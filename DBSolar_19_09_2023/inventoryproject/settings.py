@@ -138,19 +138,46 @@ WSGI_APPLICATION = 'inventoryproject.wsgi.application'
 #}
 
 # Database configuration from environment variables
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': os.environ.get('DB_NAME', 'solar_db'),
-        'USER': os.environ.get('DB_USER', 'heramb'),
-        'PASSWORD': os.environ.get('DB_PASSWORD', 'Heramb2023'),
-        'HOST': os.environ.get('DB_HOST', 'localhost'),
-        'PORT': os.environ.get('DB_PORT', '5432'),
-        'OPTIONS': {
-            'connect_timeout': 10,
-        },
+# Supports EasyPanel PostgreSQL service and standard PostgreSQL connections
+# EasyPanel typically provides: POSTGRES_HOST, POSTGRES_PORT, POSTGRES_DB, POSTGRES_USER, POSTGRES_PASSWORD
+# Or a DATABASE_URL connection string
+
+# Check if DATABASE_URL is provided (common in EasyPanel and other platforms)
+DATABASE_URL = os.environ.get('DATABASE_URL')
+
+if DATABASE_URL:
+    # Parse DATABASE_URL (format: postgres://user:password@host:port/dbname)
+    import urllib.parse
+    result = urllib.parse.urlparse(DATABASE_URL)
+    
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME': result.path[1:],  # Remove leading '/'
+            'USER': result.username,
+            'PASSWORD': result.password,
+            'HOST': result.hostname,
+            'PORT': result.port or '5432',
+            'OPTIONS': {
+                'connect_timeout': 10,
+            },
+        }
     }
-}
+else:
+    # Use individual environment variables (supports both DB_* and POSTGRES_* naming)
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME': os.environ.get('POSTGRES_DB') or os.environ.get('DB_NAME', 'solar_db'),
+            'USER': os.environ.get('POSTGRES_USER') or os.environ.get('DB_USER', 'heramb'),
+            'PASSWORD': os.environ.get('POSTGRES_PASSWORD') or os.environ.get('DB_PASSWORD', 'Heramb2023'),
+            'HOST': os.environ.get('POSTGRES_HOST') or os.environ.get('DB_HOST', 'localhost'),
+            'PORT': os.environ.get('POSTGRES_PORT') or os.environ.get('DB_PORT', '5432'),
+            'OPTIONS': {
+                'connect_timeout': 10,
+            },
+        }
+    }
 
 
 # DATABASES = {
