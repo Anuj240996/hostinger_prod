@@ -10,23 +10,25 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 WORKDIR /app
 
 # Install system dependencies
-# RUN apt-get update && apt-get install -y --no-install-recommends \
-#     postgresql-client \
-#     libpq-dev \
-#     gcc \
-#     g++ \
-#     libgl1-mesa-glx \
-#     libglib2.0-0 \
-#     libsm6 \
-#     libxext6 \
-#     libxrender-dev \
-#     libgomp1 \
-#     tesseract-ocr \
-#     libtesseract-dev \
-#     poppler-utils \
-#     zbar-tools \
-#     libzbar0 \
-#     && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    postgresql-client \
+    libpq-dev \
+    gcc \
+    g++ \
+    libgl1 \
+    libglib2.0-0 \
+    libsm6 \
+    libxext6 \
+    libxrender-dev \
+    libgomp1 \
+    tesseract-ocr \
+    libtesseract-dev \
+    poppler-utils \
+    zbar-tools \
+    libzbar0 \
+    libcairo2-dev \
+    pkg-config \
+    && rm -rf /var/lib/apt/lists/*
 
 # Install Python dependencies
 COPY requirements.txt /app/
