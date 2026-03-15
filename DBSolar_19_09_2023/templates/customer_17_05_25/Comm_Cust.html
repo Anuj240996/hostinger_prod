@@ -1,0 +1,1060 @@
+{% extends 'partials/base.html' %}
+{% block title %}Order Page{% endblock %}
+{% load static %}
+{% block content %}
+<style>
+    @media (max-width: 767px) {
+        .banner-text {
+            font-size: 24px; /* Adjust the font size as needed */
+        }
+    }
+
+      /* Style for active fieldsets */
+    .active-fieldset {
+        background-color: #d3dbec; /* Gray background color for active fieldsets */
+         border-color: blue; /* Change the border color to red for active fieldsets */
+         border: 2px solid darkblue;
+    }
+
+    /* Style for deactivated fieldsets */
+    fieldset {
+        background-color: #ffffff; /* White background color for deactivated fieldsets */
+        border-color: blue; /* Change the border color to red for active fieldsets */
+    }
+</style>
+
+    {% if messages %}
+        <ul class="messages">
+            {% for message in messages %}
+            {% if message.tags %} <script> alert("{{ message }}") </script> {% endif %}{% endfor %}
+        </ul>
+    {% endif %}
+
+    <div class="testbox">
+<!--    <form method="post" name="Cust_Form" onfocus="frm_onfocus(this)" hx-post="" hx-target="body">-->
+    <form method="post" name="Cust_Form" onfocus="frm_onfocus(this)" onsubmit="return validateForm()" hx-post="" hx-target="body">
+
+        {% csrf_token %}
+<!--                 <div class="banner d-flex flex-column align-items-center">-->
+         <div style=" position: relative;
+      height: 100px;
+      background-image:url('{% static 'images/img2.jpg' %}');
+      background-size: cover;
+      display: flex;
+      justify-content: center;
+      align-item1s: center;
+      text-align: center;" alt="Logo">
+                <h2 class="banner-text">Commercial Consumer Registration</h2>
+
+
+            </div><br>
+<!--<h4 style="background: grey; text-align: center;">Project Type: {{ project_type }} &nbsp;&nbsp;&nbsp;&nbsp;-->
+<!--Consumer Type: Commersial</h4>-->
+<!--        <input type="hidden" name="project_type" value="{{ project_type }}">-->
+<!--                  <div class="col-md-4 item1">-->
+<!--                    <label for="project_type">Project Type<span>*</span></label>-->
+<!--                    <div class="input-group">-->
+<!--                        <input id="project_type" class="text-capitalize form-control" type="text" placeholder="Plant Capacity"name="project_type" onfocus="txt_onfocus(this)" onchange="txt_onchange(this)" value="{{ project_type }}" required/>-->
+
+<!--                    </div>-->
+<!--                </div>-->
+
+         <div class="form-group">
+                           <label for="project_type">Select Project Type</label>
+<!--                           <select class="form-control" id="project_type" name="project_type" onchange="updateForm()">-->
+                           <select class="form-control" id="project_type" name="project_type" onchange="updateForm()" required>
+                              <option value="">--- Select Project Type ---</option>
+                              <option value="Rooftop">Rooftop</option>
+                              <option value="Ground Mount PV">Ground Mount PV</option>
+                              <option value="Street Light">Street Light</option>
+                              <option value="Water Pump">Water Pump</option>
+                              <option value="Hi-Mas">Hi-Mas</option>
+                              <option value="Other">Other</option>
+                           </select>
+         </div>
+<!--         <script>-->
+<!--        function updateForm() {-->
+<!--            var projectType = document.getElementById("project_type").value;-->
+<!--            var waterpump = document.getElementById("waterpump");-->
+<!--            var msebdetailsrow = document.getElementById("msebdetailsrow");-->
+<!--            var pumpwarranty = document.getElementById("pumpwarranty");-->
+
+<!--            var inverterLabel = document.querySelector("label[for='UPSC']");-->
+<!--            var inverterInput = document.getElementById("UPSC");-->
+<!--            var inverterQtyLabel = document.querySelector("label[for='qunt_inverter']");-->
+<!--            var inverterQtyInput = document.getElementById("qunt_inverter");-->
+<!--            var upssoftLabel = document.querySelector("label[for='Ups_Soft']");-->
+<!--            var upssoftInput = document.getElementById("Ups_Soft");-->
+<!--            var invwarrantyLabel = document.querySelector("label[for='inv_warranty']");-->
+<!--            var invwarrantyInput = document.getElementById("inv_warranty");-->
+
+<!--            // var warrantyfield = document.getElementById("warrantyfield");-->
+<!--            // var projectfield = document.getElementById("projectfield ");-->
+
+<!--            var warrantyFields = document.querySelectorAll(".row.mb-1 .item2"); // Select all columns-->
+
+
+
+
+<!--            if (projectType === "Water Pump") {-->
+<!--                waterpump.style.display = "block";-->
+<!--                msebdetailsrow.style.display = "none";-->
+<!--                pumpwarranty.style.display = "block";-->
+
+<!--               inverterLabel.innerHTML = 'Controller Make<span>*</span>';-->
+<!--               inverterInput.placeholder = "Controller Company";-->
+<!--               inverterQtyLabel.innerHTML = "Total No. Of Controller<span>*</span>";-->
+<!--               inverterQtyInput.placeholder = "Total No. of Controller";-->
+<!--               upssoftLabel.innerHTML = "Controller Online Software<span>*</span>";-->
+<!--               upssoftInput.placeholder = "Controller Software";-->
+
+<!--               pumpwarrantyLabel.innerHTML = "Pump Warranty<span>*</span>";-->
+<!--               pumpwarrantyInput.placeholder = "Pump Warranty";-->
+
+<!--               warrantyFields.forEach(field => {-->
+<!--                    field.classList.remove("col-md-4");-->
+<!--                    field.classList.add("col-md-3"); // Change to col-md-3-->
+<!--                });-->
+
+<!--            } else if (projectType === "Street Light") {-->
+<!--                label1.innerText = "Label for Type2 - Field 1";-->
+<!--                label2.innerText = "Label for Type2 - Field 2";-->
+<!--                field1.style.display = "block";-->
+<!--                field2.style.display = "none";-->
+<!--            } else {-->
+<!--                waterpump.style.display = "none";-->
+<!--                msebdetailsrow.style.display = "block";-->
+<!--                pumpwarranty.style.display = "none";-->
+
+<!--                inverterLabel.innerHTML = "Inverter Make<span>*</span>";-->
+<!--                inverterInput.placeholder = "Inverter Company";-->
+<!--                inverterQtyLabel.innerHTML = "Total No. Of Inverter<span>*</span>";-->
+<!--                inverterQtyInput.placeholder = "Total No. of Inverter";-->
+<!--                upssoftLabel.innerHTML = "Inverter Online Software<span>*</span>";-->
+<!--                upssoftInput.placeholder = "Inverter Software";-->
+
+<!--                invwarrantyLabel.innerHTML = "Inverter Warranty<span>*</span>";-->
+<!--                invwarrantyInput.placeholder = "Inverter Warranty";-->
+
+<!--                 warrantyFields.forEach(field => {-->
+<!--                    field.classList.remove("col-md-3");-->
+<!--                    field.classList.add("col-md-4"); // Change back to col-md-4-->
+<!--                });-->
+<!--            }-->
+<!--        }-->
+<!--    </script>-->
+        <script>
+            function updateForm() {
+                var projectType = document.getElementById("project_type").value;
+                var waterpump = document.getElementById("waterpump");
+                var waterpump1 = document.getElementById("waterpump1");
+                var waterpump2 = document.getElementById("waterpump2");
+                var msebdetailsrow = document.getElementById("msebdetailsrow");
+                var pumpwarranty = document.getElementById("pumpwarranty");
+
+                var consumerField = document.getElementById("Consumer");
+                var billUnitField = document.getElementById("Bill_unit");
+                var loadSanctionField = document.getElementById("loadsancution");
+                var solarPumpField = document.getElementById("pump_make"); // Ensure ID matches input
+                var pumpQuntField = document.getElementById("pump_qunt");
+                var pumpWarrantyField = document.getElementById("pump_warranty");
+
+                var inverterLabel = document.querySelector("label[for='UPSC']");
+                var inverterInput = document.getElementById("UPSC");
+                var inverterQtyLabel = document.querySelector("label[for='qunt_inverter']");
+                var inverterQtyInput = document.getElementById("qunt_inverter");
+                var upssoftLabel = document.querySelector("label[for='Ups_Soft']");
+                var upssoftInput = document.getElementById("Ups_Soft");
+                var invwarrantyLabel = document.querySelector("label[for='inv_warranty']");
+                var invwarrantyInput = document.getElementById("inv_warranty");
+
+                var pumpwarrantyLabel = document.querySelector("label[for='pump_warranty']");
+                var pumpwarrantyInput = document.getElementById("pump_warranty");
+
+                var warrantyFields = document.querySelectorAll(".row.mb-1 .item2"); // Select all columns
+                var projectFields = document.querySelectorAll(".row.mb-1 .item3"); // Select all columns
+
+                if (projectType === "Water Pump") {
+                    waterpump.style.display = "block";
+                    waterpump1.style.display = "block";
+                    waterpump2.style.display = "flex";
+                    msebdetailsrow.style.display = "none";
+                    pumpwarranty.style.display = "block"; // Show pump warranty field
+
+                    inverterLabel.innerHTML = 'Controller Make <span style="color: red;">*</span>';
+                    inverterInput.placeholder = "Controller Company";
+                    inverterQtyLabel.innerHTML = 'Controller Quantity <span style="color: red;">*</span>';
+                    inverterQtyInput.placeholder = "Controller Quantity";
+                    upssoftLabel.innerHTML = 'Controller Online Software <span style="color: red;">*</span>';
+                    upssoftInput.placeholder = "Controller Software";
+                    invwarrantyLabel.innerHTML = 'Controller Warranty <span style="color: red;">*</span>';
+                    invwarrantyInput.placeholder = "Controller Warranty";
+
+                    pumpwarrantyLabel.innerHTML = 'Solar Water Pump Warranty <span style="color: red;">*</span>';
+                    pumpwarrantyInput.placeholder = "Solar Water Pump Warranty";
+
+                    // Add required attribute to Water Pump fields
+                    solarPumpField.setAttribute("required", true);
+                    pumpQuntField.setAttribute("required", true);
+                    pumpWarrantyField.setAttribute("required", true);
+
+                    // Remove required attribute from MSEB fields
+                    consumerField.removeAttribute("required");
+                    billUnitField.removeAttribute("required");
+                    loadSanctionField.removeAttribute("required");
+
+                    // Adjust column width when the pump warranty field is shown
+                    warrantyFields.forEach(field => {
+                        field.classList.remove("col-md-4");
+                        field.classList.add("col-md-3");
+                    });
+
+                    // Adjust column width when the pump warranty field is shown
+                    projectFields.forEach(field => {
+                        field.classList.remove("col-md-4");
+                        field.classList.add("col-md-3");
+                    });
+
+
+
+                } else {
+                    waterpump.style.display = "none";
+                    waterpump1.style.display = "none";
+                    waterpump2.style.display = "none";
+                    msebdetailsrow.style.display = "block";
+                    pumpwarranty.style.display = "none"; // Hide pump warranty field
+
+                    inverterLabel.innerHTML = 'Inverter Make <span style="color: red;">*</span>';
+                    inverterInput.placeholder = "Inverter Company";
+                    inverterQtyLabel.innerHTML = 'Inverter Quantity <span style="color: red;">*</span>';
+                    inverterQtyInput.placeholder = "Inverter Quantity";
+                    upssoftLabel.innerHTML = 'Inverter Online Software <span style="color: red;">*</span>';
+                    upssoftInput.placeholder = "Inverter Software";
+
+                    invwarrantyLabel.innerHTML = 'Inverter Warranty <span style="color: red;">*</span>';
+                    invwarrantyInput.placeholder = "Inverter Warranty";
+
+                    // Remove required attribute from Water Pump fields
+                    solarPumpField.removeAttribute("required");
+                    pumpQuntField.removeAttribute("required");
+                    pumpWarrantyField.removeAttribute("required");
+
+                    // Add required attribute to MSEB fields
+                    consumerField.setAttribute("required", true);
+                    billUnitField.setAttribute("required", true);
+                    loadSanctionField.setAttribute("required", true);
+
+                    // Adjust column width back to original when Water Pump is deselected
+                    warrantyFields.forEach(field => {
+                        field.classList.remove("col-md-3");
+                        field.classList.add("col-md-4");
+                    });
+                    // Adjust column width back to original when Water Pump is deselected
+                    projectFields.forEach(field => {
+                        field.classList.remove("col-md-3");
+                        field.classList.add("col-md-4");
+                    });
+                }
+            }
+
+        </script>
+
+<!--       <fieldset>-->
+<!--            <legend style="color: darkblue;">Purchase Order Details</legend>-->
+<!--            <div class="row mb-1 align-items-center">-->
+<!--                <div class="col-md-4 item1">-->
+<!--                    <label for="Plant_Capacity">Plant Capacity<span>*</span></label>-->
+<!--                    <div class="input-group">-->
+<!--                        <input id="Plant_Capacity" class="text-capitalize form-control" type="number" placeholder="Plant Capacity"name="Plant_Capacity" onfocus="txt_onfocus(this)" onchange="txt_onchange(this)" value="{{ Plant_Capacity }}" required/>-->
+<!--                        <span class="input-group-text" style="color:black; background: white;border:0;align:left">Kw</span>-->
+<!--                    </div>-->
+<!--                </div>-->
+
+<!--                <div class="col-md-4 mb-3 item1">-->
+<!--                    <label class="col-form-label" for="po_order">PO Order No<span>*</span></label>-->
+<!--                    <input id="po_order" type="text" class="text-capitalize form-control" name="po_order" placeholder="PO Order No" onfocus="txt_onfocus(this)" onchange="txt_onchange(this)" value="{{ po_order }}" onblur="pink" required/>-->
+<!--                </div>-->
+
+<!--                <div class="col-md-4 mb-3 item1">-->
+<!--                    <label class="col-form-label" for="po_date">PO Date<span>*</span></label>-->
+<!--                    <input id="po_date" class="text-capitalize form-control" type="Date" name="po_date" placeholder="PO Date" onfocus="txt_onfocus(this)" onchange="txt_onchange(this)" value="{{ po_date }}" required/>-->
+<!--                </div>-->
+<!--            </div>-->
+<!--        </fieldset>-->
+<fieldset>
+          <legend style="color: darkblue;">Purchase Order Details</legend>
+            <div class="row mb-1 align-items-center">
+                <div class="col-md-3 item1">
+                    <label for="Plant_Capacity">Plant Capacity<span>*</span></label>
+                    <div class="input-group">
+                        <input id="Plant_Capacity" class="text-capitalize form-control" type="number" placeholder="Plant Capacity"name="Plant_Capacity" onfocus="txt_onfocus(this)" onchange="txt_onchange(this)" value="{{ Plant_Capacity }}" min="0" required/>
+<!--                        <span class="input-group-text" style="color:black; background: white;border:0;align:left">Kw</span>-->
+                        <span class="input-group-text" style="color:#495057;border:0;align:left">Kw</span>
+                    </div>
+                </div>
+
+                 <!-- Updated Phase Dropdown -->
+                <div class="col-md-3 mb-3 item1">
+                    <label class="col-form-label" for="phase">Phase<span>*</span></label>
+                    <select id="phase" class="form-control" name="phase" required>
+                        <option value="" disabled selected>Select Phase</option>
+                        <option value="0" {% if phase == 0 %}selected{% endif %}>Not Applicable</option>
+                        <option value="1" {% if phase == 1 %}selected{% endif %}>1 Phase</option>
+                        <option value="3" {% if phase == 3 %}selected{% endif %}>3 Phase</option>
+                    </select>
+                </div>
+                <div class="col-md-3 mb-3 item1">
+                    <label class="col-form-label" for="po_order">PO Order No<span>*</span></label>
+                    <input id="po_order" type="text" class="text-capitalize form-control" name="po_order" placeholder="PO Order No" onfocus="txt_onfocus(this)" onchange="txt_onchange(this)" value="{{ po_order }}" onblur="pink" required/>
+                </div>
+
+                <div class="col-md-3 mb-3 item1">
+                    <label class="col-form-label" for="po_date">PO Date<span>*</span></label>
+                    <input id="po_date" class="text-capitalize form-control" type="Date" name="po_date" placeholder="PO Date" onfocus="txt_onfocus(this)" onchange="txt_onchange(this)" value="{{ po_date }}" required/>
+                </div>
+
+            </div>
+         </fieldset>
+        <fieldset>
+            <legend style="color: darkblue;"> Consumer Details</legend>
+<!--             <div class="row mb-1">-->
+<!--&lt;!&ndash;                 <div class="col-md-4">&ndash;&gt;-->
+<!--&lt;!&ndash;                  <div class="question">&ndash;&gt;-->
+<!--&lt;!&ndash;                   <label>Gender</label><br>&ndash;&gt;-->
+<!--&lt;!&ndash;                   <input type="radio" value="M" id="radio_1" name="Gender" checked />&ndash;&gt;-->
+<!--&lt;!&ndash;                   <label for="radio_1" class="radio"><span>Male</span></label>&ndash;&gt;-->
+<!--&lt;!&ndash;                   <input  type="radio" value="F" id="radio_2" name="Gender"/>&ndash;&gt;-->
+<!--&lt;!&ndash;                   <label for="radio_2" class="radio"><span>Female</span></label>&ndash;&gt;-->
+<!--&lt;!&ndash;                   </div>&ndash;&gt;-->
+<!--&lt;!&ndash;                 </div>&ndash;&gt;-->
+
+
+
+<!--                 <div class="col-md-12 item1">-->
+<!--                   <label for="Comp_name">Farm Name<span>*</span></label>-->
+<!--                   <input id="Comp_name" type="text" class="text-capitalize form-control" name="Comp_name" placeholder="Farm name" onfocus="txt_onfocus(this)" onchange="txt_onchange(this)" value="{{ Comp_name }}"  onblur="pink" required/>-->
+<!--                 </div>-->
+<!--             </div>-->
+            <div class="row mb-1">
+                <div class="col-md-12 item1">
+                    <label for="Comp_name">Farm Name<span>*</span></label>
+                    <input id="Comp_name" type="text" class="text-capitalize form-control" name="Comp_name" placeholder="Farm name" onfocus="txt_onfocus(this)" onchange="txt_onchange(this)" onblur="checkCompanyName(this)" required/>
+                    <div class="error-message" id="comp-name-error"></div>
+                </div>
+            </div>
+             <div class="row mb-1">
+        <div class="col-md-4 item1">
+            <label for="first_name"> First Name<span>*</span></label>
+            <input id="first_name" class="text-capitalize form-control" type="text" name="first_name" placeholder="First Name" onfocus="txt_onfocus(this)" onchange="txt_onchange(this)" value="{{ first_name }}" required/>
+           </div>
+
+           <div class="col-md-4 item1">
+             <label for="middle_name"> Middle Name<span>*</span></label>
+             <input id="middle_name" type="text" name="middle_name" class="text-capitalize form-control" placeholder="Middle Name" onfocus="txt_onfocus(this)" onchange="txt_onchange(this)" value="{{ middle_name }}" required/>
+           </div>
+
+
+
+           <div class="col-md-4 item1">
+             <label for="last_name"> Last Name<span>*</span></label>
+             <input id="last_name" type="text" name="last_name" class="text-capitalize form-control" placeholder="Last Name" onfocus="txt_onfocus(this)" onchange="txt_onchange(this)" value="{{ last_name }}" required/>
+           </div>
+        </div>
+        <div class="row mb-1">
+           <div class="col-md-4 item1">
+             <label for="Address">Address<span>*</span></label>
+             <input id="Address" type="text" name="Address" class="text-capitalize form-control" placeholder="Address" onfocus="txt_onfocus(this)" onchange="txt_onchange(this)" value="{{ Address }}" required/>
+           </div>
+
+<!--           <div class="col-md-4 item1">-->
+<!--            <label for="City">City<span>*</span></label>-->
+<!--            <input id="City" type="text" name="City" class="text-capitalize form-control" placeholder="City" onfocus="txt_onfocus(this)" onchange="txt_onchange(this)" value="{{ City }}" required/>-->
+<!--           </div>-->
+
+             <div class="col-md-4 item1">
+                 <label for="city-select"> City<span>*</span></label>
+                <select name="city_name" id="city-select" onchange="handleCitySelection()" class="form-control">
+                  <option value="" disabled selected>select City</option>
+                   {% for city in cities %}
+                    <option value="{{ city }}">{{ city }}</option>
+                   {% endfor %}
+                   <option value="Other">Other</option>
+                </select>
+                <input type="text" name="new_city_name" id="new-city-textbox" placeholder="Enter a new city" style="display: none;" class="text-capitalize form-control">
+               </div>
+
+
+           <div class="col-md-4 item1">
+            <label for="state">State<span>*</span></label>
+            <input id="state" type="text" name="state" class="text-capitalize form-control" placeholder="State" onfocus="txt_onfocus(this)" onchange="txt_onchange(this)" value="{{ state }}" required/>
+          </div>
+        </div>
+        <div class="row mb-1">
+<!--          <div class="col-md-4 item1">-->
+<!--           <label for="Pincode">Pincode<span>*</span></label>-->
+<!--           <input id="Pincode" type="number" name="Pincode" class="text-capitalize form-control" maxlength="6" placeholder="Pincode" onfocus="txt_onfocus(this)" onchange="txt_onchange(this)" value="{{ Pincode }}" required/>-->
+<!--          </div>-->
+            <div class="col-md-4 item1">
+                <label for="Pincode">Pincode<span>*</span></label>
+                <input id="Pincode" type="tel" name="Pincode" class="text-capitalize form-control" maxlength="6" placeholder="Pincode" onfocus="txt_onfocus(this)" onchange="txt_onchange(this)" onblur="validatePincode(this)" value="{{ Pincode }}" required/>
+                <div class="error-message" id="pincode-error"></div>
+            </div>
+
+           <div class="col-md-4 item1">
+            <label for="email">Email Address<span>*</span></label>
+            <input id="email" type="email" name="email" class="form-control" placeholder="Email" onfocus="txt_onfocus(this)" onchange="txt_onchange(this)" onblur="validateEmail(this)" value="{{ email }}" required/>
+            <div class="error-message" id="email-error"></div>
+           </div>
+
+<!--           <div class="col-md-4 item1">-->
+<!--            <label for="phone">Phone<span>*</span></label>-->
+<!--            <input id="phone" type="tel" name="phone" class="text-capitalize form-control" minlength="10" maxlength="10" placeholder="Phone" onfocus="txt_onfocus(this)" onchange="txt_onchange(this)" value="{{ phone }}" required/>-->
+<!--          </div>-->
+            <div class="col-md-4 item1">
+                <label for="phone">Phone<span>*</span></label>
+                <input id="phone" type="tel" name="phone" class="text-capitalize form-control" minlength="10" maxlength="10" placeholder="Phone" onfocus="txt_onfocus(this)" onchange="txt_onchange(this)" onblur="validatePhone(this)" value="{{ phone }}" required/>
+                <div class="error-message" id="phone-error"></div>
+            </div>
+        </div>
+        </fieldset>
+
+        <fieldset id="msebdetailsrow">
+            <legend style="color: darkblue;"> Consumer MSEB Details</legend>
+            <div class="row mb-1">
+           <div class="col-md-4 item1">
+            <label for="Consumer">Consumer Number(MSEDCL)<span>*</span></label>
+            <input id="Consumer" type="number" name="Consumer" class="text-capitalize form-control" placeholder="Consumer number" onfocus="txt_onfocus(this)" onchange="txt_onchange(this)" value="{{ Consumer }}" min="0" required/>
+           </div>
+           <div class="col-md-4 item1">
+                <label for="Bill_unit">Current Load Sanction<span>*</span></label>
+                 <div class="input-group">
+                <input id="Bill_unit" class="text-capitalize form-control" type="number" name="Bill_unit" placeholder="Current Load Sanction" onfocus="txt_onfocus(this)" onchange="txt_onchange(this)" value="{{ Bill_unit }}" min="0" required/>
+<!--                 <span class="input-group-text" style="color:black; background: white;border:0;align:left">Kw</span>-->
+                 <span class="input-group-text" style="color:#495057;border:0;align:left">Kw</span>
+                </div>
+                 </div>
+               <div class="col-md-4 item1">
+                <label for="loadsancution">Final Load Sanction<span>*</span></label>
+                <div class="input-group">
+                <input id="loadsancution" type="number" name="loadsancution" class="text-capitalize form-control" placeholder="Additional Load Sanction" onfocus="txt_onfocus(this)" onchange="txt_onchange(this)" value="{{ loadsancution }}" min="0" required/>
+<!--                <span class="input-group-text" style="color:black; background: white;border:0;align:left">Kw</span>-->
+                <span class="input-group-text" style="color:#495057;border:0;align:left">Kw</span>
+                </div>
+               </div>
+         </div>
+        </fieldset>
+<!--        <fieldset>-->
+<!--            <legend style="color: darkblue;">Consumer Solar Project Details</legend>-->
+<!--            <div class="row mb-1">-->
+<!--           <div class="col-md-4 item3">-->
+<!--            <label for="solar_comp">Solar Module Make<span style="color: red;">*</span></label>-->
+<!--            <input id="solar_comp" class="text-capitalize form-control" type="text" class="text-capitalize" name="solar_comp" placeholder="Solar Panel Company" onfocus="txt_onfocus(this)" onchange="txt_onchange(this)" value="{{ solar_comp }}" required/>-->
+<!--           </div>-->
+<!--          <div class="col-md-4 item3">-->
+<!--            <label for="qunt_solarpanel">Solar Module Quantity<span style="color: red;">*</span></label>-->
+<!--            <input id="qunt_solarpanel" type="number" name="qunt_solar" class="text-capitalize form-control" placeholder="Total No.of Solar Panel" onfocus="txt_onfocus(this)" onchange="txt_onchange(this)" value="{{ Ups_Soft }}" required/>-->
+<!--           </div>-->
+
+<!--           <div class="col-md-4 item2">-->
+<!--            <label for="sol_comp">Solar Module Warranty<span style="color: red;">*</span></label>-->
+<!--            <input id="sol_warranty" class="text-capitalize form-control" type="number" class="text-capitalize" name="sol_warranty" placeholder="Solar Panel Warranty" onfocus="txt_onfocus(this)" onchange="txt_onchange(this)" value="{{ sol_warranty }}" required/>-->
+<!--           </div>-->
+
+<!--           <div class="col-md-4 item3">-->
+<!--            <label for="UPSC">Inverter Make<span style="color: red;">*</span></label>-->
+<!--            <input id="UPSC" type="text" name="UPSC" class="text-capitalize form-control" placeholder="Inverter Company" onfocus="txt_onfocus(this)" onchange="txt_onchange(this)" value="{{ UPSC }}" required="">-->
+<!--          </div>-->
+<!--&lt;!&ndash;            <div id="waterpump" style="display: none;" class="col-md-4 item3">&ndash;&gt;-->
+<!--&lt;!&ndash;            <label for="pump_make_label" id="pump_make_label">Water Pump Make<span style="color: red;">*</span></label>&ndash;&gt;-->
+<!--&lt;!&ndash;            <input id="pump_make" type="text" name="pump_make" class="text-capitalize form-control" placeholder="Water Pump Make" onfocus="txt_onfocus(this)" onchange="txt_onchange(this)" value="{{ pump_make }}" required/>&ndash;&gt;-->
+<!--&lt;!&ndash;           </div>&ndash;&gt;-->
+<!--            <div id="waterpump" style="display: none;" class="col-md-4 item3">-->
+<!--                <label for="pump_make_label" id="pump_make_label">Water Pump Make<span style="color: red;">*</span></label>-->
+<!--                <input id="pump_make" type="text" name="solar_pump" class="text-capitalize form-control" placeholder="Water Pump Make" onfocus="txt_onfocus(this)" onchange="txt_onchange(this)" value="{{ pump_make }}">-->
+<!--            </div>-->
+
+<!--           <div class="col-md-4 item3">-->
+<!--            <label for="Ups_Soft">Inverter Online Software<span style="color: red;">*</span></label>-->
+<!--            <input id="Ups_Soft" type="text" name="Ups_Soft" class="text-capitalize form-control" placeholder="Inverter Software" onfocus="txt_onfocus(this)" onchange="txt_onchange(this)" value="{{ Ups_Soft }}" required/>-->
+<!--           </div>-->
+<!--          </div>-->
+<!--          <div class="row mb-1">-->
+<!--           <div class="col-md-4 item3">-->
+<!--            <label for="qunt_inverter">Total No.Of Inverter<span style="color: red;">*</span></label>-->
+<!--            <input id="qunt_inverter" type="number" name="qunt_inv" class="text-capitalize form-control" placeholder="Total No.of Inverter" onfocus="txt_onfocus(this)" onchange="txt_onchange(this)" value="{{ Ups_Soft }}" required/>-->
+<!--           </div>-->
+<!--&lt;!&ndash;          <div id="waterpump" style="display: none;">&ndash;&gt;-->
+
+<!--&lt;!&ndash;           <div id="waterpump1" style="display: none;" class="col-md-4 item3">&ndash;&gt;-->
+<!--&lt;!&ndash;            <label for="pump_qunt_label" id="pump_qunt_label">Total No.Of Water Pump<span style="color: red;">*</span></label>&ndash;&gt;-->
+<!--&lt;!&ndash;            <input id="pump_qunt" type="number" name="pump_qunt" class="text-capitalize form-control" placeholder="Total No.of Water Pump" onfocus="txt_onfocus(this)" onchange="txt_onchange(this)" value="{{ pump_qunt }}" required/>&ndash;&gt;-->
+<!--&lt;!&ndash;           </div>&ndash;&gt;-->
+
+<!--            <div id="waterpump1" style="display: none;" class="col-md-4 item3">-->
+<!--                <label for="pump_qunt_label" id="pump_qunt_label">Total No. Of Water Pump<span style="color: red;">*</span></label>-->
+<!--                <input id="pump_qunt" type="number" name="pump_qunt" class="text-capitalize form-control" placeholder="Total No.of Water Pump" onfocus="txt_onfocus(this)" onchange="txt_onchange(this)" value="{{ pump_qunt }}">-->
+<!--            </div>-->
+
+<!--&lt;!&ndash;          </div>&ndash;&gt;-->
+
+<!--          <div class="col-md-4 item3">-->
+<!--            <label for="Engineer_Assigned">Engineer Assigned<span style="color: red;">*</span></label>-->
+<!--            <select id="Engineer_Assigned" name="Engineer_Assigned" class="form-control" required>-->
+<!--                <option value="" disabled selected>Select Engineer</option>-->
+<!--                {% for engineer in engineers %}-->
+<!--                    <option value="{{ engineer.id }}">{{ engineer.first_name }} {{ engineer.last_name }}</option>-->
+<!--                {% endfor %}-->
+<!--                <option value="1">Other</option>-->
+<!--            </select>-->
+<!--          </div>-->
+<!--          </div>-->
+
+<!--        </fieldset>-->
+<!--        <fieldset>-->
+<!--            <legend style="color: darkblue;">Warranty Details</legend>-->
+<!--            <div class="row mb-1">-->
+<!--           <div class="col-md-4 item2">-->
+<!--            <label for="inv_warranty">Inverter Warranty<span style="color: red;">*</span></label>-->
+<!--            <input id="inv_warranty" type="number" name="inv_warranty" class="text-capitalize form-control" placeholder="Inverter Warranty" onfocus="txt_onfocus(this)" onchange="txt_onchange(this)" value="{{ inv_warranty }}" required="">-->
+<!--          </div>-->
+<!--&lt;!&ndash;          <div class="col-md-4 item2" id="pumpwarranty" style="display: none;">&ndash;&gt;-->
+<!--&lt;!&ndash;            <label for="pump_warranty" id="pump_warranty_label">Water Pump Warranty<span style="color: red;">*</span></label>&ndash;&gt;-->
+<!--&lt;!&ndash;            <input id="pump_warranty" type="number" name="pump_warranty" class="text-capitalize form-control" placeholder="Water Pump Warranty" onfocus="txt_onfocus(this)" onchange="txt_onchange(this)" value="{{ pump_warranty }}" required/>&ndash;&gt;-->
+<!--&lt;!&ndash;           </div>&ndash;&gt;-->
+<!--&lt;!&ndash;           &ndash;&gt;-->
+<!--            <div class="col-md-4 item2" id="pumpwarranty" style="display: none;">-->
+<!--                <label for="pump_warranty" id="pump_warranty_label">Water Pump Warranty<span style="color: red;">*</span></label>-->
+<!--                <input id="pump_warranty" type="number" name="pump_warranty" class="text-capitalize form-control" placeholder="Water Pump Warranty" onfocus="txt_onfocus(this)" onchange="txt_onchange(this)" value="{{ pump_warranty }}">-->
+<!--            </div>-->
+<!--           <div class="col-md-4 item2">-->
+<!--            <label for="com_warranty">O & M Warranty<span style="color: red;">*</span></label>-->
+<!--            <input id="com_warranty" type="number" name="com_warranty" class="text-capitalize form-control" placeholder="O & M Warranty" onfocus="txt_onfocus(this)" onchange="txt_onchange(this)" value="{{ com_warranty }}" required/>-->
+<!--           </div>-->
+
+<!--          </div>-->
+<!--        </fieldset>-->
+        <fieldset>
+            <legend style="color: darkblue;">Consumer Solar Project Details</legend>
+<!--               <fieldset style="border: 0;">-->
+                <div class="highlighted-row mb-1">
+
+               <div class="col-md-4 item3">
+
+                <label for="solar_comp">Solar Module Make<span style="color: red;">*</span></label>
+                <input id="solar_comp" class="text-capitalize form-control" type="text" class="text-capitalize" name="solar_comp" placeholder="Solar Panel Company" onfocus="txt_onfocus(this)" onchange="txt_onchange(this)" value="{{ solar_comp }}" required/>
+               </div>
+                <div class="col-md-4 item3">
+                <label for="qunt_solarpanel">Solar Module Quantity<span style="color: red;">*</span></label>
+                <div class="input-group">
+                <input id="qunt_solarpanel" type="number" name="qunt_solar" class="text-capitalize form-control" placeholder="Solar Module Quantity" onfocus="txt_onfocus(this)" onchange="txt_onchange(this)" value="{{ Ups_Soft }}" min="0" required/>
+                 <span class="input-group-text">Nos.</span>
+               </div>
+               </div>
+
+                <div class="col-md-4 item2">
+                <label for="sol_comp">Solar Module Warranty<span style="color: red;">*</span></label>
+                <div class="input-group">
+                <input id="sol_warranty" class="text-capitalize form-control" type="number" class="text-capitalize" name="sol_warranty" placeholder="Solar Panel Warranty" onfocus="txt_onfocus(this)" onchange="txt_onchange(this)" value="{{ sol_warranty }}" min="0" required/>
+                 <span class="input-group-text">Year</span>
+               </div>
+               </div>
+                </div>
+<!--             </fieldset>-->
+<!--            <fieldset style="border: 0;">-->
+                    <div class="highlighted-row mb-1">
+                   <div class="col-md-4 item3">
+                    <label for="UPSC">Inverter Make<span style="color: red;">*</span></label>
+                    <input id="UPSC" type="text" name="UPSC" class="text-capitalize form-control" placeholder="Inverter Company" onfocus="txt_onfocus(this)" onchange="txt_onchange(this)" value="{{ UPSC }}" required="">
+                  </div>
+                             <div class="col-md-4 item3">
+                    <label for="qunt_inverter">Inverter Quantity<span style="color: red;">*</span></label>
+                    <div class="input-group">
+                    <input id="qunt_inverter" type="number" name="qunt_inv" class="text-capitalize form-control" placeholder="Inverter Quantity" onfocus="txt_onfocus(this)" onchange="txt_onchange(this)" value="{{ Ups_Soft }}" min="0" required/>
+                    <span class="input-group-text">Nos.</span>
+                    </div>
+                   </div>
+                         <div class="col-md-4 item2">
+                    <label for="inv_warranty">Inverter Warranty<span style="color: red;">*</span></label>
+                    <div class="input-group">
+                    <input id="inv_warranty" type="number" name="inv_warranty" class="text-capitalize form-control" placeholder="Inverter Warranty" onfocus="txt_onfocus(this)" onchange="txt_onchange(this)" value="{{ inv_warranty }}" min="0" required="">
+                     <span class="input-group-text">Year</span>
+                     </div>
+                  </div>
+                    </div>
+<!--            </fieldset>-->
+<!--            <fieldset id="waterpump2"  style="display: none; border: 0;">-->
+                <div class="highlighted-row mb-1" style="display: none;" id="waterpump2">
+                <div id="waterpump" style="display: none;" class="col-md-4 item3">
+                    <label for="pump_make_label" id="pump_make_label">Solar Water Pump Make<span style="color: red;">*</span></label>
+                    <input id="pump_make" type="text" name="solar_pump" class="text-capitalize form-control" placeholder="Solar Water Pump Make" onfocus="txt_onfocus(this)" onchange="txt_onchange(this)" value="{{ pump_make }}">
+                </div>
+
+                <div id="waterpump1" style="display: none;" class="col-md-4 item3">
+                    <label for="pump_qunt_label" id="pump_qunt_label">Solar Water Pump Quantity<span style="color: red;">*</span></label>
+                    <div class="input-group">
+                    <input id="pump_qunt" type="number" name="pump_qunt" class="text-capitalize form-control" placeholder="Solar Water Pump Quantity" onfocus="txt_onfocus(this)" onchange="txt_onchange(this)" value="{{ pump_qunt }}" min="0">
+                      <span class="input-group-text">Nos.</span>
+                    </div>
+                </div>
+                 <div class="col-md-4 item2" id="pumpwarranty" style="display: none;">
+                    <label for="pump_warranty" id="pump_warranty_label">Solar Water Pump Warranty<span style="color: red;">*</span></label>
+                    <div class="input-group">
+                    <input id="pump_warranty" type="number" name="pump_warranty" class="text-capitalize form-control" placeholder="Solar Water Pump Warranty" onfocus="txt_onfocus(this)" onchange="txt_onchange(this)" value="{{ pump_warranty }}" min="0">
+                      <span class="input-group-text">Year</span>
+                   </div>
+                </div>
+                </div>
+<!--            </fieldset>-->
+<!--            <fieldset style="border: 0;">-->
+                    <div class="highlighted-row mb-1">
+                   <div class="col-md-4 item3">
+                    <label for="Ups_Soft">Inverter Online Software<span style="color: red;">*</span></label>
+                    <input id="Ups_Soft" type="text" name="Ups_Soft" class="text-capitalize form-control" placeholder="Inverter Software" onfocus="txt_onfocus(this)" onchange="txt_onchange(this)" value="{{ Ups_Soft }}" required/>
+                   </div>
+                         <div class="col-md-4 item2">
+                    <label for="com_warranty">O & M Warranty<span style="color: red;">*</span></label>
+                    <div class="input-group">
+                    <input id="com_warranty" type="number" name="com_warranty" class="text-capitalize form-control" placeholder="O & M Warranty" onfocus="txt_onfocus(this)" onchange="txt_onchange(this)" value="{{ com_warranty }}" min="0" required/>
+                      <span class="input-group-text">Year</span>
+                     </div>
+                   </div>
+                   <div class="col-md-4 item3">
+                     <label for="Engineer_Assigned">Engineer Assigned<span style="color: red;">*</span></label>
+                    <select id="Engineer_Assigned" name="Engineer_Assigned" class="form-control" required>
+                        <option value="" disabled selected>Select Engineer</option>
+                        {% for engineer in engineers %}
+                            <option value="{{ engineer.id }}">{{ engineer.first_name }} {{ engineer.last_name }}</option>
+                        {% endfor %}
+                        <option value="1">Other</option>
+                    </select>
+                  </div>
+                  </div>
+        </fieldset>
+
+<style>
+    /* Style for each row inside the fieldset */
+    .highlighted-row {
+        display: flex;
+        align-items: center; /* Center vertically */
+        padding: 8px 15px; /* Add padding for better spacing */
+        border-radius: 10px; /* Rounded corners */
+        // margin: 5px; /* Prevents overlapping with fieldset border */
+    }
+
+    /* Highlighted row with background color, padding, and border */
+    .highlighted {
+        // background-color: #a5a9d9 !important; /* Light pink */
+        background-color: #518988 !important; /* Light pink */
+        padding: 10px; /* Space inside */
+        border: 2px solid #372c7d; /* Red border */
+        border-radius: 10px; /* Matches fieldset */
+        // margin: 5px; /* Keeps it inside the fieldset */
+    }
+
+    /* Ensure the fieldset has padding and rounded corners */
+    fieldset {
+        overflow: hidden;
+        position: relative;
+        padding: 15px; /* Ensure spacing inside fieldset */
+        border-radius: 10px; /* Rounded corners */
+    }
+
+
+    /* When the fieldset is NOT active, reset row styles */
+    fieldset:not(.active-fieldset) .highlighted-row {
+        background-color: white !important;
+        border: none !important;
+    }
+</style>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const rows = document.querySelectorAll(".highlighted-row.mb-1"); // Select all rows inside the fieldset
+
+        rows.forEach(function (row) {
+            row.addEventListener("click", function () {
+                // Remove background from all rows
+                rows.forEach(function (r) {
+                    r.classList.remove("highlighted");
+                });
+
+                // Add background to clicked row
+                row.classList.add("highlighted");
+            });
+        });
+    });
+</script>
+
+        <fieldset>
+            <legend style="color: darkblue;">Consumer Account Details</legend>
+            <div class="row mb-1">
+<!--            <div class="col-md-6 item1">-->
+<!--              <label for="username">Username</label>-->
+<!--              <input type="text" class="form-control" placeholder="Username" id="username" name="username" required>-->
+<!--            </div>-->
+             <div class="col-md-6 item1">
+<!--            <div class="col-md-4 item1">-->
+                <label for="username">Username<span>*</span></label>
+                <input id="username" type="text" name="username" class="form-control" placeholder="Username" onfocus="txt_onfocus(this)" onchange="txt_onchange(this)" onblur="checkUsername(this)" required/>
+                <div class="error-message" id="username-error"></div>
+<!--            </div>-->
+        </div>
+            <div class="col-md-6 item1">
+              <label for="username">Password</label>
+              <input type="text" class="form-control" id="password1" name="password1" value="admin@123" readonly>
+            </div>
+            <div class="form-group">
+              <input type="hidden" class="form-control" id="password2" name="password2" value="admin@123" readonly>
+            </div>
+        </div>
+
+        </fieldset>
+
+
+<!--         <div class="colums">-->
+
+<!--           <div class="item1">-->
+
+
+
+
+
+<!--          <div class="col-md-4 item1">-->
+<!--            <label for="Cus_Act_Date">Consumer Activation Date<span>*</span></label>-->
+<!--            <input id="Cus_Act_Date" class="text-capitalize form-control" type="Date" name="Cus_Act_Date" placeholder="Activation Date" onfocus="txt_onfocus(this)" onchange="txt_onchange(this)" value="{{ Cus_Act_Date }}" required/>-->
+<!--          </div>-->
+
+
+
+
+<!--       <div class="col-md-4 item1">-->
+<!--    <label for="Engineer_Assigned">Engineer Assigned<span>*</span></label>-->
+<!--    <select id="Engineer_Assigned" name="Engineer_Assigned" class="form-control" required>-->
+<!--        <option value="" disabled selected>Select Engineer</option>-->
+<!--        {% for engineers in engineers %}-->
+<!--            <option value="{{ engineer_name.id }}">{{ engineer_name }}</option>-->
+<!--        {% endfor %}-->
+<!--    </select>-->
+<!--</div>-->
+
+
+
+
+<!--         </div>-->
+
+<div class="row mb-1">
+         <div class="btn-block col-md-4">
+<!--            <button type="submit"  value="{{Comm_Cust}}">Submit </button>-->
+              <button type="submit"  value="{{Comm_Cust}}" style="width: 80%; height: 110%;">Save & New</button>
+         </div>
+    <br><br>
+         <div class="btn-block col-md-4">
+             <button type="submit"  id="saveAndRedirect" style="width: 80%; height: 110%;">Save & Exit</button>
+         </div>
+    <br><br>
+         <div class="btn-block col-md-4">
+            <button type="Reset" href="/" style="width: 80%; height: 110%;">Clear</button>
+         </div>
+</div>
+<br>
+
+
+
+<!--        <div class="container">-->
+<!--          <h1>All Employee Details!</h1>-->
+<!--          <hr>-->
+<!--          <table class="table-cenetr" >-->
+<!--            <thead class="table table-success">-->
+<!--                  <tr>     <th scope="col">Cust id</th>-->
+<!--                           <th scope="col">Farm Name</th>-->
+<!--                           <th scope="col">City</th>-->
+<!--                           <th scope="col">Plant Capacity</th>-->
+<!--                           <th scope="col">UPS Soft</th>-->
+<!--                           <th scope="col">Consumer Type</th>-->
+<!--                           <th scope="col">Mobile</th>-->
+<!--                                                                                                                                                                                                       <th scope="col">Address</th>-->
+<!--                           <th scope="col">Activation Date</th>-->
+
+<!--                  </tr>-->
+<!--            </thead>-->
+<!--            {% for Cust in cust %}-->
+<!--            <tbody>-->
+<!--                  <tr>-->
+<!--                           <th scope="row">{{Cust.Cust_id}}</th>-->
+<!--                           <td class="text-capitalize">{{Cust.Comp_name}}</td>-->
+<!--                           <td class="text-capitalize">{{Cust.City}}</td>-->
+<!--                           <td>{{Cust.Plant_Capacity}} KW</td>-->
+<!--                           <td class="text-capitalize">{{Cust.Ups_Soft}}</td>-->
+<!--                           <td class="text-capitalize">{{Cust.Cust_type}}</td>-->
+<!--                           <td>{{Cust.phone}}</td>-->
+<!--                           <td class="text-capitalize">{{Cust.Address}}</td>-->
+<!--                           <td>{{Cust.Cus_Act_Date}}</td>-->
+<!--                  </tr>-->
+<!--            </tbody>-->
+<!--            {% endfor %}-->
+<!--          </table>-->
+<!--        </div>-->
+
+
+
+    </form>
+    </div>
+<!--<script>-->
+<!--    function validatePincode(input) {-->
+<!--    const pincode = input.value;-->
+<!--    const pincodeError = document.getElementById('pincode-error');-->
+
+<!--    if (pincode.length !== 6 || isNaN(pincode)) {-->
+<!--        pincodeError.textContent = 'Please enter a 6-digit numeric pincode.';-->
+<!--        // input.value = pincode.slice(0, 6);-->
+<!--        input.focus();-->
+<!--    } else {-->
+<!--        pincodeError.textContent = '';-->
+<!--    }-->
+<!--}-->
+
+<!--function validatePhone(input) {-->
+<!--    const phone = input.value;-->
+<!--    const phoneError = document.getElementById('phone-error');-->
+
+<!--    if (phone.length !== 10 || isNaN(phone)) {-->
+<!--        phoneError.textContent = 'Please enter a 10-digit numeric phone number.';-->
+<!--        //input.value = pincode.slice(0, 10);-->
+<!--        input.focus();-->
+<!--    } else {-->
+<!--        phoneError.textContent = '';-->
+<!--    }-->
+<!--}-->
+
+<!--</script>-->
+<style>
+    .error-message {
+        color: red; /* Set error text color to red */
+    }
+
+    .error-border {
+        border: 1px solid red !important; /* Set border color to red for input fields with errors */
+    }
+</style>
+<script>
+
+    function checkCompanyName(input) {
+        const compName = input.value;
+        const compNameError = document.getElementById('comp-name-error');
+
+         if (compName === '') {
+                compNameError.textContent = 'Company name cannot be empty.';
+                input.classList.add('error-border');
+                input.focus();
+                return;
+         }
+
+        fetch("{% url 'check_company_name' %}", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "X-CSRFToken": "{{ csrf_token }}"
+            },
+            body: JSON.stringify({ comp_name: compName })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.exists) {
+                compNameError.textContent = 'Company name already exists. Please enter a different Company Name.';
+                input.classList.add('error-border');
+                input.focus();
+            } else {
+                compNameError.textContent = '';
+                input.classList.remove('error-border');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+        });
+    }
+
+    function checkUsername(input) {
+        const username = input.value;
+        const usernameError = document.getElementById('username-error');
+
+         if (username === '') {
+                usernameError.textContent = 'Username cannot be empty.';
+                input.classList.add('error-border');
+                input.focus();
+                return;
+         }
+        fetch("{% url 'check-username' %}", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "X-CSRFToken": "{{ csrf_token }}"
+            },
+            body: JSON.stringify({ username: username })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.exists) {
+                usernameError.textContent = 'This username already exists. Please enter a different username.';
+                input.classList.add('error-border');
+                input.focus();
+            } else {
+                usernameError.textContent = '';
+                input.classList.remove('error-border');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+        });
+    }
+
+
+  function validatePincode(input) {
+    const pincode = input.value;
+    const pincodeError = document.getElementById('pincode-error');
+
+    if (pincode.length !== 6 || isNaN(pincode)) {
+        if (!/^\d{0,6}$/.test(pincode)) {
+            // Check if input contains non-numeric characters
+            pincodeError.textContent = 'Please enter a 6-digit numeric pincode.';
+            input.classList.add('error-border'); // Add error border class
+            input.focus();
+            input.value = pincode.replace(/[^0-9]/g, '').slice(0, 6); // Remove non-numeric characters
+        } else {
+            pincodeError.textContent = 'Please enter a 6-digit numeric pincode.';
+            input.classList.add('error-border'); // Add error border class
+            input.focus();
+        }
+    } else {
+        pincodeError.textContent = ''; // Clear error message
+        input.classList.remove('error-border'); // Remove error border class
+    }
+}
+
+function validatePhone(input) {
+    const phone = input.value;
+    const phoneError = document.getElementById('phone-error');
+
+    if (phone.length !== 10 || isNaN(phone)) {
+        if (!/^\d{0,10}$/.test(phone)) {
+            // Check if input contains non-numeric characters
+            phoneError.textContent = 'Please enter a 10-digit numeric phone number.';
+            input.classList.add('error-border'); // Add error border class
+            input.focus();
+            input.value = phone.replace(/[^0-9]/g, '').slice(0, 10); // Remove non-numeric characters
+        } else {
+            phoneError.textContent = 'Please enter a 10-digit numeric phone number.';
+            input.classList.add('error-border'); // Add error border class
+            input.focus();
+        }
+    } else {
+        phoneError.textContent = ''; // Clear error message
+        input.classList.remove('error-border'); // Remove error border class
+    }
+}
+
+function validateEmail(input) {
+        const email = input.value;
+        const emailError = document.getElementById('email-error');
+
+        // Simple email validation using a regular expression
+        const emailPattern = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$/;
+
+        if (!emailPattern.test(email)) {
+            emailError.textContent = 'Please enter a valid email address.';
+            input.classList.add('error-border');
+            input.focus();
+        } else {
+            emailError.textContent = '';
+            input.classList.remove('error-border');
+        }
+    }
+
+</script>
+
+<script>
+    function validateForm() {
+    const pincodeInput = document.getElementById('Pincode');
+    const phoneInput = document.getElementById('phone');
+    const compNameInput = document.getElementById('Comp_name');
+    const usernameInput = document.getElementById('username');
+
+    // Run pincode and phone validation
+    validatePincode(pincodeInput);
+    validatePhone(phoneInput);
+    checkCompanyName(compNameInput);
+    checkUsername(usernameInput);
+
+    // Check if there are any error messages
+    const pincodeError = document.getElementById('pincode-error');
+    const phoneError = document.getElementById('phone-error');
+    const compNameError = document.getElementById('comp-name-error');
+    const usernameError = document.getElementById('username-error');
+
+
+    if (pincodeError.textContent || phoneError.textContent || compNameError.textContent || usernameError.textContent) {
+        // Return false to prevent form submission if there are errors
+        return false;
+    }
+
+
+    // Form is valid, allow submission
+    return true;
+}
+
+</script>
+<script>
+    // Get a reference to the "Save and Redirect" button
+    const saveAndRedirectButton = document.getElementById('saveAndRedirect');
+
+    // Add a click event listener to the button
+    saveAndRedirectButton.addEventListener('click', function () {
+        if (validateForm()) {
+            // Trigger the form's submit method
+            document.Cust_Form.submit();
+
+            // Redirect to the specified URL after the form submission
+             alert('New Customer enrolled Successfully');
+            window.location.href = '{% url 'customer-cust' %}';
+
+              // Reload the page after a short delay (e.g., 1000 milliseconds or 1 second)
+            setTimeout(function () {
+                location.reload();
+            }, 1000); // Adjust the delay as needed
+          }
+    });
+</script>
+<script>
+    // JavaScript function to toggle the "active-fieldset" class
+    function toggleActiveFieldset(fieldset) {
+        // Remove the class from all fieldsets
+        const allFieldsets = document.querySelectorAll('fieldset');
+        allFieldsets.forEach(function (fs) {
+            fs.classList.remove('active-fieldset');
+        });
+
+        // Add the class to the clicked fieldset
+        fieldset.classList.add('active-fieldset');
+    }
+
+    // Add a click event listener to all fieldsets
+    const fieldsets = document.querySelectorAll('fieldset');
+    fieldsets.forEach(function (fieldset) {
+        fieldset.addEventListener('click', function () {
+            toggleActiveFieldset(fieldset);
+        });
+    });
+</script>
+ <script>
+        function handleCitySelection() {
+            var select = document.getElementById("city-select");
+            var textBox = document.getElementById("new-city-textbox");
+
+            if (select.value === "Other") {
+                textBox.style.display = "block";
+            } else {
+                textBox.style.display = "none";
+            }
+        }
+    </script>
+
+{% endblock %}

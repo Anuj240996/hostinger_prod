@@ -1,0 +1,1297 @@
+{% extends 'partials/base.html' %}
+{% load static %}
+{% block title %}Select Customer/Vendor{% endblock title %}
+{% block content %}
+<style>
+  .Checkbox-input {
+    margin-right: 10px;
+    transform: scale(1.2);
+  }
+  .form-check {
+    display: flex;
+    align-items: center;
+  }
+  .form-check label {
+    margin-bottom: 0;
+  }
+</style>
+<style>
+  .form-check input[type="checkbox"] {
+    accent-color: green; /* For modern browsers */
+    width: 20px;
+    height: 20px;
+    margin-right: 8px;
+    cursor: pointer;
+  }
+
+  /* Optional: For legacy browsers or more custom styling */
+  .form-check input[type="checkbox"]:checked + label {
+    background-color: #28a745;
+    color: white;
+    padding: 6px 10px;
+    border-radius: 6px;
+  }
+
+  .form-check label {
+    cursor: pointer;
+    transition: background-color 0.3s, color 0.3s;
+  }
+
+  .form-check {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+</style>
+
+
+<!--<style>-->
+<!--  /* Hide the native radio input */-->
+<!--  .btn-group label input[type="radio"] {-->
+<!--      display: none;-->
+<!--  }-->
+
+<!--  .btn-group label.active::before {-->
+<!--    color: transparent;-->
+<!--  }-->
+
+<!--  /* Style the label as an inline-flex container to align icon and text */-->
+<!--  .btn-group label {-->
+<!--      display: inline-flex;-->
+<!--      align-items: center;-->
+<!--      /* Optional: add some padding if needed */-->
+<!--      padding: 0.5rem 1rem;-->
+<!--  }-->
+<!--  /* Insert a check mark before the label text */-->
+<!--  .btn-group label::before {-->
+<!--      content: "\2713";  /* Unicode check mark */-->
+<!--      display: inline-block;-->
+<!--      margin-right: 0.5rem;-->
+<!--      font-size: 1.2rem;-->
+<!--      color: transparent; /* hidden when not active */-->
+<!--      transition: color 0.2s;-->
+<!--  }-->
+<!--  /* When the label is active, show the check mark in green */-->
+<!--  .btn-group label.active::before {-->
+<!--      color: white;  /* Bootstrap success green */-->
+<!--  }-->
+<!--</style>-->
+
+<!--<div class="container mt-5">-->
+<!--    <h1>Select Return DC Consumer or Vendor</h1>-->
+<!--    <form id="returnForm">-->
+
+<!--        {% csrf_token %}-->
+
+<!--        &lt;!&ndash; New Radio Button Syntax &ndash;&gt;-->
+<!--        <label class="d-block text-center"><b>Select Entity</b></label>-->
+<!--        <div class="d-flex justify-content-center">-->
+<!--            <div class="btn-group" data-toggle="buttons">-->
+<!--                <label class="btn btn-outline-success active" id="customerLabel">-->
+<!--                    <input type="radio" name="filter_type" value="customer" id="filterCustomer" checked autocomplete="off">-->
+<!--                    <b> Consumer</b>-->
+<!--                </label>-->
+<!--                <label class="btn btn-outline-success" id="vendorLabel">-->
+<!--                    <input type="radio" name="filter_type" value="vendor" id="filterVendor" autocomplete="off">-->
+<!--                    <b> Vendor</b>-->
+<!--                </label>-->
+<!--            </div>-->
+<!--        </div>-->
+<!--        <fieldset>-->
+<!--        &lt;!&ndash; Customer Type Dropdown (Shown for Customer filter) &ndash;&gt;-->
+<!--        <div class="form-group" id="customerTypeContainer">-->
+<!--            <label for="customerTypeDropdown"><b>Select Consumer Type</b></label>-->
+<!--            <select id="customerTypeDropdown" class="form-control" name="customer_type">-->
+<!--                <option value="" selected disabled>&#45;&#45; Select Consumer Type &#45;&#45;</option>-->
+<!--                {% for customer_type in customer_types %}-->
+<!--                    <option value="{{ customer_type }}">{{ customer_type }}</option>-->
+<!--                {% endfor %}-->
+<!--            </select>-->
+<!--        </div>-->
+
+<!--        &lt;!&ndash; Customer Dropdown (Shown for Customer filter) &ndash;&gt;-->
+<!--        <div class="form-group" id="customerContainer">-->
+<!--            <label for="customerDropdown"><b>Select Consumer</b></label>-->
+<!--            <select id="customerDropdown" class="form-control" name="customer" disabled>-->
+<!--                <option value="" selected disabled>&#45;&#45; Select Consumer &#45;&#45;</option>-->
+<!--                {% for customer in customers %}-->
+<!--                    <option value="{{ customer.Cust_id }}">{{ customer.Comp_name }}</option>-->
+<!--                {% endfor %}-->
+<!--            </select>-->
+<!--        </div>-->
+
+<!--        &lt;!&ndash; Vendor Type Dropdown (Shown for Vendor filter) &ndash;&gt;-->
+<!--        <div class="form-group" id="vendorTypeContainer" style="display: none;">-->
+<!--            <label for="vendorTypeDropdown"><b>Select Vendor Type</b></label>-->
+<!--            <select id="vendorTypeDropdown" class="form-control" name="vendor_type">-->
+<!--                <option value="" selected disabled>&#45;&#45; Select Vendor Type &#45;&#45;</option>-->
+<!--                {% for vendor_type in vendor_types %}-->
+<!--                    <option value="{{ vendor_type }}">{{ vendor_type }}</option>-->
+<!--                {% endfor %}-->
+<!--            </select>-->
+<!--        </div>-->
+
+<!--        &lt;!&ndash; Vendor Dropdown (Shown for Vendor filter) &ndash;&gt;-->
+<!--        <div class="form-group" id="vendorDropdownContainer" style="display: none;">-->
+<!--            <label for="vendorDropdown"><b>Select Vendor</b></label>-->
+<!--            <select id="vendorDropdown" class="form-control" name="vendor" disabled>-->
+<!--                <option value="" selected disabled>&#45;&#45; Select Vendor &#45;&#45;</option>-->
+<!--                {% for vendor in vendors %}-->
+<!--                    <option value="{{ vendor.id }}">{{ vendor.name }}</option>-->
+<!--                {% endfor %}-->
+<!--            </select>-->
+<!--        </div>-->
+
+<!--        &lt;!&ndash; Bill Number Dropdown (Common for both filters) &ndash;&gt;-->
+<!--        <div class="form-group mt-3">-->
+<!--            <label for="billDropdown"><b>Select Bill Number</B></label>-->
+<!--            <select id="billDropdown" class="form-control" name="billno" disabled>-->
+<!--                <option class="text-capitalize" value="" selected disabled>&#45;&#45; Select Bill Number &#45;&#45;</option>-->
+<!--            </select>-->
+<!--        </div>-->
+<!--&lt;!&ndash;        </fieldset>&ndash;&gt;-->
+
+<!--        &lt;!&ndash; Categories with Checkboxes (Initially Hidden) &ndash;&gt;-->
+<!--        <div class="form-group mt-3" id="categoryGroup" style="display: none;">-->
+<!--&lt;!&ndash;            <fieldset>&ndash;&gt;-->
+<!--            <label id="category"><b>&nbsp;&nbsp;Select &nbsp;&nbsp;&nbsp;&nbsp;Categories</b></label>-->
+<!--            <div class="checkbox-group" id="categoryDropdown">-->
+<!--                &lt;!&ndash; Categories will be dynamically added here &ndash;&gt;-->
+<!--            </div>-->
+
+<!--        </div>-->
+<!--  </fieldset>-->
+<!--        &lt;!&ndash; Next Button &ndash;&gt;-->
+<!--&lt;!&ndash;        <button type="submit" id="Next" class="btn btn-primary mt-4">Next</button>&ndash;&gt;-->
+<!--        <button type="submit" id="Next" class="btn btn-primary mt-4" disabled>Next</button>-->
+
+
+<!--    </form>-->
+<!--</div>-->
+
+
+<!--&lt;!&ndash;<script>&ndash;&gt;-->
+<!--&lt;!&ndash;    document.addEventListener('DOMContentLoaded', function () {&ndash;&gt;-->
+<!--&lt;!&ndash;        // Get references to the fields&ndash;&gt;-->
+<!--&lt;!&ndash;        const filterRadios = document.getElementsByName('filter_type');&ndash;&gt;-->
+<!--&lt;!&ndash;        const customerTypeContainer = document.getElementById('customerTypeContainer');&ndash;&gt;-->
+<!--&lt;!&ndash;        const customerTypeDropdown = document.getElementById('customerTypeDropdown');&ndash;&gt;-->
+<!--&lt;!&ndash;        const customerContainer = document.getElementById('customerContainer');&ndash;&gt;-->
+<!--&lt;!&ndash;        const customerDropdown = document.getElementById('customerDropdown');&ndash;&gt;-->
+<!--&lt;!&ndash;        const vendorDropdownContainer = document.getElementById('vendorDropdownContainer');&ndash;&gt;-->
+<!--&lt;!&ndash;        const vendorTypeContainer = document.getElementById('vendorTypeContainer');&ndash;&gt;-->
+<!--&lt;!&ndash;        const vendorTypeDropdown = document.getElementById('vendorTypeDropdown');&ndash;&gt;-->
+<!--&lt;!&ndash;        const vendorDropdown = document.getElementById('vendorDropdown');&ndash;&gt;-->
+<!--&lt;!&ndash;        const billDropdown = document.getElementById('billDropdown');&ndash;&gt;-->
+<!--&lt;!&ndash;        const categoryDropdown = document.getElementById('categoryDropdown');&ndash;&gt;-->
+<!--&lt;!&ndash;        const categoryGroup = document.getElementById('categoryGroup');&ndash;&gt;-->
+<!--&lt;!&ndash;        const returnForm = document.getElementById('returnForm');&ndash;&gt;-->
+
+<!--&lt;!&ndash;        // Function to reset the bill dropdown and categories&ndash;&gt;-->
+<!--&lt;!&ndash;        function resetBillAndCategories() {&ndash;&gt;-->
+<!--&lt;!&ndash;            billDropdown.innerHTML = '';&ndash;&gt;-->
+<!--&lt;!&ndash;            const defaultOption = document.createElement('option');&ndash;&gt;-->
+<!--&lt;!&ndash;            defaultOption.value = '';&ndash;&gt;-->
+<!--&lt;!&ndash;            defaultOption.textContent = '&#45;&#45; Select Bill Number &#45;&#45;';&ndash;&gt;-->
+<!--&lt;!&ndash;            billDropdown.appendChild(defaultOption);&ndash;&gt;-->
+<!--&lt;!&ndash;            billDropdown.disabled = true;&ndash;&gt;-->
+<!--&lt;!&ndash;            categoryDropdown.innerHTML = '';&ndash;&gt;-->
+<!--&lt;!&ndash;            categoryGroup.style.display = 'none';&ndash;&gt;-->
+<!--&lt;!&ndash;        }&ndash;&gt;-->
+
+<!--&lt;!&ndash;        // Function to update the dropdown visibility based on the selected entity&ndash;&gt;-->
+<!--&lt;!&ndash;        function updateEntityDisplay() {&ndash;&gt;-->
+<!--&lt;!&ndash;            const selectedType = document.querySelector('input[name="filter_type"]:checked').value;&ndash;&gt;-->
+<!--&lt;!&ndash;            if (selectedType === 'customer') {&ndash;&gt;-->
+<!--&lt;!&ndash;                customerTypeContainer.style.display = 'block';&ndash;&gt;-->
+<!--&lt;!&ndash;                customerContainer.style.display = 'block';&ndash;&gt;-->
+<!--&lt;!&ndash;                vendorDropdownContainer.style.display = 'none';&ndash;&gt;-->
+<!--&lt;!&ndash;                vendorTypeContainer.style.display = 'none';&ndash;&gt;-->
+<!--&lt;!&ndash;                // Reset selections&ndash;&gt;-->
+<!--&lt;!&ndash;                vendorDropdown.value = "";&ndash;&gt;-->
+<!--&lt;!&ndash;                customerTypeDropdown.value = "";&ndash;&gt;-->
+<!--&lt;!&ndash;                customerDropdown.value = "";&ndash;&gt;-->
+<!--&lt;!&ndash;                customerDropdown.disabled = true;&ndash;&gt;-->
+<!--&lt;!&ndash;            } else if (selectedType === 'vendor') {&ndash;&gt;-->
+<!--&lt;!&ndash;                customerTypeContainer.style.display = 'none';&ndash;&gt;-->
+<!--&lt;!&ndash;                customerContainer.style.display = 'none';&ndash;&gt;-->
+<!--&lt;!&ndash;                vendorDropdownContainer.style.display = 'block';&ndash;&gt;-->
+<!--&lt;!&ndash;                vendorTypeContainer.style.display = 'block';&ndash;&gt;-->
+<!--&lt;!&ndash;                // Reset selections&ndash;&gt;-->
+<!--&lt;!&ndash;                customerTypeDropdown.value = "";&ndash;&gt;-->
+<!--&lt;!&ndash;                customerDropdown.value = "";&ndash;&gt;-->
+<!--&lt;!&ndash;                customerDropdown.disabled = true;&ndash;&gt;-->
+<!--&lt;!&ndash;                vendorDropdown.value = "";&ndash;&gt;-->
+<!--&lt;!&ndash;                vendorDropdown.disabled = true;&ndash;&gt;-->
+<!--&lt;!&ndash;            }&ndash;&gt;-->
+<!--&lt;!&ndash;            resetBillAndCategories();&ndash;&gt;-->
+<!--&lt;!&ndash;        }&ndash;&gt;-->
+
+<!--&lt;!&ndash;        // Attach event listeners to radio inputs for both 'change' and 'click'&ndash;&gt;-->
+<!--&lt;!&ndash;        filterRadios.forEach(radio => {&ndash;&gt;-->
+<!--&lt;!&ndash;            radio.addEventListener('change', updateEntityDisplay);&ndash;&gt;-->
+<!--&lt;!&ndash;            radio.addEventListener('click', updateEntityDisplay);&ndash;&gt;-->
+<!--&lt;!&ndash;        });&ndash;&gt;-->
+
+<!--&lt;!&ndash;        // Customer filter: Update customers list when a customer type is selected&ndash;&gt;-->
+<!--&lt;!&ndash;        customerTypeDropdown.addEventListener('change', function () {&ndash;&gt;-->
+<!--&lt;!&ndash;            const customerType = this.value;&ndash;&gt;-->
+<!--&lt;!&ndash;            // Clear existing customer options&ndash;&gt;-->
+<!--&lt;!&ndash;            customerDropdown.innerHTML = '';&ndash;&gt;-->
+<!--&lt;!&ndash;            const defaultOption = document.createElement('option');&ndash;&gt;-->
+<!--&lt;!&ndash;            defaultOption.value = '';&ndash;&gt;-->
+<!--&lt;!&ndash;            defaultOption.textContent = '&#45;&#45; Select Customer &#45;&#45;';&ndash;&gt;-->
+<!--&lt;!&ndash;            customerDropdown.appendChild(defaultOption);&ndash;&gt;-->
+
+<!--&lt;!&ndash;            if (customerType) {&ndash;&gt;-->
+<!--&lt;!&ndash;                customerDropdown.disabled = false;&ndash;&gt;-->
+
+<!--&lt;!&ndash;                fetch(`/transactions/get_customers_by_type/${customerType}/`)&ndash;&gt;-->
+<!--&lt;!&ndash;                    .then(response => response.json())&ndash;&gt;-->
+<!--&lt;!&ndash;                    .then(data => {&ndash;&gt;-->
+<!--&lt;!&ndash;                        const customers = data.customers;&ndash;&gt;-->
+<!--&lt;!&ndash;                        if (customers.length > 0) {&ndash;&gt;-->
+<!--&lt;!&ndash;                            customers.forEach(customer => {&ndash;&gt;-->
+<!--&lt;!&ndash;                                const option = document.createElement('option');&ndash;&gt;-->
+<!--&lt;!&ndash;                                option.value = customer.Cust_id;&ndash;&gt;-->
+<!--&lt;!&ndash;                                option.textContent = customer.Comp_name;&ndash;&gt;-->
+<!--&lt;!&ndash;                                customerDropdown.appendChild(option);&ndash;&gt;-->
+<!--&lt;!&ndash;                            });&ndash;&gt;-->
+<!--&lt;!&ndash;                        }&ndash;&gt;-->
+<!--&lt;!&ndash;                    })&ndash;&gt;-->
+<!--&lt;!&ndash;                    .catch(error => console.error('Error fetching customers:', error));&ndash;&gt;-->
+<!--&lt;!&ndash;            }&ndash;&gt;-->
+<!--&lt;!&ndash;            resetBillAndCategories();&ndash;&gt;-->
+<!--&lt;!&ndash;        });&ndash;&gt;-->
+
+<!--&lt;!&ndash;        // Customer filter: Update bill list when a customer is selected&ndash;&gt;-->
+<!--&lt;!&ndash;        customerDropdown.addEventListener('change', function () {&ndash;&gt;-->
+<!--&lt;!&ndash;            const customerId = this.value;&ndash;&gt;-->
+<!--&lt;!&ndash;            resetBillAndCategories();&ndash;&gt;-->
+
+<!--&lt;!&ndash;            if (customerId) {&ndash;&gt;-->
+<!--&lt;!&ndash;                fetch(`/transactions/get_billnos/${customerId}/`)&ndash;&gt;-->
+<!--&lt;!&ndash;                    .then(response => response.json())&ndash;&gt;-->
+<!--&lt;!&ndash;                    .then(data => {&ndash;&gt;-->
+<!--&lt;!&ndash;                        const bills = data.bills;&ndash;&gt;-->
+<!--&lt;!&ndash;                        if (bills.length > 0) {&ndash;&gt;-->
+<!--&lt;!&ndash;                            billDropdown.disabled = false;&ndash;&gt;-->
+<!--&lt;!&ndash;                            bills.forEach(bill => {&ndash;&gt;-->
+<!--&lt;!&ndash;                                const option = document.createElement('option');&ndash;&gt;-->
+<!--&lt;!&ndash;                                option.value = bill.billno;&ndash;&gt;-->
+<!--&lt;!&ndash;                                option.textContent = bill.billno;&ndash;&gt;-->
+<!--&lt;!&ndash;                                billDropdown.appendChild(option);&ndash;&gt;-->
+<!--&lt;!&ndash;                            });&ndash;&gt;-->
+<!--&lt;!&ndash;                        } else {&ndash;&gt;-->
+<!--&lt;!&ndash;                            billDropdown.innerHTML = '<option value="" selected disabled>No bills available</option>';&ndash;&gt;-->
+<!--&lt;!&ndash;                        }&ndash;&gt;-->
+<!--&lt;!&ndash;                    })&ndash;&gt;-->
+<!--&lt;!&ndash;                    .catch(error => console.error('Error fetching bill numbers:', error));&ndash;&gt;-->
+<!--&lt;!&ndash;            } else {&ndash;&gt;-->
+<!--&lt;!&ndash;                billDropdown.disabled = true;&ndash;&gt;-->
+<!--&lt;!&ndash;            }&ndash;&gt;-->
+<!--&lt;!&ndash;        });&ndash;&gt;-->
+
+<!--&lt;!&ndash;        // Vendor filter: Update vendors list when a vendor type is selected&ndash;&gt;-->
+<!--&lt;!&ndash;        vendorTypeDropdown.addEventListener('change', function () {&ndash;&gt;-->
+<!--&lt;!&ndash;            const vendorType = this.value;&ndash;&gt;-->
+<!--&lt;!&ndash;            // Clear existing vendor options&ndash;&gt;-->
+<!--&lt;!&ndash;            vendorDropdown.innerHTML = '';&ndash;&gt;-->
+<!--&lt;!&ndash;            const defaultOption = document.createElement('option');&ndash;&gt;-->
+<!--&lt;!&ndash;            defaultOption.value = '';&ndash;&gt;-->
+<!--&lt;!&ndash;            defaultOption.textContent = '&#45;&#45; Select Vendor &#45;&#45;';&ndash;&gt;-->
+<!--&lt;!&ndash;            vendorDropdown.appendChild(defaultOption);&ndash;&gt;-->
+
+<!--&lt;!&ndash;            if (vendorType) {&ndash;&gt;-->
+<!--&lt;!&ndash;                vendorDropdown.disabled = false;&ndash;&gt;-->
+
+<!--&lt;!&ndash;                fetch(`/transactions/get_vendor_by_type/${vendorType}/`)&ndash;&gt;-->
+<!--&lt;!&ndash;                    .then(response => response.json())&ndash;&gt;-->
+<!--&lt;!&ndash;                    .then(data => {&ndash;&gt;-->
+<!--&lt;!&ndash;                        const vendors = data.vendor;&ndash;&gt;-->
+<!--&lt;!&ndash;                        if (vendors.length > 0) {&ndash;&gt;-->
+<!--&lt;!&ndash;                            vendors.forEach(vendor => {&ndash;&gt;-->
+<!--&lt;!&ndash;                                const option = document.createElement('option');&ndash;&gt;-->
+<!--&lt;!&ndash;                                option.value = vendor.id;&ndash;&gt;-->
+<!--&lt;!&ndash;                                option.textContent = vendor.name;&ndash;&gt;-->
+<!--&lt;!&ndash;                                vendorDropdown.appendChild(option);&ndash;&gt;-->
+<!--&lt;!&ndash;                            });&ndash;&gt;-->
+<!--&lt;!&ndash;                        }&ndash;&gt;-->
+<!--&lt;!&ndash;                    })&ndash;&gt;-->
+<!--&lt;!&ndash;                    .catch(error => console.error('Error fetching vendors:', error));&ndash;&gt;-->
+<!--&lt;!&ndash;            }&ndash;&gt;-->
+<!--&lt;!&ndash;            resetBillAndCategories();&ndash;&gt;-->
+<!--&lt;!&ndash;        });&ndash;&gt;-->
+
+<!--&lt;!&ndash;        // Vendor filter: Update bill list when a vendor is selected&ndash;&gt;-->
+<!--&lt;!&ndash;        vendorDropdown.addEventListener('change', function () {&ndash;&gt;-->
+<!--&lt;!&ndash;            const vendorId = this.value;&ndash;&gt;-->
+<!--&lt;!&ndash;            resetBillAndCategories();&ndash;&gt;-->
+
+<!--&lt;!&ndash;            if (vendorId) {&ndash;&gt;-->
+<!--&lt;!&ndash;                // Use a dedicated endpoint to fetch bills by vendor&ndash;&gt;-->
+<!--&lt;!&ndash;                fetch(`/transactions/get_vendor_billnos/${vendorId}/`)&ndash;&gt;-->
+<!--&lt;!&ndash;                    .then(response => response.json())&ndash;&gt;-->
+<!--&lt;!&ndash;                    .then(data => {&ndash;&gt;-->
+<!--&lt;!&ndash;                        const bills = data.bills;&ndash;&gt;-->
+<!--&lt;!&ndash;                        if (bills.length > 0) {&ndash;&gt;-->
+<!--&lt;!&ndash;                            billDropdown.disabled = false;&ndash;&gt;-->
+<!--&lt;!&ndash;                            bills.forEach(bill => {&ndash;&gt;-->
+<!--&lt;!&ndash;                                const option = document.createElement('option');&ndash;&gt;-->
+<!--&lt;!&ndash;                                option.value = bill.billno;&ndash;&gt;-->
+<!--&lt;!&ndash;                                option.textContent = bill.billno;&ndash;&gt;-->
+<!--&lt;!&ndash;                                billDropdown.appendChild(option);&ndash;&gt;-->
+<!--&lt;!&ndash;                            });&ndash;&gt;-->
+<!--&lt;!&ndash;                        } else {&ndash;&gt;-->
+<!--&lt;!&ndash;                            billDropdown.innerHTML = '<option value="" selected disabled>No bills available</option>';&ndash;&gt;-->
+<!--&lt;!&ndash;                        }&ndash;&gt;-->
+<!--&lt;!&ndash;                    })&ndash;&gt;-->
+<!--&lt;!&ndash;                    .catch(error => console.error('Error fetching bill numbers for vendor:', error));&ndash;&gt;-->
+<!--&lt;!&ndash;            } else {&ndash;&gt;-->
+<!--&lt;!&ndash;                billDropdown.disabled = true;&ndash;&gt;-->
+<!--&lt;!&ndash;            }&ndash;&gt;-->
+<!--&lt;!&ndash;        });&ndash;&gt;-->
+
+<!--&lt;!&ndash;        // Update categories when a bill number is selected (works for both filters)&ndash;&gt;-->
+<!--&lt;!&ndash;        billDropdown.addEventListener('change', function () {&ndash;&gt;-->
+<!--&lt;!&ndash;            const billno = this.value;&ndash;&gt;-->
+
+<!--&lt;!&ndash;            // Show a temporary loading message&ndash;&gt;-->
+<!--&lt;!&ndash;            categoryDropdown.innerHTML = '<div class="form-check"><input class="form-check-input" type="checkbox" disabled><label class="form-check-label">&#45;&#45; Loading Categories &#45;&#45;</label></div>';&ndash;&gt;-->
+
+<!--&lt;!&ndash;            if (billno) {&ndash;&gt;-->
+<!--&lt;!&ndash;                fetch(`/transactions/get_categories_by_billno/${billno}/`)&ndash;&gt;-->
+<!--&lt;!&ndash;                    .then(response => response.json())&ndash;&gt;-->
+<!--&lt;!&ndash;                    .then(data => {&ndash;&gt;-->
+<!--&lt;!&ndash;                        const categories = data.categories;&ndash;&gt;-->
+<!--&lt;!&ndash;                        if (categories.length > 0) {&ndash;&gt;-->
+<!--&lt;!&ndash;                            categoryDropdown.innerHTML = ''; // Clear loading message&ndash;&gt;-->
+<!--&lt;!&ndash;                            categories.forEach(category => {&ndash;&gt;-->
+<!--&lt;!&ndash;                                const categoryCheckbox = document.createElement('div');&ndash;&gt;-->
+<!--&lt;!&ndash;                                categoryCheckbox.classList.add('form-check');&ndash;&gt;-->
+<!--&lt;!&ndash;                                categoryCheckbox.innerHTML = `&ndash;&gt;-->
+<!--&lt;!&ndash;                                    <div style="display: flex; align-items: center; gap: 20px;">&ndash;&gt;-->
+<!--&lt;!&ndash;                                      <label style="display: flex; align-items: center; gap: 5px;" for="category${category.id}">&ndash;&gt;-->
+<!--&lt;!&ndash;                                        <input class="checkbox-input" type="checkbox" name="categories" value="${category.id}" id="category${category.id}">&ndash;&gt;-->
+<!--&lt;!&ndash;                                        ${category.name}&ndash;&gt;-->
+<!--&lt;!&ndash;                                      </label>&ndash;&gt;-->
+<!--&lt;!&ndash;                                    </div>&ndash;&gt;-->
+<!--&lt;!&ndash;                                `;&ndash;&gt;-->
+<!--&lt;!&ndash;                                categoryDropdown.appendChild(categoryCheckbox);&ndash;&gt;-->
+<!--&lt;!&ndash;                            });&ndash;&gt;-->
+<!--&lt;!&ndash;                            categoryGroup.style.display = 'block';&ndash;&gt;-->
+<!--&lt;!&ndash;                        } else {&ndash;&gt;-->
+<!--&lt;!&ndash;                            categoryDropdown.innerHTML = '<div class="form-check"><input class="form-check-input" type="checkbox" disabled><label class="form-check-label">No categories found for this bill</label></div>';&ndash;&gt;-->
+<!--&lt;!&ndash;                            categoryGroup.style.display = 'block';&ndash;&gt;-->
+<!--&lt;!&ndash;                        }&ndash;&gt;-->
+<!--&lt;!&ndash;                    })&ndash;&gt;-->
+<!--&lt;!&ndash;                    .catch(error => console.error('Error fetching categories:', error));&ndash;&gt;-->
+<!--&lt;!&ndash;            }&ndash;&gt;-->
+<!--&lt;!&ndash;        });&ndash;&gt;-->
+
+<!--&lt;!&ndash;        // Handle form submission: build the URL with parameters based on the selected filter type&ndash;&gt;-->
+<!--&lt;!&ndash;        returnForm.addEventListener('submit', function(event) {&ndash;&gt;-->
+<!--&lt;!&ndash;            event.preventDefault();&ndash;&gt;-->
+<!--&lt;!&ndash;            const filterType = document.querySelector('input[name="filter_type"]:checked').value;&ndash;&gt;-->
+<!--&lt;!&ndash;            let params = '';&ndash;&gt;-->
+<!--&lt;!&ndash;            if (filterType === 'customer') {&ndash;&gt;-->
+<!--&lt;!&ndash;                const customerType = customerTypeDropdown.value;&ndash;&gt;-->
+<!--&lt;!&ndash;                const customer = customerDropdown.value;&ndash;&gt;-->
+<!--&lt;!&ndash;                params = `customer_type=${customerType}&customer=${customer}`;&ndash;&gt;-->
+<!--&lt;!&ndash;            } else if (filterType === 'vendor') {&ndash;&gt;-->
+<!--&lt;!&ndash;                const vendor = vendorDropdown.value;&ndash;&gt;-->
+<!--&lt;!&ndash;                params = `vendor=${vendor}`;&ndash;&gt;-->
+<!--&lt;!&ndash;            }&ndash;&gt;-->
+<!--&lt;!&ndash;            const billno = billDropdown.value;&ndash;&gt;-->
+<!--&lt;!&ndash;            const categories = Array.from(categoryDropdown.querySelectorAll('input[type="checkbox"]:checked'))&ndash;&gt;-->
+<!--&lt;!&ndash;                                      .map(checkbox => checkbox.value);&ndash;&gt;-->
+<!--&lt;!&ndash;            params += `&categories=${categories.join(',')}`;&ndash;&gt;-->
+<!--&lt;!&ndash;            window.location.href = `/transactions/return/finalsales_return/${billno}/?${params}`;&ndash;&gt;-->
+<!--&lt;!&ndash;        });&ndash;&gt;-->
+<!--&lt;!&ndash;    });&ndash;&gt;-->
+<!--&lt;!&ndash;</script>&ndash;&gt;-->
+<!--<script>-->
+<!--    document.addEventListener('DOMContentLoaded', function () {-->
+<!--        const filterRadios = document.getElementsByName('filter_type');-->
+<!--        const customerTypeContainer = document.getElementById('customerTypeContainer');-->
+<!--        const customerTypeDropdown = document.getElementById('customerTypeDropdown');-->
+<!--        const customerContainer = document.getElementById('customerContainer');-->
+<!--        const customerDropdown = document.getElementById('customerDropdown');-->
+<!--        const vendorDropdownContainer = document.getElementById('vendorDropdownContainer');-->
+<!--        const vendorTypeContainer = document.getElementById('vendorTypeContainer');-->
+<!--        const vendorTypeDropdown = document.getElementById('vendorTypeDropdown');-->
+<!--        const vendorDropdown = document.getElementById('vendorDropdown');-->
+<!--        const billDropdown = document.getElementById('billDropdown');-->
+<!--        const categoryDropdown = document.getElementById('categoryDropdown');-->
+<!--        const categoryGroup = document.getElementById('categoryGroup');-->
+<!--        const returnForm = document.getElementById('returnForm');-->
+<!--        const nextButton = document.getElementById('Next');-->
+
+<!--        // Disable "Next" button initially-->
+<!--        nextButton.disabled = true;-->
+
+<!--        function updateNextButtonState() {-->
+<!--            const anyChecked = categoryDropdown.querySelectorAll('input[type="checkbox"]:checked').length > 0;-->
+<!--            nextButton.disabled = !anyChecked;-->
+<!--        }-->
+
+<!--        function resetBillAndCategories() {-->
+<!--            billDropdown.innerHTML = '';-->
+<!--            const defaultOption = document.createElement('option');-->
+<!--            defaultOption.value = '';-->
+<!--            defaultOption.textContent = '&#45;&#45; Select Bill Number &#45;&#45;';-->
+<!--            billDropdown.appendChild(defaultOption);-->
+<!--            billDropdown.disabled = true;-->
+<!--            categoryDropdown.innerHTML = '';-->
+<!--            categoryGroup.style.display = 'none';-->
+<!--            updateNextButtonState();-->
+<!--        }-->
+
+<!--        function updateEntityDisplay() {-->
+<!--            const selectedType = document.querySelector('input[name="filter_type"]:checked').value;-->
+<!--            if (selectedType === 'customer') {-->
+<!--                customerTypeContainer.style.display = 'block';-->
+<!--                customerContainer.style.display = 'block';-->
+<!--                vendorDropdownContainer.style.display = 'none';-->
+<!--                vendorTypeContainer.style.display = 'none';-->
+<!--                vendorDropdown.value = "";-->
+<!--                customerTypeDropdown.value = "";-->
+<!--                customerDropdown.value = "";-->
+<!--                customerDropdown.disabled = true;-->
+<!--            } else if (selectedType === 'vendor') {-->
+<!--                customerTypeContainer.style.display = 'none';-->
+<!--                customerContainer.style.display = 'none';-->
+<!--                vendorDropdownContainer.style.display = 'block';-->
+<!--                vendorTypeContainer.style.display = 'block';-->
+<!--                customerTypeDropdown.value = "";-->
+<!--                customerDropdown.value = "";-->
+<!--                customerDropdown.disabled = true;-->
+<!--                vendorDropdown.value = "";-->
+<!--                vendorDropdown.disabled = true;-->
+<!--            }-->
+<!--            resetBillAndCategories();-->
+<!--        }-->
+
+<!--        filterRadios.forEach(radio => {-->
+<!--            radio.addEventListener('change', updateEntityDisplay);-->
+<!--            radio.addEventListener('click', updateEntityDisplay);-->
+<!--        });-->
+
+<!--        customerTypeDropdown.addEventListener('change', function () {-->
+<!--            const customerType = this.value;-->
+<!--            customerDropdown.innerHTML = '';-->
+<!--            const defaultOption = document.createElement('option');-->
+<!--            defaultOption.value = '';-->
+<!--            defaultOption.textContent = '&#45;&#45; Select Customer &#45;&#45;';-->
+<!--            customerDropdown.appendChild(defaultOption);-->
+
+<!--            if (customerType) {-->
+<!--                customerDropdown.disabled = false;-->
+<!--                fetch(`/transactions/get_customers_by_type/${customerType}/`)-->
+<!--                    .then(response => response.json())-->
+<!--                    .then(data => {-->
+<!--                        const customers = data.customers;-->
+<!--                        if (customers.length > 0) {-->
+<!--                            customers.forEach(customer => {-->
+<!--                                const option = document.createElement('option');-->
+<!--                                option.value = customer.Cust_id;-->
+<!--                                option.textContent = customer.Comp_name;-->
+<!--                                customerDropdown.appendChild(option);-->
+<!--                            });-->
+<!--                        }-->
+<!--                    })-->
+<!--                    .catch(error => console.error('Error fetching customers:', error));-->
+<!--            }-->
+<!--            resetBillAndCategories();-->
+<!--        });-->
+
+<!--        customerDropdown.addEventListener('change', function () {-->
+<!--            const customerId = this.value;-->
+<!--            resetBillAndCategories();-->
+
+<!--            if (customerId) {-->
+<!--                fetch(`/transactions/get_billnos/${customerId}/`)-->
+<!--                    .then(response => response.json())-->
+<!--                    .then(data => {-->
+<!--                        const bills = data.bills;-->
+<!--                        if (bills.length > 0) {-->
+<!--                            billDropdown.disabled = false;-->
+<!--                            bills.forEach(bill => {-->
+<!--                                const option = document.createElement('option');-->
+<!--                                option.value = bill.billno;-->
+<!--                                option.textContent = bill.billno;-->
+<!--                                billDropdown.appendChild(option);-->
+<!--                            });-->
+<!--                        } else {-->
+<!--                            billDropdown.innerHTML = '<option value="" selected disabled>No bills available</option>';-->
+<!--                        }-->
+<!--                    })-->
+<!--                    .catch(error => console.error('Error fetching bill numbers:', error));-->
+<!--            } else {-->
+<!--                billDropdown.disabled = true;-->
+<!--            }-->
+<!--        });-->
+
+<!--        vendorTypeDropdown.addEventListener('change', function () {-->
+<!--            const vendorType = this.value;-->
+<!--            vendorDropdown.innerHTML = '';-->
+<!--            const defaultOption = document.createElement('option');-->
+<!--            defaultOption.value = '';-->
+<!--            defaultOption.textContent = '&#45;&#45; Select Vendor &#45;&#45;';-->
+<!--            vendorDropdown.appendChild(defaultOption);-->
+
+<!--            if (vendorType) {-->
+<!--                vendorDropdown.disabled = false;-->
+<!--                fetch(`/transactions/get_vendor_by_type/${vendorType}/`)-->
+<!--                    .then(response => response.json())-->
+<!--                    .then(data => {-->
+<!--                        const vendors = data.vendor;-->
+<!--                        if (vendors.length > 0) {-->
+<!--                            vendors.forEach(vendor => {-->
+<!--                                const option = document.createElement('option');-->
+<!--                                option.value = vendor.id;-->
+<!--                                option.textContent = vendor.name;-->
+<!--                                vendorDropdown.appendChild(option);-->
+<!--                            });-->
+<!--                        }-->
+<!--                    })-->
+<!--                    .catch(error => console.error('Error fetching vendors:', error));-->
+<!--            }-->
+<!--            resetBillAndCategories();-->
+<!--        });-->
+
+<!--        vendorDropdown.addEventListener('change', function () {-->
+<!--            const vendorId = this.value;-->
+<!--            resetBillAndCategories();-->
+
+<!--            if (vendorId) {-->
+<!--                fetch(`/transactions/get_vendor_billnos/${vendorId}/`)-->
+<!--                    .then(response => response.json())-->
+<!--                    .then(data => {-->
+<!--                        const bills = data.bills;-->
+<!--                        if (bills.length > 0) {-->
+<!--                            billDropdown.disabled = false;-->
+<!--                            bills.forEach(bill => {-->
+<!--                                const option = document.createElement('option');-->
+<!--                                option.value = bill.billno;-->
+<!--                                option.textContent = bill.billno;-->
+<!--                                billDropdown.appendChild(option);-->
+<!--                            });-->
+<!--                        } else {-->
+<!--                            billDropdown.innerHTML = '<option value="" selected disabled>No bills available</option>';-->
+<!--                        }-->
+<!--                    })-->
+<!--                    .catch(error => console.error('Error fetching bill numbers for vendor:', error));-->
+<!--            } else {-->
+<!--                billDropdown.disabled = true;-->
+<!--            }-->
+<!--        });-->
+
+<!--        billDropdown.addEventListener('change', function () {-->
+<!--            const billno = this.value;-->
+
+<!--            categoryDropdown.innerHTML = '<div class="form-check"><input class="form-check-input" type="checkbox" disabled><label class="form-check-label">&#45;&#45; Loading Categories &#45;&#45;</label></div>';-->
+<!--            updateNextButtonState();-->
+
+<!--            if (billno) {-->
+<!--                fetch(`/transactions/get_categories_by_billno/${billno}/`)-->
+<!--                    .then(response => response.json())-->
+<!--                    .then(data => {-->
+<!--                        const categories = data.categories;-->
+<!--                        categoryDropdown.innerHTML = '';-->
+<!--                        if (categories.length > 0) {-->
+<!--                            categories.forEach(category => {-->
+<!--                                const categoryCheckbox = document.createElement('div');-->
+<!--                                categoryCheckbox.classList.add('form-check');-->
+<!--                                categoryCheckbox.innerHTML = `-->
+<!--                                    <div style="display: flex; align-items: center; gap: 20px;">-->
+<!--                                      <label style="display: flex; align-items: center; gap: 5px;" for="category${category.id}">-->
+<!--                                        <input class="checkbox-input" type="checkbox" name="categories" value="${category.id}" id="category${category.id}">-->
+<!--                                        ${category.name}-->
+<!--                                      </label>-->
+<!--                                    </div>-->
+<!--                                `;-->
+<!--                                const checkbox = categoryCheckbox.querySelector('input[type="checkbox"]');-->
+<!--                                checkbox.addEventListener('change', updateNextButtonState);-->
+<!--                                categoryDropdown.appendChild(categoryCheckbox);-->
+<!--                            });-->
+<!--                            categoryGroup.style.display = 'block';-->
+<!--                        } else {-->
+<!--                            categoryDropdown.innerHTML = '<div class="form-check"><input class="form-check-input" type="checkbox" disabled><label class="form-check-label">No categories found for this bill</label></div>';-->
+<!--                            categoryGroup.style.display = 'block';-->
+<!--                        }-->
+<!--                        updateNextButtonState();-->
+<!--                    })-->
+<!--                    .catch(error => console.error('Error fetching categories:', error));-->
+<!--            }-->
+<!--        });-->
+
+<!--        returnForm.addEventListener('submit', function(event) {-->
+<!--            event.preventDefault();-->
+<!--            const filterType = document.querySelector('input[name="filter_type"]:checked').value;-->
+<!--            let params = '';-->
+<!--            if (filterType === 'customer') {-->
+<!--                const customerType = customerTypeDropdown.value;-->
+<!--                const customer = customerDropdown.value;-->
+<!--                params = `customer_type=${customerType}&customer=${customer}`;-->
+<!--            } else if (filterType === 'vendor') {-->
+<!--                const vendor = vendorDropdown.value;-->
+<!--                params = `vendor=${vendor}`;-->
+<!--            }-->
+<!--            const billno = billDropdown.value;-->
+<!--            const categories = Array.from(categoryDropdown.querySelectorAll('input[type="checkbox"]:checked'))-->
+<!--                                      .map(checkbox => checkbox.value);-->
+<!--            params += `&categories=${categories.join(',')}`;-->
+<!--            window.location.href = `/transactions/return/finalsales_return/${billno}/?${params}`;-->
+<!--        });-->
+<!--    });-->
+<!--</script>-->
+
+
+<!--<style>-->
+<!--  .btn-group label input[type="radio"] {-->
+<!--    display: none;-->
+<!--  }-->
+
+<!--  .btn-group label.active::before {-->
+<!--    color: transparent;-->
+<!--  }-->
+
+<!--  .btn-group label {-->
+<!--    display: inline-flex;-->
+<!--    align-items: center;-->
+<!--    padding: 0.5rem 1rem;-->
+<!--  }-->
+
+<!--  .btn-group label::before {-->
+<!--    content: "\2713";-->
+<!--    display: inline-block;-->
+<!--    margin-right: 0.5rem;-->
+<!--    font-size: 1.2rem;-->
+<!--    color: transparent;-->
+<!--    transition: color 0.2s;-->
+<!--  }-->
+
+<!--  .btn-group label.active::before {-->
+<!--    color: white;-->
+<!--  }-->
+<!--</style>-->
+
+<!--<div class="container mt-5">-->
+<!--  <h1>Select Return DC Consumer or Vendor</h1>-->
+<!--  <form id="returnForm">-->
+<!--    {% csrf_token %}-->
+
+<!--    &lt;!&ndash; Radio Button &ndash;&gt;-->
+<!--    <label class="d-block text-center"><b>Select Entity</b></label>-->
+<!--    <div class="d-flex justify-content-center mb-4">-->
+<!--      <div class="btn-group" data-toggle="buttons">-->
+<!--        <label class="btn btn-outline-success active" id="customerLabel">-->
+<!--          <input type="radio" name="filter_type" value="customer" id="filterCustomer" checked autocomplete="off">-->
+<!--          <b> Consumer</b>-->
+<!--        </label>-->
+<!--        <label class="btn btn-outline-success" id="vendorLabel">-->
+<!--          <input type="radio" name="filter_type" value="vendor" id="filterVendor" autocomplete="off">-->
+<!--          <b> Vendor</b>-->
+<!--        </label>-->
+<!--      </div>-->
+<!--    </div>-->
+<!--<fieldset>-->
+<!--    &lt;!&ndash; Consumer Selection Row &ndash;&gt;-->
+<!--    <div class="row mb-3" id="consumerRow" style="display: flex; gap: 5px;">-->
+<!--      <div class="col" id="customerTypeContainer">-->
+<!--        <label><b>Consumer Type</b></label>-->
+<!--        <select id="customerTypeDropdown" class="form-control">-->
+<!--          <option value="">&#45;&#45; Select Type &#45;&#45;</option>-->
+<!--          {% for customer_type in customer_types %}-->
+<!--            <option value="{{ customer_type }}">{{ customer_type }}</option>-->
+<!--          {% endfor %}-->
+<!--        </select>-->
+<!--      </div>-->
+<!--      <div class="col" id="customerContainer" style="display: none;">-->
+<!--        <label><b>Select Consumer</b></label>-->
+<!--        <select id="customerDropdown" class="form-control" disabled>-->
+<!--          <option value="">&#45;&#45; Select Consumer &#45;&#45;</option>-->
+<!--        </select>-->
+<!--      </div>-->
+<!--      <div class="col" id="customerBillContainer" style="display: none;">-->
+<!--        <label><b>Select Bill</b></label>-->
+<!--        <select id="billDropdown" class="form-control" disabled>-->
+<!--          <option value="">&#45;&#45; Select Bill &#45;&#45;</option>-->
+<!--        </select>-->
+<!--      </div>-->
+<!--    </div>-->
+
+<!--    &lt;!&ndash; Vendor Selection Row &ndash;&gt;-->
+<!--    <div class="row mb-3" id="vendorRow" style="display: none; gap: 5px;">-->
+<!--      <div class="col" id="vendorTypeContainer">-->
+<!--        <label><b>Vendor Type</b></label>-->
+<!--        <select id="vendorTypeDropdown" class="form-control">-->
+<!--          <option value="">&#45;&#45; Select Type &#45;&#45;</option>-->
+<!--          {% for vendor_type in vendor_types %}-->
+<!--            <option value="{{ vendor_type }}">{{ vendor_type }}</option>-->
+<!--          {% endfor %}-->
+<!--        </select>-->
+<!--      </div>-->
+<!--      <div class="col" id="vendorContainer" style="display: none;">-->
+<!--        <label><b>Select Vendor</b></label>-->
+<!--        <select id="vendorDropdown" class="form-control" disabled>-->
+<!--          <option value="">&#45;&#45; Select Vendor &#45;&#45;</option>-->
+<!--        </select>-->
+<!--      </div>-->
+<!--      <div class="col" id="vendorBillContainer" style="display: none;">-->
+<!--        <label><b>Select Bill</b></label>-->
+<!--        <select id="vendorBillDropdown" class="form-control" disabled>-->
+<!--          <option value="">&#45;&#45; Select Bill &#45;&#45;</option>-->
+<!--        </select>-->
+<!--      </div>-->
+<!--    </div>-->
+
+<!--    &lt;!&ndash; Category Checkboxes &ndash;&gt;-->
+<!--    <div class="form-group mt-3" id="categoryGroup" style="display: none;">-->
+<!--      <label><b>Select Categories</b></label>-->
+<!--      <div id="categoryDropdown" class="checkbox-group"></div>-->
+<!--    </div>-->
+<!--</fieldset>-->
+<!--    &lt;!&ndash; Next Button &ndash;&gt;-->
+<!--&lt;!&ndash;    <button type="submit" id="Next" class="btn btn-primary mt-4" disabled>Next</button>&ndash;&gt;-->
+<!--      <button type="submit" id="Next" class="btn btn-primary mt-4" style="display: none;">Next</button>-->
+<!--  </form>-->
+<!--</div>-->
+
+<!--<script>-->
+<!--document.addEventListener('DOMContentLoaded', function () {-->
+<!--  const filterRadios = document.getElementsByName('filter_type');-->
+<!--  const customerTypeDropdown = document.getElementById('customerTypeDropdown');-->
+<!--  const customerDropdown = document.getElementById('customerDropdown');-->
+<!--  const billDropdown = document.getElementById('billDropdown');-->
+<!--  const customerContainer = document.getElementById('customerContainer');-->
+<!--  const customerBillContainer = document.getElementById('customerBillContainer');-->
+
+<!--  const vendorTypeDropdown = document.getElementById('vendorTypeDropdown');-->
+<!--  const vendorDropdown = document.getElementById('vendorDropdown');-->
+<!--  const vendorBillDropdown = document.getElementById('vendorBillDropdown');-->
+<!--  const vendorContainer = document.getElementById('vendorContainer');-->
+<!--  const vendorBillContainer = document.getElementById('vendorBillContainer');-->
+
+<!--  const consumerRow = document.getElementById('consumerRow');-->
+<!--  const vendorRow = document.getElementById('vendorRow');-->
+
+<!--  const categoryDropdown = document.getElementById('categoryDropdown');-->
+<!--  const categoryGroup = document.getElementById('categoryGroup');-->
+<!--  const nextButton = document.getElementById('Next');-->
+
+<!--  // Reset categories-->
+<!--  function resetCategories() {-->
+<!--    categoryDropdown.innerHTML = '';-->
+<!--    categoryGroup.style.display = 'none';-->
+<!--    nextButton.disabled = true;-->
+<!--  }-->
+
+<!--  // Toggle Consumer/Vendor rows-->
+<!--  function updateEntityDisplay() {-->
+<!--    const selected = document.querySelector('input[name="filter_type"]:checked').value;-->
+<!--    if (selected === 'customer') {-->
+<!--      consumerRow.style.display = 'flex';-->
+<!--      vendorRow.style.display = 'none';-->
+<!--      vendorDropdown.innerHTML = '<option value="">&#45;&#45; Select Vendor &#45;&#45;</option>';-->
+<!--      vendorContainer.style.display = 'none';-->
+<!--      vendorBillContainer.style.display = 'none';-->
+<!--    } else {-->
+<!--      vendorRow.style.display = 'flex';-->
+<!--      consumerRow.style.display = 'none';-->
+<!--      customerDropdown.innerHTML = '<option value="">&#45;&#45; Select Consumer &#45;&#45;</option>';-->
+<!--      customerContainer.style.display = 'none';-->
+<!--      customerBillContainer.style.display = 'none';-->
+<!--    }-->
+<!--    resetCategories();-->
+<!--  }-->
+
+<!--  filterRadios.forEach(r => r.addEventListener('change', updateEntityDisplay));-->
+<!--  updateEntityDisplay();-->
+
+<!--  // Customer logic-->
+<!--  customerTypeDropdown.addEventListener('change', () => {-->
+<!--    const type = customerTypeDropdown.value;-->
+<!--    customerDropdown.innerHTML = '<option value="">&#45;&#45; Select Consumer &#45;&#45;</option>';-->
+<!--    customerDropdown.disabled = true;-->
+<!--    customerContainer.style.display = 'none';-->
+<!--    customerBillContainer.style.display = 'none';-->
+<!--    resetCategories();-->
+
+<!--    if (type) {-->
+<!--      fetch(`/transactions/get_customers_by_type/${type}/`)-->
+<!--        .then(res => res.json())-->
+<!--        .then(data => {-->
+<!--          data.customers.forEach(c => {-->
+<!--            const opt = document.createElement('option');-->
+<!--            opt.value = c.Cust_id;-->
+<!--            opt.textContent = c.Comp_name;-->
+<!--            customerDropdown.appendChild(opt);-->
+<!--          });-->
+<!--          customerDropdown.disabled = false;-->
+<!--          customerContainer.style.display = 'block';-->
+<!--        });-->
+<!--    }-->
+<!--  });-->
+
+<!--  customerDropdown.addEventListener('change', () => {-->
+<!--    const id = customerDropdown.value;-->
+<!--    billDropdown.innerHTML = '<option value="">&#45;&#45; Select Bill &#45;&#45;</option>';-->
+<!--    billDropdown.disabled = true;-->
+<!--    customerBillContainer.style.display = 'none';-->
+<!--    resetCategories();-->
+
+<!--    if (id) {-->
+<!--      fetch(`/transactions/get_billnos/${id}/`)-->
+<!--        .then(res => res.json())-->
+<!--        .then(data => {-->
+<!--          data.bills.forEach(b => {-->
+<!--            const opt = document.createElement('option');-->
+<!--            opt.value = b.billno;-->
+<!--            opt.textContent = b.billno;-->
+<!--            billDropdown.appendChild(opt);-->
+<!--          });-->
+<!--          billDropdown.disabled = false;-->
+<!--          customerBillContainer.style.display = 'block';-->
+<!--        });-->
+<!--    }-->
+<!--  });-->
+
+<!--  // Vendor logic-->
+<!--  vendorTypeDropdown.addEventListener('change', () => {-->
+<!--    const type = vendorTypeDropdown.value;-->
+<!--    vendorDropdown.innerHTML = '<option value="">&#45;&#45; Select Vendor &#45;&#45;</option>';-->
+<!--    vendorDropdown.disabled = true;-->
+<!--    vendorContainer.style.display = 'none';-->
+<!--    vendorBillContainer.style.display = 'none';-->
+<!--    resetCategories();-->
+
+<!--    if (type) {-->
+<!--      fetch(`/transactions/get_vendor_by_type/${type}/`)-->
+<!--        .then(res => res.json())-->
+<!--        .then(data => {-->
+<!--          data.vendor.forEach(v => {-->
+<!--            const opt = document.createElement('option');-->
+<!--            opt.value = v.id;-->
+<!--            opt.textContent = v.name;-->
+<!--            vendorDropdown.appendChild(opt);-->
+<!--          });-->
+<!--          vendorDropdown.disabled = false;-->
+<!--          vendorContainer.style.display = 'block';-->
+<!--        });-->
+<!--    }-->
+<!--  });-->
+
+<!--  vendorDropdown.addEventListener('change', () => {-->
+<!--    const id = vendorDropdown.value;-->
+<!--    vendorBillDropdown.innerHTML = '<option value="">&#45;&#45; Select Bill &#45;&#45;</option>';-->
+<!--    vendorBillDropdown.disabled = true;-->
+<!--    vendorBillContainer.style.display = 'none';-->
+<!--    resetCategories();-->
+
+<!--    if (id) {-->
+<!--      fetch(`/transactions/get_vendor_billnos/${id}/`)-->
+<!--        .then(res => res.json())-->
+<!--        .then(data => {-->
+<!--          data.bills.forEach(b => {-->
+<!--            const opt = document.createElement('option');-->
+<!--            opt.value = b.billno;-->
+<!--            opt.textContent = b.billno;-->
+<!--            vendorBillDropdown.appendChild(opt);-->
+<!--          });-->
+<!--          vendorBillDropdown.disabled = false;-->
+<!--          vendorBillContainer.style.display = 'block';-->
+<!--        });-->
+<!--    }-->
+<!--  });-->
+
+<!--  // Load categories on bill select-->
+<!--  function handleBillChange(billDropdown) {-->
+<!--    const billno = billDropdown.value;-->
+<!--    categoryDropdown.innerHTML = '<div>Loading categories...</div>';-->
+<!--    resetCategories();-->
+
+<!--    if (billno) {-->
+<!--      fetch(`/transactions/get_categories_by_billno/${billno}/`)-->
+<!--        .then(res => res.json())-->
+<!--        .then(data => {-->
+<!--          if (data.categories.length > 0) {-->
+<!--            categoryDropdown.innerHTML = '';-->
+<!--            data.categories.forEach(cat => {-->
+<!--              categoryDropdown.innerHTML += `-->
+<!--                <div class="form-check d-flex align-items-center mb-2">-->
+<!--                  <input type="checkbox" class="checkbox-input category-checkbox" value="${cat.id}" id="cat_${cat.id}">-->
+<!--                  <label for="cat_${cat.id}" class="ml-2 mb-0">${cat.name}</label>-->
+<!--                </div>`;-->
+<!--            });-->
+
+<!--             categoryGroup.style.display = 'block';-->
+<!--            watchCategoryCheckboxes();-->
+<!--          } else {-->
+<!--            categoryDropdown.innerHTML = '<div>No categories available</div>';-->
+<!--            categoryGroup.style.display = 'block';-->
+<!--          }-->
+<!--        });-->
+<!--    }-->
+<!--  }-->
+
+<!--  billDropdown.addEventListener('change', () => handleBillChange(billDropdown));-->
+<!--  vendorBillDropdown.addEventListener('change', () => handleBillChange(vendorBillDropdown));-->
+
+<!--  // Enable Next if a category is selected-->
+<!--  function watchCategoryCheckboxes() {-->
+<!--    const checkboxes = document.querySelectorAll('.category-checkbox');-->
+<!--    checkboxes.forEach(cb => {-->
+<!--      cb.addEventListener('change', () => {-->
+<!--        nextButton.disabled = !Array.from(checkboxes).some(c => c.checked);-->
+<!--      });-->
+<!--    });-->
+<!--  }-->
+
+<!--  // Form submit-->
+<!--  const returnForm = document.getElementById('returnForm');-->
+<!--  returnForm.addEventListener('submit', function (e) {-->
+<!--    e.preventDefault();-->
+<!--    const type = document.querySelector('input[name="filter_type"]:checked').value;-->
+<!--    const selectedBill = (type === 'customer' ? billDropdown : vendorBillDropdown).value;-->
+<!--    const categories = Array.from(document.querySelectorAll('.category-checkbox:checked')).map(c => c.value);-->
+<!--    const params = new URLSearchParams();-->
+<!--    params.append('categories', categories.join(','));-->
+
+<!--    if (type === 'customer') {-->
+<!--      params.append('customer_type', customerTypeDropdown.value);-->
+<!--      params.append('customer', customerDropdown.value);-->
+<!--    } else {-->
+<!--      params.append('vendor', vendorDropdown.value);-->
+<!--    }-->
+
+<!--    window.location.href = `/transactions/return/finalsales_return/${selectedBill}/?${params.toString()}`;-->
+<!--  });-->
+<!--});-->
+<!--</script>-->
+
+<style>
+  .btn-group label input[type="radio"] {
+    display: none;
+  }
+
+  .btn-group label.active::before {
+    color: transparent;
+  }
+
+  .btn-group label {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.5rem 1rem;
+  }
+
+  .btn-group label::before {
+    content: "\2713";
+    display: inline-block;
+    margin-right: 0.5rem;
+    font-size: 1.2rem;
+    color: transparent;
+    transition: color 0.2s;
+  }
+
+  .btn-group label.active::before {
+    color: white;
+  }
+
+  .form-check {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+</style>
+
+<div class="container mt-5">
+  <h1>Select Return DC Consumer or Vendor</h1>
+  <form id="returnForm">
+    {% csrf_token %}
+
+    <!-- Entity Radio -->
+    <label class="d-block text-center"><b>Select Entity</b></label>
+    <div class="d-flex justify-content-center mb-4">
+      <div class="btn-group" data-toggle="buttons">
+        <label class="btn btn-outline-success active" id="customerLabel">
+          <input type="radio" name="filter_type" value="customer" id="filterCustomer" checked autocomplete="off">
+          <b> Consumer</b>
+        </label>
+        <label class="btn btn-outline-success" id="vendorLabel">
+          <input type="radio" name="filter_type" value="vendor" id="filterVendor" autocomplete="off">
+          <b> Vendor</b>
+        </label>
+      </div>
+    </div>
+
+    <fieldset>
+      <!-- Consumer Row -->
+      <div class="row mb-3" id="consumerRow" style="display: flex; gap: 5px;">
+        <div class="col" id="customerTypeContainer">
+          <label><b>Consumer Type</b></label>
+          <select id="customerTypeDropdown" class="form-control">
+            <option value="">-- Select Type --</option>
+            {% for customer_type in customer_types %}
+              <option value="{{ customer_type }}">{{ customer_type }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col" id="customerContainer" style="display: none;">
+          <label><b>Select Consumer</b></label>
+          <select id="customerDropdown" class="form-control" disabled>
+            <option value="">-- Select Consumer --</option>
+          </select>
+        </div>
+        <div class="col" id="customerBillContainer" style="display: none;">
+          <label><b>Select Bill</b></label>
+          <select id="billDropdown" class="form-control" disabled>
+            <option value="">-- Select Bill --</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Vendor Row -->
+      <div class="row mb-3" id="vendorRow" style="display: none; gap: 5px;">
+        <div class="col" id="vendorTypeContainer">
+          <label><b>Vendor Type</b></label>
+          <select id="vendorTypeDropdown" class="form-control">
+            <option value="">-- Select Type --</option>
+            {% for vendor_type in vendor_types %}
+              <option value="{{ vendor_type }}">{{ vendor_type }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col" id="vendorContainer" style="display: none;">
+          <label><b>Select Vendor</b></label>
+          <select id="vendorDropdown" class="form-control" disabled>
+            <option value="">-- Select Vendor --</option>
+          </select>
+        </div>
+        <div class="col" id="vendorBillContainer" style="display: none;">
+          <label><b>Select Bill</b></label>
+          <select id="vendorBillDropdown" class="form-control" disabled>
+            <option value="">-- Select Bill --</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Category Checkboxes -->
+      <div class="form-group mt-3" id="categoryGroup" style="display: none;">
+        <label><b>Select Categories</b></label>
+        <div id="categoryDropdown" class="checkbox-group"></div>
+      </div>
+    </fieldset>
+
+    <!-- Next Button (Initially Hidden) -->
+    <!--<button type="submit" id="Next" class="btn btn-primary mt-4" style="display: none;">Next</button>-->
+    <div class="d-flex justify-content-center mt-4">
+      <button type="submit" id="Next" class="btn btn-primary btn-lg px-5 py-2" style="display: none;">Next</button>
+    </div>
+
+  </form>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  const customerTypeDropdown = document.getElementById('customerTypeDropdown');
+  const customerDropdown = document.getElementById('customerDropdown');
+  const billDropdown = document.getElementById('billDropdown');
+  const customerContainer = document.getElementById('customerContainer');
+  const customerBillContainer = document.getElementById('customerBillContainer');
+
+  const vendorTypeDropdown = document.getElementById('vendorTypeDropdown');
+  const vendorDropdown = document.getElementById('vendorDropdown');
+  const vendorBillDropdown = document.getElementById('vendorBillDropdown');
+  const vendorContainer = document.getElementById('vendorContainer');
+  const vendorBillContainer = document.getElementById('vendorBillContainer');
+
+  const consumerRow = document.getElementById('consumerRow');
+  const vendorRow = document.getElementById('vendorRow');
+
+  const categoryDropdown = document.getElementById('categoryDropdown');
+  const categoryGroup = document.getElementById('categoryGroup');
+  const nextButton = document.getElementById('Next');
+  const filterRadios = document.getElementsByName('filter_type');
+
+  function resetCategories() {
+    categoryDropdown.innerHTML = '';
+    categoryGroup.style.display = 'none';
+    nextButton.style.display = 'none';
+  }
+
+  function updateEntityDisplay() {
+    const selected = document.querySelector('input[name="filter_type"]:checked').value;
+    if (selected === 'customer') {
+      consumerRow.style.display = 'flex';
+      vendorRow.style.display = 'none';
+    } else {
+      vendorRow.style.display = 'flex';
+      consumerRow.style.display = 'none';
+    }
+    resetCategories();
+  }
+
+  filterRadios.forEach(r => r.addEventListener('change', updateEntityDisplay));
+  updateEntityDisplay();
+
+  // Customer logic
+  customerTypeDropdown.addEventListener('change', () => {
+    const type = customerTypeDropdown.value;
+    customerDropdown.innerHTML = '<option value="">-- Select Consumer --</option>';
+    customerDropdown.disabled = true;
+    customerContainer.style.display = 'none';
+    customerBillContainer.style.display = 'none';
+    resetCategories();
+
+    if (type) {
+      fetch(`/transactions/get_customers_by_type/${type}/`)
+        .then(res => res.json())
+        .then(data => {
+          data.customers.forEach(c => {
+            const opt = document.createElement('option');
+            opt.value = c.Cust_id;
+            opt.textContent = c.Comp_name;
+            customerDropdown.appendChild(opt);
+          });
+          customerDropdown.disabled = false;
+          customerContainer.style.display = 'block';
+        });
+    }
+  });
+
+  customerDropdown.addEventListener('change', () => {
+    const id = customerDropdown.value;
+    billDropdown.innerHTML = '<option value="">-- Select Bill --</option>';
+    billDropdown.disabled = true;
+    customerBillContainer.style.display = 'none';
+    resetCategories();
+
+    if (id) {
+      fetch(`/transactions/get_billnos/${id}/`)
+        .then(res => res.json())
+        .then(data => {
+          data.bills.forEach(b => {
+            const opt = document.createElement('option');
+            opt.value = b.billno;
+            opt.textContent = b.billno;
+            billDropdown.appendChild(opt);
+          });
+          billDropdown.disabled = false;
+          customerBillContainer.style.display = 'block';
+        });
+    }
+  });
+
+  // Vendor logic
+  vendorTypeDropdown.addEventListener('change', () => {
+    const type = vendorTypeDropdown.value;
+    vendorDropdown.innerHTML = '<option value="">-- Select Vendor --</option>';
+    vendorDropdown.disabled = true;
+    vendorContainer.style.display = 'none';
+    vendorBillContainer.style.display = 'none';
+    resetCategories();
+
+    if (type) {
+      fetch(`/transactions/get_vendor_by_type/${type}/`)
+        .then(res => res.json())
+        .then(data => {
+          data.vendor.forEach(v => {
+            const opt = document.createElement('option');
+            opt.value = v.id;
+            opt.textContent = v.name;
+            vendorDropdown.appendChild(opt);
+          });
+          vendorDropdown.disabled = false;
+          vendorContainer.style.display = 'block';
+        });
+    }
+  });
+
+  vendorDropdown.addEventListener('change', () => {
+    const id = vendorDropdown.value;
+    vendorBillDropdown.innerHTML = '<option value="">-- Select Bill --</option>';
+    vendorBillDropdown.disabled = true;
+    vendorBillContainer.style.display = 'none';
+    resetCategories();
+
+    if (id) {
+      fetch(`/transactions/get_vendor_billnos/${id}/`)
+        .then(res => res.json())
+        .then(data => {
+          data.bills.forEach(b => {
+            const opt = document.createElement('option');
+            opt.value = b.billno;
+            opt.textContent = b.billno;
+            vendorBillDropdown.appendChild(opt);
+          });
+          vendorBillDropdown.disabled = false;
+          vendorBillContainer.style.display = 'block';
+        });
+    }
+  });
+
+  function handleBillChange(billDropdown) {
+    const billno = billDropdown.value;
+    resetCategories();
+
+    if (billno) {
+      categoryDropdown.innerHTML = '<div>Loading categories...</div>';
+      fetch(`/transactions/get_categories_by_billno/${billno}/`)
+        .then(res => res.json())
+        .then(data => {
+          categoryDropdown.innerHTML = '';
+          if (data.categories.length > 0) {
+            data.categories.forEach(cat => {
+              categoryDropdown.innerHTML += `
+                <div class="form-check mb-2">
+                  <input type="checkbox" class="checkbox-input category-checkbox" value="${cat.id}" id="cat_${cat.id}">
+                  <label for="cat_${cat.id}" class="mb-0">${cat.name}</label>
+                </div>`;
+            });
+            categoryGroup.style.display = 'block';
+            watchCategoryCheckboxes();
+          } else {
+            categoryDropdown.innerHTML = '<div>No categories available</div>';
+            categoryGroup.style.display = 'block';
+          }
+        });
+    }
+  }
+
+  billDropdown.addEventListener('change', () => handleBillChange(billDropdown));
+  vendorBillDropdown.addEventListener('change', () => handleBillChange(vendorBillDropdown));
+
+  function watchCategoryCheckboxes() {
+    const checkboxes = document.querySelectorAll('.category-checkbox');
+    checkboxes.forEach(cb => {
+      cb.addEventListener('change', () => {
+        const atLeastOneChecked = Array.from(checkboxes).some(c => c.checked);
+        nextButton.style.display = atLeastOneChecked ? 'inline-block' : 'none';
+      });
+    });
+  }
+
+  // Form submit
+  document.getElementById('returnForm').addEventListener('submit', function (e) {
+    e.preventDefault();
+    const type = document.querySelector('input[name="filter_type"]:checked').value;
+    const selectedBill = (type === 'customer' ? billDropdown : vendorBillDropdown).value;
+    const categories = Array.from(document.querySelectorAll('.category-checkbox:checked')).map(c => c.value);
+    const params = new URLSearchParams();
+    params.append('categories', categories.join(','));
+
+    if (type === 'customer') {
+      params.append('customer_type', customerTypeDropdown.value);
+      params.append('customer', customerDropdown.value);
+    } else {
+      params.append('vendor', vendorDropdown.value);
+    }
+
+    window.location.href = `/transactions/return/finalsales_return/${selectedBill}/?${params.toString()}`;
+  });
+});
+</script>
+
+{% endblock content %}

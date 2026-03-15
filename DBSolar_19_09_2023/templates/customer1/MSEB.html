@@ -1,0 +1,451 @@
+{% extends 'partials/base.html' %}
+{% block title %}Order Page{% endblock %}
+{% load static %}
+
+{% block content %}
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+<style>
+    /* Set fixed width for Ok and Cancel columns */
+    #mseb_table_body .ok-column,
+    #mseb_table_body .cancel-column {
+        width: 200px;
+    }
+
+     .checkmark {
+        width: 30px;
+        height: 30px;
+        text-align: center;
+        vertical-align: middle;
+        font-size: 25px;
+        color: green;
+        font-weight: bold;
+    }
+
+
+    /* Change color of 'Done' to green */
+    #mseb_table_body .status.Done {
+        color: green;
+    }
+
+    /* Change color of 'In Process' to yellow */
+    #mseb_table_body .status.in-process {
+        color: yellow;
+    }
+</style>
+
+<style>
+     /* Adjust table body row height */
+    #mseb_table_body td,
+    #mseb_table_body th {
+        padding: 10px; /* Adjust padding to control row height */
+    }
+
+    /* Resize checkboxes */
+    #mseb_table_body input[type="checkbox"] {
+        width: 20px; /* Adjust width */
+        height: 20px; /* Adjust height */
+    }
+
+</style>
+
+
+<script>
+    // Define fieldNames globally with their corresponding display names
+    var fieldNames = {
+        'load_extension': 'Load Extension',
+        'flisibility': 'Off-Line Feasibility',
+        'quotation': 'Firm Quotation Generation',
+        'sent_to_bill': 'Sent to Bill',
+        'net_meter': 'Net Metering Procedure',
+        'flexibility': 'Technical Feasibility',
+        'approval': 'Sanction/Approval',
+        'meter_testing': 'Meter Testing',
+        'agreement': 'Net Metering Agreement',
+        'release': 'Meter Release',
+        'installation_date': 'Meter Installation Date'
+    };
+
+    $(document).ready(function(){
+        // Hide all rows except the first one initially
+        $("tbody tr:not(:first)").hide();
+
+        // Event listener for Comp_name dropdown change
+         $("#fetchDataBtn").click(function() {
+
+            var selectedCustId = $("#Comp_name").val();
+            var selectedCompName = $("#Comp_name option:selected").text().split(' (ID: ')[0]; // Extract Comp_name
+            $("#compName").val(selectedCompName); // Set Comp_name to hidden input field
+
+
+            // AJAX request to fetch MSEB data for the selected company
+            $.ajax({
+                url: '/customer/get_mseb_data/',
+                method: 'GET', // Use GET method to retrieve data
+                data: {'cust_id': selectedCustId},
+                dataType: 'json',
+                success: function(response) {
+                    console.log("Response:", response); // Log the response to inspect its structure
+                    // Clear previous data
+                    $("#mseb_table_body").empty();
+                    var current_load = parseInt(response.current_load);
+                    var loadsancution = parseInt(response.loadsancution);
+
+                    if (response && response.error && response.error === "No data found for the selected company") {
+                        // No data available for the selected company
+                        console.log("No MSEB data available for the selected company");
+                        if (current_load === loadsancution) {
+                            // If they are equal, display all field names from 'net_meter' onwards
+                            createNetMeterRow(); // Create the first row with "Load Extension" field
+                        } else {
+                            // If they are not equal, display all available field names
+                            createLoadExtensionRow(); // Create the first row with "Load Extension" field
+                        }
+                    } else {
+                        // Populate form fields with fetched data
+                        var msebData = response;
+                        var html = '';
+                        var showNextRow = false;
+                        for (var key in msebData) {
+                            if (msebData.hasOwnProperty(key)) {
+                                var fieldName = key.replace('_ok', ''); // Extract field name
+                                var fieldValue = msebData[key].value; // Extract field value
+                                var createdAt = msebData[key].created_at; // Extract created_at date
+
+                                if (fieldValue) {
+                                    html += '<tr>';
+                                    html += '<td>' + fieldNames[fieldName] + '</td>';
+                                    html += '<td class="status">Done</td>'; // Updated from "Ok" to "Done"
+                                    html += '<td class="created-at">' + (createdAt ? formatDate(new Date(createdAt)) : '') + '</td>'; // Format createdAt as "d-m-Y"
+                                    //html += '<td><input type="checkbox" class="ok-checkbox" name="' + key + '" value="ok"' + (fieldValue ? ' checked' : '') + ' disabled></td>';
+                                    html += '<td><span id="ctCheckmark" class="hidden checkmark">✓</span></td>';
+                                    html += '<td><input type="checkbox" class="cancel-checkbox" name="' + key.replace('_ok', '_cancel') + '" value="cancel" style="display: none;"></td>';
+                                    html += '</tr>';
+                                    showNextRow = true;
+                                } else if (showNextRow) {
+                                    html += '<tr>';
+                                    html += '<td>' + fieldNames[fieldName] + '</td>';
+                                    html += '<td class="status">In Process</td>'; // Updated from "Pending" to "In Process"
+                                    //html += '<td class="created-at">' + (createdAt ? createdAt : '') + '</td>'; // Display created_at date
+                                    html += '<td class="created-at"><input type="date" class="completion-date" placeholder="YYYY-MM-DD"></td>'; // Manual entry of completion date
+                                    html += '<td><input type="checkbox" class="ok-checkbox" name="' + key + '" value="ok"></td>';
+                                    html += '<td><input type="checkbox" class="cancel-checkbox" name="' + key.replace('_ok', '_cancel') + '" value="cancel"></td>';
+                                    html += '</tr>';
+                                    showNextRow = false; // Only show one In Process row after an unchecked Done row
+                                }
+                            }
+                        }
+                        $("#mseb_table_body").html(html);
+                    }
+                },
+                error: function(xhr, errmsg, err) {
+                    // Handle error
+                    console.log("Error:", errmsg);
+                }
+            });
+        });
+
+        // Function to create the first row with "Load Extension" field
+        function createLoadExtensionRow() {
+            var html = '<tr>';
+            html += '<td>' + fieldNames['load_extension'] + '</td>';
+            html += '<td class="status"></td>';
+            //html += '<td class="created-at"></td>';
+            html += '<td class="created-at"><input type="date" class="completion-date" placeholder="YYYY-MM-DD"></td>'; // Manual entry of completion date
+            html += '<td><input type="checkbox" class="ok-checkbox" name="load_extension_ok" value="ok"></td>';
+            html += '<td><input type="checkbox" class="cancel-checkbox" name="load_extension_cancel" value="cancel"></td>';
+            html += '</tr>';
+            $("#mseb_table_body").html(html);
+        }
+
+        // Function to create the first row with "net_meter" field
+        function createNetMeterRow() {
+            var html = '<tr>';
+            html += '<td>' + fieldNames['net_meter'] + '</td>';
+            html += '<td class="status"></td>';
+            //html += '<td class="created-at"></td>';
+            html += '<td class="created-at"><input type="date" class="completion-date" placeholder="YYYY-MM-DD"></td>'; // Manual entry of completion date
+            html += '<td><input type="checkbox" class="ok-checkbox" name="net_meter_ok" value="ok"></td>';
+            html += '<td><input type="checkbox" class="cancel-checkbox" name="net_meter_cancel" value="cancel"></td>';
+            html += '</tr>';
+            $("#mseb_table_body").html(html);
+        }
+        function formatDate(date) {
+            /// Extract the components of the date
+            var day = String(date.getDate()).padStart(2, '0'); // Pad with leading zero if needed
+            var month = String(date.getMonth() + 1).padStart(2, '0'); // Months are zero-based; pad with leading zero if needed
+            var year = date.getFullYear();
+
+            // Return the formatted date string
+            return day + '/' + month + '/' + year;
+        }
+
+
+        // Event listener for Ok checkboxes change
+        // Event listener for Ok checkboxes change
+        $(document).on('change', '.ok-checkbox', function(){
+            var $this = $(this);
+            var isChecked = $this.is(":checked");
+            var $cancelCheckbox = $this.closest("tr").find(".cancel-checkbox");
+            var $okCheckbox = $this.closest("tr").find(".ok-checkbox");
+            var $completionDateInput = $this.closest("tr").find(".completion-date");
+
+            // Show confirmation button when checkbox is clicked
+            if (isChecked) {
+                $completionDateInput.show(); // Show completion date input
+                var $confirmButton = $("<button>Confirm</button>").click(function() {
+                    var completionDate = $completionDateInput.val(); // Get manually entered completion date
+                    var confirmMessage = "Are you sure you want to save/update this record?";
+
+                    // Get the previous row's completion date
+                    var $prevRow = $this.closest("tr").prev();
+                    var prevCompletionDate = $prevRow.find(".completion-date").val();
+
+                    if (completionDate && confirm(confirmMessage)) {
+                        // Save the record via AJAX
+                        var compName = $("#Comp_name").val(); // Get the selected company name
+                        var fieldName = $this.attr('name').replace('_ok', ''); // Extract field name
+                        // Assuming `completionDate` is in a format that can be parsed by Date constructor
+                        var completionDateObject = new Date(completionDate);
+
+                        // Pad day and month with leading zeros if necessary
+                        var day = ('0' + completionDateObject.getDate()).slice(-2);
+                        var month = ('0' + (completionDateObject.getMonth() + 1)).slice(-2);
+                        var year = completionDateObject.getFullYear();
+
+                        var formattedDate = day + '/' + month + '/' + year;
+
+                        // Get CSRF token from the page
+                        var csrfToken = $('input[name="csrfmiddlewaretoken"]').val();
+
+                        $.ajax({
+                            url: '/customer/MSEB/',
+                            type: 'POST',
+                            headers: {
+                                'X-CSRFToken': csrfToken // Include CSRF token in headers
+                            },
+                            data: {
+                                cust_id: $("#Comp_name").val(),
+                                fieldName: fieldName,
+                                isChecked: isChecked,
+                                createdAt: completionDate // Use completion date provided by the user
+                            },
+                            success: function(response) {
+                                console.log("Record saved successfully!");
+
+                                // Change status and show next row if not last field name
+                                $this.closest("tr").find(".status").text("Done");
+                                //$this.closest("tr").find(".created-at").text(completionDate);
+                                $this.closest("tr").find(".created-at").text(formattedDate);
+
+                                $this.hide(); // Hide the Ok checkbox
+                                $this.closest("td").html('<span class="checkmark">✓</span>'); // Show the checkmark
+                                // $cancelCheckbox.hide(); // Hide the Cancel checkbox
+                                // $completionDateInput.replaceWith('<span class="created-at">' + formatDate(new Date(completionDate)) + '</span>'); // Display the entered completion date
+                                // $this.closest("tr").find(".status").text('Done'); // Update status to Done
+
+                                // Get the current field index in the sequence
+                                var currentIndex = Object.keys(fieldNames).indexOf(fieldName);
+
+                                if (currentIndex < Object.keys(fieldNames).length - 1) {
+                                    // Get the next field name in the sequence
+                                    var nextFieldName = Object.keys(fieldNames)[currentIndex + 1];
+
+                                    // Find the next row with the next field name
+                                    var $nextRow = $this.closest("tr").nextAll().filter(function() {
+                                        return $(this).find("td:first").text().trim() === fieldNames[nextFieldName];
+                                    }).first();
+
+                                    // Show the next row if found
+                                    if ($nextRow.length > 0) {
+                                        $nextRow.show();
+                                        // Change status to "In Process"
+                                        $nextRow.find(".status").text("In Process");
+                                    } else {
+                                        // If next row not found, create it
+                                        createRowForFieldName(nextFieldName);
+                                    }
+
+                                    // Enable the next field
+                                    if ($nextRow.length > 0) {
+                                        $nextRow.find('.ok-checkbox').prop('disabled', false);
+                                    }
+                                }
+                            },
+                            error: function(xhr, errmsg, err) {
+                                console.log("Error occurred while saving record:", errmsg);
+                            }
+                        });
+
+                    } else {
+                        $this.prop("checked", false); // Uncheck checkbox if user cancels
+                        $completionDateInput.show(); // Hide completion date input after saving or canceling
+                        $confirmButton.remove(); // Remove the confirm button
+                        $cancelCheckbox.prop("disabled", false).show();
+                        $okCheckbox.prop("disabled", false).show();
+                    }
+                    //$completionDateInput.hide(); // Hide completion date input after saving or canceling
+                    $confirmButton.remove(); // Remove the confirm button
+
+                });
+                $this.after($confirmButton); // Insert confirm button after checkbox
+            } else {
+                // Hide completion date input and remove confirm button if checkbox is unchecked
+                $completionDateInput.hide();
+                $this.closest("tr").find(".status").text("In Process");
+                $cancelCheckbox.show();
+                $this.closest("tr").find(".created-at").text("");
+                $this.next("button").remove();
+            }
+
+
+
+            // Hide/show the cancel checkbox based on the checked state of the Ok checkbox
+            if (isChecked) {
+                $cancelCheckbox.prop("disabled", true).hide();
+                $okCheckbox.prop("disabled", true).show();
+            } else {
+                $cancelCheckbox.prop("disabled", false).show();
+
+            }
+        });
+
+        // Function to create a row for a given field name
+        function createRowForFieldName(fieldName) {
+            var html = '<tr>';
+            html += '<td>' + fieldNames[fieldName] + '</td>';
+            html += '<td class="status">In Process</td>'; // Set status to "In Process"
+            //html += '<td class="created-at"></td>';
+            html += '<td class="created-at"><input type="date" class="completion-date" placeholder="YYYY-MM-DD"></td>'; // Manual entry of completion date
+            html += '<td><input type="checkbox" class="ok-checkbox" name="' + fieldName + '_ok" value="ok"></td>';
+            html += '<td><input type="checkbox" class="cancel-checkbox" name="' + fieldName + '_cancel" value="cancel"></td>';
+            html += '</tr>';
+            $("#mseb_table_body").append(html);
+        }
+    });
+</script>
+
+<!--    <form method="post">-->
+<!--        {% csrf_token %}-->
+
+<!--        <div class="col-md-12">-->
+<!--            &lt;!&ndash; general form elements &ndash;&gt;-->
+<!--            <div class="card card-primary">-->
+<!--                <div class="card-header">-->
+<!--                    <h3>Consumer MSEB Details</h3>-->
+<!--                </div>-->
+<!--                <br>-->
+
+
+<!--                <div class="col-sm-8">-->
+<!--                    <label for="Comp_name"><b>Select Company Name:</b></label>-->
+<!--                    <select class="form-control" name="Comp_name" id="Comp_name" required>-->
+<!--                        <option value=""></option>-->
+<!--                        {% for comp_name in customers %}-->
+<!--                            <option value="{{ comp_name }}">{{ comp_name }}</option>-->
+<!--                        {% endfor %}-->
+<!--                    </select>-->
+<!--                </div>-->
+<!--&lt;!&ndash;                  <input type="text" id="compName" name="compName" value="">&ndash;&gt;-->
+<!--&lt;!&ndash;            <input type="text" id="loadsancution" value="{{ loadsancution }}">&ndash;&gt;-->
+<!--&lt;!&ndash;            <input type="text" id="currentLoad" value="{{ current_load }}">&ndash;&gt;-->
+<!--                <input type="hidden" id="compName" name="compName" value="">-->
+<!--                 <div class="col-sm-4">-->
+<!--                <button type="button" class="btn btn-primary" id="fetchDataBtn">Fetch Data</button>-->
+<!--            </div>-->
+
+<!--                <br><br>-->
+<!--&lt;!&ndash;                <div class="col-8 text-center" id="tableContainer" style="display: none;">&ndash;&gt;-->
+<!--                <table border="1" id="mseb_table" style="display: none;" class="col-lg-11 text-center" align="center">-->
+<!--                    <thead>-->
+<!--                        <tr align="center">-->
+<!--                            <th>Field</th>-->
+<!--                            <th>Status</th>-->
+<!--                            <th>Created At</th>-->
+
+<!--                            <th style="width: 130px">Ok</th>-->
+<!--                            <th>Cancel</th>-->
+<!--                        </tr>-->
+<!--                    </thead>-->
+<!--                    <tbody id="mseb_table_body" align="center">-->
+<!--                        &lt;!&ndash; Table rows will be populated dynamically &ndash;&gt;-->
+<!--                    </tbody>-->
+<!--                </table>-->
+<!--&lt;!&ndash;                </div>&ndash;&gt;-->
+<!--            </div>-->
+<!--        </div>-->
+<!--    </form>-->
+<form method="post">
+    {% csrf_token %}
+
+    <div class="col-md-12">
+        <!-- general form elements -->
+        <div class="card card-primary">
+            <div class="card-header">
+                <h3>Consumer MSEB Details</h3>
+            </div>
+            <br>
+<!--           <div class="form-group row">-->
+            <div class="d-flex align-items-end justify-content-center row">
+                <div class="col-sm-9">
+                    <label for="Comp_name"><b>Select Company Name:</b></label>
+<!--                    <select class="form-control" name="Comp_name" id="Comp_name" required>-->
+<!--                        <option value=""></option>-->
+<!--                        {% for comp_name in customers %}-->
+<!--                            <option value="{{ comp_name }}">{{ comp_name }} </option>-->
+<!--                        {% endfor %}-->
+<!--                    </select>-->
+<!--                    <select class="form-control text-capitalize" name="Comp_name" id="Comp_name" required>-->
+<!--                        <option value=""></option>-->
+<!--                        {% for cust_id, comp_name, city in customers %}-->
+<!--                            <option value="{{ cust_id }}">{{ comp_name }}  &nbsp;&nbsp;&nbsp;( ID - {{ cust_id }} )</option>-->
+<!--                        {% endfor %}-->
+<!--                    </select>-->
+                    <select class="form-control text-capitalize" name="Comp_name" id="Comp_name" required>
+    <option value=""></option>
+    {% for cust_id, comp_name, city in customers %}
+        <!--<option value="{{ cust_id }}">{{ comp_name }} &nbsp;&nbsp;&nbsp;(ID - {{ cust_id }})</option>-->
+        <option value="{{ cust_id }}">{{ comp_name }} , {{city}} &nbsp;&nbsp;&nbsp;(ID - {{ cust_id }})</option>
+    {% endfor %}
+</select>
+
+                    <input type="hidden" id="compName">
+                </div>
+
+                <div class="col-sm-2">
+                    <button type="button" id="fetchDataBtn">Fetch Data</button>
+<!--                    <button type="button" id="preview"><i class="nav-icon fa fa-eye" aria-hidden="true"></i>   Preview</button>-->
+                </div>
+            </div>
+
+
+            <br><br>
+           <div class="table-responsive">
+            <table border="1" id="mseb_table" style="display: none;" class="col-lg-11 text-center" align="center">
+                <thead class="table-success">
+                    <tr align="center">
+                        <th>Phase</th>
+                        <th>Status</th>
+                        <th>Completion Date</th>
+                        <th style="width: 130px; height: 50px;">Ok</th>
+                        <th>Cancel</th>
+                    </tr>
+                </thead>
+                <tbody id="mseb_table_body" align="center" style="width: 130px; height: 50px;">
+                    <!-- Table rows will be populated dynamically -->
+                </tbody>
+            </table>
+           </div>
+        </div>
+    </div>
+</form>
+
+<script>
+    $(document).ready(function() {
+    $('#fetchDataBtn').click(function() {
+        $('#mseb_table').toggle();
+    });
+});
+
+</script>
+
+{% endblock %}

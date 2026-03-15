@@ -1,0 +1,321 @@
+{% extends 'partials/base.html' %}
+{% load static %}
+{% block title %} New Purchase {% endblock title %}
+{% block content %}
+<br>
+<div class="row" style="color: #4e4e4e; font-style: bold; font-size: 3rem;">
+    <div style="margin-left: 50px;"><h1>Final Bills</h1></div>
+    <!-- Navigation Buttons -->
+    <div class="col-auto text-right float-right ml-auto" style="margin-right: 40px;">
+        <div class="dt-buttons btn-group flex-wrap">
+            <a href="{% url 'finalsales-list' %}" class="btn btn-primary" title="Create New Final DC">
+                <i class="fas fa-reply"></i>
+            </a>
+            <a class="btn btn-outline-primary mr-2" id="generate-pdf" href="{% url 'finalsales-list' %}">
+                Final DC List
+            </a>
+        </div>
+    </div>
+</div>
+<style>
+  /* Hide the native radio input */
+  .btn-group label input[type="radio"] {
+      display: none;
+  }
+
+  .btn-group label.active::before {
+    color: transparent;
+  }
+
+  /* Style the label as an inline-flex container to align icon and text */
+  .btn-group label {
+      display: inline-flex;
+      align-items: center;
+      /* Optional: add some padding if needed */
+      padding: 0.5rem 1rem;
+  }
+  /* Insert a check mark before the label text */
+  .btn-group label::before {
+      content: "\2713";  /* Unicode check mark */
+      display: inline-block;
+      margin-right: 0.5rem;
+      font-size: 1.2rem;
+      color: transparent; /* hidden when not active */
+      transition: color 0.2s;
+  }
+  /* When the label is active, show the check mark in green */
+  .btn-group label.active::before {
+      color: white;  /* Bootstrap success green */
+  }
+</style>
+
+<div class="container mt-4">
+
+    <!-- New Radio Buttons: Customer or Vendor (Styled as a Bootstrap Button Group) -->
+<!--    <label style="align: center;"><b>Filter By:</b></label><br>-->
+    <label class="d-block text-center"><b>Filter By</b></label>
+    <div class="d-flex justify-content-center">
+        <div class="btn-group" data-toggle="buttons">
+            <label class="btn btn-outline-success active" id="customerLabel">
+                <input type="radio" name="filterType" value="customer" id="filterCustomer" checked autocomplete="off">
+                <b> Consumer</b>
+            </label>
+            <label class="btn btn-outline-success" id="vendorLabel">
+                <input type="radio" name="filterType" id="filterVendor" value="vendor" autocomplete="off">
+                <b> Vendor</b>
+            </label>
+        </div>
+    </div>
+
+    <!-- Dropdown to select Customer (initially visible) -->
+    <div class="form-group" id="customerSelectContainer">
+        <label for="customerSelect"><b>Select Consumer</b></label>
+        <select id="customerSelect" class="form-control text-capitalize">
+            <option value="" selected>Select a Consumer</option>
+            {% for customer in customers %}
+<!--            <option value="{{ customer.Cust_id }}">{{ customer.Cust_id__Comp_name }}</option>-->
+             <option value="{{ customer.Cust_id }}">
+                {{ customer.Cust_id__Comp_name }}, {{ customer.Cust_id__City }} -  (Mseb - {{ customer.Cust_id__Consumer|slice:"-4:" }})
+             </option>
+            {% endfor %}
+        </select>
+    </div>
+
+    <!-- Dropdown to select Vendor (initially hidden) -->
+    <div class="form-group" id="vendorSelectContainer" style="display: none;">
+        <label for="vendorSelect"><b>Select Vendor</b></label>
+        <select id="vendorSelect" class="form-control text-capitalize">
+            <option value="" selected>Select a vendor</option>
+            {% for vendor in vendors %}
+            <option value="{{ vendor.Vend_id }}">{{ vendor.Vend_id__name }},  {{ vendor.Vend_id__city }}</option>
+            {% endfor %}
+        </select>
+    </div>
+
+    <!-- Table to display bills -->
+    <div id="billsContainer" class="mt-4" style="display: none;">
+        <h4>Bills</h4>
+        <table class="table table-bordered">
+            <thead>
+                <tr>
+                    <th>Select</th>
+                    <th>Bill No</th>
+                    <th>Time</th>
+                    <th>Total Stock</th>
+                </tr>
+            </thead>
+            <tbody id="billTableBody">
+                <!-- Rows will be dynamically populated -->
+            </tbody>
+        </table>
+        <button id="generateFinalBill" class="btn btn-primary" disabled>Generate Final Bill</button>
+    </div>
+</div>
+
+<div class="container mt-4">
+    <!-- Final Bill Table -->
+    <div id="finalBillContainer" class="mt-5" style="display: none;">
+        <h4>Generated Final Bill</h4>
+        <table class="table table-bordered">
+            <thead>
+                <tr>
+                    <th>Final Bill No</th>
+                    <th>Customer</th>
+                    <th>Stock</th>
+                    <th>Quantity</th>
+                    <th>Total Quantity</th>
+                    <th>Time</th>
+                </tr>
+            </thead>
+            <tbody id="finalBillTableBody">
+                <!-- Final bill details will be dynamically added here -->
+            </tbody>
+        </table>
+        <button id="returnButton" style="display: none;">Done</button>
+    </div>
+</div>
+
+<script>
+    // Toggle dropdowns based on button (label) click
+    document.querySelectorAll('.btn-group label').forEach(function(label) {
+        label.addEventListener("click", function() {
+            // Remove active class from all labels and add to clicked label
+            document.querySelectorAll('.btn-group label').forEach(function(lbl) {
+                lbl.classList.remove("active");
+            });
+            this.classList.add("active");
+
+            // Get the radio input inside this label
+            const radio = this.querySelector('input[name="filterType"]');
+            if (radio) {
+                if (radio.value === "customer") {
+                    document.getElementById("customerSelectContainer").style.display = "block";
+                    document.getElementById("vendorSelectContainer").style.display = "none";
+                } else if (radio.value === "vendor") {
+                    document.getElementById("vendorSelectContainer").style.display = "block";
+                    document.getElementById("customerSelectContainer").style.display = "none";
+                }
+                // Hide bills table when switching filter type
+                document.getElementById("billsContainer").style.display = "none";
+            }
+        });
+    });
+
+    // Optionally, on page load set the correct dropdown based on the checked radio button
+    window.addEventListener("DOMContentLoaded", function() {
+        const selected = document.querySelector('input[name="filterType"]:checked');
+        if (selected && selected.value === "customer") {
+            document.getElementById("customerSelectContainer").style.display = "block";
+            document.getElementById("vendorSelectContainer").style.display = "none";
+        } else if (selected && selected.value === "vendor") {
+            document.getElementById("vendorSelectContainer").style.display = "block";
+            document.getElementById("customerSelectContainer").style.display = "none";
+        }
+    });
+
+    // Event listener for Customer dropdown
+    document.getElementById("customerSelect").addEventListener("change", function () {
+        const customerId = this.value;
+        if (customerId) {
+            fetch(`/transactions/get-customer-bills/?customer_id=${customerId}`)
+                .then(response => response.json())
+                .then(data => {
+                    const billTableBody = document.getElementById("billTableBody");
+                    billTableBody.innerHTML = ""; // Clear existing rows
+                    data.bills.forEach(bill => {
+                        const row = `<tr>
+                            <td><input type="checkbox" class="billCheckbox" data-bill-id="${bill.billno}" /></td>
+                            <td>${bill.billno}</td>
+                            <td>${bill.time}</td>
+                            <td>${bill.total}</td>
+                        </tr>`;
+                        billTableBody.innerHTML += row;
+                    });
+                    document.getElementById("billsContainer").style.display = "block";
+                });
+        } else {
+            document.getElementById("billsContainer").style.display = "none";
+        }
+    });
+
+    // Event listener for Vendor dropdown
+    document.getElementById("vendorSelect").addEventListener("change", function () {
+        const vendorId = this.value;
+        if (vendorId) {
+            fetch(`/transactions/get-customer-bills/?vendor_id=${vendorId}`)
+                .then(response => response.json())
+                .then(data => {
+                    const billTableBody = document.getElementById("billTableBody");
+                    billTableBody.innerHTML = ""; // Clear existing rows
+                    data.bills.forEach(bill => {
+                        const row = `<tr>
+                            <td><input type="checkbox" class="billCheckbox" data-bill-id="${bill.billno}" /></td>
+                            <td>${bill.billno}</td>
+                            <td>${bill.time}</td>
+                            <td>${bill.total}</td>
+                        </tr>`;
+                        billTableBody.innerHTML += row;
+                    });
+                    document.getElementById("billsContainer").style.display = "block";
+                });
+        } else {
+            document.getElementById("billsContainer").style.display = "none";
+        }
+    });
+
+    // Enable the "Generate Final Bill" button if at least one bill is checked
+    document.getElementById("billTableBody").addEventListener("change", function () {
+        const checkboxes = document.querySelectorAll(".billCheckbox:checked");
+        document.getElementById("generateFinalBill").disabled = checkboxes.length === 0;
+    });
+
+    // Generate Final Bill on button click
+    document.getElementById("generateFinalBill").addEventListener("click", function () {
+        const selectedBillIds = Array.from(document.querySelectorAll(".billCheckbox:checked"))
+                                      .map(checkbox => checkbox.dataset.billId);
+        if (selectedBillIds.length > 0) {
+            fetch(`/transactions/generate-final-bill/`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-CSRFToken": "{{ csrf_token }}"
+                },
+                body: JSON.stringify({ bill_ids: selectedBillIds })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                     // Show the final bill container
+                    // document.getElementById("finalBillContainer").style.display = "block";
+
+                    // Hide the generate button
+                    // document.getElementById("generateFinalBill").style.display = "none";
+
+
+                     // Show the final bill container
+                    document.getElementById("finalBillContainer").style.display = "block";
+
+                    // Hide the generate button
+                    document.getElementById("generateFinalBill").style.display = "none";
+
+                    // Add the new final bill to the table
+                    const finalBillTableBody = document.getElementById("finalBillTableBody");
+                    finalBillTableBody.innerHTML = ""; // Clear previous data
+
+
+                    // Re-fetch and refresh the billsContainer table
+                    const selectedRadio = document.querySelector('input[name="filterType"]:checked').value;
+                    const selectedId = selectedRadio === "customer"
+                        ? document.getElementById("customerSelect").value
+                        : document.getElementById("vendorSelect").value;
+
+                    const url = selectedRadio === "customer"
+                        ? `/transactions/get-customer-bills/?customer_id=${selectedId}`
+                        : `/transactions/get-customer-bills/?vendor_id=${selectedId}`;
+
+
+
+
+                    const stockDetails = data.final_bill.stock_details;
+                    let firstRow = `
+                        <tr>
+                            <td rowspan="${stockDetails.length}">${data.final_bill.billno}</td>
+                            <td rowspan="${stockDetails.length}" class="text-capitalize">${data.final_bill.customer_name}</td>
+                    `;
+                    stockDetails.forEach((stock, index) => {
+                        if (index === 0) {
+                            firstRow += `
+                                <td>${index + 1}. ${stock.name}</td>
+                                <td>${stock.quantity}</td>
+                                <td rowspan="${stockDetails.length}">${data.final_bill.total_quantity}</td>
+                                <td rowspan="${stockDetails.length}">${data.final_bill.time}</td>
+                            </tr>
+                            `;
+                            finalBillTableBody.innerHTML += firstRow;
+
+                            // Show the return button
+                            const returnButton = document.getElementById("returnButton");
+                            returnButton.style.display = "block";
+                            returnButton.addEventListener("click", function () {
+                                window.location.href = "/transactions/finalsales/"; // Replace with your final sales list URL
+                            });
+                        } else {
+                            finalBillTableBody.innerHTML += `
+                                <tr>
+                                    <td>${index + 1}. ${stock.name}</td>
+                                    <td>${stock.quantity}</td>
+                                </tr>
+                            `;
+                        }
+                    });
+                    alert("Final Bill Created Successfully!");
+                } else {
+                    alert("Failed to create the final bill. Try again.");
+                }
+            });
+        } else {
+            alert("Please select at least one bill.");
+        }
+    });
+</script>
+{% endblock %}

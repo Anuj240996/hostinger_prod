@@ -1,0 +1,489 @@
+{% extends 'partials/base.html' %}
+{% load static %}
+{% block title %} New Purchase {% endblock title %}
+{% block content %}
+
+<script type="text/javascript" src="{% static 'js/jquery-3.2.1.slim.min.js' %}"></script>
+<script type="text/javascript" src="{% static 'js/dialogbox.js' %}"></script>
+<!-- Existing HTML -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@mdi/font/css/materialdesignicons.min.css">
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<!--<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>-->
+
+<br><h1>{{ sale_bill.customer.Comp_name }} Return Bill</h1>
+<form method="post" id="billForm">
+    <h1 align="center" class="text-capitalize">Provisional Bill No - {{ sale_bill.billno }}</h1>
+    {% csrf_token %}
+    <!-- Sale Bill Details -->
+    <h3>Return DC Information</h3>
+    <p><strong>DC No:</strong> {{ sale_bill.billno }}</p>
+    <p><strong>Customer Name:</strong> {{ sale_bill.customer.Comp_name }}</p>
+    <p><strong>Phone:</strong> {{ sale_bill.customer.phone }}</p>
+    <p><strong>Address:</strong> {{ sale_bill.customer.Address }}</p>
+    <p><strong>Email:</strong> {{ sale_bill.customer.email }}</p>
+    <p><strong>GSTIN:</strong> {{ sale_bill.customer.gstin }}</p>
+
+    <!-- Bill Table -->
+    <fieldset>
+        <div class="table-responsive">
+            <table id="billTable" class="table table-hover table-center table-sm" style="width: 100%;">
+                <thead class="thead-dark align-middle" align="center">
+                    <tr>
+                        <th>Sr No</th>
+                        <th>Category</th>
+                        <th>SubCategory</th>
+                        <th>Stock Name</th>
+                        <th>Available Quantity</th>
+                        <th>Quantity</th>
+						<th>Return Quantity</th>
+                        <th>Total Quantity</th>
+<!--                        <th>Actions</th>-->
+                    </tr>
+                </thead>
+                <tbody align="center">
+                    {% for item in sale_items %}
+                    <tr data-id="{{ item.id }}">
+                        <td class="sr-no">{{ forloop.counter }}</td>
+                        <td>{{ item.stock.category.name }}</td>
+                        <td>{{ item.stock.subcategory.name }}</td>
+                        <td>
+                            &nbsp;<a href="#" class="stockName text-capitalize form-control-plaintext">{{ item.stock.name }}<br></a>
+                            <a href="{% url 'get_serial_numbers' %}?stock_id={{ item.stock.id }}"></a>
+
+                            {% if item.serials.exists %}
+                                &nbsp;&nbsp;<small class="custom-small" style="color: black">Sr No:
+                                    {% for serial in item.serials %}
+                                        {{ serial.serialNo }}{% if not forloop.last %}, {% endif %}
+                                    {% endfor %}
+                                </small>
+                            {% endif %}
+                            <small class="custom-small">
+                                <span class="stockNameDisplay" style="margin: 0; padding: 0;"></span>
+                            </small>
+                        </td>
+                        <td>
+                            <div class="d-flex justify-content-center align-items-center mt-1">
+                                <input type="hidden" class="form-control stock-quantity" value="{{ item.stock.quantity }}" readonly>
+                                {% if item.stock.quantity > item.stock.stock_alert %}
+                                    <span class="badge success">
+                                        {{ item.stock.quantity }} <small>{{ item.stock.purchase.short_name }}</small>
+                                    </span>
+                                {% else %}
+                                    <span class="badge danger">
+                                        {{ item.stock.quantity }} <small>{{ item.stock.purchase.short_name }}</small>
+                                    </span>
+                                {% endif %}
+                            </div>
+                        </td>
+                        <td>
+                            <div class="input-group">
+                                <input type="number" min="1" class="form-control quantity" style="text-align: center;" name="quantity_{{ item.pk }}" value="{{ item.total_quantity }}" readonly />
+                                <div class="input-group-append">
+                                    <span class="input-group-text me-2">{{ item.stock.purchase.short_name }}</span>
+                                </div>
+                                <div class="warning-message" style="color: red; display: none;">Quantity exceeds available stock!</div>
+                            </div>
+                        </td>
+                        <td>
+                            <input type="number" min="0" class="form-control return-quantity" style="text-align: center;"
+                                name="return_quantity_{{ item.pk }}" value="{{ item.r_quantity|default:0 }}" />
+                        </td>
+                        <td>
+                            <input type="number" class="form-control total-quantity" style="text-align: center;"
+                                name="total_quantity_{{ item.pk }}"
+                                value="{% if item.final_quantity %}{{ item.final_quantity }}{% else %}{{ item.total_quantity }}{% endif %}" readonly />
+                        </td>
+
+                        <input type="hidden" name="existing_ids[]" value="{{ item.pk }}" />
+                        <input type="hidden" name="existing_stock_ids[]" value="{{ item.stock.id }}" />
+                    </tr>
+                    {% endfor %}
+                </tbody>
+
+            </table>
+        </div>
+    </fieldset>
+
+
+    <!-- Save Changes Button -->
+    <br>
+    <div align="center">
+<!--        <button type="button" id="initialSubmitButton" class="btn btn-success" style="width: 200px; margin-right: 10px;">Save Changes</button>-->
+        <button type="submit" id="calculateTotalQuantity">Save Changes</button>
+    </div>
+</form>
+<script>
+    $(document).ready(function () {
+        // Update Total Quantity on Return Quantity change
+        $(document).on('input', '.return-quantity', function () {
+            const row = $(this).closest('tr');
+            const quantity = parseFloat(row.find('.quantity').val()) || 0;
+            const returnQuantity = parseFloat($(this).val()) || 0;
+
+            if (returnQuantity > quantity) {
+                alert("Return quantity cannot exceed available quantity!");
+                $(this).val(quantity);
+                row.find('.total-quantity').val(0);
+                return;
+            }
+
+            // Calculate total quantity and update the field
+            const totalQuantity = quantity - returnQuantity;
+            row.find('.total-quantity').val(totalQuantity);
+        });
+
+        // Initialize Total Quantity with Quantity value
+        $('.final_quantity').each(function () {
+            const row = $(this).closest('tr');
+            const quantity = parseFloat($(this).val()) || 0;
+
+            row.find('.total-quantity').val(quantity);
+        });
+
+        // Handle submit button click
+        $('#calculateTotalQuantity').on('click', function (event) {
+            event.preventDefault(); // Prevent form submission immediately
+<!--            if (validateQuantities()) {-->
+                $('#confirmationModal').modal('show'); // Show confirmation modal if validation passes
+<!--            } else {-->
+<!--                alert('Please ensure all quantities are within available stock limits.');-->
+<!--            }-->
+        });
+
+        // Handle confirmation modal submit
+        $('#modalSubmitButton').on('click', function() {
+            // After confirmation, submit the form
+            const form = document.getElementById('billForm');
+            form.submit();
+            $('#confirmationModal').modal('hide'); // Hide the confirmation modal
+            alert("**Bill No: " + "{{ sale_bill.billno }}" + "** Records Updated Successfully!"); // Show success message
+        });
+
+    });
+
+</script>
+<!-- Modal for Serial Numbers -->
+<div class="modal fade" id="serialNumberModal" tabindex="-1" role="dialog" aria-labelledby="serialNumberModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="serialNumberModalLabel">Select Serial Numbers</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="serialNumberForm">
+                    <div id="serial-number-container">
+                        <!-- Checkboxes will be dynamically added here -->
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" id="saveSerialNumbers">Save Serial Numbers</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    $(document).ready(function () {
+        var selectedStockId;
+        var selectedSerialNumbers = {};
+
+        $(document).on('click', '.stockName', function (e) {
+            e.preventDefault();
+
+            var stockRow = $(this).closest('tr');
+            selectedStockId = stockRow.find('input[name*="stock"]').val();
+            var quantity = parseInt(stockRow.find('input[name*="total_quantity"]').val()) || 0;
+
+            // Fetch serial numbers for selected stock
+            $.ajax({
+                url: '{% url "final_get_serial_numbers_edit" %}',
+                data: {
+                    stock_id: selectedStockId,
+                    sales_billno: '{{ sale_bill }}',
+                },
+                success: function (data) {
+                    var serialNumbers = data.serial_numbers;
+                    $('#serial-number-container').empty();
+
+                    serialNumbers.forEach(function (serial) {
+                        var isChecked = serial.checked ? 'checked' : '';
+                        var checkbox = `
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" value="${serial.serialNo}" id="serialNo-${serial.serialNo}" ${isChecked}>
+                                <label class="form-check-label" for="serialNo-${serial.serialNo}">${serial.serialNo}</label>
+                            </div>`;
+                        $('#serial-number-container').append(checkbox);
+                    });
+
+                    initialValidation(quantity);
+                    $('#serialNumberModal').modal('show');
+                },
+                error: function () {
+                    alert("Failed to fetch serial numbers. Please try again.");
+                }
+            });
+        });
+
+        function initialValidation(quantity) {
+            var checkedCount = $('#serial-number-container input[type="checkbox"]:checked').length;
+
+            if (checkedCount > quantity) {
+                alert("Checked count exceeds the allowed quantity. Adjusting checkboxes.");
+                disableUncheckedCheckboxes();
+            } else if (checkedCount === quantity) {
+                disableUncheckedCheckboxes();
+            }
+
+            updateCheckboxState(quantity);
+        }
+
+        function enableUncheckedCheckboxes() {
+            $('#serial-number-container input[type="checkbox"]').prop('disabled', false);
+        }
+
+        function disableUncheckedCheckboxes() {
+            $('#serial-number-container input[type="checkbox"]').each(function () {
+                if (!$(this).is(':checked')) {
+                    $(this).prop('disabled', true);
+                }
+            });
+        }
+
+        function updateCheckboxState(quantity) {
+            $('#serial-number-container input[type="checkbox"]').off('change').on('change', function () {
+                var checkedCount = $('#serial-number-container input[type="checkbox"]:checked').length;
+
+                if (checkedCount > quantity) {
+                    alert("Checked count exceeds the allowed quantity.");
+                    disableUncheckedCheckboxes();
+                } else if (checkedCount === quantity) {
+                    disableUncheckedCheckboxes();
+                } else {
+                    enableUncheckedCheckboxes();
+                }
+            });
+        }
+
+        $('#saveSerialNumbers').on('click', function () {
+            var checkedSerials = $('#serial-number-container input[type="checkbox"]:checked').map(function () {
+                return $(this).val();
+            }).get();
+
+            var stockRow = $('input[value="' + selectedStockId + '"]').closest('tr');
+            var quantity = parseInt(stockRow.find('input[name*="quantity_"]').val()) || 0;
+
+            // Final validation
+            if (checkedSerials.length > quantity) {
+                alert("Checked count exceeds the allowed quantity. Please adjust your selection.");
+                return;
+            }
+
+            // Temporarily store the selected serial numbers
+            selectedSerialNumbers[selectedStockId] = checkedSerials;
+
+            // Update the table row with selected serials
+            // stockRow.find('.stockNameDisplay').text(`Selected Serials: ${checkedSerials.join(', ')}`);
+
+             // Update the table row with selected serials in green color
+            stockRow.find('.stockNameDisplay').addClass('green-text').text(`Selected Serials: ${checkedSerials.join(', ')}`);
+
+            // Add or update hidden input for serials in the form
+            const hiddenFieldName = `serials-${selectedStockId}`;
+            let hiddenField = $(`input[name="${hiddenFieldName}"]`);
+
+            if (hiddenField.length > 0) {
+                hiddenField.val(checkedSerials.join(','));
+            } else {
+                hiddenField = $('<input>')
+                    .attr('type', 'hidden')
+                    .attr('name', hiddenFieldName)
+                    .val(checkedSerials.join(','));
+                $('#billForm').append(hiddenField);
+            }
+
+            $('#serialNumberModal').modal('hide');
+            alert('Serial numbers updated successfully.');
+        });
+    });
+
+</script>
+
+<!-- Modal Structure -->
+<div class="modal fade" id="confirmationModal" tabindex="-1" aria-labelledby="confirmationModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="confirmationModalLabel">Confirm Details</h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <form id="modalForm">
+
+            <div class="toggle-container" style="display: flex; justify-content: center; align-items: center; width: 100%;">
+                <div id="currentBillLabel" class="toggle-label" style="display: flex; flex-direction: column; align-items: center; margin-right: 20px; width: 180px;">
+                    <span style="line-height: 1.5;">Current Bill</span>
+                    <span class="checkmark" id="checkCurrent" style="margin-left: 30px; line-height: 1.5;">✔</span>
+                </div>
+                <div id="previousBillLabel" class="toggle-label" style="display: flex; flex-direction: column; align-items: center; width: 180px;">
+                    <span style="line-height: 1.5;">Previous Bill</span>
+                    <span class="checkmark" id="checkPrevious" style="margin-left: 30px; line-height: 1.5;">✔</span>
+                </div>
+            </div>
+
+          <!-- Previous Bill and Previous Date Fields -->
+          <div class="form-group" id="previousBillField">
+            <label for="eway_no">Prev. Delivery Challan No <span style="color: red;">*</span></label>
+            <input type="text" id="eway_no" name="eway_no" class="form-control" value="{{ final_bill_details.eway }}">
+          </div>
+          <div class="form-group" id="previousDateField">
+            <label for="bill_date">Prev. Bill Date <span style="color: red;">*</span></label>
+            <input type="date" id="bill_date" name="bill_date" class="form-control" value="{{ final_bill_details.tcs }}">
+          </div>
+
+          <div class="form-group">
+            <label for="veh_no">Vehicle No</label>
+            <input type="text" id="veh_no" name="veh_no" class="form-control" value="{{ final_bill_details.veh }}">
+          </div>
+          <div class="form-group">
+            <label for="arrange">Arrange By <span style="color: red;">*</span></label>
+            <input type="text" id="arrange" name="arrange" class="form-control" value="{{ final_bill_details.sgst }}" required>
+          </div>
+            <div class="form-group">
+            <label for="handby">Handled By <span style="color: red;">*</span></label>
+            <input type="text" id="handby" name="handby" class="form-control" value="{{ final_bill_details.igst }}" required>
+          </div>
+            <div class="form-group">
+              <label for="destination">Source <span style="color: red;">*</span></label>
+              <select id="destination" name="destination" class="form-control" required>
+                <option value="" disabled {% if not final_bill_details.destination %}selected{% endif %}></option>
+                <option value="Warehouse" {% if final_bill_details.destination == "Warehouse" %}selected{% endif %}>Warehouse</option>
+                <option value="Office" {% if final_bill_details.destination == "Office" %}selected{% endif %}>Office</option>
+                <option value="Vendor" {% if final_bill_details.destination == "Vendor" %}selected{% endif %}>Vendor</option>
+              </select>
+            </div>
+
+          <div class="form-group">
+            <label for="po_no">PO No</label>
+            <input type="text" id="po_no" name="po_no" class="form-control" value="{{ final_bill_details.po }}" required>
+          </div>
+          <div class="form-group">
+            <label for="po_date">PO Date</label>
+            <input type="date" id="po_date" name="po_date" class="form-control" value="{{ final_bill_details.cgst }}" required>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+        <button type="button" id="modalSubmitButton" class="btn btn-primary">Submit</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script type="text/javascript">
+$(document).ready(function() {
+    // Initialize the previous bill fields to show by default
+    $('#previousBillLabel').addClass('active');
+    $('#checkPrevious').show(); // Show checkmark for Previous Bill
+    $('#previousBillField').show(); // Ensure the fields are shown initially
+    $('#previousDateField').show();
+
+    // Click event for Current Bill label
+    $('#currentBillLabel').on('click', function() {
+        // Set this label as active and remove active state from the other
+        $(this).addClass('active');
+        $('#previousBillLabel').removeClass('active');
+        $('#checkCurrent').show(); // Show checkmark for Current Bill
+        $('#checkPrevious').hide(); // Hide checkmark for Previous Bill
+
+        // Hide previous bill fields
+        $('#previousBillField').hide();
+        $('#eway_no').val(''); // Clear input
+        $('#previousDateField').hide();
+        $('#bill_date').val(''); // Clear input
+    });
+
+    // Click event for Previous Bill label
+    $('#previousBillLabel').on('click', function() {
+        // Set this label as active and remove active state from the other
+        $(this).addClass('active');
+        $('#currentBillLabel').removeClass('active');
+        $('#checkPrevious').show(); // Show checkmark for Previous Bill
+        $('#checkCurrent').hide(); // Hide checkmark for Current Bill
+
+        // Show previous bill fields
+        $('#previousBillField').show();
+        $('#previousDateField').show();
+    });
+
+    // Handle the modal's submit button
+    $('#modalSubmitButton').on('click', function() {
+        // Retrieve the value from the modal input fields
+        const eway_no = $('#eway_no').val();
+        const bill_date = $('#bill_date').val();
+        const veh_no = $('#veh_no').val();
+        const arrange = $('#arrange').val();
+        const handby = $('#handby').val();
+        const destination = $('#destination').val();
+        const po_no = $('#po_no').val();
+        const po_date = $('#po_date').val();
+
+        // Check if required fields are filled based on selected bill type
+        const isCurrentBill = $('#currentBillLabel').hasClass('active');
+        const isPreviousBill = $('#previousBillLabel').hasClass('active');
+
+        // Validate fields based on the selected bill type
+        if (isCurrentBill) {
+            // For Current Bill, only check handby and destination
+            if (arrange && handby && destination) {
+                // Append modal input data to the main form
+                $('#billForm').append($('<input>', {type: 'hidden', name: 'veh_no', value: veh_no}));
+                $('#billForm').append($('<input>', {type: 'hidden', name: 'arrange', value: arrange}));
+                $('#billForm').append($('<input>', {type: 'hidden', name: 'handby', value: handby}));
+                $('#billForm').append($('<input>', {type: 'hidden', name: 'destination', value: destination}));
+                $('#billForm').append($('<input>', {type: 'hidden', name: 'po_no', value: po_no}));
+                $('#billForm').append($('<input>', {type: 'hidden', name: 'po_date', value: po_date}));
+
+                // Hide the modal
+                $('#confirmationModal').modal('hide');
+
+                // Submit the form after hiding the modal
+                $('#billForm').submit();
+            } else {
+                alert("Please fill in all required fields in the modal (Handby and Destination).");
+            }
+        } else if (isPreviousBill) {
+            // For Previous Bill, check that eway_no, bill_date, handby, and destination are filled
+            if (arrange && eway_no && bill_date && handby && destination) {
+                // Append modal input data to the main form
+                $('#billForm').append($('<input>', {type: 'hidden', name: 'eway_no', value: eway_no}));
+                $('#billForm').append($('<input>', {type: 'hidden', name: 'bill_date', value: bill_date}));
+                $('#billForm').append($('<input>', {type: 'hidden', name: 'veh_no', value: veh_no}));
+                $('#billForm').append($('<input>', {type: 'hidden', name: 'arrange', value: arrange}));
+                $('#billForm').append($('<input>', {type: 'hidden', name: 'handby', value: handby}));
+                $('#billForm').append($('<input>', {type: 'hidden', name: 'destination', value: destination}));
+                $('#billForm').append($('<input>', {type: 'hidden', name: 'po_no', value: po_no}));
+                $('#billForm').append($('<input>', {type: 'hidden', name: 'po_date', value: po_date}));
+
+                // Hide the modal
+                $('#confirmationModal').modal('hide');
+
+                // Submit the form after hiding the modal
+                $('#billForm').submit();
+            } else {
+                alert("Please fill in all required fields in the modal (Eway No, Bill Date, Handby, and Destination).");
+            }
+        }
+    });
+});
+</script>
+
+{% endblock %}
+

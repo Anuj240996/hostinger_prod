@@ -1,0 +1,87 @@
+{% extends 'partials/base.html' %}
+{% load static %}
+{% load indian_filters %}
+
+{% block title %}Quotation List{% endblock title %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h4 class="fw-bold mb-1">Quotation List</h4>
+      <small class="text-muted">All generated quotations</small>
+    </div>
+    <a href="{% url 'quotation:create_quotation' %}" class="btn btn-primary">
+      + New Quotation
+    </a>
+  </div>
+
+  <div class="card shadow-sm border-0">
+    <div class="card-body p-0">
+
+      <table class="table table-hover align-middle mb-0">
+        <thead class="table-light text-uppercase small">
+          <tr>
+            <th>Quotation No</th>
+            <th>Consumer Name</th>
+            <th>Quotation Type</th>
+            <th>Project Capacity</th>
+            <th>Date</th>
+            <th class="text-end">Final Amount</th>
+            <th class="text-center">Actions</th>
+          </tr>
+        </thead>
+
+        <tbody>
+          {% for q in quotations %}
+          <tr>
+            <td class="fw-semibold">{{ q.quotation_no }}</td>
+            <td>{{ q.consumer_name }}</td>
+
+            <td>
+              <span class="badge bg-info-subtle text-dark">
+                {{ q.get_consumer_type_display }}
+              </span>
+            </td>
+            <td>{{ q.plant_capacity_kw }}</td>
+            <!-- ✅ SAFE POSTGRES DATE DISPLAY -->
+            <td>
+              {% if q.created_at %}
+                {{ q.date }}
+              {% else %}
+                —
+              {% endif %}
+            </td>
+            <td class="text-end fw-semibold">
+             <b> ₹ {{ q.final_amount|floatformat:2 }}  </b>
+            </td>
+
+            <td class="text-center">
+              {% if q.is_latest_revision %}
+                <a href="{% url 'quotation:edit_quotation' q.pk %}"
+                   class="btn btn-sm btn-outline-secondary me-1">Edit</a>
+                <a href="{% url 'quotation:revise_quotation' q.pk %}"
+                   class="btn btn-sm btn-outline-warning me-1">Revise</a>
+              {% endif %}
+              <a href="{% url 'quotation:quotation_pdf' q.pk %}"
+                 target="_blank"
+                 class="btn btn-sm btn-outline-primary">PDF</a>
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="7" class="text-center text-muted py-4">
+              No quotations available.
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+
+      </table>
+
+    </div>
+  </div>
+
+</div>
+{% endblock %}

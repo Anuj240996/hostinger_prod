@@ -1,0 +1,312 @@
+{% extends 'partials/base.html' %}
+{% block title %}Consumer Page{% endblock %}
+{% load static %}
+{% block content %}
+<style>
+    /* Custom CSS for positioning the company symbol on top of the image */
+    .image-container {
+        position: relative;
+        display: inline-block; /* Ensures inline display */
+    }
+
+    .company-symbol-overlap {
+        position: absolute;
+        bottom: 0;
+        right: 3px;
+        max-width: 30%; /* Make the symbol resizable while maintaining aspect ratio */
+        height: 35%;
+        z-index: 1; /* Ensure the symbol is above the image */
+    }
+</style>
+
+{% if user.is_authenticated and user.is_staff %}
+<div class="card shadow m-1">
+   <div class="card-body">
+      <div class="page-header">
+         <div class="row">
+            <div class="col-sm-12">
+               <h3 class="page-title">Employee Details</h3>
+               <ul class="breadcrumb" style="border-bottom : 2px solid orange">
+                  <li class="breadcrumb-item"><a href="students.html">Dashboard</a></li>
+                  <li class="breadcrumb-item active">Employee Details</li>
+               </ul>
+            </div>
+         </div>
+      </div>
+      <form method="post" enctype="multipart/form-data">
+         {% csrf_token %}
+         <h5 class="p-2 text-danger" style="border-bottom : 2px solid orange">Company Details </h5>
+               <div class="card-body">
+                  <div class="row">
+                     <div class="col-md-12">
+                        <div class="about-info">
+                           <h4>About Me</h4>
+                           <div class="media mt-1">
+
+                              <ul>
+                                   <li>
+                                       <!-- Add Company Symbol Overlapping the Image -->
+                                       <div class="image-container">
+                                           <img class="img-thumbnail ml-2" height="550px" src="{{ employee.image.url }}" class="card-img-top" height="200px" alt="profile-image">
+                                           <img src="{% static '/images/dblogosmall.png' %}" alt="Company Symbol" class="company-symbol-overlap">
+                                       </div>
+                                       <!-- End Company Symbol -->
+                                   </li>
+                                   <li>
+                                       <small class="text-muted">Currently:  <a href="{{ employee.image.url }}">{{ employee.image }}</a></small>
+                                   </li>
+                               </ul>
+
+
+
+                              <div class="media-body ml-7">
+                              <!--<ul class="ml-5">-->
+                              <ul>
+                                 <li>
+                                    </b><span class="title-span"><b>Employee ID</b></span>
+                                    <span> : </span>
+                                    <span class="info-span ml-3">  DB/{{ user.id }}</span>
+                                 </li>
+                                 <li>
+                                    <span class="title-span"><b>Username </b> </span>
+                                    <span> : </span>
+                                    <span class="info-span ml-3">{{ user.username }}</span>
+                                 </li>
+                                 <li>
+                                    <span class="title-span"><b>Full Name </b> </span>
+                                    <span> : </span>
+                                    <span class="info-span ml-3 text-capitalize">{{ user.first_name }} {{ user.last_name }}</span>
+                                 </li>
+                                 <li>
+                                    <span class="title-span"><b>Work Mobile</b>  </span>
+                                    <span> : </span>
+                                    <span class="info-span ml-3">{{ employee.workphone }}</span>
+                                 </li>
+                                 <li>
+                                    <span class="title-span"><b>Work Email</b>  </span>
+                                    <span> : </span>
+                                    <span class="info-span ml-3">{{ user.email }}</span>
+                                 </li>
+                                 <li>
+                                    <span class="title-span"><b>Designation</b>  </span>
+                                    <span> : </span>
+                                    <span class="info-span ml-3 text-capitalize">{{ employee.designation }} - {{ employee.department }}</span>
+                                 </li>
+                                 <li>
+                                    <span class="title-span"><b>Date of Birth</b> </span>
+                                    <span> : </span>
+                                    <span class="info-span ml-3">{{ employee.DOB }}</span>
+                                 </li>
+                              </ul>
+                              </div>
+                           </div>
+                        </div>
+                     </div>
+                  </div>
+            <h5 class="p-2 text-danger" style="border-bottom : 2px solid orange">Personal Details </h5>
+            <div class="form-row">
+               <div class="col-sm-6">
+                  <div class="form-group">
+                     <label> Work Email</label>
+                     <input type="email" name="email" class="form-control" value="{{ user.email }}">
+                  </div>
+               </div>
+               <div class="col-sm-6">
+                  <div class="form-group">
+                     <label> Work Mobile No.</label>
+                     <input type="text" name="ph" class="form-control" placeholder="ener name" value="{{ employee.workphone }}">
+                  </div>
+               </div>
+               <div class="col-sm-6">
+                  <div class="form-group">
+                     <label> Date Of Birth   [{{ employee.DOB }}]</label>
+                     <input type="date" name="DOB" class="form-control" placeholder="ener name" value="{{ employee.DOB }}">
+                  </div>
+               </div>
+               <div class="col-sm-3">
+                  <div class="form-group">
+                     <label> Blood Group</label>
+                     <input type="text" disabled name="bg" class="form-control" placeholder="Enter Blood Group" value="{{ employee.bg }}">
+                  </div>
+               </div>
+               <div class="col-sm-3">
+                 <div class="form-group">
+                   <label><b> Change Blood Group :</b></label><br>
+                   <select id="bg" name="bg" style="width: 210px; height: 40px; font-size: 16px;">
+                      <option value="" selected disabled class="text-center">--- Select Blood Group ---</option>
+                      {% for bg in bgs %}
+                          <option value="{{ bg.0 }}" >&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{{ bg.1 }}</option>
+                      {% endfor %}
+                   </select>
+                 </div>
+
+               </div>
+               <div class="col-sm-6">
+                  <div class="form-group">
+                     <label> Address</label>
+                     <input type="text" name="address" class="form-control text-capitalize" placeholder="ener name" value="{{ employee.address }}">
+                  </div>
+               </div>
+               <div class="col-sm-6">
+                  <div class="form-group">
+                     <label> City</label>
+                     <input type="text" name="city" class="form-control" value="{{ employee.city }}">
+                  </div>
+               </div>
+               <div class="col-sm-6">
+                  <div class="form-group">
+                     <label> Taluka</label>
+                     <input type="text" name="taluka" class="form-control" value="{{ employee.taluka }}">
+                  </div>
+               </div>
+               <div class="col-sm-6">
+                  <div class="form-group">
+                     <label> District</label>
+                     <input type="text" name="district" class="form-control" value="{{ employee.district }}">
+                  </div>
+               </div>
+            </div>
+            <input type="submit" value="submit" class="btn btn-primary">
+         </div>
+      </form>
+   </div>
+</div>
+{% elif user.is_authenticated %}
+<div class="card shadow m-1">
+   <div class="card-body">
+      <div class="page-header">
+         <div class="row">
+            <div class="col-sm-12">
+               <h3 class="page-title">Consumer Details</h3>
+               <ul class="breadcrumb" style="border-bottom : 2px solid orange">
+                  <li class="breadcrumb-item"><a href="students.html">Dashboard</a></li>
+                  <li class="breadcrumb-item active">Consumer Details</li>
+               </ul>
+            </div>
+         </div>
+      </div>
+      <form method="post" enctype="multipart/form-data">
+         {% csrf_token %}
+         <h5 class="p-2 text-danger" style="border-bottom : 2px solid orange">Consumer Details </h5>
+
+
+               <div class="card-body">
+                  <div class="row">
+                     <div class="col-md-12">
+                        <div class="about-info">
+                           <h4>About Me</h4>
+                           <div class="media mt-1">
+                              <ul>
+                                <li>
+                                    <!-- Add Company Symbol Overlapping the Image -->
+                                    <div class="image-container">
+                                        <img class="img-thumbnail ml-2" height="550px" src="{{ employee.image.url }}" class="card-img-top" height="200px" alt="profile-image">
+                                        <img src="{% static '/images/dblogosmall.png' %}" alt="Company Symbol" class="company-symbol-overlap">
+                                    </div>
+                                    <!-- End Company Symbol -->
+                                </li>
+                                <li>
+                                    <small class="text-muted">Currently:  <a href="{{ employee.image.url }}">{{ employee.image }}</a></small>
+                                </li>
+
+                                 <li>
+                                    <span>
+                                    Change:<input type="file" name="image" accept="image/*" class="clearablefileinput form-control-file" id="id_image">
+                                    </span>
+                                 </li>
+                              </ul>
+                              <div class="media-body ml-5">
+                              <ul class="ml-5">
+                                 <li>
+                                    <span class="title-span"><b>Consumer ID</b></span>
+                                    <span> : </span>
+                                    <span class="info-span ml-3">  DB/{{ customer.Cust_id }}</span>
+                                 </li>
+                                 <li>
+                                    <span class="title-span"><b>Username </b> </span>
+                                    <span> : </span>
+                                    <span class="info-span ml-3">{{ user.username }}</span>
+                                 </li>
+                                 <li>
+                                    <span class="title-span"><b>Full Name </b> </span>
+                                    <span> : </span>
+                                    <span class="info-span ml-3 text-capitalize">{{ user.first_name }} {{ user.last_name }}</span>
+                                 </li>
+                                 <li>
+                                    <span class="title-span"><b>Contact Number</b>  </span>
+                                    <span> : </span>
+                                    <span class="info-span ml-3">{{ customer.phone }}</span>
+                                 </li>
+                                 <li>
+                                    <span class="title-span"><b>Account Email</b>  </span>
+                                    <span> : </span>
+                                    <span class="info-span ml-3">{{ user.email }}</span>
+                                 </li>
+
+                              </ul>
+                              </div>
+                           </div>
+                        </div>
+                     </div>
+                  </div>
+
+
+            <h5 class="p-2 text-danger" style="border-bottom : 2px solid orange">Personal Details </h5>
+            <div class="form-row">
+
+               <div class="col-sm-6">
+                  <div class="form-group">
+                     <label> Account Email</label>
+                     <input type="email" name="email" class="form-control" value="{{ user.email }}">
+                  </div>
+               </div>
+
+               <div class="col-sm-6">
+                  <div class="form-group">
+                     <label> Contact Number</label>
+                     <input type="text" name="ph1" class="form-control" placeholder="ener name" value="{{ customer.phone }}">
+                  </div>
+               </div>
+               <div class="col-sm-6">
+                  <div class="form-group">
+                     <label> Address</label>
+                     <input type="text" name="address1" class="form-control text-capitalize" placeholder="ener name" value="{{ customer.Address }}">
+                  </div>
+               </div>
+               <div class="col-sm-6">
+                  <div class="form-group">
+                     <label> City</label>
+                     <input type="text" name="city1" class="form-control" value="{{ customer.City }}">
+                  </div>
+               </div>
+               <div class="col-sm-6">
+                  <div class="form-group">
+                     <label> State</label>
+                     <input type="text" name="state1" class="form-control" value="{{ customer.state }}">
+                  </div>
+               </div>
+               <div class="col-sm-6">
+                  <div class="form-group">
+                     <label> Pincode</label>
+                     <input type="text" name="pincode1" class="form-control" value="{{ customer.Pincode }}">
+                  </div>
+               </div>
+            </div>
+            <input type="submit" value="submit" class="btn btn-primary">
+         </div>
+      </form>
+   </div>
+</div>
+{% endif %}
+{% if error == "no" %}
+<script>
+   alert('Profile Update Successful');
+   window.location = ('{% url 'user-profile' %}')
+</script>
+{% endif %}
+{% if error == "yes" %}
+<script>
+   alert('Something went wrong , Try Again...');
+</script>
+{% endif %}
+{% endblock %}

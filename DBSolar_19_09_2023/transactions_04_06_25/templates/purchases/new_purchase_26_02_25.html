@@ -1,0 +1,2886 @@
+{% extends 'partials/base.html' %}
+{% load static %}
+{% block title %} New Purchase {% endblock title %}
+{% block content %}
+
+<!--    <div style="color:#575757; font-style: bold; font-size: 3rem; border-bottom: 1px solid white;">New Purchase</div>-->
+
+<!--        <br>&lt;!&ndash; Log on to codeastro.com for more projects &ndash;&gt;-->
+
+<!--        <div class="panel panel-default">-->
+<!--            <div class="panel-heading panel-heading-text">Supplier Details</div>-->
+<!--            <div class="panel-body">-->
+
+<!--                <div class="form-group">-->
+<!--                    <label for="id_name" class="panel-body-text">Supplier Name:</label>-->
+<!--                    <input type="text" class="form-control textinput" id="id_name" value="{{ supplier.name }}" disabled>-->
+<!--                </div>-->
+
+<!--                <div class="form-row">-->
+<!--                    <div class="form-group col-md-6">-->
+<!--                        <label for="id_phone" class="panel-body-text">Phone No:</label>-->
+<!--                        <input type="text" class="form-control textinput" id="id_phone" value="{{ supplier.phone }}" disabled>-->
+<!--                    </div>-->
+<!--                    <div class="form-group col-md-6">-->
+<!--                        <label for="id_gstin" class="panel-body-text">GSTIN No:</label>-->
+<!--                        <input type="gstin" class="form-control textinput" id="id_gstin" value="{{ supplier.gstin }}" disabled>-->
+<!--                    </div>-->
+<!--                </div>-->
+
+<!--            </div>&lt;!&ndash; Log on to codeastro.com for more projects &ndash;&gt;-->
+<!--        </div>-->
+
+<!--        <br>-->
+
+<!--        <form method="post" class="panel panel-default">-->
+
+<!--            {% csrf_token %}-->
+<!--            {{ formset.management_form }}-->
+
+<!--            <div class="panel-heading panel-heading-text">Product Details</div>-->
+
+<!--                <div id="stockitem">-->
+<!--                    <div class="panel-body">-->
+<!--                    {% for form in formset %}-->
+<!--                        <div class="row form-row">-->
+<!--                            <div class="form-group col-md-6">-->
+<!--                                {{ form.stock.errors }}-->
+<!--                                <label class="panel-body-text">Stock:</label>-->
+<!--                                {{ form.stock }}-->
+<!--                            </div>&lt;!&ndash; Log on to codeastro.com for more projects &ndash;&gt;-->
+<!--                            <div class="form-group col-md-2">-->
+<!--                                <label class="panel-body-text">Price per item:</label>-->
+<!--                                {{ form.perprice }}-->
+<!--                            </div>-->
+<!--                            <div class="form-group col-md-2">-->
+<!--                                {{ form.quantity.errors }}-->
+<!--                                <label class="panel-body-text">Quantity:</label>-->
+<!--                                {{ form.quantity }}-->
+<!--                            </div>&lt;!&ndash; Log on to codeastro.com for more projects &ndash;&gt;-->
+<!--                            <div class="form-group col-md-1">-->
+<!--                                <label class="panel-body-text">Price:</label>-->
+<!--                                <input type="text" class="textinput form-control totalprice" value="1" disabled required>-->
+<!--                            </div>-->
+<!--                            <div class="form-group col-md-1">-->
+<!--                                <label class="panel-body-text" style="color: #000">.</label>-->
+<!--                                <button class="form-control btn btn-danger remove-form-row">-</button>-->
+<!--                            </div>-->
+<!--                        </div>-->
+<!--                    {% endfor %}-->
+<!--                        <div style="text-align: right;">-->
+<!--                            <a href="#" class="add-form-row">+ Add More</a>-->
+<!--                        </div>-->
+<!--                    </div>-->
+<!--                </div>-->
+
+
+<!--            <br>&lt;!&ndash; Log on to codeastro.com for more projects &ndash;&gt;-->
+
+<!--            <div class="align-middle">-->
+<!--                <button type="submit" class="btn btn-success">Add to Purchases</button>-->
+<!--                <a href="{% url 'select-supplier' %}" class="btn btn-danger">Go Back</a>-->
+<!--                <a href="{% url 'purchases-list' %}" class="btn btn-secondary">Cancel</a>-->
+<!--            </div>-->
+
+<!--        </form>-->
+
+<!--    </div>-->
+
+<!--    &lt;!&ndash; Custom JS to add and remove item forms &ndash;&gt;&lt;!&ndash; Log on to codeastro.com for more projects &ndash;&gt;-->
+<!--    <script type="text/javascript" src="{% static 'js/jquery-3.2.1.slim.min.js' %}"></script>-->
+<!--    <script type="text/javascript" src="{% static 'js/dialogbox.js' %}"></script>-->
+<!--    <script type="text/javascript">-->
+
+<!--        //creates custom alert object-->
+<!--        var custom_alert = new custom_alert();-->
+
+<!--        function updateElementIndex(el, prefix, ndx) {-->
+<!--            var id_regex = new RegExp('(' + prefix + '-\\d+)');-->
+<!--            var replacement = prefix + '-' + ndx;-->
+<!--            if ($(el).attr("for")) $(el).attr("for", $(el).attr("for").replace(id_regex, replacement));-->
+<!--            if (el.id) el.id = el.id.replace(id_regex, replacement);-->
+<!--            if (el.name) el.name = el.name.replace(id_regex, replacement);-->
+<!--        }-->
+
+<!--        //stores the total no of item forms-->
+<!--        var total = 1;-->
+
+<!--        function cloneMore(selector, prefix) {-->
+<!--            var newElement = $(selector).clone(true);-->
+<!--            //var total = $('#id_' + prefix + '-TOTAL_FORMS').val();-->
+<!--            newElement.find(':input:not([type=button]):not([type=submit]):not([type=reset])').each(function() {-->
+<!--                var name = $(this).attr('name')-->
+<!--                if(name) {-->
+<!--                    name = name.replace('-' + (total-1) + '-', '-' + total + '-');-->
+<!--                    var id = 'id_' + name;-->
+<!--                    $(this).attr({'name': name, 'id': id}).val('').removeAttr('checked');-->
+<!--                }-->
+<!--            });-->
+<!--            newElement.find('label').each(function() {-->
+<!--                var forValue = $(this).attr('for');-->
+<!--                if (forValue) {-->
+<!--                forValue = forValue.replace('-' + (total-1) + '-', '-' + total + '-');-->
+<!--                $(this).attr({'for': forValue});-->
+<!--                }-->
+<!--            });-->
+<!--            total++;-->
+<!--            $('#id_' + prefix + '-TOTAL_FORMS').val(total);-->
+<!--            $(selector).after(newElement);-->
+<!--            return false;-->
+<!--        }-->
+
+<!--        function deleteForm(prefix, btn) {-->
+<!--            //var total = parseInt($('#id_' + prefix + '-TOTAL_FORMS').val());-->
+<!--            if (total > 1){-->
+<!--                btn.closest('.form-row').remove();-->
+<!--                var forms = $('.form-row');-->
+<!--                $('#id_' + prefix + '-TOTAL_FORMS').val(forms.length);-->
+<!--                for (var i=0, formCount=forms.length; i<formCount; i++) {-->
+<!--                    $(forms.get(i)).find(':input').each(function() {-->
+<!--                        updateElementIndex(this, prefix, i);-->
+<!--                    });-->
+<!--                }-->
+<!--                total--;-->
+<!--            } else {-->
+<!--                custom_alert.render("Field cannot be deleted");-->
+<!--            }-->
+<!--            return false;-->
+<!--        }-->
+
+<!--        $(document).on('click', '.add-form-row', function(e){-->
+<!--            e.preventDefault();-->
+<!--            cloneMore('.form-row:last', 'form');-->
+<!--            return false;-->
+<!--        });-->
+
+<!--        $(document).on('click', '.remove-form-row', function(e){-->
+<!--            e.preventDefault();-->
+<!--            deleteForm('form', $(this));-->
+<!--            return false;-->
+<!--        });-->
+
+
+<!--        //updates the total price by multiplying 'price per item' and 'quantity'-->
+<!--        $(document).on('change', '.setprice', function(e){-->
+<!--            e.preventDefault();-->
+<!--            //gets the values-->
+<!--            var element = $(this);-->
+<!--            var quantity = element.parents('.form-row').find('.quantity').val();-->
+<!--            var perprice = element.parents('.form-row').find('.price').val();-->
+<!--            //calculates the total-->
+<!--            var tprice = quantity * perprice;-->
+<!--            //sets it to field-->
+<!--            element.parents('.form-row').find('.totalprice').val(tprice);-->
+<!--            return false;-->
+<!--        });-->
+
+<!--    </script>-->
+
+
+
+<!--<div style="color:#575757; font-style: bold; font-size: 3rem; border-bottom: 1px solid white;">New Purchase</div>-->
+
+<!--<br>-->
+
+<!--<div class="panel panel-default">-->
+<!--    <div class="panel-heading panel-heading-text">Supplier Details</div>-->
+<!--    <div class="panel-body">-->
+<!--        <div class="form-group">-->
+<!--            <label for="id_name" class="panel-body-text">Supplier Name:</label>-->
+<!--            <input type="text" class="form-control textinput" id="id_name" value="{{ supplier.name }}" disabled>-->
+<!--        </div>-->
+<!--        <div class="form-row">-->
+<!--            <div class="form-group col-md-6">-->
+<!--                <label for="id_phone" class="panel-body-text">Phone No:</label>-->
+<!--                <input type="text" class="form-control textinput" id="id_phone" value="{{ supplier.phone }}" disabled>-->
+<!--            </div>-->
+<!--            <div class="form-group col-md-6">-->
+<!--                <label for="id_gstin" class="panel-body-text">GSTIN No:</label>-->
+<!--                <input type="gstin" class="form-control textinput" id="id_gstin" value="{{ supplier.gstin }}" disabled>-->
+<!--            </div>-->
+<!--        </div>-->
+<!--    </div>-->
+<!--</div>-->
+
+<!--<br>-->
+
+<!--<form method="post" class="panel panel-default">-->
+<!--    {% csrf_token %}-->
+<!--    {{ formset.management_form }}-->
+
+<!--    <div class="panel-heading panel-heading-text">Product Details</div>-->
+
+<!--    &lt;!&ndash; Dropdown list for selecting stock &ndash;&gt;-->
+<!--    <div class="form-group">-->
+<!--        <label for="stock_dropdown" class="panel-body-text">Select Stock:</label>-->
+<!--        <select id="stock_dropdown" class="form-control">-->
+<!--            <option value="">Select Stock</option>-->
+<!--            {% for stock in stock_list %}-->
+<!--                <option value="{{ stock.id }}" data-name="{{ stock.name }}" data-price="{{ stock.price }}">{{ stock.name }}</option>-->
+<!--            {% endfor %}-->
+<!--        </select>-->
+<!--    </div>-->
+
+<!--    &lt;!&ndash; Container for dynamically added form rows &ndash;&gt;-->
+<!--    <div id="stockitem">-->
+<!--        <div class="panel-body">-->
+<!--            &lt;!&ndash; Existing rows from formset &ndash;&gt;-->
+<!--&lt;!&ndash;            {% for form in formset %}&ndash;&gt;-->
+<!--&lt;!&ndash;                <div class="row form-row">&ndash;&gt;-->
+<!--&lt;!&ndash;                    <div class="form-group col-md-6">&ndash;&gt;-->
+<!--&lt;!&ndash;                        {{ form.stock.errors }}&ndash;&gt;-->
+<!--&lt;!&ndash;                        <label class="panel-body-text">Stock:</label>&ndash;&gt;-->
+<!--&lt;!&ndash;                        {{ form.stock }}&ndash;&gt;-->
+<!--&lt;!&ndash;                    </div>&ndash;&gt;-->
+<!--&lt;!&ndash;                    <div class="form-group col-md-2">&ndash;&gt;-->
+<!--&lt;!&ndash;                        <label class="panel-body-text">Price per item:</label>&ndash;&gt;-->
+<!--&lt;!&ndash;                        {{ form.perprice }}&ndash;&gt;-->
+<!--&lt;!&ndash;                    </div>&ndash;&gt;-->
+<!--&lt;!&ndash;                    <div class="form-group col-md-2">&ndash;&gt;-->
+<!--&lt;!&ndash;                        {{ form.quantity.errors }}&ndash;&gt;-->
+<!--&lt;!&ndash;                        <label class="panel-body-text">Quantity:</label>&ndash;&gt;-->
+<!--&lt;!&ndash;                        {{ form.quantity }}&ndash;&gt;-->
+<!--&lt;!&ndash;                    </div>&ndash;&gt;-->
+<!--&lt;!&ndash;                    <div class="form-group col-md-1">&ndash;&gt;-->
+<!--&lt;!&ndash;                        <label class="panel-body-text">Total:</label>&ndash;&gt;-->
+<!--&lt;!&ndash;                        <input type="text" class="textinput form-control totalprice" value="0" readonly required>&ndash;&gt;-->
+<!--&lt;!&ndash;                    </div>&ndash;&gt;-->
+<!--&lt;!&ndash;                    <div class="form-group col-md-1">&ndash;&gt;-->
+<!--&lt;!&ndash;                        <label class="panel-body-text" style="color: #000">.</label>&ndash;&gt;-->
+<!--&lt;!&ndash;                        <button class="form-control btn btn-danger remove-form-row">-</button>&ndash;&gt;-->
+<!--&lt;!&ndash;                    </div>&ndash;&gt;-->
+<!--&lt;!&ndash;                </div>&ndash;&gt;-->
+<!--&lt;!&ndash;            {% endfor %}&ndash;&gt;-->
+<!--        </div>-->
+<!--    </div>-->
+
+<!--    <div style="text-align: right;">-->
+<!--        <a href="#" class="add-form-row">+ Add More</a>-->
+<!--    </div>-->
+
+<!--    <br>-->
+
+<!--    <div class="align-middle">-->
+<!--        <button type="submit" class="btn btn-success">Add to Purchases</button>-->
+<!--        <a href="{% url 'select-supplier' %}" class="btn btn-danger">Go Back</a>-->
+<!--        <a href="{% url 'purchases-list' %}" class="btn btn-secondary">Cancel</a>-->
+<!--    </div>-->
+<!--</form>-->
+<!--&lt;!&ndash; Custom JS to add and remove item forms &ndash;&gt;-->
+<!--<script type="text/javascript" src="{% static 'js/jquery-3.2.1.slim.min.js' %}"></script>-->
+<!--<script type="text/javascript" src="{% static 'js/dialogbox.js' %}"></script>-->
+<!--<script type="text/javascript">-->
+
+<!--    var total = {{ formset.total_form_count }};-->
+
+<!--    function updateElementIndex(el, prefix, ndx) {-->
+<!--        var id_regex = new RegExp('(' + prefix + '-\\d+)');-->
+<!--        var replacement = prefix + '-' + ndx;-->
+<!--        if ($(el).attr("for")) $(el).attr("for", $(el).attr("for").replace(id_regex, replacement));-->
+<!--        if (el.id) el.id = el.id.replace(id_regex, replacement);-->
+<!--        if (el.name) el.name = el.name.replace(id_regex, replacement);-->
+<!--    }-->
+
+<!--    function deleteForm(prefix, btn) {-->
+<!--        if (total > 1){-->
+<!--            btn.closest('.form-row').remove();-->
+<!--            var forms = $('.form-row');-->
+<!--            $('#id_' + prefix + '-TOTAL_FORMS').val(forms.length);-->
+<!--            for (var i=0, formCount=forms.length; i<formCount; i++) {-->
+<!--                $(forms.get(i)).find(':input').each(function() {-->
+<!--                    updateElementIndex(this, prefix, i);-->
+<!--                });-->
+<!--            }-->
+<!--            total--;-->
+<!--        } else {-->
+<!--            alert("You can't delete the only remaining form.");-->
+<!--        }-->
+<!--        return false;-->
+<!--    }-->
+
+<!--    $(document).on('change', '#stock_dropdown', function() {-->
+<!--        var selectedStock = $(this).find(':selected');-->
+<!--        var stockName = selectedStock.text();-->
+<!--        var stockId = selectedStock.val();-->
+<!--        var stockPrice = selectedStock.data('price');-->
+
+<!--        if(stockId) {-->
+<!--            var newRow = `<div class="row form-row">-->
+<!--                <div class="form-group col-md-6">-->
+<!--                    <label class="panel-body-text">Stock:</label>-->
+<!--                    <input type="text" class="form-control textinput" value="${stockName}" disabled>-->
+<!--                    <input type="hidden" name="form-${total}-stock" value="${stockId}">-->
+<!--                </div>-->
+<!--                <div class="form-group col-md-2">-->
+<!--                    <label class="panel-body-text">Price per item:</label>-->
+<!--                    <input type="text" class="form-control price" name="form-${total}-perprice" value="${stockPrice}">-->
+<!--                </div>-->
+<!--                <div class="form-group col-md-2">-->
+<!--                    <label class="panel-body-text">Quantity:</label>-->
+<!--                    <input type="number" class="form-control quantity" name="form-${total}-quantity" value="1">-->
+<!--                </div>-->
+<!--                <div class="form-group col-md-1">-->
+<!--                    <label class="panel-body-text">Total:</label>-->
+<!--                    <input type="text" class="textinput form-control totalprice" value="${stockPrice}" readonly>-->
+<!--                </div>-->
+<!--                <div class="form-group col-md-1">-->
+<!--                    <label class="panel-body-text" style="color: #000">.</label>-->
+<!--                    <button class="form-control btn btn-danger remove-form-row">-</button>-->
+<!--                </div>-->
+<!--            </div>`;-->
+
+<!--            $('#stockitem .panel-body').append(newRow);-->
+<!--            total++;-->
+<!--            $('#id_form-TOTAL_FORMS').val(total);-->
+
+<!--            selectedStock.remove();-->
+<!--        }-->
+<!--    });-->
+
+<!--    $(document).on('click', '.remove-form-row', function(e){-->
+<!--        e.preventDefault();-->
+
+<!--        var row = $(this).closest('.form-row');-->
+<!--        var stockName = row.find('input[name*="stock"]').closest('.form-group').find('input[type="text"]').val();-->
+<!--        var stockId = row.find('input[name*="stock"]').val();-->
+<!--        var stockPrice = row.find('.price').val();-->
+
+<!--        $('#stock_dropdown').append(`<option value="${stockId}" data-price="${stockPrice}">${stockName}</option>`);-->
+
+<!--        deleteForm('form', $(this));-->
+<!--        return false;-->
+<!--    });-->
+
+<!--    $(document).on('change', '.quantity', function(){-->
+<!--        var element = $(this);-->
+<!--        var quantity = parseFloat(element.val()) || 0;-->
+<!--        var pricePerItem = parseFloat(element.closest('.form-row').find('.price').val()) || 0;-->
+<!--        var totalPrice = (quantity * pricePerItem).toFixed(2);-->
+<!--        element.closest('.form-row').find('.totalprice').val(totalPrice);-->
+<!--    });-->
+
+
+<!--</script>-->
+
+<!--<div style="color:#575757; font-style: bold; font-size: 3rem; border-bottom: 1px solid white;">New Purchase</div>-->
+
+<!--<br>-->
+
+<!--<div class="panel panel-default">-->
+<!--    <div class="panel-heading panel-heading-text">Supplier Details</div>-->
+<!--    <div class="panel-body">-->
+<!--        <div class="form-group">-->
+<!--            <label for="id_name" class="panel-body-text">Supplier Name:</label>-->
+<!--            <input type="text" class="form-control textinput" id="id_name" value="{{ supplier.name }}" disabled>-->
+<!--        </div>-->
+<!--        <div class="form-row">-->
+<!--            <div class="form-group col-md-6">-->
+<!--                <label for="id_phone" class="panel-body-text">Phone No:</label>-->
+<!--                <input type="text" class="form-control textinput" id="id_phone" value="{{ supplier.phone }}" disabled>-->
+<!--            </div>-->
+<!--            <div class="form-group col-md-6">-->
+<!--                <label for="id_gstin" class="panel-body-text">GSTIN No:</label>-->
+<!--                <input type="gstin" class="form-control textinput" id="id_gstin" value="{{ supplier.gstin }}" disabled>-->
+<!--            </div>-->
+<!--        </div>-->
+<!--    </div>-->
+<!--</div>-->
+
+<!--<br>-->
+
+<!--<form method="post" class="panel panel-default">-->
+<!--    {% csrf_token %}-->
+<!--    {{ formset.management_form }}-->
+
+<!--    <div class="panel-heading panel-heading-text">Product Details</div>-->
+
+<!--    &lt;!&ndash; Unique dropdown to select Stock item &ndash;&gt;-->
+<!--    <div class="form-group">-->
+<!--        <label for="stock-select">Select Stock Item:</label>-->
+<!--        <select id="stock-select" class="form-control">-->
+<!--            <option value="">Select an item</option>-->
+<!--            {% for stock in stocks %}-->
+<!--                <option value="{{ stock.id }}" data-price="{{ stock.price }}">{{ stock.name }}</option>-->
+<!--            {% endfor %}-->
+<!--        </select>-->
+<!--    </div>-->
+
+<!--    <div id="stockitem">-->
+<!--        <div class="panel-body">-->
+<!--            &lt;!&ndash; Table displaying selected stock items &ndash;&gt;-->
+<!--            <table class="table table-bordered">-->
+<!--                <thead>-->
+<!--                    <tr>-->
+<!--                        <th>Stock</th>-->
+<!--                        <th>Price per item</th>-->
+<!--                        <th>Quantity</th>-->
+<!--                        <th>Total</th>-->
+<!--                        <th>Action</th>-->
+<!--                    </tr>-->
+<!--                </thead>-->
+<!--                <tbody id="selected-stock-items">-->
+<!--                    &lt;!&ndash; Dynamic rows added via JS &ndash;&gt;-->
+<!--                </tbody>-->
+<!--            </table>-->
+<!--        </div>-->
+<!--    </div>-->
+
+<!--    <br>-->
+
+<!--    <div class="align-middle">-->
+<!--        <button type="submit" class="btn btn-success">Add to Purchases</button>-->
+<!--        <a href="{% url 'select-supplier' %}" class="btn btn-danger">Go Back</a>-->
+<!--        <a href="{% url 'purchases-list' %}" class="btn btn-secondary">Cancel</a>-->
+<!--    </div>-->
+<!--</form>-->
+
+<!--<script type="text/javascript" src="{% static 'js/jquery-3.2.1.slim.min.js' %}"></script>-->
+<!--<script type="text/javascript">-->
+<!--    // Handle adding selected stock item to the table-->
+<!--    $('#stock-select').on('change', function () {-->
+<!--        var stockId = $(this).val();-->
+<!--        var stockName = $(this).find('option:selected').text();-->
+<!--        var pricePerItem = $(this).find('option:selected').data('price');-->
+
+<!--        if (stockId) {-->
+<!--            var newRow = `-->
+<!--                <tr data-stock-id="${stockId}">-->
+<!--                    <td>${stockName}</td>-->
+<!--                    <td><input type="number" class="form-control price" value="${pricePerItem}"></td>-->
+<!--                    <td><input type="number" class="form-control quantity" min="1" value="1"></td>-->
+<!--                    <td><input type="number" class="form-control total" value="${pricePerItem}" readonly></td>-->
+<!--                    <td><button class="btn btn-danger remove-row">Remove</button></td>-->
+<!--                </tr>-->
+<!--            `;-->
+<!--            $('#selected-stock-items').append(newRow);-->
+<!--        }-->
+
+<!--        // Update total price when quantity changes-->
+<!--        $(document).on('input', '.quantity', function () {-->
+<!--            var row = $(this).closest('tr');-->
+<!--            var price = row.find('.price').val();-->
+<!--            var quantity = $(this).val();-->
+<!--            var total = price * quantity;-->
+<!--            row.find('.total').val(total);-->
+<!--        });-->
+
+<!--        // Remove row-->
+<!--        $(document).on('click', '.remove-row', function () {-->
+<!--            $(this).closest('tr').remove();-->
+<!--        });-->
+<!--    });-->
+<!--</script>-->
+
+<br>
+<div style="color:#575757; font-style: bold; font-size: 3rem; border-bottom: 1px solid white;"
+     xmlns="http://www.w3.org/1999/html">New Purchase</div>
+
+<br>
+<fieldset>
+<div class="panel panel-default">
+    <div class="panel-heading panel-heading-text">Supplier Details</div>
+    <div class="panel-body">
+        <div class="form-group">
+            <label for="id_name" class="panel-body-text">Supplier Name:</label>
+            <input type="text" class="form-control textinput text-capitalize" id="id_name" value="{{ supplier.name }}" disabled>
+        </div>
+        <div class="form-row">
+            <div class="form-group col-md-6">
+                <label for="id_phone" class="panel-body-text">Phone No:</label>
+                <input type="text" class="form-control textinput" id="id_phone" value="{{ supplier.phone }}" disabled>
+            </div>
+            <div class="form-group col-md-6">
+                <label for="id_gstin" class="panel-body-text">GSTIN No:</label>
+                <input type="gstin" class="form-control textinput" id="id_gstin" value="{{ supplier.gstin }}" disabled>
+            </div>
+        </div>
+    </div>
+</div>
+</fieldset>
+<br>
+
+<form method="post" class="panel panel-default" id="purchaseForm">
+    {% csrf_token %}
+    {{ formset.management_form }}
+
+    <div class="panel-heading panel-heading-text">Product Details</div>
+
+<!--    &lt;!&ndash; Dropdown list for selecting stock &ndash;&gt;-->
+<!--    <div class="form-group">-->
+<!--        <label for="stock_dropdown" class="panel-body-text">Select Stock:</label>-->
+<!--        <select id="stock_dropdown" class="form-control">-->
+<!--            <option value="">Select Stock</option>-->
+<!--            {% for stock in stock_list %}-->
+<!--                <option value="{{ stock.id }}" data-name="{{ stock.name }}" data-price="{{ stock.price }}">{{ stock.name }}</option>-->
+<!--            {% endfor %}-->
+<!--        </select>-->
+<!--    </div>-->
+<fieldset>
+    <!-- Dropdown list for selecting category -->
+    <div class="form-row">
+        <div class="form-group col-md-6">
+        <label for="category_dropdown" class="panel-body-text">Select Category:</label>
+        <select id="category_dropdown" class="form-control text-capitalize">
+            <option value="">Select Category</option>
+            {% for category in categories %}
+                <option value="{{ category.id }}">{{ category.name }}</option>
+            {% endfor %}
+        </select>
+        </div>
+
+
+    <!-- Dropdown list for selecting subcategory -->
+
+        <div class="form-group col-md-6">
+        <label id="subcategory_label" for="subcategory_dropdown" class="panel-body-text" style="display: none;">Select Subcategory:</label>
+        <select id="subcategory_dropdown" class="form-control text-capitalize" style="display: none;">
+            <option value="">Select Subcategory</option>
+        </select>
+        </div>
+    </div>
+
+    <!-- Dropdown list for selecting stock -->
+
+
+<!--     <div class="row mb-1 align-items-center">-->
+<!--         <div class="col-md-9 mb-2 item1">-->
+<!--        <label id="stock_label" for="stock_dropdown" class="panel-body-text" style="display: none;">Select Stock:</label>-->
+<!--        <select id="stock_dropdown" class="form-control" style="display: none;">-->
+<!--            <option value="">Select Stock</option>-->
+<!--        </select>-->
+<!--    </div>-->
+<!--     <div class="col-md-3 mb-2 item1">-->
+<!--    <h3>Include GST</h3>-->
+<!--    <label class="switch">-->
+<!--        <input type="checkbox" id="gstToggle">-->
+<!--        <span class="slider"></span>-->
+<!--    </label>-->
+<!--    </div>-->
+<!--    </div>-->
+<!--    <div class="row mb-1 align-items-center">-->
+<!--        <div class="col-md-9 mb-2 item1">-->
+<!--            <label id="stock_label" for="stock_dropdown" class="panel-body-text" style="display: none;">Select Stock:</label>-->
+<!--            <select id="stock_dropdown" class="form-control" style="display: none;">-->
+<!--                <option value="">Select Stock</option>-->
+<!--            </select>-->
+<!--        </div>-->
+<!--        <div class="col-md-3 mb-2 item1" id="gstToggleContainer" style="display: none;"> &lt;!&ndash; Initially hidden &ndash;&gt;-->
+<!--            <label id="gstLabel" for="gstToggle" class="panel-body-text"><h5>Excluding GST</h5></label> &lt;!&ndash; Default label &ndash;&gt;-->
+<!--            <label class="switch">-->
+<!--                <input type="checkbox" id="gstToggle">-->
+<!--                <span class="slider"></span>-->
+<!--            </label>-->
+<!--        </div>-->
+<!--    </div>-->
+
+    <div class="row mb-1 align-items-center">
+        <div class="col-md-9 mb-2 item1">
+            <label id="stock_label" for="stock_dropdown" class="panel-body-text" style="display: none;">Select Stock:</label>
+            <select id="stock_dropdown" class="text-capitalize form-control" style="display: none;">
+                <option value="">Select Stock</option>
+            </select>
+        </div>
+        <div class="col-md-3 mb-2 item1" id="gstToggleContainer" style="display: none;"> <!-- Initially hidden -->
+            <div class="gst-label-container">
+                <span id="label_excl_gst" class="gst-label">Excl. GST</span>
+                <span id="label_incl_gst" class="gst-label" style="display: none;">Incl. GST</span>
+            </div>
+            <label class="switch ml-2">
+                <input type="checkbox" id="gstToggle" name="gstToggle">
+                <span class="slider"></span>
+            </label>
+
+        </div>
+<!--        <div class="col-md-3 mb-2 item1" id="gstToggleContainer" style="display: none;"> &lt;!&ndash; Initially hidden &ndash;&gt;-->
+<!--            <label id="gstLabel" for="gstToggle" class="panel-body-text"><h5>Excluding GST</h5></label> &lt;!&ndash; Default label &ndash;&gt;-->
+<!--            <label class="switch">-->
+<!--                <input type="checkbox" id="gstToggle">-->
+<!--                <span class="slider"></span>-->
+<!--            </label>-->
+<!--        </div>-->
+    </div>
+
+
+
+
+<!--    <h3>Include GST</h3>-->
+<!--    <label class="switch">-->
+<!--        <input type="checkbox" id="gstToggle">-->
+<!--        <span class="slider"></span>-->
+<!--    </label>-->
+
+<!--    <p id="priceDisplay">Price: $100 (without GST)</p>-->
+
+<!--    <script>-->
+<!--        const gstToggle = document.getElementById('gstToggle');-->
+<!--        const priceDisplay = document.getElementById('priceDisplay');-->
+<!--        const basePrice = 100; // Base price without GST-->
+<!--        const gstRate = 0.18; // Example GST rate (18%)-->
+
+<!--        gstToggle.addEventListener('change', function() {-->
+<!--            if (gstToggle.checked) {-->
+<!--                const priceWithGST = basePrice + (basePrice * gstRate);-->
+<!--                priceDisplay.textContent = `Price: $${priceWithGST.toFixed(2)} (with GST)`;-->
+<!--            } else {-->
+<!--                priceDisplay.textContent = `Price: $${basePrice.toFixed(2)} (without GST)`;-->
+<!--            }-->
+<!--        });-->
+<!--    </script>-->
+    <!-- Toggle Switch for Including GST -->
+
+</fieldset>
+
+    <div id="fieldset-container" style="display: none;">
+<fieldset>
+    <!-- Container for dynamically added form rows -->
+    <div id="stockitem">
+        <div class="panel-body">
+
+            <!-- Existing rows from formset -->
+
+        </div>
+    </div>
+
+<!--    <div style="text-align: right;">-->
+<!--        <a href="#" class="add-form-row">+ Add More</a>-->
+<!--    </div>-->
+
+    <!-- Total Quantity and Amount -->
+<!--    <hr style="background: black; width: 50%; margin-left: auto; border: none; height: 1px;">-->
+           <div style="width: 100%; display: flex; justify-content: flex-end;">
+            <hr style="background-color: black; width: 50%; border: none; height: 1px; margin: 0;">
+          </div><br>
+
+
+<!--    <div class="form-group row" id="totals">-->
+<!--        <div class="col-md-6">-->
+<!--            <label for="total_quantity" class="panel-body-text">Total Quantity:</label>-->
+<!--            <input type="text" id="total_quantity" class="form-control" readonly>-->
+<!--        </div>-->
+<!--        <div class="col-md-6">-->
+<!--            <label for="total_amount" class="panel-body-text">Total Amount (Excl. GST):</label>-->
+<!--            <input type="text" id="total_amount" class="form-control" readonly>-->
+<!--        </div>-->
+<!--    </div>-->
+      <div class="form-group row" id="totals">
+          <div class="col-md-6">
+
+          </div>
+            <div class="col-md-3">
+                <div class="input-group">
+                    <div class="input-group-prepend">
+                        <span class="input-group-text">Total Quantity</span>
+                    </div>
+                    <input type="text" id="total_quantity" class="form-control" style="background-color: white;
+                           text-align: right; padding-right: 12px; font-weight: bold;" readonly>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="input-group">
+                    <div class="input-group-prepend">
+                        <span class="input-group-text">Basic Amount</span>
+                    </div>
+                    <input type="text" id="total_amount" name="total_amount" class="form-control pr-6" style="background-color: white; text-align: right; font-weight: bold" readonly>
+                </div>
+            </div>
+        </div>
+
+<!--      <div class="row mb-1 align-items-center">-->
+
+<!--          <div class="col-md-7 mb-2 item1">-->
+
+<!--        </div>-->
+<!--         <div class="col-md-2 mb-2 item1">-->
+<!--             <label for="gst_value" id="gst_value_lable" class="panel-body-text" style="display: none;  text-align: right;">GST:</label>-->
+<!--             <label id="gst_value"  style="display: block;   text-align: right;"></label>-->
+<!--        </div>-->
+
+<!--        <div class="col-md-3 mb-4 item1">-->
+<!--        <label for="gst_amount" id="gst_amount_lable" class="panel-body-text" style="display: none;">GST Amount:</label>-->
+<!--        <input type="text" id="gst_amount" class="form-control" value="0" style="display: none;" readonly>-->
+<!--    </div>-->
+<!--      </div>-->
+
+    <div class="row mb-1 align-items-center">
+        <div class="col-md-6 mb-2 item1">
+            <!-- You can add any other content here -->
+        </div>
+
+        <div class="col-md-3 mb-2 item1">
+            <!-- GST label inside the textbox -->
+            <div class="input-group">
+                <div class="input-group-prepend">
+                    <span class="input-group-text" id="gst_value_label" style="display: none;">GST</span>
+                </div>
+                <input type="text" id="gst_value" name="gst_value" class="form-control" value="0" style="display: block; background-color: white;
+                        text-align: right; padding-right: 12px;" readonly>
+
+
+
+            </div>
+        </div>
+
+<!--        <div class="col-md-3 mb-4 item1">-->
+<!--            &lt;!&ndash; GST Amount label inside the textbox &ndash;&gt;-->
+<!--            <div class="input-group">-->
+<!--                <div class="input-group-prepend">-->
+<!--                    <span class="input-group-text" id="gst_amount_label" style="display: none;">GST Amount:</span>-->
+<!--                </div>-->
+<!--                <input type="text" id="gst_amount" class="form-control" value="0" style="display: none; background-color: white;" readonly>-->
+<!--            </div>-->
+<!--        </div>-->
+        <div class="col-md-3 mb-4 item1">
+            <!-- GST Amount label inside the textbox -->
+            <div class="input-group">
+                <div class="input-group-prepend">
+                    <span class="input-group-text" id="gst_amount_label" style="display: none;">GST Amount</span>
+                </div>
+                <input type="text" id="gst_amount" name="gst_amount" class="form-control" value="0"
+                       style="background-color: white; text-align: right; padding-right: 12px;" readonly>
+            </div>
+        </div>
+
+    </div>
+
+
+<!--    <div class="form-group">-->
+<!--        <label for="final_amount" id="final_amount_lable" class="panel-body-text" style="display: none;">Final Amount (Incl. GST):</label>-->
+<!--        <input type="text" id="final_amount" class="form-control" style="display: none;" value="100" readonly>-->
+<!--    </div>-->
+     <div class="row mb-1 align-items-center">
+         <div class="col-md-9 mb-2 form-group">
+         </div>
+            <div class="col-md-3 mb-2 form-group">
+            <div class="input-group">
+                <div class="input-group-prepend">
+                    <span class="input-group-text" id="round_off_label" style="display: none;">Round Off</span>
+                </div>
+                <input type="text" id="round_off" name="round_off" class="form-control" value="100" style="display: none; background-color: white; text-align: right; padding-right: 12px;" readonly>
+            </div>
+        </div>
+     </div>
+    <div class="row mb-1 align-items-center">
+         <div class="col-md-9 mb-2 form-group">
+         </div>
+            <div class="col-md-3 mb-2 form-group">
+            <div class="input-group">
+                <div class="input-group-prepend">
+                    <span class="input-group-text" id="delivery_charges_label" style="display: none;">Delivery Charges</span>
+                </div>
+                <input type="text" id="delivery_charges" name="delivery_charges" class="form-control" value="0" style="display: none; background-color: white; text-align: right; padding-right: 12px;">
+<!--                  <input type="number" id="delivery_charges" placeholder="Enter Delivery Charges" />-->
+
+            </div>
+        </div>
+     </div>
+<div class="row mb-1 align-items-center">
+         <div class="col-md-6 mb-2 form-group">
+         </div>
+
+    <div class="col-md-6 mb-2 form-group">
+    <div class="input-group">
+        <div class="input-group-prepend">
+            <span class="input-group-text" id="final_amount_label" style="display: none; color: black; font-weight: bold;">Final Amount (Incl. GST)</span>
+        </div>
+        <input type="text" id="final_amount" name="final_amount" class="form-control" value="100" style="display: none; background-color: white; text-align: right; padding-right: 12px; font-weight: bold;" readonly>
+    </div>
+</div>
+     </div>
+
+</fieldset>
+    </div>
+    <br>
+    <div class="text-center">
+<!--        <button type="submit" class="btn btn-success" style="width: 200px; margin-right: 10px;">Add to Purchases</button>-->
+           <button type="button" id="initialSubmitButton" class="btn btn-success" style="width: 200px; margin-right: 10px;">Add to Purchases</button>
+        <a href="{% url 'select-supplier' %}" class="btn btn-danger" style="width: 200px; margin-right: 10px;">Go Back</a>
+        <a href="{% url 'purchases-list' %}" class="btn btn-secondary" style="width: 200px;">Cancel</a>
+    </div>
+
+</form>
+<!-- Modal for Serial Number Entry -->
+<div class="modal fade" id="serialNumberModal" tabindex="-1" role="dialog" aria-labelledby="serialNumberModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="serialNumberModalLabel">Enter Serial Numbers</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="serialNumberForm">
+                    <div id="serial-number-container">
+                        <!-- Textboxes will be dynamically added here -->
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" id="saveSerialNumbers">Save Serial Numbers</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<!-- Modal Structure -->
+<div class="modal fade" id="confirmationModal" tabindex="-1" aria-labelledby="confirmationModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="confirmationModalLabel">Confirm Details</h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+                <form id="modalForm">
+                    <div class="form-group">
+                        <label for="eway_no">Supplier Invoice No <span style="color: red;">*</span></label>
+                        <input type="text" id="eway_no" name="eway_no" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="bill_date">Bill Date <span style="color: red;">*</span></label>
+                        <input type="date" id="bill_date" name="bill_date" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="veh_no">Vehicle No</label>
+                        <input type="text" id="veh_no" name="veh_no" class="form-control">
+                    </div>
+                    <div class="form-group">
+                        <label for="handby">Handled By <span style="color: red;">*</span></label>
+                        <input type="text" id="handby" name="handby" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="destination">Destination <span style="color: red;">*</span></label>
+<!--                        <input type="text" id="destination" name="destination" class="form-control" required>-->
+                         <select id="destination" name="destination" class="form-control" style=" overflow: hidden; width: 100%;" required>
+                                                <option value="" disabled selected> </option>
+                                                <option value="Warehouse" {% if billdetails.destination == "Warehouse" %}selected{% endif %}>&nbsp;Warehouse</option>
+                                                <option value="Office" {% if billdetails.destination == "Office" %}selected{% endif %}>&nbsp;Office</option>
+                                                <option value="Project Side" {% if billdetails.destination == "Project Side" %}selected{% endif %}>&nbsp;Project Side</option>
+                                            </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="po_no">PO No</label>
+                        <input type="text" id="po_no" name="po_no" class="form-control">
+                    </div>
+                    <div class="form-group">
+                        <label for="po_date">PO Date</label>
+                        <input type="date" id="po_date" name="po_date" class="form-control">
+                    </div>
+                </form>
+            </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+        <button type="button" id="modalSubmitButton" class="btn btn-primary">Submit</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script type="text/javascript" src="{% static 'js/jquery-3.2.1.slim.min.js' %}"></script>
+<script type="text/javascript" src="{% static 'js/dialogbox.js' %}"></script>
+<!--&lt;!&ndash;<script type="text/javascript">&ndash;&gt;-->
+
+<!--&lt;!&ndash;    var total = {{ formset.total_form_count }};&ndash;&gt;-->
+<!--&lt;!&ndash;    var total = 0;&ndash;&gt;-->
+
+<!--&lt;!&ndash;    function updateElementIndex(el, prefix, ndx) {&ndash;&gt;-->
+<!--&lt;!&ndash;        var id_regex = new RegExp('(' + prefix + '-\\d+)');&ndash;&gt;-->
+<!--&lt;!&ndash;        var replacement = prefix + '-' + ndx;&ndash;&gt;-->
+<!--&lt;!&ndash;        if ($(el).attr("for")) $(el).attr("for", $(el).attr("for").replace(id_regex, replacement));&ndash;&gt;-->
+<!--&lt;!&ndash;        if (el.id) el.id = el.id.replace(id_regex, replacement);&ndash;&gt;-->
+<!--&lt;!&ndash;        if (el.name) el.name = el.name.replace(id_regex, replacement);&ndash;&gt;-->
+<!--&lt;!&ndash;    }&ndash;&gt;-->
+
+<!--&lt;!&ndash;    function deleteForm(prefix, btn) {&ndash;&gt;-->
+<!--&lt;!&ndash;        if (total > 1) {&ndash;&gt;-->
+<!--&lt;!&ndash;            btn.closest('.form-row').remove();&ndash;&gt;-->
+<!--&lt;!&ndash;            var forms = $('.form-row');&ndash;&gt;-->
+<!--&lt;!&ndash;            $('#id_' + prefix + '-TOTAL_FORMS').val(forms.length);&ndash;&gt;-->
+<!--&lt;!&ndash;            for (var i = 0, formCount = forms.length; i < formCount; i++) {&ndash;&gt;-->
+<!--&lt;!&ndash;                $(forms.get(i)).find(':input').each(function () {&ndash;&gt;-->
+<!--&lt;!&ndash;                    updateElementIndex(this, prefix, i);&ndash;&gt;-->
+<!--&lt;!&ndash;                });&ndash;&gt;-->
+<!--&lt;!&ndash;            }&ndash;&gt;-->
+<!--&lt;!&ndash;            total&#45;&#45;;&ndash;&gt;-->
+
+<!--&lt;!&ndash;            // After deleting, make sure all remaining forms have required fields filled&ndash;&gt;-->
+<!--&lt;!&ndash;            forms.each(function(index, form) {&ndash;&gt;-->
+<!--&lt;!&ndash;                $(form).find(':input[required]').each(function() {&ndash;&gt;-->
+<!--&lt;!&ndash;                    if (!$(this).val()) {&ndash;&gt;-->
+<!--&lt;!&ndash;                        $(this).attr('value', '');  // Ensuring hidden fields are updated&ndash;&gt;-->
+<!--&lt;!&ndash;                    }&ndash;&gt;-->
+<!--&lt;!&ndash;                });&ndash;&gt;-->
+<!--&lt;!&ndash;            });&ndash;&gt;-->
+<!--&lt;!&ndash;        } else {&ndash;&gt;-->
+<!--&lt;!&ndash;            alert("You can't delete the only remaining form.");&ndash;&gt;-->
+<!--&lt;!&ndash;        }&ndash;&gt;-->
+<!--&lt;!&ndash;        return false;&ndash;&gt;-->
+<!--&lt;!&ndash;    }&ndash;&gt;-->
+
+<!--&lt;!&ndash;    $(document).on('change', '#stock_dropdown', function() {&ndash;&gt;-->
+<!--&lt;!&ndash;        var selectedStock = $(this).find(':selected');&ndash;&gt;-->
+<!--&lt;!&ndash;        var stockName = selectedStock.text();&ndash;&gt;-->
+<!--&lt;!&ndash;        var stockId = selectedStock.val();&ndash;&gt;-->
+<!--&lt;!&ndash;        var stockPrice = selectedStock.data('price');&ndash;&gt;-->
+
+<!--&lt;!&ndash;        if(stockId) {&ndash;&gt;-->
+<!--&lt;!&ndash;            var serialNo = total + 1; // Calculate the serial number based on total rows&ndash;&gt;-->
+
+<!--&lt;!&ndash;            var newRow = `<div class="row form-row">&ndash;&gt;-->
+<!--&lt;!&ndash;                    <div class="form-group col-md-1">&ndash;&gt;-->
+<!--&lt;!&ndash;                        ${total === 0 ? '<label class="panel-body-text">Sr No:</label>' : ''}&ndash;&gt;-->
+<!--&lt;!&ndash;                        <span class="form-control-plaintext">${serialNo}</span>&ndash;&gt;-->
+<!--&lt;!&ndash;                    </div>&ndash;&gt;-->
+<!--&lt;!&ndash;                    <div class="form-group col-md-4">&ndash;&gt;-->
+<!--&lt;!&ndash;                        ${total === 0 ? '<label class="panel-body-text">Stock:</label>' : ''}&ndash;&gt;-->
+<!--&lt;!&ndash;                        <div>&ndash;&gt;-->
+<!--&lt;!&ndash;                          <input type="hidden" class="form-control textinput" value="${stockName}" disabled>&ndash;&gt;-->
+<!--&lt;!&ndash;                          <span class="form-control-plaintext">${stockName}</span>&ndash;&gt;-->
+<!--&lt;!&ndash;                          <input type="hidden" name="form-${total}-stock" value="${stockId}">&ndash;&gt;-->
+<!--&lt;!&ndash;                        </div>&ndash;&gt;-->
+<!--&lt;!&ndash;                    </div>&ndash;&gt;-->
+<!--&lt;!&ndash;                    <div class="form-group col-md-2">&ndash;&gt;-->
+<!--&lt;!&ndash;                        ${total === 0 ? '<label class="panel-body-text">Price per item:</label>' : ''}&ndash;&gt;-->
+<!--&lt;!&ndash;                        <input type="text" class="form-control price" name="form-${total}-perprice" value="${stockPrice}">&ndash;&gt;-->
+<!--&lt;!&ndash;                    </div>&ndash;&gt;-->
+<!--&lt;!&ndash;                    <div class="form-group col-md-2">&ndash;&gt;-->
+<!--&lt;!&ndash;                        ${total === 0 ? '<label class="panel-body-text">Quantity:</label>' : ''}&ndash;&gt;-->
+<!--&lt;!&ndash;                        <input type="number" class="form-control quantity" name="form-${total}-quantity" value="1">&ndash;&gt;-->
+<!--&lt;!&ndash;                    </div>&ndash;&gt;-->
+<!--&lt;!&ndash;                    <div class="form-group col-md-2">&ndash;&gt;-->
+<!--&lt;!&ndash;                        ${total === 0 ? '<label class="panel-body-text">Total:</label>' : ''}&ndash;&gt;-->
+<!--&lt;!&ndash;                        <input type="text" class="textinput form-control totalprice" value="${stockPrice}" readonly>&ndash;&gt;-->
+<!--&lt;!&ndash;                    </div>&ndash;&gt;-->
+<!--&lt;!&ndash;                    <div class="form-group col-md-1">&ndash;&gt;-->
+<!--&lt;!&ndash;                        ${total === 0 ? '<label class="panel-body-text" style="color: #000">.</label>' : ''}&ndash;&gt;-->
+<!--&lt;!&ndash;                        <button class="form-control btn btn-danger remove-form-row">-</button>&ndash;&gt;-->
+<!--&lt;!&ndash;                    </div>&ndash;&gt;-->
+<!--&lt;!&ndash;                </div>`;&ndash;&gt;-->
+
+<!--&lt;!&ndash;            $('#stockitem .panel-body').append(newRow);&ndash;&gt;-->
+<!--&lt;!&ndash;            total++;&ndash;&gt;-->
+<!--&lt;!&ndash;            $('#id_form-TOTAL_FORMS').val(total);&ndash;&gt;-->
+
+<!--&lt;!&ndash;            selectedStock.remove();&ndash;&gt;-->
+<!--&lt;!&ndash;        }&ndash;&gt;-->
+<!--&lt;!&ndash;    });&ndash;&gt;-->
+
+
+<!--&lt;!&ndash;    $(document).on('click', '.remove-form-row', function(e){&ndash;&gt;-->
+<!--&lt;!&ndash;        e.preventDefault();&ndash;&gt;-->
+
+<!--&lt;!&ndash;        var row = $(this).closest('.form-row');&ndash;&gt;-->
+<!--&lt;!&ndash;        var stockName = row.find('input[name*="stock"]').closest('.form-group').find('input[type="text"]').val();&ndash;&gt;-->
+<!--&lt;!&ndash;        var stockId = row.find('input[name*="stock"]').val();&ndash;&gt;-->
+<!--&lt;!&ndash;        var stockPrice = row.find('.price').val();&ndash;&gt;-->
+
+<!--&lt;!&ndash;        $('#stock_dropdown').append(`<option value="${stockId}" data-price="${stockPrice}">${stockName}</option>`);&ndash;&gt;-->
+
+<!--&lt;!&ndash;        deleteForm('form', $(this));&ndash;&gt;-->
+<!--&lt;!&ndash;        return false;&ndash;&gt;-->
+<!--&lt;!&ndash;    });&ndash;&gt;-->
+
+<!--&lt;!&ndash;    $(document).on('change', '.quantity', function(){&ndash;&gt;-->
+<!--&lt;!&ndash;        var element = $(this);&ndash;&gt;-->
+<!--&lt;!&ndash;        var quantity = parseFloat(element.val()) || 0;&ndash;&gt;-->
+<!--&lt;!&ndash;        var pricePerItem = parseFloat(element.closest('.form-row').find('.price').val()) || 0;&ndash;&gt;-->
+<!--&lt;!&ndash;        var totalPrice = (quantity * pricePerItem).toFixed(2);&ndash;&gt;-->
+<!--&lt;!&ndash;        element.closest('.form-row').find('.totalprice').val(totalPrice);&ndash;&gt;-->
+<!--&lt;!&ndash;    });&ndash;&gt;-->
+
+<!--&lt;!&ndash;</script>&ndash;&gt;-->
+
+
+<!--&lt;!&ndash;<script type="text/javascript">&ndash;&gt;-->
+<!--&lt;!&ndash;    // Initialize total as 0&ndash;&gt;-->
+<!--&lt;!&ndash;    var total = {{ formset.total_form_count }};&ndash;&gt;-->
+<!--&lt;!&ndash;    var total = 0;&ndash;&gt;-->
+
+<!--&lt;!&ndash;    function updateElementIndex(el, prefix, ndx) {&ndash;&gt;-->
+<!--&lt;!&ndash;        var id_regex = new RegExp('(' + prefix + '-\\d+)');&ndash;&gt;-->
+<!--&lt;!&ndash;        var replacement = prefix + '-' + ndx;&ndash;&gt;-->
+<!--&lt;!&ndash;        if ($(el).attr("for")) $(el).attr("for", $(el).attr("for").replace(id_regex, replacement));&ndash;&gt;-->
+<!--&lt;!&ndash;        if (el.id) el.id = el.id.replace(id_regex, replacement);&ndash;&gt;-->
+<!--&lt;!&ndash;        if (el.name) el.name = el.name.replace(id_regex, replacement);&ndash;&gt;-->
+<!--&lt;!&ndash;    }&ndash;&gt;-->
+
+
+<!--&lt;!&ndash;    $(document).on('change', '#stock_dropdown', function() {&ndash;&gt;-->
+<!--&lt;!&ndash;        var selectedStock = $(this).find(':selected');&ndash;&gt;-->
+<!--&lt;!&ndash;        var stockName = selectedStock.text();&ndash;&gt;-->
+<!--&lt;!&ndash;        var stockId = selectedStock.val();&ndash;&gt;-->
+<!--&lt;!&ndash;        var stockPrice = selectedStock.data('price');&ndash;&gt;-->
+
+<!--&lt;!&ndash;        if(stockId) {&ndash;&gt;-->
+<!--&lt;!&ndash;            var serialNo = total + 1;&ndash;&gt;-->
+
+<!--&lt;!&ndash;            var newRow = `<div class="row form-row">&ndash;&gt;-->
+<!--&lt;!&ndash;                <input type="hidden" name="form-${total}-DELETE" id="id_form-${total}-DELETE">&ndash;&gt;-->
+<!--&lt;!&ndash;                <div class="form-group col-md-1">&ndash;&gt;-->
+<!--&lt;!&ndash;                    ${total === 0 ? '<label class="panel-body-text">Sr No:</label>' : ''}&ndash;&gt;-->
+<!--&lt;!&ndash;                    <span class="form-control-plaintext">${serialNo}</span>&ndash;&gt;-->
+<!--&lt;!&ndash;                </div>&ndash;&gt;-->
+<!--&lt;!&ndash;                <div class="form-group col-md-4">&ndash;&gt;-->
+<!--&lt;!&ndash;                    ${total === 0 ? '<label class="panel-body-text">Stock:</label>' : ''}&ndash;&gt;-->
+<!--&lt;!&ndash;                    <div>&ndash;&gt;-->
+<!--&lt;!&ndash;                      <input type="hidden" class="form-control textinput" value="${stockName}" disabled>&ndash;&gt;-->
+<!--&lt;!&ndash;                      <span class="form-control-plaintext">${stockName}</span>&ndash;&gt;-->
+<!--&lt;!&ndash;                      <input type="hidden" name="form-${total}-stock" value="${stockId}">&ndash;&gt;-->
+<!--&lt;!&ndash;                    </div>&ndash;&gt;-->
+<!--&lt;!&ndash;                </div>&ndash;&gt;-->
+<!--&lt;!&ndash;                <div class="form-group col-md-2">&ndash;&gt;-->
+<!--&lt;!&ndash;                    ${total === 0 ? '<label class="panel-body-text">Price per item:</label>' : ''}&ndash;&gt;-->
+<!--&lt;!&ndash;                    <input type="text" class="form-control price" name="form-${total}-perprice" value="1">&ndash;&gt;-->
+<!--&lt;!&ndash;                </div>&ndash;&gt;-->
+<!--&lt;!&ndash;                <div class="form-group col-md-2">&ndash;&gt;-->
+<!--&lt;!&ndash;                    ${total === 0 ? '<label class="panel-body-text">Quantity:</label>' : ''}&ndash;&gt;-->
+<!--&lt;!&ndash;                    <input type="number" class="form-control quantity" name="form-${total}-quantity" value="1">&ndash;&gt;-->
+<!--&lt;!&ndash;                </div>&ndash;&gt;-->
+<!--&lt;!&ndash;                <div class="form-group col-md-2">&ndash;&gt;-->
+<!--&lt;!&ndash;                    ${total === 0 ? '<label class="panel-body-text">Total:</label>' : ''}&ndash;&gt;-->
+<!--&lt;!&ndash;                    <input type="text" class="textinput form-control totalprice" value="${stockPrice}" readonly>&ndash;&gt;-->
+<!--&lt;!&ndash;                </div>&ndash;&gt;-->
+<!--&lt;!&ndash;                <div class="form-group col-md-1">&ndash;&gt;-->
+<!--&lt;!&ndash;                    ${total === 0 ? '<label class="panel-body-text" style="color: #000">.</label>' : ''}&ndash;&gt;-->
+<!--&lt;!&ndash;                    <button class="form-control btn btn-danger remove-form-row">-</button>&ndash;&gt;-->
+<!--&lt;!&ndash;                </div>&ndash;&gt;-->
+<!--&lt;!&ndash;            </div>`;&ndash;&gt;-->
+
+<!--&lt;!&ndash;            $('#stockitem .panel-body').append(newRow);&ndash;&gt;-->
+<!--&lt;!&ndash;            total++;&ndash;&gt;-->
+<!--&lt;!&ndash;            $('#id_form-TOTAL_FORMS').val(total); // Update total form count&ndash;&gt;-->
+
+<!--&lt;!&ndash;            selectedStock.remove();&ndash;&gt;-->
+<!--&lt;!&ndash;        }&ndash;&gt;-->
+<!--&lt;!&ndash;    });&ndash;&gt;-->
+
+<!--&lt;!&ndash;    function deleteForm(prefix, btn) {&ndash;&gt;-->
+<!--&lt;!&ndash;        var formRow = btn.closest('.form-row');&ndash;&gt;-->
+<!--&lt;!&ndash;        var formIndex = formRow.find('input:hidden[name*="stock"]').attr('name').match(/-(\d+)-/)[1];&ndash;&gt;-->
+<!--&lt;!&ndash;        var totalForms = $('#id_' + prefix + '-TOTAL_FORMS').val();&ndash;&gt;-->
+
+<!--&lt;!&ndash;        // Hide the form row and mark it as deleted&ndash;&gt;-->
+<!--&lt;!&ndash;        formRow.hide();&ndash;&gt;-->
+<!--&lt;!&ndash;        $('#id_' + prefix + '-' + formIndex + '-DELETE').val('on'); // Set the DELETE field to 'on'&ndash;&gt;-->
+
+<!--&lt;!&ndash;        // Decrease the total form count&ndash;&gt;-->
+<!--&lt;!&ndash;        totalForms&#45;&#45;;&ndash;&gt;-->
+<!--&lt;!&ndash;        $('#id_' + prefix + '-TOTAL_FORMS').val(totalForms);&ndash;&gt;-->
+
+<!--&lt;!&ndash;        total&#45;&#45;;&ndash;&gt;-->
+
+<!--&lt;!&ndash;        // Re-enable the stock option in the dropdown&ndash;&gt;-->
+<!--&lt;!&ndash;        var stockName = formRow.find('input[name*="stock"]').closest('.form-group').find('input[type="text"]').val();&ndash;&gt;-->
+<!--&lt;!&ndash;        var stockId = formRow.find('input[name*="stock"]').val();&ndash;&gt;-->
+<!--&lt;!&ndash;        var stockPrice = formRow.find('.price').val();&ndash;&gt;-->
+<!--&lt;!&ndash;        $('#stock_dropdown').append(`<option value="${stockId}" data-price="${stockPrice}">${stockName}</option>`);&ndash;&gt;-->
+<!--&lt;!&ndash;    }&ndash;&gt;-->
+
+
+<!--&lt;!&ndash;    $(document).on('click', '.remove-form-row', function(e){&ndash;&gt;-->
+<!--&lt;!&ndash;        e.preventDefault();&ndash;&gt;-->
+
+<!--&lt;!&ndash;        var row = $(this).closest('.form-row');&ndash;&gt;-->
+<!--&lt;!&ndash;        var stockName = row.find('input[name*="stock"]').closest('.form-group').find('input[type="text"]').val();&ndash;&gt;-->
+<!--&lt;!&ndash;        var stockId = row.find('input[name*="stock"]').val();&ndash;&gt;-->
+<!--&lt;!&ndash;        var stockPrice = row.find('.price').val();&ndash;&gt;-->
+
+<!--&lt;!&ndash;        $('#stock_dropdown').append(`<option value="${stockId}" data-price="${stockPrice}">${stockName}</option>`);&ndash;&gt;-->
+
+<!--&lt;!&ndash;        deleteForm('form', $(this));&ndash;&gt;-->
+<!--&lt;!&ndash;        return false;&ndash;&gt;-->
+<!--&lt;!&ndash;    });&ndash;&gt;-->
+
+<!--&lt;!&ndash;    $(document).on('change', '.quantity', function(){&ndash;&gt;-->
+<!--&lt;!&ndash;        var element = $(this);&ndash;&gt;-->
+<!--&lt;!&ndash;        var quantity = parseFloat(element.val()) || 0;&ndash;&gt;-->
+<!--&lt;!&ndash;        var pricePerItem = parseFloat(element.closest('.form-row').find('.price').val()) || 0;&ndash;&gt;-->
+<!--&lt;!&ndash;        var totalPrice = (quantity * pricePerItem).toFixed(2);&ndash;&gt;-->
+<!--&lt;!&ndash;        element.closest('.form-row').find('.totalprice').val(totalPrice);&ndash;&gt;-->
+<!--&lt;!&ndash;    });&ndash;&gt;-->
+
+<!--&lt;!&ndash;    // Before submission, check for any forms that are partially filled but not marked for deletion&ndash;&gt;-->
+<!--&lt;!&ndash;    $('form').on('submit', function() {&ndash;&gt;-->
+<!--&lt;!&ndash;        $('.form-row').each(function(index, formRow) {&ndash;&gt;-->
+<!--&lt;!&ndash;            var isMarkedForDeletion = $(formRow).find('input[name*="DELETE"]').prop('checked');&ndash;&gt;-->
+<!--&lt;!&ndash;            var isEmpty = true;&ndash;&gt;-->
+
+<!--&lt;!&ndash;            // Check if the form row has any filled fields&ndash;&gt;-->
+<!--&lt;!&ndash;            $(formRow).find('input').each(function() {&ndash;&gt;-->
+<!--&lt;!&ndash;                if ($(this).val()) {&ndash;&gt;-->
+<!--&lt;!&ndash;                    isEmpty = false;&ndash;&gt;-->
+<!--&lt;!&ndash;                    return false;&ndash;&gt;-->
+<!--&lt;!&ndash;                }&ndash;&gt;-->
+<!--&lt;!&ndash;            });&ndash;&gt;-->
+
+<!--&lt;!&ndash;            // If the form is empty but not marked for deletion, mark it for deletion&ndash;&gt;-->
+<!--&lt;!&ndash;            if (isEmpty && !isMarkedForDeletion) {&ndash;&gt;-->
+<!--&lt;!&ndash;                $(formRow).find('input[name*="DELETE"]').prop('checked', true);&ndash;&gt;-->
+<!--&lt;!&ndash;                $(formRow).remove();&ndash;&gt;-->
+<!--&lt;!&ndash;            }&ndash;&gt;-->
+<!--&lt;!&ndash;        });&ndash;&gt;-->
+
+<!--&lt;!&ndash;        return true;  // Continue with the form submission&ndash;&gt;-->
+<!--&lt;!&ndash;    });&ndash;&gt;-->
+
+
+<!--&lt;!&ndash;</script>&ndash;&gt;-->
+
+<!--<script type="text/javascript" src="{% static 'js/jquery-3.2.1.slim.min.js' %}"></script>-->
+<!--<script type="text/javascript" src="{% static 'js/dialogbox.js' %}"></script>-->
+<!--&lt;!&ndash;<script type="text/javascript">&ndash;&gt;-->
+
+<!--&lt;!&ndash;    $(document).ready(function() {&ndash;&gt;-->
+<!--&lt;!&ndash;        // Load subcategories when category is selected&ndash;&gt;-->
+<!--&lt;!&ndash;        $('#category_dropdown').change(function() {&ndash;&gt;-->
+<!--&lt;!&ndash;            var categoryId = $(this).val();&ndash;&gt;-->
+<!--&lt;!&ndash;            var subcategoryDropdown = $('#subcategory_dropdown');&ndash;&gt;-->
+<!--&lt;!&ndash;            var stockDropdown = $('#stock_dropdown');&ndash;&gt;-->
+
+<!--&lt;!&ndash;            // Reset and disable dropdowns&ndash;&gt;-->
+<!--&lt;!&ndash;            subcategoryDropdown.empty().append('<option value="">Select Subcategory</option>').prop('disabled', true);&ndash;&gt;-->
+<!--&lt;!&ndash;            stockDropdown.empty().append('<option value="">Select Stock</option>').prop('disabled', true);&ndash;&gt;-->
+
+<!--&lt;!&ndash;            if (categoryId) {&ndash;&gt;-->
+<!--&lt;!&ndash;                $.ajax({&ndash;&gt;-->
+<!--&lt;!&ndash;                    url: '{% url "get_subcategories" %}',&ndash;&gt;-->
+<!--&lt;!&ndash;                    data: { 'category_id': categoryId },&ndash;&gt;-->
+<!--&lt;!&ndash;                    success: function(data) {&ndash;&gt;-->
+<!--&lt;!&ndash;                        $.each(data.subcategories, function(index, subcategory) {&ndash;&gt;-->
+<!--&lt;!&ndash;                            subcategoryDropdown.append('<option value="' + subcategory.id + '">' + subcategory.name + '</option>');&ndash;&gt;-->
+<!--&lt;!&ndash;                        });&ndash;&gt;-->
+<!--&lt;!&ndash;                        subcategoryDropdown.prop('disabled', false);&ndash;&gt;-->
+<!--&lt;!&ndash;                    }&ndash;&gt;-->
+<!--&lt;!&ndash;                });&ndash;&gt;-->
+<!--&lt;!&ndash;            }&ndash;&gt;-->
+<!--&lt;!&ndash;        });&ndash;&gt;-->
+
+<!--&lt;!&ndash;        // Load stocks when subcategory is selected&ndash;&gt;-->
+<!--&lt;!&ndash;        $('#subcategory_dropdown').change(function() {&ndash;&gt;-->
+<!--&lt;!&ndash;            var subcategoryId = $(this).val();&ndash;&gt;-->
+<!--&lt;!&ndash;            var stockDropdown = $('#stock_dropdown');&ndash;&gt;-->
+
+<!--&lt;!&ndash;            // Reset and disable stock dropdown&ndash;&gt;-->
+<!--&lt;!&ndash;            stockDropdown.empty().append('<option value="">Select Stock</option>').prop('disabled', true);&ndash;&gt;-->
+
+<!--&lt;!&ndash;            if (subcategoryId) {&ndash;&gt;-->
+<!--&lt;!&ndash;                $.ajax({&ndash;&gt;-->
+<!--&lt;!&ndash;                    url: '{% url "get_stocks" %}',&ndash;&gt;-->
+<!--&lt;!&ndash;                    data: { 'subcategory_id': subcategoryId },&ndash;&gt;-->
+<!--&lt;!&ndash;                    success: function(data) {&ndash;&gt;-->
+<!--&lt;!&ndash;                        $.each(data.stocks, function(index, stock) {&ndash;&gt;-->
+<!--&lt;!&ndash;                            stockDropdown.append('<option value="' + stock.id + '" data-name="' + stock.name + '" data-price="' + stock.price + '">' + stock.name + '</option>');&ndash;&gt;-->
+<!--&lt;!&ndash;                        });&ndash;&gt;-->
+<!--&lt;!&ndash;                        stockDropdown.prop('disabled', false);&ndash;&gt;-->
+<!--&lt;!&ndash;                    }&ndash;&gt;-->
+<!--&lt;!&ndash;                });&ndash;&gt;-->
+<!--&lt;!&ndash;            }&ndash;&gt;-->
+<!--&lt;!&ndash;        });&ndash;&gt;-->
+<!--&lt;!&ndash;    });&ndash;&gt;-->
+<!--&lt;!&ndash;</script>&ndash;&gt;-->
+
+<!--<script type="text/javascript">-->
+<!--$(document).ready(function() {-->
+<!--    var $gstToggleContainer = $('#gstToggleContainer');-->
+<!--    var $gstLabel = $('#gstLabel');-->
+
+<!--    // Handle category dropdown change-->
+<!--    $('#category_dropdown').on('change', function() {-->
+<!--        var categoryId = $(this).val();-->
+<!--        var $subcategoryDropdown = $('#subcategory_dropdown');-->
+<!--        var $subcategoryLabel = $('#subcategory_label');-->
+<!--        var $stockDropdown = $('#stock_dropdown');-->
+<!--        var $stockLabel = $('#stock_label');-->
+
+<!--        if (categoryId) {-->
+<!--            $.ajax({-->
+<!--                url: '{% url "get_subcategories" %}',-->
+<!--                data: { 'category_id': categoryId },-->
+<!--                success: function(data) {-->
+<!--                    $subcategoryDropdown.empty().append('<option value="">Select Subcategory</option>');-->
+<!--                    $.each(data.subcategories, function(index, subcategory) {-->
+<!--                        $subcategoryDropdown.append(`<option value="${subcategory.id}">${subcategory.name}</option>`);-->
+<!--                    });-->
+<!--                    $subcategoryDropdown.show();-->
+<!--                    $subcategoryLabel.show();-->
+<!--                },-->
+<!--                error: function(xhr, status, error) {-->
+<!--                    console.error("Error fetching subcategories: ", error);-->
+<!--                }-->
+<!--            });-->
+<!--        } else {-->
+<!--            $subcategoryDropdown.empty().append('<option value="">Select Subcategory</option>').hide();-->
+<!--            $subcategoryLabel.hide();-->
+<!--            $stockDropdown.empty().append('<option value="">Select Stock</option>').hide();-->
+<!--            $stockLabel.hide();-->
+<!--            $gstToggleContainer.hide(); // Hide toggle button when no category selected-->
+<!--        }-->
+<!--    });-->
+
+<!--    // Handle subcategory dropdown change-->
+<!--    $('#subcategory_dropdown').on('change', function() {-->
+<!--        var subcategoryId = $(this).val();-->
+<!--        var $stockDropdown = $('#stock_dropdown');-->
+<!--        var $stockLabel = $('#stock_label');-->
+
+<!--        if (subcategoryId) {-->
+<!--            $.ajax({-->
+<!--                url: '{% url "get_stocks" %}',-->
+<!--                data: { 'subcategory_id': subcategoryId },-->
+<!--                success: function(data) {-->
+<!--                    $stockDropdown.empty().append('<option value="">Select Stock</option>');-->
+<!--                    $.each(data.stocks, function(index, stock) {-->
+<!--                        $stockDropdown.append(`<option value="${stock.id}" data-name="${stock.name}" data-price="${stock.price}">${stock.name}</option>`);-->
+<!--                    });-->
+<!--                    $stockDropdown.show();-->
+<!--                    $stockLabel.show();-->
+<!--                    $gstToggleContainer.show(); // Show the toggle button when stock dropdown is displayed-->
+<!--                },-->
+<!--                error: function(xhr, status, error) {-->
+<!--                    console.error("Error fetching stocks: ", error);-->
+<!--                }-->
+<!--            });-->
+<!--        } else {-->
+<!--            $stockDropdown.empty().append('<option value="">Select Stock</option>').hide();-->
+<!--            $stockLabel.hide();-->
+<!--            $gstToggleContainer.hide(); // Hide toggle button when no subcategory is selected-->
+<!--        }-->
+<!--    });-->
+
+<!--     // Handle GST toggle switch-->
+<!--    $('#gstToggle').on('change', function() {-->
+<!--        if ($(this).is(':checked')) {-->
+<!--            $gstLabel.text('Including GST');-->
+<!--        } else {-->
+<!--            $gstLabel.text('Excluding GST');-->
+<!--        }-->
+<!--    });-->
+
+<!--    // Initialize total as 0-->
+<!--    var total = 0;-->
+
+<!--    $(document).on('change', '#stock_dropdown', function() {-->
+<!--        var selectedStock = $(this).find(':selected');-->
+<!--        var stockName = selectedStock.text();-->
+<!--        var stockId = selectedStock.val();-->
+<!--        var stockPrice = selectedStock.data('price');-->
+
+<!--        $.ajax({-->
+<!--            url: '{% url "get_stock_quantity" %}',-->
+<!--            data: {-->
+<!--                'stock_id': stockId-->
+<!--            },-->
+<!--            success: function(data) {-->
+<!--                var stockQuantity = data.quantity;-->
+<!--                var stockAlert = data.stock_alert;-->
+<!--                var badgeClass = stockQuantity > stockAlert ? 'success' : 'danger';-->
+<!--                var stockgst = data.gst;-->
+<!--                var badgeClass1 = stockgst;-->
+
+<!--                if (stockId) {-->
+<!--                    var serialNo = total + 1;-->
+
+<!--                    var newRow = `<div class="row form-row">-->
+<!--                        <input type="hidden" name="form-${total}-DELETE" id="id_form-${total}-DELETE">-->
+<!--                        <div class="form-group col-md-1">-->
+<!--                            ${total === 0 ? '<label class="panel-body-text">Sr No:</label>' : ''}-->
+<!--                            <span class="form-control-plaintext">${serialNo}</span>-->
+<!--                        </div>-->
+
+<!--                        <div class="form-group col-md-4">-->
+<!--                            ${total === 0 ? '<label class="panel-body-text">Stock:</label>' : ''}-->
+<!--                            <div>-->
+<!--                              <input type="hidden" class="form-control textinput" value="${stockName}" disabled>-->
+<!--                              <span class="form-control-plaintext">${stockName}</span>-->
+<!--                              <input type="hidden" name="form-${total}-stock" value="${stockId}">-->
+<!--                            </div>-->
+<!--                        </div>-->
+<!--                        <div class="form-group col-md-1">-->
+<!--                            ${total === 0 ? '<label class="panel-body-text">Avb.Qunt.:</label>' : ''}-->
+<!--                            <div class="d-flex align-items-center mt-1">-->
+<!--                             <input type="hidden" class="form-control stock-quantity" value="${stockQuantity}" readonly>-->
+<!--                            <span class="badge ${badgeClass}">${stockQuantity}</span>-->
+<!--                            </div>-->
+<!--                        </div>-->
+
+<!--                        <div class="form-group col-md-2">-->
+<!--                            ${total === 0 ? '<label class="panel-body-text">Price per item:</label>' : ''}-->
+<!--                            <input type="text" class="form-control price" name="form-${total}-perprice" required>-->
+<!--                        </div>-->
+
+<!--                        <div class="form-group quantity-container col-md-2">-->
+<!--                            ${total === 0 ? '<label class="panel-body-text">Quantity:</label>' : ''}-->
+<!--                            <input type="number" class="form-control quantity" name="form-${total}-quantity" value=1>-->
+<!--                        </div>-->
+
+<!--                        <div class="form-group gst-container col-md-1" style="display: none;">-->
+<!--                            ${total === 0 ? '<label class="panel-body-text" id="gst_label">GST :</label>' : ''}-->
+<!--                            <div class="d-flex align-items-center mt-1">-->
+<!--                                <input type="hidden" class="form-control gst" value="${stockgst}" readonly>-->
+<!--                                <span class="badge ${badgeClass1}" id="gst_badge" style="font-size: 1rem;">${stockgst}%</span> &lt;!&ndash; Initially hidden &ndash;&gt;-->
+<!--                            </div>-->
+<!--                        </div>-->
+
+
+
+<!--                        <div class="form-group col-md-2">-->
+<!--                            ${total === 0 ? '<label class="panel-body-text">Total:</label>' : ''}-->
+<!--                            <div class="custom-flex">-->
+<!--                                <input type="text" class="textinput form-control totalprice me-2" value="${stockPrice}" readonly>-->
+
+
+<!--                                <img src="{% static 'images/letter-x (1).png' %}" class="remove-form-row" alt="Remove" style="cursor: pointer; width: 15px; height: 15px;">-->
+<!--                            </div>-->
+<!--                        </div>-->
+<!--                    </div>`;-->
+
+<!--                    $('#stockitem .panel-body').append(newRow);-->
+<!--                    total++;-->
+<!--                    $('#id_form-TOTAL_FORMS').val(total);-->
+
+<!--                    selectedStock.remove();-->
+<!--                }-->
+<!--                updateTotals(); // Ensure totals are updated after adding a row-->
+<!--            }-->
+<!--        });-->
+
+<!--        $('.quantity, .price').trigger('change');-->
+<!--        $('#fieldset-container').show();-->
+<!--    });-->
+
+<!--    function deleteForm(prefix, btn) {-->
+<!--        var formRow = btn.closest('.form-row');-->
+<!--        var formIndex = formRow.find('input:hidden[name*="stock"]').attr('name').match(/-(\d+)-/)[1];-->
+<!--        var totalForms = $('#id_' + prefix + '-TOTAL_FORMS').val();-->
+
+<!--        var stockId = formRow.find('input[name*="stock"]').val();-->
+<!--        var stockPrice = formRow.find('.price').val();-->
+<!--        var stockName = formRow.find('input[name*="stock"]').closest('.form-group').find('span').text();-->
+
+<!--        formRow.remove();-->
+
+<!--        totalForms&#45;&#45;;-->
+<!--        $('#id_' + prefix + '-TOTAL_FORMS').val(totalForms);-->
+
+<!--        $('#stockitem .form-row').each(function(index, row) {-->
+<!--            $(row).find('.form-control-plaintext').first().text(index + 1);-->
+<!--            updateElementIndex(row, prefix, index);-->
+<!--        });-->
+
+<!--        total&#45;&#45;;-->
+
+<!--        $('#stock_dropdown').append(`<option value="${stockId}" data-price="${stockPrice}">${stockName}</option>`);-->
+
+<!--        // Recalculate totals after deletion-->
+<!--        updateTotals();-->
+<!--    }-->
+
+<!--    $(document).on('click', '.remove-form-row', function(e){-->
+<!--        e.preventDefault();-->
+
+<!--        deleteForm('form', $(this));-->
+
+<!--        if ($('#stockitem .form-row').length === 0) {-->
+<!--            $('#fieldset-container').hide();-->
+<!--        }-->
+
+<!--        $('.quantity, .price').trigger('change');-->
+<!--    });-->
+
+<!--    function updateElementIndex(el, prefix, ndx) {-->
+<!--        var id_regex = new RegExp('(' + prefix + '-\\d+-)');-->
+<!--        var replacement = prefix + '-' + ndx + '-';-->
+<!--        $(el).find(':input').each(function() {-->
+<!--            if (this.id) this.id = this.id.replace(id_regex, replacement);-->
+<!--            if (this.name) this.name = this.name.replace(id_regex, replacement);-->
+<!--        });-->
+<!--    }-->
+
+<!--    function updateSerialNumbers() {-->
+<!--        $('#stockitem .form-row').each(function(index, row) {-->
+<!--            $(row).find('.form-control-plaintext').text(index + 1);-->
+<!--        });-->
+<!--    }-->
+
+<!--    function updateTotals() {-->
+<!--        var totalQuantity = 0;-->
+<!--        var totalAmount = 0;-->
+<!--        var gstAmount = 0;-->
+<!--        var gstRate = 0;  // Assuming a fixed GST rate. If GST is item-specific, move it inside the loop.-->
+<!--        var finalAmount = 0;-->
+
+<!--        $('#stockitem .form-row').each(function() {-->
+<!--            var quantity = parseFloat($(this).find('.quantity').val()) || 0;-->
+<!--            var pricePerItem = parseFloat($(this).find('.price').val()) || 0;-->
+<!--            var gstRate = parseFloat($(this).find('.gst').val()) || 0;  // Use this if GST is item-specific-->
+<!--            var totalPrice = quantity * pricePerItem;-->
+
+<!--            totalQuantity += quantity;-->
+<!--            totalAmount += totalPrice;-->
+
+<!--            var itemGstAmount = (totalPrice * gstRate) / 100;-->
+<!--            gstAmount += itemGstAmount;  // Sum of GST for each item-->
+
+<!--            $(this).find('.totalprice').val(totalPrice.toFixed(2));-->
+<!--        });-->
+
+<!--        finalAmount = totalAmount + gstAmount;-->
+
+<!--        // Update the total quantity and amount-->
+<!--        $('#total_quantity').val(totalQuantity);-->
+<!--        $('#total_amount').val(totalAmount.toFixed(2));-->
+
+<!--        // Update the GST and final amount-->
+<!--        $('#gst_amount').val(gstAmount.toFixed(2));-->
+<!--        $('#final_amount').val(finalAmount.toFixed(2));-->
+<!--    }-->
+
+<!--    // Recalculate totals when quantity or price is updated-->
+<!--    $(document).on('input', '.quantity, .price, .gst', function() {-->
+<!--        updateTotals();-->
+<!--    });-->
+
+<!--    // Initial totals calculation-->
+<!--    updateTotals();-->
+
+
+
+<!--    // Confirmation dialog before form submission-->
+<!--    document.getElementById('purchaseForm').onsubmit = function() {-->
+<!--        var confirmation = confirm("Are You sure you want to Purchases Bill Store in Stock?");-->
+<!--        if (confirmation) {-->
+<!--            return true;  // Proceed with form submission-->
+<!--        } else {-->
+<!--            return false;  // Prevent form submission-->
+<!--        }-->
+<!--    };-->
+<!--});-->
+<!--</script>-->
+
+
+
+<!--&lt;!&ndash;<script type="text/javascript">&ndash;&gt;-->
+
+<!--&lt;!&ndash;  $(document).ready(function() {&ndash;&gt;-->
+<!--&lt;!&ndash;        // Handle category dropdown change&ndash;&gt;-->
+<!--&lt;!&ndash;        $('#category_dropdown').on('change', function() {&ndash;&gt;-->
+<!--&lt;!&ndash;            var categoryId = $(this).val();&ndash;&gt;-->
+<!--&lt;!&ndash;            var $subcategoryDropdown = $('#subcategory_dropdown');&ndash;&gt;-->
+<!--&lt;!&ndash;            var $subcategoryLabel = $('#subcategory_label');&ndash;&gt;-->
+<!--&lt;!&ndash;            var $stockDropdown = $('#stock_dropdown');&ndash;&gt;-->
+<!--&lt;!&ndash;            var $stockLabel = $('#stock_label');&ndash;&gt;-->
+
+<!--&lt;!&ndash;            if (categoryId) {&ndash;&gt;-->
+<!--&lt;!&ndash;                $.ajax({&ndash;&gt;-->
+<!--&lt;!&ndash;                    url: '{% url "get_subcategories" %}',&ndash;&gt;-->
+<!--&lt;!&ndash;                    data: { 'category_id': categoryId },&ndash;&gt;-->
+<!--&lt;!&ndash;                    success: function(data) {&ndash;&gt;-->
+<!--&lt;!&ndash;                        // Populate subcategory dropdown with new options&ndash;&gt;-->
+<!--&lt;!&ndash;                        $subcategoryDropdown.empty().append('<option value="">Select Subcategory</option>');&ndash;&gt;-->
+<!--&lt;!&ndash;                        $.each(data.subcategories, function(index, subcategory) {&ndash;&gt;-->
+<!--&lt;!&ndash;                            $subcategoryDropdown.append(`<option value="${subcategory.id}">${subcategory.name}</option>`);&ndash;&gt;-->
+<!--&lt;!&ndash;                        });&ndash;&gt;-->
+
+<!--&lt;!&ndash;                        // Show subcategory dropdown and its label&ndash;&gt;-->
+<!--&lt;!&ndash;                        $subcategoryDropdown.show();&ndash;&gt;-->
+<!--&lt;!&ndash;                        $subcategoryLabel.show();&ndash;&gt;-->
+<!--&lt;!&ndash;                    },&ndash;&gt;-->
+<!--&lt;!&ndash;                    error: function(xhr, status, error) {&ndash;&gt;-->
+<!--&lt;!&ndash;                        console.error("Error fetching subcategories: ", error);&ndash;&gt;-->
+<!--&lt;!&ndash;                    }&ndash;&gt;-->
+<!--&lt;!&ndash;                });&ndash;&gt;-->
+<!--&lt;!&ndash;            } else {&ndash;&gt;-->
+<!--&lt;!&ndash;                // Hide subcategory dropdown and its label, and clear options&ndash;&gt;-->
+<!--&lt;!&ndash;                $subcategoryDropdown.empty().append('<option value="">Select Subcategory</option>').hide();&ndash;&gt;-->
+<!--&lt;!&ndash;                $subcategoryLabel.hide();&ndash;&gt;-->
+
+<!--&lt;!&ndash;                // Also hide stock dropdown and its label, and clear options&ndash;&gt;-->
+<!--&lt;!&ndash;                $stockDropdown.empty().append('<option value="">Select Stock</option>').hide();&ndash;&gt;-->
+<!--&lt;!&ndash;                $stockLabel.hide();&ndash;&gt;-->
+<!--&lt;!&ndash;            }&ndash;&gt;-->
+<!--&lt;!&ndash;        });&ndash;&gt;-->
+
+<!--&lt;!&ndash;        // Handle subcategory dropdown change&ndash;&gt;-->
+<!--&lt;!&ndash;        $('#subcategory_dropdown').on('change', function() {&ndash;&gt;-->
+<!--&lt;!&ndash;            var subcategoryId = $(this).val();&ndash;&gt;-->
+<!--&lt;!&ndash;            var $stockDropdown = $('#stock_dropdown');&ndash;&gt;-->
+<!--&lt;!&ndash;            var $stockLabel = $('#stock_label');&ndash;&gt;-->
+
+<!--&lt;!&ndash;            if (subcategoryId) {&ndash;&gt;-->
+<!--&lt;!&ndash;                $.ajax({&ndash;&gt;-->
+<!--&lt;!&ndash;                    url: '{% url "get_stocks" %}',&ndash;&gt;-->
+<!--&lt;!&ndash;                    data: { 'subcategory_id': subcategoryId },&ndash;&gt;-->
+<!--&lt;!&ndash;                    success: function(data) {&ndash;&gt;-->
+<!--&lt;!&ndash;                        // Populate stock dropdown with new options&ndash;&gt;-->
+<!--&lt;!&ndash;                        $stockDropdown.empty().append('<option value="">Select Stock</option>');&ndash;&gt;-->
+<!--&lt;!&ndash;                        $.each(data.stocks, function(index, stock) {&ndash;&gt;-->
+<!--&lt;!&ndash;                            $stockDropdown.append(`<option value="${stock.id}" data-name="${stock.name}" data-price="${stock.price}">${stock.name}</option>`);&ndash;&gt;-->
+<!--&lt;!&ndash;                        });&ndash;&gt;-->
+
+<!--&lt;!&ndash;                        // Show stock dropdown and its label&ndash;&gt;-->
+<!--&lt;!&ndash;                        $stockDropdown.show();&ndash;&gt;-->
+<!--&lt;!&ndash;                        $stockLabel.show();&ndash;&gt;-->
+<!--&lt;!&ndash;                    },&ndash;&gt;-->
+<!--&lt;!&ndash;                    error: function(xhr, status, error) {&ndash;&gt;-->
+<!--&lt;!&ndash;                        console.error("Error fetching stocks: ", error);&ndash;&gt;-->
+<!--&lt;!&ndash;                    }&ndash;&gt;-->
+<!--&lt;!&ndash;                });&ndash;&gt;-->
+<!--&lt;!&ndash;            } else {&ndash;&gt;-->
+<!--&lt;!&ndash;                // Hide stock dropdown and its label, and clear options&ndash;&gt;-->
+<!--&lt;!&ndash;                $stockDropdown.empty().append('<option value="">Select Stock</option>').hide();&ndash;&gt;-->
+<!--&lt;!&ndash;                $stockLabel.hide();&ndash;&gt;-->
+<!--&lt;!&ndash;            }&ndash;&gt;-->
+<!--&lt;!&ndash;        });&ndash;&gt;-->
+
+
+
+
+<!--&lt;!&ndash;    // Initialize total as 0&ndash;&gt;-->
+<!--&lt;!&ndash;    var total = {{ formset.total_form_count }};&ndash;&gt;-->
+<!--&lt;!&ndash;    var total = 0;&ndash;&gt;-->
+
+<!--&lt;!&ndash;    $(document).on('change', '#stock_dropdown', function() {&ndash;&gt;-->
+<!--&lt;!&ndash;        var selectedStock = $(this).find(':selected');&ndash;&gt;-->
+<!--&lt;!&ndash;        var stockName = selectedStock.text();&ndash;&gt;-->
+<!--&lt;!&ndash;        var stockId = selectedStock.val();&ndash;&gt;-->
+<!--&lt;!&ndash;        var stockPrice = selectedStock.data('price');&ndash;&gt;-->
+
+<!--&lt;!&ndash;        // Fetch stock quantity from the server (You may need to adapt this to your setup)&ndash;&gt;-->
+<!--&lt;!&ndash;        $.ajax({&ndash;&gt;-->
+<!--&lt;!&ndash;            url: '{% url "get_stock_quantity" %}', // You need to create this view to return the quantity&ndash;&gt;-->
+<!--&lt;!&ndash;            data: {&ndash;&gt;-->
+<!--&lt;!&ndash;                'stock_id': stockId&ndash;&gt;-->
+<!--&lt;!&ndash;            },&ndash;&gt;-->
+<!--&lt;!&ndash;            success: function(data) {&ndash;&gt;-->
+<!--&lt;!&ndash;                var stockQuantity = data.quantity; // Adjust this based on the response structure&ndash;&gt;-->
+<!--&lt;!&ndash;                var stockAlert = data.stock_alert; // Adjust this based on the response structure&ndash;&gt;-->
+<!--&lt;!&ndash;                var badgeClass = stockQuantity > stockAlert ? 'success' : 'danger';&ndash;&gt;-->
+<!--&lt;!&ndash;                // var badgeClass = stockQuantity > stockAlert ? 'badge-success' : 'badge-danger';&ndash;&gt;-->
+<!--&lt;!&ndash;                // var badgeText = stockQuantity > stockAlert ? 'Stock Sufficient' : 'Stock Low';&ndash;&gt;-->
+
+<!--&lt;!&ndash;                if(stockId) {&ndash;&gt;-->
+<!--&lt;!&ndash;                    var serialNo = total + 1;&ndash;&gt;-->
+
+<!--&lt;!&ndash;                    var newRow = `<div class="row form-row">&ndash;&gt;-->
+<!--&lt;!&ndash;                        <input type="hidden" name="form-${total}-DELETE" id="id_form-${total}-DELETE">&ndash;&gt;-->
+<!--&lt;!&ndash;                        <div class="form-group col-md-1">&ndash;&gt;-->
+<!--&lt;!&ndash;                            ${total === 0 ? '<label class="panel-body-text">Sr No:</label>' : ''}&ndash;&gt;-->
+<!--&lt;!&ndash;                            <span class="form-control-plaintext">${serialNo}</span>&ndash;&gt;-->
+<!--&lt;!&ndash;                        </div>&ndash;&gt;-->
+
+<!--&lt;!&ndash;                        <div class="form-group col-md-4">&ndash;&gt;-->
+<!--&lt;!&ndash;                            ${total === 0 ? '<label class="panel-body-text">Stock:</label>' : ''}&ndash;&gt;-->
+<!--&lt;!&ndash;                            <div>&ndash;&gt;-->
+<!--&lt;!&ndash;                              <input type="hidden" class="form-control textinput" value="${stockName}" disabled>&ndash;&gt;-->
+<!--&lt;!&ndash;                              <span class="form-control-plaintext">${stockName}</span>&ndash;&gt;-->
+<!--&lt;!&ndash;                              <input type="hidden" name="form-${total}-stock" value="${stockId}">&ndash;&gt;-->
+<!--&lt;!&ndash;                            </div>&ndash;&gt;-->
+<!--&lt;!&ndash;                        </div>&ndash;&gt;-->
+<!--&lt;!&ndash;                        <div class="form-group col-md-1">&ndash;&gt;-->
+<!--&lt;!&ndash;                            ${total === 0 ? '<label class="panel-body-text">Avb.Qunt.:</label>' : ''}&ndash;&gt;-->
+<!--&lt;!&ndash;                            <div class="d-flex align-items-center mt-1">&ndash;&gt;-->
+<!--&lt;!&ndash;                             <input type="hidden" class="form-control stock-quantity" value="${stockQuantity}" readonly>&ndash;&gt;-->
+<!--&lt;!&ndash;                            <span class="badge ${badgeClass}">${stockQuantity}</span>&ndash;&gt;-->
+<!--&lt;!&ndash;                            </div>&ndash;&gt;-->
+<!--&lt;!&ndash;                        </div>&ndash;&gt;-->
+
+<!--&lt;!&ndash;                        <div class="form-group col-md-2">&ndash;&gt;-->
+<!--&lt;!&ndash;                            ${total === 0 ? '<label class="panel-body-text">Price per item:</label>' : ''}&ndash;&gt;-->
+<!--&lt;!&ndash;                            <input type="text" class="form-control price" name="form-${total}-perprice" required>&ndash;&gt;-->
+<!--&lt;!&ndash;                        </div>&ndash;&gt;-->
+<!--&lt;!&ndash;                        <div class="form-group col-md-2">&ndash;&gt;-->
+<!--&lt;!&ndash;                            ${total === 0 ? '<label class="panel-body-text">Quantity:</label>' : ''}&ndash;&gt;-->
+<!--&lt;!&ndash;                            <input type="number" class="form-control quantity" name="form-${total}-quantity" value=1>&ndash;&gt;-->
+<!--&lt;!&ndash;                        </div>&ndash;&gt;-->
+
+
+<!--&lt;!&ndash;                        <div class="form-group col-md-2">&ndash;&gt;-->
+<!--&lt;!&ndash;                            ${total === 0 ? '<label class="panel-body-text">Total:</label>' : ''}&ndash;&gt;-->
+<!--&lt;!&ndash;                            <div class="custom-flex">&ndash;&gt;-->
+<!--&lt;!&ndash;                                <input type="text" class="textinput form-control totalprice me-2" value="${stockPrice}" readonly>&ndash;&gt;-->
+<!--&lt;!&ndash;                                <img src="{% static 'images/letter-x (1).png' %}" class="remove-form-row" alt="Remove" style="cursor: pointer; width: 15px; height: 15px;">&ndash;&gt;-->
+<!--&lt;!&ndash;                            </div>&ndash;&gt;-->
+<!--&lt;!&ndash;                        </div>&ndash;&gt;-->
+
+
+
+
+
+
+<!--&lt;!&ndash;                    </div>`;&ndash;&gt;-->
+
+<!--&lt;!&ndash;                    $('#stockitem .panel-body').append(newRow);&ndash;&gt;-->
+<!--&lt;!&ndash;                    total++;&ndash;&gt;-->
+<!--&lt;!&ndash;                    $('#id_form-TOTAL_FORMS').val(total); // Update total form count&ndash;&gt;-->
+
+<!--&lt;!&ndash;                    selectedStock.remove();&ndash;&gt;-->
+
+
+<!--&lt;!&ndash;                }&ndash;&gt;-->
+<!--&lt;!&ndash;            }&ndash;&gt;-->
+<!--&lt;!&ndash;        });&ndash;&gt;-->
+<!--&lt;!&ndash;        // Trigger the calculation&ndash;&gt;-->
+<!--&lt;!&ndash;        $('.quantity, .price').trigger('change');&ndash;&gt;-->
+
+<!--&lt;!&ndash;        // Show the fieldset container after a new row is added&ndash;&gt;-->
+<!--&lt;!&ndash;         $('#fieldset-container').show();&ndash;&gt;-->
+<!--&lt;!&ndash;    });&ndash;&gt;-->
+
+<!--&lt;!&ndash;    function deleteForm(prefix, btn) {&ndash;&gt;-->
+<!--&lt;!&ndash;        var formRow = btn.closest('.form-row');&ndash;&gt;-->
+<!--&lt;!&ndash;        var formIndex = formRow.find('input:hidden[name*="stock"]').attr('name').match(/-(\d+)-/)[1];&ndash;&gt;-->
+<!--&lt;!&ndash;        var totalForms = $('#id_' + prefix + '-TOTAL_FORMS').val();&ndash;&gt;-->
+
+<!--&lt;!&ndash;        // Get the stock name and stock ID before removing the row&ndash;&gt;-->
+<!--&lt;!&ndash;        // var stockName = formRow.find('input[name*="stock"]').closest('.form-group').find('span').text();&ndash;&gt;-->
+<!--&lt;!&ndash;        var stockId = formRow.find('input[name*="stock"]').val();&ndash;&gt;-->
+<!--&lt;!&ndash;        var stockPrice = formRow.find('.price').val();&ndash;&gt;-->
+
+<!--&lt;!&ndash;        // Remove the entire form row&ndash;&gt;-->
+<!--&lt;!&ndash;        formRow.remove();&ndash;&gt;-->
+
+<!--&lt;!&ndash;        // Decrease the total form count&ndash;&gt;-->
+<!--&lt;!&ndash;        totalForms&#45;&#45;;&ndash;&gt;-->
+<!--&lt;!&ndash;        $('#id_' + prefix + '-TOTAL_FORMS').val(totalForms);&ndash;&gt;-->
+
+<!--&lt;!&ndash;        // Update the form indices of the remaining forms&ndash;&gt;-->
+<!--&lt;!&ndash;        $('#stockitem .form-row').each(function(index, row) {&ndash;&gt;-->
+<!--&lt;!&ndash;            // Update the serial number&ndash;&gt;-->
+<!--&lt;!&ndash;            $(row).find('.form-control-plaintext').first().text(index + 1);&ndash;&gt;-->
+
+<!--&lt;!&ndash;            // Update the form index&ndash;&gt;-->
+<!--&lt;!&ndash;            updateElementIndex(row, prefix, index);&ndash;&gt;-->
+<!--&lt;!&ndash;        });&ndash;&gt;-->
+
+<!--&lt;!&ndash;        total&#45;&#45;;&ndash;&gt;-->
+
+<!--&lt;!&ndash;        // Re-enable the stock option in the dropdown with the correct stock name&ndash;&gt;-->
+<!--&lt;!&ndash;        $('#stock_dropdown').append(`<option value="${stockId}" data-price="${stockPrice}">${stockName}</option>`);&ndash;&gt;-->
+<!--&lt;!&ndash;    }&ndash;&gt;-->
+
+<!--&lt;!&ndash;    $(document).on('click', '.remove-form-row', function(e){&ndash;&gt;-->
+<!--&lt;!&ndash;        e.preventDefault();&ndash;&gt;-->
+
+<!--&lt;!&ndash;        var row = $(this).closest('.form-row');&ndash;&gt;-->
+<!--&lt;!&ndash;        var stockName = row.find('input[name*="stock"]').closest('.form-group').find('span').text();&ndash;&gt;-->
+<!--&lt;!&ndash;        var stockId = row.find('input[name*="stock"]').val();&ndash;&gt;-->
+<!--&lt;!&ndash;        var stockPrice = row.find('.price').val();&ndash;&gt;-->
+
+<!--&lt;!&ndash;        $('#stock_dropdown').append(`<option value="${stockId}" data-price="${stockPrice}">${stockName}</option>`);&ndash;&gt;-->
+
+<!--&lt;!&ndash;        deleteForm('form', $(this));&ndash;&gt;-->
+<!--&lt;!&ndash;        return false;&ndash;&gt;-->
+
+
+<!--&lt;!&ndash;        // Hide the fieldset container if no items remain&ndash;&gt;-->
+<!--&lt;!&ndash;        if ($('#stockitem .form-row').length === 0) {&ndash;&gt;-->
+<!--&lt;!&ndash;            $('#fieldset-container').hide();&ndash;&gt;-->
+<!--&lt;!&ndash;        }&ndash;&gt;-->
+
+<!--&lt;!&ndash;        // Trigger the calculation&ndash;&gt;-->
+<!--&lt;!&ndash;        $('.quantity, .price').trigger('change');&ndash;&gt;-->
+
+<!--&lt;!&ndash;    });&ndash;&gt;-->
+
+
+
+<!--&lt;!&ndash;    function updateElementIndex(el, prefix, ndx) {&ndash;&gt;-->
+<!--&lt;!&ndash;        var id_regex = new RegExp('(' + prefix + '-\\d+-)');&ndash;&gt;-->
+<!--&lt;!&ndash;        var replacement = prefix + '-' + ndx + '-';&ndash;&gt;-->
+<!--&lt;!&ndash;        $(el).find(':input').each(function() {&ndash;&gt;-->
+<!--&lt;!&ndash;            if (this.id) this.id = this.id.replace(id_regex, replacement);&ndash;&gt;-->
+<!--&lt;!&ndash;            if (this.name) this.name = this.name.replace(id_regex, replacement);&ndash;&gt;-->
+<!--&lt;!&ndash;        });&ndash;&gt;-->
+<!--&lt;!&ndash;    }&ndash;&gt;-->
+
+<!--&lt;!&ndash;    // Function to update serial numbers&ndash;&gt;-->
+<!--&lt;!&ndash;    function updateSerialNumbers() {&ndash;&gt;-->
+<!--&lt;!&ndash;        $('#stockitem .form-row').each(function(index, row) {&ndash;&gt;-->
+<!--&lt;!&ndash;            $(row).find('.form-control-plaintext').text(index + 1);&ndash;&gt;-->
+<!--&lt;!&ndash;        });&ndash;&gt;-->
+<!--&lt;!&ndash;    }&ndash;&gt;-->
+
+<!--&lt;!&ndash;    $('form').on('submit', function() {&ndash;&gt;-->
+<!--&lt;!&ndash;        var totalForms = $('#id_form-TOTAL_FORMS').val();&ndash;&gt;-->
+
+<!--&lt;!&ndash;        $('.form-row').each(function(index, formRow) {&ndash;&gt;-->
+<!--&lt;!&ndash;            var isMarkedForDeletion = $(formRow).find('input[name*="DELETE"]').val() === 'on';&ndash;&gt;-->
+<!--&lt;!&ndash;            var isEmpty = true;&ndash;&gt;-->
+
+<!--&lt;!&ndash;            // Check if the form row has any filled fields&ndash;&gt;-->
+<!--&lt;!&ndash;            $(formRow).find('input').each(function() {&ndash;&gt;-->
+<!--&lt;!&ndash;                if ($(this).val()) {&ndash;&gt;-->
+<!--&lt;!&ndash;                    isEmpty = false;&ndash;&gt;-->
+<!--&lt;!&ndash;                    return false;&ndash;&gt;-->
+<!--&lt;!&ndash;                }&ndash;&gt;-->
+<!--&lt;!&ndash;            });&ndash;&gt;-->
+
+<!--&lt;!&ndash;            // If the form is empty and marked for deletion, remove the entire row&ndash;&gt;-->
+<!--&lt;!&ndash;            if (isEmpty && isMarkedForDeletion) {&ndash;&gt;-->
+<!--&lt;!&ndash;                $(formRow).remove(); // Remove the form row&ndash;&gt;-->
+<!--&lt;!&ndash;                totalForms&#45;&#45;;&ndash;&gt;-->
+<!--&lt;!&ndash;            }&ndash;&gt;-->
+<!--&lt;!&ndash;        });&ndash;&gt;-->
+
+<!--&lt;!&ndash;        // Update the total forms count&ndash;&gt;-->
+<!--&lt;!&ndash;        $('#id_form-TOTAL_FORMS').val(totalForms);&ndash;&gt;-->
+
+<!--&lt;!&ndash;        // Reindex remaining forms&ndash;&gt;-->
+<!--&lt;!&ndash;        $('#stockitem .form-row').each(function(index, formRow) {&ndash;&gt;-->
+<!--&lt;!&ndash;            updateElementIndex(formRow, 'form', index);&ndash;&gt;-->
+<!--&lt;!&ndash;        });&ndash;&gt;-->
+
+<!--&lt;!&ndash;        return true;  // Continue with the form submission&ndash;&gt;-->
+<!--&lt;!&ndash;    });&ndash;&gt;-->
+
+<!--&lt;!&ndash;    $(document).on('change', '.quantity, .price', function() {&ndash;&gt;-->
+<!--&lt;!&ndash;        var totalQuantity = 0;&ndash;&gt;-->
+<!--&lt;!&ndash;        var totalAmount = 0;&ndash;&gt;-->
+
+<!--&lt;!&ndash;        $('#stockitem .form-row').each(function() {&ndash;&gt;-->
+<!--&lt;!&ndash;            var quantity = parseFloat($(this).find('.quantity').val()) || 0;&ndash;&gt;-->
+<!--&lt;!&ndash;            var pricePerItem = parseFloat($(this).find('.price').val()) || 0;&ndash;&gt;-->
+<!--&lt;!&ndash;            var totalPrice = quantity * pricePerItem;&ndash;&gt;-->
+
+<!--&lt;!&ndash;            totalQuantity += quantity;&ndash;&gt;-->
+<!--&lt;!&ndash;            totalAmount += totalPrice;&ndash;&gt;-->
+
+<!--&lt;!&ndash;            $(this).find('.totalprice').val(totalPrice.toFixed(2));&ndash;&gt;-->
+<!--&lt;!&ndash;        });&ndash;&gt;-->
+
+<!--&lt;!&ndash;        // Update the total quantity and amount fields&ndash;&gt;-->
+<!--&lt;!&ndash;        $('#total_quantity').val(totalQuantity);&ndash;&gt;-->
+<!--&lt;!&ndash;        $('#total_amount').val(totalAmount.toFixed(2));&ndash;&gt;-->
+
+<!--&lt;!&ndash;        // Show or hide the fieldset container based on the totals&ndash;&gt;-->
+<!--&lt;!&ndash;        if (totalQuantity > 0 || totalAmount > 0) {&ndash;&gt;-->
+<!--&lt;!&ndash;            $('#fieldset-container').show();&ndash;&gt;-->
+<!--&lt;!&ndash;        } else {&ndash;&gt;-->
+<!--&lt;!&ndash;            $('#fieldset-container').hide();&ndash;&gt;-->
+<!--&lt;!&ndash;        }&ndash;&gt;-->
+<!--&lt;!&ndash;    });&ndash;&gt;-->
+
+<!--&lt;!&ndash;    // Confirmation dialog before form submission&ndash;&gt;-->
+<!--&lt;!&ndash;    document.getElementById('purchaseForm').onsubmit = function() {&ndash;&gt;-->
+<!--&lt;!&ndash;        var confirmation = confirm("Are You sure you want to Purchases Bill Store in Stock?");&ndash;&gt;-->
+<!--&lt;!&ndash;        if (confirmation) {&ndash;&gt;-->
+<!--&lt;!&ndash;            return true;  // Proceed with form submission&ndash;&gt;-->
+<!--&lt;!&ndash;        } else {&ndash;&gt;-->
+<!--&lt;!&ndash;            return false;  // Prevent form submission&ndash;&gt;-->
+<!--&lt;!&ndash;        }&ndash;&gt;-->
+<!--&lt;!&ndash;    };&ndash;&gt;-->
+<!--&lt;!&ndash;  });&ndash;&gt;-->
+
+<!--&lt;!&ndash;</script>&ndash;&gt;-->
+<style>
+    .success {
+
+        color: #28a745; /* Text color */
+        border: 3px solid #28a745; /* Border color */
+        padding: 5px 8px;
+        border-radius: 5px;
+        font-size: 80%;
+    }
+
+    .danger {
+
+        color: #dc3545; /* Text color */
+        border: 3px solid #dc3545; /* Border color */
+        padding: 5px 8px;
+        border-radius: 5px;
+        font-size: 80%;
+    }
+
+    .custom-flex {
+        display: flex;
+        align-items: center; /* Vertically center input and image */
+    }
+    .custom-flex input {
+        margin-right: 10px; /* Add some space between the input and the image */
+    }
+    /* Styling for toggle button */
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 60px;
+            height: 34px;
+            margin-top: 40px;  /* Remove any margin */
+        }
+
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 34px;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 26px;
+            width: 26px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+
+        input:checked + .slider {
+            background-color: #2196F3;
+        }
+
+        input:checked + .slider:before {
+            transform: translateX(26px);
+        }
+
+        .gst-label-container {
+            display: inline-block;
+        }
+
+        .gst-label {
+            font-weight: bold;
+            font-size: 1.3rem; /* Adjust size as needed */
+            margin-right: 10px;
+            display: inline-block;
+            vertical-align: middle;
+            margin-bottom: 25px;  /* Remove any margin */
+        }
+
+
+
+        #label_excl_gst {
+            color: #dc3545; /* Red for "Excl. GST" */
+        }
+
+        #label_incl_gst {
+            color: #28a745; /* Green for "Incl. GST" */
+        }
+
+        /* Switch styling */
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 60px;
+            height: 34px;
+            margin-left: 10px; /* Space between label and toggle */
+        }
+
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 26px;
+            width: 26px;
+            border-radius: 50%;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+        }
+
+        input:checked + .slider {
+            background-color: #2196F3;
+        }
+
+        input:checked + .slider:before {
+            transform: translateX(26px);
+        }
+
+        /* Rounded sliders */
+        .slider.round {
+            border-radius: 34px;
+        }
+
+        .slider.round:before {
+            border-radius: 50%;
+        }
+
+        /* Flex container to align labels and toggle on the same line */
+        .d-flex {
+            display: flex;
+            align-items: center;
+        }
+
+        .ml-2 {
+            margin-left: 10px;
+        }
+        .stockName {
+            margin-bottom: 0; /* Ensure no margin at the bottom of the stockName */
+        }
+
+        .custom-small {
+            color: #909494;
+            margin: 0; /* Remove any margin */
+            line-height: 1; /* Set line height to minimize space */
+            padding: 0; /* Remove any padding */
+        }
+
+
+</style>
+
+<!--<script type="text/javascript">-->
+<!--$(document).ready(function() {-->
+<!--    // Toggle switch for applying GST-->
+<!--    $('#gstToggle').on('change', function() {-->
+<!--        if ($(this).is(':checked')) {-->
+<!--            // If GST is enabled, calculate GST for each row and update totals-->
+<!--            calculateGST();-->
+<!--        } else {-->
+<!--            // If GST is disabled, reset GST-related fields and update totals-->
+<!--            resetGST();-->
+<!--        }-->
+<!--        updateFinalAmount();-->
+<!--    });-->
+
+<!--    // Calculate GST for each row and update the total GST amount-->
+<!--    function calculateGST() {-->
+<!--        var totalGstAmount = 0;-->
+<!--        $('.form-row').each(function() {-->
+<!--            var quantity = parseFloat($(this).find('.quantity').val()) || 0;-->
+<!--            var price = parseFloat($(this).find('.price').val()) || 0;-->
+<!--            var gstPercent = parseFloat($(this).find('.gst').val()) || 0;-->
+
+<!--            // Calculate GST for this row-->
+<!--            var gstStockPrice = (price * quantity * gstPercent) / 100;-->
+<!--            $(this).find('.gststockPrice').val(gstStockPrice.toFixed(2));-->
+
+<!--            // Add GST to the total GST amount-->
+<!--            totalGstAmount += gstStockPrice;-->
+<!--        });-->
+<!--        // Update the GST amount textbox-->
+<!--        $('#gst_amount').val(totalGstAmount.toFixed(2));-->
+<!--    }-->
+
+<!--    // Reset GST-related fields when GST is disabled-->
+<!--    function resetGST() {-->
+<!--        // Clear the GST stock price for each row-->
+<!--        $('.gststockPrice').val('0.00');-->
+<!--        // Set the total GST amount to 0-->
+<!--        $('#gst_amount').val('0.00');-->
+<!--    }-->
+
+<!--    // Update final amount based on the total amount and GST amount-->
+<!--    function updateFinalAmount() {-->
+<!--        var totalAmount = parseFloat($('#total_amount').val()) || 0;-->
+<!--        var gstAmount = parseFloat($('#gst_amount').val()) || 0;-->
+
+<!--        // If GST is disabled, ignore GST and use total amount only-->
+<!--        if (!$('#gstToggle').is(':checked')) {-->
+<!--            $('#final_amount').val(totalAmount.toFixed(2));-->
+<!--        } else {-->
+<!--            // Calculate the final amount as total amount + GST amount-->
+<!--            var finalAmount = totalAmount + gstAmount;-->
+<!--            $('#final_amount').val(finalAmount.toFixed(2));-->
+<!--        }-->
+<!--    }-->
+
+<!--    // Listen for quantity or price changes to recalculate totals and GST-->
+<!--    $(document).on('input', '.quantity, .price', function() {-->
+<!--        updateTotals();-->
+<!--        if ($('#gstToggle').is(':checked')) {-->
+<!--            calculateGST();-->
+<!--        }-->
+<!--        updateFinalAmount();-->
+<!--    });-->
+
+<!--    // Update total quantity and amount when quantity or price is changed-->
+<!--    function updateTotals() {-->
+<!--        var totalQuantity = 0;-->
+<!--        var totalAmount = 0;-->
+<!--        $('.form-row').each(function() {-->
+<!--            var quantity = parseFloat($(this).find('.quantity').val()) || 0;-->
+<!--            var price = parseFloat($(this).find('.price').val()) || 0;-->
+
+<!--            // Calculate total for each row-->
+<!--            var rowTotal = price * quantity;-->
+<!--            $(this).find('.totalprice').val(rowTotal.toFixed(2));-->
+
+<!--            // Add to total quantity and total amount-->
+<!--            totalQuantity += quantity;-->
+<!--            totalAmount += rowTotal;-->
+<!--        });-->
+<!--        // Update total quantity and total amount textboxes-->
+<!--        $('#total_quantity').val(totalQuantity);-->
+<!--        $('#total_amount').val(totalAmount.toFixed(2));-->
+<!--    }-->
+
+<!--    // Toggle labels based on checkbox state-->
+<!--    $('#gstToggle').on('change', function() {-->
+<!--        if ($(this).is(':checked')) {-->
+<!--            $('#label_excl_gst').hide();-->
+<!--            $('#label_incl_gst').show();-->
+<!--            $('#gst_value').show();-->
+<!--            $('#gst_amount').show();-->
+<!--            $('#final_amount').show();-->
+<!--            $('#gst_value_lable').show();-->
+<!--            $('#gst_amount_lable').show();-->
+<!--            $('#final_amount_lable').show();-->
+<!--            $('#gst_badge').show();  // Show the GST badge-->
+<!--            $('#gst_label').show();  // Show the GST label-->
+
+<!--            // Adjust column sizes-->
+<!--            $('.quantity-container').removeClass('col-md-2').addClass('col-md-1'); // Smaller quantity field-->
+<!--            $('.gst-container').show();  // Show GST field (col-md-1)-->
+<!--        } else {-->
+<!--            $('#label_excl_gst').show();-->
+<!--            $('#label_incl_gst').hide();-->
+<!--            $('#gst_value').hide();-->
+<!--            $('#gst_amount').hide();-->
+<!--            $('#final_amount').hide();-->
+<!--            $('#gst_value_lable').hide();-->
+<!--            $('#gst_amount_lable').hide();-->
+<!--            $('#final_amount_lable').hide();-->
+<!--            $('#gst_badge').hide();  // Hide the GST badge-->
+<!--            $('#gst_label').hide();  // Hide the GST label-->
+
+<!--            // Adjust column sizes-->
+<!--            $('.quantity-container').removeClass('col-md-1').addClass('col-md-2'); // Larger quantity field-->
+<!--            $('.gst-container').hide();  // Hide GST field (col-md-1)-->
+<!--        }-->
+<!--    });-->
+
+<!--    // Initial state-->
+<!--    if ($('#gstToggle').is(':checked')) {-->
+<!--        $('#label_excl_gst').hide();-->
+<!--        $('#label_incl_gst').show();-->
+<!--        $('#gst_value').show();-->
+<!--        $('#gst_amount').show();-->
+<!--        $('#final_amount').show();-->
+<!--        $('#gst_badge').show();  // Show the GST badge-->
+<!--        $('#gst_label').show();  // Show the GST label-->
+
+<!--        // Adjust column sizes-->
+<!--        $('.quantity-container').removeClass('col-md-2').addClass('col-md-1'); // Smaller quantity field-->
+<!--        $('.gst-container').show();  // Show GST field (col-md-1)-->
+
+
+
+<!--    } else {-->
+<!--        $('#label_excl_gst').show();-->
+<!--        $('#label_incl_gst').hide();-->
+<!--        $('#gst_value').hide();-->
+<!--        $('#gst_amount').hide();-->
+<!--        $('#final_amount').hide();-->
+<!--        $('#gst_badge').hide();  // Hide the GST badge-->
+<!--        $('#gst_label').hide();  // Hide the GST label-->
+
+<!--        // Adjust column sizes-->
+<!--        $('.quantity-container').removeClass('col-md-1').addClass('col-md-2'); // Larger quantity field-->
+<!--        $('.gst-container').hide();  // Hide GST field (col-md-1)-->
+
+<!--    }-->
+<!--});-->
+<!--</script>-->
+<script type="text/javascript">
+$(document).ready(function() {
+    var $gstToggleContainer = $('#gstToggleContainer');
+    var $gstLabel = $('#gstLabel');
+
+    // Handle category dropdown change
+    $('#category_dropdown').on('change', function() {
+        var categoryId = $(this).val();
+        var $subcategoryDropdown = $('#subcategory_dropdown');
+        var $subcategoryLabel = $('#subcategory_label');
+        var $stockDropdown = $('#stock_dropdown');
+        var $stockLabel = $('#stock_label');
+
+        if (categoryId) {
+            $.ajax({
+                url: '{% url "get_subcategories" %}',
+                data: { 'category_id': categoryId },
+                success: function(data) {
+                    $subcategoryDropdown.empty().append('<option value="">Select Subcategory</option>');
+                    $.each(data.subcategories, function(index, subcategory) {
+                        $subcategoryDropdown.append(`<option value="${subcategory.id}">${subcategory.name}</option>`);
+                    });
+                    $subcategoryDropdown.show();
+                    $subcategoryLabel.show();
+                },
+                error: function(xhr, status, error) {
+                    console.error("Error fetching subcategories: ", error);
+                }
+            });
+        } else {
+            $subcategoryDropdown.empty().append('<option value="">Select Subcategory</option>').hide();
+            $subcategoryLabel.hide();
+            $stockDropdown.empty().append('<option value="">Select Stock</option>').hide();
+            $stockLabel.hide();
+            $gstToggleContainer.hide(); // Hide toggle button when no category selected
+        }
+    });
+
+    // Handle subcategory dropdown change
+    $('#subcategory_dropdown').on('change', function() {
+        var subcategoryId = $(this).val();
+        var $stockDropdown = $('#stock_dropdown');
+        var $stockLabel = $('#stock_label');
+
+        if (subcategoryId) {
+            $.ajax({
+                url: '{% url "get_stocks_purchase" %}',
+                data: { 'subcategory_id': subcategoryId },
+                success: function(data) {
+                    $stockDropdown.empty().append('<option value="">Select Stock</option>');
+                    $.each(data.stocks, function(index, stock) {
+                        $stockDropdown.append(`<option value="${stock.id}" data-name="${stock.name}" data-price="${stock.price}">${stock.name}</option>`);
+                    });
+                    $stockDropdown.show();
+                    $stockLabel.show();
+                    $gstToggleContainer.show(); // Show the toggle button when stock dropdown is displayed
+                },
+                error: function(xhr, status, error) {
+                    console.error("Error fetching stocks: ", error);
+                }
+            });
+        } else {
+            $stockDropdown.empty().append('<option value="">Select Stock</option>').hide();
+            $stockLabel.hide();
+            $gstToggleContainer.hide(); // Hide toggle button when no subcategory is selected
+        }
+    });
+
+    // Handle GST toggle switch
+    $('#gstToggle').on('change', function() {
+        if ($(this).is(':checked')) {
+            $gstLabel.text('Including GST');
+        } else {
+            $gstLabel.text('Excluding GST');
+        }
+        toggleGSTFields();
+        updateFinalAmount();
+    });
+
+
+    function updateGSTValues() {
+        var gstValues = new Set(); // Use a Set to ensure uniqueness
+
+        // Collect unique GST values
+        $('#stockitem .gst_badge').each(function() {
+            var gstValueText = $(this).text().trim(); // Get text from GST badge
+            if (gstValueText) {
+                // Convert to float and format
+                var gstValue = parseFloat(gstValueText).toFixed(2); // Convert to float with 2 decimal places
+
+                // Remove trailing .00
+                if (gstValue.endsWith('.00')) {
+                    gstValue = gstValue.split('.')[0]; // Remove decimal part
+                }
+
+                // Append % symbol
+                gstValue = gstValue + '%';
+
+                gstValues.add(gstValue); // Add to the Set
+            }
+        });
+
+        // Join unique values with commas and update the textbox
+        $('#gst_value').val(Array.from(gstValues).join(' , '));
+    }
+
+
+    // Initialize total as 0
+    var total = 0;
+
+    $(document).on('change', '#stock_dropdown', function() {
+        var selectedStock = $(this).find(':selected');
+        var stockName = selectedStock.text();
+        var stockId = selectedStock.val();
+        var stockPrice = selectedStock.data('price');
+
+        $.ajax({
+            url: '{% url "get_stock_quantity" %}',
+            data: {
+                'stock_id': stockId
+            },
+            success: function(data) {
+                var stockQuantity = data.quantity;
+                var purchase = data.purchase;
+                var purchase_id = data.purchase_id;
+                var stockAlert = data.stock_alert;
+                var badgeClass = stockQuantity > stockAlert ? 'success' : 'danger';
+                var stockgst = data.gst;
+                var badgeClass1 = stockgst;
+
+                if (stockId) {
+                    var serialNo = total + 1;
+
+                    var newRow = `<div class="row form-row">
+                        <input type="hidden" name="form-${total}-DELETE" id="id_form-${total}-DELETE">
+                        <div class="form-group col-md-1 text-center">
+<!--                            ${total === 0 ? '<label class="panel-body-text" style="text-align: center; font-weight: bold;">Sr No</label>' : ''}-->
+                            ${total === 0 ? '<label class="panel-body-text" style="text-align: center; font-weight: bold;">Sr No</label>' : ''}
+                            <span class="form-control-plaintext">${serialNo}</span>
+                        </div>
+
+<!--                        <div class="form-group col-md-4 text-center">-->
+<!--                            ${total === 0 ? '<label class="panel-body-text" style="text-align: center; font-weight: bold;">Stock</label>' : ''}-->
+<!--                            <div>-->
+<!--                              <input type="hidden" class="form-control textinput" value="${stockName}" disabled>-->
+<!--                              <span class="text-capitalize form-control-plaintext">${stockName}</span>-->
+<!--                              <input type="hidden" name="form-${total}-stock" value="${stockId}">-->
+<!--                            </div>-->
+<!--                        </div>-->
+
+                      <div class="form-group col-md-4 text-center">
+                            ${total === 0 ? '<label class="panel-body-text" style="text-align: center; font-weight: bold;">Stock</label>' : ''}
+                            <div style="display: flex; flex-direction: column; align-items: center;">
+                                <a href="#" class="stockName text-capitalize form-control-plaintext">${stockName}</a>
+                                <input type="hidden" name="form-${total}-stock" value="${stockId}">
+                                <small class="custom-small">
+                                    <span class="stockNameDisplay" style="margin: 0; padding: 0;"></span>
+                                </small>
+                            </div>
+                        </div>
+
+
+
+
+                        <div class="form-group col-md-1 text-center">
+                            ${total === 0 ? '<label class="panel-body-text" style="text-align: center; font-weight: bold;">Avb.Qunt.</label>' : ''}
+                            <div class="d-flex justify-content-center align-items-center mt-1">
+                             <input type="hidden" class="form-control stock-quantity" value="${stockQuantity}" readonly>
+                            <span class="badge ${badgeClass}">${stockQuantity} <small style="color: green">${purchase}</small></span>
+
+                            </div>
+                        </div>
+
+                        <div class="form-group col-md-2 text-center">
+                            ${total === 0 ? '<label class="panel-body-text" style="text-align: center; font-weight: bold;">Quantity</label>' : ''}
+                            <div class="input-group">
+                              <input type="number" class="form-control quantity" style="text-align: center;" name="form-${total}-quantity" value=1>
+                               <div class="input-group-append">
+                                    <span class="input-group-text">${purchase}</span>
+                                </div>
+                            </div>
+                            <input type="hidden" class="form-control stock-purchase" name="purchase" value="${purchase}" readonly>
+                            <input type="hidden" class="form-control stock-purchase" name="purchase_id" value="${purchase_id}" readonly>
+                        </div>
+
+<!--                        <div class="form-group col-md-2">-->
+<!--                            ${total === 0 ? '<label class="panel-body-text" style="text-align: center; font-weight: bold;">Rate:</label>' : ''}-->
+<!--                            <input type="text" class="form-control price" name="form-${total}-perprice" required>-->
+<!--                            <input type="hidden" class="form-control stock-purchase" value="${purchase}" readonly>-->
+<!--                            <span class="badge ${badgeClass1}" style="font-size: 1rem;">${purchase}</span>-->
+<!--                        </div>-->
+<!--                        <div class="form-group col-md-1">-->
+<!--                            ${total === 0 ? '<label class="panel-body-text" style="text-align: center; font-weight: bold;">Per</label>' : ''}-->
+<!--                            <div class="d-flex align-items-center mt-1">-->
+<!--                            <input type="hidden" class="form-control stock-purchase" value="${purchase}" readonly>-->
+<!--                            <span class="badge ${badgeClass1}" style="font-size: 1rem;">${purchase}</span>-->
+<!--                            </div>-->
+<!--                        </div>-->
+
+                        <div class="form-group quantity-container col-md-2 text-center">
+                            ${total === 0 ? '<label class="panel-body-text" style="text-align: center; font-weight: bold;">Rate</label>' : ''}
+<!--                            <div class="input-group">-->
+                                <input type="text" class="form-control price" name="form-${total}-perprice" required>
+<!--                                <div class="input-group-append">-->
+<!--                                    <span class="input-group-text">${purchase}</span>-->
+<!--                                </div>-->
+<!--                            </div>-->
+<!--                            <input type="hidden" class="form-control stock-purchase" value="${purchase}" readonly>-->
+                        </div>
+
+                        <div class="form-group gst-container col-md-1 text-center" style="display: none;">
+                            ${total === 0 ? '<label class="panel-body-text" id="gst_label" style="text-align: center; font-weight: bold;">GST</label>' : ''}
+                            <div class="d-flex justify-content-center align-items-center mt-1">
+                                <input type="hidden" class="form-control gst" value="${stockgst}" readonly>
+<!--                                <span class="badge gst_badge" style="font-size: 1rem;" style="text-align: center;">${stockgst}%</span>-->
+                                <span class="badge gst_badge" style="font-size: 1rem;" style="text-align: center;"> ${parseFloat(stockgst).toString().replace(/\.00$/, '')}%</span>
+
+                            </div>
+                        </div>
+
+                        <div class="form-group col-md-2 text-center">
+                            ${total === 0 ? '<label class="panel-body-text" style="text-align: center; font-weight: bold;">Total</label>' : ''}
+                            <div class="custom-flex">
+                                <input type="text" style="text-align: right;" class="textinput form-control totalprice me-2" value="${stockPrice}" readonly>
+                                <img src="{% static 'images/letter-x (1).png' %}" class="remove-form-row" alt="Remove" style="cursor: pointer; width: 15px; height: 15px;">
+                            </div>
+                        </div>
+                    </div>`;
+
+                    $('#stockitem .panel-body').append(newRow);
+                    total++;
+                    $('#id_form-TOTAL_FORMS').val(total);
+
+                    selectedStock.remove();
+                }
+                updateTotals();
+                if ($('#gstToggle').is(':checked')) {
+                    $('.gst-container').show();
+                    $('.quantity-container').removeClass('col-md-2').addClass('col-md-1');
+                    calculateGST();
+
+                }
+                updateFinalAmount();
+                updateGSTValues(); // Update GST values
+            }
+        });
+
+        $('#fieldset-container').show();
+    });
+
+<!--    function deleteForm(prefix, btn) {-->
+<!--        var formRow = btn.closest('.form-row');-->
+<!--        var totalForms = $('#id_' + prefix + '-TOTAL_FORMS').val();-->
+
+<!--        var stockId = formRow.find('input[name*="stock"]').val();-->
+<!--        var stockPrice = formRow.find('.price').val();-->
+<!--        var stockName = formRow.find('input[name*="stock"]').closest('.form-group').find('span').text();-->
+
+<!--        formRow.remove();-->
+
+<!--        totalForms&#45;&#45;;-->
+<!--        $('#id_' + prefix + '-TOTAL_FORMS').val(totalForms);-->
+
+<!--        $('#stockitem .form-row').each(function(index, row) {-->
+<!--            $(row).find('.form-control-plaintext').first().text(index + 1);-->
+<!--            updateElementIndex(row, prefix, index);-->
+<!--        });-->
+
+<!--        total&#45;&#45;;-->
+
+<!--        $('#stock_dropdown').append(`<option value="${stockId}" data-price="${stockPrice}">${stockName}</option>`);-->
+
+<!--        updateTotals();-->
+<!--        if ($('#gstToggle').is(':checked')) {-->
+<!--            calculateGST();-->
+<!--        }-->
+<!--        updateFinalAmount();-->
+<!--    }-->
+
+<!--    $(document).on('click', '.remove-form-row', function(e){-->
+<!--        e.preventDefault();-->
+
+<!--        deleteForm('form', $(this));-->
+
+<!--        if ($('#stockitem .form-row').length === 0) {-->
+<!--            $('#fieldset-container').hide();-->
+<!--        }-->
+<!--        updateGSTValues(); // Update GST values after deletion-->
+<!--    });-->
+
+    function deleteForm(prefix, btn) {
+        var formRow = btn.closest('.form-row');
+        var totalForms = $('#id_' + prefix + '-TOTAL_FORMS').val();
+
+        // Correctly get the stockId and stockName from the form row
+        var stockId = formRow.find('input[name*="stock"]').val();
+        var stockPrice = formRow.find('.price').val();
+        // Get stockName from the original input, not the display span
+        var stockName = formRow.find('input[name*="stock"]').closest('.form-group').find('.stockName').text();
+
+        formRow.remove();
+
+        totalForms--;
+        $('#id_' + prefix + '-TOTAL_FORMS').val(totalForms);
+
+        $('#stockitem .form-row').each(function(index, row) {
+            $(row).find('.form-control-plaintext').first().text(index + 1);
+            updateElementIndex(row, prefix, index);
+        });
+
+        total--;
+
+        // Append the correct stockId and stockName to the dropdown
+        $('#stock_dropdown').append(`<option value="${stockId}" data-price="${stockPrice}">${stockName}</option>`);
+
+        updateTotals();
+        if ($('#gstToggle').is(':checked')) {
+            calculateGST();
+        }
+        updateFinalAmount();
+    }
+
+    $(document).on('click', '.remove-form-row', function(e) {
+        e.preventDefault();
+
+        deleteForm('form', $(this));
+
+        if ($('#stockitem .form-row').length === 0) {
+            $('#fieldset-container').hide();
+        }
+        updateGSTValues(); // Update GST values after deletion
+    });
+
+
+    function updateElementIndex(el, prefix, ndx) {
+        var id_regex = new RegExp('(' + prefix + '-\\d+-)');
+        var replacement = prefix + '-' + ndx + '-';
+        $(el).find(':input').each(function() {
+            if (this.id) this.id = this.id.replace(id_regex, replacement);
+            if (this.name) this.name = this.name.replace(id_regex, replacement);
+        });
+    }
+
+    // Update total quantity and amount
+    function updateTotals() {
+        var totalQuantity = 0;
+        var totalAmount = 0;
+        $('.form-row').each(function() {
+            var quantity = parseFloat($(this).find('.quantity').val()) || 0;
+            var pricePerItem = parseFloat($(this).find('.price').val()) || 0;
+            var totalPrice = quantity * pricePerItem;
+
+            totalQuantity += quantity;
+            totalAmount += totalPrice;
+
+            $(this).find('.totalprice').val(totalPrice.toFixed(2));
+        });
+
+        $('#total_quantity').val(totalQuantity);
+        $('#total_amount').val(totalAmount.toFixed(2));
+    }
+
+    // Calculate GST amounts
+    function calculateGST() {
+        var totalGstAmount = 0;
+        $('.form-row').each(function() {
+            var quantity = parseFloat($(this).find('.quantity').val()) || 0;
+            var price = parseFloat($(this).find('.price').val()) || 0;
+            var gstPercent = parseFloat($(this).find('.gst').val()) || 0;
+
+            var gstStockPrice = (price * quantity * gstPercent) / 100;
+            $(this).find('.gststockPrice').val(gstStockPrice.toFixed(2));
+
+            totalGstAmount += gstStockPrice;
+        });
+        $('#gst_amount').val(totalGstAmount.toFixed(2));
+    }
+
+    function resetGST() {
+        $('.gststockPrice').val('0.00');
+        $('#gst_amount').val('0.00');
+    }
+
+<!--    function updateFinalAmount() {-->
+<!--        var totalAmount = parseFloat($('#total_amount').val()) || 0;-->
+<!--        var gstAmount = parseFloat($('#gst_amount').val()) || 0;-->
+
+<!--        if (!$('#gstToggle').is(':checked')) {-->
+<!--            $('#final_amount').val(totalAmount.toFixed(2));-->
+<!--            calculateGST();-->
+<!--        } else {-->
+<!--            var finalAmount = totalAmount + gstAmount;-->
+<!--            $('#final_amount').val(finalAmount.toFixed(2));-->
+<!--        }-->
+<!--    }-->
+
+<!--    function updateFinalAmount() {-->
+<!--&lt;!&ndash;        var totalAmount = parseFloat($('#total_amount').val()) || 0;&ndash;&gt;-->
+<!--&lt;!&ndash;        var gstAmount = parseFloat($('#gst_amount').val()) || 0;&ndash;&gt;-->
+<!--&lt;!&ndash;        var finalAmount, roundOffAmount, adjustment;&ndash;&gt;-->
+<!--&lt;!&ndash;        &ndash;&gt;-->
+<!--         var totalAmount = parseFloat($('#total_amount').val()) || 0;-->
+<!--         var gstAmount = parseFloat($('#gst_amount').val()) || 0;-->
+<!--         var finalAmount = 0; // Initialize finalAmount-->
+<!--         var adjustment = 0; // Initialize adjustedFinalAmount-->
+<!--         var roundOffAmount = 0; // Initialize roundOffAmount-->
+
+<!--        if (!$('#gstToggle').is(':checked')) {-->
+<!--            finalAmount = totalAmount;-->
+<!--            calculateGST();-->
+<!--        } else {-->
+<!--            finalAmount = totalAmount + gstAmount;-->
+<!--        }-->
+
+<!--        // Extract the decimal part-->
+<!--        var decimalPart = finalAmount - Math.floor(finalAmount);-->
+
+<!--        if (decimalPart <= 0.49) {-->
+<!--            // If decimal part <= 0.49, subtract it from the finalAmount (round down)-->
+<!--            adjustment = -decimalPart;-->
+<!--            roundOffAmount = Math.floor(finalAmount);-->
+<!--        } else {-->
+<!--            // If decimal part > 0.49, add the difference to round up-->
+<!--            adjustment = 1 - decimalPart;-->
+<!--            roundOffAmount = Math.ceil(finalAmount);-->
+<!--        }-->
+
+<!--        // Update final amount to reflect the rounding adjustment-->
+<!--        var adjustedFinalAmount = finalAmount + adjustment + deliverycharges;-->
+
+<!--        // Show the adjusted final_amount in the textbox-->
+<!--&lt;!&ndash;        $('#final_amount').val(adjustedFinalAmount.toFixed(2));&ndash;&gt;-->
+<!--        // Update the final_amount textbox with the adjusted value and add ₹ symbol-->
+<!--        $('#final_amount').val('₹ ' + adjustedFinalAmount.toFixed(2));-->
+
+<!--        // Show the adjustment value (round off) in the textbox-->
+<!--        $('#round_off').val(adjustment.toFixed(2));  // Assuming you have an input field with id 'round_off'-->
+<!--    }-->
+
+    function updateFinalAmount() {
+        var totalAmount = parseFloat($('#total_amount').val()) || 0;
+        var gstAmount = parseFloat($('#gst_amount').val()) || 0;
+        var deliveryCharges = parseFloat($('#delivery_charges').val()) || 0; // Get delivery charges
+
+        var finalAmount = 0; // Initialize finalAmount
+        var adjustment = 0;   // Initialize adjustment
+        var roundOffAmount = 0; // Initialize roundOffAmount
+
+        if (!$('#gstToggle').is(':checked')) {
+            finalAmount = totalAmount;
+            calculateGST(); // Call this function if GST is not applied
+        } else {
+            finalAmount = totalAmount + gstAmount;
+        }
+
+        // Add delivery charges to the final amount
+        finalAmount += deliveryCharges;
+
+        // Extract the decimal part
+        var decimalPart = finalAmount - Math.floor(finalAmount);
+
+        if (decimalPart <= 0.49) {
+            // If decimal part <= 0.49, subtract it from the finalAmount (round down)
+            adjustment = -decimalPart;
+            roundOffAmount = Math.floor(finalAmount);
+        } else {
+            // If decimal part > 0.49, add the difference to round up
+            adjustment = 1 - decimalPart;
+            roundOffAmount = Math.ceil(finalAmount);
+        }
+
+        // Update final amount to reflect the rounding adjustment
+        var adjustedFinalAmount = finalAmount + adjustment;
+
+        // Update the final_amount textbox with the adjusted value and add ₹ symbol
+        $('#final_amount').val('₹ ' + adjustedFinalAmount.toFixed(2));
+
+        // Show the adjustment value (round off) in the textbox
+        $('#round_off').val(adjustment.toFixed(2));  // Assuming you have an input field with id 'round_off'
+
+    }
+
+    // 🔔 Real-time updates when delivery charges change
+    $('#delivery_charges').on('input', function () {
+        updateFinalAmount();
+    });
+
+    // Listen for quantity or price changes
+    $(document).on('input', '.quantity, .price', function() {
+        updateTotals();
+        if ($('#gstToggle').is(':checked')) {
+            calculateGST();
+
+        }
+        updateFinalAmount();
+        updateGSTValues(); // Update GST values
+
+    });
+
+    // Toggle GST fields
+    function toggleGSTFields() {
+        if ($('#gstToggle').is(':checked')) {
+            $('#label_excl_gst').hide();
+            $('#label_incl_gst').show();
+            $('#gst_value').show();
+            $('#gst_amount').show();
+            $('#final_amount').show();
+            $('#gst_value_label').show();
+            $('#gst_amount_label').show();
+            $('#final_amount_label').show();
+            $('#gst_badge').show();
+            $('#gst_label').show();
+            $('#round_off_label').show();
+            $('#round_off').show();
+            $('#delivery_charges_label').show();
+			$('#delivery_charges').show();
+
+            $('.quantity-container').removeClass('col-md-2').addClass('col-md-1');
+            $('.gst-container').show();
+
+            updateGSTValues();
+        } else {
+            $('#label_excl_gst').show();
+            $('#label_incl_gst').hide();
+            $('#gst_value').hide();
+            $('#gst_amount').hide();
+            $('#final_amount').show();
+            $('#gst_value_label').hide();
+            $('#gst_amount_label').hide();
+            $('#final_amount_label').show();
+
+            $('#gst_label').hide();
+            $('#round_off_label').show();
+            $('#round_off').show();
+            $('#delivery_charges_label').show();
+			$('#delivery_charges').show();
+
+            $('.quantity-container').removeClass('col-md-1').addClass('col-md-2');
+            $('.gst-container').hide();
+        }
+    }
+
+    // Toggle labels based on checkbox state
+    $('#gstToggle').on('change', function() {
+        if ($(this).is(':checked')) {
+            $('#label_excl_gst').hide();
+            $('#label_incl_gst').show();
+            $('#gst_value').show();
+            $('#gst_amount').show();
+            $('#final_amount').show();
+            $('#gst_value_lable').show();
+            $('#gst_amount_lable').show();
+            $('#final_amount_lable').show();
+            $('#gst_badge').show();  // Show the GST badge
+            $('#gst_label').show();  // Show the GST label
+            $('#round_off_label').show();
+            $('#round_off').show();
+            $('#delivery_charges_label').show();
+			$('#delivery_charges').show();
+
+            // Adjust column sizes
+            $('.quantity-container').removeClass('col-md-2').addClass('col-md-1'); // Smaller quantity field
+            $('.gst-container').show();  // Show GST field (col-md-1)
+
+            updateGSTValues();
+        } else {
+            $('#label_excl_gst').show();
+            $('#label_incl_gst').hide();
+            $('#gst_value').hide();
+            $('#gst_amount').hide();
+            $('#final_amount').show();
+            $('#gst_value_lable').hide();
+            $('#gst_amount_lable').hide();
+            $('#final_amount_lable').show();
+            $('#gst_badge').hide();  // Hide the GST badge
+            $('#gst_label').hide();  // Hide the GST label
+            $('#round_off_label').show();  // Hide the GST label
+            $('#round_off').show();  // Hide the GST label
+            $('#delivery_charges_label').show();
+			$('#delivery_charges').show();
+
+            // Adjust column sizes
+            $('.quantity-container').removeClass('col-md-1').addClass('col-md-2'); // Larger quantity field
+            $('.gst-container').hide();  // Hide GST field (col-md-1)
+        }
+    });
+
+    // Initial state
+    toggleGSTFields();
+    updateTotals();
+    updateFinalAmount();
+    calculateGST()
+
+    // Confirmation dialog
+    document.getElementById('purchaseForm').onsubmit = function() {
+        var confirmation = confirm("Are you sure you want to store the purchase bill in stock?");
+        return confirmation;
+      //  $('#purchaseDetailsModal').modal('show'); // Hide modal
+    };
+
+    // Call updateGSTValues on page load if needed
+    updateGSTValues();
+    calculateGST()
+
+});
+</script>
+<script>
+    $(document).ready(function() {
+        // Event handler for clicking on stockName
+        $(document).on('click', '.stockName', function(event) {
+            event.preventDefault();
+            var $row = $(this).closest('.form-row'); // Get the current row
+            var quantity = parseInt($row.find('.quantity').val()); // Get the quantity value from the current row
+
+            if (quantity > 0) {
+                // Clear previous textboxes
+                $('#serial-number-container').empty();
+
+                // Dynamically create textboxes based on the quantity
+                for (var i = 0; i < quantity; i++) {
+                    var inputHtml = `
+                        <div class="form-group">
+                            <label for="serial_${i}">Serial Number ${i + 1}:</label>
+                            <input type="text" class="form-control" id="serial_${i}" name="serial_${i}" required>
+                        </div>`;
+                    $('#serial-number-container').append(inputHtml);
+                }
+
+                // Show the modal
+                $('#serialNumberModal').modal('show');
+
+                // Attach the row index to the modal's save button
+                $('#saveSerialNumbers').data('row', $row);
+            }
+        });
+
+        $('#saveSerialNumbers').on('click', function() {
+            var serialNumbers = [];
+            $('#serial-number-container input').each(function() {
+                serialNumbers.push($(this).val());
+            });
+
+            // Join the serial numbers with commas
+            var serialNumbersString = serialNumbers.join(', ');
+
+            // Get the row where the stockName was clicked
+            var $row = $(this).data('row');
+
+            // Update the stockName field to show the serial numbers below it
+<!--            $row.find('.stockNameDisplay').text(serialNumbersString);-->
+            $row.find('.stockNameDisplay').html(serialNumbersString); // Use .html() to set the content properly
+
+            // Add hidden inputs to store serial numbers for backend
+            for (var i = 0; i < serialNumbers.length; i++) {
+                $row.append('<input type="hidden" name="serial_numbers_' + $row.index() + '[]" value="' + serialNumbers[i] + '">');
+            }
+
+            // Hide the modal
+            $('#serialNumberModal').modal('hide');
+        });
+
+    });
+
+</script>
+
+
+<!--<script type="text/javascript">-->
+<!--$(document).ready(function() {-->
+<!--    // Display the modal when the initial submit button is clicked-->
+<!--    $('#initialSubmitButton').on('click', function() {-->
+<!--        $('#confirmationModal').modal('show');-->
+<!--    });-->
+
+<!--    // Handle the modal's submit button-->
+<!--    $('#modalSubmitButton').on('click', function() {-->
+<!--        // Retrieve the value from the modal input fields-->
+<!--        const eway_no = $('#eway_no').val();-->
+<!--        const bill_date = $('#bill_date').val();-->
+<!--        const veh_no = $('#veh_no').val();-->
+<!--        const handby = $('#handby').val();-->
+<!--        const destination = $('#destination').val();-->
+<!--        const po_no = $('#po_no').val();-->
+<!--        const po_date = $('#po_date').val();-->
+<!--        const total_amount = $('#total_amount').val(); // New input field-->
+
+<!--        // Check if required fields are filled-->
+<!--        if (eway_no && bill_date && handby && destination && total_amount) {-->
+<!--            // Append modal input data to the main form-->
+<!--            $('#purchaseForm').append($('<input>', {type: 'hidden', name: 'eway_no', value: eway_no}));-->
+<!--            $('#purchaseForm').append($('<input>', {type: 'hidden', name: 'bill_date', value: bill_date}));-->
+<!--            $('#purchaseForm').append($('<input>', {type: 'hidden', name: 'veh_no', value: veh_no}));-->
+<!--            $('#purchaseForm').append($('<input>', {type: 'hidden', name: 'handby', value: handby}));-->
+<!--            $('#purchaseForm').append($('<input>', {type: 'hidden', name: 'destination', value: destination}));-->
+<!--            $('#purchaseForm').append($('<input>', {type: 'hidden', name: 'po_no', value: po_no}));-->
+<!--            $('#purchaseForm').append($('<input>', {type: 'hidden', name: 'po_date', value: po_date}));-->
+<!--            $('#purchaseForm').append($('<input>', {type: 'hidden', name: 'total_amount', value: total_amount})); // Append new total amount-->
+
+<!--            // Hide the modal-->
+<!--            $('#confirmationModal').modal('hide');-->
+
+<!--            // Submit the form after hiding the modal-->
+<!--            $('#purchaseForm').submit();-->
+<!--        } else {-->
+<!--            alert("Please fill in all required fields in the modal.");-->
+<!--        }-->
+<!--    });-->
+<!--});-->
+<!--</script>-->
+
+<script type="text/javascript">
+$(document).ready(function() {
+    // Function to validate quantity and perprice fields
+    function validateFields() {
+        let isValid = true;
+        $('.quantity').each(function() {
+            let quantityValue = parseInt($(this).val(), 10);
+            if (isNaN(quantityValue) || quantityValue <= 0) {
+                isValid = false;
+                alert("Please enter a valid quantity greater than 0.");
+                $(this).focus();
+                return false; // Exit each loop if invalid
+            }
+        });
+
+        $('.price').each(function() {
+            let priceValue = parseFloat($(this).val());
+            if (isNaN(priceValue) || priceValue <= 0) {
+                isValid = false;
+                alert("Please enter a valid price greater than 0.");
+                $(this).focus();
+                return false; // Exit each loop if invalid
+            }
+        });
+
+        return isValid;
+    }
+
+    // Display the modal only after validation
+    $('#initialSubmitButton').on('click', function() {
+        if (validateFields()) {
+            $('#confirmationModal').modal('show'); // Open the modal only if validation passes
+        }
+    });
+
+    // Handle the modal's submit button
+    $('#modalSubmitButton').on('click', function() {
+        // Retrieve the value from the modal input fields
+        const eway_no = $('#eway_no').val();
+        const bill_date = $('#bill_date').val();
+        const veh_no = $('#veh_no').val();
+        const handby = $('#handby').val();
+        const destination = $('#destination').val();
+        const po_no = $('#po_no').val();
+        const po_date = $('#po_date').val();
+        const total_amount = $('#total_amount').val(); // New input field
+
+        // Check if required fields are filled
+        if (eway_no && bill_date && handby && destination && total_amount) {
+            // Append modal input data to the main form
+            $('#purchaseForm').append($('<input>', {type: 'hidden', name: 'eway_no', value: eway_no}));
+            $('#purchaseForm').append($('<input>', {type: 'hidden', name: 'bill_date', value: bill_date}));
+            $('#purchaseForm').append($('<input>', {type: 'hidden', name: 'veh_no', value: veh_no}));
+            $('#purchaseForm').append($('<input>', {type: 'hidden', name: 'handby', value: handby}));
+            $('#purchaseForm').append($('<input>', {type: 'hidden', name: 'destination', value: destination}));
+            $('#purchaseForm').append($('<input>', {type: 'hidden', name: 'po_no', value: po_no}));
+            $('#purchaseForm').append($('<input>', {type: 'hidden', name: 'po_date', value: po_date}));
+            $('#purchaseForm').append($('<input>', {type: 'hidden', name: 'total_amount', value: total_amount})); // Append new total amount
+
+            // Hide the modal
+            $('#confirmationModal').modal('hide');
+
+            // Submit the form after hiding the modal
+            $('#purchaseForm').submit();
+        } else {
+            alert("Please fill in all required fields in the modal.");
+        }
+    });
+});
+</script>
+
+{% endblock content %}

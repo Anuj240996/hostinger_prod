@@ -1,0 +1,391 @@
+{% extends 'partials/base.html' %}
+{% load static %}
+{% load indian_filters %}
+{% block title %} Purchases Bill No : {{ bill.billno }}{% endblock title %}
+{% block content %}
+ <!-- Bootstrap CSS -->
+    <link rel="stylesheet" type="text/css" href="{% static 'bootstrap/bootstrap.min.css' %}">
+
+    <!-- font awesome cdn -->
+<!--    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.0/css/all.css" integrity="sha384-lZN37f5QGtY3VHgisS14W3ExzMWZxybE1SJSEsQp9S+oqd12jhcu+A56Ebc1zFSJ" crossorigin="anonymous">-->
+
+    <!-- Main CSS, then Sidebar CSS, Bill CSS-->
+    <link rel="stylesheet" type="text/css" href="{% static 'css/main.css' %}">
+<!--    <link rel="stylesheet" type="text/css" href="{% static 'css/sidebar.css' %}">-->
+    <link rel="stylesheet" type="text/css" href="{% static 'css/bill1.css' %}">
+<br>
+    <div style="color:#575757; font-style: bold; font-size: 2rem;  border-bottom: 1px solid white;">Purchase Bill No : {{ bill.billno }}</div>
+<br>
+    <!-- <br><br> --><!-- Log on to codeastro.com for more projects -->
+<!--    <form method="post">-->
+<form method="post" style="width: 900px; margin: 0 auto;">
+    {% csrf_token %}
+        <div class="bg">
+            <br>
+            <div id="printArea" class="bg">
+                <table class="outer-box inner-box" style="width: 840px; margin-left: auto; margin-right: auto;">
+                    <tbody>
+<!--                        <tr style="height: 1px;">-->
+<!--                            <td> <p style="text-align: center;">TAX INVOICE - PURCHASE BILL</p> </td>-->
+<!--                        </tr>-->
+<!--                        <tr style="text-align: center;">-->
+<!--                            <td>-->
+<!--&lt;!&ndash;                                <span style="font-size: 300%;">DB Solar Pvt Ltd.</span> <br>&ndash;&gt;-->
+<!--&lt;!&ndash;                                <span style="font-size: 120%; font-weight: bold;">Sales - On-Grid / Off-Grid Solar</span> <br>&ndash;&gt;-->
+<!--&lt;!&ndash;                                <span style="font-weight: bold;">REGD ADDRESS :</span> Eknamth Rangamanch Natyagruh<br>Aurangabad, OR 97882<br>&ndash;&gt;-->
+<!--&lt;!&ndash;                                <span style="font-weight: bold;">EMAIL : db-solar.co.in</span> <br><br>&ndash;&gt;-->
+<!--&lt;!&ndash;                                <div style="text-align: center; display: flex; align-items: left; justify-content: left; margin-left: 150px;">&ndash;&gt;-->
+<!--&lt;!&ndash;                                    <div style="margin-right: 50px;">&ndash;&gt;-->
+<!--&lt;!&ndash;                                        <img style="width: 100px; height: auto;" src="{% static 'images/dblogo200.png' %}" alt="DB Logo">&ndash;&gt;-->
+<!--&lt;!&ndash;                                    </div>&ndash;&gt;-->
+<!--&lt;!&ndash;                                    <div>&ndash;&gt;-->
+<!--&lt;!&ndash;                                        <span style="font-size: 300%;">DB Solar Pvt Ltd.</span><br>&ndash;&gt;-->
+<!--&lt;!&ndash;                                        <span style="font-size: 120%; font-weight: bold;">Sales - On-Grid / Off-Grid Solar</span><br>&ndash;&gt;-->
+<!--&lt;!&ndash;                                        <span style="font-weight: bold;">REGD ADDRESS :</span> Eknamth Rangamanch Natyagruh<br>Aurangabad, OR 97882<br>&ndash;&gt;-->
+<!--&lt;!&ndash;                                        <span style="font-weight: bold;">EMAIL : db-solar.co.in</span><br><br>&ndash;&gt;-->
+<!--&lt;!&ndash;                                    </div>&ndash;&gt;-->
+<!--&lt;!&ndash;                                </div>&ndash;&gt;-->
+<!--&lt;!&ndash;                                   <div style="display: flex; align-items: center; text-align: center;">&ndash;&gt;-->
+<!--                                <div style="text-align: center; display: flex; align-items: left; justify-content: left; margin-left: 150px;">-->
+<!--                                    <div style="margin-right: 50px;">-->
+<!--                                       <img style="width: 160px; height: 160px; margin-top: -30px;" src="{% static 'images/dblogo200.png' %}" alt="DB Logo">-->
+<!--                                    </div>-->
+<!--                                    <div>-->
+<!--                                        <span style="font-size: 300%;">HERAMB INDUSTRIES</span><br>-->
+<!--                                        <span style="font-size: 120%; font-weight: bold;">Sales - On-Grid / Off-Grid Solar</span><br>-->
+<!--                                        <span style="font-weight: bold;">REGD ADDRESS :</span> Eknamth Rangamanch Natyagruh,<br>Aurangabad, Maharashtra, 497882<br>-->
+<!--                                        <span><b>EMAIL :</b> db-solar.co.in , <b>GST NO :</b> 123456789CASTR0</span><br><br>-->
+<!--                                    </div>-->
+<!--                                </div>-->
+<!--                            </td>-->
+<!--                        </tr>-->
+
+                         <tr style="text-align: center;">
+                                    <td>
+                                        <div style="text-align: center; display: flex; align-items: flex-start; justify-content: center;">
+                                            <div style="flex: 500px 300px 0 300px;">
+                                                <img style="width: 150px; height: auto;" src="{% static 'images/dblogo200.png' %}" alt="DB Logo">
+                                            </div>
+
+                                            <div style="margin-left: 40px; text-align: center; line-height: 1.2;">
+                                                <span style="font-size: 100%; margin-right: 100px;">TAX INVOICE - PURCHASE BILL</span><br>
+                                                <span style="font-size: 300%;">HERAMB INDUSTRIES</span><br>
+                                                <span style="font-size: 120%; font-weight: bold;">Sales - On-Grid / Off-Grid Solar</span><br>
+                                                <span style="font-size: 90%;  line-height: 1.5;"> <span style="font-weight: bold;">REGD ADDRESS :</span> Bhagya Bangla, Block No. 2, Opp - Sant Eknamth Mandir,<br> New Osmanpura, Chh.Sambhaji Nagar. Maharashtra, 431001<br>
+                                                <span><b>EMAIL :</b> &nbsp;herambasd1@gmail.com , &nbsp; <b>GSTIN/UIN :</b>&nbsp;  27AIPPD9639R1Z6</span><br><br></span>
+                                            </div>
+                                        </div>
+                                    </td>
+                       </tr>
+
+                        <tr>
+                            <td>
+                            <table class="outer-box" style="width: 800px; margin-left: auto; margin-right: auto;">
+                                <tbody>
+<!--                                    <tr>-->
+<!--                                        <td class="inner-box" style="text-align: center; font-weight: bold;" colspan="3">TAX INVOICE - PURCHASE BILL</td>-->
+<!--                                    </tr>-->
+                                    <tr>
+                                        <td class="inner-box" style="width: 50%; font-weight: bold;">&nbsp;&nbsp;NAME OF CONSIGNEE / BUYER</td>
+                                        <td class="inner-box" style="width: 25%; font-weight: bold;">&nbsp;INVOICE NO</td>
+                                        <td class="inner-box" style="width: 25%; color: red;">&nbsp;&nbsp;<b>{{ bill.billno }}</b></td>
+                                    </tr>
+                                    <tr>
+                                        <td class="inner-box" style="width: 50%;">&nbsp;&nbsp;{{ bill.supplier.name }}</td>
+                                        <td class="inner-box" style="width: 25%; font-weight: bold;">&nbsp;DATE</td>
+                                        <td class="inner-box" style="width: 25%;">&nbsp;&nbsp;{{ bill.time.date|date:'d/m/Y' }}</td>
+                                    </tr>
+                                    <tr style="height: auto;"><!-- Log on to codeastro.com for more projects -->
+<!--                                        <td class="inner-box" style="width: 50%;" rowspan="6">{{ bill.supplier.address|linebreaks }}</td>-->
+
+                                                <td class="inner-box text-capitalize" style="width: 50%;  padding-left: 10px;" rowspan="6">{{ bill.supplier.address|linebreaks }} {{bill.supplier.City}}, {{bill.supplier.state}}, {{bill.supplier.Pincode}},<br> Ph. {{bill.supplier.phone}}</td>
+
+                                        <td class="inner-box" style="width: 25%; font-weight: bold;">&nbsp;SUPPLIER DC NO</td>
+<!--                                         <td class="inner-box align-middle" style="width: 25%;"> <input type="text" name="eway" class="align-middle" style="border: 0; overflow: hidden;" value="{% if billdetails.eway %}{{ billdetails.eway }}{% endif %}" required> </td>-->
+                                        <td class="inner-box align-middle" style="width: 25%;">&nbsp;
+                                            {% if billdetails.eway %}
+                                                {{ billdetails.eway }}
+                                            {% else %}
+                                                    <span style="vertical-align: middle;">&nbsp;--</span>
+                                            {% endif %} </td>
+
+
+                                    </tr>
+<!--                                    <tr>&lt;!&ndash; Log on to codeastro.com for more projects &ndash;&gt;-->
+<!--                                        <td class="inner-box" style="width: 25%; font-weight: bold;">&nbsp;Supplier Bill Date</td>-->
+<!--                                        <td class="inner-box align-middle" style="width: 25%;"> <input type="date" name="bill_date" class="align-middle" style="border: 0; overflow: hidden;" value="{% if billdetails.bill_date %}{{ billdetails.bill_date }}{% endif %}"> </td>-->
+<!--                                    </tr>-->
+                                    <tr style="height: 5px; padding: 0; margin: 0;">
+                                        <td class="inner-box" style="width: 25%; font-weight: bold; padding: 0; margin: 1;">
+                                            &nbsp;SUPPLIER DC DATE
+                                        </td>
+<!--                                        <td class="inner-box" style="width: 25%; padding: 0; margin: 1;">-->
+<!--                                            <input type="date" readonly name="bill_date" class="align-middle" style="border: 0; overflow: hidden; margin: 1; height: 18px; line-height: 1;" value="{% if billdetails.cgst %}{{ billdetails.cgst }}{% endif %}" required>-->
+<!--&lt;!&ndash;                                              &nbsp;  &nbsp;{% if billdetails.cgst %}{{ billdetails.cgst }}{% endif %}&ndash;&gt;-->
+<!--                                        </td>-->
+
+                                        <td class="inner-box" style="width: 25%; padding: 0; margin: 1; vertical-align: middle;">
+                                             {% if billdetails.tcs %}
+                                            &nbsp;&nbsp;<input type="date" name="bill_date" class="align-middle"
+                                                   style="border: 0; height: 100%; margin: 0; padding: 0; vertical-align: middle;"
+                                                   value="{{ billdetails.tcs }}" readonly>
+                                             {% else %}
+                                                    <span style="vertical-align: middle; margin-left: 5px;">&nbsp;&nbsp;--</span>
+                                            {% endif %}
+                                        </td>
+
+                                    </tr>
+
+                                    <tr>
+                                        <td class="inner-box" style="width: 25%; font-weight: bold;">&nbsp;VEH NO</td>
+<!--                                        <td class="inner-box align-middle" style="width: 25%;"> <input type="text" name="veh" class="align-middle" style="border: 0; overflow: hidden;" value="{% if billdetails.veh %}{{ billdetails.veh }}{% endif %}"> </td>-->
+                                        <td class="inner-box align-middle" style="width: 25%;"> &nbsp; {% if billdetails.veh %}{{ billdetails.veh }}{% endif %}</td>
+                                    </tr>
+                                     <tr>
+                                        <td class="inner-box" style="width: 25%; font-weight: bold;">&nbsp;HANDLED BY</td>
+<!--                                        <td class="inner-box align-middle" style="width: 25%;"> <input type="text" name="handby" class="align-middle" style="border: 0; overflow: hidden;" value="{% if billdetails.igst %}{{ billdetails.igst }}{% endif %}"> </td>-->
+                                        <td class="inner-box align-middle" style="width: 25%;">&nbsp;&nbsp;{% if billdetails.igst %}{{ billdetails.igst }}{% endif %}</td>
+                                    </tr>
+<!--                                    <tr>-->
+<!--                                        <td class="inner-box" style="width: 25%; font-weight: bold;">&nbsp;DESTINATION</td>-->
+<!--&lt;!&ndash;                                        <td class="inner-box align-middle" style="width: 25%;"> <input type="text" name="destination" class="align-middle" style="border: 0; overflow: hidden;" value="{% if billdetails.destination %}{{ billdetails.destination }}{% endif %}"> </td>&ndash;&gt;-->
+<!--                                    </tr>-->
+                                    <tr>
+                                        <td class="inner-box" style="width: 25%; font-weight: bold;">&nbsp;DESTINATION</td>
+<!--                                        <td class="inner-box align-middle" style="width: 25%; height: 40px;">-->
+<!--                                            <select name="destination" class="align-middle" style="border: 0; overflow: hidden; width: 100%;" required>-->
+<!--                                                <option value="" disabled selected> </option>-->
+<!--                                                <option value="Warehouse" {% if billdetails.destination == "Warehouse" %}selected{% endif %}>&nbsp;Warehouse</option>-->
+<!--                                                <option value="Office" {% if billdetails.destination == "Office" %}selected{% endif %}>&nbsp;Office</option>-->
+<!--                                                <option value="Project Side" {% if billdetails.destination == "Project Side" %}selected{% endif %}>&nbsp;Project Side</option>-->
+<!--                                            </select>-->
+<!--                                        </td>-->
+<!--                                        <td class="inner-box align-middle" style="width: 25%;"> <input type="text" name="destination" class="align-middle" style="border: 0; overflow: hidden;" value="{% if billdetails.destination %}{{ billdetails.destination }}{% endif %}"> </td>-->
+                                        <td class="inner-box align-middle" style="width: 25%;">&nbsp;&nbsp;{% if billdetails.destination %}{{ billdetails.destination }}{% endif %} </td>
+                                    </tr>
+                                    <tr>
+
+                                        <td class="inner-box" style="width: 25%; font-weight: bold;">&nbsp;SUPPLIER INVOICE NO.</td>
+<!--                                        <td class="inner-box align-middle" style="width: 25%;"> <input type="text" name="po" class="align-middle" style="border: 0; overflow: hidden;" value="{% if billdetails.po %}{{ billdetails.po }}{% endif %}"> </td>-->
+                                        <td class="inner-box align-middle" style="width: 25%;">&nbsp;
+                                            {% if billdetails.po %}
+                                                 {{ billdetails.po }}
+                                            {% else %}
+                                                    <span style="vertical-align: middle;">&nbsp;--</span>
+                                            {% endif %} </td>
+                                    </tr><!-- Log on to codeastro.com for more projects -->
+                                    <tr>
+                                        <td class="inner-box" style="font-weight: bold;">&nbsp;GSTIN No : {{ bill.supplier.gstin }}</td>
+                                        <td class="inner-box" style="width: 25%; font-weight: bold;">&nbsp;SUPPLIER INVOICE DATE</td>
+<!--                                        <td class="inner-box align-middle" style="width: 25%;"> <input type="text" name="po_date" class="align-middle" style="border: 0; overflow: hidden;" value="{% if billdetails.tcs %}{{ billdetails.tcs }}{% endif %}"> </td>-->
+<!--                                        <td class="inner-box" style="width: 25%; padding: 0; margin: 1;">-->
+<!--                                            <input type="date" name="po_date" class="align-middle" style="border: 0; height: 18px; overflow: hidden; margin: 1; height: auto; line-height: 1;" value="{% if billdetails.tcs %}{{ billdetails.tcs }}{% endif %}" readonly>-->
+<!--                                        </td>-->
+                                        <td class="inner-box" style="width: 25%; padding: 0; margin: 1; vertical-align: middle;">
+                                             {% if billdetails.cgst %}
+                                            &nbsp;&nbsp;<input type="date" name="po_date" class="align-middle"
+                                                   style="border: 0; height: 100%; margin: 0; padding: 0; vertical-align: middle;"
+                                                    value="{{ billdetails.cgst }}" readonly>
+                                             {% else %}
+                                                    <span style="vertical-align: middle; margin-left: 5px;">&nbsp;&nbsp;--</span>
+                                            {% endif %}
+                                        </td>
+
+
+                                    </tr><!-- Log on to codeastro.com for more projects -->
+                                </tbody>
+                            </table>
+                            </td>
+                        </tr>
+
+                        <tr>
+                            <td><!-- Log on to codeastro.com for more projects -->
+                            <table class="outer-box" style="width: 800px; margin-left: auto; margin-right: auto;">
+                                <tbody>
+                                {% if billdetails.gst_amount != 0 %}
+                                    <tr>
+                                        <td class="inner-box" style="width: 05%; font-weight: bold; text-align: center;">&nbsp;SL</td>
+                                        <td class="inner-box" style="width: 30%; font-weight: bold; text-align: center;">GOODS</td>
+                                        <td class="inner-box" style="width: 10%; font-weight: bold; text-align: center;">&nbsp;HSN/SAC</td>
+                                        <td class="inner-box" style="width: 12%; font-weight: bold; text-align: center;">QTY MTS</td>
+                                        <td class="inner-box" style="width: 12%; font-weight: bold; text-align: center;">RATE PMT</td>
+                                        <td class="inner-box" style="width: 7%; font-weight: bold; text-align: center;">GST</td>
+                                        <td class="inner-box" style="width: 12%; font-weight: bold; text-align: center;"><i class="fas fa-rupee-sign"></i>  &nbsp;AMOUNT</td>
+<!--                                        <td class="inner-box" style="width: 05%; font-weight: bold; text-align: center;">PS</td>-->
+                                    </tr>
+                                {% else %}
+                                     <tr>
+                                        <td class="inner-box" style="width: 05%; font-weight: bold; text-align: center;">&nbsp;SL</td>
+                                        <td class="inner-box" style="width: 39%; font-weight: bold; text-align: center;">GOODS</td>
+                                        <td class="inner-box" style="width: 10%; font-weight: bold; text-align: center;">&nbsp;HSN/SAC</td>
+                                        <td class="inner-box" style="width: 10%; font-weight: bold; text-align: center;">QTY MTS</td>
+                                        <td class="inner-box" style="width: 12%; font-weight: bold; text-align: center;">RATE PMT</td>
+<!--                                        <td class="inner-box" style="width: 7%; font-weight: bold; text-align: center;">GST</td>-->
+                                        <td class="inner-box" style="width: 12%; font-weight: bold; text-align: center;"><i class="fas fa-rupee-sign"></i>  &nbsp;AMOUNT</td>
+<!--                                        <td class="inner-box" style="width: 05%; font-weight: bold; text-align: center;">PS</td>-->
+                                    </tr>
+                                {% endif %}
+                                    {% for item in items %}
+                                        <tr style="height: auto;">
+                                            <td class="inner-box" style="width: 5%;">&nbsp; {{ forloop.counter }}</td>
+<!--                                            <td class="inner-box text-capitalize" style="width: 30%;">&nbsp;<b> {{ item.stock.name }}</b></td>-->
+<!--                                              <td class="inner-box text-capitalize" style="width: 30%; line-height: 1;">-->
+<!--                                                    <b style="margin-left: 10px;"> {{ item.stock.name }}</b><br>-->
+<!--                                                   {% if item.purchaseserial_set.all %}-->
+<!--                                                    <small style="margin-left: 10px;">-->
+<!--                                                           &nbsp;&nbsp;&nbsp; SR No.-->
+<!--                                                        {% for serial in item.purchaseserial_set.all %}-->
+<!--                                                            {{ serial.serialNo }}{% if not forloop.last %}, {% endif %}-->
+<!--                                                        {% endfor %}-->
+<!--                                                    </small>-->
+<!--                                                    {% endif %}-->
+<!--                                                </td>-->
+
+                                             <td class="inner-box text-capitalize" style="width: 30%; line-height: 1.2;">
+                                                <span style="padding-left: 10px; display: inline-block;">{{ item.stock.name }}</span><br>
+                                                {% if item.purchaseserial_set.all %}
+                                                        <small style="padding-left: 15px; display: inline-block;">Serial No -</small>
+                                                        <small style="padding-left: 15px; display: inline-block;">
+                                                        {% for serial in item.purchaseserial_set.all %}
+                                                            {{ serial.serialNo }}{% if not forloop.last %}, {% endif %}
+                                                        {% endfor %}
+                                                    </small>
+                                                {% endif %}
+                                            </td>
+
+                                            <td class="inner-box" style="width: 10%;">&nbsp;</td>
+                                            <td class="inner-box" style="width: 12%; padding-right: 10px;" align="right">&nbsp; <b>{{ item.quantity|indian_format }}&nbsp;<small style="color: black">{{ item.purchase.short_name}}</small></b></td>
+                                            <td class="inner-box" style="width: 12%; padding-right: 10px;" align="right">&nbsp; {{ item.perprice|indian_format_with_decimals }}</td>
+<!--                                            <td class="inner-box" style="width: 5%;">&nbsp; {{ item.purchase.short_name }}</td>-->
+<!--                                           <td class="inner-box" style="width: 7%; padding-right: 10px;" align="right">&nbsp; {{ item.stock.gst|floatformat:"-1" }}%</td>-->
+                                          {% if billdetails.gst_amount != 0 %}
+                                           <td class="inner-box" style="width: 7%; padding-right: 10px;" align="right">&nbsp;  {{ item.stock.gst|floatformat:"-2" }} %</td>
+                                          {% endif %}
+                                            <td class="inner-box" style="width: 12%; padding-right: 10px;" align="right"><b>&nbsp;{{ item.totalprice|indian_format_with_decimals }}</b></td>
+
+<!--                                            <td class="inner-box" style="width: 5%;">&nbsp;0</td>-->
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                            </td>
+                        </tr>
+
+                        <tr>
+                            <td>
+                            <table class="outer-box inner-box" style="width: 800px; margin-left: auto; margin-right: auto;">
+                                <tbody>
+                                    <tr>
+                                        <td class="inner-box" style="width: 35%; text-align: center;" rowspan="5">
+                                            <p> <span style="font-weight: bold;">BANK DETAILS <br> CodeAstro</span> <br>
+                                                WestView Bank <br> AC NO-54A7 6S31 4T85 0RO3 <br> IFSC CODE - ABCD 010 0110 <br> CS BRANCH <br> PH NO - 541-010-0400</p>
+                                        </td>
+
+                                        <td class="inner-box" style="width: 30%; font-weight: bold; padding-right: 10px;" align="right">&nbsp;Basic Amount</td>
+                                         <td class="inner-box align-middle" style="width: 30%; padding-right: 10px;" align="right">&nbsp; {{ billdetails.total_amount|indian_format_with_decimals }}</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="inner-box" style="width: 30%; font-weight: bold; padding-right: 10px;" align="right">&nbsp;GST @ {{ billdetails.gst_value }} </td>
+                                        <td class="inner-box align-middle" style="width: 30%; padding-right: 10px;" align="right">&nbsp; {{ billdetails.gst_amount|indian_format_with_decimals }}</td>
+                                    </tr>
+                                    <tr><!-- Log on to codeastro.com for more projects -->
+                                        <td class="inner-box" style="font-weight: bold; padding-right: 10px;" align="right">&nbsp;Round Off </td>
+                                        <td class="inner-box align-middle" align="right" style="padding-right: 10px;">&nbsp; {{billdetails.round_off|indian_format_with_decimals}}</td>
+<!--                                        <td class="inner-box align-middle" align="right" style="padding-right: 10px;">&nbsp; <input type="text" name="cess" class="align-middle" pattern="[0-9]+\.[0-9]+" style="border: 0; overflow: hidden;" value="{% if billdetails.cess %}{{ billdetails.cess }}{% endif %}"></td>-->
+                                    </tr>
+                                    <tr><!-- Log on to codeastro.com for more projects -->
+                                        <td class="inner-box" style="font-weight: bold; padding-right: 10px;" align="right">&nbsp;Delivery Charges </td>
+                                        <td class="inner-box align-middle" align="right" style="padding-right: 10px;">&nbsp; {{billdetails.delivery_charges}}</td>
+<!--                                        <td class="inner-box align-middle" align="right" style="padding-right: 10px;">&nbsp; <input type="text" name="cess" class="align-middle" pattern="[0-9]+\.[0-9]+" style="border: 0; overflow: hidden;" value="{% if billdetails.cess %}{{ billdetails.cess }}{% endif %}"></td>-->
+                                    </tr>
+                                    <tr>
+                                        <td class="inner-box" style="font-weight: bold; padding-right: 10px;" align="right">&nbsp;TOTAL</td>
+<!--                                        <td class="inner-box align-middle">&nbsp;<B> <input type="text" name="total" class="align-middle" pattern="[0-9]+\.[0-9]+" style="border: 0; overflow: hidden;" value="{% if billdetails.final_amount %}{{ billdetails.final_amount }}{% endif %}"> </B></td>-->
+                                       <td class="inner-box align-middle" align="right" style="padding-right: 10px;">&nbsp;<b><i class="fas fa-rupee-sign"></i>  &nbsp;{{ billdetails.final_amount|indian_format_with_decimals }}</b></td>
+
+                                    </tr>
+                                </tbody>
+                            </table>
+                            </td>
+                        </tr>
+
+                        <tr>
+
+                            <td align="right">
+                                <span style="font-weight: bold; margin-right: 20px;">For Heramb Industries, &nbsp;&nbsp;&nbsp;<br><br><br><br> Signature &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span>
+                            </td>
+                        </tr>
+
+                        <tr>
+                            <td style="text-align: center;">
+                                <!-- FINAL TEXT -->
+                            </td>
+                        </tr>
+
+                    </tbody>
+                </table>
+
+            </div>
+
+            <!-- <br><br> --><!-- Log on to codeastro.com for more projects -->
+
+        </div>
+
+        <br><br>
+
+        <div class="wrapper">
+            <button class="center btn btn-primary" onclick="printpage('printArea')">Print</button>
+<!--            <button class="center btn btn-success" type="submit">Save Draft</button>-->
+            <a href="{% url 'purchases-list' %}" class=" btn center btn-secondary">Go Back</a>
+        </div><!-- Log on to codeastro.com for more projects -->
+
+    </form>
+
+    <script>
+        function printpage(divName) {
+            var printContents = document.getElementById(divName).innerHTML;
+            var originalContents = document.body.innerHTML;
+            document.body.innerHTML = printContents;
+            window.print();
+            document.body.innerHTML = originalContents;
+        }
+        </script>
+<style>
+    .outer-box{
+    border-collapse: collapse;
+}
+
+.inner-box{
+    border: 1px solid #000;
+}
+
+.wrapper{
+    text-align: center;
+}
+
+.center{
+    position: relative;
+}
+
+.bg{
+    background-color: #fff;
+    color: #000;
+}
+
+.bg-black{
+    background-color: #000;
+    color: #fff;
+}
+
+p{
+    background-color: #fff;
+    color: #000;
+}
+</style>
+
+
+  <!-- jQuery first, then Popper.js, then Bootstrap JS -->
+    <script src="{% static 'bootstrap/jquery-3.3.1.slim.min.js' %}"></script>
+    <script src="{% static 'bootstrap/popper.min.js' %}"></script>
+    <script src="{% static 'bootstrap/bootstrap.min.js' %}"></script>
+{% endblock %}

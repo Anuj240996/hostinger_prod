@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+{% extends 'partials/base.html' %}
+{% block title %}Order Page{% endblock %}
+{% load static %}
+{% block content %}
+<div class="content container-fluid">
+<div class="page-header">
+   <div class="row">
+      <div class="col-sm-12">
+         <h3 class="page-title text-capitalize">Welcome {{ user.first_name }}</h3>
+
+          <div class="page-header">
+                 <div class="row align-items-center">
+                    <div class="col">
+
+                       <ul class="breadcrumb">
+                          <li class="breadcrumb-item"><a href="{% url 'dashboard-index' %}"><i class="fa fa-home" aria-hidden="true"></i> Home</a></li>
+                          <li class="breadcrumb-item active">Consumer Dashboard</li>
+                       </ul>
+                    </div>
+                 </div>
+              </div>
+
+
+
+      </div>
+   </div>
+</div>
+
+<div class="row">
+   <div class="col-xl-3 col-sm-6 col-12 d-flex">
+
+      <div class="card bg-five w-100 my-card shadow">
+          <a class="text-decoration-none text-dark" href="{% url 'customer-view_all' %}?Cust_type=Residential">
+         <div class="card-body">
+            <div class="db-widgets d-flex justify-content-between align-items-center">
+               <div class="db-icon">
+                  <i class="fas fa-house-user"></i>
+               </div>
+               <div class="db-info text-right">
+                  <h3>{{ totalIndividual }}</h3>
+                  <h6>&nbsp;&nbsp;&nbsp;&nbsp;Residential Cust</h6>
+               </div>
+            </div>
+         </div>
+        </a>
+      </div>
+   </div>
+   <div class="col-xl-3 col-sm-6 col-12 d-flex">
+
+      <div class="card bg-six w-100 my-card shadow">
+          <a class="text-decoration-none text-dark" href="{% url 'customer-view_all' %}?Cust_type=Industrial">
+         <div class="card-body">
+            <div class="db-widgets d-flex justify-content-between align-items-center">
+               <div class="db-icon">
+                 <i class="fas fa-industry"></i>
+               </div>
+               <div class="db-info text-right">
+                  <h3>{{ totalCompany }}</h3>
+                  <h6>&nbsp;&nbsp;&nbsp;&nbsp;Industrial Cust</h6>
+               </div>
+            </div>
+         </div>
+        </a>
+      </div>
+   </div>
+   <div class="col-xl-3 col-sm-6 col-12 d-flex">
+
+       <div class="card bg-seven w-100 my-card shadow">
+          <a class="text-decoration-none text-dark" href="{% url 'customer-view_all' %}?Cust_type=Commersial">
+         <div class="card-body">
+            <div class="db-widgets d-flex justify-content-between align-items-center">
+               <div class="db-icon">
+                  <i class="fas fa-city"></i>
+               </div>
+               <div class="db-info text-right">
+                  <h3>{{ totalComersial }}</h3>
+                  <h6>Commersial Cust</h6>
+               </div>
+            </div>
+         </div>
+         </a>
+      </div>
+   </div>
+   <div class="col-xl-3 col-sm-6 col-12 d-flex">
+       <div class="card bg-eight w-100 my-card shadow">
+         <a class="text-decoration-none text-dark" href="{% url 'customer-view_all' %}?Cust_type=Goverment">
+         <div class="card-body">
+            <div class="db-widgets d-flex justify-content-between align-items-center">
+               <div class="db-icon">
+                  <i class="fas fa-clock"></i>
+               </div>
+               <div class="db-info text-right">
+                  <h3>{{ totalGoverment }}</h3>
+                  <h6>Goverment Cust</h6>
+<!--                  <h3>{{ totalGoverment }}</h3>-->
+<!--                  <h6>&nbsp;&nbsp;Goverment Cust</h6>-->
+               </div>
+            </div>
+         </div>
+         </a>
+      </div>
+   </div>
+</div>
+</div>
+
+
+<div class="content container-fluid">
+                              {% if customers %}
+                                    {% if customer_type is None %}
+                                      {% with customer_type='All' %}
+                                         <h4 align="center">Result against " <span style="color: brown">{{ customer_type }}</span> " Consumer </h4><br>
+                                      {% endwith %}
+                                    {% else %}
+                                       <h4 align="center">Result against " <span style="color: brown">{{ customer_type }}</span> " Consumer </h4><br>
+                                     {% endif %}
+
+<!--   <div class="table-responsive">-->
+<!--       <div class="card-header">-->
+<!--   <div class="row">-->
+<!--      <div class="col-6">-->
+<!--         <h3 class="card-title">Consumer List Records</h3>-->
+<!--      </div>-->
+<!--      <div class="col-6">-->
+
+<!--         <label for="dateFilter">Date Filter:</label>-->
+<!--         <select class="form-control" id="dateFilter" onchange="applyDateFilter()">-->
+<!--            <option value=""> {{ caption_text1 }}</option>-->
+<!--            <option value=""> </option>-->
+<!--            <option value="Today">Today</option>-->
+<!--            <option value="Last7Days">Last 7 Days</option>-->
+<!--            <option value="Last30Days">Last 30 Days</option>-->
+<!--            <option value="ThisMonth">This Month</option>-->
+<!--            <option value="All">Up To Date</option>-->
+<!--            <option value="Custom">Custom Range</option>-->
+<!--         </select>-->
+<!--      </div>-->
+<!--   </div>-->
+<!--   <div  class="row mb-1" id="customDateRange" style="display: none;">-->
+<!--      <div class="form-group col-md-5" style="display: inline-block; margin-right: 10px;">-->
+<!--         <label for="startDate">Start Date:</label>-->
+<!--         <input type="date" class="form-control" id="startDate">-->
+<!--      </div>-->
+<!--      <div class="form-group col-md-5" style="display: inline-block; margin-right: 10px;">-->
+<!--         <label for="endDate">End Date:</label>-->
+<!--         <input type="date" class="form-control" id="endDate">-->
+<!--      </div>-->
+<!--      <button class="btn btn-primary" onclick="applyCustomRange()" style="display: inline-block;">Apply</button>-->
+<!--   </div>-->
+
+<!--<script>-->
+<!--   function applyDateFilter() {-->
+<!--       var selectedOption = document.getElementById("dateFilter").value;-->
+<!--       if (selectedOption === "Custom") {-->
+<!--           document.getElementById("customDateRange").style.display = "block";-->
+<!--       } else {-->
+<!--           // Redirect to the URL with the selected filter option-->
+<!--           window.location.href = "{% url 'customer-view_all' %}?filter=" + selectedOption;-->
+<!--       }-->
+<!--   }-->
+
+<!--   function applyCustomRange() {-->
+<!--       var startDate = document.getElementById("startDate").value;-->
+<!--       var endDate = document.getElementById("endDate").value;-->
+<!--       // Redirect to the URL with the custom date range-->
+<!--       window.location.href = "{% url 'customer-view_all' %}?filter=Custom&start_date=" + startDate + "&end_date=" + endDate;-->
+<!--   }-->
+<!--</script>-->
+<!--<h3 style="text-align: center; color: red;">* {{ caption_text }} *</h3>-->
+        <table id="yourDataTable" class="table table-hover table-center table.dataTable.table-sm mb-0 datatable table.sm">
+                                 <thead class="table-success">
+                                    <tr>
+                                       <th scope="col">Sr No.</th>
+                                       <th scope="col">Cust id</th>
+                                       <th scope="col">Consumer / Farm Name</th>
+                                       <th scope="col">Capacity</th>
+<!--                                       <th scope="col">UPS Soft</th>-->
+                                       <th scope="col">Consumer Type</th>
+                                       <th scope="col">Mobile</th>
+                                       <th scope="col">City</th>
+                                       <th scope="col">PO Date</th>
+                                       <!--<th class="text-center">Action</th>-->
+                                        <th scope="col">Project Status</th>
+                                       <th scope="col">MSEB Status</th>
+
+
+                                    </tr>
+                                 </thead>
+
+                                 <tbody>
+                                    {% for Cust in customers %}
+                                    <tr>
+                                       <td>{{forloop.counter }}</td>
+                                       <td>{{Cust.Cust_id}}</td>
+                                       {% if Cust.Comp_name %}
+                                        <td class="text-capitalize">
+                                          <a href="{% url 'customer-customer-updatepage' Cust.Cust_id %}" class="text-capitalize">{{Cust.Comp_name}} , &nbsp;{{Cust.City}}</a>
+                                        </td>
+                                       {% else %}
+                                        <td class="text-capitalize">
+                                          <a href="{% url 'customer-customer-updatepage' Cust.Cust_id %}" class="text-capitalize">{{Cust.first_name}} {{Cust.last_name}} , &nbsp;{{Cust.City}}</a>
+                                        </td>
+                                        {% endif %}
+                                       <td>{{Cust.Plant_Capacity}} Kwp</td>
+<!--                                       <td class="text-capitalize">{{Cust.Ups_Soft}}</td>-->
+                                       <td class="text-capitalize">{{Cust.Cust_type}}</td>
+                                       <td>{{Cust.phone}}</td>
+                                       <td class="text-capitalize">{{Cust.City}}</td>
+                                       <td>{{ Cust.po_date|date:'d-m-Y' }}</td>
+<!--                                       <td class="text-right">-->
+<!--                                          <div class="actions">-->
+<!--                                             <a href="{% url 'customer-customer-update' Cust.Cust_id %}" class="btn btn-sm bg-success-light mr-2">-->
+<!--                                                  <a href="{% url 'customer-customer-updatepage' Cust.Cust_id %}" class="btn btn-sm bg-success-light mr-2">-->
+<!--                                             <i class="fa fa-eye" aria-hidden="true"></i>-->
+<!--                                             </a>-->
+<!--                                          </div>-->
+<!--                                       </td>-->
+                                       <td align="center">
+                                                {% if Cust.project_status %}
+                                                 {% if Cust.project_status == 'Completed' %}
+                                                   <a href="{% url 'customer-customer-updatepage' Cust.Cust_id %}" class="text-capitalize"><img src="{% static 'images/check 5.gif' %}" style="width: 25px;"><b style="color: green"> Completed</b></a>
+                                                 {% else %}
+                                                   <a href="{% url 'customer-customer-updatepage' Cust.Cust_id %}" class="text-capitalize"><img src="{% static 'images/pending1.gif' %}" alt="Pending" style="width: 25px;"><b style="color: orange"> Pending</b></a>
+                                                 {% endif %}
+                                                {% else %}
+                                                <span class="badge badge-danger">Pending</span>
+                                                {% endif %}
+                                        </td>
+                                        <td>
+                                                {% if Cust.mseb_data.exists %}
+                                                    {% with mseb_record=Cust.mseb_data.first %}
+                                                        {% if mseb_record.installation_date %}
+                                                            <a href="{% url 'customer-MSEB_tracking' Cust.Cust_id %}"><span class="badge badge-success">Completed</span></a>
+                                                        {% else %}
+                                                            <a href="{% url 'customer-MSEB_tracking' Cust.Cust_id %}"><span class="badge badge-warning">Pending</span></a>
+                                                        {% endif %}
+
+                                                    {% endwith %}
+                                                {% else %}
+                                                    {% if user.is_superuser %}
+                                                       <a href="{% url 'customer-MSEB' %}"><span class="badge badge-info">Upcoming</span></a>
+                                                    {% else %}
+                                                       <a href="#"><span class="badge badge-info">Upcoming</span></a>
+                                                    {% endif %}
+
+
+                                                {% endif %}
+                                        </td>
+
+                                    </tr>
+                                    {% endfor %}
+                                 </tbody>
+                              </table>
+                           </div>
+                              {% endif %}
+                           </div>
+
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    let dataTable = $('#yourDataTable').DataTable();
+    //let dataTable = $('#yourDataTable').DataTable({
+    //    scrollX: true,
+    //    fixedHeader: true,
+    //    columnDefs: [
+    //        { targets: 0, orderable: false } // '0' represents the index of the 'Sr No.' column (zero-based)
+    //    ]
+    //});
+
+    // Check if the DataTable is already initialized
+    if ($.fn.dataTable.isDataTable('#yourDataTable')) {
+        dataTable.destroy(); // If initialized, destroy the DataTable
+    }
+
+    dataTable = $('#yourDataTable').DataTable({
+        scrollX: true, // Enable horizontal scrolling
+        //scrollY: '50vh', // Adjust the height as needed
+        scrollCollapse: true,
+        fixedHeader: {
+            header: true,
+            footer: false // Do not fix the footer to prevent it from moving
+        },
+        columnDefs: [
+           { targets: 0, orderable: false } // Disable sorting for the Sr No. column (zero-based)
+        ]
+
+    });
+
+     $('#yourDataTable tbody tr').each(function(index) {
+        $(this).find('td:first').text(index + 1);
+    });
+
+      dataTable.on('order.dt search.dt', function() {
+        dataTable.column(0, { search: 'applied', order: 'applied' }).nodes().each(function(cell, i) {
+            cell.innerHTML = i + 1;
+        });
+    }).draw();
+});
+</script>
+
+
+
+
+
+
+
+
+{% endblock %}

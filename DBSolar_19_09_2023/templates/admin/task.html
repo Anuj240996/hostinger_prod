@@ -1,0 +1,1560 @@
+{% extends 'partials/base.html' %}
+{% load static %}
+{% block content %}
+
+<link href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.1.0-rc.0/css/select2.min.css" rel="stylesheet" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.1.0-rc.0/js/select2.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/fuse.js/6.6.2/fuse.min.js"></script>
+<div class="container mt-5">
+   <h3 class="page-title text-center">Task Assigner</h3>
+   <div class="card mt-3" style="border: 5px solid #573170; background-color: #f7f7f7;">
+      <div class="card-body">
+         <h2 class="card-title text-center" style="text-transform: uppercase; color:#573170;">Apply Now</h2>
+         <br><br>
+         <hr>
+         <form method="post" style="background-color: #f7f7f7;">
+            {% csrf_token %}
+            <!-- Button to trigger the modal -->
+            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#profileModal">
+            First Select Department
+            </button>
+            <div class="row mb-3">
+               <div class="col-sm-6">
+                  <label class="col-form-label">Department:</label>
+                  <input type="text" name="Department" id="Department" readonly class="form-control" required>
+               </div>
+               <div class="col-sm-6">
+                  <label for="AssignTo" class="col-form-label">Assign To:</label>
+                  <input type="text" name="AssignTo" id="AssignTo" readonly class="form-control" required>
+                  <input type="hidden" name="AssignToID" id="AssignToID">
+               </div>
+            </div>
+<!--            <div class="row mb-3">-->
+<!--               <label class="col-sm-2 col-form-label">Company Name:</label>-->
+<!--               <div class="col-sm-10 d-flex align-items-center">-->
+<!--                  &lt;!&ndash; Dropdown &ndash;&gt;-->
+<!--                  <select id="comp_name" name="comp_name" class="form-control" style="width: 100%;" required>-->
+<!--                     <option value="">Select a company</option>-->
+<!--                     {% if companies %}-->
+<!--                     {% for company in companies %}-->
+<!--                     <option value="{{ company.Comp_name }}">{{ company.Comp_name }}</option>-->
+<!--                     {% endfor %}-->
+<!--                     {% else %}-->
+<!--                     <option value="">No companies available</option>-->
+<!--                     {% endif %}-->
+<!--                  </select>-->
+<!--                  &lt;!&ndash; Voice Icon Container &ndash;&gt;-->
+<!--                  <div id="voiceIconContainer" class="ml-2">-->
+
+<!--                     &lt;!&ndash; Static Mic Icon (Visible initially) &ndash;&gt;-->
+<!--                     <span id="staticMicIcon" class="icon clickable" style="cursor: pointer;">-->
+<!--                     <img src="{% static 'images/image1.png' %}" alt="Static Mic Icon" width="24" height="24">-->
+<!--                     </span>-->
+<!--                     &lt;!&ndash; Animated Mic Icon (Initially Hidden) &ndash;&gt;-->
+<!--                     <span id="animatedMicIcon" class="icon clickable" style="cursor: pointer; display: none;">-->
+<!--                     <img src="{% static 'images/interview.gif' %}" alt="Animated Mic Icon" width="35" height="35">-->
+<!--                     </span>-->
+<!--                  </div>-->
+<!--               </div>-->
+<!--            </div>-->
+             <div class="row mb-3">
+                  <label class="col-sm-2 col-form-label">Company Name:</label>
+                  <div class="col-sm-10 d-flex align-items-center">
+                    <select id="comp_name" name="comp_name" class="form-control" style="width: 100%;" required>
+                      <option value="">Select a company</option>
+                      {% if companies %}
+                      {% for company in companies %}
+                      <option value="{{ company.Comp_name }}">{{ company.Comp_name }}</option>
+                      {% endfor %}
+                      {% else %}
+                      <option value="">No companies available</option>
+                      {% endif %}
+                    </select>
+
+                    <div id="voiceIconContainer" class="ml-2">
+                      <span id="staticMicIcon" class="icon clickable" style="cursor: pointer;">
+                        <img src="{% static 'images/image1.png' %}" alt="Static Mic Icon" width="24" height="24">
+                      </span>
+                    </div>
+                  </div>
+             </div>
+
+            <div id="customer_details" style="display: none;">
+               <div class="row mb-3">
+                  <div class="col-sm-6">
+                     <label for="phone" class="col-form-label">Phone:</label>
+                     <input type="text" id="phone" name="phone" value="" readonly class="form-control">
+                  </div>
+                  <div class="col-sm-6">
+                     <label for="address" class="col-form-label">Address:</label>
+                     <input type="text" id="address" name="address" value="" readonly class="form-control">
+                  </div>
+               </div>
+               <div class="row mb-3">
+                  <div class="col-sm-6">
+                     <label for="city" class="col-form-label">City:</label>
+                     <input type="text" id="city" name="city" value="" readonly class="form-control">
+                  </div>
+                  <div class="col-sm-6">
+                     <label for="plant_capacity" class="col-form-label">Plant Capacity:</label>
+                     <input type="text" id="plant_capacity" name="plant_capacity" value="" readonly class="form-control">
+                     <input type="hidden" id="new_customer_id" name="new_customer_id" value="" readonly class="form-control">
+                  </div>
+               </div>
+               <!-- Add more fields here -->
+            </div>
+            <div class="row mb-3">
+               <label class="col-sm-2 col-form-label">Message:</label>
+               <div class="col-sm-10">
+                  <textarea name="Message" class="form-control" placeholder="Message...." required></textarea>
+               </div>
+            </div>
+            <div class="row">
+               <div class="col text-center">
+                  <button type="submit" class="btn btn-primary">Submit</button>
+               </div>
+            </div>
+         </form>
+      </div>
+   </div>
+</div>
+<div class="modal fade" id="profileModal" tabindex="-1" aria-labelledby="profileModalLabel" aria-hidden="true">
+   <div class="modal-dialog">
+      <div class="modal-content">
+         <div class="modal-header">
+            <h5 class="modal-title" id="profileModalLabel">User Profile</h5>
+            <button type="button" class="close" data-bs-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+         </div>
+         <div class="modal-body">
+            <form method="post">
+               {% csrf_token %}
+               <div class="form-group">
+                  <label for="department">Department</label>
+                  <select class="form-control" id="department" name="department" required>
+                     <!-- Add required attribute here -->
+                     <option value="">Select Department</option>
+                     {% for profile in unique_departments %}
+                     <option value="{{ profile.department }}">{{ profile.department }}</option>
+                     {% endfor %}
+                  </select>
+               </div>
+               <div class="form-group">
+                  <label for="first_name">First Name</label>
+                  <select class="form-control" id="first_name" name="first_name">
+                     <option value="">Select First Name</option>
+                     {% for user in all_users %}
+                     <option value="{{ user.id }}">{{ user.first_name }} {{ user.last_name }}</option>
+                     {% endfor %}
+                  </select>
+               </div>
+               <!-- Add more fields as needed -->
+               <div class="modal-footer">
+                  <button type="submit" class="btn btn-primary">Save</button>
+                  <!--            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>-->
+               </div>
+            </form>
+         </div>
+      </div>
+   </div>
+</div>
+
+<!--<div class="modal fade" id="speechModal" tabindex="-1" aria-labelledby="speechModalLabel" aria-hidden="true">-->
+<!--  <div class="modal-dialog modal-dialog-centered">-->
+<!--    <div class="modal-content">-->
+<!--      <div class="modal-header">-->
+<!--        <h5 class="modal-title" id="speechModalLabel">Speech Recognition</h5>-->
+<!--        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>-->
+<!--      </div>-->
+<!--      <div class="modal-body text-center">-->
+        <!-- Mic Image for listening status -->
+        <!--                <img id="micImage" src="{% static 'images/interview.gif' %}" alt="Mic Image" width="50" height="50">-->
+        <!--                <p class="mt-3">Listening...</p>-->
+        <!--                <div id="recognizedText" class="p-2 border rounded bg-light">Listening...</div>-->
+<!--        <div id="recognizedText">-->
+<!--          <h3>Listening....</h3>-->
+<!--        </div>-->
+
+
+        <!-- Dynamic Wave -->
+<!--        <div id="waveContainer" style="position: relative; width: 100%; height: 100px; overflow: hidden; border-radius: 10px;">-->
+<!--          <div id="wave" class="wave" style="position: absolute; width: 100%; height: 100%; background-color: lightgrey; border-radius: 5px;"></div>-->
+
+          <!-- Position the mic image in the center of the wave -->
+<!--          <img id="micImage" src="{% static 'images/interview.gif' %}" alt="Mic Image" width="50" height="50" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);">-->
+<!--        </div>-->
+<!--      </div>-->
+<!--      <div class="modal-footer">-->
+<!--        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>-->
+<!--      </div>-->
+<!--    </div>-->
+<!--  </div>-->
+<!--</div>-->
+
+<div class="modal fade" id="speechModal" tabindex="-1" aria-labelledby="speechModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="speechModalLabel">Speech Recognition</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body text-center">
+        <!-- Recognized Text -->
+        <div id="recognizedText">
+          <h3>Listening....</h3>
+        </div>
+
+        <!-- Dynamic Wave -->
+        <div id="waveContainer" style="position: relative; width: 100%; height: 100px; overflow: hidden; border-radius: 10px;">
+          <div id="wave" class="wave" style="position: absolute; width: 100%; height: 100%; background-color: lightgrey; border-radius: 5px;"></div>
+
+          <!-- Position the mic image in the center of the wave -->
+          <img id="micImage" src="{% static 'images/interview.gif' %}" alt="Mic Image" width="50" height="50" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+<script>
+   $(document).ready(function() {
+     // Retrieve the dropdown elements
+     var departmentDropdown = $('#department');
+     var uniqueDepartmentDropdown = $('#unique_department');
+     var firstNameDropdown = $('#first_name');
+     var assignToTextbox = $('#AssignTo');
+     var departmentTextbox = $('#Department');
+
+     var assignToIDTextbox = $('#AssignToID');
+
+     // Store the original options of the First Name dropdown
+     var originalOptions = firstNameDropdown.html();
+
+     // Update the AssignTo textbox and filter the First Name dropdown options when the modal's "Save" button is clicked
+     $('#profileModal').on('click', '.btn-primary', function(event) {
+       event.preventDefault();
+
+       // Get the selected department and first name
+       var selectedDepartment = departmentDropdown.val();
+       var selectedFirstNameID = firstNameDropdown.find(':selected');
+
+
+       // Ensure that a department is selected
+       if (!selectedDepartment) {
+         alert("Please select a department.");
+         return;
+
+       }
+
+
+       // Ensure that a first name is selected
+       if (!selectedFirstNameID.val()) {
+         alert("Please select a first name.");
+         return;
+       }
+
+       // Get the text and ID values from the selected option
+       var selectedText = selectedFirstNameID.text();
+       var selectedID = selectedFirstNameID.val();
+
+       // Split the selectedText into first name and last name
+       var splitNames = selectedText.split(' ');
+       var firstName = splitNames[0];
+       var lastName = splitNames[1];
+
+       // Update the AssignTo and AssignToID textboxes with the selected values
+       assignToTextbox.val(firstName + ' ' + lastName);
+       assignToIDTextbox.val(selectedID);
+
+       // Update the AssignTo and Department textboxes in the main form
+       departmentTextbox.val(selectedDepartment);
+
+       // Close the modal
+       $('#profileModal').modal('hide');
+     });
+
+     // Define the options for departments and first names
+     var departmentOptions = {
+       {% for profile in all_profiles %}
+       {% if profile.department %}
+       '{{ profile.department }}': [
+         {% for user in all_users %}
+           {% if profile.department == user.profile.department %}
+           {
+             'id': '{{ user.id }}',
+             'name': '{{ user.first_name }} {{ user.last_name }}'
+           },
+           {% endif %}
+         {% endfor %}
+       ],
+       {% endif %}
+       {% endfor %}
+     };
+
+     // Get unique department options
+     var uniqueDepartments = Object.keys(departmentOptions);
+
+     // Initialize the department dropdown with unique options
+     $.each(uniqueDepartments, function(index, department) {
+       departmentDropdown.append($('<option>', {
+         value: department,
+         text: department
+       }));
+     });
+
+     // Initialize the unique_department dropdown with unique options
+     $.each(uniqueDepartments, function(index, department) {
+       uniqueDepartmentDropdown.append($('<option>', {
+         value: department,
+         text: department
+       }));
+     });
+
+
+     // Initialize the first_name dropdown with the initial options
+     updateFirstNameOptions();
+
+     // Update the first_name dropdown when department changes
+     departmentDropdown.change(function() {
+       updateFirstNameOptions();
+     });
+
+     // Function to update the options of the first_name dropdown based on the selected department
+     function updateFirstNameOptions() {
+       var selectedDepartment = departmentDropdown.val();
+       firstNameDropdown.empty(); // Clear the current options
+
+
+       if (selectedDepartment) {
+         var names = departmentOptions[selectedDepartment];
+
+         // Add the options based on the selected department
+         if (names.length > 0) {
+           $.each(names, function(index, name) {
+             firstNameDropdown.append($('<option>', {
+               value: name.id,
+               text: name.name
+             }));
+           });
+         } else {
+           firstNameDropdown.append($('<option>', {
+             value: '',
+             text: 'No names available'
+           }));
+         }
+       } else {
+         firstNameDropdown.append($('<option>', {
+           value: '',
+           text: '-- Select Name --'
+         }));
+       }
+     }
+
+     $('#comp_name').on('change', function() {
+       var selectedCompany = $(this).val();
+       if (selectedCompany !== '') {
+         $.ajax({
+           url: '/firereport/get_customer_details/',
+           type: 'GET',
+           data: { 'comp_name': selectedCompany },
+           dataType: 'json',
+           success: function(data) {
+             if (data) {
+               $('#phone').val(data.phone);
+               $('#address').val(data.Address);
+               $('#city').val(data.City);
+               // $('#plant_capacity').val(data.Plant_Capacity);
+               $('#plant_capacity').val(data.Plant_Capacity + " KW");
+               $('#new_customer_id').val(data.new_customer_id); // Add the new field here
+               // Update other fields as needed
+
+               $('#customer_details').show();
+             } else {
+               // Clear the textbox values when no company is selected
+               $('#phone').val('');
+               $('#address').val('');
+               $('#city').val('');
+               $('#plant_capacity').val('');
+               $('#new_customer_id').val(''); // Clear the new field
+               // Clear other fields as needed
+
+               $('#customer_details').hide();
+             }
+           }
+         });
+       }
+     });
+
+
+     // Handle form submission
+     $('form').submit(function(event) {
+       // Prevent the form from submitting
+       event.preventDefault();
+
+       // Get the selected values
+       var selectedDepartment = departmentDropdown.val();
+       var selectedFirstNameID = firstNameDropdown.val();
+
+       // Perform any additional form validation or processing here
+
+       // ...
+
+       // Submit the form if necessary
+       this.submit();
+     });
+   });
+
+</script>
+{% if error == "no" %}
+<script>
+   alert('Reporting Successful');
+   window.location.href = window.location.href; // Refresh the page
+</script>
+{% endif %}
+{% if error == "yes" %}
+<script>
+   alert('Something went wrong. Please try again.');
+</script>
+{% endif %}
+<!-- Include Fuse.js Library for fuzzy matching -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/fuse.js/6.6.2/fuse.min.js"></script>
+<!--<script>-->
+<!--   $(document).ready(function () {-->
+<!--       const staticMicIcon = document.getElementById("staticMicIcon");-->
+<!--       const animatedMicIcon = document.getElementById("animatedMicIcon");-->
+<!--       const compNameDropdown = document.getElementById("comp_name");-->
+
+<!--       // Store the original dropdown options-->
+<!--       const originalOptions = Array.from(compNameDropdown.options).map(option => ({-->
+<!--           text: option.textContent.trim(),-->
+<!--           value: option.value-->
+<!--       }));-->
+
+<!--       // Initialize Fuse.js with updated settings for substring matching-->
+<!--       const fuse = new Fuse(originalOptions, {-->
+<!--           keys: ["text"],-->
+<!--           threshold: 0.4,  // More sensitive to partial matches-->
+<!--           minMatchCharLength: 1,  // Ensure it matches substrings, not whole words-->
+<!--           includeScore: true-->
+<!--       });-->
+
+<!--       // Initialize Speech Recognition-->
+<!--       const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();-->
+<!--       recognition.lang = 'en-IN';  // Set language to Hindi (India)-->
+
+<!--       staticMicIcon.addEventListener("click", function () {-->
+<!--           // Hide the static mic icon and show the animated mic icon-->
+<!--           staticMicIcon.style.display = 'none';-->
+<!--           animatedMicIcon.style.display = 'inline-block';-->
+
+<!--           recognition.start();-->
+<!--       });-->
+
+<!--       recognition.onresult = function (event) {-->
+<!--           const voiceInput = event.results[0][0].transcript.trim();-->
+<!--           console.log("Recognized Speech:", voiceInput);-->
+
+<!--           // Optional: Normalize or map common mispronunciations-->
+<!--           const mapping = {-->
+<!--               'apple': 'Apple Inc.',-->
+<!--               'microsoft': 'Microsoft Corporation',-->
+<!--               'google': 'Google LLC'-->
+<!--           };-->
+
+<!--           const normalizedInput = mapping[voiceInput.toLowerCase()] || voiceInput;-->
+
+<!--           // Perform fuzzy search with normalized input-->
+<!--           const results = fuse.search(normalizedInput);-->
+<!--           console.log("Filtered Search Results:", results);-->
+
+<!--           // Clear and repopulate the dropdown based on results-->
+<!--           compNameDropdown.innerHTML = '<option value="">Select a company</option>'; // Reset dropdown-->
+
+<!--           if (results.length > 0) {-->
+<!--               results.forEach(result => {-->
+<!--                   const option = document.createElement("option");-->
+<!--                   option.value = result.item.value;-->
+<!--                   option.textContent = result.item.text;-->
+<!--                   compNameDropdown.appendChild(option);-->
+<!--               });-->
+
+<!--               if (results.length === 1) {-->
+<!--                   // Automatically select the single match-->
+<!--                   const singleResult = results[0].item.value;-->
+<!--                   compNameDropdown.value = singleResult;-->
+<!--                   alert(`Automatically selected: "${results[0].item.text}"`);-->
+<!--               } else {-->
+<!--                   alert(`Showing results for: "${voiceInput}"`);-->
+
+
+<!--               }-->
+
+<!--               // Open the dropdown-->
+<!--               compNameDropdown.focus();-->
+<!--               compNameDropdown.size = Math.min(results.length, 5); // Show filtered options-->
+<!--           } else {-->
+<!--               alert(`No matching company found for "${voiceInput}".`);-->
+
+<!--               // Repopulate dropdown with original options if no match is found-->
+<!--               originalOptions.forEach(option => {-->
+<!--                   const opt = document.createElement("option");-->
+<!--                   opt.value = option.value;-->
+<!--                   opt.textContent = option.text;-->
+<!--                   compNameDropdown.appendChild(opt);-->
+<!--               });-->
+
+<!--               // Reset dropdown state-->
+<!--               compNameDropdown.size = 0;-->
+<!--           }-->
+
+<!--           // After voice recognition completes, show the static icon again-->
+<!--           staticMicIcon.style.display = 'inline-block';-->
+<!--           animatedMicIcon.style.display = 'none';-->
+
+<!--           // Trigger the 'change' event after the dropdown is populated-->
+<!--           $(compNameDropdown).trigger('change');-->
+<!--       };-->
+
+<!--       recognition.onerror = function (event) {-->
+<!--           console.error("Speech recognition error:", event.error);-->
+<!--           alert("Speech recognition error. Please try again.");-->
+
+<!--           // Repopulate dropdown with original options in case of error-->
+<!--           compNameDropdown.innerHTML = '<option value="">Select a company</option>';-->
+<!--           originalOptions.forEach(option => {-->
+<!--               const opt = document.createElement("option");-->
+<!--               opt.value = option.value;-->
+<!--               opt.textContent = option.text;-->
+<!--               compNameDropdown.appendChild(opt);-->
+<!--           });-->
+
+<!--           // Reset dropdown state-->
+<!--           compNameDropdown.size = 0;-->
+
+<!--           // After error, show the static icon again-->
+<!--           staticMicIcon.style.display = 'inline-block';-->
+<!--           animatedMicIcon.style.display = 'none';-->
+<!--       };-->
+
+<!--       // Reset dropdown size on blur (optional)-->
+<!--       compNameDropdown.addEventListener('blur', function () {-->
+<!--           compNameDropdown.size = 0;-->
+<!--       });-->
+<!--   });-->
+<!--</script>-->
+
+
+// <script>
+//   $(document).ready(function () {
+//       const staticMicIcon = document.getElementById("staticMicIcon");
+//       const speechModal = new bootstrap.Modal(document.getElementById("speechModal"));
+//       const recognizedTextDiv = document.getElementById("recognizedText");
+//       const compNameDropdown = document.getElementById("comp_name");
+//       const waveContainer = document.getElementById("waveContainer");
+//       const waveElement = document.getElementById("wave");
+//       const micImage = document.getElementById("micImage");
+
+//       // Store the original dropdown options
+//       const originalOptions = Array.from(compNameDropdown.options).map(option => ({
+//           text: option.textContent.trim(),
+//           value: option.value
+//       }));
+
+//       // Initialize Fuse.js for fuzzy searching
+//       const fuse = new Fuse(originalOptions, {
+//           keys: ["text"],
+//           threshold: 0.3,  // Allow lenient matching
+//           minMatchCharLength: 1,
+//           ignoreLocation: true, // Ignore the position of the match in the text
+//           includeScore: true // Include the score to prioritize better matches
+//       });
+
+//       // Initialize Speech Recognition
+//       let recognition;
+//       if ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window) {
+//           recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+//           recognition.lang = 'en-IN';
+//           recognition.interimResults = true; // Enable real-time updates
+//       } else {
+//           console.error("Speech recognition not supported on this device.");
+//           return;
+//       }
+
+//       // Initialize Web Audio API for volume detection
+//       let audioContext;
+//       let analyserNode;
+//       let microphoneStream;
+
+//       // Start recognition when modal opens
+//       staticMicIcon.addEventListener("click", function () {
+//           speechModal.show();
+//           recognizedTextDiv.innerHTML = "<h5>Listening...</h5>";
+
+//           recognition.start();
+
+//           // Initialize AudioContext after user gesture
+//           audioContext = new (window.AudioContext || window.webkitAudioContext)();
+//           analyserNode = audioContext.createAnalyser();
+
+//           // Resuming the audio context if it was suspended
+//           audioContext.resume().then(() => {
+//               startVolumeDetection();
+//           });
+//       });
+
+//       // Handle recognition results
+//       recognition.onresult = function (event) {
+//           let interimTranscript = '';
+//           let finalTranscript = '';
+
+//           // Collect interim results and show characters immediately
+//           for (let i = event.resultIndex; i < event.results.length; i++) {
+//               const transcript = event.results[i][0].transcript.trim();
+//               if (event.results[i].isFinal) {
+//                   finalTranscript += transcript + ' ';
+//               } else {
+//                   interimTranscript += transcript + ' ';
+//               }
+//           }
+
+//           // Update modal with interim text immediately as the user speaks
+//   <!--            if (finalTranscript) {-->
+//   <!--                recognizedTextDiv.textContent = finalTranscript;-->
+//   <!--            } else {-->
+//   <!--                recognizedTextDiv.textContent = interimTranscript;-->
+//   <!--            }-->
+
+//           if (finalTranscript) {
+//               recognizedTextDiv.innerHTML = `<h5>${finalTranscript}</h5>`; // Use innerHTML to apply the h3 tag
+//           } else {
+//               recognizedTextDiv.innerHTML = `<h5>${interimTranscript}</h5>`; // Use innerHTML to apply the h3 tag
+//           }
+
+//           // Perform the search only once final transcript is ready
+//           if (finalTranscript) {
+//               // Use a small timeout to allow the modal text to update first
+//               setTimeout(function () {
+//                   // Perform the search with final transcript
+//                   const searchQuery = finalTranscript.toLowerCase().trim();
+//                   const results = fuse.search(searchQuery);
+
+//                   // Clear and repopulate the dropdown based on search results
+//                   compNameDropdown.innerHTML = '<option value="">Select a company</option>'; // Reset dropdown
+
+//                   if (results.length > 0) {
+//                       results.forEach(result => {
+//                           const option = document.createElement("option");
+//                           option.value = result.item.value;
+//                           option.textContent = result.item.text;
+//                           compNameDropdown.appendChild(option);
+//                       });
+
+//                       // Show alert with the number of results found
+//                       // alert(`Found ${results.length} result(s) for: "${finalTranscript}"`);
+//                       // If only one result is found, set it as selected
+
+//                       if (results.length === 1) {
+//                           compNameDropdown.value = results[0].item.value; // Select the only option
+//                           // alert(`Selected company: "${results[0].item.text}"`);
+//                           alert(`Automatically selected: "${results[0].item.text}"`);
+//                       } else {
+//                           alert(`Showing results for ${results.length} result(s) for: "${finalTranscript}"`);
+//                       }
+
+//                   } else {
+//                       alert(`No matching company found for "${finalTranscript}".`);
+//                       // Repopulate dropdown with original options if no match is found
+//                       originalOptions.forEach(option => {
+//                           const opt = document.createElement("option");
+//                           opt.value = option.value;
+//                           opt.textContent = option.text;
+//                           compNameDropdown.appendChild(opt);
+//                       });
+//                       speechModal.hide();
+//                   }
+//                   // Trigger the 'change' event after the dropdown is populated
+//                   $(compNameDropdown).trigger('change');
+//                   speechModal.hide();
+//               }, 200); // Adding a small delay before filtering to let modal text update
+//           }
+//       };
+
+//       recognition.onerror = function (event) {
+//           console.error("Speech recognition error:", event.error);
+//           recognizedTextDiv.textContent = "Error occurred. Please try again.";
+//           speechModal.hide();
+//       };
+
+// <!--      // Initialize variables for smoother wave update-->
+// <!--      let lastVolume = 0;-->
+// <!--      let volumeSmoothed = 0;-->
+
+// <!--      function startVolumeDetection() {-->
+// <!--          if (navigator.mediaDevices) {-->
+// <!--              navigator.mediaDevices.getUserMedia({ audio: true })-->
+// <!--                  .then(stream => {-->
+// <!--                      microphoneStream = stream;-->
+// <!--                      let microphoneSource = audioContext.createMediaStreamSource(stream);-->
+// <!--                      microphoneSource.connect(analyserNode);-->
+// <!--                      analyserNode.fftSize = 256;-->
+// <!--                      let bufferLength = analyserNode.frequencyBinCount;-->
+// <!--                      let dataArray = new Uint8Array(bufferLength);-->
+
+// <!--                      function updateVolume() {-->
+// <!--                          analyserNode.getByteFrequencyData(dataArray);-->
+// <!--                          let total = 0;-->
+// <!--                          for (let i = 0; i < bufferLength; i++) {-->
+// <!--                              total += dataArray[i];-->
+// <!--                          }-->
+// <!--                          let averageVolume = total / bufferLength;-->
+// <!--                          updateWave(averageVolume);-->
+// <!--                          requestAnimationFrame(updateVolume);-->
+// <!--                      }-->
+// <!--                      updateVolume();-->
+// <!--                  })-->
+// <!--                  .catch(err => {-->
+// <!--                      console.error('Error accessing microphone:', err);-->
+// <!--                  });-->
+// <!--          }-->
+// <!--      }-->
+
+// <!--      function updateWave(volume) {-->
+// <!--          if (volume > 5) {-->
+// <!--              if (waveContainer.classList.contains("d-none")) {-->
+// <!--                  waveContainer.classList.remove("d-none");-->
+// <!--              }-->
+// <!--              const scaleX = Math.min(volume / 255, 1); // Normalize volume to 0-1-->
+// <!--              waveElement.style.transform = `scaleX(${scaleX})`;-->
+// <!--              waveElement.style.transition = "transform 0.1s ease-out"; // Smooth animation-->
+// <!--          } else {-->
+// <!--              if (!waveContainer.classList.contains("d-none")) {-->
+// <!--                  waveContainer.classList.add("d-none");-->
+// <!--              }-->
+// <!--          }-->
+// <!--      }-->
+//           // Initialize variables for smoother wave update
+//           let lastVolume = 0;
+//           let volumeSmoothed = 0;
+
+//           // Start volume detection when recognition begins
+//           function startVolumeDetection() {
+//               if (navigator.mediaDevices) {
+//                   navigator.mediaDevices.getUserMedia({ audio: true })
+//                       .then(stream => {
+//                           let audioContext = new (window.AudioContext || window.webkitAudioContext)();
+//                           let analyserNode = audioContext.createAnalyser();
+//                           let microphoneSource = audioContext.createMediaStreamSource(stream);
+//                           microphoneSource.connect(analyserNode);
+//                           analyserNode.fftSize = 256;
+//                           let bufferLength = analyserNode.frequencyBinCount;
+//                           let dataArray = new Uint8Array(bufferLength);
+
+//                           // Update volume level at a fixed interval
+//                           function updateVolume() {
+//                               analyserNode.getByteFrequencyData(dataArray);
+//                               let total = 0;
+//                               for (let i = 0; i < bufferLength; i++) {
+//                                   total += dataArray[i];
+//                               }
+//                               let averageVolume = total / bufferLength;
+
+//                               // Smooth the volume change (for better stability)
+//                               volumeSmoothed = averageVolume * 0.1 + lastVolume * 0.9;
+//                               lastVolume = volumeSmoothed;
+
+//                               // Update the wave based on the smoothed volume
+//                               updateWave(volumeSmoothed);
+
+//                               // Call updateVolume again on the next animation frame
+//                               requestAnimationFrame(updateVolume);
+//                           }
+//                           updateVolume();
+//                       })
+//                       .catch(err => {
+//                           console.error('Error accessing microphone:', err);
+//                       });
+//               }
+//           }
+
+//           // Function to update the wave with smoother volume scaling
+//           function updateWave(volume) {
+//               const scaleX = Math.min(volume / 255, 1); // Normalize volume to 0-1
+
+//               // Only update the wave when the volume exceeds a threshold
+//               if (scaleX > 0.02) { // Prevent unnecessary wave display at low volume levels
+//                   if (waveContainer.classList.contains("d-none")) {
+//                       waveContainer.classList.remove("d-none");
+//                   }
+//                   waveElement.style.transform = `scaleX(${scaleX})`;
+//                   waveElement.style.transition = "transform 0.1s ease-out"; // Smooth transition for scaling
+//               } else {
+//                   if (!waveContainer.classList.contains("d-none")) {
+//                       waveContainer.classList.add("d-none");
+//                   }
+//               }
+//           }
+
+//           // Initialize Speech Recognition to start volume detection
+//           staticMicIcon.addEventListener("click", function () {
+//               speechModal.show();
+//               recognizedTextDiv.innerHTML = "<h5>Listening...</h5>";
+//               recognition.start();
+
+//               // Resuming the audio context
+//               audioContext = new (window.AudioContext || window.webkitAudioContext)();
+//               audioContext.resume().then(() => {
+//                   startVolumeDetection();
+//               });
+//           });
+
+//   });
+
+// </script>
+
+
+
+<!--<script>-->
+<!--  $(document).ready(function () {-->
+<!--      const staticMicIcon = document.getElementById("staticMicIcon");-->
+<!--      const speechModal = new bootstrap.Modal(document.getElementById("speechModal"));-->
+<!--      const recognizedTextDiv = document.getElementById("recognizedText");-->
+<!--      const compNameDropdown = document.getElementById("comp_name");-->
+<!--      const waveContainer = document.getElementById("waveContainer");-->
+<!--      const waveElement = document.getElementById("wave");-->
+<!--      const micImage = document.getElementById("micImage");-->
+
+<!--      // Store the original dropdown options-->
+<!--      const originalOptions = Array.from(compNameDropdown.options).map(option => ({-->
+<!--          text: option.textContent.trim(),-->
+<!--          value: option.value-->
+<!--      }));-->
+
+<!--      // Initialize Fuse.js for fuzzy searching-->
+<!--      const fuse = new Fuse(originalOptions, {-->
+<!--          keys: ["text"],-->
+<!--          threshold: 0.3,  // Allow lenient matching-->
+<!--          minMatchCharLength: 1,-->
+<!--          ignoreLocation: true, // Ignore the position of the match in the text-->
+<!--          includeScore: true // Include the score to prioritize better matches-->
+<!--      });-->
+
+<!--      // Initialize Speech Recognition-->
+<!--      let recognition;-->
+<!--      if ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window) {-->
+<!--          recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();-->
+<!--          recognition.lang = 'en-IN';-->
+<!--          recognition.interimResults = true; // Enable real-time updates-->
+<!--      } else {-->
+<!--          console.error("Speech recognition not supported on this device.");-->
+<!--          return;-->
+<!--      }-->
+
+<!--      // Initialize Web Audio API for volume detection-->
+<!--      let audioContext;-->
+<!--      let analyserNode;-->
+<!--      let microphoneStream;-->
+<!--      let volumeDetectionActive = false;  // To track if volume detection is active-->
+
+<!--      // Start recognition when modal opens-->
+<!--      staticMicIcon.addEventListener("click", function () {-->
+<!--          speechModal.show();-->
+<!--          recognizedTextDiv.innerHTML = "<h5>Listening...</h5>";-->
+
+<!--          // If microphone stream exists, stop it-->
+<!--          if (microphoneStream) {-->
+<!--              microphoneStream.getTracks().forEach(track => track.stop()); // Stop all tracks to release the mic-->
+<!--              microphoneStream = null; // Clear microphone stream reference-->
+<!--          }-->
+
+<!--          // Reset audio context and recognition-->
+<!--          audioContext = null;-->
+<!--          recognition.start();-->
+<!--      });-->
+
+<!--      // Handle recognition results-->
+<!--      recognition.onresult = function (event) {-->
+<!--          let interimTranscript = '';-->
+<!--          let finalTranscript = '';-->
+
+<!--          // Collect interim results and show characters immediately-->
+<!--          for (let i = event.resultIndex; i < event.results.length; i++) {-->
+<!--              const transcript = event.results[i][0].transcript.trim();-->
+<!--              if (event.results[i].isFinal) {-->
+<!--                  finalTranscript += transcript + ' ';-->
+<!--              } else {-->
+<!--                  interimTranscript += transcript + ' ';-->
+<!--              }-->
+<!--          }-->
+
+<!--          // Update modal with interim text immediately as the user speaks-->
+<!--          if (finalTranscript) {-->
+<!--              recognizedTextDiv.innerHTML = `<h5>${finalTranscript}</h5>`; // Use innerHTML to apply the h3 tag-->
+<!--          } else {-->
+<!--              recognizedTextDiv.innerHTML = `<h5>${interimTranscript}</h5>`; // Use innerHTML to apply the h3 tag-->
+<!--          }-->
+
+<!--          // Perform the search only once final transcript is ready-->
+<!--          if (finalTranscript) {-->
+<!--              // Use a small timeout to allow the modal text to update first-->
+<!--              setTimeout(function () {-->
+<!--                  // Perform the search with final transcript-->
+<!--                  const searchQuery = finalTranscript.toLowerCase().trim();-->
+<!--                  const results = fuse.search(searchQuery);-->
+
+<!--                  // Clear and repopulate the dropdown based on search results-->
+<!--                  compNameDropdown.innerHTML = '<option value="">Select a company</option>'; // Reset dropdown-->
+
+<!--                  if (results.length > 0) {-->
+<!--                      results.forEach(result => {-->
+<!--                          const option = document.createElement("option");-->
+<!--                          option.value = result.item.value;-->
+<!--                          option.textContent = result.item.text;-->
+<!--                          compNameDropdown.appendChild(option);-->
+<!--                      });-->
+
+<!--                      // Show alert with the number of results found-->
+<!--                      alert(`Showing results for ${results.length} result(s) for: "${finalTranscript}"`);-->
+
+<!--                      // If only one result is found, set it as selected-->
+<!--                      if (results.length === 1) {-->
+<!--                          compNameDropdown.value = results[0].item.value; // Select the only option-->
+<!--                          alert(`Automatically selected: "${results[0].item.text}"`);-->
+<!--                      }-->
+<!--                  } else {-->
+<!--                      alert(`No matching company found for "${finalTranscript}".`);-->
+<!--                      // Repopulate dropdown with original options if no match is found-->
+<!--                      originalOptions.forEach(option => {-->
+<!--                          const opt = document.createElement("option");-->
+<!--                          opt.value = option.value;-->
+<!--                          opt.textContent = option.text;-->
+<!--                          compNameDropdown.appendChild(opt);-->
+<!--                      });-->
+<!--                      speechModal.hide();-->
+<!--                  }-->
+
+<!--                  // Trigger the 'change' event after the dropdown is populated-->
+<!--                  $(compNameDropdown).trigger('change');-->
+<!--                  speechModal.hide();-->
+<!--              }, 200); // Adding a small delay before filtering to let modal text update-->
+<!--          }-->
+<!--      };-->
+
+<!--      recognition.onerror = function (event) {-->
+<!--          console.error("Speech recognition error:", event.error);-->
+<!--          recognizedTextDiv.textContent = "Error occurred. Please try again.";-->
+<!--          speechModal.hide();-->
+<!--      };-->
+
+<!--      // Function to start volume detection after user gesture-->
+<!--      function startVolumeDetection() {-->
+<!--          if (navigator.mediaDevices) {-->
+<!--              navigator.mediaDevices.getUserMedia({ audio: true })-->
+<!--                  .then(stream => {-->
+<!--                      let audioContext = new (window.AudioContext || window.webkitAudioContext)();-->
+<!--                      let analyserNode = audioContext.createAnalyser();-->
+<!--                      let microphoneSource = audioContext.createMediaStreamSource(stream);-->
+<!--                      microphoneSource.connect(analyserNode);-->
+<!--                      analyserNode.fftSize = 256;-->
+<!--                      let bufferLength = analyserNode.frequencyBinCount;-->
+<!--                      let dataArray = new Uint8Array(bufferLength);-->
+
+<!--                      microphoneStream = stream; // Save the microphone stream-->
+
+<!--                      volumeDetectionActive = true; // Mark that volume detection is active-->
+
+<!--                      // Update volume level at a fixed interval-->
+<!--                      function updateVolume() {-->
+<!--                          if (!volumeDetectionActive) {-->
+<!--                              return; // Stop updating if volume detection is not active-->
+<!--                          }-->
+
+<!--                          analyserNode.getByteFrequencyData(dataArray);-->
+<!--                          let total = 0;-->
+<!--                          for (let i = 0; i < bufferLength; i++) {-->
+<!--                              total += dataArray[i];-->
+<!--                          }-->
+<!--                          let averageVolume = total / bufferLength;-->
+
+<!--                          // Update the wave based on the volume-->
+<!--                          updateWave(averageVolume);-->
+
+<!--                          // Call updateVolume again on the next animation frame-->
+<!--                          requestAnimationFrame(updateVolume);-->
+<!--                      }-->
+<!--                      updateVolume();-->
+<!--                  })-->
+<!--                  .catch(err => {-->
+<!--                      console.error('Error accessing microphone:', err);-->
+<!--                  });-->
+<!--          }-->
+<!--      }-->
+
+<!--      // Function to update the wave with volume scaling-->
+<!--      function updateWave(volume) {-->
+<!--          const scaleX = Math.min(volume / 255, 1); // Normalize volume to 0-1-->
+
+<!--          // Only update the wave when the volume exceeds a threshold-->
+<!--          if (scaleX > 0.02) { // Prevent unnecessary wave display at low volume levels-->
+<!--              if (waveContainer.classList.contains("d-none")) {-->
+<!--                  waveContainer.classList.remove("d-none");-->
+<!--              }-->
+<!--              waveElement.style.transform = `scaleX(${scaleX})`;-->
+<!--              waveElement.style.transition = "transform 0.1s ease-out"; // Smooth transition for scaling-->
+<!--          } else {-->
+<!--              if (!waveContainer.classList.contains("d-none")) {-->
+<!--                  waveContainer.classList.add("d-none");-->
+<!--              }-->
+<!--          }-->
+<!--      }-->
+
+<!--      // Trigger recognition and volume detection when mic icon is clicked-->
+<!--      staticMicIcon.addEventListener("click", function () {-->
+<!--          speechModal.show();-->
+<!--          recognizedTextDiv.innerHTML = "<h5>Listening...</h5>";-->
+<!--          recognition.start();-->
+
+<!--          // Resume audio context-->
+<!--          audioContext = new (window.AudioContext || window.webkitAudioContext)();-->
+<!--          audioContext.resume().then(() => {-->
+<!--              startVolumeDetection();-->
+<!--          });-->
+<!--      });-->
+
+<!--      // Stop volume detection when the microphone stream is stopped-->
+<!--      function stopVolumeDetection() {-->
+<!--          volumeDetectionActive = false; // Mark volume detection as inactive-->
+<!--          if (microphoneStream) {-->
+<!--              microphoneStream.getTracks().forEach(track => track.stop());-->
+<!--              microphoneStream = null;-->
+<!--          }-->
+<!--          waveContainer.classList.add("d-none"); // Hide wave animation-->
+<!--      }-->
+
+<!--      // Listen for when the microphone stream stops and stop volume detection-->
+<!--      window.addEventListener('beforeunload', stopVolumeDetection); // Ensure cleanup before page unload-->
+<!--      window.addEventListener('visibilitychange', function() {-->
+<!--          if (document.hidden) {-->
+<!--              stopVolumeDetection();-->
+<!--          }-->
+<!--      });-->
+
+<!--  });-->
+<!--</script>-->
+
+
+
+<!--<script>-->
+<!--  $(document).ready(function () {-->
+<!--      const staticMicIcon = document.getElementById("staticMicIcon");-->
+<!--      const speechModal = new bootstrap.Modal(document.getElementById("speechModal"));-->
+<!--      const recognizedTextDiv = document.getElementById("recognizedText");-->
+<!--      const compNameDropdown = document.getElementById("comp_name");-->
+<!--      const waveContainer = document.getElementById("waveContainer");-->
+<!--      const waveElement = document.getElementById("wave");-->
+<!--      const micImage = document.getElementById("micImage");-->
+
+<!--      // Store the original dropdown options-->
+<!--      const originalOptions = Array.from(compNameDropdown.options).map(option => ({-->
+<!--          text: option.textContent.trim(),-->
+<!--          value: option.value-->
+<!--      }));-->
+
+<!--      // Initialize Fuse.js for fuzzy searching-->
+<!--      const fuse = new Fuse(originalOptions, {-->
+<!--          keys: ["text"],-->
+<!--          threshold: 0.3,-->
+<!--          minMatchCharLength: 1,-->
+<!--          ignoreLocation: true,-->
+<!--          includeScore: true-->
+<!--      });-->
+
+<!--      // Initialize Speech Recognition-->
+<!--      let recognition;-->
+<!--      let isRecognitionRunning = false; // Track recognition status-->
+<!--      if ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window) {-->
+<!--          recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();-->
+<!--          recognition.lang = 'en-IN';-->
+<!--          recognition.interimResults = true;-->
+<!--      } else {-->
+<!--          console.error("Speech recognition not supported on this device.");-->
+<!--          return;-->
+<!--      }-->
+
+<!--      // Initialize Web Audio API for volume detection-->
+<!--      let audioContext;-->
+<!--      let analyserNode;-->
+<!--      let microphoneStream;-->
+<!--      let volumeDetectionActive = false;-->
+
+<!--      // Start recognition when modal opens-->
+<!--      staticMicIcon.addEventListener("click", function () {-->
+<!--          if (!isRecognitionRunning) {-->
+<!--              speechModal.show();-->
+<!--              recognizedTextDiv.innerHTML = "<h5>Listening...</h5>";-->
+
+<!--              // Stop existing microphone stream-->
+<!--              if (microphoneStream) {-->
+<!--                  microphoneStream.getTracks().forEach(track => track.stop());-->
+<!--                  microphoneStream = null;-->
+<!--              }-->
+
+<!--              // Reset audio context and start recognition-->
+<!--              audioContext = null;-->
+<!--              recognition.start();-->
+<!--              isRecognitionRunning = true; // Update recognition status-->
+<!--          }-->
+<!--      });-->
+
+<!--      // Handle recognition results-->
+<!--      recognition.onresult = function (event) {-->
+<!--          let interimTranscript = '';-->
+<!--          let finalTranscript = '';-->
+
+<!--          for (let i = event.resultIndex; i < event.results.length; i++) {-->
+<!--              const transcript = event.results[i][0].transcript.trim();-->
+<!--              if (event.results[i].isFinal) {-->
+<!--                  finalTranscript += transcript + ' ';-->
+<!--              } else {-->
+<!--                  interimTranscript += transcript + ' ';-->
+<!--              }-->
+<!--          }-->
+
+<!--          recognizedTextDiv.innerHTML = `<h5>${finalTranscript || interimTranscript}</h5>`;-->
+
+<!--          if (finalTranscript) {-->
+<!--              setTimeout(function () {-->
+<!--                  const searchQuery = finalTranscript.toLowerCase().trim();-->
+<!--                  const results = fuse.search(searchQuery);-->
+
+<!--                  compNameDropdown.innerHTML = '<option value="">Select a company</option>';-->
+<!--                  if (results.length > 0) {-->
+<!--                      results.forEach(result => {-->
+<!--                          const option = document.createElement("option");-->
+<!--                          option.value = result.item.value;-->
+<!--                          option.textContent = result.item.text;-->
+<!--                          compNameDropdown.appendChild(option);-->
+<!--                      });-->
+
+<!--                      alert(`Showing results for ${results.length} result(s) for: "${finalTranscript}"`);-->
+<!--                      if (results.length === 1) {-->
+<!--                          compNameDropdown.value = results[0].item.value;-->
+<!--                          alert(`Automatically selected: "${results[0].item.text}"`);-->
+<!--                      }-->
+<!--                  } else {-->
+<!--                      alert(`No matching company found for "${finalTranscript}".`);-->
+<!--                      originalOptions.forEach(option => {-->
+<!--                          const opt = document.createElement("option");-->
+<!--                          opt.value = option.value;-->
+<!--                          opt.textContent = option.text;-->
+<!--                          compNameDropdown.appendChild(opt);-->
+<!--                      });-->
+<!--                      speechModal.hide();-->
+<!--                  }-->
+<!--                  $(compNameDropdown).trigger('change');-->
+<!--                  speechModal.hide();-->
+<!--              }, 200);-->
+<!--          }-->
+<!--      };-->
+
+<!--      recognition.onerror = function (event) {-->
+<!--          console.error("Speech recognition error:", event.error);-->
+<!--          recognizedTextDiv.textContent = "Error occurred. Please try again.";-->
+<!--          speechModal.hide();-->
+<!--          isRecognitionRunning = false; // Reset recognition status-->
+<!--      };-->
+
+<!--      recognition.onend = function () {-->
+<!--          isRecognitionRunning = false; // Reset recognition status when recognition ends-->
+<!--      };-->
+
+<!--      // Function to start volume detection after user gesture-->
+<!--      function startVolumeDetection() {-->
+<!--          if (navigator.mediaDevices) {-->
+<!--              navigator.mediaDevices.getUserMedia({ audio: true })-->
+<!--                  .then(stream => {-->
+<!--                      audioContext = new (window.AudioContext || window.webkitAudioContext)();-->
+<!--                      analyserNode = audioContext.createAnalyser();-->
+<!--                      const microphoneSource = audioContext.createMediaStreamSource(stream);-->
+<!--                      microphoneSource.connect(analyserNode);-->
+<!--                      analyserNode.fftSize = 256;-->
+<!--                      const bufferLength = analyserNode.frequencyBinCount;-->
+<!--                      const dataArray = new Uint8Array(bufferLength);-->
+
+<!--                      microphoneStream = stream;-->
+<!--                      volumeDetectionActive = true;-->
+
+<!--                      function updateVolume() {-->
+<!--                          if (!volumeDetectionActive) return;-->
+
+<!--                          analyserNode.getByteFrequencyData(dataArray);-->
+<!--                          const total = dataArray.reduce((sum, val) => sum + val, 0);-->
+<!--                          const averageVolume = total / bufferLength;-->
+
+<!--                          updateWave(averageVolume);-->
+<!--                          requestAnimationFrame(updateVolume);-->
+<!--                      }-->
+<!--                      updateVolume();-->
+<!--                  })-->
+<!--                  .catch(err => {-->
+<!--                      console.error('Error accessing microphone:', err);-->
+<!--                  });-->
+<!--          }-->
+<!--      }-->
+
+<!--      // Function to update the wave with volume scaling-->
+<!--      function updateWave(volume) {-->
+<!--          const scaleX = Math.min(volume / 255, 1);-->
+<!--          if (scaleX > 0.02) {-->
+<!--              waveContainer.classList.remove("d-none");-->
+<!--              waveElement.style.transform = `scaleX(${scaleX})`;-->
+<!--              waveElement.style.transition = "transform 0.1s ease-out";-->
+<!--          } else {-->
+<!--              waveContainer.classList.add("d-none");-->
+<!--          }-->
+<!--      }-->
+
+<!--      function stopVolumeDetection() {-->
+<!--          volumeDetectionActive = false;-->
+<!--          if (microphoneStream) {-->
+<!--              microphoneStream.getTracks().forEach(track => track.stop());-->
+<!--              microphoneStream = null;-->
+<!--          }-->
+<!--          waveContainer.classList.add("d-none");-->
+<!--      }-->
+
+<!--      window.addEventListener('beforeunload', stopVolumeDetection);-->
+<!--      window.addEventListener('visibilitychange', function () {-->
+<!--          if (document.hidden) stopVolumeDetection();-->
+<!--      });-->
+<!--  });-->
+<!--</script>-->
+
+<!--<script>-->
+<!--  $(document).ready(function () {-->
+<!--    const staticMicIcon = document.getElementById("staticMicIcon");-->
+<!--    const speechModal = new bootstrap.Modal(document.getElementById("speechModal"));-->
+<!--    const recognizedTextDiv = document.getElementById("recognizedText");-->
+<!--    const compNameDropdown = document.getElementById("comp_name");-->
+
+<!--    // Store the original dropdown options-->
+<!--    const originalOptions = Array.from(compNameDropdown.options).map(option => ({-->
+<!--      text: option.textContent.trim(),-->
+<!--      value: option.value-->
+<!--    }));-->
+
+<!--    // Initialize Fuse.js for fuzzy searching-->
+<!--    const fuse = new Fuse(originalOptions, {-->
+<!--      keys: ["text"],-->
+<!--      threshold: 0.3, // Adjust this based on how strict you want the search-->
+<!--      minMatchCharLength: 1,-->
+<!--      ignoreLocation: true,-->
+<!--      includeScore: true-->
+<!--    });-->
+
+<!--    // Initialize Speech Recognition-->
+<!--    let recognition;-->
+<!--    let isRecognitionRunning = false;-->
+<!--    if ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window) {-->
+<!--      recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();-->
+<!--      recognition.lang = 'en-IN';-->
+<!--      recognition.interimResults = true;-->
+<!--    } else {-->
+<!--      console.error("Speech recognition not supported on this device.");-->
+<!--      return;-->
+<!--    }-->
+
+<!--    // Function to normalize the text (removes special characters, lowercase)-->
+<!--    function normalizeText(text) {-->
+<!--      return text.toLowerCase().replace(/[^a-z0-9\s]/g, '');-->
+<!--    }-->
+
+<!--    // Function to filter options based on input-->
+<!--    function filterOptions(input) {-->
+<!--      const normalizedInput = normalizeText(input);-->
+<!--      let searchResults = [];-->
+
+<!--      // Check for complete match (exact match)-->
+<!--      const exactMatches = originalOptions.filter(option =>-->
+<!--        normalizeText(option.text) === normalizedInput-->
+<!--      );-->
+
+<!--      if (exactMatches.length > 0) {-->
+<!--        searchResults = exactMatches;-->
+<!--        alert(`Showing results for exact match: "${input}"`);-->
+<!--      } else {-->
+<!--        // Check for partial matches-->
+<!--        const partialSearchResults = fuse.search(normalizedInput);-->
+
+<!--        if (partialSearchResults.length > 0) {-->
+<!--          searchResults = partialSearchResults.map(result => result.item);-->
+<!--          alert(`Showing results for partial match: "${input}"`);-->
+<!--        } else {-->
+<!--            alert(`No matching company found for "${finalTranscript}".`);-->
+<!--            originalOptions.forEach(option => {-->
+<!--              const opt = document.createElement("option");-->
+<!--              opt.value = option.value;-->
+<!--              opt.textContent = option.text;-->
+<!--              compNameDropdown.appendChild(opt);-->
+<!--            });-->
+<!--            speechModal.hide();-->
+<!--        }-->
+<!--      }-->
+
+<!--      // Reset dropdown options-->
+<!--      compNameDropdown.innerHTML = '<option value="">Select a company</option>';-->
+
+<!--		if (searchResults.length > 0) {-->
+<!--        // Append search results to the dropdown-->
+<!--        searchResults.forEach(result => {-->
+<!--          const option = document.createElement("option");-->
+<!--          option.value = result.value;-->
+<!--          option.textContent = result.text;-->
+<!--          compNameDropdown.appendChild(option);-->
+<!--        });-->
+
+<!--        // If only one result is found, automatically select it-->
+<!--        if (searchResults.length === 1) {-->
+<!--          compNameDropdown.value = searchResults[0].value; // Select the single result-->
+<!--          $(compNameDropdown).trigger('change'); // Trigger change event-->
+<!--        }-->
+<!--      } else {-->
+<!--        // If no match found, show all original options-->
+<!--        originalOptions.forEach(option => {-->
+<!--          const opt = document.createElement("option");-->
+<!--          opt.value = option.value;-->
+<!--          opt.textContent = option.text;-->
+<!--          compNameDropdown.appendChild(opt);-->
+<!--        });-->
+<!--      }-->
+
+<!--      // Stop the microphone after processing results-->
+<!--      if (isRecognitionRunning) {-->
+<!--        recognition.stop();-->
+<!--        isRecognitionRunning = false;-->
+<!--      }-->
+<!--    }-->
+
+<!--    // Start recognition when modal opens-->
+<!--    staticMicIcon.addEventListener("click", function () {-->
+<!--      if (!isRecognitionRunning) {-->
+<!--        speechModal.show();-->
+<!--        recognizedTextDiv.innerHTML = "<h5>Listening...</h5>";-->
+<!--        recognition.start();-->
+<!--        isRecognitionRunning = true;-->
+<!--      }-->
+<!--    });-->
+
+<!--    // Handle recognition results-->
+<!--    recognition.onresult = function (event) {-->
+<!--      let interimTranscript = '';-->
+<!--      let finalTranscript = '';-->
+
+<!--      for (let i = event.resultIndex; i < event.results.length; i++) {-->
+<!--        const transcript = event.results[i][0].transcript.trim();-->
+<!--        if (event.results[i].isFinal) {-->
+<!--          finalTranscript += transcript + ' ';-->
+<!--        } else {-->
+<!--          interimTranscript += transcript + ' ';-->
+<!--        }-->
+<!--      }-->
+
+<!--      recognizedTextDiv.innerHTML = `<h5>${finalTranscript || interimTranscript}</h5>`;-->
+
+<!--      if (finalTranscript) {-->
+<!--        setTimeout(function () {-->
+<!--          const input = finalTranscript.trim(); // Use the final transcript as input-->
+<!--          filterOptions(input); // Use the input in the search/filter function-->
+<!--          speechModal.hide(); // Hide the modal after filtering-->
+																			  
+																	  
+<!--        }, 200);-->
+			  
+																			
+						  
+						   
+						   
+									 
+<!--      }-->
+<!--    };-->
+
+<!--    recognition.onerror = function (event) {-->
+<!--      console.error("Speech recognition error:", event.error);-->
+<!--      recognizedTextDiv.textContent = "Error occurred. Please try again.";-->
+<!--      speechModal.hide();-->
+<!--      if (isRecognitionRunning) {-->
+<!--        recognition.stop(); // Stop the recognition on error-->
+<!--        isRecognitionRunning = false;-->
+<!--      }-->
+<!--    };-->
+
+<!--    recognition.onend = function () {-->
+<!--      isRecognitionRunning = false;-->
+<!--    };-->
+<!--  });-->
+<!--</script>-->
+
+
+
+<script>
+  $(document).ready(function () {
+    const staticMicIcon = document.getElementById("staticMicIcon");
+    const speechModal = new bootstrap.Modal(document.getElementById("speechModal"));
+    const recognizedTextDiv = document.getElementById("recognizedText");
+    const compNameDropdown = document.getElementById("comp_name");
+
+    // Store the original dropdown options
+    const originalOptions = Array.from(compNameDropdown.options).map(option => ({
+      text: option.textContent.trim(),
+      value: option.value
+    }));
+
+    // Initialize Fuse.js for fuzzy searching
+    const fuse = new Fuse(originalOptions, {
+      keys: ["text"],
+      threshold: 0.3, // Adjust this based on how strict you want the search
+      minMatchCharLength: 1,
+      ignoreLocation: true,
+      includeScore: true
+    });
+
+    // Initialize Speech Recognition
+    let recognition;
+    let isRecognitionRunning = false;
+    if ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window) {
+      recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+      recognition.lang = 'en-IN';
+      recognition.interimResults = true;
+    } else {
+      console.error("Speech recognition not supported on this device.");
+      return;
+    }
+
+    // Function to reset the dropdown list to the original options
+    function resetDropdown() {
+      compNameDropdown.innerHTML = '<option value="">Select a company</option>';
+      originalOptions.forEach(option => {
+        const opt = document.createElement("option");
+        opt.value = option.value;
+        opt.textContent = option.text;
+        compNameDropdown.appendChild(opt);
+        $('#customer_details').hide();
+      });
+    }
+
+    // Function to normalize the text (removes special characters, lowercase)
+    function normalizeText(text) {
+      return text.toLowerCase().replace(/[^a-z0-9\s]/g, '');
+    }
+
+    // Function to filter options based on input
+    function filterOptions(input) {
+      const normalizedInput = normalizeText(input);
+      let searchResults = [];
+
+      // Check for complete match (exact match)
+      const exactMatches = originalOptions.filter(option =>
+        normalizeText(option.text) === normalizedInput
+      );
+
+      if (exactMatches.length > 0) {
+        searchResults = exactMatches;
+        alert(`Showing results for exact match: "${input}"`);
+      } else {
+        // Check for partial matches
+        const partialSearchResults = fuse.search(normalizedInput);
+
+        if (partialSearchResults.length > 0) {
+          searchResults = partialSearchResults.map(result => result.item);
+          alert(`Showing lists for ${searchResults.length} result(s) for: "${input}"`);
+          
+        } else {
+          // Alert message for no matches found
+          alert(`No matching company found for "${input}". Resetting to the default list.`);
+          resetDropdown(); // Reset to the original dropdown list
+          speechModal.hide();
+          return;
+        }
+      }
+
+      // Reset dropdown options
+      compNameDropdown.innerHTML = '<option value="">Select a company</option>';
+
+      if (searchResults.length > 0) {
+        // Append search results to the dropdown
+        searchResults.forEach(result => {
+          const option = document.createElement("option");
+          option.value = result.value;
+          option.textContent = result.text;
+          compNameDropdown.appendChild(option);
+        });
+
+        // If only one result is found, automatically select it
+        if (searchResults.length === 1) {
+          compNameDropdown.value = searchResults[0].value; // Select the single result
+          $(compNameDropdown).trigger('change'); // Trigger change event
+        }
+      }
+    }
+
+    // Start recognition when modal opens
+    staticMicIcon.addEventListener("click", function () {
+      if (!isRecognitionRunning) {
+        speechModal.show();
+        recognizedTextDiv.innerHTML = "<h5>Listening...</h5>";
+        recognition.start();
+        isRecognitionRunning = true;
+      }
+    });
+
+    // Handle recognition results
+    recognition.onresult = function (event) {
+      let interimTranscript = '';
+      let finalTranscript = '';
+
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        const transcript = event.results[i][0].transcript.trim();
+        if (event.results[i].isFinal) {
+          finalTranscript += transcript + ' ';
+        } else {
+          interimTranscript += transcript + ' ';
+        }
+      }
+
+      recognizedTextDiv.innerHTML = `<h5>${finalTranscript || interimTranscript}</h5>`;
+
+      if (finalTranscript) {
+        setTimeout(function () {
+          const input = finalTranscript.trim(); // Use the final transcript as input
+          filterOptions(input); // Use the input in the search/filter function
+          speechModal.hide(); // Hide the modal after filtering
+        }, 200);
+      }
+    };
+
+    // Handle errors during speech recognition
+    recognition.onerror = function (event) {
+      console.error("Speech recognition error:", event.error);
+      recognizedTextDiv.textContent = "Error occurred. Please try again.";
+      resetDropdown(); // Reset the dropdown on error
+      speechModal.hide();
+      if (isRecognitionRunning) {
+        recognition.stop(); // Stop the recognition on error
+        isRecognitionRunning = false;
+      }
+    };
+
+    recognition.onend = function () {
+      isRecognitionRunning = false;
+    };
+  });
+</script>
+
+<!--------------------------------->
+
+{% include 'footer.html' %}
+{% endblock %}
+

@@ -1,0 +1,216 @@
+{% extends 'partials/base.html' %}
+{% block title %} New Purchase {% endblock title %}
+{% block content %}
+
+<!-- Custom CSS to replace radio button with an inline check mark icon -->
+<!--<style>-->
+<!--  /* Hide the native radio input */-->
+<!--  .btn-group label input[type="radio"] {-->
+<!--      display: none;-->
+<!--  }-->
+<!--  -->
+<!--  /* Style the label as an inline-flex container to align icon and text */-->
+<!--  .btn-group label {-->
+<!--      display: inline-flex;-->
+<!--      align-items: center;-->
+<!--      /* Optional: add some padding if needed */-->
+<!--      padding: 0.5rem 1rem;-->
+<!--  }-->
+<!--  /* Insert a check mark before the label text */-->
+<!--  .btn-group label::before {-->
+<!--      content: "\2713";  /* Unicode check mark */-->
+<!--      display: inline-block;-->
+<!--      margin-right: 0.5rem;-->
+<!--      font-size: 1.2rem;-->
+<!--      color: transparent; /* hidden when not active */-->
+<!--      transition: color 0.2s;-->
+<!--  }-->
+<!--  /* When the label is active, show the check mark in green */-->
+<!--  .btn-group label.active::before {-->
+<!--      color: #28a745;  /* Bootstrap success green */-->
+<!--  }-->
+<!--</style>-->
+<style>
+  /* Hide the native radio input */
+  .btn-group label input[type="radio"] {
+      display: none;
+  }
+
+  .btn-group label.active::before {
+    color: transparent;
+  }
+
+  /* Style the label as an inline-flex container to align icon and text */
+  .btn-group label {
+      display: inline-flex;
+      align-items: center;
+      /* Optional: add some padding if needed */
+      padding: 0.5rem 1rem;
+  }
+  /* Insert a check mark before the label text */
+  .btn-group label::before {
+      content: "\2713";  /* Unicode check mark */
+      display: inline-block;
+      margin-right: 0.5rem;
+      font-size: 1.2rem;
+      color: transparent; /* hidden when not active */
+      transition: color 0.2s;
+  }
+  /* When the label is active, show the check mark in green */
+  .btn-group label.active::before {
+      color: white;  /* Bootstrap success green */
+  }
+</style>
+
+<div style="color:#575757; font-style: bold; font-size: 3rem; border-bottom: 1px solid white;">New Sales</div>
+<br>
+<form method="post" id="saleForm" action="{% url 'select_customer' %}">
+    {% csrf_token %}
+
+    <!-- Radio Buttons: Customer or Vendor (Styled as a Bootstrap Button Group) -->
+<!--    <label style="align: center;"><b>Select Entity</b></label><br>-->
+    <label class="d-block text-center"><b>Select Entity</b></label>
+    <div class="d-flex justify-content-center">
+        <div class="btn-group" data-toggle="buttons">
+            <label class="btn btn-outline-success active" id="customerLabel">
+                <input type="radio" name="entity_type" value="customer" id="customerRadio" checked autocomplete="off">
+                <b> Consumer</b>
+            </label>
+            <label class="btn btn-outline-success" id="vendorLabel">
+                <input type="radio" name="entity_type" value="vendor" id="vendorRadio" autocomplete="off">
+                <b> Vendor</b>
+            </label>
+        </div>
+    </div>
+
+    <!-- Category Dropdown (Populated dynamically based on selection) -->
+    <div class="form-group">
+        <label for="Cust_type"><b id="categoryLabel">Consumer Category</b></label>
+        <select id="Cust_type" class="form-control text-capitalize" name="Cust_type">
+            <!-- Options will be loaded dynamically -->
+        </select>
+    </div>
+
+    <!-- Dependent Consumer/Vendor Dropdown -->
+    <div class="form-group" id="supplierDropdown" style="display: none;">
+        <label for="supplier"><b id="supplierLabel">Consumer</b></label>
+        <select id="supplier" class="form-control text-capitalize" name="supplier">
+            <option value="">--Select--</option>
+        </select>
+    </div>
+
+    <!-- Hidden inputs to store selected supplier and entity type -->
+    <input type="hidden" id="selectedSupplier" name="selected_supplier">
+    <input type="hidden" id="selectedEntity" name="selected_entity">
+
+    <!-- DC Type Radio Buttons -->
+    <div class="form-group">
+        <label for="dcType"><b>Select DC Type</b></label><br>
+        <label class="checkbox-label">
+             <input type="radio" class="checkbox-input" id="individualDC" name="dc_type" value="individual" required>
+             <b>Individual DC</b>
+        </label>
+        <label class="checkbox-label">
+             <input type="radio" class="checkbox-input" id="selectedDC" name="dc_type" value="selected" required>
+             <b>Favourite List DC</b>
+        </label>
+    </div>
+    <br>
+    <div class="align-middle">
+        <button type="submit" class="btn btn-success">Next</button>
+        <a href="{% url 'sales-list' %}" class="btn btn-secondary">Cancel</a>
+    </div>
+</form>
+
+<!-- Pass the two sets of categories from the view as JSON-safe data -->
+<script>
+    // customerCategories: list of objects like { "Cust_type": "Retail" }
+    // vendorCategories: list of objects like { "category__id": 1, "category__name": "IND" }
+    const customerCategories = {{ customer_categories|safe }};
+    const vendorCategories = {{ vendor_categories|safe }};
+
+    // Function to update the category dropdown based on the selected entity type
+    function updateCategoryDropdown() {
+        let entityTypeInput = document.querySelector('input[name="entity_type"]:checked');
+        if (!entityTypeInput) {
+            console.error("No entity_type radio button is selected");
+            return;
+        }
+        let entityType = entityTypeInput.value; // 'customer' or 'vendor'
+        let categorySelect = document.getElementById('Cust_type');
+        let categoryLabel = document.getElementById('categoryLabel');
+        let supplierLabel = document.getElementById('supplierLabel');
+
+        // Update labels accordingly
+        categoryLabel.textContent = entityType === 'vendor' ? 'Vendor Category' : 'Consumer Category';
+        supplierLabel.textContent = entityType === 'vendor' ? 'Vendor' : 'Consumer';
+
+        // Build options for the dropdown
+        let optionsHTML = `<option value="">--Select ${entityType === 'vendor' ? 'Vendor' : 'Customer'} Category--</option>`;
+        let categories = entityType === 'vendor' ? vendorCategories : customerCategories;
+        if (entityType === 'vendor') {
+            categories.forEach(function(cat) {
+                optionsHTML += `<option value="${cat.category__id}">${cat.category__name}</option>`;
+            });
+        } else {
+            categories.forEach(function(cat) {
+                optionsHTML += `<option value="${cat.Cust_type}">${cat.Cust_type}</option>`;
+            });
+        }
+        categorySelect.innerHTML = optionsHTML;
+
+        // Update the hidden field for entity type
+        document.getElementById('selectedEntity').value = entityType;
+        // Hide the supplier dropdown until a category is selected
+        document.getElementById('supplierDropdown').style.display = 'none';
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        // Initialize the dropdown using the default selected entity (Customer)
+        updateCategoryDropdown();
+        // Add both 'change' and 'click' event listeners for better responsiveness
+        document.querySelectorAll('input[name="entity_type"]').forEach(function(radio) {
+            radio.addEventListener('change', updateCategoryDropdown);
+            radio.addEventListener('click', updateCategoryDropdown);
+        });
+    });
+
+    // When a category is selected, fetch its dependent supplier list.
+    document.getElementById('Cust_type').addEventListener('change', function() {
+        let catValue = this.value;
+        let entityType = document.querySelector('input[name="entity_type"]:checked').value;
+        if (catValue) {
+            document.getElementById('supplierDropdown').style.display = 'block';
+            // The URL endpoint depends on the entity type.
+            fetch(`/transactions/get-${entityType}s/${catValue}/`)
+            .then(response => response.json())
+            .then(data => {
+                let supplierSelect = document.getElementById('supplier');
+                supplierSelect.innerHTML = `<option value="">--Select ${entityType === 'vendor' ? 'Vendor' : 'Consumer'}--</option>`;
+                data.suppliers.forEach(supplier => {
+                    supplierSelect.innerHTML += `<option value="${supplier.id}">${supplier.name}</option>`;
+                });
+            });
+        } else {
+            document.getElementById('supplierDropdown').style.display = 'none';
+        }
+    });
+
+    // Update the hidden field when the supplier is changed
+    document.getElementById('supplier').addEventListener('change', function () {
+        document.getElementById('selectedSupplier').value = this.value;
+    });
+
+    // Validate the form before submission
+    document.getElementById('saleForm').addEventListener('submit', function (event) {
+        const selectedSupplier = document.getElementById('supplier').value;
+        document.getElementById('selectedSupplier').value = selectedSupplier;
+
+        const selectedDCType = document.querySelector('input[name="dc_type"]:checked').value;
+        if (selectedDCType === 'selected' && !selectedSupplier) {
+            alert('Please select a ' + (document.querySelector('input[name="entity_type"]:checked').value === 'vendor' ? 'vendor' : 'consumer') + ' for Selected DC.');
+            event.preventDefault();
+        }
+    });
+</script>
+{% endblock content %}

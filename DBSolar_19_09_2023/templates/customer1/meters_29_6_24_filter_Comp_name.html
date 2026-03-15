@@ -1,0 +1,600 @@
+{% extends 'partials/base.html' %}
+{% block title %}Order Page{% endblock %}
+{% load static %}
+{% block content %}
+
+ {% if messages %}
+        <ul class="messages">
+            {% for message in messages %}
+            {% if message.tags %} <script> alert("{{ message }}") </script> {% endif %}{% endfor %}
+        </ul>
+    {% endif %}
+
+<!-- Company Dropdown List -->
+<!--<label for="Comp_name">Company Name:</label>-->
+<!--<select name="Comp_name" id="Comp_name">-->
+<!--   {% for comp_name in comp_names %}-->
+<!--   <option value="{{ comp_name }}">{{ comp_name }}</option>-->
+<!--   {% endfor %}-->
+<!--</select>-->
+     <div class="col-md-12">
+         <!-- general form elements -->
+         <div class="card card-primary">
+            <div class="card-header">
+               <h3>Consumer Meters Details</h3>
+            </div>
+<br>
+<div class="form-group row">
+        <div class="col-sm-11">
+           <label for="Comp_name"><b>Select Company Name:</b></label>
+
+            <select class="form-control" name="Comp_name" id="Comp_name" required>
+                <option value=""></option>
+               {% for comp_name in comp_names %}
+               <option value="{{ comp_name }}">{{ comp_name }}</option>
+               {% endfor %}
+            </select>
+        </div>
+
+    </div>
+
+
+
+
+<br>
+<div style="text-align: center">
+   <button onclick="openTab('metersTab')">Meters</button>&nbsp;&nbsp;&nbsp;
+    <button onclick="toggleGenerationMeter()">Generation Meter</button>&nbsp;&nbsp;&nbsp;
+<!--    <button onclick="openTab('generationMeterTab')">Generation Meter</button>&nbsp;&nbsp;&nbsp;-->
+<!--   <button onclick="openTab('generationCTTab')">Generation CT</button>-->
+    <br>
+    <br>
+                  <div id="generationMeterRadioButton" style="display: none;">
+                      <label class="checkbox-label"><input type="radio" class="checkbox-input" name="meter_type" value="generation"> Generation Meter</label>
+                      <label class="checkbox-label"><input type="radio" class="checkbox-input" name="meter_type" value="generation_ct"> Generation + CT Meter</label><br>
+                  </div>
+
+</div>
+
+<script>
+   // JavaScript function to update the selected company name across forms
+   function updateSelectedCompName() {
+       const selectedCompName = document.getElementById('Comp_name').value;
+       document.querySelectorAll('.compNameDropdown').forEach(function (dropdown) {
+           dropdown.value = selectedCompName;
+       });
+   }
+
+   // Event listener for company name dropdown change
+   document.getElementById('Comp_name').addEventListener('change', updateSelectedCompName);
+
+   // Initial state
+   document.addEventListener('DOMContentLoaded', function () {
+       updateSelectedCompName();
+       openTab('metersTab'); // Set the default tab
+   });
+</script>
+<!-- Meters Tab -->
+<div id="metersTab" class="tab-content">
+   <form id="metersForm" action="{% url 'save_meters' %}" method="post" name="metersForm">
+      {% csrf_token %}
+      <!-- Add hidden input for selected company name -->
+      <input type="hidden" name="selected_company" id="selectedCompany">
+      <!-- Generation CT Form Fields -->
+      <div>
+         <fieldset>
+            <h3>Meters Details</h3>
+            <div class="checkbox-column">
+               <label for="meters">Meters:</label><br>
+               <!--               <input class="checkbox-input" type="radio" name="meters" value="True" required> NetMeter-->
+               <!--               <input class="checkbox-input" type="radio" name="meters" value="False" required> ABT Meter-->
+               <label class="checkbox-label"><input type="radio" class="checkbox-input" name="meters" value="Net Meter" required> Net Meter</label>
+               <label class="checkbox-label"><input type="radio" class="checkbox-input" name="meters" value="ABT Meter" required> ABT Meter</label><br>
+            </div>
+            <table>
+               <tr>
+                  <td style="width: 350px">
+                     <!-- Meters Form Fields -->
+                     <label for="make">Make:</label>
+                     <input type="hidden" name="Comp_name" class="compNameDropdown" required>
+                     <input type="text" class="form-control" name="make" height="100px" required>
+                  </td>
+                  <td style="width: 350px">
+                     <label for="capacity">Capacity:</label>
+                     <input type="text" class="form-control" name="capacity" required>
+                  </td>
+                  <td style="width: 350px">
+                     <label for="serial_no">Serial No:</label>
+                     <input type="text" class="form-control" name="serial_no" required>
+                  </td>
+               </tr>
+            </table>
+         </fieldset>
+         <div class="label">
+            <fieldset>
+               <h3>Transformer Details</h3>
+               <!-- Transformer Details Fields -->
+              {% csrf_token %}
+     <div class="form-group row">
+        <div class="col-sm-12">
+               <label for="transformer_type">Transformer Type:</label>
+               <select name="transformer_type" class="form-control" required>
+                  <option value="CT">CT</option>
+                  <option value="Cubical">Cubical</option>
+                  <option value="None">None</option>
+               </select>
+        </div>
+    </div>
+
+
+               <div class="transformerFieldsContainer">
+                  <table>
+                     <tr>
+                        <td style="width: 350px">
+                           <!-- Meters Form Fields -->
+                           <label id="transformer_make" for="transformer_make">Make:</label>
+                           <input type="text" class="form-control" name="transformer_make" id="transformer_make">
+                        </td>
+                        <td style="width: 350px">
+                           <label for="transformer_capacity" id="transformer_capacity">Capacity:</label>
+                           <input type="text" class="form-control" name="transformer_capacity" id="transformer_capacity">
+                        </td>
+                        <td style="width: 350px">
+                           <label for="transformer_serial_number" id="transformer_serial_number">Serial No:</label>
+                           <input type="text" class="form-control" name="transformer_serial_number" id="transformer_serial_number">
+                        </td>
+                     </tr>
+                  </table>
+               </div>
+<!--         </div>-->
+          </fieldset>
+         </div>
+      </div>
+      <div class="form-group" align="center">
+      <button type="submit">Save</button>
+      </div>
+   </form>
+</div>
+<!--&lt;!&ndash; Generation Meter Tab &ndash;&gt;-->
+<!--<div id="generationMeterTab" class="tab-content">-->
+<!--   <form id="generationMeterForm" action="{% url 'save_generation_meter' %}" method="post">-->
+<!--      {% csrf_token %}-->
+<!--      <input type="hidden" name="row_count" id="generationMeterRowCount" value="1"> &lt;!&ndash; Add this line &ndash;&gt;-->
+<!--      <fieldset>-->
+<!--         <h3>Generation Meter Details</h3>-->
+<!--         <div class="row-container">-->
+<!--            <div class="row">-->
+<!--               <table align="center">-->
+<!--                   <fieldset>-->
+<!--                  <tr>-->
+<!--                     <td style="width: 350px">-->
+<!--                        <label for="make">Make:</label>-->
+<!--                        <input type="hidden" name="Comp_name" class="compNameDropdown" required>-->
+<!--                        <input type="text" class="form-control" name="make" required>-->
+<!--                     </td>-->
+<!--                     <td style="width: 350px">-->
+<!--                        <label for="capacity">Capacity:</label>-->
+<!--                        <input type="text" class="form-control" name="capacity" required>-->
+<!--                     </td>-->
+<!--                     <td style="width: 350px">-->
+<!--                        <label for="serial_no">Serial No:</label>-->
+<!--                        <input type="text" class="form-control" name="serial_no" required>-->
+<!--                     </td>-->
+<!--                  </tr>-->
+
+<!--                  &lt;!&ndash; Additional fields for Generation CT Meter &ndash;&gt;-->
+<!--                  <tr id="generationCTFields" style="display: none;">-->
+<!--                     <td style="width: 350px">-->
+<!--                        <label for="ct_make">Generation CT Make:</label>-->
+<!--                        <input type="text" class="form-control" name="CT_make">-->
+<!--                     </td>-->
+<!--                     <td style="width: 350px">-->
+<!--                        <label for="ct_capacity">Generation CT Capacity:</label>-->
+<!--                        <input type="text" class="form-control" name="CT_capacity">-->
+<!--                     </td>-->
+<!--                     <td style="width: 350px">-->
+<!--                        <label for="ct_serial_no">Generation CT Serial No:</label>-->
+<!--                        <input type="text" class="form-control" name="CT_serial_no">-->
+<!--                     </td>-->
+<!--                  </tr>-->
+<!--                       </fieldset>-->
+<!--               </table>-->
+<!--               <button id="addGenerationMeterRow" type="button" onclick="addGenerationMeterRow()" style="height: 45px; width: 110px"> + </button>-->
+<!--            </div>-->
+<!--         </div>-->
+<!--      </fieldset>-->
+<!--      <br>-->
+<!--      <div class="form-group" align="center">-->
+<!--         <button type="submit">Save</button>-->
+<!--      </div>-->
+<!--   </form>-->
+<!--</div>-->
+
+
+<!-- Generation Meter Tab -->
+<div id="generationMeterTab" class="tab-content" style="display: None;">
+   <form id="generationMeterForm" action="{% url 'save_generation_meter' %}" method="post">
+      {% csrf_token %}
+      <input type="hidden" name="row_count" id="generationMeterRowCount" value="1"> <!-- Add this line -->
+      <h3>Generation Meter Details</h3>
+      <div class="row-container">
+         <div class="row">
+            <fieldset class="styled-fieldset"> <!-- Moved <fieldset> here -->
+               <table align="center" style="margin: 0 auto;">
+                  <tr>
+                     <td style="width: 350px">
+                        <label for="make">Generation Make:</label>
+                        <input type="hidden" name="Comp_name" class="compNameDropdown" required>
+                        <input type="text" class="form-control" name="make" required>
+                     </td>
+                     <td style="width: 350px">
+                        <label for="capacity">Generation Capacity:</label>
+                        <input type="text" class="form-control" name="capacity" required>
+                     </td>
+                     <td style="width: 350px">
+                        <label for="serial_no">Generation Serial No:</label>
+                        <input type="text" class="form-control" name="serial_no" required>
+                     </td>
+                  </tr>
+                  <!-- Additional fields for Generation CT Meter -->
+                  <tr id="generationCTFields" style="display: none;">
+                     <td style="width: 350px">
+                        <label for="ct_make">CT Make:</label>
+                        <input type="text" class="form-control" name="CT_make">
+                     </td>
+                     <td style="width: 350px">
+                        <label for="ct_capacity">CT Capacity:</label>
+                        <input type="text" class="form-control" name="CT_capacity">
+                     </td>
+                     <td style="width: 350px">
+                        <label for="ct_serial_no">CT Serial No:</label>
+                        <input type="text" class="form-control" name="CT_serial_no">
+                     </td>
+                  </tr>
+               </table>
+            </fieldset> <!-- Moved </fieldset> here -->
+            <button id="addGenerationMeterRow" type="button" onclick="addGenerationMeterRow()" style="height: 45px; width: 110px; text-align"> + </button>
+         </div>
+      </div>
+      <br>
+      <div class="form-group" align="center">
+         <button type="submit">Save</button>
+      </div>
+   </form>
+</div>
+         </div>
+     </div>
+
+<script>
+   // Function to toggle visibility of Generation CT fields
+   function toggleGenerationCTFields() {
+      const generationCTFields = document.getElementById('generationCTFields');
+      const generationType = document.querySelector('input[name="meter_type"]:checked').value;
+      generationCTFields.style.display = (generationType === 'generation_ct') ? 'table-row' : 'none';
+   }
+
+   // Event listener for radio button change
+   document.querySelectorAll('input[name="meter_type"]').forEach(function(radio) {
+      radio.addEventListener('change', toggleGenerationCTFields);
+   });
+
+   // Initial state
+   document.addEventListener('DOMContentLoaded', function() {
+      toggleGenerationCTFields(); // Set initial visibility
+      openTab('metersTab'); // Set the default tab
+   });
+</script>
+
+<!--             &lt;!&ndash; Generation CT Tab &ndash;&gt;-->
+<!--<div id="generationCTTab" class="tab-content">-->
+<!--   <form id="generationCTForm" action="{% url 'save_generation_ct' %}" method="post">-->
+<!--      {% csrf_token %}-->
+<!--      <input type="hidden" name="row_count" id="generationCTRowCount" value="1"> &lt;!&ndash; Add this line &ndash;&gt;-->
+<!--      &lt;!&ndash; Generation CT Form Fields &ndash;&gt;-->
+<!--      <fieldset>-->
+<!--         <h3>GenrationCT Meters Details</h3>-->
+<!--         &lt;!&ndash;         <label for="required">Required:</label>&ndash;&gt;-->
+<!--         &lt;!&ndash;         <input type="checkbox" name="required" id="requiredCheckbox" required>&ndash;&gt;-->
+<!--         &lt;!&ndash;         &ndash;&gt;-->
+<!--         <div class="checkbox-column">-->
+<!--            <label class="checkbox-label"><input type="checkbox" class="checkbox-input" name="required" id="requiredCheckbox" required> Required</label><br>-->
+<!--         </div>-->
+<!--         <div class="row-container">-->
+<!--            <div class="row">-->
+<!--               <table align="center">-->
+<!--                  <tr>-->
+<!--                     <td style="width: 350px">-->
+<!--                        <label for="make" id="makeLabel">Make:</label>-->
+<!--                        <input type="hidden" name="Comp_name" class="compNameDropdown" required>-->
+<!--                        <input type="text" class="form-control" name="make" id="make">-->
+<!--                     </td>-->
+<!--                     <td style="width: 350px">-->
+<!--                        <label for="capacity" id="capacityLabel">Ratio:</label>-->
+<!--                        <input type="text" class="form-control" name="capacity" id="capacity">-->
+<!--                     </td>-->
+<!--                     <td style="width: 350px">-->
+<!--                        <label for="serial_no" id="serialNoLabel">Serial No:</label>-->
+<!--                        <input type="text" class="form-control" name="serial_no" id="serial_no">-->
+<!--                     </td>-->
+<!--                  </tr>-->
+<!--               </table>-->
+<!--               <br>-->
+<!--               <br>-->
+<!--               <button id="addGenerationCTRow" type="button" onclick="addGenerationCTRow()" style="height: 45px; width: 110px"> + </button>-->
+<!--            </div>-->
+<!--         </div>-->
+<!--      </fieldset>-->
+<!--      <div class="form-group" align="center">-->
+<!--      <button type="submit" id="submit">Save</button>-->
+<!--      </div>-->
+<!--   </form>-->
+<!--</div>-->
+<script>
+   // JavaScript functions to handle tab switching and dynamic row addition
+   function openTab(tabName) {
+       const tabs = document.querySelectorAll('.tab-content');
+       tabs.forEach(tab => {
+           tab.style.display = 'none';
+       });
+
+       const selectedTab = document.getElementById(tabName);
+       selectedTab.style.display = 'block';
+   }
+
+   // JavaScript functions to handle tab switching and dynamic row addition
+   function openTab(tabName) {
+    const tabs = document.querySelectorAll('.tab-content');
+    tabs.forEach(tab => {
+        tab.style.display = 'none';
+    });
+
+    const selectedTab = document.getElementById(tabName);
+    selectedTab.style.display = 'block';
+   }
+
+   let generationMeterRowCounter = 0;
+   let generationCTRowCounter = 0;
+
+   function addRow(containerId, addButtonId, counterId, counter) {
+    const container = document.getElementById(containerId);
+    const rowContainer = container.querySelector(".row-container");
+    const clone = rowContainer.querySelector(".row").cloneNode(true);
+
+    // Remove the "Add Row" button from the cloned row
+    const addRowButton = clone.querySelector("button");
+    if (addRowButton) {
+        addRowButton.remove();
+    }
+
+    // Get the current row index
+    const currentIndex = counter;
+
+    // Clear input values in the cloned row
+    const inputFields = clone.querySelectorAll('input[type="text"], input[type="number"]');
+    inputFields.forEach(function (input) {
+        const originalName = input.name;
+        input.name = `${originalName}_${currentIndex}`;
+        input.value = ''; // Clear the input values
+    });
+
+    // Append the cloned row
+    rowContainer.appendChild(clone);
+
+    // Update the row counter
+    const rowCount = rowContainer.childElementCount;
+    document.getElementById(counterId).value = rowCount;
+
+    // Show the "Add Row" button at the end of the current row
+    const newRow = rowContainer.lastElementChild;
+    const addRowButtonContainer = document.createElement("div");
+    addRowButtonContainer.className = "add-row-container";
+    addRowButtonContainer.appendChild(document.getElementById(addButtonId));
+    newRow.appendChild(addRowButtonContainer);
+   }
+
+
+   function addGenerationMeterRow() {
+    generationMeterRowCounter++;
+    addRow("generationMeterForm", "addGenerationMeterRow", "generationMeterRowCount", generationMeterRowCounter);
+   }
+
+   function addGenerationCTRow() {
+    generationCTRowCounter++;
+    addRow("generationCTForm", "addGenerationCTRow", "generationCTRowCount", generationCTRowCounter);
+   }
+
+   // Event listeners for adding rows
+   document.getElementById("addGenerationMeterRow").addEventListener("click", addGenerationMeterRow);
+   document.getElementById("addGenerationCTRow").addEventListener("click", addGenerationCTRow);
+
+   // Initial state
+   document.addEventListener('DOMContentLoaded', function () {
+    openTab('metersTab'); // Set the default tab
+   });
+
+</script>
+
+<script>
+   function updateTransformerFields() {
+       const transformerType = document.querySelector('select[name="transformer_type"]');
+       const transformerFieldsContainer = document.querySelector('.transformerFieldsContainer');
+       const label = document.querySelector('.label');
+
+       const radioButtons = document.querySelectorAll('input[name="meters"]');
+       const selectedRadioButton = [...radioButtons].find(radio => radio.checked);
+
+       if (selectedRadioButton) {
+           transformerFieldsContainer.style.display = 'block';
+           if (selectedRadioButton.value === 'ABT Meter') {
+               // ABT Meter selected
+               transformerType.style.display = 'block';
+               label.style.display = 'block';
+           } else {
+               // NetMeter selected
+               transformerType.style.display = 'block';
+               label.style.display = 'block';
+           }
+       } else {
+           transformerFieldsContainer.style.display = 'none';
+           transformerType.style.display = 'none';
+           label.style.display = 'none';
+       }
+        // Hide transformerFieldsContainer when "None" is selected in transformer_type dropdown
+       if (transformerType.value === 'None') {
+           transformerFieldsContainer.style.display = 'none';
+       }
+
+   }
+
+   function handleRadioChange(value) {
+       const transformerTypeDropdown = document.querySelector('select[name="transformer_type"]');
+       const transformerMakeInput = document.querySelector('input[name="transformer_make"]');
+       const transformerCapacityInput = document.querySelector('input[name="transformer_capacity"]');
+       const transformerSerialNumberInput = document.querySelector('input[name="transformer_serial_number"]');
+
+       const transformerType = document.querySelector('select[name="transformer_type"]');
+       const transformerTypeContainer = document.querySelector('.transformerTypeContainer');
+
+       if (value === 'Net Meter') {
+           // NetMeter selected
+           transformerTypeDropdown.innerHTML = '<option value="CT">CT</option><option value="None">None</option>';
+           transformerType.style.display = 'block';
+       } else {
+           // ABT Meter selected
+           transformerTypeDropdown.innerHTML = '<option value="Cubical">Cubical</option><option value="None">None</option>';
+           transformerType.style.display = 'block';
+       }
+
+       updateTransformerFields();
+   }
+
+   document.addEventListener('DOMContentLoaded', function () {
+       const radioButtons = document.querySelectorAll('input[name="meters"]');
+       radioButtons.forEach(function (radio) {
+           radio.addEventListener('change', function () {
+               handleRadioChange(this.value);
+           });
+       });
+
+       const transformerTypeDropdown = document.querySelector('select[name="transformer_type"]');
+       transformerTypeDropdown.addEventListener('change', updateTransformerFields);
+
+       updateTransformerFields(); // Call to set the initial state
+   });
+</script>
+<script>
+   // checkbox checked than hide textbox
+   function updateGenerationCTFields() {
+       const checkbox = document.getElementById('requiredCheckbox');
+       const makeLabel = document.getElementById('makeLabel');
+       const capacityLabel = document.getElementById('capacityLabel');
+       const serialNoLabel = document.getElementById('serialNoLabel');
+       const makeInput = document.getElementById('make');
+       const capacityInput = document.getElementById('capacity');
+       const serialNoInput = document.getElementById('serial_no');
+       const addRowButton = document.getElementById('addGenerationCTRow');
+
+       if (checkbox.checked) {
+           // Show the labels, input fields, and addRow button
+           makeLabel.style.display = 'block';
+           capacityLabel.style.display = 'block';
+           serialNoLabel.style.display = 'block';
+           makeInput.style.display = 'block';
+           capacityInput.style.display = 'block';
+           serialNoInput.style.display = 'block';
+           addRowButton.style.display = 'block';
+           submit.style.display = 'block';
+       } else {
+           // Hide the labels, input fields, and addRow button
+           makeLabel.style.display = 'none';
+           capacityLabel.style.display = 'none';
+           serialNoLabel.style.display = 'none';
+           makeInput.style.display = 'none';
+           capacityInput.style.display = 'none';
+           serialNoInput.style.display = 'none';
+           addRowButton.style.display = 'none';
+           submit.style.display = 'none';
+       }
+   }
+
+   document.addEventListener('DOMContentLoaded', function () {
+       const checkbox = document.getElementById('requiredCheckbox');
+       checkbox.addEventListener('change', updateGenerationCTFields);
+       updateGenerationCTFields(); // Call to set the initial state
+   });
+</script>
+<script>
+   // Set the selected company value in the hidden input field
+   function setSelectedCompany() {
+      const selectedCompanyInput = document.getElementById('selectedCompany');
+      const companyNameDropdown = document.getElementById('Comp_name');
+      selectedCompanyInput.value = companyNameDropdown.value;
+   }
+
+   // Add an event listener to call setSelectedCompany before form submission
+   document.getElementById('metersForm').addEventListener('submit', function() {
+      setSelectedCompany();
+   });
+</script>
+<style>
+   .form-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.form-group {
+    margin-bottom: 10px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+ .styled-fieldset {
+    margin: 0 auto;
+    margin-top: 10px;
+    margin-bottom: 10px;
+}
+/* CSS to style the radio buttons */
+.radio-label {
+    display: inline-block;
+    margin-right: 20px; /* Adjust as needed */
+}
+
+.radio-input {
+    margin-right: 5px; /* Adjust as needed */
+}
+
+</style>
+<script>
+   function toggleGenerationMeter() {
+       const generationMeterRadioButton = document.getElementById('generationMeterRadioButton');
+       const metersForm = document.getElementById('metersTab');
+       if (generationMeterRadioButton.style.display === 'none') {
+           generationMeterRadioButton.style.display = 'block';
+           metersForm.style.display = 'None';
+       } else {
+           generationMeterRadioButton.style.display = 'none';
+           metersForm.style.display = 'None';
+       }
+   }
+
+   function toggleGenerationMeterForm() {
+       const generationMeterForm = document.getElementById('generationMeterTab');
+       const generationMeterRadioButton = document.querySelector('input[name="meter_type"][value="generation"]:checked');
+       const metersForm = document.getElementById('metersTab');
+       if (generationMeterRadioButton) {
+           generationMeterForm.style.display = 'block';
+           metersForm.style.display = 'None';
+       } else {
+           generationMeterForm.style.display = 'block';
+           metersForm.style.display = 'None';
+       }
+   }
+
+   // Event listener for radio button change
+   document.querySelectorAll('input[name="meter_type"]').forEach(function(radio) {
+      radio.addEventListener('change', toggleGenerationMeterForm);
+   });
+</script>
+
+{% endblock %}

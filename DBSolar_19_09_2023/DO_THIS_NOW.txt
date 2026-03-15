@@ -1,0 +1,51 @@
+================================================================================
+URGENT: Fix the Migration File Issue
+================================================================================
+
+Django is trying to load fix_migration_history.py as a migration.
+You need to rename or move it.
+
+================================================================================
+STEP 1: Rename the Problem Files
+================================================================================
+
+On your server, run these commands:
+
+cd /home/anujdeshmukh24/DBSolar_19_09_2023/DBSolar_19_09_2023
+
+# Rename the files so Django doesn't try to load them as migrations
+mv fix_migration_history.py _fix_migration_history.py
+mv fix_migration_direct.py _fix_migration_direct.py
+
+================================================================================
+STEP 2: Fix ID Columns (Skip Migrations)
+================================================================================
+
+Now run the id column fix:
+
+python FIX_DATABASE_NOW.py
+
+This will fix all id columns without needing migrations.
+
+================================================================================
+STEP 3: Restart Django Server
+================================================================================
+
+After fixing id columns, restart your server:
+
+python manage.py runserver 0.0.0.0:8000
+
+================================================================================
+ALTERNATIVE: If files are in migrations directory
+================================================================================
+
+If the files are in customer/migrations/, move them out:
+
+mv customer/migrations/fix_migration_history.py .
+mv customer/migrations/fix_migration_direct.py .
+
+Then run:
+python FIX_DATABASE_NOW.py
+
+================================================================================
+

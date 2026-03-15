@@ -1,0 +1,329 @@
+{% extends 'partials/base.html' %}
+{% load static %}
+{% block content %}
+
+<div class="container mt-5">
+    <h3 class="page-title text-center">Task Assigner</h3>
+    <div class="card mt-3" style="border: 5px solid #573170; background-color: #f7f7f7;">
+        <div class="card-body">
+            <h2 class="card-title text-center" style="text-transform: uppercase; color:#573170;">Apply Now</h2><br><br>
+            <hr>
+            <form method="post" style="background-color: #f7f7f7;">
+                {% csrf_token %}
+                <!-- Button to trigger the modal -->
+                <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#profileModal">
+                  First Select Department
+                </button>
+
+                <div class="row mb-3">
+                    <div class="col-sm-6">
+                        <label class="col-form-label">Department:</label>
+                        <input type="text" name="Department" id="Department" readonly class="form-control" required>
+                    </div>
+                    <div class="col-sm-6">
+                        <label for="AssignTo" class="col-form-label">Assign To:</label>
+                        <input type="text" name="AssignTo" id="AssignTo" readonly class="form-control" required>
+                        <input type="hidden" name="AssignToID" id="AssignToID">
+                    </div>
+                </div>
+                <div class="row mb-3">
+                    <label for="comp_name" class="col-sm-2 col-form-label">Company Name:</label>
+                    <div class="col-sm-10">
+                        <select id="comp_name" name="comp_name" class="form-control" style="width: 100%;">
+                            <option value="">Select a company</option>
+                            {% for company in companies %}
+                                <option value="{{ company.Comp_name }}">{{ company.Comp_name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+
+                <div id="customer_details" style="display: none;">
+                    <div class="row mb-3">
+                        <div class="col-sm-6">
+                            <label for="phone" class="col-form-label">Phone:</label>
+                            <input type="text" id="phone" name="phone" value="" readonly class="form-control">
+                        </div>
+                        <div class="col-sm-6">
+                            <label for="address" class="col-form-label">Address:</label>
+                            <input type="text" id="address" name="address" value="" readonly class="form-control">
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-sm-6">
+                            <label for="city" class="col-form-label">City:</label>
+                            <input type="text" id="city" name="city" value="" readonly class="form-control">
+                        </div>
+                        <div class="col-sm-6">
+                            <label for="plant_capacity" class="col-form-label">Plant Capacity:</label>
+                            <input type="text" id="plant_capacity" name="plant_capacity" value="" readonly class="form-control">
+                            <input type="hidden" id="new_customer_id" name="new_customer_id" value="" readonly class="form-control">
+                        </div>
+                    </div>
+                    <!-- Add more fields here -->
+                </div>
+                <div class="row mb-3">
+                    <label class="col-sm-2 col-form-label">Message:</label>
+                    <div class="col-sm-10">
+                        <textarea name="Message" class="form-control" placeholder="Message...." required></textarea>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col text-center">
+                        <button type="submit" class="btn btn-primary">Submit</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+
+
+<!-- Profile Modal -->
+<div class="modal fade" id="profileModal" tabindex="-1" aria-labelledby="profileModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="profileModalLabel">User Profile</h5>
+        <button type="button" class="close" data-bs-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+      </div>
+
+      <div class="modal-body">
+        <form method="post">
+          {% csrf_token %}
+          <div class="form-group">
+            <label for="department">Department</label>
+            <select class="form-control" id="department" name="department" onchange="enableSubmitButton()">
+              <option value="">Select Department</option>
+              {% for profile in unique_departments %}
+                <option value="{{ profile.department }}">{{ profile.department }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="first_name">First Name</label>
+            <select class="form-control" id="first_name" name="first_name">
+              <option value="">Select First Name</option>
+              {% for user in all_users %}
+                <option value="{{ user.id }}">{{ user.first_name }} {{ user.last_name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <!-- Add more fields as needed -->
+          <div class="modal-footer">
+            <button type="submit" id="submitButton" class="btn btn-primary" disabled>Save</button>
+<!--            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>-->
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  function enableSubmitButton() {
+    var departmentSelect = document.getElementById("department");
+    var submitButton = document.getElementById("submitButton");
+    submitButton.disabled = departmentSelect.value === "";
+  }
+</script>
+
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+
+
+
+<script>
+$(document).ready(function() {
+  // Retrieve the dropdown elements
+  var departmentDropdown = $('#department');
+  var uniqueDepartmentDropdown = $('#unique_department');
+  var firstNameDropdown = $('#first_name');
+  var assignToTextbox = $('#AssignTo');
+  var departmentTextbox = $('#Department');
+
+  var assignToIDTextbox = $('#AssignToID');
+
+  // Store the original options of the First Name dropdown
+  var originalOptions = firstNameDropdown.html();
+
+  // Update the AssignTo textbox and filter the First Name dropdown options when the modal's "Save" button is clicked
+  $('#profileModal').on('click', '.btn-primary', function(event) {
+    event.preventDefault();
+
+    // Get the selected department and first name
+    var selectedDepartment = departmentDropdown.val();
+    var selectedFirstNameID = firstNameDropdown.find(':selected');
+
+    // Get the text and ID values from the selected option
+    var selectedText = selectedFirstNameID.text();
+    var selectedID = selectedFirstNameID.val();
+
+    // Split the selectedText into first name and last name
+    var splitNames = selectedText.split(' ');
+    var firstName = splitNames[0];
+    var lastName = splitNames[1];
+
+    // Update the AssignTo and AssignToID textboxes with the selected values
+    assignToTextbox.val(firstName + ' ' + lastName);
+    assignToIDTextbox.val(selectedID);
+
+    // Update the AssignTo and Department textboxes in the main form
+    departmentTextbox.val(selectedDepartment);
+
+    // Close the modal
+    $('#profileModal').modal('hide');
+  });
+
+  // Define the options for departments and first names
+  var departmentOptions = {
+    {% for profile in all_profiles %}
+    {% if profile.department %}
+    '{{ profile.department }}': [
+      {% for user in all_users %}
+        {% if profile.department == user.profile.department %}
+        {
+          'id': '{{ user.id }}',
+          'name': '{{ user.first_name }} {{ user.last_name }}'
+        },
+        {% endif %}
+      {% endfor %}
+    ],
+    {% endif %}
+    {% endfor %}
+  };
+
+  // Get unique department options
+  var uniqueDepartments = Object.keys(departmentOptions);
+
+  // Initialize the department dropdown with unique options
+  $.each(uniqueDepartments, function(index, department) {
+    departmentDropdown.append($('<option>', {
+      value: department,
+      text: department
+    }));
+  });
+
+  // Initialize the unique_department dropdown with unique options
+  $.each(uniqueDepartments, function(index, department) {
+    uniqueDepartmentDropdown.append($('<option>', {
+      value: department,
+      text: department
+    }));
+  });
+
+  // Initialize the first_name dropdown with the initial options
+  updateFirstNameOptions();
+
+  // Update the first_name dropdown when department changes
+  departmentDropdown.change(function() {
+    updateFirstNameOptions();
+  });
+
+  // Function to update the options of the first_name dropdown based on the selected department
+  function updateFirstNameOptions() {
+    var selectedDepartment = departmentDropdown.val();
+    firstNameDropdown.empty(); // Clear the current options
+
+    if (selectedDepartment) {
+      var names = departmentOptions[selectedDepartment];
+
+      // Add the options based on the selected department
+      if (names.length > 0) {
+        $.each(names, function(index, name) {
+          firstNameDropdown.append($('<option>', {
+            value: name.id,
+            text: name.name
+          }));
+        });
+      } else {
+        firstNameDropdown.append($('<option>', {
+          value: '',
+          text: 'No names available'
+        }));
+      }
+    } else {
+      firstNameDropdown.append($('<option>', {
+        value: '',
+        text: '-- Select Name --'
+      }));
+    }
+  }
+
+  $('#comp_name').on('change', function() {
+    var selectedCompany = $(this).val();
+    if (selectedCompany !== '') {
+      $.ajax({
+        url: '/firereport/get_customer_details/',
+        type: 'GET',
+        data: { 'comp_name': selectedCompany },
+        dataType: 'json',
+        success: function(data) {
+          if (data) {
+            $('#phone').val(data.phone);
+            $('#address').val(data.Address);
+            $('#city').val(data.City);
+            // $('#plant_capacity').val(data.Plant_Capacity);
+            $('#plant_capacity').val(data.Plant_Capacity + " KW");
+            $('#new_customer_id').val(data.new_customer_id); // Add the new field here
+            // Update other fields as needed
+
+            $('#customer_details').show();
+          } else {
+            // Clear the textbox values when no company is selected
+            $('#phone').val('');
+            $('#address').val('');
+            $('#city').val('');
+            $('#plant_capacity').val('');
+            $('#new_customer_id').val(''); // Clear the new field
+            // Clear other fields as needed
+
+            $('#customer_details').hide();
+          }
+        }
+      });
+    }
+  });
+
+
+  // Handle form submission
+  $('form').submit(function(event) {
+    // Prevent the form from submitting
+    event.preventDefault();
+
+    // Get the selected values
+    var selectedDepartment = departmentDropdown.val();
+    var selectedFirstNameID = firstNameDropdown.val();
+
+    // Perform any additional form validation or processing here
+
+    // ...
+
+    // Submit the form if necessary
+    this.submit();
+  });
+});
+
+</script>
+
+
+
+
+{% if error == "no" %}
+    <script>
+        alert('Reporting Successful');
+        window.location.href = window.location.href; // Refresh the page
+    </script>
+{% endif %}
+
+{% if error == "yes" %}
+    <script>
+        alert('Something went wrong. Please try again.');
+    </script>
+{% endif %}
+
+{% include 'footer.html' %}
+{% endblock %}

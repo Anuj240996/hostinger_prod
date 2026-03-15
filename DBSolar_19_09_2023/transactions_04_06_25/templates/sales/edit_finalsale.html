@@ -1,0 +1,87 @@
+{% extends 'partials/base.html' %}
+{% load static %}
+{% block title %} Edit Merged Bills {% endblock title %}
+{% block content %}
+<div class="container mt-4">
+
+    <h3 align="center">Update Final Delivery Challan Bill for <br> <h1 align="center">** {{ final_sale.customer.Comp_name }} **</h1></h3>
+
+    <!-- Dropdown to select customer -->
+    <div class="form-group">
+        <label for="customerSelect">Select Customer</label>
+        <select id="customerSelect" class="form-control" disabled>
+            <option value="" selected>Select a customer</option>
+            {% for customer in customers %}
+            <option value="{{ customer.Cust_id }}" {% if customer.Cust_id == selected_customer_id %}selected{% endif %}>
+                {{ customer.Cust_id__Comp_name }}
+            </option>
+            {% endfor %}
+        </select>
+    </div>
+
+    <!-- Table to display bills -->
+    <div id="billsContainer" class="mt-4">
+        <h4>Bills</h4>
+        <table class="table table-bordered">
+            <thead>
+                <tr>
+                    <th>Select</th>
+                    <th>Bill No</th>
+                    <th>Time</th>
+                    <th>Total Stock</th>
+                </tr>
+            </thead>
+            <tbody id="billTableBody">
+                    {% for bill in bills %}
+                    <tr>
+                        <td>
+                            <input type="checkbox" class="billCheckbox" data-bill-id="{{ bill.billno }}"
+                                {% if bill.is_merged %}checked{% endif %}>
+                        </td>
+                        <td>{{ bill.billno }}</td>
+                        <td>{{ bill.time }}</td>
+                        <td>{{ bill.total }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+
+
+        </table>
+        <button id="updateFinalBill" class="btn btn-primary">Update Final Bill</button>
+    </div>
+</div>
+
+<script>
+    document.getElementById("customerSelect").addEventListener("change", function () {
+        const customerId = this.value;
+        if (customerId) {
+            window.location.href = `/transactions/sales/edit_finalsale/?customer_id=${customerId}&billno={{ final_sale.billno }}`;
+        }
+    });
+
+    document.getElementById("updateFinalBill").addEventListener("click", function () {
+        const selectedBillIds = Array.from(document.querySelectorAll(".billCheckbox:checked")).map(checkbox => checkbox.dataset.billId);
+        if (selectedBillIds.length > 0) {
+            fetch(`/transactions/update-final-bill/`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-CSRFToken": "{{ csrf_token }}"
+                },
+                body: JSON.stringify({ bill_ids: selectedBillIds, final_billno: "{{ final_sale.billno }}" })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert("Final Bill Updated Successfully!");
+                    window.location.href = "/transactions/finalsales/"; // Replace with your final sales list URL
+                } else {
+                    alert("Failed to update the final bill. Try again.");
+                }
+            });
+        } else {
+            alert("Please select at least one bill.");
+        }
+    });
+</script>
+{% endblock %}

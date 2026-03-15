@@ -1,0 +1,127 @@
+{% extends 'partials/base.html' %}
+{% load indian_filters %}
+
+{% block title %}
+  {% if supplier %}
+    {{ supplier.name }}'s profile
+  {% elif vendor %}
+    {{ vendor.name }}'s profile
+  {% endif %}
+{% endblock %}
+
+{% block content %}
+<div class="content-section">
+    <div class="media">
+        <div class="media-body">
+            {% if supplier %}
+                <h3 style="color:blue; ext-capitalize;" class="account-heading">&nbsp;{{ supplier.Comp_name }}</h3>
+<!--                <a href="{% url 'edit-supplier' supplier.pk %}" class="btn btn-info" style="float: right;">Edit Details</a>-->
+            {% elif vendor %}
+                <h3 style="color:blue; text-capitalize;" class="account-heading">&nbsp;{{ vendor.name }}</h3>
+<!--                <a href="{% url 'edit-vendor' vendor.pk %}" class="btn btn-info" style="float: right;">Edit Details</a>-->
+            {% endif %}
+            <div class="row">
+                <div class="col-md-6">
+                    <p class="fal">
+                        {% if supplier %}
+                            <b>Contact &nbsp; :</b> {{ supplier.phone }} <br>
+                            <b>Email Id &nbsp; :</b> {{ supplier.email }} <br>
+<!--                            <b>GSTIN No &nbsp; :</b> {{ supplier.gstin }} <br>-->
+                        {% elif vendor %}
+                            <b>Contact &nbsp; :</b> {{ vendor.phone }} <br>
+                            <b>Email Id &nbsp; :</b> {{ vendor.email }} <br>
+                            <b>GSTIN No &nbsp; :</b> {{ vendor.gstin }} <br>
+                        {% endif %}
+                    </p>
+                </div>
+                <div class="col-md-6">
+                    <p class="fal">
+                        <b>Address:</b> <br>
+                        {% if supplier %}
+                            {{ supplier.Address|linebreaks }}
+                        {% elif vendor %}
+                            {{ vendor.address|linebreaks }}
+                        {% endif %}
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<br>
+
+<form>
+    <h1 align="center" style="color: blue;"> **  Provisional Sale Bills Details  **</h1>
+    <table class="table table-css table-hover table-bordered">
+        <thead class="thead-dark align-middle">
+            <tr align="center">
+                <th width="10%">Sr No.</th>
+                <th width="10%">Bill No.</th>
+                <th width="35%">Stocks</th>
+                <th width="15%">Quantity</th>
+<!--                <th width="20%">Total Purchased Price</th>-->
+                <th width="20%">Purchased Date</th>
+                <th width="10%">Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for purchase in bills %}
+            <tr>
+                <td class="align-middle" align="center"> {{ forloop.counter }}</td>
+                <td class="align-middle" align="center">
+                    <p>{{ purchase.billno }}</p>
+                </td>
+                <td class="align-middle text-capitalize" style="white-space: nowrap;">
+                    {% for item in purchase.get_items_list %}
+                        {{ forloop.counter }}. <span style="padding-left: 10px;">{{ item.stock.name }}</span>{% if not forloop.last %} ,<br> {% endif %}
+                    {% endfor %}
+                </td>
+                <td class="align-middle" align="center">
+                    {% for item in purchase.get_items_list %}
+                        {{ item.quantity|indian_format }} <small style="color: #909494">{{ item.stock.purchase.short_name }}</small><br>
+                    {% endfor %}
+                </td>
+<!--                <td class="align-middle" align="center">-->
+<!--                    <b><i class="fas fa-rupee-sign"></i> &nbsp;{{ purchase.get_final_amount|indian_format_with_decimals }}</b>-->
+<!--                </td>-->
+                <td class="align-middle" align="center">
+                    {{ purchase.time.date }}
+                </td>
+                <td class="align-middle" align="center">
+                    <div class="align-middle">
+                        <a href="{% url 'sale-bill' purchase.billno %}" style="color: #FFBC53; font-size: 16px;">
+                            <i class="fas fa-eye"></i>
+                        </a>&nbsp;&nbsp;
+                        <a href="{% url 'delete-purchase' purchase.pk %}" style="color: red; font-size: 16px;">
+                            <i class="fas fa-trash"></i>
+                        </a>
+                    </div>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</form>
+
+<div class="align-middle">
+    {% if bills.has_other_pages %}
+        {% if bills.has_previous %}
+            <a class="btn btn-outline-info mb-4" href="?page=1">First</a>
+            <a class="btn btn-outline-info mb-4" href="?page={{ bills.previous_page_number }}">Previous</a>
+        {% endif %}
+
+        {% for num in bills.paginator.page_range %}
+            {% if bills.number == num %}
+                <a class="btn btn-info mb-4" href="?page={{ num }}">{{ num }}</a>
+            {% elif num > bills.number|add:'-3' and num < bills.number|add:'3' %}
+                <a class="btn btn-outline-info mb-4" href="?page={{ num }}">{{ num }}</a>
+            {% endif %}
+        {% endfor %}
+
+        {% if bills.has_next %}
+            <a class="btn btn-outline-info mb-4" href="?page={{ bills.next_page_number }}">Next</a>
+            <a class="btn btn-outline-info mb-4" href="?page={{ bills.paginator.num_pages }}">Last</a>
+        {% endif %}
+    {% endif %}
+</div>
+{% endblock content %}

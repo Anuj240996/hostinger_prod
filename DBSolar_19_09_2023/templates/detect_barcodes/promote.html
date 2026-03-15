@@ -1,0 +1,1469 @@
+{% extends 'partials/base.html' %}
+{% load static %}
+
+{% block content %}
+<!--<form method="get" id="customer-select-form">-->
+<!--    <label for="customer">Select Customer:</label>-->
+<!--    <select name="customer" id="customer" onchange="this.form.submit()">-->
+<!--        <option value="">&#45;&#45; Select &#45;&#45;</option>-->
+<!--        {% for c in customers %}-->
+<!--            <option value="{{ c.Cust_id }}" {% if selected_customer and selected_customer.Cust_id == c.Cust_id %}selected{% endif %}>-->
+<!--                {{ c.Comp_name }} ({{ c.phone }})-->
+<!--            </option>-->
+<!--        {% endfor %}-->
+<!--    </select>-->
+<!--</form>-->
+
+<!--{% if selected_customer %}-->
+<!--    <h3>Customer Info</h3>-->
+<!--    <p>Company Name: <input type="text" id="company_name" /></p>-->
+<!--    <p>Wattage: <input type="text" id="wattage" /></p>-->
+
+<!--    <form method="post" id="serial-form">-->
+<!--        {% csrf_token %}-->
+<!--        <table border="1">-->
+<!--            <thead>-->
+<!--                <tr>-->
+<!--                    <th>Stock Name</th>-->
+<!--                    <th>Serial Numbers</th>-->
+<!--                </tr>-->
+<!--            </thead>-->
+<!--            <tbody>-->
+<!--                {% for item in saleitems %}-->
+<!--                    <tr>-->
+<!--                        <td>{{ item.stock.name }}</td>-->
+<!--                        <td>-->
+<!--                            {% for s in serials %}-->
+<!--                                {% if s.stock_id == item.stock.id %}-->
+<!--                                    <label>-->
+<!--                                        <input type="checkbox" name="serial_ids" value="{{ s.id }}" />-->
+<!--                                        {{ s.serialNo }}-->
+<!--                                    </label><br/>-->
+<!--                                {% endif %}-->
+<!--                            {% endfor %}-->
+<!--                        </td>-->
+<!--                    </tr>-->
+<!--                {% endfor %}-->
+<!--            </tbody>-->
+<!--        </table>-->
+<!--        <button type="button" onclick="submitSerials()">Submit</button>-->
+<!--    </form>-->
+<!--{% endif %}-->
+<!--<script>-->
+<!--function submitSerials() {-->
+<!--    const serial_ids = Array.from(document.querySelectorAll('input[name="serial_ids"]:checked'))-->
+<!--                            .map(cb => cb.value);-->
+<!--    const company_name = document.getElementById('company_name').value;-->
+<!--    const wattage = document.getElementById('wattage').value;-->
+
+<!--    fetch("{% url 'save_selected_serials' %}", {-->
+<!--        method: "POST",-->
+<!--        headers: {-->
+<!--            "X-CSRFToken": "{{ csrf_token }}",-->
+<!--            "Content-Type": "application/x-www-form-urlencoded"-->
+<!--        },-->
+<!--        body: new URLSearchParams({-->
+<!--            'serial_ids[]': serial_ids,-->
+<!--            'company_name': company_name,-->
+<!--            'wattage': wattage-->
+<!--        })-->
+<!--    })-->
+<!--    .then(res => res.json())-->
+<!--    .then(data => {-->
+<!--        if (data.success) {-->
+<!--            alert("Serial numbers saved to barcode image!");-->
+<!--            location.reload();-->
+<!--        }-->
+<!--    });-->
+<!--}-->
+<!--</script>-->
+
+<!--<form method="get" id="filter-form">-->
+<!--    <label>Customer:</label>-->
+<!--    <select name="customer" onchange="this.form.submit()">-->
+<!--        <option value="">Select Customer</option>-->
+<!--        {% for c in customers %}-->
+<!--            <option value="{{ c.Cust_id }}" {% if selected_customer_id == c.Cust_id|stringformat:"s" %}selected{% endif %}>-->
+<!--                {{ c.first_name }} {{ c.last_name }}-->
+<!--            </option>-->
+<!--        {% endfor %}-->
+<!--    </select>-->
+
+<!--    {% if subcategories %}-->
+<!--        <label>Subcategory:</label>-->
+<!--        <select name="subcategory" onchange="this.form.submit()">-->
+<!--            <option value="">Select Subcategory</option>-->
+<!--            {% for sub in subcategories %}-->
+<!--                <option value="{{ sub }}" {% if selected_subcategory == sub %}selected{% endif %}>{{ sub.Subcategory.name }}</option>-->
+<!--            {% endfor %}-->
+<!--        </select>-->
+<!--    {% endif %}-->
+
+<!--    {% if stocks %}-->
+<!--        <label>Stock:</label>-->
+<!--        <select name="stock" onchange="this.form.submit()">-->
+<!--            <option value="">Select Stock</option>-->
+<!--            {% for stock in stocks %}-->
+<!--                <option value="{{ stock.id }}" {% if selected_stock_id == stock.id|stringformat:"s" %}selected{% endif %}>-->
+<!--                    {{ stock.name }}-->
+<!--                </option>-->
+<!--            {% endfor %}-->
+<!--        </select>-->
+<!--    {% endif %}-->
+<!--</form>-->
+
+<!--{% if serials %}-->
+<!--    <form id="serial-form">-->
+<!--        {% csrf_token %}-->
+<!--        <input type="hidden" name="customer_id" value="{{ selected_customer_id }}">-->
+<!--        <input type="hidden" name="subcategory" value="{{ selected_subcategory }}">-->
+
+<!--        <table border="1">-->
+<!--            <tr>-->
+<!--                <th>Select</th>-->
+<!--                <th>Serial No</th>-->
+<!--            </tr>-->
+<!--            {% for s in serials %}-->
+<!--                <tr>-->
+<!--                    <td><input type="checkbox" name="serial_ids" value="{{ s.id }}"></td>-->
+<!--                    <td>{{ s.serialNo }}</td>-->
+<!--                </tr>-->
+<!--            {% endfor %}-->
+<!--        </table>-->
+<!--        <button type="button" onclick="submitSerials()">Save to BarcodeImage</button>-->
+<!--    </form>-->
+<!--{% endif %}-->
+<!--<script>-->
+<!--function submitSerials() {-->
+<!--    const form = document.getElementById("serial-form");-->
+<!--    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;-->
+<!--    const serialIds = Array.from(form.querySelectorAll('input[name="serial_ids"]:checked')).map(cb => cb.value);-->
+<!--    const customerId = form.querySelector('[name="customer_id"]').value;-->
+<!--    const subcategory = form.querySelector('[name="subcategory"]').value;-->
+
+<!--    if (!serialIds.length) {-->
+<!--        alert("Please select at least one serial number.");-->
+<!--        return;-->
+<!--    }-->
+
+<!--    fetch("{% url 'save_selected_serials' %}", {-->
+<!--        method: "POST",-->
+<!--        headers: {-->
+<!--            "X-CSRFToken": csrfToken,-->
+<!--            "Content-Type": "application/x-www-form-urlencoded",-->
+<!--        },-->
+<!--        body: new URLSearchParams({-->
+<!--            'serial_ids[]': serialIds,-->
+<!--            'customer_id': customerId,-->
+<!--            'subcategory': subcategory,-->
+<!--        }),-->
+<!--    })-->
+<!--    .then(response => response.json())-->
+<!--    .then(data => {-->
+<!--        if (data.success) {-->
+<!--            alert("Saved successfully!");-->
+<!--            location.reload();-->
+<!--        } else {-->
+<!--            alert("Error saving.");-->
+<!--        }-->
+<!--    });-->
+<!--}-->
+<!--</script>-->
+<!--<form method="get" id="filter-form">-->
+<!--    <label>Customer:</label>-->
+<!--    <select name="customer" onchange="this.form.submit()">-->
+<!--        <option value="">Select Customer</option>-->
+<!--        {% for c in customers %}-->
+<!--            <option value="{{ c.Cust_id }}" {% if selected_customer_id == c.Cust_id|stringformat:"s" %}selected{% endif %}>-->
+<!--                {{ c.first_name }} {{ c.last_name }}-->
+<!--            </option>-->
+<!--        {% endfor %}-->
+<!--    </select>-->
+
+<!--&lt;!&ndash;    {% if subcategories %}&ndash;&gt;-->
+<!--&lt;!&ndash;        <label>Subcategory:</label>&ndash;&gt;-->
+<!--&lt;!&ndash;        <select name="subcategory" multiple onchange="this.form.submit()">&ndash;&gt;-->
+<!--&lt;!&ndash;            {% for sub in subcategories %}&ndash;&gt;-->
+<!--&lt;!&ndash;                <option value="{{ sub }}" {% if sub in selected_subcategories %}selected{% endif %}>&ndash;&gt;-->
+<!--&lt;!&ndash;                    {{ sub }}&ndash;&gt;-->
+<!--&lt;!&ndash;                </option>&ndash;&gt;-->
+<!--&lt;!&ndash;            {% endfor %}&ndash;&gt;-->
+<!--&lt;!&ndash;        </select>&ndash;&gt;-->
+<!--&lt;!&ndash;    {% endif %}&ndash;&gt;-->
+<!--    {% if subcategories %}-->
+<!--        <label>Subcategory:</label>-->
+<!--        <select name="subcategory" multiple onchange="this.form.submit()">-->
+<!--            {% for sub in subcategories %}-->
+<!--                <option value="{{ sub.id }}" {% if sub.id|stringformat:"s" in selected_subcategories %}selected{% endif %}>-->
+<!--                    {{ sub.name }}-->
+<!--                </option>-->
+<!--            {% endfor %}-->
+<!--        </select>-->
+<!--    {% endif %}-->
+
+<!--&lt;!&ndash;    {% if stocks %}&ndash;&gt;-->
+<!--&lt;!&ndash;        <label>Stocks:</label>&ndash;&gt;-->
+<!--&lt;!&ndash;        <select name="stocks" multiple onchange="this.form.submit()">&ndash;&gt;-->
+<!--&lt;!&ndash;            {% for stock in stocks %}&ndash;&gt;-->
+<!--&lt;!&ndash;                <option value="{{ stock.id }}" {% if stock.id|stringformat:"s" in selected_stock_ids %}selected{% endif %}>&ndash;&gt;-->
+<!--&lt;!&ndash;                    {{ stock.name }}&ndash;&gt;-->
+<!--&lt;!&ndash;                </option>&ndash;&gt;-->
+<!--&lt;!&ndash;            {% endfor %}&ndash;&gt;-->
+<!--&lt;!&ndash;        </select>&ndash;&gt;-->
+<!--&lt;!&ndash;    {% endif %}&ndash;&gt;-->
+<!--&lt;!&ndash;    <label>Stocks:</label>&ndash;&gt;-->
+<!--&lt;!&ndash;<select name="stocks" multiple size="6" onchange="this.form.submit()">&ndash;&gt;-->
+<!--&lt;!&ndash;    {% for stock in stocks %}&ndash;&gt;-->
+<!--&lt;!&ndash;        <option value="{{ stock.id }}"&ndash;&gt;-->
+<!--&lt;!&ndash;                {% if stock.id|stringformat:"s" in selected_stock_ids %}&ndash;&gt;-->
+<!--&lt;!&ndash;                    selected&ndash;&gt;-->
+<!--&lt;!&ndash;                {% endif %}>&ndash;&gt;-->
+<!--&lt;!&ndash;            {{ stock.name }}&ndash;&gt;-->
+<!--&lt;!&ndash;        </option>&ndash;&gt;-->
+<!--&lt;!&ndash;    {% endfor %}&ndash;&gt;-->
+<!--&lt;!&ndash;</select>&ndash;&gt;-->
+<!--{% if stocks %}-->
+<!--    <label>Stocks:</label>-->
+<!--    <select name="stocks" multiple size="6" onchange="this.form.submit()">-->
+<!--        {% for stock in stocks %}-->
+<!--            <option value="{{ stock.id }}"-->
+<!--                {% if stock.id|stringformat:"s" in selected_stock_ids %}selected{% endif %}>-->
+<!--                {{ stock.name }}-->
+<!--            </option>-->
+<!--        {% endfor %}-->
+<!--    </select>-->
+<!--{% endif %}-->
+
+<!--</form>-->
+<!--<form method="get" id="filter-form">-->
+<!--    <label>Customer:</label>-->
+<!--    <select name="customer" onchange="this.form.submit()">-->
+<!--        <option value="">Select Customer</option>-->
+<!--        {% for c in customers %}-->
+<!--            <option value="{{ c.Cust_id }}" {% if selected_customer_id == c.Cust_id|stringformat:"s" %}selected{% endif %}>-->
+<!--                {{ c.Comp_name }}-->
+<!--            </option>-->
+<!--        {% endfor %}-->
+<!--    </select>-->
+
+<!--    {% if selected_customer_id %}-->
+<!--        <label>Subcategory:</label>-->
+<!--        <select name="subcategory" multiple onchange="this.form.submit()">-->
+<!--            {% for sub in subcategories %}-->
+<!--                <option value="{{ sub.id }}" {% if sub.id|stringformat:"s" in selected_subcategories %}selected{% endif %}>-->
+<!--                    {{ sub.name }}-->
+<!--                </option>-->
+<!--            {% endfor %}-->
+<!--        </select>-->
+<!--    {% endif %}-->
+
+<!--    {% if stocks %}-->
+<!--        <label>Stocks:</label>-->
+<!--        <select name="stocks" multiple size="6" onchange="this.form.submit()">-->
+<!--            {% for stock in stocks %}-->
+<!--                <option value="{{ stock.id }}" {% if stock.id|stringformat:"s" in selected_stock_ids %}selected{% endif %}>-->
+<!--                    {{ stock.name }}-->
+<!--                </option>-->
+<!--            {% endfor %}-->
+<!--        </select>-->
+<!--    {% endif %}-->
+<!--</form>-->
+<form method="get" id="filter-form" xmlns="http://www.w3.org/1999/html">
+<!-- <fieldset>-->
+<!--    <label>Customer:</label>-->
+<!--    <select name="customer" onchange="this.form.submit()" class="form-control">-->
+<!--        <option value="">Select Customer</option>-->
+<!--        {% for c in customers %}-->
+<!--            <option value="{{ c.Cust_id }}" {% if selected_customer_id == c.Cust_id|stringformat:"s" %}selected{% endif %}>-->
+<!--                {{ c.Comp_name }}-->
+<!--            </option>-->
+<!--        {% endfor %}-->
+<!--    </select>-->
+
+<!--    {% if selected_customer_id %}-->
+<!--        <label>Subcategory:</label>-->
+<!--        <select name="subcategory" onchange="this.form.submit()" class="form-control">-->
+<!--            <option value="">Select Subcategory</option>-->
+<!--            {% for sub in subcategories %}-->
+<!--                <option value="{{ sub.id }}" {% if selected_subcategories and sub.id|stringformat:"s" == selected_subcategories.0|stringformat:"s" %}selected{% endif %}>-->
+<!--                    {{ sub.name }}-->
+<!--                </option>-->
+<!--            {% endfor %}-->
+<!--        </select>-->
+<!--    {% endif %}-->
+
+<!--    {% if stocks %}-->
+<!--        <label>Stocks:</label>-->
+<!--        <select name="stocks" multiple size="6" onchange="this.form.submit()" class="form-control">-->
+<!--            {% for stock in stocks %}-->
+<!--                <option value="{{ stock.id }}" {% if stock.id|stringformat:"s" in selected_stock_ids %}selected{% endif %}>-->
+<!--                    {{ stock.name }}-->
+<!--                </option>-->
+<!--            {% endfor %}-->
+<!--        </select>-->
+<!--    {% endif %}-->
+<!--</fieldset>-->
+
+<!--<fieldset style="display: flex; flex-direction: row; gap: 15px; align-items: flex-end; flex-wrap: wrap;">-->
+<!--    &lt;!&ndash; Customer Dropdown &ndash;&gt;-->
+<!--    <div style="flex: 1; min-width: 200px;">-->
+<!--        <label>Customer:</label>-->
+<!--        <select name="customer" onchange="this.form.submit()" class="form-control" style="width: 100%;">-->
+<!--            <option value="">Select Customer</option>-->
+<!--            {% for c in customers %}-->
+<!--                <option value="{{ c.Cust_id }}" {% if selected_customer_id == c.Cust_id|stringformat:"s" %}selected{% endif %}>-->
+<!--                    {{ c.Comp_name }}-->
+<!--                </option>-->
+<!--            {% endfor %}-->
+<!--        </select>-->
+<!--    </div>-->
+
+<!--    &lt;!&ndash; Subcategory Dropdown (Conditional) &ndash;&gt;-->
+<!--    {% if selected_customer_id %}-->
+<!--    <div style="flex: 1; min-width: 200px;">-->
+<!--        <label>Subcategory:</label>-->
+<!--        <select name="subcategory" onchange="this.form.submit()" class="form-control" style="width: 100%;">-->
+<!--            <option value="">Select Subcategory</option>-->
+<!--            {% for sub in subcategories %}-->
+<!--                <option value="{{ sub.id }}" {% if selected_subcategories and sub.id|stringformat:"s" == selected_subcategories.0|stringformat:"s" %}selected{% endif %}>-->
+<!--                    {{ sub.name }}-->
+<!--                </option>-->
+<!--            {% endfor %}-->
+<!--        </select>-->
+<!--    </div>-->
+<!--    {% endif %}-->
+
+<!--&lt;!&ndash;    &lt;!&ndash; Subcategory Dropdown (Conditional) &ndash;&gt;&ndash;&gt;-->
+<!--&lt;!&ndash;    {% if selected_customer_id and subcategories %}&ndash;&gt;-->
+<!--&lt;!&ndash;    <div style="flex: 1; min-width: 200px;">&ndash;&gt;-->
+<!--&lt;!&ndash;        <label>Subcategory:</label>&ndash;&gt;-->
+<!--&lt;!&ndash;        <select name="subcategory" onchange="this.form.submit()" class="form-control" style="width: 100%;">&ndash;&gt;-->
+<!--&lt;!&ndash;            <option value="">Select Subcategory</option>&ndash;&gt;-->
+<!--&lt;!&ndash;            {% for sub in subcategories %}&ndash;&gt;-->
+<!--&lt;!&ndash;                <option value="{{ sub.id }}" {% if selected_subcategories and sub.id|stringformat:"s" == selected_subcategories.0|stringformat:"s" %}selected{% endif %}>&ndash;&gt;-->
+<!--&lt;!&ndash;                    {{ sub.name }}&ndash;&gt;-->
+<!--&lt;!&ndash;                </option>&ndash;&gt;-->
+<!--&lt;!&ndash;            {% endfor %}&ndash;&gt;-->
+<!--&lt;!&ndash;        </select>&ndash;&gt;-->
+<!--&lt;!&ndash;    </div>&ndash;&gt;-->
+<!--&lt;!&ndash;    {% endif %}&ndash;&gt;-->
+
+
+<!--    &lt;!&ndash; Stocks Dropdown (Conditional) &ndash;&gt;-->
+<!--    {% if stocks %}-->
+<!--    <div style="flex: 1; min-width: 200px;">-->
+<!--        <label>Stocks:</label>-->
+<!--        <select name="stocks" multiple size="3" onchange="this.form.submit()" class="form-control" style="width: 100%;">-->
+<!--            {% for stock in stocks %}-->
+<!--                <option value="{{ stock.id }}" {% if stock.id|stringformat:"s" in selected_stock_ids %}selected{% endif %}>-->
+<!--                    {{ stock.name }}-->
+<!--                </option>-->
+<!--            {% endfor %}-->
+<!--        </select>-->
+<!--    </div>-->
+<!--    {% endif %}-->
+<!--</fieldset>-->
+
+<!--<fieldset style="display: flex; flex-direction: row; gap: 15px; align-items: flex-end; flex-wrap: wrap;">-->
+<!--    &lt;!&ndash; Customer Dropdown &ndash;&gt;-->
+<!--    <div style="flex: 1; min-width: 200px;">-->
+<!--        <label>Customer:</label>-->
+<!--        <select name="customer" onchange="this.form.submit()" class="form-control" style="width: 100%;">-->
+<!--            <option value="">Select Customer</option>-->
+<!--            {% for c in customers %}-->
+<!--                <option value="{{ c.Cust_id }}" {% if selected_customer_id == c.Cust_id|stringformat:"s" %}selected{% endif %}>-->
+<!--                    {{ c.Comp_name }}-->
+<!--                </option>-->
+<!--            {% endfor %}-->
+<!--        </select>-->
+<!--    </div>-->
+
+<!--    &lt;!&ndash; Subcategory Dropdown (Conditional) &ndash;&gt;-->
+<!--    {% if selected_customer_id %}-->
+<!--    <div style="flex: 1; min-width: 200px;">-->
+<!--        <label>Subcategory:</label>-->
+<!--        <select name="subcategory" onchange="this.form.submit()" class="form-control" style="width: 100%;">-->
+<!--            <option value="">Select Subcategory</option>-->
+<!--            {% for sub in subcategories %}-->
+<!--                <option value="{{ sub.id }}"-->
+<!--                    {% if not reset_subcategory and selected_subcategories and sub.id|stringformat:"s" == selected_subcategories.0|stringformat:"s" %}selected{% endif %}>-->
+<!--                    {{ sub.name }}-->
+<!--                </option>-->
+<!--            {% endfor %}-->
+<!--        </select>-->
+<!--    </div>-->
+<!--    {% endif %}-->
+
+
+<!--    &lt;!&ndash; Stocks Dropdown (Conditional) &ndash;&gt;-->
+<!--    {% if stocks %}-->
+<!--    <div style="flex: 1; min-width: 200px;">-->
+<!--        <label>Stocks:</label>-->
+<!--        <select name="stocks" multiple size="3" onchange="this.form.submit()" class="form-control" style="width: 100%;">-->
+<!--            {% for stock in stocks %}-->
+<!--                <option value="{{ stock.id }}" {% if stock.id|stringformat:"s" in selected_stock_ids %}selected{% endif %}>-->
+<!--                    {{ stock.name }}-->
+<!--                </option>-->
+<!--            {% endfor %}-->
+<!--        </select>-->
+<!--    </div>-->
+<!--    {% endif %}-->
+<!--</fieldset>-->
+
+<!--<fieldset style="display: flex; flex-direction: row; gap: 15px; align-items: flex-end; flex-wrap: wrap;">-->
+<!--    &lt;!&ndash; Customer Dropdown &ndash;&gt;-->
+<!--    <div style="flex: 1; min-width: 200px;">-->
+<!--        <label>Customer:</label>-->
+<!--        <select name="customer" onchange="this.form.submit()" class="form-control" style="width: 100%;">-->
+<!--            <option value="">Select Customer</option>-->
+<!--&lt;!&ndash;            {% for c in customers %}&ndash;&gt;-->
+<!--&lt;!&ndash;                <option value="{{ c.Cust_id }}" {% if selected_customer_id == c.Cust_id|stringformat:"s" %}selected{% endif %}>&ndash;&gt;-->
+<!--&lt;!&ndash;                    {{ c.Comp_name }}&ndash;&gt;-->
+<!--&lt;!&ndash;                </option>&ndash;&gt;-->
+<!--&lt;!&ndash;            {% endfor %}&ndash;&gt;-->
+<!--           {% for c in customers %}-->
+<!--              <option value="{{ c.Cust_id }}" {% if selected_customer_id == c.Cust_id|stringformat:"s" %}selected{% endif %}>-->
+<!--                {{ c.Comp_name }}-->
+<!--              </option>-->
+<!--            {% endfor %}-->
+<!--        </select>-->
+<!--    </div>-->
+
+<!--    &lt;!&ndash; Subcategory Dropdown &ndash;&gt;-->
+<!--    {% if selected_customer_id %}-->
+<!--    <div style="flex: 1; min-width: 200px;">-->
+<!--        <label>Subcategory:</label>-->
+<!--        <select name="subcategory" onchange="this.form.submit()" class="form-control" style="width: 100%;">-->
+<!--            <option value="">Select Subcategory</option>-->
+<!--            {% for sub in subcategories %}-->
+<!--                <option value="{{ sub.id }}"-->
+<!--                    {% if selected_subcategories and sub.id|stringformat:"s" == selected_subcategories.0|stringformat:"s" %}selected{% endif %}>-->
+<!--                    {{ sub.name }}-->
+<!--                </option>-->
+<!--            {% endfor %}-->
+<!--&lt;!&ndash;            {% for sub in subcategories %}&ndash;&gt;-->
+<!--&lt;!&ndash;                {% if sub.has_serials %}&ndash;&gt;-->
+<!--&lt;!&ndash;                    <option value="{{ sub.id }}"&ndash;&gt;-->
+<!--&lt;!&ndash;                        {% if selected_subcategories and sub.id|stringformat:"s" == selected_subcategories.0|stringformat:"s" %}selected{% endif %}>&ndash;&gt;-->
+<!--&lt;!&ndash;                        {{ sub.name }}&ndash;&gt;-->
+<!--&lt;!&ndash;                    </option>&ndash;&gt;-->
+<!--&lt;!&ndash;                {% endif %}&ndash;&gt;-->
+<!--&lt;!&ndash;            {% endfor %}&ndash;&gt;-->
+
+<!--        </select>-->
+<!--    </div>-->
+<!--    {% endif %}-->
+
+<!--    &lt;!&ndash; Stocks Dropdown &ndash;&gt;-->
+<!--    {% if selected_subcategories and subcategories %}-->
+<!--    <div style="flex: 1; min-width: 200px;">-->
+<!--        <label>Stocks:</label>-->
+<!--        <select name="stocks" multiple size="3" onchange="this.form.submit()" class="form-control" style="width: 100%;">-->
+<!--            {% for stock in stocks %}-->
+<!--                <option value="{{ stock.id }}" {% if stock.id|stringformat:"s" in selected_stock_ids %}selected{% endif %}>-->
+<!--                    {{ stock.name }}-->
+<!--                </option>-->
+<!--            {% endfor %}-->
+<!--        </select>-->
+<!--    </div>-->
+<!--    {% endif %}-->
+<!--</fieldset>-->
+
+<fieldset style="display: flex; flex-direction: row; gap: 15px; align-items: flex-end; flex-wrap: wrap;">
+    <!-- Customer Dropdown -->
+    <div style="flex: 1; min-width: 200px;">
+        <label>Customer:</label>
+        <select name="customer" onchange="this.form.submit()" class="form-control" style="width: 100%;">
+            <option value="">Select Customer</option>
+<!--            {% if not hide_dropdowns %}-->
+<!--                {% for c in customers %}-->
+<!--                  <option value="{{ c.Cust_id }}" {% if selected_customer_id == c.Cust_id|stringformat:"s" %}selected{% endif %}>-->
+<!--                    {{ c.Comp_name }}-->
+<!--                  </option>-->
+<!--                {% endfor %}-->
+<!--            {% endif %}-->
+            {% for c in customers %}
+              {% if c.available_subcategories %}
+                <option value="{{ c.Cust_id }}" {% if selected_customer_id == c.Cust_id|stringformat:"s" %}selected{% endif %}>
+                  {{ c.Comp_name }}
+                </option>
+              {% endif %}
+            {% endfor %}
+
+        </select>
+    </div>
+
+    <!-- Subcategory Dropdown -->
+    {% if selected_customer_id %}
+    <div style="flex: 1; min-width: 200px;">
+        <label>Subcategory:</label>
+        <select name="subcategory" onchange="this.form.submit()" class="form-control" style="width: 100%;">
+            <option value="">Select Subcategory</option>
+            {% if not hide_dropdowns %}
+                {% for sub in subcategories %}
+                    <option value="{{ sub.id }}"
+                        {% if selected_subcategories and sub.id|stringformat:"s" == selected_subcategories.0|stringformat:"s" %}selected{% endif %}>
+                        {{ sub.name }}
+                    </option>
+                {% endfor %}
+            {% endif %}
+        </select>
+    </div>
+    {% endif %}
+
+    <!-- Stocks Dropdown -->
+    {% if selected_subcategories and subcategories %}
+    <div style="flex: 1; min-width: 200px;">
+        <label>Stocks:</label>
+        <select name="stocks" multiple size="3" onchange="this.form.submit()" class="form-control" style="width: 100%;">
+            {% if not hide_dropdowns %}
+                {% for stock in stocks %}
+                    <option value="{{ stock.id }}" {% if stock.id|stringformat:"s" in selected_stock_ids %}selected{% endif %}>
+                        {{ stock.name }}
+                    </option>
+                {% endfor %}
+            {% endif %}
+        </select>
+    </div>
+    {% endif %}
+</fieldset>
+
+
+
+<!--{% if existing_serials %}-->
+<!--    <h3>Already Assigned Serial Numbers (SolarPanel & Inverter)</h3>-->
+<!--    <table border="1">-->
+<!--        <tr>-->
+<!--            <th>SrNo</th>-->
+<!--            <th>Serial No</th>-->
+<!--            <th>Product</th>-->
+<!--            <th>Assigned On</th>-->
+<!--        </tr>-->
+<!--        {% for es in existing_serials %}-->
+<!--            <tr>-->
+<!--                <td>{{ forloop.counter }}</td>-->
+<!--                <td>{{ es.barcode_data }}</td>-->
+<!--                <td>{{ es.product_name }}</td>-->
+<!--                <td>{{ es.file_saved_at }}</td>-->
+<!--            </tr>-->
+<!--        {% endfor %}-->
+<!--    </table>-->
+<!--{% endif %}-->
+
+<!--{% if existing_serials %}-->
+<!--&lt;!&ndash;    <h3>Already Assigned Serial Numbers (SolarPanel & Inverter)</h3>&ndash;&gt;-->
+<!--&lt;!&ndash;    <table border="1">&ndash;&gt;-->
+<!--&lt;!&ndash;        <tr>&ndash;&gt;-->
+<!--&lt;!&ndash;            <th>Sr No</th>&ndash;&gt;-->
+<!--&lt;!&ndash;            <th>Serial No</th>&ndash;&gt;-->
+<!--&lt;!&ndash;            <th>Product</th>&ndash;&gt;-->
+<!--&lt;!&ndash;            <th>Assigned On</th>&ndash;&gt;-->
+<!--&lt;!&ndash;        </tr>&ndash;&gt;-->
+<!--&lt;!&ndash;        {% for es in existing_serials %}&ndash;&gt;-->
+<!--&lt;!&ndash;            <tr>&ndash;&gt;-->
+<!--&lt;!&ndash;                <td>{{ forloop.counter }}</td>&ndash;&gt;-->
+<!--&lt;!&ndash;                <td>{{ es.barcode_data }}</td>&ndash;&gt;-->
+<!--&lt;!&ndash;                <td>{{ es.product_name }}</td>&ndash;&gt;-->
+<!--&lt;!&ndash;                <td>{{ es.file_saved_at }}</td>&ndash;&gt;-->
+<!--&lt;!&ndash;            </tr>&ndash;&gt;-->
+<!--&lt;!&ndash;        {% endfor %}&ndash;&gt;-->
+<!--&lt;!&ndash;    </table>&ndash;&gt;-->
+<!--    <br>-->
+<!--    <h4>Assignment Summary:</h4>-->
+<!--    <table border="1">-->
+<!--        <tr>-->
+<!--            <th>Product</th>-->
+<!--            <th>Assigned</th>-->
+<!--            <th>Required</th>-->
+<!--            <th>Status</th>-->
+<!--        </tr>-->
+<!--        {% with pending_solar=qunt_solar|add:"-solar_count" %}-->
+<!--        <tr>-->
+<!--            <td>SolarPanel</td>-->
+<!--            <td>{{ solar_count }}</td>-->
+<!--            <td>{{ qunt_solar }}</td>-->
+<!--            <td>-->
+<!--                {% if solar_count >= qunt_solar %}-->
+<!--                    ✅ Completed-->
+<!--                {% else %}-->
+<!--                    ⚠️ Pending ({{ pending_solar }} remaining)-->
+<!--                {% endif %}-->
+<!--            </td>-->
+<!--        </tr>-->
+<!--        {% endwith %}-->
+
+<!--        {% with pending_inv=qunt_inv|add:"-inverter_count" %}-->
+<!--        <tr>-->
+<!--            <td>Inverter</td>-->
+<!--            <td>{{ inverter_count }}</td>-->
+<!--            <td>{{ qunt_inv }}</td>-->
+<!--            <td>-->
+<!--                {% if inverter_count >= qunt_inv %}-->
+<!--                    ✅ Completed-->
+<!--                {% else %}-->
+<!--                    ⚠️ Pending ({{ pending_inv }} remaining)-->
+<!--                {% endif %}-->
+<!--            </td>-->
+<!--        </tr>-->
+<!--        {% endwith %}-->
+<!--    </table>-->
+
+<!--<br>-->
+<!--<h3>Already Assigned Serial Numbers</h3>-->
+
+<!--<table border="1" cellpadding="6" cellspacing="0" style="width: 100%; border-collapse: collapse;">-->
+<!--    <thead style="background-color: #f0f0f0;">-->
+<!--        <tr>-->
+<!--            <th>Sr No.</th>-->
+<!--            <th>Product Name</th>-->
+<!--            <th>Serial Number</th>-->
+<!--            <th>Assigned On</th>-->
+<!--        </tr>-->
+<!--    </thead>-->
+<!--    <tbody>-->
+<!--        {% if existing_serials %}-->
+<!--            {% for serial in existing_serials %}-->
+<!--                <tr>-->
+<!--                    <td>{{ forloop.counter }}</td>-->
+<!--                    <td>{{ serial.product_name }}</td>-->
+<!--                    <td>{{ serial.barcode_data }}</td>-->
+<!--                    <td>{{ serial.file_saved_at|date:"Y-m-d H:i" }}</td>-->
+<!--                </tr>-->
+<!--            {% endfor %}-->
+<!--        {% else %}-->
+<!--            <tr>-->
+<!--                <td colspan="4" style="text-align: center;">No serial numbers found.</td>-->
+<!--            </tr>-->
+<!--        {% endif %}-->
+<!--    </tbody>-->
+<!--</table>-->
+<fieldset>
+<!--{% endif %}-->
+{% if selected_subcategories %}
+<!--    {% if existing_serials %}-->
+<!--        <br>-->
+<!--        <h4>Assignment Summary:</h4>-->
+<!--        <table border="1">-->
+<!--            <tr>-->
+<!--                <th>Product</th>-->
+<!--                <th>Assigned</th>-->
+<!--                <th>Required</th>-->
+<!--                <th>Status</th>-->
+<!--            </tr>-->
+<!--            {% with pending_solar=qunt_solar|add:"-solar_count" %}-->
+<!--            <tr>-->
+<!--                <td>SolarPanel</td>-->
+<!--                <td>{{ solar_count }}</td>-->
+<!--                <td>{{ qunt_solar }}</td>-->
+<!--                <td>-->
+<!--                    {% if solar_count >= qunt_solar %}-->
+<!--                        ✅ Completed-->
+<!--                    {% else %}-->
+<!--                        ⚠️ Pending ({{ pending_solar }} remaining)-->
+<!--                    {% endif %}-->
+<!--                </td>-->
+<!--            </tr>-->
+<!--            {% endwith %}-->
+
+<!--            {% with pending_inv=qunt_inv|add:"-inverter_count" %}-->
+<!--            <tr>-->
+<!--                <td>Inverter</td>-->
+<!--                <td>{{ inverter_count }}</td>-->
+<!--                <td>{{ qunt_inv }}</td>-->
+<!--                <td>-->
+<!--                    {% if inverter_count >= qunt_inv %}-->
+<!--                        ✅ Completed-->
+<!--                    {% else %}-->
+<!--                        ⚠️ Pending ({{ pending_inv }} remaining)-->
+<!--                    {% endif %}-->
+<!--                </td>-->
+<!--            </tr>-->
+<!--            {% endwith %}-->
+<!--        </table>-->
+<!--{% if summary_product %}-->
+<!--    <br>-->
+<!--    <h4>Assignment Summary: {{ summary_product }}</h4>-->
+<!--&lt;!&ndash;    <table border="1">&ndash;&gt;-->
+<!--    <table border="1" cellpadding="6" cellspacing="0" style="width: 100%; border-collapse: collapse; text-align: center;">-->
+<!--        <thead style="background-color: #8f8c95; color: white;">-->
+<!--        <tr>-->
+<!--            <th>Product</th>-->
+<!--            <th>Assigned</th>-->
+<!--            <th>Required</th>-->
+<!--            <th>Status</th>-->
+<!--        </tr>-->
+<!--        </thead>-->
+<!--        <tbody>-->
+<!--        <tr>-->
+<!--            <td>{{ summary_product }}</td>-->
+<!--            <td>{{ summary_count }}</td>-->
+<!--            <td>{{ summary_required }}</td>-->
+<!--            <td>-->
+<!--                {% if summary_count >= summary_required %}-->
+<!--                    ✅ Completed-->
+<!--                {% else %}-->
+<!--                    ⚠️ Pending ({{ summary_pending }} remaining)-->
+<!--                {% endif %}-->
+<!--            </td>-->
+<!--        </tr>-->
+<!--        </tbody>-->
+<!--    </table>-->
+<!--{% endif %}-->
+
+<!--        <br>-->
+<!--        <h3>Already Assigned Serial Numbers</h3>-->
+
+<!--        <table border="1" cellpadding="6" cellspacing="0" style="width: 100%; border-collapse: collapse; text-align: center;">-->
+<!--&lt;!&ndash;            <thead style="background-color: #f0f0f0;">&ndash;&gt;-->
+<!--            <thead style="background-color: #8f8c95; color: white;">-->
+<!--                <tr>-->
+<!--                    <th>Sr No.</th>-->
+<!--                    <th>Product Name</th>-->
+<!--                    <th>Serial Number</th>-->
+<!--                    <th>Assigned On</th>-->
+<!--                </tr>-->
+<!--            </thead>-->
+<!--            <tbody>-->
+<!--                {% for serial in existing_serials %}-->
+<!--                    <tr>-->
+<!--                        <td>{{ forloop.counter }}</td>-->
+<!--                        <td>{{ serial.product_name }}</td>-->
+<!--                        <td>{{ serial.barcode_data }}</td>-->
+<!--                        <td>{{ serial.file_saved_at|date:"Y-m-d H:i" }}</td>-->
+<!--                    </tr>-->
+<!--                {% endfor %}-->
+<!--            </tbody>-->
+<!--        </table>-->
+<!--    {% endif %}-->
+<!--{% endif %}-->
+
+{% if show_serial_tables %}
+    {% if summary_product %}
+    <br>
+    <h4>Assignment Summary: {{ summary_product }}</h4>
+    <table border="1" cellpadding="6" cellspacing="0" style="width: 100%; border-collapse: collapse; text-align: center;">
+        <thead style="background-color: #8f8c95; color: white;">
+        <tr>
+            <th>Product</th>
+            <th>Assigned</th>
+            <th>Required</th>
+            <th>Status</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr>
+            <td>{{ summary_product }}</td>
+            <td>{{ summary_count }}</td>
+            <td>{{ summary_required }}</td>
+            <td>
+                {% if summary_count >= summary_required %}
+                    ✅ Completed
+                {% else %}
+                    ⚠️ Pending ({{ summary_pending }} remaining)
+                {% endif %}
+            </td>
+        </tr>
+        </tbody>
+    </table>
+    {% endif %}
+
+    {% if existing_serials %}
+    <br>
+    <h3>Already Assigned Serial Numbers</h3>
+    <table border="1" cellpadding="6" cellspacing="0" style="width: 100%; border-collapse: collapse; text-align: center;">
+        <thead style="background-color: #8f8c95; color: white;">
+            <tr>
+                <th>Sr No.</th>
+                <th>Product Name</th>
+                <th>Serial Number</th>
+                <th>Assigned On</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for serial in existing_serials %}
+                <tr>
+                    <td>{{ forloop.counter }}</td>
+                    <td>{{ serial.product_name }}</td>
+                    <td>{{ serial.barcode_data }}</td>
+                    <td>{{ serial.file_saved_at|date:"Y-m-d H:i" }}</td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% endif %}
+{% endif %}
+
+</fieldset>
+</form>
+
+
+    <br>
+<!--{% if serials %}-->
+<!--    <form id="serial-form">-->
+<!--        {% csrf_token %}-->
+<!--        <input type="hidden" name="customer_id" value="{{ selected_customer_id }}">-->
+<!--        {% for sub in selected_subcategories %}-->
+<!--            <input type="hidden" name="subcategory" value="{{ sub }}">-->
+<!--        {% endfor %}-->
+
+
+
+<!--        <thead class="thead-dark align-middle">-->
+
+
+<!--        <div id="serial-table-container">-->
+<!--&lt;!&ndash;            <table border="1">&ndash;&gt;-->
+<!--            <table border="1" cellpadding="6" cellspacing="0" style="width: 100%; border-collapse: collapse; text-align: center;">-->
+<!--                <thead style="background-color: #8f8c95; color: white;">-->
+<!--                <tr>-->
+<!--                    <th>Select</th>-->
+<!--                    <th>Serial No</th>-->
+<!--                </tr>-->
+<!--                </thead>-->
+<!--                <tbody align="center">-->
+<!--                {% for s in serials %}-->
+<!--                    <tr>-->
+<!--                        <td><input type="checkbox" name="serial_ids" value="{{ s.id }}" class="checkbox-input"></td>-->
+<!--                        <td>{{ s.serialNo }}</td>-->
+<!--                    </tr>-->
+<!--                {% endfor %}-->
+<!--                </tbody>-->
+<!--            </table>-->
+<!--            <br>-->
+<!--            <button type="button" onclick="submitSerials()" style="width: 20%;">Save to BarcodeImage</button>-->
+<!--        </div>-->
+<!--    </form>-->
+<!--{% endif %}-->
+<!--{% if serials %}-->
+<!--<form id="serial-form">-->
+<!--    {% csrf_token %}-->
+<!--    <input type="hidden" name="customer_id" value="{{ selected_customer_id }}">-->
+<!--    {% for sub in selected_subcategories %}-->
+<!--        <input type="hidden" name="subcategory" value="{{ sub }}">-->
+<!--    {% endfor %}-->
+
+<!--   {% if summary_product == 'Inverter' or summary_product == 'SolarPanel' %}-->
+<!--    <div style="display: flex; gap: 20px; align-items: center; margin-top: 10px; margin-bottom: 20px;">-->
+<!--        <div class="form-group col-md-6">-->
+<!--            <label for="company_name">Company Name:</label>-->
+<!--            <input type="text" id="company_name" name="company_name" class="form-control" required>-->
+<!--        </div>-->
+<!--        <div class="form-group col-md-6">-->
+<!--            <label for="wattage">Wattage:</label>-->
+<!--            <div class="input-group">-->
+<!--                <input type="text" id="wattage" name="wattage" class="form-control" required>-->
+<!--                <div class="input-group-append">-->
+<!--                    <span class="input-group-text">Kw</span>-->
+<!--                </div>-->
+<!--            </div>-->
+<!--        </div>-->
+<!--    </div>-->
+<!--    {% endif %}-->
+
+
+<!--    <div id="serial-table-container">-->
+<!--        <table id="serial-table" border="1" cellpadding="6" cellspacing="0" style="width: 100%; border-collapse: collapse; text-align: center;">-->
+<!--            <thead style="background-color: #8f8c95; color: white;">-->
+<!--                <tr>-->
+<!--                    <th>Sr No</th>-->
+<!--                    <th>Select</th>-->
+<!--                    <th>Serial No</th>-->
+<!--                </tr>-->
+<!--            </thead>-->
+<!--            <tbody align="center">-->
+<!--                {% for s in serials %}-->
+<!--                    <tr>-->
+<!--                        <td>{{ forloop.counter }}</td>-->
+<!--                        <td><input type="checkbox" name="serial_ids" value="{{ s.id }}" class="checkbox-input" onchange="toggleRowColor(this)"></td>-->
+<!--                        <td>{{ s.serialNo }}</td>-->
+<!--                    </tr>-->
+<!--                {% endfor %}-->
+<!--            </tbody>-->
+<!--        </table>-->
+<!--        <br>-->
+<!--        <button type="button" onclick="submitSerials()" style="width: 20%;">Save to BarcodeImage</button>-->
+<!--    </div>-->
+<!--</form>-->
+<!--{% endif %}-->
+
+<!--<script>-->
+<!--function toggleRowColor(checkbox) {-->
+<!--    const row = checkbox.closest('tr');-->
+<!--    if (checkbox.checked) {-->
+<!--        row.style.backgroundColor = '#d3f4ff';  // Light blue when checked-->
+<!--    } else {-->
+<!--        row.style.backgroundColor = 'white';   // White when unchecked-->
+<!--    }-->
+<!--}-->
+
+<!--// Optional: Initialize row background based on checkbox state (e.g., on page load)-->
+<!--document.addEventListener('DOMContentLoaded', function () {-->
+<!--    document.querySelectorAll('#serial-table .checkbox-input').forEach(cb => {-->
+<!--        toggleRowColor(cb);-->
+<!--    });-->
+<!--});-->
+<!--</script>-->
+
+
+<!--&lt;!&ndash;<style>&ndash;&gt;-->
+<!--&lt;!&ndash;select[multiple] {&ndash;&gt;-->
+<!--&lt;!&ndash;    width: 100%;&ndash;&gt;-->
+<!--&lt;!&ndash;    padding: 4px;&ndash;&gt;-->
+<!--&lt;!&ndash;    font-size: 14px;&ndash;&gt;-->
+<!--&lt;!&ndash;    height: auto;&ndash;&gt;-->
+<!--&lt;!&ndash;}&ndash;&gt;-->
+<!--&lt;!&ndash;</style>&ndash;&gt;-->
+
+<!--&lt;!&ndash;<script>&ndash;&gt;-->
+<!--&lt;!&ndash;function submitSerials() {&ndash;&gt;-->
+<!--&lt;!&ndash;    const form = document.getElementById("serial-form");&ndash;&gt;-->
+<!--&lt;!&ndash;    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;&ndash;&gt;-->
+<!--&lt;!&ndash;    const serialIds = Array.from(form.querySelectorAll('input[name="serial_ids"]:checked')).map(cb => cb.value);&ndash;&gt;-->
+<!--&lt;!&ndash;    const customerId = form.querySelector('[name="customer_id"]').value;&ndash;&gt;-->
+<!--&lt;!&ndash;    const subcategories = Array.from(document.querySelectorAll('input[name="subcategory"]')).map(i => i.value);&ndash;&gt;-->
+
+<!--&lt;!&ndash;    if (!serialIds.length) {&ndash;&gt;-->
+<!--&lt;!&ndash;        alert("Please select at least one serial number.");&ndash;&gt;-->
+<!--&lt;!&ndash;        return;&ndash;&gt;-->
+<!--&lt;!&ndash;    }&ndash;&gt;-->
+
+<!--&lt;!&ndash;    fetch("{% url 'save_selected_serials' %}", {&ndash;&gt;-->
+<!--&lt;!&ndash;        method: "POST",&ndash;&gt;-->
+<!--&lt;!&ndash;        headers: {&ndash;&gt;-->
+<!--&lt;!&ndash;            "X-CSRFToken": csrfToken,&ndash;&gt;-->
+<!--&lt;!&ndash;            "Content-Type": "application/x-www-form-urlencoded",&ndash;&gt;-->
+<!--&lt;!&ndash;        },&ndash;&gt;-->
+<!--&lt;!&ndash;        body: new URLSearchParams({&ndash;&gt;-->
+<!--&lt;!&ndash;            'serial_ids[]': serialIds,&ndash;&gt;-->
+<!--&lt;!&ndash;            'customer_id': customerId,&ndash;&gt;-->
+<!--&lt;!&ndash;            'subcategory[]': subcategories,&ndash;&gt;-->
+<!--&lt;!&ndash;        }),&ndash;&gt;-->
+<!--&lt;!&ndash;    })&ndash;&gt;-->
+<!--&lt;!&ndash;    .then(response => response.json())&ndash;&gt;-->
+<!--&lt;!&ndash;    .then(data => {&ndash;&gt;-->
+<!--&lt;!&ndash;        if (data.success) {&ndash;&gt;-->
+<!--&lt;!&ndash;            alert("Saved successfully!");&ndash;&gt;-->
+<!--&lt;!&ndash;            location.reload();&ndash;&gt;-->
+<!--&lt;!&ndash;        } else {&ndash;&gt;-->
+<!--&lt;!&ndash;            alert("Error saving.");&ndash;&gt;-->
+<!--&lt;!&ndash;        }&ndash;&gt;-->
+<!--&lt;!&ndash;    });&ndash;&gt;-->
+<!--&lt;!&ndash;}&ndash;&gt;-->
+<!--&lt;!&ndash;</script>&ndash;&gt;-->
+<!--&lt;!&ndash;<script>&ndash;&gt;-->
+<!--&lt;!&ndash;function submitSerials() {&ndash;&gt;-->
+<!--&lt;!&ndash;    const form = document.getElementById("serial-form");&ndash;&gt;-->
+<!--&lt;!&ndash;    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;&ndash;&gt;-->
+<!--&lt;!&ndash;    const serialIds = Array.from(form.querySelectorAll('input[name="serial_ids"]:checked')).map(cb => cb.value);&ndash;&gt;-->
+<!--&lt;!&ndash;    const customerId = form.querySelector('[name="customer_id"]').value;&ndash;&gt;-->
+<!--&lt;!&ndash;    const subcategories = Array.from(document.querySelectorAll('input[name="subcategory"]')).map(i => i.value);&ndash;&gt;-->
+
+<!--&lt;!&ndash;    const companyNameInput = document.getElementById("company_name");&ndash;&gt;-->
+<!--&lt;!&ndash;    const wattageInput = document.getElementById("wattage");&ndash;&gt;-->
+
+<!--&lt;!&ndash;    const companyName = companyNameInput ? companyNameInput.value : '';&ndash;&gt;-->
+<!--&lt;!&ndash;    const wattage = wattageInput ? wattageInput.value : '';&ndash;&gt;-->
+
+
+<!--&lt;!&ndash;    if (!serialIds.length) {&ndash;&gt;-->
+<!--&lt;!&ndash;        alert("Please select at least one serial number.");&ndash;&gt;-->
+<!--&lt;!&ndash;        return;&ndash;&gt;-->
+<!--&lt;!&ndash;    }&ndash;&gt;-->
+
+<!--&lt;!&ndash;    // If company_name or wattage fields exist, validate them&ndash;&gt;-->
+<!--&lt;!&ndash;    if ((companyNameInput || wattageInput) && (!companyName || !wattage)) {&ndash;&gt;-->
+<!--&lt;!&ndash;        alert("Please fill in both Company Name and Wattage.");&ndash;&gt;-->
+<!--&lt;!&ndash;        if (!companyName) companyNameInput?.focus();&ndash;&gt;-->
+<!--&lt;!&ndash;        else wattageInput?.focus();&ndash;&gt;-->
+<!--&lt;!&ndash;        return;&ndash;&gt;-->
+<!--&lt;!&ndash;    }&ndash;&gt;-->
+
+<!--&lt;!&ndash;    fetch("{% url 'save_selected_serials' %}", {&ndash;&gt;-->
+<!--&lt;!&ndash;        method: "POST",&ndash;&gt;-->
+<!--&lt;!&ndash;        headers: {&ndash;&gt;-->
+<!--&lt;!&ndash;            "X-CSRFToken": csrfToken,&ndash;&gt;-->
+<!--&lt;!&ndash;            "Content-Type": "application/x-www-form-urlencoded",&ndash;&gt;-->
+<!--&lt;!&ndash;        },&ndash;&gt;-->
+<!--&lt;!&ndash;        body: new URLSearchParams({&ndash;&gt;-->
+<!--&lt;!&ndash;            'serial_ids[]': serialIds,&ndash;&gt;-->
+<!--&lt;!&ndash;            'customer_id': customerId,&ndash;&gt;-->
+<!--&lt;!&ndash;            'subcategory[]': subcategories,&ndash;&gt;-->
+<!--&lt;!&ndash;            'company_name': companyName,&ndash;&gt;-->
+<!--&lt;!&ndash;            'wattage': wattage,&ndash;&gt;-->
+<!--&lt;!&ndash;        }),&ndash;&gt;-->
+<!--&lt;!&ndash;    })&ndash;&gt;-->
+<!--&lt;!&ndash;    .then(response => response.json())&ndash;&gt;-->
+<!--&lt;!&ndash;    .then(data => {&ndash;&gt;-->
+<!--&lt;!&ndash;        if (data.success) {&ndash;&gt;-->
+<!--&lt;!&ndash;            alert("Saved successfully!");&ndash;&gt;-->
+
+<!--&lt;!&ndash;            // ✅ Clear all checkboxes&ndash;&gt;-->
+<!--&lt;!&ndash;            form.querySelectorAll('input[name="serial_ids"]:checked').forEach(cb => cb.checked = false);&ndash;&gt;-->
+
+<!--&lt;!&ndash;            // ✅ Hide the serial number table&ndash;&gt;-->
+<!--&lt;!&ndash;            document.getElementById("serial-form").style.display = "none";&ndash;&gt;-->
+
+
+
+<!--&lt;!&ndash;        } else {&ndash;&gt;-->
+<!--&lt;!&ndash;            alert("Error saving: " + (data.message || 'Unknown error'));&ndash;&gt;-->
+<!--&lt;!&ndash;        }&ndash;&gt;-->
+<!--&lt;!&ndash;    })&ndash;&gt;-->
+<!--&lt;!&ndash;    .catch(error => {&ndash;&gt;-->
+<!--&lt;!&ndash;        console.error("Error submitting serials:", error);&ndash;&gt;-->
+<!--&lt;!&ndash;        alert("An error occurred while saving.");&ndash;&gt;-->
+<!--&lt;!&ndash;    });&ndash;&gt;-->
+<!--&lt;!&ndash;}&ndash;&gt;-->
+<!--&lt;!&ndash;</script>&ndash;&gt;-->
+<!--<script>-->
+<!--function submitSerials() {-->
+<!--    const form = document.getElementById("serial-form");-->
+<!--    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;-->
+<!--    const serialIds = Array.from(form.querySelectorAll('input[name="serial_ids"]:checked')).map(cb => cb.value);-->
+<!--    const customerId = form.querySelector('[name="customer_id"]').value;-->
+<!--    const subcategories = Array.from(document.querySelectorAll('input[name="subcategory"]')).map(i => i.value);-->
+
+<!--    const companyNameInput = document.getElementById("company_name");-->
+<!--    const wattageInput = document.getElementById("wattage");-->
+
+<!--    const companyName = companyNameInput ? companyNameInput.value : '';-->
+<!--    const wattage = wattageInput ? wattageInput.value : '';-->
+
+<!--    if (!serialIds.length) {-->
+<!--        alert("Please select at least one serial number.");-->
+<!--        return;-->
+<!--    }-->
+
+<!--    // If company_name or wattage fields exist, validate them-->
+<!--    if ((companyNameInput || wattageInput) && (!companyName || !wattage)) {-->
+<!--        alert("Please fill in both Company Name and Wattage.");-->
+<!--        if (!companyName) companyNameInput?.focus();-->
+<!--        else wattageInput?.focus();-->
+<!--        return;-->
+<!--    }-->
+
+<!--    fetch("{% url 'save_selected_serials' %}", {-->
+<!--        method: "POST",-->
+<!--        headers: {-->
+<!--            "X-CSRFToken": csrfToken,-->
+<!--            "Content-Type": "application/x-www-form-urlencoded",-->
+<!--        },-->
+<!--        body: new URLSearchParams({-->
+<!--            'serial_ids[]': serialIds,-->
+<!--            'customer_id': customerId,-->
+<!--            'subcategory[]': subcategories,-->
+<!--            'company_name': companyName,-->
+<!--            'wattage': wattage,-->
+<!--        }),-->
+<!--    })-->
+<!--    .then(response => response.json())-->
+<!--    .then(data => {-->
+<!--        if (data.success) {-->
+<!--            alert("Saved successfully!");-->
+
+<!--            // ✅ Redirect to promote page after alert-->
+<!--            window.location.href = "/detect_barcodes/promote/";-->
+
+<!--        } else {-->
+<!--            alert("Error saving: " + (data.message || 'Unknown error'));-->
+<!--        }-->
+<!--    })-->
+<!--    .catch(error => {-->
+<!--        console.error("Error submitting serials:", error);-->
+<!--        alert("An error occurred while saving.");-->
+<!--    });-->
+<!--}-->
+<!--</script>-->
+
+
+<!--{% if serials %}-->
+<!--<form id="serial-form">-->
+<!--    {% csrf_token %}-->
+<!--    <input type="hidden" name="customer_id" value="{{ selected_customer_id }}">-->
+<!--    {% for sub in selected_subcategories %}-->
+<!--        <input type="hidden" name="subcategory" value="{{ sub }}">-->
+<!--    {% endfor %}-->
+
+<!--    {% if summary_product == 'Inverter' or summary_product == 'SolarPanel' %}-->
+<!--    <div style="display: flex; gap: 20px; align-items: center; margin-top: 10px; margin-bottom: 20px;">-->
+<!--        <div class="form-group col-md-6">-->
+<!--            <label for="company_name">Company Name:</label>-->
+<!--            <input type="text" id="company_name" name="company_name" class="form-control" required>-->
+<!--        </div>-->
+<!--        <div class="form-group col-md-6">-->
+<!--            <label for="wattage">Wattage:</label>-->
+<!--            <div class="input-group">-->
+<!--                <input type="text" id="wattage" name="wattage" class="form-control" required>-->
+<!--                <div class="input-group-append">-->
+<!--                    <span class="input-group-text">Kw</span>-->
+<!--                </div>-->
+<!--            </div>-->
+<!--        </div>-->
+<!--    </div>-->
+<!--    {% endif %}-->
+
+<!--    &lt;!&ndash; Select All button &ndash;&gt;-->
+<!--    <div style="margin-bottom: 10px;">-->
+<!--        <button type="button" id="select-all-btn">Select All</button>-->
+<!--    </div>-->
+
+<!--    <div id="serial-table-container">-->
+<!--        <table id="serial-table" border="1" cellpadding="6" cellspacing="0" style="width: 100%; border-collapse: collapse; text-align: center;">-->
+<!--            <thead style="background-color: #8f8c95; color: white;">-->
+<!--                <tr>-->
+<!--                    <th>Sr No</th>-->
+<!--                    <th>Select</th>-->
+<!--                    <th>Serial No</th>-->
+<!--                </tr>-->
+<!--            </thead>-->
+<!--            <tbody align="center">-->
+<!--                {% for s in serials %}-->
+<!--                    <tr>-->
+<!--                        <td>{{ forloop.counter }}</td>-->
+<!--                        <td><input type="checkbox" name="serial_ids" value="{{ s.id }}" class="checkbox-input" onchange="toggleRowColor(this)"></td>-->
+<!--                        <td>{{ s.serialNo }}</td>-->
+<!--                    </tr>-->
+<!--                {% endfor %}-->
+<!--            </tbody>-->
+<!--        </table>-->
+<!--        <br>-->
+<!--        <button type="button" onclick="submitSerials()" style="width: 20%;">Save to BarcodeImage</button>-->
+<!--    </div>-->
+<!--</form>-->
+<!--{% endif %}-->
+
+<!--<script>-->
+<!--// -&#45;&#45;&#45;&#45; Toggle row background color on checkbox change -&#45;&#45;&#45;&#45;-->
+<!--function toggleRowColor(checkbox) {-->
+<!--    const row = checkbox.closest('tr');-->
+<!--    if (checkbox.checked) {-->
+<!--        row.style.backgroundColor = '#d3f4ff';-->
+<!--    } else {-->
+<!--        row.style.backgroundColor = 'white';-->
+<!--    }-->
+<!--}-->
+
+<!--// -&#45;&#45;&#45;&#45; Initialize row colors -&#45;&#45;&#45;&#45;-->
+<!--document.addEventListener('DOMContentLoaded', function () {-->
+<!--    document.querySelectorAll('#serial-table .checkbox-input').forEach(cb => toggleRowColor(cb));-->
+<!--});-->
+
+<!--// -&#45;&#45;&#45;&#45; Select All / Limit selection -&#45;&#45;&#45;&#45;-->
+<!--const requiredCount = {{ summary_required|default:0 }};  // required number of checkboxes-->
+<!--const checkboxes = document.querySelectorAll('#serial-table .checkbox-input');-->
+<!--const selectAllBtn = document.getElementById('select-all-btn');-->
+
+<!--function updateCheckboxStates() {-->
+<!--    const checkedCount = document.querySelectorAll('#serial-table .checkbox-input:checked').length;-->
+
+<!--    checkboxes.forEach(cb => {-->
+<!--        if (!cb.checked) {-->
+<!--            cb.disabled = checkedCount >= requiredCount;-->
+<!--        } else {-->
+<!--            cb.disabled = false;-->
+<!--        }-->
+<!--    });-->
+<!--}-->
+
+<!--// Bind change event to all checkboxes-->
+<!--checkboxes.forEach(cb => cb.addEventListener('change', updateCheckboxStates));-->
+
+<!--// Select All button logic-->
+<!--selectAllBtn.addEventListener('click', function () {-->
+<!--    let selected = 0;-->
+<!--    checkboxes.forEach(cb => {-->
+<!--        if (selected < requiredCount) {-->
+<!--            cb.checked = true;-->
+<!--            selected++;-->
+<!--        }-->
+<!--    });-->
+<!--    updateCheckboxStates();-->
+<!--    checkboxes.forEach(cb => toggleRowColor(cb));-->
+<!--});-->
+
+<!--// -&#45;&#45;&#45;&#45; Submit serials -&#45;&#45;&#45;&#45;-->
+<!--function submitSerials() {-->
+<!--    const form = document.getElementById("serial-form");-->
+<!--    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;-->
+<!--    const serialIds = Array.from(form.querySelectorAll('input[name="serial_ids"]:checked')).map(cb => cb.value);-->
+<!--    const customerId = form.querySelector('[name="customer_id"]').value;-->
+<!--    const subcategories = Array.from(document.querySelectorAll('input[name="subcategory"]')).map(i => i.value);-->
+
+<!--    const companyNameInput = document.getElementById("company_name");-->
+<!--    const wattageInput = document.getElementById("wattage");-->
+
+<!--    const companyName = companyNameInput ? companyNameInput.value : '';-->
+<!--    const wattage = wattageInput ? wattageInput.value : '';-->
+
+<!--    if (!serialIds.length) {-->
+<!--        alert("Please select at least one serial number.");-->
+<!--        return;-->
+<!--    }-->
+
+<!--    if ((companyNameInput || wattageInput) && (!companyName || !wattage)) {-->
+<!--        alert("Please fill in both Company Name and Wattage.");-->
+<!--        if (!companyName) companyNameInput?.focus();-->
+<!--        else wattageInput?.focus();-->
+<!--        return;-->
+<!--    }-->
+
+<!--    fetch("{% url 'save_selected_serials' %}", {-->
+<!--        method: "POST",-->
+<!--        headers: {-->
+<!--            "X-CSRFToken": csrfToken,-->
+<!--            "Content-Type": "application/x-www-form-urlencoded",-->
+<!--        },-->
+<!--        body: new URLSearchParams({-->
+<!--            'serial_ids[]': serialIds,-->
+<!--            'customer_id': customerId,-->
+<!--            'subcategory[]': subcategories,-->
+<!--            'company_name': companyName,-->
+<!--            'wattage': wattage,-->
+<!--        }),-->
+<!--    })-->
+<!--    .then(response => response.json())-->
+<!--    .then(data => {-->
+<!--        if (data.success) {-->
+<!--            alert("Saved successfully!");-->
+<!--            window.location.href = "/detect_barcodes/promote/";-->
+<!--        } else {-->
+<!--            alert("Error saving: " + (data.message || 'Unknown error'));-->
+<!--        }-->
+<!--    })-->
+<!--    .catch(error => {-->
+<!--        console.error("Error submitting serials:", error);-->
+<!--        alert("An error occurred while saving.");-->
+<!--    });-->
+<!--}-->
+<!--</script>-->
+
+
+{% if serials %}
+<form id="serial-form">
+    {% csrf_token %}
+    <input type="hidden" name="customer_id" value="{{ selected_customer_id }}">
+    {% for sub in selected_subcategories %}
+        <input type="hidden" name="subcategory" value="{{ sub }}">
+    {% endfor %}
+
+    {% if summary_product == 'Inverter' or summary_product == 'SolarPanel' %}
+    <div style="display: flex; gap: 20px; align-items: center; margin-top: 10px; margin-bottom: 20px;">
+        <div class="form-group col-md-6">
+            <label for="company_name">Company Name:</label>
+            <input type="text" id="company_name" name="company_name" class="form-control" required>
+        </div>
+        <div class="form-group col-md-6">
+            <label for="wattage">Wattage:</label>
+            <div class="input-group">
+                <input type="text" id="wattage" name="wattage" class="form-control" required>
+                <div class="input-group-append">
+                    <span class="input-group-text">Kw</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <div id="serial-table-container">
+        <table id="serial-table" border="1" cellpadding="6" cellspacing="0"
+               style="width: 100%; border-collapse: collapse; text-align: center;">
+<!--            <thead style="background-color: #8f8c95; color: white;">-->
+<!--                <tr>-->
+<!--                    <th>Sr No</th>-->
+<!--                    <th>-->
+<!--&lt;!&ndash;                        <input type="checkbox" class="checkbox-input" id="select-all-checkbox" title="Select All" style="margin-left: 5px;">&ndash;&gt;-->
+<!--&lt;!&ndash;                        Select&ndash;&gt;-->
+<!--                        <div style="display: flex; align-items: center; justify-content: center; gap: 6px;">-->
+<!--                            <input type="checkbox" class="checkbox-input" id="select-all-checkbox" title="Select All">-->
+<!--                            <label for="select-all-checkbox">Select</label>-->
+<!--                          </div>-->
+<!--                    </th>-->
+
+<!--                    <th>Serial No</th>-->
+<!--                </tr>-->
+<!--            </thead>-->
+
+           <thead>
+              <tr>
+                <th>Sr No</th>
+                <th>
+                  <div class="select-container">
+                    <input type="checkbox" id="select-all-checkbox" title="Select All">
+                    <label for="select-all-checkbox" style="color: white;">Select</label>
+                  </div>
+                </th>
+                <th>Serial No</th>
+              </tr>
+            </thead>
+
+
+            <tbody align="center">
+                {% for s in serials %}
+                    <tr>
+                        <td>{{ forloop.counter }}</td>
+                        <td><input type="checkbox" name="serial_ids" value="{{ s.id }}" class="checkbox-input"></td>
+                        <td>{{ s.serialNo }}</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        <br>
+        <button type="button" onclick="submitSerials()" style="width: 20%;">Save to BarcodeImage</button>
+    </div>
+</form>
+{% endif %}
+
+<script>
+// ----------------- SETTINGS -----------------
+const requiredCount = {{ summary_required|default:0 }};  // number of allowed selections
+const checkboxes = document.querySelectorAll('#serial-table .checkbox-input');
+const selectAll = document.getElementById('select-all-checkbox');
+
+// ----------------- STYLE TOGGLE -----------------
+function toggleRowColor(checkbox) {
+    const row = checkbox.closest('tr');
+    row.style.backgroundColor = checkbox.checked ? '#d3f4ff' : 'white';
+}
+
+// ----------------- CHECKBOX LIMIT HANDLING -----------------
+function updateCheckboxStates() {
+    const checkedCount = document.querySelectorAll('#serial-table .checkbox-input:checked').length;
+
+    checkboxes.forEach(cb => {
+        if (!cb.checked) {
+            cb.disabled = checkedCount >= requiredCount;
+        } else {
+            cb.disabled = false;
+        }
+    });
+
+    // Update "Select All" state
+    selectAll.checked = checkedCount > 0 && checkedCount === checkboxes.length;
+    selectAll.indeterminate = checkedCount > 0 && checkedCount < checkboxes.length;
+}
+
+// ----------------- INDIVIDUAL CHECKBOX HANDLERS -----------------
+checkboxes.forEach(cb => {
+    cb.addEventListener('change', () => {
+        toggleRowColor(cb);
+        updateCheckboxStates();
+    });
+});
+
+// ----------------- SELECT ALL HEADER CHECKBOX -----------------
+selectAll.addEventListener('change', () => {
+    if (selectAll.checked) {
+        let selected = 0;
+        checkboxes.forEach(cb => {
+            if (selected < requiredCount) {
+                cb.checked = true;
+                selected++;
+            } else {
+                cb.checked = false;
+            }
+        });
+    } else {
+        checkboxes.forEach(cb => cb.checked = false);
+    }
+
+    checkboxes.forEach(cb => toggleRowColor(cb));
+    updateCheckboxStates();
+});
+
+// ----------------- INIT STYLES -----------------
+document.addEventListener('DOMContentLoaded', function () {
+    checkboxes.forEach(cb => toggleRowColor(cb));
+    updateCheckboxStates();
+});
+
+// ----------------- SUBMIT LOGIC -----------------
+function submitSerials() {
+    const form = document.getElementById("serial-form");
+    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+    const serialIds = Array.from(form.querySelectorAll('input[name="serial_ids"]:checked')).map(cb => cb.value);
+    const customerId = form.querySelector('[name="customer_id"]').value;
+    const subcategories = Array.from(document.querySelectorAll('input[name="subcategory"]')).map(i => i.value);
+
+    const companyNameInput = document.getElementById("company_name");
+    const wattageInput = document.getElementById("wattage");
+
+    const companyName = companyNameInput ? companyNameInput.value : '';
+    const wattage = wattageInput ? wattageInput.value : '';
+
+    if (!serialIds.length) {
+        alert("Please select at least one serial number.");
+        return;
+    }
+
+    if ((companyNameInput || wattageInput) && (!companyName || !wattage)) {
+        alert("Please fill in both Company Name and Wattage.");
+        if (!companyName) companyNameInput?.focus();
+        else wattageInput?.focus();
+        return;
+    }
+
+    fetch("{% url 'save_selected_serials' %}", {
+        method: "POST",
+        headers: {
+            "X-CSRFToken": csrfToken,
+            "Content-Type": "application/x-www-form-urlencoded",
+        },
+        body: new URLSearchParams({
+            'serial_ids[]': serialIds,
+            'customer_id': customerId,
+            'subcategory[]': subcategories,
+            'company_name': companyName,
+            'wattage': wattage,
+        }),
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert("Saved successfully!");
+
+            window.location.href = `/detect_barcodes/promote/?customer=${customerId}&subcategory=${subcategories[0]}`;
+        } else {
+            alert("Error saving: " + (data.message || 'Unknown error'));
+        }
+    })
+    .catch(error => {
+        console.error("Error submitting serials:", error);
+        alert("An error occurred while saving.");
+    });
+}
+</script>
+
+            <style>
+            #serial-table thead {
+              background-color: #8f8c95;
+              color: white;
+            }
+
+            #serial-table thead th {
+              text-align: center;
+              vertical-align: middle;
+            }
+
+            #select-all-checkbox {
+              width: 20px;
+              height: 20px;
+              margin: 0;
+              cursor: pointer;
+              margin-right: 5px;
+            }
+
+            #serial-table thead label {
+              margin: 0;
+              font-size: 14px;
+              cursor: pointer;
+            }
+
+            #serial-table .select-container {
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              gap: 3px;
+            }
+            </style>
+
+{% endblock %}

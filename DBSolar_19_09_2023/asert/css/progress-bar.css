@@ -1,0 +1,542 @@
+/* Horizontal Progress Bar */
+.ProgressBar {
+  margin: 0 auto;
+  padding: 2em 0 3em;
+  list-style: none;
+  position: relative;
+  display: flex;
+  justify-content: space-between;
+}
+
+.ProgressBar-step {
+  text-align: center;
+  position: relative;
+  width: 100%;
+  transition: background-color 0.3s ease;
+}
+
+.ProgressBar-step:before, .ProgressBar-step:after {
+  content: "";
+  height: 0.5em;
+  background-color: #9f9fa3;
+  position: absolute;
+  z-index: 1;
+  width: 100%;
+  left: -50%;
+  top: 50%;
+  transform: translateY(-50%);
+  transition: all 0.25s ease-out;
+}
+
+.ProgressBar-step:first-child:before, .ProgressBar-step:first-child:after {
+  display: none;
+}
+
+.ProgressBar-step:after {
+  background-color: #9f9fa3;
+  width: 0%;
+}
+
+.ProgressBar-step.is-complete + .ProgressBar-step.is-current:after, .ProgressBar-step.is-complete + .ProgressBar-step.is-complete:after {
+  //width: 100%;
+  background-color: #00637c;
+}
+
+.ProgressBar-step.is-complete + .ProgressBar-step.is-current:after, .ProgressBar-step.is-complete + .ProgressBar-step.is-yellow:after {
+  background-color: yellow;
+ // width: 100%;
+}
+
+.ProgressBar-stepLabel {
+  display: block;
+  text-transform: uppercase;
+  color: #9f9fa3;
+  position: absolute;
+  padding-top: 0.5em;
+  width: 100%;
+  transition: all 0.25s ease-out;
+  animation: fadeIn 5s ease forwards;
+}
+
+.is-current > .ProgressBar-stepLabel, .is-complete > .ProgressBar-stepLabel {
+  color: #00637c;
+}
+
+.is-current > .ProgressBar-stepLabel, .is-pending > .ProgressBar-stepLabel {
+  color: yellow;
+}
+
+.date {
+  font-size: 12px;
+  color: black;
+}
+
+.ProgressBar-icon {
+  width: 1.5em;
+  height: 1.5em;
+  background-color: #9f9fa3;
+  fill: #9f9fa3;
+  border-radius: 50%;
+  padding: 0.5em;
+  max-width: 100%;
+  z-index: 10;
+  position: relative;
+  transition: all 0.25s ease-out;
+  animation: fadeIn 3s ease forwards;
+
+}
+
+.is-current .ProgressBar-icon {
+  fill: #00637c;
+  background-color: #00637c;
+}
+
+
+
+.is-complete .ProgressBar-icon {
+  fill: #dbf1ff;
+  background-color: #00637c;
+  opacity: 0;
+}
+
+.is-pending .ProgressBar-icon {
+  fill: yellow;
+  background-color: yellow;
+}
+
+/* Keyframe Animation */
+@keyframes moveLine {
+  0% {
+    width: 0%;
+  }
+  100% {
+    width: 100%;
+  }
+}
+
+/* Animation Delay for progress bar line */
+.ProgressBar-step.is-complete:nth-child(1):after {
+  animation: moveLine 1s ease forwards;
+}
+
+.ProgressBar-step.is-complete:nth-child(2):after {
+  animation: moveLine 1s ease 1s forwards;
+}
+
+/* Add delay for each step */
+.ProgressBar-step.is-complete:nth-child(3):after {
+  animation: moveLine 1s ease 2s forwards;
+}
+
+/* Continue adding delay for subsequent steps */
+.ProgressBar-step.is-complete:nth-child(4):after {
+  animation: moveLine 1s ease 3s forwards;
+}
+
+/* Continue adding delay for subsequent steps */
+.ProgressBar-step.is-complete:nth-child(5):after {
+  animation: moveLine 1s ease 4s forwards;
+}
+
+/* Continue adding delay for subsequent steps */
+.ProgressBar-step.is-complete:nth-child(6):after {
+  animation: moveLine 1s ease 5s forwards;
+}
+
+/* Continue adding delay for subsequent steps */
+.ProgressBar-step.is-complete:nth-child(7):after {
+  animation: moveLine 1s ease 6s forwards;
+}
+
+/* Continue adding delay for subsequent steps */
+.ProgressBar-step.is-complete:nth-child(8):after {
+  animation: moveLine 1s ease 7s forwards;
+}
+
+/* Continue adding delay for subsequent steps */
+.ProgressBar-step.is-complete:nth-child(9):after {
+  animation: moveLine 1s ease 8s forwards;
+}
+
+/* Continue adding delay for subsequent steps */
+.ProgressBar-step.is-complete:nth-child(10):after {
+  animation: moveLine 1s ease 9s forwards;
+}
+
+/* Continue adding delay for subsequent steps */
+.ProgressBar-step.is-complete:nth-child(11):after {
+  animation: moveLine 1s ease 10s forwards;
+}
+
+
+/* Animation Delay for progress bar line */
+.ProgressBar-step.is-yellow:nth-child(1):after {
+  animation: moveLine 1s ease forwards;
+}
+
+.ProgressBar-step.is-yellow:nth-child(2):after {
+  animation: moveLine 1s ease 1s forwards;
+}
+
+/* Add delay for each step */
+.ProgressBar-step.is-yellow:nth-child(3):after {
+  animation: moveLine 1s ease 2s forwards;
+}
+
+/* Continue adding delay for subsequent steps */
+.ProgressBar-step.is-yellow:nth-child(4):after {
+  animation: moveLine 1s ease 3s forwards;
+}
+
+/* Continue adding delay for subsequent steps */
+.ProgressBar-step.is-yellow:nth-child(5):after {
+  animation: moveLine 1s ease 4s forwards;
+}
+
+/* Continue adding delay for subsequent steps */
+.ProgressBar-step.is-yellow:nth-child(6):after {
+  animation: moveLine 1s ease 5s forwards;
+}
+
+/* Continue adding delay for subsequent steps */
+.ProgressBar-step.is-yellow:nth-child(7):after {
+  animation: moveLine 1s ease 6s forwards;
+}
+
+/* Continue adding delay for subsequent steps */
+.ProgressBar-step.is-yellow:nth-child(8):after {
+  animation: moveLine 1s ease 7s forwards;
+}
+
+/* Continue adding delay for subsequent steps */
+.ProgressBar-step.is-yellow:nth-child(9):after {
+  animation: moveLine 1s ease 8s forwards;
+}
+
+/* Continue adding delay for subsequent steps */
+.ProgressBar-step.is-yellow:nth-child(10):after {
+  animation: moveLine 1s ease 9s forwards;
+}
+
+/* Continue adding delay for subsequent steps */
+.ProgressBar-step.is-yellow:nth-child(11):after {
+  animation: moveLine 1s ease 10s forwards;
+}
+
+/* Display icons after each step */
+.ProgressBar-step.is-complete:nth-child(1) .ProgressBar-icon {
+  animation: fadeIn 0.5s ease forwards;
+}
+
+.ProgressBar-step.is-complete:nth-child(2) .ProgressBar-icon {
+  animation: fadeIn 0.5s ease 1.5s forwards;
+}
+
+/* Continue adding delay for subsequent steps */
+.ProgressBar-step.is-complete:nth-child(3) .ProgressBar-icon {
+  animation: fadeIn 0.5s ease 2.5s forwards;
+}
+
+/* Continue adding delay for subsequent steps */
+.ProgressBar-step.is-complete:nth-child(4) .ProgressBar-icon {
+  animation: fadeIn 0.5s ease 3.5s forwards;
+}
+
+/* Continue adding delay for subsequent steps */
+.ProgressBar-step.is-complete:nth-child(5) .ProgressBar-icon {
+  animation: fadeIn 0.5s ease 4.5s forwards;
+}
+
+/* Continue adding delay for subsequent steps */
+.ProgressBar-step.is-complete:nth-child(6) .ProgressBar-icon {
+  animation: fadeIn 0.5s ease 5.5s forwards;
+}
+
+/* Continue adding delay for subsequent steps */
+.ProgressBar-step.is-complete:nth-child(7) .ProgressBar-icon {
+  animation: fadeIn 0.5s ease 6.5s forwards;
+}
+
+/* Continue adding delay for subsequent steps */
+.ProgressBar-step.is-complete:nth-child(8) .ProgressBar-icon {
+  animation: fadeIn 0.5s ease 7.5s forwards;
+}
+
+/* Continue adding delay for subsequent steps */
+.ProgressBar-step.is-complete:nth-child(9) .ProgressBar-icon {
+  animation: fadeIn 0.5s ease 8.5s forwards;
+}
+
+/* Continue adding delay for subsequent steps */
+.ProgressBar-step.is-complete:nth-child(10) .ProgressBar-icon {
+  animation: fadeIn 0.5s ease 9.5s forwards;
+}
+
+/* Continue adding delay for subsequent steps */
+.ProgressBar-step.is-complete:nth-child(11) .ProgressBar-icon {
+  animation: fadeIn 0.5s ease 10.5s forwards;
+}
+
+/* Keyframe Animation for icon fade-in */
+@keyframes fadeIn {
+  0% {
+    opacity: 0;
+    transform: translateY(-30px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+
+
+
+/* Vertical Progress Bar for Mobile */
+@media (max-width: 767px) {
+  .ProgressBar {
+    flex-direction: column;
+  }
+  .ProgressBar-step {
+    width: 50%;
+    padding: 0.5em 0;
+  }
+
+
+.ProgressBar-step:before, .ProgressBar-step:after {
+  content: "";
+
+  background-color: #9f9fa3;
+  position: absolute;
+  z-index: 1;
+  width: 0.5em;
+  height: 100%;
+  left: 50%;
+  top: -20%;
+  transform: translateX(-50%);
+  transition: all 0.25s ease-out;
+}
+
+
+
+.ProgressBar-step.is-complete + .ProgressBar-step.is-current:after, .ProgressBar-step.is-complete + .ProgressBar-step.is-complete:after {
+  height: 0em;
+  background-color: #00637c;
+}
+
+.ProgressBar-step.is-complete + .ProgressBar-step.is-current:after, .ProgressBar-step.is-complete + .ProgressBar-step.is-yellow:after {
+  background-color: yellow;
+   height: 0em;
+}
+
+
+.ProgressBar-stepLabel {
+  padding-top: 0;
+  margin-left: 8.5em; /* Remove the previous margin */
+  margin-top: -1.6em; /* Adjust this value as needed to move the label upward */
+  text-align: left;
+
+}
+
+/* Add this CSS to hide the horizontal scrollbar */
+body {
+  overflow-x: hidden;
+}
+
+/* Modify this rule to prevent horizontal overflow within the container */
+.content-wrapper {
+  overflow-x: hidden;
+  overflow-y: visible; /* or 'auto' if you expect vertical overflow */
+}
+
+/* Keyframe Animation for vertical progress bar line */
+@keyframes moveLineVertical {
+    0% {
+      height: 0%;
+    }
+    100% {
+      height: 100%;
+    }
+}
+
+  /* Animation Delay for progress bar line */
+.ProgressBar-step.is-complete:nth-child(1):after {
+  animation: moveLineVertical 1s ease forwards;
+}
+
+.ProgressBar-step.is-complete:nth-child(2):after {
+  animation: moveLineVertical 1s ease 1s forwards;
+}
+
+/* Add delay for each step */
+.ProgressBar-step.is-complete:nth-child(3):after {
+  animation: moveLineVertical 1s ease 2s forwards;
+}
+
+/* Continue adding delay for subsequent steps */
+.ProgressBar-step.is-complete:nth-child(4):after {
+  animation: moveLineVertical 1s ease 3s forwards;
+}
+
+/* Continue adding delay for subsequent steps */
+.ProgressBar-step.is-complete:nth-child(5):after {
+  animation: moveLineVertical 1s ease 4s forwards;
+}
+
+/* Continue adding delay for subsequent steps */
+.ProgressBar-step.is-complete:nth-child(6):after {
+  animation: moveLineVertical 1s ease 5s forwards;
+}
+
+/* Continue adding delay for subsequent steps */
+.ProgressBar-step.is-complete:nth-child(7):after {
+  animation: moveLineVertical 1s ease 6s forwards;
+}
+
+/* Continue adding delay for subsequent steps */
+.ProgressBar-step.is-complete:nth-child(8):after {
+  animation: moveLineVertical 1s ease 7s forwards;
+}
+
+/* Continue adding delay for subsequent steps */
+.ProgressBar-step.is-complete:nth-child(9):after {
+  animation: moveLineVertical 1s ease 8s forwards;
+}
+
+/* Continue adding delay for subsequent steps */
+.ProgressBar-step.is-complete:nth-child(10):after {
+  animation: moveLineVertical 1s ease 9s forwards;
+}
+
+/* Continue adding delay for subsequent steps */
+.ProgressBar-step.is-complete:nth-child(11):after {
+  animation: moveLineVertical 1s ease 10s forwards;
+}
+
+
+/* Animation Delay for progress bar line */
+.ProgressBar-step.is-yellow:nth-child(1):after {
+  animation: moveLineVertical 1s ease forwards;
+}
+
+.ProgressBar-step.is-yellow:nth-child(2):after {
+  animation: moveLineVertical 1s ease 1s forwards;
+}
+
+/* Add delay for each step */
+.ProgressBar-step.is-yellow:nth-child(3):after {
+  animation: moveLineVertical 1s ease 2s forwards;
+}
+
+/* Continue adding delay for subsequent steps */
+.ProgressBar-step.is-yellow:nth-child(4):after {
+  animation: moveLineVertical 1s ease 3s forwards;
+}
+
+/* Continue adding delay for subsequent steps */
+.ProgressBar-step.is-yellow:nth-child(5):after {
+  animation: moveLineVertical 1s ease 4s forwards;
+}
+
+/* Continue adding delay for subsequent steps */
+.ProgressBar-step.is-yellow:nth-child(6):after {
+  animation: moveLineVertical 1s ease 5s forwards;
+}
+
+/* Continue adding delay for subsequent steps */
+.ProgressBar-step.is-yellow:nth-child(7):after {
+  animation: moveLineVertical 1s ease 6s forwards;
+}
+
+/* Continue adding delay for subsequent steps */
+.ProgressBar-step.is-yellow:nth-child(8):after {
+  animation: moveLineVertical 1s ease 7s forwards;
+}
+
+/* Continue adding delay for subsequent steps */
+.ProgressBar-step.is-yellow:nth-child(9):after {
+  animation: moveLineVertical 1s ease 8s forwards;
+}
+
+/* Continue adding delay for subsequent steps */
+.ProgressBar-step.is-yellow:nth-child(10):after {
+  animation: moveLineVertical 1s ease 9s forwards;
+}
+
+/* Continue adding delay for subsequent steps */
+.ProgressBar-step.is-yellow:nth-child(11):after {
+  animation: moveLineVertical 1s ease 10s forwards;
+}
+
+
+
+
+
+
+
+/* Display icons after each step */
+.ProgressBar-step.is-complete:nth-child(1) .ProgressBar-icon {
+  animation: fadeIn 0.5s ease forwards;
+}
+
+.ProgressBar-step.is-complete:nth-child(2) .ProgressBar-icon {
+  animation: fadeIn 0.5s ease 1.5s forwards;
+}
+
+/* Continue adding delay for subsequent steps */
+.ProgressBar-step.is-complete:nth-child(3) .ProgressBar-icon {
+  animation: fadeIn 0.5s ease 2.5s forwards;
+}
+
+/* Continue adding delay for subsequent steps */
+.ProgressBar-step.is-complete:nth-child(4) .ProgressBar-icon {
+  animation: fadeIn 0.5s ease 3.5s forwards;
+}
+
+/* Continue adding delay for subsequent steps */
+.ProgressBar-step.is-complete:nth-child(5) .ProgressBar-icon {
+  animation: fadeIn 0.5s ease 4.5s forwards;
+}
+
+/* Continue adding delay for subsequent steps */
+.ProgressBar-step.is-complete:nth-child(6) .ProgressBar-icon {
+  animation: fadeIn 0.5s ease 5.5s forwards;
+}
+
+/* Continue adding delay for subsequent steps */
+.ProgressBar-step.is-complete:nth-child(7) .ProgressBar-icon {
+  animation: fadeIn 0.5s ease 6.5s forwards;
+}
+
+/* Continue adding delay for subsequent steps */
+.ProgressBar-step.is-complete:nth-child(8) .ProgressBar-icon {
+  animation: fadeIn 0.5s ease 7.5s forwards;
+}
+
+/* Continue adding delay for subsequent steps */
+.ProgressBar-step.is-complete:nth-child(9) .ProgressBar-icon {
+  animation: fadeIn 0.5s ease 8.5s forwards;
+}
+
+/* Continue adding delay for subsequent steps */
+.ProgressBar-step.is-complete:nth-child(10) .ProgressBar-icon {
+  animation: fadeIn 0.5s ease 9.5s forwards;
+}
+
+/* Continue adding delay for subsequent steps */
+.ProgressBar-step.is-complete:nth-child(11) .ProgressBar-icon {
+  animation: fadeIn 0.5s ease 10.5s forwards;
+}
+
+/* Keyframe Animation for icon fade-in */
+@keyframes fadeIn {
+  0% {
+    opacity: 0;
+    transform: translateX(-30px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+}

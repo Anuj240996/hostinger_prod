@@ -1,0 +1,279 @@
+{% extends 'partials/base.html' %}
+{% load static %}
+{% load custom_filters %}
+
+{% block title %}Manage Permissions - {{ selected_user.username }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                    <h3>
+                        <i class="fas fa-user-shield"></i> Manage Permissions for: 
+                        <strong>{{ selected_user.username }}</strong>
+                        {% if selected_user.first_name or selected_user.last_name %}
+                            ({{ selected_user.first_name }} {{ selected_user.last_name }})
+                        {% endif %}
+                    </h3>
+                    <div>
+                        <a href="{% url 'user:control_panel_home' %}" class="btn btn-secondary btn-sm">
+                            <i class="fas fa-arrow-left"></i> Back to User List
+                        </a>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-warning">
+                        <strong>CP UI v2 (debug)</strong> — if you can see this banner, Django is rendering the updated template.
+                    </div>
+                    {% if messages %}
+                        {% for message in messages %}
+                            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                                {{ message }}
+                                <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                                    <span aria-hidden="true">&times;</span>
+                                </button>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+
+                    <!-- User Info Card -->
+                    <div class="row mb-4">
+                        <div class="col-md-12">
+                            <div class="card bg-light">
+                                <div class="card-body">
+                                    <div class="row">
+                                        <div class="col-md-3">
+                                            <strong>Username:</strong> {{ selected_user.username }}
+                                        </div>
+                                        <div class="col-md-3">
+                                            <strong>Email:</strong> {{ selected_user.email|default:"N/A" }}
+                                        </div>
+                                        <div class="col-md-3">
+                                            <strong>Department:</strong> 
+                                            {% if selected_user.profile %}
+                                                {{ selected_user.profile.department|default:"N/A" }}
+                                            {% else %}
+                                                N/A
+                                            {% endif %}
+                                        </div>
+                                        <div class="col-md-3">
+                                            <strong>Designation:</strong>
+                                            {% if selected_user.profile %}
+                                                {{ selected_user.profile.designation|default:"N/A" }}
+                                            {% else %}
+                                                N/A
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <form method="post" id="permissionsForm">
+                        {% csrf_token %}
+                        <!-- Portal access + grouped module permissions -->
+                        {% if portals %}
+                            <div id="portalAccordion">
+                                {% for portal in portals %}
+                                    <div class="card mb-3">
+                                        <div class="card-header" id="heading_{{ portal.id }}">
+                                            <div class="d-flex justify-content-between align-items-center">
+                                                <a class="btn btn-link p-0" data-toggle="collapse" href="#collapse_{{ portal.id }}" role="button" aria-expanded="{% if forloop.first %}true{% else %}false{% endif %}" aria-controls="collapse_{{ portal.id }}">
+                                                    <strong>{{ portal.display_name }}</strong>
+                                                </a>
+
+                                                <!-- Portal toggle ALWAYS visible (even when collapsed) -->
+                                                <div class="form-check mb-0">
+                                                    <input class="form-check-input" type="checkbox" name="portal_{{ portal.id }}" id="portal_{{ portal.id }}" {% if portal_access|get_item:portal.id %}checked{% endif %}>
+                                                    <label class="form-check-label" for="portal_{{ portal.id }}">
+                                                        Portal Access
+                                                    </label>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div id="collapse_{{ portal.id }}" class="collapse {% if forloop.first %}show{% endif %}" aria-labelledby="heading_{{ portal.id }}" data-parent="#portalAccordion">
+                                            <div class="card-body">
+
+                                                {% with pmodules=portal_modules|get_item:portal.id %}
+                                                    {% if pmodules %}
+                                                        <div class="table-responsive">
+                                                            <table class="table table-bordered table-hover">
+                                                                <thead class="table-dark">
+                                                                    <tr>
+                                                                        <th style="width: 20%;">Module</th>
+                                                                        <th style="width: 10%;">Add</th>
+                                                                        <th style="width: 10%;">View</th>
+                                                                        <th style="width: 10%;">Edit</th>
+                                                                        <th style="width: 10%;">Delete</th>
+                                                                        <th style="width: 10%;">Export</th>
+                                                                        <th style="width: 10%;">Import</th>
+                                                                        <th style="width: 10%;">Approve</th>
+                                                                        <th style="width: 10%;">Reject</th>
+                                                                    </tr>
+                                                                </thead>
+                                                                <tbody>
+                                                                    {% for module in pmodules %}
+                                                                    <tr>
+                                                                        <td class="align-middle">
+                                                                            <strong>
+                                                                                <i class="fas fa-folder"></i> {{ module.display_name }}
+                                                                            </strong>
+                                                                            {% if module.description %}
+                                                                                <br><small class="text-muted">{{ module.description }}</small>
+                                                                            {% endif %}
+                                                                        </td>
+                                                                        {% with module_perms=module_permissions_organized|get_item:module.id %}
+                                                                            <td class="text-center align-middle">
+                                                                                {% if module_perms.add %}
+                                                                                    <div class="form-check d-flex justify-content-center">
+                                                                                        <input class="form-check-input permission-checkbox" type="checkbox" name="permission_{{ module_perms.add.id }}" id="perm_{{ module_perms.add.id }}" {% if module_perms.add.granted %}checked{% endif %} value="true">
+                                                                                    </div>
+                                                                                {% else %}<span class="text-muted">-</span>{% endif %}
+                                                                            </td>
+                                                                            <td class="text-center align-middle">
+                                                                                {% if module_perms.view %}
+                                                                                    <div class="form-check d-flex justify-content-center">
+                                                                                        <input class="form-check-input permission-checkbox" type="checkbox" name="permission_{{ module_perms.view.id }}" id="perm_{{ module_perms.view.id }}" {% if module_perms.view.granted %}checked{% endif %} value="true">
+                                                                                    </div>
+                                                                                {% else %}<span class="text-muted">-</span>{% endif %}
+                                                                            </td>
+                                                                            <td class="text-center align-middle">
+                                                                                {% if module_perms.edit %}
+                                                                                    <div class="form-check d-flex justify-content-center">
+                                                                                        <input class="form-check-input permission-checkbox" type="checkbox" name="permission_{{ module_perms.edit.id }}" id="perm_{{ module_perms.edit.id }}" {% if module_perms.edit.granted %}checked{% endif %} value="true">
+                                                                                    </div>
+                                                                                {% else %}<span class="text-muted">-</span>{% endif %}
+                                                                            </td>
+                                                                            <td class="text-center align-middle">
+                                                                                {% if module_perms.delete %}
+                                                                                    <div class="form-check d-flex justify-content-center">
+                                                                                        <input class="form-check-input permission-checkbox" type="checkbox" name="permission_{{ module_perms.delete.id }}" id="perm_{{ module_perms.delete.id }}" {% if module_perms.delete.granted %}checked{% endif %} value="true">
+                                                                                    </div>
+                                                                                {% else %}<span class="text-muted">-</span>{% endif %}
+                                                                            </td>
+                                                                            <td class="text-center align-middle">
+                                                                                {% if module_perms.export %}
+                                                                                    <div class="form-check d-flex justify-content-center">
+                                                                                        <input class="form-check-input permission-checkbox" type="checkbox" name="permission_{{ module_perms.export.id }}" id="perm_{{ module_perms.export.id }}" {% if module_perms.export.granted %}checked{% endif %} value="true">
+                                                                                    </div>
+                                                                                {% else %}<span class="text-muted">-</span>{% endif %}
+                                                                            </td>
+                                                                            <td class="text-center align-middle">
+                                                                                {% if module_perms.import %}
+                                                                                    <div class="form-check d-flex justify-content-center">
+                                                                                        <input class="form-check-input permission-checkbox" type="checkbox" name="permission_{{ module_perms.import.id }}" id="perm_{{ module_perms.import.id }}" {% if module_perms.import.granted %}checked{% endif %} value="true">
+                                                                                    </div>
+                                                                                {% else %}<span class="text-muted">-</span>{% endif %}
+                                                                            </td>
+                                                                            <td class="text-center align-middle">
+                                                                                {% if module_perms.approve %}
+                                                                                    <div class="form-check d-flex justify-content-center">
+                                                                                        <input class="form-check-input permission-checkbox" type="checkbox" name="permission_{{ module_perms.approve.id }}" id="perm_{{ module_perms.approve.id }}" {% if module_perms.approve.granted %}checked{% endif %} value="true">
+                                                                                    </div>
+                                                                                {% else %}<span class="text-muted">-</span>{% endif %}
+                                                                            </td>
+                                                                            <td class="text-center align-middle">
+                                                                                {% if module_perms.reject %}
+                                                                                    <div class="form-check d-flex justify-content-center">
+                                                                                        <input class="form-check-input permission-checkbox" type="checkbox" name="permission_{{ module_perms.reject.id }}" id="perm_{{ module_perms.reject.id }}" {% if module_perms.reject.granted %}checked{% endif %} value="true">
+                                                                                    </div>
+                                                                                {% else %}<span class="text-muted">-</span>{% endif %}
+                                                                            </td>
+                                                                        {% endwith %}
+                                                                    </tr>
+                                                                    {% endfor %}
+                                                                </tbody>
+                                                            </table>
+                                                        </div>
+                                                    {% else %}
+                                                        <div class="text-muted">No modules assigned to this portal yet.</div>
+                                                    {% endif %}
+                                                {% endwith %}
+                                            </div>
+                                        </div>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            <div class="alert alert-warning">No portals configured yet. Please initialize modules & permissions.</div>
+                        {% endif %}
+
+                        <!-- Action Buttons -->
+                        <div class="row mt-4">
+                            <div class="col-md-12 text-center">
+                                <button type="submit" class="btn btn-success btn-lg">
+                                    <i class="fas fa-save"></i> Save Permissions
+                                </button>
+                                <a href="{% url 'user:control_panel_home' %}" class="btn btn-secondary btn-lg">
+                                    <i class="fas fa-times"></i> Cancel
+                                </a>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .table th {
+        font-weight: 600;
+        text-align: center;
+        vertical-align: middle;
+    }
+    .table td {
+        vertical-align: middle;
+    }
+    .form-check-input {
+        width: 3rem;
+        height: 1.5rem;
+        cursor: pointer;
+    }
+    .form-check-input:checked {
+        background-color: #28a745;
+        border-color: #28a745;
+    }
+    .card-header h3 {
+        margin: 0;
+    }
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Add visual feedback when checkboxes are toggled
+    const checkboxes = document.querySelectorAll('.permission-checkbox');
+    checkboxes.forEach(checkbox => {
+        checkbox.addEventListener('change', function() {
+            const row = this.closest('tr');
+            if (this.checked) {
+                row.style.backgroundColor = '#d4edda';
+                setTimeout(() => {
+                    row.style.backgroundColor = '';
+                }, 500);
+            } else {
+                row.style.backgroundColor = '#f8d7da';
+                setTimeout(() => {
+                    row.style.backgroundColor = '';
+                }, 500);
+            }
+        });
+    });
+
+    // Form submission confirmation
+    document.getElementById('permissionsForm').addEventListener('submit', function(e) {
+        const checkedCount = document.querySelectorAll('.permission-checkbox:checked').length;
+        if (checkedCount === 0) {
+            if (!confirm('No permissions are selected. This will remove all permissions for this user. Continue?')) {
+                e.preventDefault();
+                return false;
+            }
+        }
+    });
+});
+</script>
+{% endblock %}

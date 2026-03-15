@@ -1,0 +1,192 @@
+{% extends 'partials/base.html' %}
+{% block title %}Order Page{% endblock %}
+{% block content %}
+<style>
+   .checkbox-column {
+   display: inline-block;
+   }
+   /* Style the select element */
+   select#userType {
+   width: 300px; /* Set the width as per your preference */
+   height: 30px;
+   font-size: 16px; /* Set the font size as per your preference */
+   }
+   /* Style the option elements within the select */
+   select#userType option {
+   font-size: 16px; /* Set the font size as per your preference */
+   }
+   /* Style the select label */
+    label[for="userType"] {
+        font-size: 16px; /* Adjust the font size as per your preference */
+        margin-right: 10px; /* Add space to the right of the label */
+        font-weight: bold;
+    }
+
+          /* Style for active fieldsets */
+    .active-fieldset {
+        background-color: #d3dbec; /* Gray background color for active fieldsets */
+         border-color: blue; /* Change the border color to red for active fieldsets */
+         border: 2px solid darkblue;
+    }
+
+    /* Style for deactivated fieldsets */
+    fieldset {
+        background-color: #ffffff; /* White background color for deactivated fieldsets */
+        border-color: blue; /* Change the border color to red for active fieldsets */
+    }
+
+</style>
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        var minFields = 4;
+        var maxFields = 6;
+        var searchButton = document.getElementById('search-button');
+        var checkboxes = document.querySelectorAll('input[type="checkbox"]');
+        var errorMessage = document.getElementById('max-fields-error');
+        var fieldsets = document.querySelectorAll('fieldset');
+
+        checkboxes.forEach(function (checkbox) {
+            checkbox.addEventListener('change', function () {
+                var selectedCheckboxes = Array.from(checkboxes).filter(function (checkbox) {
+                    return checkbox.checked;
+                });
+
+                // Toggle the active-fieldset class based on the number of selected checkboxes
+               // fieldsets.forEach(function (fieldset) {
+                 //   if (selectedCheckboxes.length >= minFields && selectedCheckboxes.length <= maxFields) {
+                   //     fieldset.classList.add('active-fieldset');
+                   // } else {
+                    //    fieldset.classList.remove('active-fieldset');
+                   // }
+               // });
+
+
+                if (selectedCheckboxes.length < minFields) {
+                    searchButton.disabled = true;
+                    errorMessage.textContent = 'You must select at least ' + minFields + ' fields.';
+                    errorMessage.style.display = 'block';
+                } else if (selectedCheckboxes.length > maxFields) {
+                    this.checked = false;
+                    errorMessage.textContent = 'You can select a maximum of ' + maxFields + ' fields.';
+                    errorMessage.style.display = 'block';
+                } else {
+                    searchButton.disabled = false;
+                    errorMessage.style.display = 'none';
+                }
+            });
+        });
+
+        // Add click event listener to fieldsets
+        fieldsets.forEach(function (fieldset) {
+            fieldset.addEventListener('click', function () {
+                // Remove the 'active-fieldset' class from all fieldsets
+                fieldsets.forEach(function (fs) {
+                    fs.classList.remove('active-fieldset');
+                });
+
+                // Add the 'active-fieldset' class to the clicked fieldset
+                this.classList.add('active-fieldset');
+            });
+        });
+
+
+        // Add a submit event listener to the form
+        var form = document.querySelector('form');
+        form.addEventListener('submit', function (event) {
+            // Check if the "Username" checkbox is checked
+            var usernameCheckbox = document.querySelector('input[name="user_fields"][value="username"]');
+            if (!usernameCheckbox.checked) {
+                event.preventDefault(); // Prevent form submission
+                errorMessage.textContent = 'Please select the "Username" field. As it is Mandatory.';
+                errorMessage.style.display = 'block';
+            }
+        });
+    });
+</script>
+
+  <br>
+   <form method="post">
+      {% csrf_token %}
+    <h3>Select fields to filter in PDF:</h3>
+    <fieldset>
+           <legend>Filter and Select Fields:</legend>
+
+         <div class="row mb-1 align-items-center">
+              <div class="col-md-4 mb-2 item1">
+               <label for="userType">Filter Users:</label>
+               <select id="userType" name="userType">
+                  <option value="all">All Users</option>
+                  <option value="superuser">Administrator</option>
+                  <option value="staff">Staff</option>
+                  <!--                        <option value="active">Consumer</option>-->
+               </select>
+              </div>
+         </div>
+    </fieldset>
+         <br>
+     <h3>Select fields to include in PDF:</h3>
+       <h3 id="max-fields-error" style="color: red; display: none;"></h3>
+            <div class="row mb-1 align-items-center">
+              <div class="col-md-4 mb-2 item1">
+               <!--           <label><input type="checkbox" name="profile_fields" value="customer_id" checked hidden>-->
+               <fieldset>
+                  <legend>User Fields:</legend>
+                  <div class="checkbox-column">
+                     <label class="checkbox-label"><input type="checkbox" class="checkbox-input" name="user_fields" value="username" checked> Username<p><span style="color: red; font-size: 25px;">*</span></p>
+                     </label><br>
+                     <label class="checkbox-label"><input type="checkbox" class="checkbox-input" name="user_fields" value="email"> Official Email ID</label><br>
+                     <label class="checkbox-label"><input type="checkbox" class="checkbox-input" name="user_fields" value="full_name"> Full Name</label><br>
+                     <label class="checkbox-label"><input type="checkbox" class="checkbox-input" name="profile_fields" value="workphone"> Official Contact No.</label><br>
+                     <!-- Add more user fields here -->
+                  </div>
+               </fieldset>
+            </div>
+            <div class="col-md-4 mb-2 item1">
+               <fieldset>
+                  <legend>Profile Fields:</legend>
+                  <div class="checkbox-column">
+                     <label class="checkbox-label"><input type="checkbox" class="checkbox-input" name="profile_fields" value="DOB"> Date Of Birth</label><br>
+                     <label class="checkbox-label"><input type="checkbox" class="checkbox-input" name="profile_fields" value="designation"> Designation</label><br>
+                     <label class="checkbox-label"><input type="checkbox" class="checkbox-input" name="profile_fields" value="department"> Department</label><br>
+                     <label class="checkbox-label"><input type="checkbox" class="checkbox-input" name="profile_fields" value="bg"> Blood Group</label><br>
+                     <!-- Add more profile fields here -->
+                  </div>
+               </fieldset>
+            </div>
+            <div class="col-md-4 mb-2 item1">
+               <fieldset>
+                  <legend>Address Fields:</legend>
+                  <div class="checkbox-column">
+                     <label class="checkbox-label"><input type="checkbox" class="checkbox-input" name="profile_fields" value="address"> Address</label><br>
+                     <label class="checkbox-label"><input type="checkbox" class="checkbox-input" name="profile_fields" value="city"> City</label><br>
+                     <label class="checkbox-label"><input type="checkbox" class="checkbox-input" name="profile_fields" value="taluka"> Taluka</label><br>
+                     <label class="checkbox-label"><input type="checkbox" class="checkbox-input" name="profile_fields" value="district"> District</label><br>
+                     <!-- Add more profile fields here -->
+                  </div>
+               </fieldset>
+            </div>
+            </div>
+
+
+
+       <br>
+<div class="row mb-1">
+         <div class="btn-block col-md-6">
+                   <button type="submit" id="search-button" style="width: 70%; height: 110%;" disabled>Generate PDF</button>
+         </div>
+    <br><br>
+
+         <div class="btn-block col-md-6">
+            <button type="Reset" href="/" style="width: 70%; height: 110%;">Clear</button>
+         </div>
+</div>
+<br>
+
+
+
+
+
+
+   </form>
+
+   {% endblock %}

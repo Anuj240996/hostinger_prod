@@ -1,0 +1,169 @@
+<!-- navbar -->
+{% load humanize %}
+<style>
+    /* Custom CSS for displaying count1 in mobile mode */
+    @media (max-width: 767px) {
+        .badge-warning.navbar-badge {
+            position: absolute;
+            top: 10px; /* Adjust the top value as needed to position the count1 value correctly */
+            right: 15px; /* Adjust the right value as needed to position the count1 value correctly */
+            display: inline-block; /* Add this to make the count visible in mobile mode */
+        }
+    }
+</style>
+{% if user.is_authenticated %}
+<script>
+    function testClearNoti() {
+        console.log("Clear All link clicked");
+    }
+</script>
+<div class="header">
+   <div class="header-left">
+      <a href="/index" class="logo">
+      <img src="/static/images/DB SOLAR PNG LOGO 3 (6).png" alt="Logo" width="100%">
+      </a>
+      <a href="#" class="logo logo-small">
+      <img src="/static/images/dblogosmall.png"  alt="Logo" width="30" height="30">
+      </a>
+   </div>
+   <a href="javascript:void(0);" id="toggle_btn">
+   <i class="fas fa-align-left"></i>
+   </a>
+   <a class="mobile_btn" id="mobile_btn">
+   <i class="fas fa-bars"></i>
+   </a>
+   <ul class="nav user-menu">
+      <li class="nav-item dropdown noti-dropdown">
+
+            {% if count1 > 0 %}
+                <a href="{% url 'dashboard-notification' %}" class="dropdown-toggle nav-link" data-toggle="dropdown">
+                    <i class="far fa-bell fa-bounce" aria-hidden="true"></i>
+                    <span class="badge badge-warning navbar-badge">
+
+                        {% block nav-btn %}
+                            {{ count1 }}
+                        {% endblock nav-btn %}
+                    </span>
+                </a>
+            {% else %}
+                <a href="#" class="dropdown-toggle nav-link">
+                    <i class="fa fa-bell" aria-hidden="true"></i>
+                </a>
+            {% endif %}
+            <!--                  {% include 'partials/notification_count.html' with notification_count=notification_count %}-->
+            <!--                      {% include 'partials/notification_count.html' %}-->
+            <!--                  </span>-->
+
+         <div class="dropdown-menu notifications">
+            <div class="topnav-dropdown-header">
+               <span class="notification-title">Notifications</span>
+               <a href="javascript:void(0)" class="clear-noti"> Clear All </a>
+            </div>
+            <div class="noti-content">
+               <ul class="notification-list">
+                  {% for notification1 in notification1 %}
+                  <li class="notification-message">
+
+                     <a href="{% url 'dashboard-notification' %}">
+
+                        <div class="media">
+                           {% if not notification1.status %}
+                           <span class="avatar avatar-sm">
+<!--                           <img class="avatar-img rounded-circle" alt="User Image" src="{{ user.profile.image.url }}">-->
+                               <img class="avatar-img rounded-circle" alt="{{ notification1.sender.username }}" src="{{ notification1.sender.profile.image.url }}">
+                           </span>
+
+                           <div class="media-body">
+                              <p class="noti-details"><span class="noti-title  font-weight-bold">{{ notification1.sender.first_name }}</span> has sent you  <br> &nbsp;<span class="noti-title">{{ notification1.message }}  </span></p>
+                              <p class="noti-time"><span class="notification-time">{{ notification1.created_at|naturaltime }}</span></p>
+                           </div>
+
+
+                           {% else %}
+
+                            <p>No notifications</p>
+                           {% endif %}
+
+                        </div>
+                     </a>
+                  </li>
+                  {% endfor %}
+               </ul>
+            </div>
+            <div class="topnav-dropdown-footer">
+               <a href="{% url 'dashboard-notification' %}"> View All Notifications</a>
+            </div>
+         </div>
+      </li>
+      <li class="nav-item dropdown has-arrow">
+         <a href="#" class="dropdown-toggle nav-link" data-toggle="dropdown">
+            {% if user.first_name %}
+               <span class="user-img text-capitalize"><img class="rounded-circle" src="{{ user.profile.image.url }}" width="50" height="50" alt="{{ user.first_name }} {{ user.last_name }}">  {{ user.first_name }} </span>
+            {% else %}
+              <span class="user-img text-capitalize"><img class="rounded-circle" src="{{ user.profile.image.url }}" width="50" height="50" alt="{{ user.first_name }} {{ user.last_name }}">  {{ user.username }} </span>
+            {% endif %}
+         </a>
+         <div class="dropdown-menu">
+            <div class="user-header">
+               <div class="avatar avatar-sm">
+                  <img src="{{ user.profile.image.url }}" alt="User Image" class="avatar-img rounded-circle">
+               </div>
+               {% if user.first_name %}
+                  <div class="user-text text-capitalize">
+                   <h6>{{ user.first_name }} {{ user.last_name }}</h6>
+                   <p class="text-muted mb-0">{{ user.profile.designation }}-{{ user.profile.department }}</p>
+                  </div>
+               {% else %}
+                  <div class="user-text text-capitalize">
+                    <h6>{{ user.username }}</h6>
+                    <p class="text-muted mb-0">Consumer</p>
+                  </div>
+               {% endif %}
+            </div>
+            <a class="dropdown-item text-capitalize" href="{% url 'user-profile' %}">My Profile</a>
+            <a class="dropdown-item text-capitalize" href="{% url 'firereport-changePassword' %}">Change Password</a>
+            <a class="dropdown-item text-capitalize" href="{% url 'user-logout' %}">Logout</a>
+         </div>
+      </li>
+   </ul>
+</div>
+{% else %}
+<div class="header">
+   <div class="header-left">
+      <a href="#" class="logo">
+      <img src="/static/images/dblogo200.png" alt="Logo" > &nbsp;<font size="6" >DB SOLAR</font>
+      </a>
+      <a href="#" class="logo logo-small">
+      <img src="/static/images/dblogosmall.png"  alt="Logo" width="30" height="30">
+      </a>
+   </div>
+   <a href="javascript:void(0);" id="toggle_btn">
+   <i class="fas fa-align-left"></i>
+   </a>
+   <!--            <div class="top-nav-search">-->
+   <!--               <form>-->
+   <!--                  <input type="text" class="form-control" placeholder="Search here">-->
+   <!--                  <button class="btn" type="submit"><i class="fas fa-search"></i></button>-->
+   <!--               </form>-->
+   <!--            </div>-->
+   <a class="mobile_btn" id="mobile_btn">
+   <i class="fas fa-bars"></i>
+   </a>
+   <ul class="nav user-menu">
+      <li class="nav-item dropdown noti-dropdown">
+         <a href="#" class="dropdown-toggle nav-link" data-toggle="dropdown">
+         <i class="far fa-bell"></i> <span class="badge badge-pill">
+         </span>
+         </a>
+
+         <div class="topnav-dropdown-footer">
+            <a href="#">View all Notifications</a>
+         </div>
+      </li>
+      <li class="nav-item">
+         <a href="" class="dropdown-toggle nav-link" data-toggle="dropdown">login</a>
+      </li>
+   </ul>
+</div>
+{% endif %}
+<!-- /.navbar -->

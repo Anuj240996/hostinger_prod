@@ -1,0 +1,219 @@
+{% extends 'partials/base.html' %}
+{% block title %}Consumer Page{% endblock %}
+{% load static %}
+{% block content %}
+<div class="card shadow m-1">
+   <div class="card-body">
+      <div class="page-header">
+         <div class="row">
+            <div class="col-sm-12">
+               <h3 class="page-title">Consumer Details</h3>
+               <ul class="breadcrumb" style="border-bottom : 2px solid orange">
+                  <li class="breadcrumb-item"><a href="students.html">Dashboard</a></li>
+                  <li class="breadcrumb-item active">Consumer Details</li>
+               </ul>
+            </div>
+         </div>
+      </div>
+      {% if messages %}
+       {% for message in messages %}
+        <div class="alert alert-{{ message.tags }}">
+                  {{ message }}
+        </div> {% endfor %}
+      {% endif %}
+      <form method="post" enctype="multipart/form-data">
+         {% csrf_token %}
+
+
+                  <h5 class="p-2 text-danger" style="border-bottom : 2px solid orange">Company Details View </h5>
+                  <div class="form-row">
+                     <div class="col-sm-6">
+                        <div class="form-group">
+                           <label> <b>Consumer ID :</b></label>
+                           <input type="text" name="custid" class="form-control text-capitalize" placeholder="Enter Consumer ID" value="{{ customer.Cust_id }}" readonly>
+                        </div>
+                     </div>
+                     <div class="col-sm-6">
+                        <div class="form-group">
+                           <label> <b>Username :</b></label>
+                           <input type="text" name="user" class="form-control text-capitalize" placeholder="Enter Username" value="{{ customer.new_customer.username }}" readonly>
+                        </div>
+                     </div>
+                     <div class="col-sm-6">
+                        <div class="form-group">
+                           <label><b> Consumer Type :</b></label>
+                           <input type="text" name="custtype" class="form-control text-capitalize" placeholder="Enter Consumer Type" value="{{ customer.Cust_type }}">
+                        </div>
+                     </div>
+
+                     {% if customer.first_name %}
+                     <div class="col-sm-6">
+                        <div class="form-group">
+                           <label> <b>First Name :</b></label>
+                           <input type="text" name="firstname" class="form-control" value="{{ customer.first_name }}">
+                        </div>
+                     </div>
+                     {% endif %}
+                     {% if customer.last_name %}
+                     <div class="col-sm-6">
+                        <div class="form-group">
+                           <label><b> Last Name :</b></label>
+                           <input type="text" name="lastname" class="form-control" placeholder="Enter Lastname" value="{{ customer.last_name }}">
+                        </div>
+                     </div>
+                     {% endif %}
+                     {% if customer.Comp_name %}
+                     <div class="col-sm-6">
+                        <difirstv class="form-group">
+                           <label><b> Consumer/Farm Name :</b></label>
+                           <input type="text" name="compname" class="form-control" placeholder="Enter Consumer/Farm Name" value="{{ customer.Comp_name }}">
+                        </difirstv>
+                     </div>
+                     {% endif %}
+                     {% if customer.Gender %}
+                     <div class="col-sm-6">
+                        <difirstv class="form-group">
+                           <label><b> Gender :</b></label>
+                           <input type="text" name="gen" class="form-control" placeholder="ener name" value="{{ customer.Gender }}">
+                        </difirstv>
+                     </div>
+                     {% endif %}
+                     <div class="col-sm-6">
+                        <div class="form-group">
+                           <label><b> Plant Capacity :</b></label>
+                            <div class="input-group">
+                           <input type="text" name="plantcapacity" class="form-control" placeholder="Enter Plant Capacity" value="{{ customer.Plant_Capacity }}">
+                           <span class="input-group-text" style="color:black; background: white;border:0;align:left">Kw</span>
+                           </div>
+                        </div>
+                     </div>
+                     <div class="col-sm-6">
+                        <div class="form-group">
+                           <label><b>Solar Plate Company Name  :</b></label>
+                           <input type="text" name="solarcomp" class="form-control" placeholder="Enter Solar Plate Company Name" value="{{ customer.solar_comp }}">
+                        </div>
+                     </div>
+                     <div class="col-sm-6">
+                        <div class="form-group">
+                           <label><b> Inverter Company Name :</b></label>
+                           <input type="text" name="UPSC" class="form-control" placeholder="Enter Inverter Company Name" value="{{ customer.UPSC }}">
+                        </div>
+                     </div>
+                     <div class="col-sm-6">
+                        <div class="form-group">
+                           <label><b> Total No.Of Solar Panel* :</b></label>
+                           <input type="text" name="qunt_solar" class="form-control" placeholder="Enter Inverter Phase" value="{{ customer.qunt_solar }}">
+                        </div>
+                     </div>
+                     <div class="col-sm-6">
+                        <div class="form-group">
+                           <label><b> Total No.of Inverter* :</b></label>
+                           <input type="text" name="qunt_inv" class="form-control" placeholder="Enter Inverter Phase" value="{{ customer.qunt_inv }}">
+                        </div>
+                     </div>
+                     <div class="col-sm-6">
+                        <div class="form-group">
+                           <label> <b>PO Date :</b>   [{{ customer.po_date | date:'d/m/y' }}]</label>
+                           <input type="date" name="Cusactdate" class="form-control" placeholder="Enter PO Date" value="{{ customer.po_date }}">
+                        </div>
+                     </div>
+                     <div class="col-sm-6">
+                        <div class="form-group">
+                           <label><b> Inverter Software Company :</b></label>
+                           <input type="text" name="upssoft" class="form-control" placeholder="Enter Inverter Software Company" value="{{ customer.Ups_Soft }}">
+                        </div>
+                     </div>
+
+                     <div class="col-sm-12">
+                        <h5 class="p-2 text-danger" style="border-bottom : 2px solid orange">Consumer Contact Details </h5>
+                     </div>
+
+                     <div class="col-sm-6">
+                        <div class="form-group">
+                           <label> <b> Consumer Phone No : </b></label>
+                           <input type="text" name="phone" class="form-control text-capitalize" value="{{ customer.phone }}" >
+                        </div>
+                     </div>
+                     <div class="col-sm-6">
+                        <div class="form-group">
+                           <label> <b>Consumer Email ID :</b></label>
+                           <input type="email" name="email" class="form-control text-capitalize" value="{{ customer.email }}" >
+                        </div>
+                     </div>
+
+
+
+                     <div class="col-sm-6">
+                        <div class="form-group">
+                           <label><b> Address :</b></label>
+                           <input type="text" name="address" class="form-control" placeholder="Enter Address" value="{{ customer.Address }}">
+                        </div>
+
+                     </div>
+                     <div class="col-sm-6">
+                        <div class="form-group">
+                           <label> <b>City : </b> </label>
+                           <input type="text" name="city" class="form-control text-capitalize" placeholder="Enter City" value="{{ customer.City }}">
+                        </div>
+                     </div>
+
+                     <div class="col-sm-6">
+                        <div class="form-group">
+                           <label> <b>State :</b></label>
+                           <input type="text" name="state" class="form-control text-capitalize" placeholder="Enter State" value="{{ customer.state }}">
+                        </div>
+                     </div>
+                     <div class="col-sm-6">
+                        <div class="form-group">
+                           <label> <b>PinCode :</b></label>
+                           <input type="text" name="pincode" class="form-control text-capitalize" placeholder="Enter Pincode" value="{{ customer.Pincode }}">
+                        </div>
+                     </div>
+
+                     <div class="col-sm-12">
+                        <h5 class="p-2 text-danger" style="border-bottom : 2px solid orange">Consumer MSEB Details </h5>
+                     </div>
+                     <div class="col-sm-6">
+                        <div class="form-group">
+                           <label><b> Consumer Billing No :</b></label>
+                           <input type="text" name="consumer" class="form-control" placeholder="Enter Consumer Billing No" value="{{ customer.Consumer }}">
+                        </div>
+                     </div>
+                     <div class="col-sm-6">
+                        <div class="form-group">
+                           <label> <b>Current Load : </b> </label>
+                           <div class="input-group">
+                           <input type="text" name="current_load" class="form-control" placeholder="Enter Billing Unit" value="{{ customer.current_load }}">
+                           <span class="input-group-text" style="color:black; background: white;border:0;align:left">Kw</span>
+                           </div>
+                        </div>
+                     </div>
+                     <div class="col-sm-6">
+                        <div class="form-group">
+                           <label> <b>Final Load Sanction : </b> </label>
+                           <div class="input-group">
+                           <input type="text" name="loadsancution" class="form-control text-capitalize" placeholder="Enter MSEB Load Sanction" value="{{ customer.loadsancution }}">
+                           <span class="input-group-text" style="color:black; background: white;border:0;align:left">Kw</span>
+                           </div>
+                        </div>
+                     </div>
+
+                  </div>
+            <input type="submit" value="SUBMIT" class="btn btn-primary">
+
+      </form>
+   </div>
+</div>
+
+{% if error == "no" %}
+<script>
+   alert(' {{customer.first_name }} {{customer.last_name }} Profile Update Successful');
+   window.location = ('{% url 'customer-customer-updatepage' customer.Cust_id %}')
+</script>
+{% endif %}
+{% if error == "yes" %}
+<script>
+   alert('Something went wrong , Try Again...');
+</script>
+{% endif %}
+{% endblock %}

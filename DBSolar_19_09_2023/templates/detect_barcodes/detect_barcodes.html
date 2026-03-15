@@ -1,0 +1,641 @@
+{% extends 'partials/base.html' %}
+{% load static %}
+{% block content %}
+
+<style xmlns="http://www.w3.org/1999/html">
+    /* CSS for the zoomed image */
+    .zoom-image-container {
+        display: none;
+        position: fixed;
+        z-index: 9999;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        max-width: 90%;
+        max-height: 90%;
+        background-color: #fff;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+        overflow: auto;
+        text-align: center;
+    }
+
+    .zoom-image {
+        max-width: 100%;
+        max-height: 100%;
+        margin: 0 auto;
+    }
+</style>
+<!--<div class="container-fluid">-->
+<!--    <div class="card-body">-->
+        <!-- left column -->
+        <div class="col-md-12">
+            <!-- general form elements -->
+            <div class="card card-primary">
+                <div class="card-header">
+                    <h3>Upload Solar Panel Barcode Image</h3>
+                </div>
+                <form  method="post" id="barcodeForm" enctype="multipart/form-data">
+
+                    {% csrf_token %}
+                    <br>
+                <fieldset>
+                    <div class="form-group row">
+                        <label for="comp_name" class="col-sm-2 col-form-label"><B>Consumer Name:</B></label>
+                   {% if user.is_authenticated and user.is_staff and user.is_superuser %}
+                    <div class="col-sm-10">
+                        <select id="comp_name" name="comp_name" class="text-capitalize form-control" style="width: 100%;">
+                            <option value="">Select a Consumer</option>
+                            {% for company in companies|dictsort:"Comp_name" %}
+                                <option value="{{ company.new_customer_id }}">{{ company.Comp_name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                   {% elif user.is_authenticated and user.is_staff %}
+
+                          <div class="col-sm-10">
+                        <select id="comp_name" name="comp_name" class="text-capitalize form-control" style="width: 100%;">
+                            <option value=""> </option>
+                             {% for company in filtered_companies %}
+                                {% if company.Engg_Assign == user %}
+                                <option value="{{ company.new_customer_id }}">{{ company.Comp_name }}</option>
+                                {% endif %}
+                            {% endfor %}
+                        </select>
+                    </div>
+                   {% endif %}
+                </div>
+
+                <div id="customer_details" style="display: none;">
+                    <div class="form-group row">
+
+                            <label for="city" class="col-md-2 col-form-label"><B>City:</B></label>
+                            <div class="col-md-4">
+                            <input type="text" id="city" name="city" value="" readonly class="text-capitalize form-control">
+                             <input type="hidden" id="phone" name="phone" value="" readonly class="text-capitalize form-control">
+                            <input type="hidden" id="address" name="address" value="" readonly class="text-capitalize form-control">
+                        </div>
+
+                        <label for="plant_capacity" class="col-md-2 col-form-label"><b>Plant Capacity:</b></label>
+                           <div class="col-md-4">
+                            <input type="text" id="plant_capacity" name="plant_capacity" value="" readonly class="text-capitalize form-control">
+                            <input type="hidden" id="new_customer_id" name="new_customer_id" value="" readonly class="text-capitalize form-control">
+                        </div>
+                        <br><br><br>
+                        <div class="col-md-4" style="text-align: center;">
+                        <fieldset>
+                            <legend style="color: Green;"> Estimate Solar Panel</legend>
+<!--                            <label for="qunt_solar">Estimate Solar Panel</label><br>-->
+                            <input type="text" id="qunt_solar" style="background-color: white; text-align: center; border: 0; font-size: 50px; color: Green; font-weight: bold;" name="qunt_solar" value="" readonly class="text-capitalize form-control">
+
+                        </fieldset>
+                        </div>
+
+                           <div class="col-md-4" style="text-align: center;">
+                            <fieldset>
+                                <legend style="color: black;"> Deployed Solar Panel</legend>
+<!--                            <label for="deployed_solar_panel_count">Deployed Solar Panel</label><br>-->
+                            <input type="text" id="deployed_solar_panel_count" style="background-color: white; font-border: black; text-align: center; border: 0; font-size: 50px; color: Yellow; font-weight: bold;" name="deployed_solar_panel_count" value="" readonly class="text-capitalize form-control">
+                            </fieldset>
+                        </div>
+
+                           <div class="col-md-4" style="text-align: center;">
+                            <fieldset>
+                                <legend style="color: red;"> Remaning Solar Panel</legend>
+<!--                            <label for="remaining_solar_panel_count" >Remaning Solar Panel</label><br>-->
+                            <input type="text" id="remaining_solar_panel_count"  style="background-color: white; text-align: center; border: 0; font-size: 50px; color: red; font-weight: bold;" name="remaining_solar_panel_count" value="" readonly class="text-capitalize form-control">
+                            </fieldset>
+                        </div>
+
+                    </div>
+                    <!-- Add more fields here -->
+                </div>
+                    </fieldset>
+
+                        <div id="project_details" style="display: none;">
+                         <fieldset>
+                        <div class="form-group row">
+                            <label for="solarPlateCompany" class="col-md-2 col-form-label"><b>Solar Panel Make :</b></label>
+                            <div class="col-md-4">
+                                <input type="text" class="text-capitalize form-control" id="solarPlateCompany" name="solarPlateCompany" required>
+                            </div>
+                            <label for="wattage" class="col-md-2 col-form-label"><b>Module Type /Kw :</b></label>
+                            <div class="col-md-4">
+                                <input type="text" class="text-capitalize form-control" id="wattage" name="wattage" required>
+                            </div>
+                        </div>
+
+                        <div class="form-check form-check-inline">
+<!--                            <input class="form-check-input" type="radio" name="barcodeOption" id="uploadBarcode" checked>-->
+                             <input type="radio" name="barcodeOption" value="uploadBarcode" id="uploadBarcode" checked hidden>
+                            <label class="form-check-label" for="uploadBarcode" hidden>Upload Barcode</label>
+                        </div>
+
+                        <div class="form-check form-check-inline">
+<!--                            <input class="form-check-input" type="radio" name="barcodeOption" id="writeSerialNumber">-->
+                            <input type="radio" name="barcodeOption" value="writeSerialNumber" id="writeSerialNumber" hidden>
+                            <label class="form-check-label" for="writeSerialNumber" hidden>Write Serial Number</label>
+                        </div>
+
+
+                        <div class="form-group row" id="uploadBarcodeSection">
+                            <label for="barcodeImage" class="col-md-2 col-form-label"><b>Select Barcode Images</b></label>
+                            <div class="col-md-10">
+                                <input type="file" class="text-capitalize form-control-file" id="barcodeImage" accept="image/*" multiple required>
+                            </div>
+                        </div>
+
+                <div id="writeSerialNumberSection" style="display: none;" class="form-group row">
+                    <label for="serial" class="col-md-2 col-form-label"><b>Serial Number</b></label>
+                    <div class="col-md-10">
+                        <input type="text" class="text-capitalize form-control" id="serial" name="serial">
+                    </div>
+                    <button id="addTextBoxButton">Add Textbox</button>
+                </div>
+
+                        <button id="btn_DetectBarcode" class="btn btn-primary" type="submit"
+                            style="background-image: url('{% static 'images/download1.png' %}'); background-size: cover; background-position: center; width: 150px; height: 40px; border: none;">Scan
+                            Barcode</button>
+                         </fieldset>
+                        </div>
+
+
+                </form>
+            </div>
+        </div>
+<!--    </div>-->
+<div class="container-fluid">
+   <div class="card-body">
+    <div class="row">
+        <div class="col-md-12">
+            <h4 id="selectedCompanyName" style="display: none;">Uploaded Solar Panel Barcodes for Consumer: </h4>
+            <div id="barcodeResult" style="display: none;">
+                <div class="table-responsive">
+                    <h3>Barcode Data:</h3>
+                    <p>Selected Images Count: <span id="selectedImagesCount">0</span></p>
+                    <p>Detected Barcodes Count: <span id="detectedBarcodesCount">0</span></p>
+                    <p>Duplicate Barcodes Count: <span id="duplicateBarcodesCount">0</span></p>
+                    <p>Not Detected Images Count: <span id="notDetectedImagesCount">0</span></p>
+                   <div class="card-body">
+<!--                    <table class="table justify-content-center">-->
+                     <table id="yourDataTable" class="table  table-bordered table-striped datatable table.sm" style="background-color: white" >
+                        <thead>
+                            <tr>
+                                <th>Serial Number</th>
+                                <th>Barcode Data</th>
+                                <th>Barcode Type</th>
+                                <th>Solar Panel Make</th>
+                                <th>Wattage</th>
+                                <th>Last Modified at</th>
+                                <th>Status</th>
+<!--                                <th>Image</th>-->
+                            </tr>
+                        </thead>
+                        <tbody id="barcodeTableBody"></tbody>
+
+                    </table>
+
+                    <p id="noBarcodeMessage" style="display: none;">No barcode image found.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+</div>
+</div>
+<div class="zoom-image-container">
+    <img class="zoom-image" src="" alt="Zoomed Barcode Image">
+</div>
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"
+    integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=" crossorigin="anonymous"></script>
+
+<script>
+    $(document).ready(function () {
+
+        //$("#barcodeForm").submit(function (e) {
+          //  e.preventDefault();
+
+        $("input[name='barcodeOption']").change(function () {
+            if ($("input[name='barcodeOption']:checked").val() === 'uploadBarcode') {
+
+                // Show the upload barcode section
+                $("#uploadBarcodeSection").show();
+                // Hide the write serial number section
+                $("#writeSerialNumberSection").hide();
+            } else {
+                // Show the write serial number section
+                $("#writeSerialNumberSection").show();
+                // Hide the upload barcode section
+                $("#uploadBarcodeSection").hide();
+                // Enable submit button for writeSerialNumber option
+                $("#btn_DetectBarcode").prop("disabled", false);
+            }
+        });
+
+
+
+
+        $("#addTextBoxButton").click(function () {
+            // Add a new textbox for serial number
+            var newTextBox = '<div class="col-md-10"><input type="text" class="text-capitalize form-control" name="serial"></div>';
+            $("#writeSerialNumberSection").append(newTextBox);
+        });
+
+       // Allow form submission
+        $('#barcodeForm').submit(function() {
+            return true;
+        });
+
+        // Handle form submission
+        $('form').submit(function(event) {
+           event.preventDefault();
+
+            // Clear previously zoomed image
+            $(".zoom-image-container").fadeOut();
+
+             // Capture the selected radio button value
+            var barcodeOption = $("input[name='barcodeOption']:checked").val();
+
+
+            var formData = new FormData();
+
+            var solarPlateCompany = $('#solarPlateCompany').val();
+            var wattage = $('#wattage').val();
+            var comp_name = $('#comp_name').val();
+            var new_customer_id = $('#new_customer_id').val();
+            //var serial = $('#serial').val();
+
+
+            if (barcodeOption === 'uploadBarcode') {
+            var images = $('#barcodeImage')[0].files;
+            for (var i = 0; i < images.length; i++) {
+                formData.append('image', images[i]);
+              }
+            } else if (barcodeOption === 'writeSerialNumber') {
+                var serialNumbers = [];
+                $('.serial-input').each(function () {
+                    serialNumbers.push($(this).val());
+                });
+
+                formData.append('serialNumbers', JSON.stringify(serialNumbers));
+            }
+
+
+            formData.append('barcodeOption', barcodeOption);
+            formData.append('solarPlateCompany', solarPlateCompany);
+            formData.append('wattage', wattage);
+            formData.append('comp_name', comp_name);
+            formData.append('new_customer_id', new_customer_id);
+            //formData.append('serialNumber', serialNumber);
+            formData.append('csrfmiddlewaretoken', $('input[name="csrfmiddlewaretoken"]').val());
+
+            $.ajax({
+                type: "POST",
+                data: formData,
+                processData: false,
+                contentType: false,
+                success: function (data) {
+                  console.log("Data received from server:", data);
+
+                    var detectedBarcodes = {}; // Track detected barcodes
+                    var tableBody = $("#barcodeTableBody");
+                    tableBody.empty(); // Clear the table body
+
+
+                    // Clear the input fields
+                    $("#solarPlateCompany").val('');
+                    $("#wattage").val('');
+                    //$("#comp_name").val('');
+                    $("#new_customer_id").val('');
+                    //$("#city").val('');
+                    //$("#plant_capacity").val('');
+                    //$("#qunt_solar").val('');
+                    //$("#deployed_solar_panel_count").val('');
+                    //$("#remaining_solar_panel_count").val('');
+                    $('#project_details').hide();
+                    $('#serial').val('');
+
+                    var selectedImagesCount = images.length;
+                    var detectedBarcodesCount = 0;
+                    var duplicateBarcodesCount = 0;
+                    var notDetectedImagesCount = 0;
+
+                    var serialNumber = 1;
+
+                    for (var i = 0; i < data.length; i++) {
+                        var barcodeData = data[i].barcode_data;
+                        var barcodeType = data[i].barcode_type;
+                        var fileSavedAt = data[i].file_saved_at;
+                      //  var imageSrc = URL.createObjectURL(images[i]);
+                        var message = data[i].message;
+                        var status = (barcodeData !== null && barcodeData !== '') ? 'Detected' : 'Duplicate';
+
+                       if (barcodeData !== null && barcodeData !== '') {
+                           if (message === 'Barcode data already exists in the database.') {
+                                console.log("Barcode data already exists: " + barcodeData);
+                               duplicateBarcodesCount++;
+
+                                // Skip detection for duplicate barcode
+                               continue;
+                            }
+
+                            console.log(barcodeData);
+                            detectedBarcodesCount++;
+                            var row = $("<tr></tr>");
+                            row.append("<td>" + serialNumber++ + "</td>");
+                            row.append("<td>" + barcodeData + "</td>");
+                            row.append("<td>" + barcodeType + "</td>");
+                            row.append("<td>" + solarPlateCompany + "</td>");
+                            row.append("<td>" + wattage + " Kw</td>");
+                            row.append("<td>" + fileSavedAt + "</td>");
+                         //   row.append("<td><img class='zoomable-image' src='" + imageSrc +
+                           //     "' alt='Barcode Image' style='max-width: 200px; max-height: 120px; cursor: zoom-in;'></td>");
+                            row.append("<td>" + status + "</td>");
+
+                            // If it's a duplicate, add a specific class for styling
+                            if (status === 'Not Detected') {
+                                row.addClass('not-detected');
+                            }
+
+                            tableBody.append(row);
+
+                            detectedBarcodes[barcodeData] = true; // Add barcode to detected list
+                        } else {
+                            console.log("No barcode data found");
+                            notDetectedImagesCount++;
+                        }
+
+                        // Revoke object URLs after they have been used
+                        URL.revokeObjectURL(images[i]);
+                    }
+
+                    // Show the table
+                    $("#barcodeResult").show();
+
+                     // Update count displays
+                    $("#selectedImagesCount").text(selectedImagesCount);
+                    $("#detectedBarcodesCount").text(detectedBarcodesCount);
+                    $("#duplicateBarcodesCount").text(duplicateBarcodesCount);
+                    $("#notDetectedImagesCount").text(notDetectedImagesCount);
+
+                    // Update selected images count
+                    $("#selectedImagesCount").text(selectedImagesCount);
+
+                    // Update detected barcodes count
+                    $("#detectedBarcodesCount").text(detectedBarcodesCount);
+
+                    // Update duplicate barcodes count
+                    $("#duplicateBarcodesCount").text(duplicateBarcodesCount);
+
+                    // Update not detected images count
+                    $("#notDetectedImagesCount").text(notDetectedImagesCount);
+
+                    // Clear the selected file input
+                    $('#barcodeImage').val('');
+
+                    // Show or hide the "No barcode image found" message
+                    if (detectedBarcodesCount > 0) {
+                        $("#noBarcodeMessage").hide();
+                    } else {
+                        $("#noBarcodeMessage").show();
+                    }
+
+                    // Show alert message with the count of detected barcodes
+                    alert("Total Number of Barcode Images Detected: " + detectedBarcodesCount);
+                    console.log("Success message displayed.");
+
+
+                    // Show a message for duplicate barcodes
+                    if (duplicateBarcodesCount > 0) {
+                        alert("Barcode data already exists: " + duplicateBarcodesCount);
+                    }
+                },
+                error: function (error) {
+                    console.log("Error occurred during AJAX request:", error);
+                    alert("Error occurred during barcode detection. Please try again later.");
+                }
+            });
+        });
+
+
+        $('#comp_name').on('change', function() {
+                    var selectedCompany = $(this).val();
+                    if (selectedCompany !== '') {
+                      $.ajax({
+                        url: '/detect_barcodes/get_customer_details/',
+                        type: 'GET',
+                        data: { 'new_customer_id': selectedCompany },
+                        dataType: 'json',
+                        success: function(data) {
+                          if (data) {
+                            $('#phone').val(data.phone);
+                            $('#address').val(data.Address);
+                            $('#city').val(data.City);
+                            // $('#plant_capacity').val(data.Plant_Capacity);
+                            $('#plant_capacity').val(data.Plant_Capacity + " Kw");
+                            $('#new_customer_id').val(data.new_customer_id); // Add the new field here
+                            $('#comp_name').val(data.new_customer_id);
+                            $('#qunt_solar').val(data.qunt_solar);
+                            $('#deployed_solar_panel_count').val(data.deployed_solar_panel_count);
+                            $('#remaining_solar_panel_count').val(data.remaining_solar_panel_count);
+                            // Update other fields as needed
+
+                            $('#customer_details').show();
+                            $('#project_details').show();
+
+                             // Update the selected company name here
+                            $('#selectedCompanyName').text('Uploaded Solar Panel Barcodes for Consumer: ' + data.Comp_name).show();
+
+                           // After you receive the data from the server
+                            var remainingSolarPanelCount = parseInt(data.remaining_solar_panel_count);
+
+                            // Check if remainingSolarPanelCount is 0
+                            if (remainingSolarPanelCount === 0) {
+                                 $('#project_details').hide();
+                                 alert( data.Comp_name +" " + "Solar Panel Quantity Full Fill");
+                            }
+
+                            // Load existing barcode records
+                            if (data.barcode_records && data.barcode_records.length > 0) {
+                                var tableBody = $("#barcodeTableBody");
+                                tableBody.empty(); // Clear existing rows
+                                
+                                var serialNumber = 1;
+                                $.each(data.barcode_records, function(index, record) {
+                                    var row = $("<tr></tr>");
+                                    row.append("<td>" + serialNumber++ + "</td>");
+                                    row.append("<td>" + (record.barcode_data || '') + "</td>");
+                                    row.append("<td>" + (record.barcode_type || '') + "</td>");
+                                    row.append("<td>" + (record.company_name || '') + "</td>");
+                                    row.append("<td>" + (record.wattage || '') + " Kw</td>");
+                                    row.append("<td>" + (record.file_saved_at || '') + "</td>");
+                                    row.append("<td>" + (record.status || 'Detected') + "</td>");
+                                    tableBody.append(row);
+                                });
+                                
+                                // Show the barcode result section
+                                $("#barcodeResult").show();
+                                
+                                // Update counts
+                                $("#selectedImagesCount").text(data.barcode_records.length);
+                                $("#detectedBarcodesCount").text(data.barcode_records.length);
+                                $("#duplicateBarcodesCount").text(0);
+                                $("#notDetectedImagesCount").text(0);
+                                
+                                // Reinitialize DataTable if it exists
+                                if ($.fn.dataTable.isDataTable('#yourDataTable')) {
+                                    $('#yourDataTable').DataTable().destroy();
+                                }
+                                $('#yourDataTable').DataTable({
+                                    scrollCollapse: true,
+                                    fixedHeader: {
+                                        header: true,
+                                        footer: false
+                                    },
+                                    columnDefs: [
+                                       { targets: 0, orderable: false }
+                                    ]
+                                });
+                            } else {
+                                // No existing records, hide the table
+                                $("#barcodeTableBody").empty();
+                                $("#barcodeResult").hide();
+                            }
+
+                          } else {
+                            // Clear the textbox values when no company is selected
+                            $('#phone').val('');
+                            $('#address').val('');
+                            $('#city').val('');
+                            $('#plant_capacity').val('');
+                            $('#new_customer_id').val(''); // Clear the new field
+                            $('#comp_name').val('');
+                            $('#qunt_solar').val('');
+                            $('#deployed_solar_panel_count').val('');
+                            $('#remaining_solar_panel_count').val('');
+                            // Clear other fields as needed
+
+                            $('#customer_details').hide();
+                            $('#project_details').hide();
+                            
+                            // Clear barcode table
+                            $("#barcodeTableBody").empty();
+                            $("#barcodeResult").hide();
+                            $("#selectedCompanyName").hide();
+
+                          }
+                        },
+                        error: function(xhr, status, error) {
+                            console.error("Error loading customer details:", error);
+                            alert("Error loading customer details. Please try again.");
+                        }
+                      });
+                    } else {
+                        // Clear everything when no company is selected
+                        $('#phone').val('');
+                        $('#address').val('');
+                        $('#city').val('');
+                        $('#plant_capacity').val('');
+                        $('#new_customer_id').val('');
+                        $('#comp_name').val('');
+                        $('#qunt_solar').val('');
+                        $('#deployed_solar_panel_count').val('');
+                        $('#remaining_solar_panel_count').val('');
+                        $('#customer_details').hide();
+                        $('#project_details').hide();
+                        $("#barcodeTableBody").empty();
+                        $("#barcodeResult").hide();
+                        $("#selectedCompanyName").hide();
+                    }
+                  });
+
+
+
+        $(document).on('click', '.zoomable-image', function () {
+            var imageSrc = $(this).attr("src");
+            var zoomImageContainer = $(".zoom-image-container");
+            var zoomImage = $(".zoom-image");
+
+            if (zoomImageContainer.is(":visible")) {
+                if (zoomImage.attr("src") === imageSrc) {
+                    // Clicked the same image, zoom out
+                    zoomImageContainer.fadeOut();
+                } else {
+                    // Clicked a different image, update the zoomed image
+                    zoomImage.attr("src", imageSrc);
+                }
+            } else {
+                // Zoom in on the clicked image
+                zoomImage.attr("src", imageSrc);
+                zoomImageContainer.fadeIn();
+            }
+        });
+
+        $(document).on('click', '.zoom-image-container', function () {
+            $(this).fadeOut();
+        });
+
+        $(document).on('keydown', function (e) {
+            if (e.keyCode === 27) {
+                $('.zoom-image-container').fadeOut();
+            }
+        });
+
+        // Check if the clicked element is not a zoomable image or zoom image container
+        $(document).on('click', function (e) {
+            var target = $(e.target);
+            var zoomImageContainer = $(".zoom-image-container");
+
+            // Check if the clicked element is not a zoomable image or zoom image container
+            if (!target.hasClass("zoomable-image") && !target.hasClass("zoom-image") && !target.hasClass(
+                    "zoom-image-container")) {
+                zoomImageContainer.fadeOut();
+            }
+        });
+
+    });
+
+</script>
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    let dataTable = $('#yourDataTable').DataTable();
+    //let dataTable = $('#yourDataTable').DataTable({
+    //    scrollX: true,
+    //    fixedHeader: true,
+    //    columnDefs: [
+    //        { targets: 0, orderable: false } // '0' represents the index of the 'Sr No.' column (zero-based)
+    //    ]
+    //});
+
+    // Check if the DataTable is already initialized
+    if ($.fn.dataTable.isDataTable('#yourDataTable')) {
+        dataTable.destroy(); // If initialized, destroy the DataTable
+    }
+
+    dataTable = $('#yourDataTable').DataTable({
+        //scrollX: true, // Enable horizontal scrolling
+        //scrollY: '50vh', // Adjust the height as needed
+        scrollCollapse: true,
+        fixedHeader: {
+            header: true,
+            footer: false // Do not fix the footer to prevent it from moving
+        },
+        columnDefs: [
+           { targets: 0, orderable: false } // Disable sorting for the Sr No. column (zero-based)
+        ]
+
+    });
+
+     $('#yourDataTable tbody tr').each(function(index) {
+        $(this).find('td:first').text(index + 1);
+    });
+
+      dataTable.on('order.dt search.dt', function() {
+        dataTable.column(0, { search: 'applied', order: 'applied' }).nodes().each(function(cell, i) {
+            cell.innerHTML = i + 1;
+        });
+    }).draw();
+});
+</script>
+
+{% endblock content %}

@@ -1,0 +1,679 @@
+<!doctype html>
+{% load static %}
+{% load active_link_tags %}
+{% load group_filters %}
+{% load indian_filters %}
+{% load number_filters %}
+{% load custom_filters %}
+  <meta charset="utf-8">
+  <title>Quotation</title>
+  <style>
+    @page {
+      size: A4;
+      margin: 150px 30px 70px 30px; /* top, right, bottom, left */
+      @frame header_frame {
+        -pdf-frame-content: header_content;
+        top: 0px;
+        left: 0px;
+        width: 885px;
+        height: 180px;
+      }
+     @frame footer_frame {
+        -pdf-frame-content: footer_content;
+        top: 785pt; /* 842pt (A4 height) - 60pt footer height */
+        left: 0pt;
+        width: 597pt;
+        height: 100pt;
+      }
+    }
+
+    body {
+      font-family: DejaVu Sans, Arial, sans-serif;
+      font-size: 13px;
+      line-height: 1.4;
+    }
+
+    h1, h4 {
+      text-align: center;
+      margin: 5px 0;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 8px;
+      table-layout: fixed;
+    }
+
+    .indent-left {
+      padding-left: 5px;
+      margin-left: 2px;
+    }
+
+
+    th, td {
+      border: 1px solid #000;
+      padding: 1px;
+      vertical-align: top;
+      word-wrap: break-word;
+    }
+
+    th { background: #ADD8E6; }
+
+    .no-border td, .no-border th { border: none !important; }
+
+    .center { text-align: center; }
+    .right { text-align: right; white-space: nowrap; }
+    .bold { font-weight: bold; }
+    .red { color: red; font-weight: bold; }
+    .space-top { margin-top: 12px; }
+
+    /* Offer Table Layout */
+    .offer-table th:nth-child(1), .offer-table td:nth-child(1) { width: 8%; text-align: center; }
+    .offer-table th:nth-child(2), .offer-table td:nth-child(2) { width: 56%; text-align: left; }
+    .offer-table th:nth-child(3), .offer-table td:nth-child(3) { width: 12%; text-align: center; }
+    .offer-table th:nth-child(4), .offer-table td:nth-child(4) { width: 24%; text-align: right; white-space: nowrap; }
+
+
+    .offer-table1 th,
+    .offer-table1 td {
+        vertical-align: middle;
+        text-align: center;
+        padding-top: 5px;
+        padding-bottom: 5px;
+    }
+
+
+    table, tr, td, th { page-break-inside: avoid; }
+
+    hr {
+      border: none;
+      border-top: 1px solid #000;
+      margin: 12px 0;
+    }
+
+  </style>
+  <style>
+      /* outer ordered list numbers */
+      ol.main {
+        line-height: 1.8;
+        padding-left: 1rem; /* controls left indent for outer list */
+      }
+
+      /* nested ol inside an li of the main ol -> use a, b, c... */
+      ol.main ol {
+        list-style-type: lower-alpha; /* forces a, b, c... */
+        margin-top: 0.25rem;
+        margin-left: 2 rem; /* extra indent for nested list */
+        padding-left: 0;     /* we rely on margin-left above */
+      }
+
+    </style>
+
+
+  <div id="header_content" style="margin:0; padding:0;">
+    <img src="{% static 'images/quotation_bg1.jpg' %}"
+         style="width:595pt; height:100pt; display:block; margin:0; padding:0;">
+
+  </div>
+
+  <div id="footer_content" style="margin:0; padding:0;">
+  <img src="{% static 'images/address.jpg' %}"
+       style="width:595pt; height:60pt; display:block; margin:0; padding:0;">
+</div>
+  <!-- ===== BODY CONTENT ===== -->
+  <h1>QUOTATION</h1>
+
+  <table class="no-border">
+    <tr>
+      <td>
+        <strong>To,</strong><br>
+<!--        <span><b>{{ quotation.consumer_name }}</b></span><br>-->
+        <!-- NEW: Show title before name -->
+        <span><b>{{ quotation.title }} {{ quotation.consumer_name }}
+        {% if quotation.title == 'Mr' %}
+            Sir
+        {% elif quotation.title == 'Ms' %}
+            Mam
+        {% else %}
+            Respected Client,
+        {% endif %}
+       </b></span><br>
+        {{ quotation.consumer_address1 }} ,<br>
+        {{ quotation.consumer_address2 }}<br><br>
+<!--        <strong>Mobile No:</strong> <span class="red">{{ quotation.consumer_mobile }}</span><br>-->
+<!--        <strong>Consumer No:</strong> <span class="red">{{ quotation.consumer_no }}</span>-->
+      </td>
+      <td class="right">
+        <strong>Date:</strong> <span class="black">{{ formatted_date }}</span><br>
+      </td>
+    </tr>
+  </table>
+    <strong>Sub -</strong> Quotation for Grid Tie Solar Power Plant of
+<span class="black"> <b> &nbsp;{{ quotation.plant_capacity_kw|clean_decimal  }} KW</b></span> for solar system.
+
+<!--  <p style="padding-top: -5px; padding-bottom: -10px;"><b>Respected Client,</b></p>-->
+<!-- CHANGED: Dynamic salutation based on title -->
+<p style="padding-top: -5px; padding-bottom: -10px;">
+    <b>
+        {% if quotation.title == 'Mr' %}
+            Dear Sir,
+        {% elif quotation.title == 'Ms' %}
+            Dear Madam,
+        {% else %}
+            Respected Client,
+        {% endif %}
+    </b>
+</p>
+  <span>
+    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;This refers to your discussion with our <b>Mr. <span class="black">{{ quotation.employee_name }}</span></b>
+    for your requirement. Plant Capacity <b><span class="black"> &nbsp;{{ quotation.plant_capacity_kw|clean_decimal  }}</span> KW</b>
+    solar system with our genuine competitive offer as follows:
+  </span>
+  <table align="center">
+    <tr>
+      <td style="padding: 5px; line-height: 1.5;" width="35%">
+        <b>From,</b><br>
+        &nbsp;&nbsp;&nbsp;<b>Heramb Industries,</b><br>
+        &nbsp;&nbsp;&nbsp;Bhagya Banglow,Near Sant Eknath<br>
+        &nbsp;&nbsp;&nbsp;Rang Mandir, New Osman Pura,<br>
+        &nbsp;&nbsp;&nbsp;Chh. Sambhaki Nagar.(MH)-431001
+      </td>
+<!--      <td style="padding: 2px; width: 33%;">-->
+
+<!--          <b>From,</b>-->
+<!--          <div style="margin-left: 10px;">-->
+<!--              <b>Heramb Industries, Bhagya</b><br>-->
+<!--              Banglow, Near Sant Eknath Rang<br>-->
+<!--              Mandir, New Osman Pura,<br>-->
+<!--              Chh. Sambhaji Nagar (MH) - 431001-->
+<!--          </div>-->
+
+<!--      </td>-->
+
+      <td style="padding: 5px; line-height: 1.5;" width="33%">
+        <b>To,</b><br>
+        &nbsp;&nbsp;&nbsp;<b>{{ quotation.title }} {{ quotation.consumer_name }}</b><br>
+        &nbsp;&nbsp;&nbsp;{{ quotation.consumer_address1 }} ,<br>
+        &nbsp;&nbsp;&nbsp;{{ quotation.consumer_address2 }}<br>
+      </td>
+      <td style="padding: 5px;" width="35%">
+<!--        <div style="line-height: 1.8;">-->
+<!--        &nbsp;&nbsp;<b>Date - </b>{{ quotation.date|date:"d / m / Y" }}<br>-->
+<!--        &nbsp;&nbsp;&nbsp;<b>Quotation No.-</b>DB/Res/{{ quotation.quotation_no }}/{% now "y" as this_year %}-->
+<!--{{ this_year }}<br>-->
+<!--        &nbsp;&nbsp;&nbsp;<b>Consumer No.</b>{{ quotation.consumer_no }}<br>-->
+<!--          &nbsp;&nbsp;&nbsp;<b>Consumer type </b>Residential<br>-->
+<!--        &nbsp;&nbsp;&nbsp;<b>Mobile No.</b>{{ quotation.consumer_mobile }}<br>-->
+
+<!--        </div>-->
+          <div style="line-height: 5;">
+            <b>Date - </b>{{ formatted_date }}<br>
+            &nbsp;<b>Quotation No. - </b>
+              {% if quotation.consumer_type == 'Residential' %}
+                DB/Res/{{ quotation.quotation_no }}/
+                {% now "y" as this_year %}{{ this_year }}
+              {% elif quotation.consumer_type == 'Commercial' %}
+                DB/Comm/{{ quotation.quotation_no }}/
+                {% now "y" as this_year %}{{ this_year }}
+               {% elif quotation.consumer_type == 'Industrial' %}
+                DB/Ind/{{ quotation.quotation_no }}/
+                {% now "y" as this_year %}{{ this_year }}
+              {% endif %}
+
+              <br>
+
+            &nbsp;<b>Consumer No. - </b>{{ quotation.consumer_no }}<br>
+            &nbsp;<b>Consumer Type - </b>{{ quotation.consumer_type }}<br>
+            &nbsp;<b>Mobile No. - </b>{{ quotation.consumer_mobile }}
+        </div>
+
+      </td>
+    </tr>
+  </table>
+<!-- Spacer Above Next Table -->
+<h4 style="margin-top: 10px; margin-bottom: 1px; text-align:center;">
+    Offer for <span class="bold">{{ quotation.plant_capacity_kw|clean_decimal }}</span> KW Rooftop Grid Solar Plant.
+</h4>
+
+<table class="offer-table" id="offer_details" align="center" style="margin-top: -5px;">
+  <tr align="center">
+    <th class="nowrap" width="61%" style="vertical-align: middle; padding-top: 2px; padding-bottom: 2px; padding-bottom: 0px">Product Description</th>
+    <th class="center nowrap" width="21%" style="vertical-align: middle; padding-top: 2px; padding-bottom: 2px; padding-bottom: 0px">Units</th>
+    <th class="center nowrap" width="21%" style="vertical-align: middle; padding-top: 2px; padding-bottom: 2px; padding-bottom: 0px">Amount (INR)</th>
+  </tr>
+
+  <!-- Additional static rows as per sample PDF -->
+  <tr>
+    <td align="left" class="indent-left" style="vertical-align: middle; padding-top: 2px; padding-bottom: 2px; padding-bottom: 0px"><b>{{ quotation.panel_type }}</b> Solar PV Panels {{ quotation.panel_capacity_watt }} watt<br><b>Make - </b> {{ quotation.panel_company_names }}  &nbsp;(Approx.{{ quotation.panel_qty }} qty)</td>
+    <td class="center" style="vertical-align: middle; padding-top: 2px; padding-bottom: 2px; padding-bottom: 0px"><b>{{ quotation.plant_capacity_kw|clean_decimal }} KW</b></td>
+    <td rowspan="9" class="right" style="padding: 0; margin: 0; vertical-align: middle; text-align: right; padding-right: 20px;">
+                {{ quotation.net_amount|indian_format_with_decimals }}
+            </td>
+        </tr>
+  </tr>
+  <tr>
+    <td align="left" class="indent-left" style="vertical-align: middle; padding-top: 3px; padding-bottom: 3px; padding-bottom: 0px"><b>{{ quotation.inv_phase }}</b> Solar Grid <b>Inverter</b><br><b>Make -</b> {{ quotation.inverter_company_names }}  &nbsp;(Approx.{{ quotation.inverter_qty }} qty)</td>
+    <td class="center" style="vertical-align: middle; padding-top: 2px; padding-bottom: 2px; padding-bottom: 0px"><b>{{ quotation.inv_capacity_kw|clean_decimal  }} KW</b></td>
+  </tr>
+<!--  <tr>-->
+<!--    <td align="left" class="indent-left" style="vertical-align: middle; padding-top: 2px; padding-bottom: 2px; padding-bottom: 0px"><b>{{ quotation.structure_type }} Structure - </b>-->
+
+<!--        {{ quotation.structure_front_height_ft|clean_decimal }} X-->
+<!--    {{ quotation.structure_back_height_ft|clean_decimal }} Feet , {{ quotation.other_details }}</td>-->
+<!--    <td class="center" style="vertical-align: middle; padding-top: 2px; padding-bottom: 2px; padding-bottom: 0px"><b>For {{ quotation.plant_capacity_kw|clean_decimal  }} KW</b></td>-->
+<!--  </tr>-->
+   <tr>
+    <td align="left" class="indent-left" style="vertical-align: middle; padding-top: 2px; padding-bottom: 2px; padding-bottom: 0px">
+
+        {% if quotation.structure_type == 'Tin Shade' %}
+            <!-- Display Tin Shade information -->
+             <b>{{ quotation.structure_type }}  Structure  </b>
+               {% if formatted_other_details %}
+            , {{ formatted_other_details }}
+        {% endif %}
+        {% else %}
+            <b>{{ quotation.structure_type }} - </b>
+            <!-- Display GI Structure or MS Structure height information -->
+            {{ quotation.structure_front_height_ft|clean_decimal }} X
+            {{ quotation.structure_back_height_ft|clean_decimal }} Feet
+             {% if formatted_other_details %}
+            , {{ formatted_other_details }}
+        {% endif %}
+        {% endif %}
+    </td>
+    <td class="center" style="vertical-align: middle; padding-top: 2px; padding-bottom: 2px; padding-bottom: 0px">
+        <b>For {{ quotation.plant_capacity_kw|clean_decimal }} KW</b>
+    </td>
+</tr>
+  <tr>
+    <td align="left" class="indent-left" style="vertical-align: middle; padding-top: 2px; padding-bottom: 2px; padding-bottom: 0px">Generation Meter (Make Secure / L&amp;T)<br><b style="background-color: yellow;">(Net Meter will be providing by MSEDCL)</b></td>
+    <td class="center" style="vertical-align: middle; padding-top: 2px; padding-bottom: 2px; padding-bottom: 0px"><b>2 Nos.</b></td>
+  </tr>
+  <tr>
+    <td align="left" class="indent-left" style="vertical-align: middle; padding-top: 2px; padding-bottom: 2px; padding-bottom: 0px">Earthing with Lighting Arrestor- with 16 mm  &amp; 25 mm Conductor<br>Cable.AC Cable 65 feet & DC Cable. <b>Make -</b> TCI / Polycab / Apar</td>
+    <td class="center" style="vertical-align: middle; padding-top: 2px; padding-bottom: 2px; padding-bottom: 0px">Entire Project</td>
+  </tr>
+  <tr>
+    <td align="left" class="indent-left" style="vertical-align: middle; padding-top: 2px; padding-bottom: 2px; padding-bottom: 0px">AC Surge Protection Device &amp; MCCB. Make L&amp;T / ABB<br>DC Protection Device.ACDB &amp; DCDB with IP 65 Distribution Boxes</td>
+    <td class="center" style="vertical-align: middle; padding-top: 2px; padding-bottom: 2px; padding-bottom: 0px">Entire Project</td>
+  </tr>
+  <tr>
+    <td align="left" class="indent-left" style="vertical-align: middle; padding-top: 2px; padding-bottom: 2px; padding-bottom: 0px">Installation</td>
+    <td class="center" style="vertical-align: middle; padding-top: 2px; padding-bottom: 2px; padding-bottom: 0px">Entire Project</td>
+  </tr>
+  <tr>
+    <td align="left" class="indent-left" style="vertical-align: middle; padding-top: 2px; padding-bottom: 2px; padding-bottom: 0px">Transportation</td>
+    <td class="center" style="vertical-align: middle; padding-top: 2px; padding-bottom: 2px; padding-bottom: 0px">Included</td>
+  </tr>
+  <tr>
+    <td align="left" class="indent-left" style="vertical-align: middle; padding-top: 2px; padding-bottom: 2px; padding-bottom: 0px">Lessoning</td>
+    <td class="center" style="vertical-align: middle; padding-top: 2px; padding-bottom: 2px; padding-bottom: 0px">Included</td>
+  </tr>
+
+  <!-- Totals -->
+  {% if quotation.special_discount and quotation.special_discount > 0 %}
+  <tr>
+    <td colspan="2" class="left bold indent-left" style="vertical-align: middle; padding-top: 2px; padding-bottom: 2px; padding-bottom: 0px"><span  style="background-color: yellow;">SPECIAL DISCOUNT</span></td>
+    <td class="right bold" style="text-align: right; padding-right: 20px; vertical-align: middle; vertical-align: middle; padding-top: 2px; padding-bottom: 2px; padding-bottom: 0px">{{ quotation.special_discount|indian_format_with_decimals }}</td>
+  </tr>
+<!--  <tr><td colspan="2" class="right bold" style="padding: 2px;">AFTER DISCOUNT AMOUNT</td><td>{{ quotation.gst_5_amount }}</td></tr>-->
+  <tr>
+    <td colspan="2" class="left bold indent-left" style="vertical-align: middle; padding-top: 2px; padding-bottom: 2px; padding-bottom: 0px">AFTER DISCOUNT AMOUNT</td>
+    <td class="right" style="text-align: right; padding-right: 20px; vertical-align: middle; vertical-align: middle; padding-top: 2px; padding-bottom: 2px; padding-bottom: 0px">
+        {{ after_discount_amount|indian_format_with_decimals }}
+    </td>
+  </tr>
+  {% endif %}
+  <tr>
+  <td colspan="2" class="left bold indent-left" style="vertical-align: middle; padding-top: 2px; padding-bottom: 2px; padding-bottom: 0px">GST 5&#37; (70&#37; of Basic Amount)</td>
+  <td class="right" style="text-align: right; padding-right: 20px; vertical-align: middle; padding-top: 2px; padding-bottom: 2px; padding-bottom: 0px">{{ quotation.gst_5_amount|indian_format_with_decimals }}</td>
+</tr>
+<tr>
+  <td colspan="2" class="left bold indent-left" style="vertical-align: middle; padding-top: 2px; padding-bottom: 2px; padding-bottom: 0px">GST 18&#37; (30&#37; of Basic Amount)</td>
+  <td class="right" style="text-align: right; padding-right: 20px; vertical-align: middle; padding-top: 2px; padding-bottom: 2px; padding-bottom: 0px">{{ quotation.gst_18_amount|indian_format_with_decimals }}</td>
+</tr>
+
+  <tr>
+    <td colspan="2" class="left bold indent-left" style="vertical-align: middle; padding-top: 2px; padding-bottom: 2px; padding-bottom: 0px">Net Amount – INR – <span colspan="2" style="font-weight:regular;">{{ amount_words }}</span></td>
+    <td class="right bold" style="text-align: right; padding-right: 20px; vertical-align: middle; padding-top: 2px; padding-bottom: 2px; padding-bottom: 0px;font-size: 15px;">
+       <i class="fas fa-rupee-sign"></i>{{ quotation.final_amount|indian_format_with_decimals }}
+    </td>
+  </tr>
+</table>
+{% if quotation.consumer_type == 'Residential' %}
+<div style="text-align: left; margin-left: 2px; padding: 0px; background-color: yellow; font-weight:regular; margin-top: 5px;">
+  <b>Note -</b> Subsidy will be provided to consumer <b>Rs. 78,000/-</b> from CENTRAL GOVERNMENT
+  in consumer's Bank A/C directly.
+</div>
+{% endif %}
+
+<!-- Attached Sample Quotation PDF -->
+<!--  <h4 class="space-top"  align="left" style=" padding-bottom: 10px;"> <span  style="background-color: darkblue; color: white; font-size: 18px;"><u>DETAILS FOR THE MAJOR COMPONENTS</u></span></h4>-->
+<h4 class="space-top section-heading"
+    align="left"
+    style="padding-bottom: 10px; page-break-before: always; page-break-inside: avoid;">
+    <span style="background-color: #0A66C2; color: white; font-size: 17px;">
+        <u>DETAILS FOR THE MAJOR COMPONENTS</u>
+    </span>
+</h4>
+
+  <table class="offer-table1" align="center">
+  <tr>
+    <th width="10%">Sr No.</th>
+    <th width="25%">Components</th>
+    <th width="35%">Makes</th>
+    <th width="30%">Warranty</th>
+  </tr>
+  <tr>
+    <td>1.</td>
+    <td><b>PV Models <br>{{ quotation.panel_type }}</b></td>
+    <td>{{ quotation.panel_company_names }}</td>
+    <td><b>{{ quotation.panel_manufacturing_warranty }}</b> years Manufacturing and <b>{{ quotation.panel_performance_warranty }}</b> years performance warranty.</td>
+<!--    <td class="center"><a href="{{ doc.file.url }}" target="_blank">View / Download</a></td>-->
+  </tr>
+   <tr>
+    <td>2.</td>
+    <td><b>Inverter</b></td>
+    <td>{{ quotation.inverter_company_names }} or Equivalent</td>
+     <td><b>{{ quotation.inverter_warranty }}</b> years </td>
+  </tr>
+  <tr>
+    <td>3.</td>
+    <td> {% if quotation.structure_type == 'Tin Shade' %}
+            <!-- Display Tin Shade information -->
+             <b>{{ quotation.structure_type }}  Structure  </b>
+        {% else %}
+            <b>{{ quotation.structure_type }} </b>
+        {% endif %}
+    </td>
+    <td>Heramb</td>
+    <td><b>{{ quotation.structure_warranty }}</b> years.</td>
+  </tr>
+ <tr>
+    <td>4.</td>
+    <td><b>Cables</b></td>
+    <td>Polycab or Equivalent</td>
+    <td>N.A.</td>
+  </tr>
+</table>
+
+
+<!--  <table class="offer-table" border="1">-->
+<!--    <tr style=" padding: 2px; ">-->
+<!--      <th>Sr No</th>-->
+<!--      <th>Product Description</th>-->
+<!--      <th>Units</th>-->
+<!--      <th>Amount (INR)</th>-->
+<!--    </tr>-->
+<!--    {% for item in quotation.items.all %}-->
+<!--    <tr>-->
+<!--      <td class="center" style=" padding: 2px;">{{ forloop.counter }}</td>-->
+<!--      <td style=" padding: 2px;">{{ item.product.name }}{% if item.description %}<br><small>{{ item.description }}</small>{% endif %}</td>-->
+<!--      <td class="center" style=" padding: 2px;">{{ item.quantity }}</td>-->
+<!--      <td class="right">{{ item.line_total }}</td>-->
+<!--    </tr>-->
+<!--    {% endfor %}-->
+<!--    <tr><td colspan="3"  style=" padding: 3px;" class="right bold">SPECIAL DISCOUNT</td><td class="right red">{{ quotation.special_discount }}</td></tr>-->
+<!--    <tr><td colspan="3" style=" padding: 3px;" class="right bold">AFTER DISCOUNT AMOUNT</td><td class="right red">{{ quotation.after_discount_amount }}</td></tr>-->
+<!--    <tr><td colspan="3" style=" padding: 3px;" class="right bold">GST 5% (70% of Basic Amount)</td><td class="right red">{{ quotation.gst_5_amount }}</td></tr>-->
+<!--    <tr><td colspan="3" style=" padding: 3px;" class="right bold">GST 18% (30% of Basic Amount)</td><td class="right red">{{ quotation.gst_18_amount }}</td></tr>-->
+<!--    <tr><td colspan="3" style=" padding: 3px;" class="right bold">Net Amount – INR –</td><td class="right bold red">{{ quotation.net_amount }}</td></tr>-->
+<!--  </table>-->
+
+<h4 class="space-top" align="left" style=" padding-bottom: 5px; padding-top: 5px;"> <span  style="background-color: #0A66C2; color: white; font-size: 17px; padding-top: 5px;;"><u>PAYBACK CALCULATIONS</u></span></h4>
+<!--<table id="calculation" class="offer-table">-->
+  <table class="offer-table1" align="center">
+  <tr><td width="50%" style="font-weight: bold; margin-left: 20px; text-align: left;">Plant Capacity</td><td class="black" align="center" width="25%">{{ quotation.plant_capacity_kw|clean_decimal  }}</td><td align="center" width="25%">KW</td></tr>
+  <tr><td style="font-weight: bold; margin-left: 20px; text-align: left;">No. of Units Generated per Year (Approx.)</td><td class="black" align="center">{{ units_generated_per_year|indian_format }}</td><td align="center">Approx UNITS</td></tr>
+  <tr><td style="font-weight: bold; margin-left: 20px; text-align: left;">Electricity per Unit Cost</td><td class="black" align="center">{{ unit_rate|indian_format }} </td><td align="center">Rs/Unit</td></tr>
+  <tr><td style="font-weight: bold; margin-left: 20px; text-align: left;">Yearly Saving</td><td class="black" align="center">{{ yearly_saving|indian_format }} </td><td align="center">Rs/Year</td></tr>
+  <tr><td style="font-weight: bold; margin-left: 20px; text-align: left;">Investment Cost</td><td class="black" align="center">{{ quotation.final_amount|indian_format }}</td><td align="center"> Rs/System</td></tr>
+  <tr><td style="font-weight: bold; margin-left: 20px; text-align: left;">Subsidy</td><td class="black" align="center">{{ subsidy_amount|indian_format }}</td><td align="center">Rs</td></tr>
+  <tr><td style="font-weight: bold; margin-left: 20px; text-align: left;">Total amount after Subsidy</td><td class="black" align="center">{{ after_subsidy_amount|indian_format }}</td><td align="center">Rs/System</td></tr>
+  <tr><td style="font-weight: bold; margin-left: 20px; text-align: left;">Payback Period</td><td class="black" align="center">{{ payback_period }}</td><td align="center">Years</td></tr>
+</table>
+
+<!--  <h4 class="space-top">PAYBACK CALCULATIONS</h4>-->
+<!--  <table id="calculation">-->
+<!--    <tr><td>Plant Capacity</td><td class="red">{{ quotation.plant_capacity_kw }} </td><td>KW</td></tr>-->
+<!--    <tr><td>No. of Units Generated per Year (Approx.)</td><td class="red">{{ quotation.units_generated_per_year }}</td></tr>-->
+<!--    <tr><td>Electricity per Unit Cost</td><td class="red">{{ quotation.electricity_unit_cost }} Rs/Unit</td></tr>-->
+<!--    <tr><td>Yearly Saving</td><td class="red">{{ quotation.yearly_saving }} Rs/Year</td></tr>-->
+<!--    <tr><td>Investment Cost</td><td class="red">{{ quotation.net_amount }} Rs/System</td></tr>-->
+<!--&lt;!&ndash;    <tr><td>Subsidy</td><td class="red">{{ quotation.subsidy_amount }}</td></tr>&ndash;&gt;-->
+<!--    <tr><td>Total amount after Subsidy</td><td class="red">{{ quotation.after_subsidy_amount }} Rs/System</td></tr>-->
+<!--    <tr><td>Payback Period</td><td class="red">{{ quotation.payback_years }} Years</td></tr>-->
+<!--  </table>-->
+
+    <h4 class="space-top" align="left"> <span  style="background-color: #0A66C2; color: white; font-size: 17px;"><u>WORK OF SCOPE UNDER HERAMB</u></span></h4>
+
+  <ol style="padding-top: 10px;">
+    <li style=" margin-left: 30px;">Supply and Installation of Solar Panels.</li>
+    <li style=" margin-left: 30px;">Supply and Installation of Solar Inverter.</li>
+    <li style=" margin-left: 30px;">PV Module, DC cabling up to solar inverter.</li>
+    <li style=" margin-left: 30px;">Inverter AC / DC cabling up to solar inverter.</li>
+    <li style=" margin-left: 30px;">Testing & commissioning of net meter.</li>
+    <li style=" margin-left: 30px;">All required documents process will be done by Heramb Industries.</li>
+  </ol>
+
+<!--    <h4 class="space-top" align="left"> <span  style="background-color: blue; color: white; font-size: 18px;">TERMS & CONDITIONS</span></h4>-->
+<!--  <ol style=" line-height: 1.8;">-->
+<!--    <li style=" margin-left: 30px;"> <span style="background-color: yellow;">Included GST.</span></li>-->
+<!--    <li style=" margin-left: 30px;">Payment terms & Conditions:-->
+<!--      <ol type="a">-->
+<!--        <li>80 &#37; with Purchase Order</li>-->
+<!--        <li>10 &#37; After dispatch of Material</li>-->
+<!--        <li>5 &#37; After Solar structure installation</li>-->
+<!--        <li>5 &#37; After complete net metering process</li>-->
+<!--      </ol>-->
+<!--    </li>-->
+<!--    <li style=" margin-left: 30px;"><span style="background-color: yellow;">Load extension Charges is in consumer's scope.</span></li>-->
+<!--    <li style=" margin-left: 30px;">After load extension, Net-metering process takes 30 days.</li>-->
+<!--    <li style=" margin-left: 30px;">Inlet Water Pipe Line, Water Motor in Consumer Scope.-->
+<!--    <li style=" margin-left: 30px;">Internet access or Wi-Fi Network on Roof or Shed in Consumer Scope.</li>-->
+<!--    <li style=" margin-left: 30px;">All project related civil and official work will be done by Heramb Industries.</li>-->
+<!--    <li style=" margin-left: 30px;"><span style="background-color: yellow;">Ladder in Consumer Scope.</span></li>-->
+<!--    <li style=" margin-left: 30px;"><span style="background-color: yellow;">Load charge is in consumer scope.</span></li>-->
+<!--    <li style=" margin-left: 30px;">Quotation Valid For 7 days from the date of issuance of this quotation.</li>-->
+<!--  </ol>-->
+
+<!--  <h4 class="space-top" align="left">-->
+<!--    <span style="background-color: blue; color: white; font-size: 18px;">TERMS &amp; CONDITIONS</span>-->
+<!--  </h4>-->
+<!--<h4 class="space-top section-heading"-->
+<!--    align="left"-->
+<!--    style="padding-bottom: 5px; page-break-before: always; page-break-inside: avoid;">-->
+<!--    <span style="background-color: #0A66C2; color: white; font-size: 17px;">-->
+<!--        <u>TERMS &amp; CONDITIONS</u>-->
+<!--    </span>-->
+<!--</h4>-->
+
+<!--  <ol class="main">-->
+<!--    <li><span style="background-color: yellow;">Included GST.</span></li>-->
+
+<!--    <li>-->
+<!--      Payment terms &amp; Conditions:-->
+<!--      <ol>-->
+<!--        <li style="margin-left: 20px;">80 &#37; with Purchase Order</li>-->
+<!--        <li style="margin-left: 20px;">10 &#37; After dispatch of Material</li>-->
+<!--        <li style="margin-left: 20px;">5 &#37; After Solar structure installation</li>-->
+<!--        <li style="margin-left: 20px;">5 &#37; After complete net metering process</li>-->
+<!--      </ol>-->
+<!--    </li>-->
+
+<!--    <li><span style="background-color: yellow;">Load extension Charges is in consumer's scope.</span></li>-->
+
+<!--    <li>After load extension, Net-metering process takes 30 days.</li>-->
+
+<!--    <li>Inlet Water Pipe Line, Water Motor in Consumer Scope.</li>-->
+
+<!--    <li>Internet access or Wi-Fi Network on Roof or Shed in Consumer Scope.</li>-->
+
+<!--    <li>All project related civil and official work will be done by Heramb Industries.</li>-->
+
+<!--    <li><span style="background-color: yellow;">Ladder in the Consumer Scope.</span></li>-->
+
+<!--    <li><span style="background-color: yellow;">Walkway in the Consumer Scope.</span></li>-->
+
+<!--    <li>Quotation Valid For 7 days from the date of issuance of this quotation.</li>-->
+<!--  </ol>-->
+
+<!--<h4 class="space-top section-heading"-->
+<!--    align="left"-->
+<!--    style="padding-bottom: 5px; page-break-before: always; page-break-inside: avoid;">-->
+<!--    <span style="background-color: #0A66C2; color: white; font-size: 17px;">-->
+<!--        <u>TERMS &amp; CONDITIONS</u>-->
+<!--    </span>-->
+<!--</h4>-->
+
+<!--<ol class="main">-->
+<!--    {% if quotation.terms_conditions_text %}-->
+<!--        {{ quotation.terms_conditions_text|linebreaks }}-->
+<!--    {% else %}-->
+<!--        &lt;!&ndash; Default terms if none selected &ndash;&gt;-->
+<!--        <li><span style="background-color: yellow;">Included GST.</span></li>-->
+<!--        <li>-->
+<!--            Payment terms &amp; Conditions:-->
+<!--            <ol>-->
+<!--                <li style="margin-left: 20px;">80 &#37; with Purchase Order</li>-->
+<!--                <li style="margin-left: 20px;">10 &#37; After dispatch of Material</li>-->
+<!--                <li style="margin-left: 20px;">5 &#37; After Solar structure installation</li>-->
+<!--                <li style="margin-left: 20px;">5 &#37; After complete net metering process</li>-->
+<!--            </ol>-->
+<!--        </li>-->
+<!--        <li><span style="background-color: yellow;">Load extension Charges is in consumer's scope.</span></li>-->
+<!--        <li>After load extension, Net-metering process takes 30 days.</li>-->
+<!--        <li>Inlet Water Pipe Line, Water Motor in Consumer Scope.</li>-->
+<!--        <li>Internet access or Wi-Fi Network on Roof or Shed in Consumer Scope.</li>-->
+<!--        <li>All project related civil and official work will be done by Heramb Industries.</li>-->
+<!--        <li><span style="background-color: yellow;">Ladder in the Consumer Scope.</span></li>-->
+<!--        <li><span style="background-color: yellow;">Walkway in the Consumer Scope.</span></li>-->
+<!--        <li>Quotation Valid For 7 days from the date of issuance of this quotation.</li>-->
+<!--    {% endif %}-->
+<!--</ol>-->
+<!--<h4 class="space-top section-heading"-->
+<!--    align="left"-->
+<!--    style="padding-bottom: 5px; page-break-before: always; page-break-inside: avoid;">-->
+<!--    <span style="background-color: #0A66C2; color: white; font-size: 17px;">-->
+<!--        <u>TERMS &amp; CONDITIONS</u>-->
+<!--    </span>-->
+<!--</h4>-->
+
+<!--<ol class="main">-->
+<!--    {% if quotation.terms_conditions_text %}-->
+<!--        {% for term in quotation.terms_conditions.all %}-->
+<!--            <li>-->
+<!--                {% if term.has_yellow_background %}-->
+<!--                    <span style="background-color: yellow;">{{ term.content }}</span>-->
+<!--                {% else %}-->
+<!--                    {{ term.content }}-->
+<!--                {% endif %}-->
+<!--            </li>-->
+<!--        {% endfor %}-->
+<!--    {% else %}-->
+<!--        &lt;!&ndash; Default terms if none selected &ndash;&gt;-->
+<!--        <li><span style="background-color: yellow;">Included GST.</span></li>-->
+<!--        <li>-->
+<!--            Payment terms &amp; Conditions:-->
+<!--            <ol>-->
+<!--                <li style="margin-left: 20px;">80 &#37; with Purchase Order</li>-->
+<!--                <li style="margin-left: 20px;">10 &#37; After dispatch of Material</li>-->
+<!--                <li style="margin-left: 20px;">5 &#37; After Solar structure installation</li>-->
+<!--                <li style="margin-left: 20px;">5 &#37; After complete net metering process</li>-->
+<!--            </ol>-->
+<!--        </li>-->
+<!--        <li><span style="background-color: yellow;">Load extension Charges is in consumer's scope.</span></li>-->
+<!--        <li>After load extension, Net-metering process takes 30 days.</li>-->
+<!--        <li>Inlet Water Pipe Line, Water Motor in Consumer Scope.</li>-->
+<!--        <li>Internet access or Wi-Fi Network on Roof or Shed in Consumer Scope.</li>-->
+<!--        <li>All project related civil and official work will be done by Heramb Industries.</li>-->
+<!--        <li><span style="background-color: yellow;">Ladder in the Consumer Scope.</span></li>-->
+<!--        <li><span style="background-color: yellow;">Walkway in the Consumer Scope.</span></li>-->
+<!--        <li>Quotation Valid For 7 days from the date of issuance of this quotation.</li>-->
+<!--    {% endif %}-->
+<!--</ol>-->
+<h4 class="space-top section-heading"
+    align="left"
+    style="padding-bottom: 5px; page-break-before: always; page-break-inside: avoid;">
+    <span style="background-color: #0A66C2; color: white; font-size: 17px;">
+        <u>TERMS &amp; CONDITIONS</u>
+    </span>
+</h4>
+
+<ol class="main">
+    <!-- DEFAULT TERMS (Always shown) -->
+    <li><span style="background-color: yellow;">Included GST.</span></li>
+    <li>
+        Payment terms &amp; Conditions:
+        <ol>
+            <li style="margin-left: 20px;">80 &#37; with Purchase Order</li>
+            <li style="margin-left: 20px;">10 &#37; After dispatch of Material</li>
+            <li style="margin-left: 20px;">5 &#37; After Solar structure installation</li>
+            <li style="margin-left: 20px;">5 &#37; After complete net metering process</li>
+        </ol>
+    </li>
+    <li><span style="background-color: yellow;">Load extension Charges is in consumer's scope.</span></li>
+    <li>After load extension, Net-metering process takes 30 days.</li>
+
+    <!-- CUSTOM TERMS (From database) -->
+    {% for term in quotation.terms_conditions.all %}
+        <li>
+            {% if term.id in terms_with_yellow %}
+                <span style="background-color: yellow;">{{ term.content }}</span>
+            {% else %}
+                {{ term.content }}
+            {% endif %}
+        </li>
+    {% endfor %}
+</ol>
+    <h4 class="space-top" align="left"> <span  style="background-color: #0A66C2; color: white; font-size: 17px;"><u>Bank Details:</u></span></h4>
+
+  <div style=" line-height: 1.8; margin-left: 20px; font-size: 14px;">
+
+  <b>A/C Name -</b> Heramb Industries<br>
+  <b>GST No -</b> 123457896541332<br>
+  <b>PAN No -</b> ABC12358G<br>
+  <b>A/C No -</b> 112233665544778<br>
+  <b>IFSC CODE -</b> SVSB000123<br>
+  <b>Bank Name -</b> SVC CO-OP Bank<br>
+  <b>Branch Name -</b> Aurangabad / Chh. SambhajiNagar<br>
+</div>
+  <table class="no-border">
+    <tr style="border: none; margin-left: 14px;">
+      <td>  <b style="font-size: 20px;">Contact Person: </b><br>
+<!--           <div style="margin-left: 30px; font-weight: bold; font-size: 15px;">Mr.{{ quotation.employee_name }}<br>-->
+<!--            7588540555-->
+<!--             </div>-->
+        {# quotation_pdf_template.html #}
+<!--        <h3>Representatives</h3>-->
+        {% if quotation.representative_names %}
+          {# Display from stored order in representative_names (already formatted with numbers and order) #}
+          {# representative_names is stored as: "1. Name - Contact\n2. Name - Contact\n..." #}
+          {# linebreaksbr converts \n to <br> tags for proper display #}
+          <div style="margin-left: 20px; line-height: 1.6;">
+            {{ quotation.representative_names|linebreaksbr }}
+          </div>
+        {% elif representatives %}
+          {# Fallback to representatives queryset if representative_names not available #}
+          {% for rep in representatives %}
+            <div style="margin-left: 20px; margin-bottom: 2px;">
+              <b>{{ forloop.counter }}. {{ rep.name }}{% if rep.contact %} - {{ rep.contact }}{% endif %}</b>
+            </div>
+          {% endfor %}
+        {% else %}
+          <p>No representatives selected.</p>
+        {% endif %}
+
+      </td>
+      <td><div style="font-size: 16px; fon; margin-left: 20px; text-align: center;">
+  <b>With Regards,</b>
+   <img src="{% static 'images/sign.jpeg' %}"
+         style="width:100pt; height:80pt; display:block; margin:0; padding:0;">
+      <b>M/S HERAMB INDUSTRIES</b>
+</div></td>
+    </tr>
+  </table>
+
+</body>
+</html>

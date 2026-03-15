@@ -1,0 +1,120 @@
+{% extends 'partials/base.html' %}
+
+
+{% block title %} {{title}} {% endblock title %}
+
+
+{% block content %}
+
+    <div style="color:#575757; font-style: bold; font-size: 3rem; border-bottom: 1px solid white;">{{title}}</div> <br>
+
+    <form method="post">
+        {% csrf_token %}
+        <div class="form-group">
+            {{ form.non_field_errors }}
+        </div>
+        <div class="form-group">
+            <label for="{{ form.name.id_for_label }}">Supplier Name:</label>
+            {{ form.name }}
+            {% if form.name.errors %}
+                <span style="color: red; font-weight: bold;">{{ form.name.errors }}</span>
+            {% endif %}
+        </div>
+        <div class="form-group">
+            <label for="{{ form.contact_person.id_for_label }}">Contact Person Name:</label>
+            {{ form.contact_person }}
+            {% if form.contact_person.errors %}
+                <span style="color: red; font-weight: bold;">{{ form.contact_person.errors }}</span>
+            {% endif %}
+        </div>
+
+        <div class="form-row">
+            <div class="form-group col-md-6">
+                <label for="{{ form.phone.id_for_label }}">Phone No:</label>
+                {{ form.phone }}
+                {% if form.phone.errors %}
+                  <span style="color: red; font-weight: bold;">{{ form.phone.errors }}</span>
+                {% endif %}
+            </div>
+            <div class="form-group col-md-6">
+                <label for="{{ form.email.id_for_label }}">Email ID:</label>
+                {{ form.email }}
+                {% if form.email.errors %}
+                    <span style="color: red; font-weight: bold;">{{ form.email.errors }}</span>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label for="{{ form.address.id_for_label }}">Address:</label>
+            {{ form.address }}
+            {% if form.address.errors %}
+                <span style="color: red; font-weight: bold;">{{ form.address.errors }}</span>
+            {% endif %}
+        </div>
+
+        <div class="form-row">
+            <div class="form-group col-md-6">
+                <label for="{{ form.city.id_for_label }}">City:</label>
+                {{ form.city }}
+                {% if form.city.errors %}
+                    <span style="color: red; font-weight: bold;">{{ form.city.errors }}</span>
+                {% endif %}
+
+            </div>
+            <div class="form-group col-md-6">
+                <label for="{{ form.state.id_for_label }}">State:</label>
+                {{ form.state }}
+                {% if form.state.errors %}
+                    <span style="color: red; font-weight: bold;">{{ form.state.errors }}</span>
+                {% endif %}
+
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="form-group col-md-6">
+                <label for="{{ form.post_code.id_for_label }}">Pine Code:</label>
+                {{ form.post_code }}
+                {% if form.post_code.errors %}
+                    <span style="color: red; font-weight: bold;">{{ form.post_code.errors }}</span>
+                {% endif %}
+
+            </div>
+            <div class="form-group col-md-6">
+                <label for="{{ form.category.id_for_label }}">Category:</label>
+                {{ form.category }}
+                {% if form.category.errors %}
+                    <span style="color: red; font-weight: bold;">{{ form.category.errors }}</span>
+                {% endif %}
+
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label for="{{ form.gstin.id_for_label }}">GSTIN No:</label>
+            {{ form.gstin }}
+            {% if form.gstin.errors %}
+                <span style="color: red; font-weight: bold;">{{ form.gstin.errors }}</span>
+            {% endif %}
+        </div>
+
+         <div class="form-group">
+            <label for="{{ form.status.id_for_label }}">Status:</label>
+            {{ form.status }}
+        </div>
+        <br>
+
+        <div class="align-middle">
+            <button type="submit" class="btn btn-success">{{ savebtn }}</button>
+            {% if title == "New Supplier" %}
+                <button type="reset" class="btn btn-danger" >Reset</button>
+            {% endif %}
+            {% if delbtn %}
+                <a href="{% url 'delete-supplier' supplier.pk %}" class="btn btn-danger"> Delete Supplier </a>
+            {% endif %}
+            <a href="{% url 'suppliers-list' %}" class="btn btn-secondary">Cancel</a>
+        </div>
+        
+    </form>
+
+{% endblock content %}

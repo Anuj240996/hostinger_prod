@@ -1,0 +1,187 @@
+{% extends 'partials/base.html' %}
+{% block title %}Order Page{% endblock %}
+{% load static %}
+{% block content %}
+{% if messages %}
+    <ul class="messages">
+        {% for message in messages %}
+            {% if message.tags %} <script> alert("{{ message }}") </script> {% endif %}
+        {% endfor %}
+    </ul>
+{% endif %}
+<div class="page-header">
+    <div class="row">
+        <div class="col-sm-12">
+            <h3 class="page-title text-capitalize">Delete Meters Details of Company</h3>
+            <ul class="breadcrumb" style="border-bottom: 2px solid orange">
+                <li class="breadcrumb-item"><a href="#">Dashboard</a></li>
+                <li class="breadcrumb-item active">View Details</li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+<form method="POST">
+    {% csrf_token %}
+    <div class="form-group row">
+        <div class="col-sm-10">
+            <label for="comp_name">Select Company Name:</label>
+            <select class="form-control" name="comp_name" id="comp_name">
+                <option value=""></option>
+                {% for comp_name in comp_names %}
+                    <option value="{{ comp_name }}" {% if comp_name == selected_comp_name %} selected {% endif %}>{{ comp_name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-sm-2">
+            <br>
+            <button type="submit"><i class="nav-icon fa fa-eye" aria-hidden="true"></i>   Preview</button>
+        </div>
+    </div>
+
+    {% if selected_comp_name %}
+        {% if meters_records %}
+            <fieldset>
+                <legend>Meters</legend>
+                <table id="meters-table" class="highlight-on-check">
+                    <!-- Meter Table Header -->
+                    <thead>
+                        <tr>
+                            <th style="width: 200px; text-align: center">Sr No</th>
+                            <th style="width: 400px; text-align: center">Meter Type</th>
+                            <th style="width: 400px; text-align: center">{% if meters_records.0.meter_type %} {{ meters_records.0.meter_type }} Make {% endif %}</th>
+                            <th style="width: 300px; text-align: center">{% if meters_records.0.meter_type %} {{ meters_records.0.meter_type }} Capacity {% endif %}</th>
+                            <th style="width: 400px; text-align: center">{% if meters_records.0.meter_type %} {{ meters_records.0.meter_type }} Serial Number {% endif %}</th>
+                            {% if meters_records.0.transformer_make %} <!-- Check if CT_make is present in the first record -->
+                                <th style="width: 400px; text-align: center">CT Type</th>
+                                <th style="width: 400px; text-align: center">{% if meters_records.0.transformer_type %} {{ meters_records.0.transformer_type }} Make {% endif %}</th>
+                                <th style="width: 300px; text-align: center">{% if meters_records.0.transformer_type %} {{ meters_records.0.transformer_type }} Capacity {% endif %}</th>
+                                <th style="width: 400px; text-align: center">{% if meters_records.0.transformer_type %} {{ meters_records.0.transformer_type }} Serial Number{% endif %}</th>
+                            {% endif %}
+                            <th style="width: 200px; text-align: center">Delete</th>
+                        </tr>
+                    </thead>
+                    <!-- Meter Table Body -->
+                    <tbody>
+                        {% for record in meters_records %}
+                            <tr>
+                                <td style="text-align: center">{{ forloop.counter }}</td>
+                                <td>{{ record.meter_type }}</td>
+                                <td>{{ record.make }}</td>
+                                <td style="text-align: center">{{ record.capacity }}</td>
+                                <td>{{ record.serial_no }}</td>
+                                {% if record.transformer_make %} <!-- Check if CT_make is present in the current record -->
+                                    <td>{{ record.transformer_type }}</td>
+                                    <td>{{ record.transformer_make }}</td>
+                                    <td>{{ record.transformer_capacity }}</td>
+                                    <td>{{ record.transformer_serial_number }}</td>
+                                {% endif %}
+                                <td style="text-align: center"><input type="checkbox" class="checkbox-input" name="meters_to_delete" value="{{ record.id }}"></td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </fieldset>
+        {% endif %}
+
+        {% if generation_meter_records %}
+            <fieldset>
+            {% if generation_meter_records.0.CT_make %}
+              <legend style="color: blue;">Generation With CT Meters</legend>
+            {% else %}
+              <legend style="color: blue;">Generation Meters</legend>
+            {% endif %}
+            <table class="highlight-on-check" id="generation-meters-table">
+                <!-- Generation Meter Table Header -->
+                <thead>
+                <tr>
+                    <th style="width: 200px; text-align: center">Sr No.</th>
+                    <th style="width: 400px; text-align: center">Generation Meter Make</th>
+                    <th style="width: 300px; text-align: center">Generation Meter Capacity</th>
+                    <th style="width: 400px; text-align: center">Generation Meter Serial Number</th>
+                    {% if generation_meter_records.0.CT_make %} <!-- Check if CT_make is present in the first record -->
+                        <th style="width: 400px; text-align: center">CT Make</th>
+                        <th style="width: 300px; text-align: center">CT Capacity</th>
+                        <th style="width: 400px; text-align: center">CT Serial Number</th>
+                    {% endif %}
+                     <th style="width: 200px; text-align: center">Delete</th>
+                    <!-- <th style="width: 200px; text-align: center">Delete</th> -->
+                </tr>
+                </thead>
+                <!-- Generation Meter Table Body -->
+                <tbody>
+                {% for record in generation_meter_records %}
+                    <tr>
+                        <td style="text-align: center">{{ forloop.counter }}</td>
+                        <td>{{ record.make }}</td>
+                        <td>{{ record.capacity }}</td>
+                        <td>{{ record.serial_no }}</td>
+                        {% if record.CT_make %} <!-- Check if CT_make is present in the current record -->
+                            <td>{{ record.CT_make }}</td>
+                            <td>{{ record.CT_capacity }}</td>
+                            <td>{{ record.CT_serial_no }}</td>
+                        {% endif %}
+                        <td style="text-align: center"><input type="checkbox" name="generation_meters_to_delete" class="checkbox-input" value="{{ record.id }}"></td>
+                        <!-- <td style="text-align: center"><input type="checkbox" name="generation_meters_to_delete" class="checkbox-input" value="{{ record.id }}"></td> -->
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </fieldset>
+        {% endif %}
+
+        <!-- Delete Selected Records Button -->
+        <div class="form-group" align="center">
+            <button type="submit" name="action" value="delete" style="width: 200px;">Delete Selected Records</button>
+        </div>
+    {% endif %}
+</form>
+
+<style>
+.form-group {
+    margin-bottom: 10px;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+th, td {
+    border: 1px solid #dddddd;
+    text-align: center;
+    padding: 8px;
+}
+
+th {
+    background-color: lightgray;
+}
+
+/* Highlight rows when checkbox is checked */
+.highlighted-row {
+    background-color: #cb6843; /* Change to your preferred color */
+}
+
+.checkbox-input {
+    margin: 0 auto;
+    display: block;
+}
+</style>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const checkboxes = document.querySelectorAll('.checkbox-input');
+
+    checkboxes.forEach(function(checkbox) {
+        checkbox.addEventListener('change', function() {
+            const row = this.parentNode.parentNode;
+            if (this.checked) {
+                row.classList.add('highlighted-row');
+            } else {
+                row.classList.remove('highlighted-row');
+            }
+        });
+    });
+});
+</script>
+
+{% endblock %}

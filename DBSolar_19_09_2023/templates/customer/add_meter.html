@@ -1,0 +1,176 @@
+
+{% extends 'partials/base.html' %}
+{% block title %}Order Page{% endblock %}
+{% load static %}
+{% block content %}
+    <form method="post" enctype="multipart/form-data" action="{% url 'customer-add_meter' %}">
+        {% csrf_token %}
+
+        <!-- Company Dropdown List -->
+        <label for="Comp_name">Company Name:</label>
+        <select name="Comp_name" id="Comp_name">
+            {% for comp_name in comp_names %}
+                <option value="{{ comp_name }}">{{ comp_name }}</option>
+            {% endfor %}
+        </select><br>
+        <fieldset>
+        <!-- Meters (Radio Buttons) -->
+        <legend>Meters:</legend>
+        <div id="metersRow">
+            <input type="radio" name="meters" value="Net Meter"> Net Meter
+            <input type="radio" name="meters" value="ABT Meter"> ABT Meter<br>
+
+            <table>
+                <tr class="row">
+                    <td>
+                        <label for="meters_make">Make:</label>
+                        <input type="text" name="m_meters_make" style="margin-right: 10px;">
+                    </td>
+                    <td>
+                        <label for="meters_capacity">Capacity:</label>
+                        <input type="text" name="m_meters_capacity" style="margin-right: 10px;">
+                    </td>
+                    <td>
+                        <label for="meters_serial">Serial No:</label>
+                        <input type="text" name="m_meters_serial" style="margin-right: 10px;">
+                    </td>
+                    <td></td>
+                </tr>
+            </table>
+
+<div class="row">
+</div>
+        </div>
+
+        <!-- Add Row Button for Meters Section -->
+        <button type="button" id="addMetersRow">Add Row</button><br>
+        </fieldset>
+
+        <fieldset>
+        <!-- Dropdown for CT, Cubical, None -->
+        <legend>Transformer:</legend>
+        <div id="meterTypeRow">
+            <label for="meter_type">Meter Type:</label>
+            <select name="meter_type">
+                <option value="CT">CT</option>
+                <option value="Cubical">Cubical</option>
+                <option value="None">None</option>
+            </select><br>
+
+            <!-- Meters Make, Capacity, Serial No (Related to Meter Type) -->
+            <div class="row">
+                <label for="Transformer_make">Make:</label>
+                <input type="text" name="meter_make" style="margin-right: 10px;">
+                <label for="Transformer_capacity">Capacity:</label>
+                <input type="text" name="meter_capacity" style="margin-right: 10px;">
+                <label for="Transformer_serial">Serial No:</label>
+                <input type="text" name="meter_serial" style="margin-right: 10px;">
+            </div>
+        </div>
+
+        <!-- Add Row Button for Meter Type Section -->
+        <button type="button" id="addMeterTypeRow">Add Row</button><br>
+        </fieldset>
+
+        <fieldset>
+        <!-- Generation Meter Section -->
+        <legend>Generation Meter:</legend>
+        <div id="generationMeterRow">
+            <div class="row">
+                <label for="generation_meter_make">Make:</label>
+                <input type="text" name="generation_meter_make" style="margin-right: 10px;">
+                <label for="generation_meter_capacity">Capacity:</label>
+                <input type="text" name="generation_meter_capacity" style="margin-right: 10px;">
+                <label for="generation_meter_serial">Serial No:</label>
+                <input type="text" name="generation_meter_serial" style="margin-right: 10px;">
+            </div>
+        </div>
+
+        <!-- Add Row Button for Generation Meter Section -->
+        <button type="button" id="addGenerationMeterRow">Add Row</button><br>
+        </fieldset>
+
+        <fieldset>
+        <!-- Generation CT Section -->
+        <legend>Generation CT:</legend>
+        <div id="generationCTRow">
+            <input type="radio" name="generation_ct" value="Required"> Required
+            <input type="radio" name="generation_ct" value="Not Required"> Not Required<br>
+            <div class="row">
+                <label for="generation_ct_make">Make:</label>
+                <input type="text" name="generation_ct_make" style="margin-right: 10px;">
+                <label for="generation_ct_capacity">Capacity:</label>
+                <input type="text" name="generation_ct_capacity" style="margin-right: 10px;">
+                <label for="generation_ct_serial">Serial No:</label>
+                <input type="text" name="generation_ct_serial" style="margin-right: 10px;">
+            </div>
+        </div>
+
+        <!-- Add Row Button for Generation CT Section -->
+        <button type="button" id="addGenerationCTRow">Add Row</button><br>
+        </fieldset>
+
+        <!-- Submit Button -->
+        <input type="submit" value="Submit">
+    </form>
+<style>
+        .row {
+            display: flex;
+            align-items: center;
+        }
+        .row label {
+            margin-right: 10px;
+        }
+    </style>
+<script>
+
+  let metersRowCounter = 0;
+
+function addRow(containerId, counter) {
+    const container = document.getElementById(containerId);
+    const clone = container.querySelector(".row").cloneNode(true);
+
+    // Get the current row index
+    const currentIndex = counter;
+
+    // Update input names in the cloned set
+    const inputFields = clone.querySelectorAll("input[type='text']");
+    inputFields.forEach(function (input) {
+        const originalName = input.name;
+        input.name = `${originalName}_${currentIndex}`;
+        input.value = ''; // Clear the input values
+    });
+
+    container.appendChild(clone);
+}
+
+document.getElementById("addMetersRow").addEventListener("click", function () {
+    metersRowCounter++;
+    addRow("metersRow", metersRowCounter);
+});
+let meterTypeRowCounter = 0;
+let generationMeterRowCounter = 0;
+let generationCTRowCounter = 0;
+
+function addMeterTypeRow() {
+    meterTypeRowCounter++;
+    addRow("meterTypeRow", meterTypeRowCounter);
+}
+
+function addGenerationMeterRow() {
+    generationMeterRowCounter++;
+    addRow("generationMeterRow", generationMeterRowCounter);
+}
+
+function addGenerationCTRow() {
+    generationCTRowCounter++;
+    addRow("generationCTRow", generationCTRowCounter);
+}
+
+document.getElementById("addMeterTypeRow").addEventListener("click", addMeterTypeRow);
+document.getElementById("addGenerationMeterRow").addEventListener("click", addGenerationMeterRow);
+document.getElementById("addGenerationCTRow").addEventListener("click", addGenerationCTRow);
+
+
+</script>
+{% endblock %}

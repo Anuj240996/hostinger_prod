@@ -1,0 +1,2 @@
+ function txt_onchange(obj) { obj.style.backgroundColor = "#E9F0FC";obj.style.color = "black"; }
+ function txt_onfocus(obj){ obj.style.backgroundColor = "#fff"; }

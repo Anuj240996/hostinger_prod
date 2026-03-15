@@ -1,0 +1,586 @@
+{% extends 'partials/base.html' %}
+{% block title %}Consumer Page{% endblock %}
+{% load static %}
+{% block content %}
+{% if user.is_authenticated and user.is_staff %}
+<div class="content container-fluid">
+   <div class="page-header">
+      <div class="row">
+         <div class="col">
+            <h3 class="page-title text-capitalize">{{user.first_name}}  &nbsp;Profile</h3>
+            <ul class="breadcrumb">
+               <li class="breadcrumb-item"><a href="{% url 'firereport-dashboard_staff' %}">Dashboard</a></li>
+               <li class="breadcrumb-item active">Profile</li>
+            </ul>
+         </div>
+      </div>
+   </div>
+   <div class="row">
+      <div class="col-md-12">
+         <div class="profile-header">
+            <div class="row align-items-center">
+               <div class="col-auto profile-image">
+                  <a href="#">
+                  <img class="rounded-circle" alt="User Image" src="{{ employee.image.url }}">
+                  </a>
+               </div>
+               <div class="col ml-md-n2 profile-user-info">
+                  <h4 class="user-name mb-0 text-capitalize">{{ user.first_name }} {{ user.last_name }}</h4>
+                  <h6 class="text-muted text-capitalize">DB/{{ user.id }} - {{ employee.designation }} {{ employee.department }}</h6>
+                  <div class="user-Location text-capitalize"><i class="fas fa-map-marker-alt"></i> {{ employee.address }}, {{ employee.city }}</div>
+                  <div class="about-text text-capitalize">{{ employee.taluka }} {{ employee.district }}</div>
+               </div>
+               <div class="col-auto profile-btn">
+                  <a href="{% url 'user-edit_profile' %}" class="btn btn-primary">
+                  Edit
+                  </a>
+               </div>
+            </div>
+         </div>
+         <div class="profile-menu">
+            <ul class="nav nav-tabs nav-tabs-solid">
+               <li class="nav-item">
+                  <a class="nav-link active" data-toggle="tab" href="#per_details_tab">About</a>
+               </li>
+               <li class="nav-item">
+                  <a class="nav-link" data-toggle="tab" href="#work_tab">Work Details</a>
+               </li>
+               <li class="nav-item">
+                  <a class="nav-link" data-toggle="tab" href="#education_tab">Education</a>
+               </li>
+               <li class="nav-item">
+                  <a class="nav-link" data-toggle="tab" href="#emergency_tab">Permanent Details</a>
+               </li>
+               <li class="nav-item">
+                  <a class="nav-link" data-toggle="tab" href="#password_tab">Password</a>
+               </li>
+            </ul>
+         </div>
+         <div class="tab-content profile-tab-cont">
+            <div class="tab-pane fade show active" id="per_details_tab">
+               <div class="row">
+                  <div class="col-lg-9">
+                     <div class="card">
+                        <div class="card-body">
+                           <h5 class="card-title d-flex justify-content-between">
+                              <span>Personal Details</span>
+                              <a class="edit-link" data-toggle="modal" href="{% url 'user-edit_profile' %}"><i class="far fa-edit mr-1"></i>Edit</a>
+                           </h5>
+                           <div class="media-body ml-5">
+                              <div class="row">
+                                 <p class="col-sm-3 text-muted text-sm-right mb-0 mb-sm-3">Name</p>
+                                 <p class="col-sm-9 text-capitalize">{{ user.first_name }} {{ user.last_name }}</p>
+                              </div>
+                              <div class="row">
+                                 <p class="col-sm-3 text-muted text-sm-right mb-0 mb-sm-3">Date of Birth</p>
+                                 <p class="col-sm-9">{{ employee.DOB }}</p>
+                              </div>
+                              <div class="row">
+                                 <p class="col-sm-3 text-muted text-sm-right mb-0 mb-sm-3">Blood Group</p>
+                                 <p class="col-sm-9">{{ employee.bg }}</p>
+                              </div>
+                              <div class="row">
+                                 <p class="col-sm-3 text-muted text-sm-right mb-0 mb-sm-3">Email ID</p>
+                                 <p class="col-sm-9">{{ user.email }}</p>
+                              </div>
+                              <div class="row">
+                                 <p class="col-sm-3 text-muted text-sm-right mb-0 mb-sm-3">Contact No.</p>
+                                 <p class="col-sm-9">{{ employee.workphone }}</p>
+                              </div>
+                              <div class="row">
+                                 <p class="col-sm-3 text-muted text-sm-right mb-0">Address</p>
+                                 <p class="col-sm-9 mb-0 text-capitalize">{{ employee.address }} ,  <br>
+                                    {{ employee.city }} ,<br>
+                                    {{ employee.taluka }} ,<br>
+                                    {{ employee.district }}.
+                                 </p>
+                              </div>
+                           </div>
+                        </div>
+                     </div>
+                  </div>
+                  <div class="col-lg-3">
+                     <div class="card">
+                        <div class="card-body">
+                           <h5 class="card-title d-flex justify-content-between">
+                              <span>Account Status</span>
+                              <a class="edit-link" href="#"><i class="far fa-edit mr-1"></i> Edit</a>
+                           </h5>
+                           <button class="btn btn-success" type="button"><i class="fe fe-check-verified"></i> Active</button>
+                        </div>
+                     </div>
+                     <div class="card">
+                        <div class="card-body">
+                           <h5 class="card-title d-flex justify-content-between">
+                              <span>Skills </span>
+                              <a class="edit-link" href="#"><i class="far fa-edit mr-1"></i> Edit</a>
+                           </h5>
+                           <div class="skill-tags">
+<!--                               <span>Html5</span> -->
+<!--                              // <span>CSS3</span>
+                              // <span>WordPress</span>
+                              // <span>Javascript</span>
+                              // <span>Android</span>
+                              // <span>iOS</span>
+                              // <span>Angular</span>
+                              // <span>PHP</span> */-->
+
+                           </div>
+                        </div>
+                     </div>
+                  </div>
+               </div>
+            </div>
+            <div id="work_tab" class="tab-pane fade">
+               <div class="row">
+                  <div class="col-lg-9">
+                     <div class="card">
+                        <div class="card-body">
+                           <h5 class="card-title d-flex justify-content-between">
+                              <span>Work Details</span>
+                           </h5>
+                           <div class="media-body ml-5">
+                              <div class="row">
+                                 <p class="col-sm-3 text-muted text-sm-right mb-0 mb-sm-3">Employee ID</p>
+                                 <p class="col-sm-9 text-capitalize">DB / {{ user.id }} </p>
+                              </div>
+                              <div class="row">
+                                 <p class="col-sm-3 text-muted text-sm-right mb-0 mb-sm-3">Designation</p>
+                                 <p class="col-sm-9 text-capitalize">{{ employee.designation }} </p>
+                              </div>
+                              <div class="row">
+                                 <p class="col-sm-3 text-muted text-sm-right mb-0 mb-sm-3">Department</p>
+                                 <p class="col-sm-9 text-capitalize">{{ employee.department }}</p>
+                              </div>
+                              <div class="row">
+                                 <p class="col-sm-3 text-muted text-sm-right mb-0 mb-sm-3">Date Of Joining</p>
+                                 <p class="col-sm-9">{{ user.date_joined | date:'d/m/y' }}</p>
+                              </div>
+                              <div class="row">
+                                 <p class="col-sm-3 text-muted text-sm-right mb-0 mb-sm-3">Work Email ID</p>
+                                 <p class="col-sm-9">{{ user.email }}</p>
+                              </div>
+                              <div class="row">
+                                 <p class="col-sm-3 text-muted text-sm-right mb-0 mb-sm-3">Phone No</p>
+                                 <p class="col-sm-9">{{ employee.workphone }}</p>
+                              </div>
+                           </div>
+                        </div>
+                     </div>
+                  </div>
+                  <div class="col-lg-3">
+                     <div class="card">
+                        <div class="card-body">
+                           <h5 class="card-title d-flex justify-content-between">
+                              <span>Account Status</span>
+                              <a class="edit-link" href="#"><i class="far fa-edit mr-1"></i> Edit</a>
+                           </h5>
+                           <button class="btn btn-success" type="button"><i class="fe fe-check-verified"></i> Active</button>
+                        </div>
+                     </div>
+                     <div class="card">
+                        <div class="card-body">
+                           <h5 class="card-title d-flex justify-content-between">
+                              <span>Skills </span>
+                              <a class="edit-link" href="#"><i class="far fa-edit mr-1"></i> Edit</a>
+                           </h5>
+                           <div class="skill-tags">
+<!--                              <span>Html5</span>
+                              <span>CSS3</span>
+                              <span>WordPress</span>
+                              <span>Javascript</span>
+                              <span>Android</span>
+                              <span>iOS</span>
+                              <span>Angular</span>
+                              <span>PHP</span>-->
+                           </div>
+                        </div>
+                     </div>
+                  </div>
+               </div>
+            </div>
+            <div id="education_tab" class="tab-pane fade">
+               <div class="row">
+                  <div class="col-lg-9">
+                     <div class="card">
+                        <div class="card-body">
+                           <h5 class="card-title d-flex justify-content-between">
+                              <span>Education Details</span>
+                           </h5>
+                           <div class="media-body ml-5">
+                              <div class="row">
+                                 <p class="col-sm-3 text-muted text-sm-right mb-0 mb-sm-3">Higher Education</p>
+                                 <p class="col-sm-9">{{ employee.pg }} </p>
+                              </div>
+                              <div class="row">
+                                 <p class="col-sm-3 text-muted text-sm-right mb-0 mb-sm-3">Institution</p>
+                                 <p class="col-sm-9 text-capitalize">{{ employee.institution }}</p>
+                              </div>
+                              <div class="row">
+                                 <p class="col-sm-3 text-muted text-sm-right mb-0 mb-sm-3">Year Of Passing</p>
+                                 <p class="col-sm-9">{{ employee.yop | date:'m/Y' }}</p>
+                              </div>
+                              <div class="row">
+                                 <p class="col-sm-3 text-muted text-sm-right mb-0 mb-sm-3">Specialization</p>
+                                 <p class="col-sm-9 text-capitalize">{{ employee.specili }}</p>
+                              </div>
+                           </div>
+                        </div>
+                     </div>
+                  </div>
+                  <div class="col-lg-3">
+                     <div class="card">
+                        <div class="card-body">
+                           <h5 class="card-title d-flex justify-content-between">
+                              <span>Account Status</span>
+                              <a class="edit-link" href="#"><i class="far fa-edit mr-1"></i> Edit</a>
+                           </h5>
+                           <button class="btn btn-success" type="button"><i class="fe fe-check-verified"></i> Active</button>
+                        </div>
+                     </div>
+                     <div class="card">
+                        <div class="card-body">
+                           <h5 class="card-title d-flex justify-content-between">
+                              <span>Skills </span>
+                              <a class="edit-link" href="#"><i class="far fa-edit mr-1"></i> Edit</a>
+                           </h5>
+                           <div class="skill-tags">
+<!--                              <span>Html5</span>
+                              <span>CSS3</span>
+                              <span>WordPress</span>
+                              <span>Javascript</span>
+                              <span>Android</span>
+                              <span>iOS</span>
+                              <span>Angular</span>
+                              <span>PHP</span>-->
+                           </div>
+                        </div>
+                     </div>
+                  </div>
+               </div>
+            </div>
+            <div id="emergency_tab" class="tab-pane fade">
+               <div class="row">
+                  <div class="col-lg-9">
+                     <div class="card">
+                        <div class="card-body">
+                           <h5 class="card-title d-flex justify-content-between">
+                              <span>Permanent Details</span>
+                           </h5>
+                           <div class="media-body ml-5">
+                              <div class="row">
+                                 <p class="col-sm-3 text-muted text-sm-right mb-0 mb-sm-3">Name</p>
+                                 <p class="col-sm-9 text-capitalize">{{ employee.name }} </p>
+                              </div>
+                              <div class="row">
+                                 <p class="col-sm-3 text-muted text-sm-right mb-0 mb-sm-3">Contact No</p>
+                                 <p class="col-sm-9">{{ employee.phone }}</p>
+                              </div>
+                              <div class="row">
+                                 <p class="col-sm-3 text-muted text-sm-right mb-0 mb-sm-3">Email</p>
+                                 <p class="col-sm-9">{{ employee.email }}</p>
+                              </div>
+                              <div class="row">
+                                 <p class="col-sm-3 text-muted text-sm-right mb-0 mb-sm-3">Address</p>
+                                 <p class="col-sm-9 text-capitalize">{{ employee.emraddress }}</p>
+                              </div>
+                           </div>
+                        </div>
+                     </div>
+                  </div>
+                  <div class="col-lg-3">
+                     <div class="card">
+                        <div class="card-body">
+                           <h5 class="card-title d-flex justify-content-between">
+                              <span>Account Status</span>
+                              <a class="edit-link" href="#"><i class="far fa-edit mr-1"></i> Edit</a>
+                           </h5>
+                           <button class="btn btn-success" type="button"><i class="fe fe-check-verified"></i> Active</button>
+                        </div>
+                     </div>
+                     <div class="card">
+                        <div class="card-body">
+                           <h5 class="card-title d-flex justify-content-between">
+                              <span>Skills </span>
+                              <a class="edit-link" href="#"><i class="far fa-edit mr-1"></i> Edit</a>
+                           </h5>
+                           <div class="skill-tags">
+<!--                              // <span>Html5</span>
+                              // <span>CSS3</span>
+                              // <span>WordPress</span>
+                              // <span>Javascript</span>
+                              // <span>Android</span>
+                              // <span>iOS</span>
+                              // <span>Angular</span>
+                              // <span>PHP</span>-->
+                           </div>
+                        </div>
+                     </div>
+                  </div>
+               </div>
+            </div>
+            <div id="password_tab" class="tab-pane fade"  data-href-template="firereport-changePassword">
+               <div class="card">
+                  <div class="card-body">
+                     <h5 class="card-title">Change Password</h5>
+                     <div class="row">
+                        <div class="col-md-10 col-lg-8">
+                           <form method="post" name="changepassword" onsubmit="return checkpassword()">
+                              {% csrf_token %}
+                              <div class="card-body">
+                                 <div class="form-group">
+                                    <label>Current Password</label>
+                                    <input type="password" name="oldpassword" class="form-control" placeholder="Enter Current Password" required>
+                                 </div>
+                                 <div class="form-group">
+                                    <label>New Password</label>
+                                    <input type="password" name="newpassword" class="form-control" placeholder="Enter New Password" required>
+                                 </div>
+                                 <div class="form-group">
+                                    <label>Confirm Password</label>
+                                    <input type="password" name="confirmpassword" class="form-control" placeholder="Enter Confirm Password" required>
+                                 </div>
+                              </div>
+                              <div class="card-footer">
+                                 <button  type="submit" class="btn btn-primary">Submit</button>
+                              </div>
+                           </form>
+                        </div>
+                     </div>
+                  </div>
+               </div>
+            </div>
+         </div>
+      </div>
+   </div>
+</div>
+{% elif user.is_authenticated %}
+<div class="content container-fluid">
+<div class="page-header">
+   <div class="row">
+      <div class="col">
+         <h3 class="page-title text-capitalize">{{user.first_name}}  &nbsp;Profile</h3>
+         <ul class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'firereport-dashboard_staff' %}">Dashboard</a></li>
+            <li class="breadcrumb-item active">Profile</li>
+         </ul>
+      </div>
+   </div>
+</div>
+<div class="row">
+<div class="col-md-12">
+   <div class="profile-header">
+      <div class="row align-items-center">
+         <div class="image-container">
+            <a href="#">
+            <img class="rounded-circle" alt="User Image" src="{{ employee.image.url }}">
+            </a>
+<!--         </div>-->
+<!--          <div class="image-container">-->
+<!--                            <img class="img-thumbnail ml-2" height="550px" src="{{ employee.image.url }}" class="card-img-top" height="200px" alt="profile-image">-->
+<!--                            <img src="{% static '/images/dblogosmall.png' %}" alt="Company Symbol" class="company-symbol-overlap">-->
+         </div>
+
+         <div class="col ml-md-n2 profile-user-info">
+             {% if customer.Comp_name %}
+                  <h4 class="user-name mb-0 text-capitalize">{{ customer.Comp_name }}</h4>
+             {% else %}
+                  <h4 class="user-name mb-0 text-capitalize">{{ user.first_name }} {{ user.last_name }}</h4>
+             {% endif %}
+            <div class="user-Location text-capitalize"><i class="fas fa-map-marker-alt"></i> {{ customer.Address }}, {{ customer.City }}</div>
+            <div class="about-text text-capitalize">{{ customer.state }} , {{ customer.Pincode }}.</div>
+         </div>
+         <div class="col-auto profile-btn">
+            <a href="{% url 'user-edit_profile' %}" class="btn btn-primary">
+            Edit
+            </a>
+         </div>
+      </div>
+   </div>
+   <div class="profile-menu">
+      <ul class="nav nav-tabs nav-tabs-solid">
+         <li class="nav-item">
+            <a class="nav-link active" data-toggle="tab" href="#per_details_tab">About</a>
+         </li>
+         <li class="nav-item">
+            <a class="nav-link" data-toggle="tab" href="#work_tab">Plaint Details</a>
+         </li>
+         <li class="nav-item">
+            <a class="nav-link" data-toggle="tab" href="#password_tab">Password</a>
+         </li>
+      </ul>
+   </div>
+   <div class="tab-content profile-tab-cont">
+      <div class="tab-pane fade show active" id="per_details_tab">
+         <div class="row">
+            <div class="col-lg-9">
+               <div class="card">
+                  <div class="card-body">
+                     <h5 class="card-title d-flex justify-content-between">
+                        <span>Personal Details</span>
+                        <a class="edit-link" data-toggle="modal" href="{% url 'user-edit_profile' %}"><i class="far fa-edit mr-1"></i>Edit</a>
+                     </h5>
+
+                     <div class="row">
+                        {% if customer.Comp_name %}
+                        <p class="col-sm-3 text-muted text-sm-right mb-0 mb-sm-3">Company/Farm Name</p>
+                        <p class="col-sm-9 text-capitalize">{{customer.Comp_name}}</p>
+                        {% else %}
+                        <p class="col-sm-3 text-muted text-sm-right mb-0 mb-sm-3">Consumer Name</p>
+                        <p class="col-sm-9 text-capitalize">{{user.first_name}} {{user.last_name}}</p>
+                        {% endif %}
+                     </div>
+                     <div class="row">
+                           <p class="col-sm-3 text-muted text-sm-right mb-0 mb-sm-3">User Account Email ID</p>
+                           <p class="col-sm-9">{{ user.email }}</p>
+                     </div>
+                     <div class="row">
+                           <p class="col-sm-3 text-muted text-sm-right mb-0 mb-sm-3">Contact No.</p>
+                           <p class="col-sm-9">{{ customer.phone }}</p>
+                     </div>
+                     <div class="row">
+                           <p class="col-sm-3 text-muted text-sm-right mb-0">Address</p>
+                           <p class="col-sm-9 mb-0 text-capitalize">{{ customer.Address }} <br>
+                              {{ customer.City }} ,<br>
+                              {{ customer.Pincode }} ,<br>
+                              {{ customer.state }}.
+                           </p>
+                     </div>
+
+                  </div>
+               </div>
+            </div>
+            <div class="col-lg-3">
+               <div class="card">
+                  <div class="card-body">
+                     <h5 class="card-title d-flex justify-content-between">
+                        <span>Account Status</span>
+                        <a class="edit-link" href="#"><i class="far fa-edit mr-1"></i> Edit</a>
+                     </h5>
+                     <button class="btn btn-success" type="button"><i class="fe fe-check-verified"></i> Active</button>
+                  </div>
+               </div>
+            </div>
+         </div>
+      </div>
+
+         <div id="work_tab" class="tab-pane fade">
+            <div class="row">
+               <div class="col-lg-9">
+                  <div class="card">
+                     <div class="card-body">
+                        <h5 class="card-title d-flex justify-content-between">
+                           <span>Company Details</span>
+                        </h5>
+                        <div class="media-body ml-5">
+                           <div class="media-body ml-5">
+                              <div class="row">
+                                 <p class="col-sm-3 text-muted text-sm-right mb-0 mb-sm-3">Consumer ID</p>
+                                 <p class="col-sm-9">DB/Cust/ {{ customer.Cust_id }}</p>
+                              </div>
+                              <div class="row">
+                                 <p class="col-sm-3 text-muted text-sm-right mb-0 mb-sm-3">Solar Plaint</p>
+                                 <p class="col-sm-9">{{ customer.Plant_Capacity }} KWp</p>
+                              </div>
+                              <div class="row">
+                                 <p class="col-sm-3 text-muted text-sm-right mb-0 mb-sm-3">Consumer No</p>
+                                 <p class="col-sm-9">{{ customer.Consumer }}</p>
+                              </div>
+                              <div class="row">
+                                 <p class="col-sm-3 text-muted text-sm-right mb-0 mb-sm-3">Date Of Installation</p>
+                                 <p class="col-sm-9">{{ customer.Cus_Act_Date | date:'d/m/y' }}</p>
+                              </div>
+                              <div class="row">
+                                 <p class="col-sm-3 text-muted text-sm-right mb-0 mb-sm-3">Company Email ID</p>
+                                 <p class="col-sm-9">{{ customer.email }}</p>
+                              </div>
+                              <div class="row">
+                                 <p class="col-sm-3 text-muted text-sm-right mb-0 mb-sm-3">Phone No</p>
+                                 <p class="col-sm-9">{{ customer.phone }}</p>
+                              </div>
+                           </div>
+                        </div>
+                     </div>
+                  </div>
+               </div>
+               <div class="col-lg-3">
+                  <div class="card">
+                     <div class="card-body">
+                        <h5 class="card-title d-flex justify-content-between">
+                           <span>Account Status</span>
+                           <a class="edit-link" href="#"><i class="far fa-edit mr-1"></i> Edit</a>
+                        </h5>
+                        <button class="btn btn-success" type="button"><i class="fe fe-check-verified"></i> Active</button>
+                     </div>
+                  </div>
+               </div>
+            </div>
+         </div>
+
+      <div id="password_tab" class="tab-pane fade"  data-href-template="firereport-changePassword">
+         <div class="row">
+            <div class="col-lg-9">
+               <div class="card">
+                  <div class="card-body">
+                     <h5 class="card-title d-flex justify-content-between">
+                        <span>Change Password</span>
+
+                     </h5>
+                     <div class="media-body ml-5">
+                        <form method="post" name="changepassword" onsubmit="return checkpassword()">
+                        {% csrf_token %}
+                        <div class="card-body">
+                           <div class="form-group">
+                              <label>Current Password</label>
+                              <input type="password" name="oldpassword" class="form-control" placeholder="Enter Current Password" required>
+                           </div>
+                           <div class="form-group">
+                              <label>New Password</label>
+                              <input type="password" name="newpassword" class="form-control" placeholder="Enter New Password" required>
+                           </div>
+                           <div class="form-group">
+                              <label>Confirm Password</label>
+                              <input type="password" name="confirmpassword" class="form-control" placeholder="Enter Confirm Password" required>
+                           </div>
+                        </div>
+                        <div class="card-footer">
+                           <button  type="submit" class="btn btn-primary">Submit</button>
+                        </div>
+                     </form>
+                     </div>
+                  </div>
+               </div>
+            </div>
+         </div>
+         </div>
+         </div>
+      </div>
+</div>
+</div>
+
+{% endif %}
+<script>
+   function checkpassword(){
+   if(document.changepassword.newpassword.value!=document.changepassword.confirmpassword.value){
+   alert('New Password and Confirm Password field does not Match');
+   document.changepassword.confirmpassword.focus();
+   return false;
+   }
+   return true;
+   }
+</script>
+{% if error == "no" %}
+<script>
+   alert('Password updated successfully');
+   window.location=('{% url 'user-login' %}');
+</script>
+{% endif %}
+{% if error == "yes" %}
+<script></script>
+{% endif %}
+{% if error == "not" %}
+<script>
+   alert('Your current password is wrong');
+</script>
+{% endif %}
+{% endblock %}

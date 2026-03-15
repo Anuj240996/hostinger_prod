@@ -1,0 +1,96 @@
+{% extends 'partials/base.html' %}
+{% load static %}
+{% block content %}
+<section class="content">
+    <div class="page-header">
+      <div class="row">
+         <div class="col">
+            <h1 class="m-0 page-title text-capitalize">Between Date Report Details</h1>
+            <ul class="breadcrumb float-sm-left">
+               <li class="breadcrumb-item"><a href="{% url 'firereport-dashboard_staff' %}">Home</a></li>
+               <li class="breadcrumb-item active">Reports</li>
+               <li class="breadcrumb-item active">Between Date Report</li>
+            </ul>
+         </div>
+      </div>
+   </div>
+    <div class="container-fluid">
+        <div class="row">
+            <!-- left column -->
+            <div class="col-md-12">
+                <!-- general form elements -->
+                <div class="card card-primary">
+                    <div class="card-header">
+                        <h3 class="card-title">Between Date Report Details</h3>
+                    </div>
+
+                    <div class="card-body">
+                        <h5 class="text-center text-primary">Report From <span style="color:red;">{{fd}}</span> to <span
+                                style="color:red;">{{td}}</span></h5>
+                        <table id="example1" class="table table-bordered table-striped">
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>Name</th>
+                                    <th>Mobile Number</th>
+                                    <th>Location</th>
+                                    <th>Message</th>
+                                    <th>Reporting Time</th>
+                                    <th>Assign To</th>
+                                    <th>Current Status</th>
+
+                                </tr>
+                            </thead>
+
+                            <tbody>
+
+                                    {% for i in firereport %}
+                                        <tr>
+                                            <td>{{ forloop.counter }}</td>
+                                            <td>{{ i.FullName }}</td>
+                                            <td>{{ i.MobileNumber }}</td>
+                                            <td>{{ i.Location }}</td>
+                                            <td>{{ i.Message }}</td>
+                                            <td>{{ i.Postingdate }}</td>
+                                            <td>{{ i.AssignTo.first_name }} {{ i.AssignTo.last_name }}</td>
+
+                                        {% if user.is_staff or user.is_superuser %}
+                                                {% if i.Status == 'Request Completed' %}
+                                                 <td class="text-center"><a class="btn btn-success btn-center" href="{% url 'firereport-viewRequestDetails' i.id %}"><i class="fa fa-eye"></i> &nbsp;Completed</a></td>
+                                                {% elif i.Status == 'Assigned' %}
+                                                    <td class="text-center"><a class="btn btn-info" href="{% url 'firereport-viewRequestDetails' i.id %}"> <i class="fa fa-eye"></i> &nbsp;&nbsp;Assigned&nbsp;&nbsp; </a></td>
+                                                {% elif i.Status == 'Work in Progress' %}
+                                                    <td class="text-center"><a class="btn btn-warning" href="{% url 'firereport-viewRequestDetails' i.id %}"><i class="fa fa-eye"></i> Work Progress </a></td>
+                                                {% elif i.Status == 'Team On the Way' %}
+                                                    <td class="text-center"><a class="btn btn-primary" href="{% url 'firereport-viewRequestDetails' i.id %}"> <i class="fa fa-eye"></i> On the Way </a></td>
+                                                {% else %}
+                                                    <td class="text-center"><a class="btn btn-danger" href="{% url 'firereport-viewRequestDetails' i.id %}"> <i class="fa fa-eye"></i> &nbsp;Not Assign </a></td>
+                                                {% endif %}
+
+                                        {% else %}
+
+                                                {% if i.Status == 'Request Completed' %}
+                                                 <td class="text-center"><a class="btn btn-success btn-center" href="{% url 'firereport-viewStatusDetails' i.id %}"><i class="fa fa-eye"></i> &nbsp;Completed</a></td>
+                                                {% elif i.Status == 'Assigned' %}
+                                                    <td class="text-center"><a class="btn btn-info" href="{% url 'firereport-viewStatusDetails' i.id %}"> <i class="fa fa-eye"></i> &nbsp;&nbsp;Assigned&nbsp;&nbsp; </a></td>
+                                                {% elif i.Status == 'Work in Progress' %}
+                                                    <td class="text-center"><a class="btn btn-warning" href="{% url 'firereport-viewStatusDetails' i.id %}"><i class="fa fa-eye"></i> Work Progress </a></td>
+                                                {% elif i.Status == 'Team On the Way' %}
+                                                    <td class="text-center"><a class="btn btn-primary" href="{% url 'firereport-viewStatusDetails' i.id %}"> <i class="fa fa-eye"></i> On the Way </a></td>
+                                                {% else %}
+                                                    <td class="text-center"><a class="btn btn-danger" href="{% url 'firereport-viewStatusDetails' i.id %}"> <i class="fa fa-eye"></i> &nbsp;Not Assign </a></td>
+                                                {% endif %}
+
+                                        {% endif %}
+                                        </tr>
+                                    {% endfor %}
+
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

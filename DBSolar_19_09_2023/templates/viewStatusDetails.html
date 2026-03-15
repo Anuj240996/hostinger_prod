@@ -1,0 +1,138 @@
+{% extends 'partials/base.html' %}
+{% load static %}
+{% load tz %}
+{% block content %}
+<style>
+    /* Custom CSS for positioning the company symbol on top of the image */
+    .image-container {
+        position: relative;
+        display: inline-block; /* Ensures inline display */
+    }
+
+    .company-symbol-overlap {
+        position: absolute;
+        bottom: 0;
+        right: 3px;
+        max-width: 30%; /* Make the symbol resizable while maintaining aspect ratio */
+        height: 35%;
+        z-index: 1; /* Ensure the symbol is above the image */
+    }
+</style>
+
+
+<div class="container mt-3">
+    <h5 class="page-title text-center">View Complaint Details</h5>
+    <hr>
+    <div class="card">
+        <div class="card-body" style="background-color: #98a8aa">
+            <table id="example1" class="table table-bordered table-striped" style="background-color: white">
+                <tr>
+                    <th colspan="4" class="text-center text-danger"><h5>-- Personal Information --</h5></th>
+                </tr>
+                 <tr>
+                    <th>&nbsp;Complaint ID</th>
+                    <td colspan="3">CMP / {{firereport.id}}</td>
+                </tr>
+
+                <tr>
+                    <th>&nbsp;Full Name</th>
+                    <td>{{firereport.FullName}}</td>
+
+                    <th>&nbsp;Contact Number</th>
+                    <td>{{firereport.MobileNumber}}</td>
+                </tr>
+
+                <tr>
+                    <th>&nbsp;Location</th>
+                    <td>{{firereport.Location}}</td>
+
+                    <th>&nbsp;Reporting Time</th>
+                    <td>{{ firereport.Postingdate|localtime|date:"d-m-Y H:i" }}</td>
+                </tr>
+
+                <tr>
+                    <th>&nbsp;Title</th>
+                    <td>{{ complaint_title|default:"-" }}</td>
+                    <th>&nbsp;Category</th>
+                    <td>{{ complaint_category|default:"-" }}</td>
+                </tr>
+
+                <tr>
+                    <th>&nbsp;Message</th>
+                    <td colspan="3">{{ complaint_message|default:firereport.Message }}</td>
+                </tr>
+            </table>
+
+            <table id="example1" class="table table-bordered table-striped" style="background-color: white">
+                <tr>
+                    <th colspan="4" class="text-center text-danger"><h5>-- Engineers Assigned Details --</h5></th>
+                </tr>
+                {% if firereport.AssignTo %}
+                 <tr>
+                     <th style="text-align: center;" colspan="4">
+                         <div class="image-container" style="align: center;">
+                              <img class="img-thumbnail ml-2" height="200px" width="300px" src="{{ firereport.AssignTo.profile.image.url }}" class="card-img-top"  alt="profile-image">
+                              <img src="{% static '/images/dblogosmall.png' %}" alt="Company Symbol" class="company-symbol-overlap">
+                         </div>
+                     </th>
+                 </tr>
+                <tr>
+                    <th>&nbsp;Engineers Name</th>
+                    <td>{{firereport.AssignTo.first_name}} {{firereport.AssignTo.last_name}}</td>
+
+                    <th>&nbsp;Employee ID & Designation</th>
+                    <td> DB / {{firereport.AssignTo.id}} - {{firereport.AssignTo.profile.designation}}</td>
+                </tr>
+
+                <tr>
+                    <th>&nbsp;Contact No.</th>
+                    <td>{{firereport.AssignTo.profile.workphone}}</td>
+
+                    <th>&nbsp;Assigned Time</th>
+                    <td>{{firereport.AssignedTime}}</td>
+                </tr>
+
+                <tr>
+                    <th>&nbsp;Engineers Address</th>
+                    <td colspan="3">{{firereport.AssignTo.profile.address}}</td>
+                </tr>
+                {% else %}
+                <tr>
+                    <th><h4 align="center" style="color:green"> Not Updated Yet </h4></th>
+                </tr>
+                {% endif %}
+            </table>
+
+            {% if reportcount != 0 %}
+            <table id="example1" class="table table-bordered table-striped" style="background-color: white">
+                <tr align="center">
+                                <th colspan="4" class="text-center text-danger"><h5>-- Request Track History --</h5></th>
+                            </tr>
+                            <tr style="background-color: #b3bebe">
+                                <th class="text-center">#</th>
+                                <th>Remark</th>
+                                <th>Status</th>
+                                <th>Remark Date</th>
+                            </tr>
+
+                {% for i in report1 %}
+                <tr>
+                    <td class="text-center">{{forloop.counter}}</td>
+                    <td>{{i.remark}}</td>
+                    <td>{{i.status}}</td>
+                    <td>{{ i.postingDate|localtime|date:"d-m-Y H:i" }}</td>
+                </tr>
+                {% endfor %}
+            </table>
+            {% endif %}
+
+            {% if reportcount == 0 %}
+            <h4 align="center" style="color:red"> No Tracking history found </h4>
+            {% endif %}
+
+        </div>
+    </div>
+</div>
+
+{% include 'footer.html' %}
+{% endblock %}

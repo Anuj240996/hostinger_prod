@@ -1,0 +1,380 @@
+{% extends 'partials/base.html' %}
+{% load static %}
+{% block content %}
+<style>
+   /* Style for messages and container */
+        .messages-container {
+            position: fixed;
+            top: 0;
+            right: 0;
+            margin: 10px;
+            padding: 10px;
+            border-radius: 5px;
+            display: none;
+            z-index: 9999;
+            display: flex;
+            align-items: center;
+        }
+
+        .success-messages, .warning-messages {
+            flex: 1;
+        }
+
+        .success-messages {
+            background-color: #4CAF50; /* Green */
+            color: white;
+        }
+
+        .warning-messages {
+            background-color: #ffcc00; /* Yellow */
+            color: black;
+        }
+
+        /* Style for image button */
+        .barcode-button {
+            background-size: cover;
+            background-position: center;
+            width: 50px;
+            height: 50px;
+            border: none;
+            margin-right: 10px;
+        }
+   table {
+   width: 100%;
+   border-collapse: collapse;
+   }
+   th, td {
+   border: 1px solid #dddddd;
+   text-align: center;
+   padding: 8px;
+   }
+   th {
+   background-color: #f2f2f2;
+   }
+   .detect { color: green; }
+   .duplicate { color: red; }
+</style>
+<script>
+   $(document).ready(function() {
+       // Hide the table initially
+       $(".barcode-table").hide();
+
+       // Show the table when the form is submitted
+       $("form").submit(function() {
+           $(".barcode-table").show();
+       });
+
+       // Clear the company name field when the form is not submitted
+       {% if not form.is_submitted %}
+           $("#solarPlateCompany").val('');
+       {% endif %}
+   });
+</script>
+<!--<div class="container-fluid">-->
+<!--    <div class="card-body">-->
+<!-- left column -->
+<div class="col-md-12">
+<!-- general form elements -->
+  <div class="card card-primary">
+    <div class="card-header">
+        <h3>Upload Inverter Serial No. Image</h3>
+    </div>
+
+
+
+
+         {% if detected_count is not None and non_detected_count is not None and duplicate_count is not None %}
+        {% if detected_count > 0 %}
+            <div class="messages-container success-messages">
+                <span class="barcode-button" style="background-image: url('{% static 'images/verified.gif' %}')"
+                    ></span>
+                <div>
+                    <p>Successfully uploaded {{ uploaded_count }} pages.</p>
+                    <p>Detected Serial No.: {{ detected_count }}</p>
+                    <p>Duplicate Serial No.: {{ duplicate_count }}</p>
+                    <p>Non-detected Serial No.: {{ non_detected_count }}</p>
+                </div>
+            </div>
+        {% else %}
+            <div class="messages-container warning-messages">
+                <span class="barcode-button" style="background-image: url('{% static 'images/letter-x.gif' %}')"
+                    ></span>
+                <div>
+                    <p>Uploaded {{ uploaded_count }} pages.</p>
+                    <p>Detected Serial No.: {{ detected_count }}</p>
+                    <p>Duplicate Serial No.: {{ duplicate_count }}</p>
+                    <p>Non-detected Serial No.: {{ non_detected_count }}</p>
+                </div>
+            </div>
+        {% endif %}
+    {% endif %}
+    <form method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+        <br>
+        <fieldset>
+            <div class="form-group row">
+                <label for="comp_name" class="col-sm-2 col-form-label"><B>Consumer Name:</B></label>
+                {% if user.is_authenticated and user.is_staff and user.is_superuser %}
+                <div class="col-sm-10">
+                    <select id="comp_name" name="comp_name" class="text-capitalize form-control" style="width: 100%;">
+                        <option value="">Select a Consumer</option>
+                        {% for company in companies|dictsort:"Comp_name" %}
+                        <option value="{{ company.new_customer_id }}">{{ company.Comp_name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                {% elif user.is_authenticated and user.is_staff %}
+                <div class="col-sm-10">
+                    <select id="comp_name" name="comp_name" class="text-capitalize form-control" style="width: 100%;">
+                        <option value=""> </option>
+                        {% for company in filtered_companies %}
+                        {% if company.Engg_Assign == user %}
+                        <option value="{{ company.new_customer_id }}">{{ company.Comp_name }}</option>
+                        {% endif %}
+                        {% endfor %}
+                    </select>
+                </div>
+                {% endif %}
+            </div>
+            <div id="customer_details" style="display: none;">
+                <div class="form-group row">
+                    <label for="city" class="col-md-2 col-form-label"><B>City:</B></label>
+                    <div class="col-md-4">
+                        <input type="text" id="city" name="city" value="" readonly class="text-capitalize form-control">
+                        <input type="hidden" id="phone" name="phone" value="" readonly class="text-capitalize form-control">
+                        <input type="hidden" id="address" name="address" value="" readonly class="text-capitalize form-control">
+                    </div>
+                    <label for="plant_capacity" class="col-md-2 col-form-label"><b>Plant Capacity:</b></label>
+                    <div class="col-md-4">
+                        <input type="text" id="plant_capacity" name="plant_capacity" value="" readonly class="text-capitalize form-control">
+                        <input type="hidden" id="new_customer_id" name="new_customer_id" value="" readonly class="text-capitalize form-control">
+                    </div>
+                    <br><br><br>
+                    <div class="col-md-4" style="text-align: center;">
+                    <fieldset>
+                            <legend style="color: Green;"> Estimate Inverter</legend>
+<!--                            <label for="qunt_solar">Estimate Solar Panel</label><br>-->
+                            <input type="text" id="qunt_inv" style="background-color: white; text-align: center; border: 0; font-size: 50px; color: Green; font-weight: bold;" name="qunt_inv" value="" readonly class="form-control">
+
+                        </fieldset>
+                        </div>
+
+                           <div class="col-md-4" style="text-align: center;">
+                            <fieldset>
+                                <legend style="color: black;"> Deployed Inverter</legend>
+<!--                            <label for="deployed_solar_panel_count">Deployed Solar Panel</label><br>-->
+                            <input type="text" id="deployed_inverter_count" style="background-color: white; font-border: black; text-align: center; border: 0; font-size: 50px; color: Yellow; font-weight: bold;" name="deployed_inverter_count" value="" readonly class="form-control">
+                            </fieldset>
+                        </div>
+
+                           <div class="col-md-4" style="text-align: center;">
+                            <fieldset>
+                                <legend style="color: red;"> Remaning Inverter</legend>
+<!--                            <label for="remaining_solar_panel_count" >Remaning Solar Panel</label><br>-->
+                            <input type="text" id="remaining_inverter_count"  style="background-color: white; text-align: center; border: 0; font-size: 50px; color: red; font-weight: bold;" name="remaining_inverter_count" value="" readonly class="form-control">
+                            </fieldset>
+                    </div>
+                </div>
+         <!-- Add more fields here -->
+            </div>
+        </fieldset>
+        <div id="project_details" style="display: none;">
+            <fieldset>
+                <div class="form-group row">
+                    <label for="solarPlateCompany" class="col-md-2 col-form-label"><b>Inverter Make :</b></label>
+                    <div class="col-md-4">
+               <!--                                <input type="text" name="comp_name" id="comp_name" required>-->
+                        <input type="text" class="text-capitalize form-control" id="solarPlateCompany" name="solarPlateCompany" required>
+                    </div>
+                    <label for="wattage" class="col-md-2 col-form-label"><b>Module Type /Kw :</b></label>
+                    <div class="col-md-4">
+               <!--                             <input type="text" name="wattage" id="wattage" required>-->
+                        <input type="text" class="text-capitalize form-control" id="wattage" name="wattage" required>
+                    </div>
+                </div>
+                <div class="form-group row">
+                    <label for="barcodeImage" class="col-md-2 col-form-label"><b>Select Barcode Images</b></label>
+                    <div class="col-md-10">
+               <!--                                <input type="file" class="text-capitalize form-control-file" name="images"  accept="image/*" multiple required>-->
+                        <input type="file" name="images" accept="image/*" multiple required>
+                    </div>
+                </div>
+         <!--<button type="submit">Upload</button>-->
+                <button id="btn_DetectBarcode" class="btn btn-primary" type="submit" style="background-image: url('{% static 'images/download1.png' %}'); background-size: cover; background-position: center; width: 150px; height: 40px; border: none;">Scan Serial No</button>
+            </fieldset>
+        </div>
+   <!--					<button type="submit">Upload</button>-->
+    </form>
+      <br>
+      <div class="container-fluid">
+          <div class="card-body">
+              <div class="row">
+                  <div class="col-md-12">
+                      <h4 id="selectedCompanyName" style="display: none;">Uploaded Inverter Serial No for Consumer: </h4>
+                      <div id="barcodeResult">
+                          <div class="table-responsive">
+                              {% if detected_count is not None and non_detected_count is not None and duplicate_count is not None %}
+                              <h3>Serial No. Status:</h3>
+                              <p>Uploaded Serial No Page: <b>{{ uploaded_count }}</b></p>
+                              <p>Detected Serial No: <b>{{ detected_count }}</b></p>
+                              <p>Non-Detected Serial No: {{ non_detected_count }}</p>
+                              <p>Duplicate Serial No: {{ duplicate_count }}</p>
+                              {% endif %}
+                              <div class="card-body">
+                     <!--                    <table class="table justify-content-center">-->
+                                  {% if valid_barcodes %}
+                                  <h3>Uploaded Inverter Serial No. for Consumer: {{ selected_company_name }}</h3>
+                                  <table id="yourDataTable" class="table  barcode-table table-bordered table-striped datatable table.sm" style="background-color: white" >
+                                      <tr>
+                                          <th>Sr No.</th>
+                           <!--                <th>Image</th>-->
+                                          <th>Barcode Data</th>
+                                          <th>Save data</th>
+                                          <th>Product Name</th>
+                                          <th>Wattage</th>
+                                          <th>Status</th>
+                                      </tr>
+                                      {% for barcode, status, barcode_image, file_saved_at, company, wattage in valid_barcodes %}
+                                      <tr>
+                                          <td>{{ forloop.counter }}</td>
+                           <!--                    <td>{{ barcode_image.images.url }}</td>-->
+                                          <td>{{ barcode }}</td>
+                                          <td>{{ file_saved_at }}</td>
+                                          <td>{{ company }}</td>
+                                          <td>{{ wattage }}</td>
+                                          <td class="{{ status|lower }}">{{ status }}</td>
+                                      </tr>
+                                      {% endfor %}
+                                  </table>
+                                  {% endif %}
+                                  <p id="noBarcodeMessage" style="display: none;">No barcode image found.</p>
+                              </div>
+                          </div>
+                      </div>
+                  </div>
+              </div>
+          </div>
+      </div>
+  </div>
+</div>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"
+   integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=" crossorigin="anonymous"></script>
+<script>
+   $(document).ready(function () {
+       $('#comp_name').on('change', function() {
+                     console.log("Dropdown changed."); // Add this line to check event binding
+                    var selectedCompany = $(this).val();
+                    console.log("Selected Company: " + selectedCompany); // Add this line to check the selectedCompany value
+                    if (selectedCompany !== '') {
+                      $.ajax({
+                        url: '/detect_barcodes/get_inverter_details/',
+                        type: 'GET',
+                        data: { 'new_customer_id': selectedCompany },
+                        dataType: 'json',
+                        success: function(data) {
+                          if (data) {
+                            $('#phone').val(data.phone);
+                            $('#address').val(data.Address);
+                            $('#city').val(data.City);
+                            // $('#plant_capacity').val(data.Plant_Capacity);
+                            $('#plant_capacity').val(data.Plant_Capacity + " KW");
+                            $('#new_customer_id').val(data.new_customer_id); // Add the new field here
+                            $('#comp_name').val(data.new_customer_id);
+                            $('#qunt_inv').val(data.qunt_inv);
+                            $('#deployed_inverter_count').val(data.deployed_inverter_count);
+                            $('#remaining_inverter_count').val(data.remaining_inverter_count);
+
+                           // Update other fields as needed
+
+                            $('#customer_details').show();
+                            $('#project_details').show();
+                             // Update the selected company name here
+                            $('#selectedCompanyName').text('Uploaded Inverter Barcodes for Consumer: ' + data.Comp_name).show();
+
+                             // After you receive the data from the server
+                            var remainingInverterCount = parseInt(data.remaining_inverter_count);
+
+
+                             // Check if remainingInverterCount is 0
+                            if (remainingInverterCount === 0) {
+                                 $('#project_details').hide();
+                                alert( data.Comp_name +" " + "Inverter Quantity Full Fill");
+
+                            }
+
+
+                          } else {
+                            // Clear the textbox values when no company is selected
+                            $('#phone').val('');
+                            $('#address').val('');
+                            $('#city').val('');
+                            $('#plant_capacity').val('');
+                            $('#new_customer_id').val(''); // Clear the new field
+                            $('#comp_name').val('');
+                            $('#qunt_inv').val('');
+                            $('#deployed_inverter_count').val('');
+                            $('#remaining_inverter_count').val('');
+
+                            // Clear other fields as needed
+
+                            $('#customer_details').hide();
+                            $('#project_details').hide();
+                          }
+                        }
+                      });
+                    }
+                  });
+
+// Show messages and hide after a few seconds
+
+            {% if detected_count is not None and detected_count > 0 %}
+                $(".success-messages").fadeIn().delay(5000).fadeOut();
+            {% else %}
+                $(".warning-messages").fadeIn().delay(5000).fadeOut();
+            {% endif %}
+
+   });
+
+</script>
+<script>
+   document.addEventListener("DOMContentLoaded", function() {
+       let dataTable = $('#yourDataTable').DataTable();
+       let dataTable = $('#yourDataTable').DataTable({
+           scrollX: true,
+           fixedHeader: true,
+           columnDefs: [
+               { targets: 0, orderable: false } // '0' represents the index of the 'Sr No.' column (zero-based)
+           ]
+       });
+
+       // Check if the DataTable is already initialized
+       if ($.fn.dataTable.isDataTable('#yourDataTable')) {
+           dataTable.destroy(); // If initialized, destroy the DataTable
+       }
+
+       dataTable = $('#yourDataTable').DataTable({
+           //scrollX: true, // Enable horizontal scrolling
+           //scrollY: '50vh', // Adjust the height as needed
+           scrollCollapse: true,
+           fixedHeader: {
+               header: true,
+               footer: false // Do not fix the footer to prevent it from moving
+           },
+           columnDefs: [
+              { targets: 0, orderable: false } // Disable sorting for the Sr No. column (zero-based)
+           ]
+
+       });
+
+        $('#yourDataTable tbody tr').each(function(index) {
+           $(this).find('td:first').text(index + 1);
+       });
+
+         dataTable.on('order.dt search.dt', function() {
+           dataTable.column(0, { search: 'applied', order: 'applied' }).nodes().each(function(cell, i) {
+               cell.innerHTML = i + 1;
+           });
+       }).draw();
+   });
+</script>
+{% endblock %}

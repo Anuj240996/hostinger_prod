@@ -1,0 +1,758 @@
+{% extends 'partials/base.html' %}
+{% load static %}
+{% block content %}
+ <!-- Other meta tags and stylesheets -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@mdi/font/css/materialdesignicons.min.css">
+<script type="text/javascript" src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+<br>
+    <div class="row" style="color: #4e4e4e; font-style: bold; font-size: 3rem;">
+      <div class="col-md-8" style="margin-left: 20px;"><h3>Sales List</h3></div>
+       <!-- Add these buttons inside the col-auto div -->
+                <div class="col-auto text-right float-right ml-auto" style="margin-right: 25px;">
+                    <div class="dt-buttons btn-group flex-wrap">
+                        <!--       <a href="#" class="btn btn-outline-primary mr-2" name="download" id="download-pdf"><i class="fas fa-download"></i>Download</a>-->
+<!--                        <a id="generate-pdf-all" href="#" class="btn btn-primary" onclick="generatePDF()" type="button" title="PDF"><i class="fas fa-file-pdf fs-4" style="font-size: 1.1rem;"></i></a>-->
+                        <a id="generate-excel-all" href="#" class="btn btn-primary" onclick="generateExcel()" title="Excel"><i class="mdi mdi-microsoft-excel" style="font-size: 19px;"></i></a>
+                        <a id="generate-print-all" href="#" class="btn btn-primary" onclick="copyToClipboard()" title="Copy"><i class="fas fa-solid fa-copy"></i></a>
+                        <a id="generate-copy-all" href="#" class="btn btn-primary" onclick="printTable()" title="Print"><i class="fas fa-solid fa-print"></i></a>
+<!--                        <a href="{% url 'select_customer' %}" class="btn btn-primary" title="ADD New Stock"><i class="fas fa-plus"></i></a>-->
+                        <!--       <button class="btn btn-outline-primary mr-2" id="generate-pdf"><i class="fas fa-file-pdf"></i> Generate PDF</button>-->
+                        <!--       <button class="btn btn-outline-primary" id="generate-excel"><i class="fas fa-file-excel"></i> Generate Excel</button>-->
+                    </div>
+                </div>
+    </div>
+
+
+<style>
+   /* CSS for the zoomed image */
+   .zoom-image-container.zoomed-out {
+   display: none;
+   }
+   .zoom-image-container {
+   position: fixed;
+   z-index: 9999;
+   top: 50%;
+   left: 50%;
+   transform: translate(-50%, -50%);
+   max-width: 90%;
+   max-height: 90%;
+   background-color: #fff;
+   box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+   overflow: auto;
+   text-align: center;
+   }
+   .zoom-image {
+   max-width: 100%;
+   max-height: 100%;
+   margin: 0 auto;
+   }
+</style>
+
+<div class="container-fluid">
+<!--   <img src="{{ STATIC_URL }}images/dblogo2001.png" style="width: 450px; height: 40px;">-->
+<!--   <img src="media/static/images/dblogo2001.png" style="width: 450px; height: 40px;">-->
+   <div class="card-body">
+      <!-- left column -->
+      <div class="col-md-12">
+         <!-- general form elements -->
+         <div class="card card-primary">
+            <div class="card-header">
+               <h3>Product Barcode List</h3>
+            </div>
+            <form method="POST" action="{% url 'detect_barcodes-search' %}" id="barcode-form">
+               {% csrf_token %}
+               <div class="form-group row">
+                  <div class="col-sm-5">
+                     <label for="company">Company Name:</label>
+                     <select class="form-control" name="company" id="company">
+                         <option value=""></option>
+                         {% for company in companies %}
+                         <option value="{{ company }}">{{ company|title }}</option>
+                         {% endfor %}
+                     </select>
+
+                  </div>
+                  <div class="col-sm-5">
+                     <label for="product">Item Type:</label>
+                     <select class="form-control" name="product" id="product">
+                        <option value=""></option>
+                        <option value="All">All</option>
+                        {% for product in product_names %}
+                        <option value="{{ product }}">{{ product }}</option>
+                        {% endfor %}
+                     </select>
+                  </div>
+                  <div class="col-sm-2">
+                     <br>
+                     <!-- Hidden input to store selected company value -->
+                     <!--                      <input type="hidden" name="selected_company" id="selected_company">-->
+                     <button type="submit" id="preview"><i class="nav-icon fa fa-eye" aria-hidden="true"></i>   Preview</button>
+                  </div>
+                  <!-- Add a button for generating PDF -->
+               </div>
+            </form>
+         </div>
+      </div>
+      <br>
+
+      {% if solar_items %}
+         <button type="button" class="btn btn-primary" id="generate-pdf1" style="float: right; margin-right: 45px; padding: 5px 0px; font-size: 17px;"><i class="fa-solid fa-file-pdf fa-2x"></i>  Generate Bill</button>
+         <h4>Generated Barcodes for Consumer: {{ solar_items.0.company|title }}</h4>
+          <input type="hidden" id="companyName" value="{{ solar_items.0.company|title }}">
+      {% elif inverter_items %}
+          <button type="button" class="btn btn-primary" id="generate-pdf1" style="float: right; margin-right: 45px; padding: 5px 0px; font-size: 17px;"><i class="fa-solid fa-file-pdf fa-2x"></i>  Generate Bill</button>
+
+         <h4>Generated Barcodes for Consumer: {{ inverter_items.0.company|title }}</h4>
+       <input type="hidden" id="companyName" value="{{ inverter_items.0.company|title }}">
+      {% endif %}
+
+      {% if solar_items %}
+
+      <div class="col-md-12 mx-auto">
+         <div class="table-responsive">
+               <caption>
+                  <h3>Solar Panel Items</h3>
+               </caption>
+               <table class="table" id="yourDataTable">
+                  <thead>
+                     <tr border="1">
+                        <th colspan="3">
+                           <b>Make :</b> {{ solar_items.0.company_name|title }} <br>
+                           <b>Wattage :</b>  {{ unique_wattages|join:"," }}
+                        </th>
+                        <th colspan="1">
+                           <b>Total Quantity :</b> {{ solar_panel_total_quantity }}
+                           <br>
+                           <!--        <b1> Total Quantity:  {% for wattage in solar_panel_quantity_by_wattage %}{{ total_quantity|default:wattage }} {% endfor %}</b1><br>-->
+                           {% for item in solar_panel_quantity_by_wattage %}
+                           <b>Quantity for Model Type {{ item.wattage }} :</b> {{ item.total_quantity }}
+                           <br>
+                           {% endfor %}
+                        </th>
+                     </tr>
+                     <tr>
+                        <th>Serial No</th>
+                        <th>Wattage (Kw)</th>
+                        <th>Barcode No</th>
+                        <th>Panel Barcode</th>
+                     </tr>
+                  </thead>
+                  <tbody>
+                     {% for item in solar_items %}
+                     <tr>
+                        <td>{{ forloop.counter }}</td>
+                        <td>{{ item.wattage}} Kw</td>
+                        <td>{{ item.barcode_data }}</td>
+                        <td>
+                             {% if item.barcode_type == 'CODE39' %}
+                                 <img src="{{ item.image.url }}" alt="Barcode Image" class="zoomable-image" style="width: 150px; height: auto; cursor: zoom-in;">
+                             {% elif item.barcode_path %}
+                                 {% if item.barcode_path.url %}
+                                     <img src="{{ item.barcode_path.url }}" alt="Barcode Image" class="zoomable-image" style="width: 150px; height: auto; cursor: zoom-in;">
+                                 {% else %}
+                                     <p>No barcode image available</p>
+                                 {% endif %}
+                             {% else %}
+                                 <p>No barcode information available</p>
+                             {% endif %}
+                         </td>
+
+
+                     </tr>
+                     {% endfor %}
+                  </tbody>
+               </table>
+            </div>
+         </div>
+
+
+      {% endif %}
+
+      <br>
+      {% if inverter_items %}
+      <div class="col-md-12 mx-auto">
+         <div class="table-responsive">
+            <caption>
+               <h3>Inverter Items</h3>
+            </caption>
+            <table class="table" id="inverterDataTable">
+               <thead>
+                  <tr>
+                     <th colspan="3">
+                        <b>Make : </b>{{ inverter_items.0.company_name|title }} <br>
+                        <b>Wattage :</b> {{ inverter_wattages|join:"," }}
+                     </th>
+                     <th colspan="1">
+                        <b>Total Quantity : </b>{{ inverter_panel_total_quantity }}
+                        <br>
+                        <!--        <b1> Total Quantity:  {% for wattage in solar_panel_quantity_by_wattage %}{{ total_quantity|default:wattage }} {% endfor %}</b1><br>-->
+                        {% for item in inverter_panel_quantity_by_wattage %}
+                        <b>Quantity for Model Type {{ item.wattage }} :</b> {{ item.total_quantity }}
+                        <br>
+                        {% endfor %}
+                     </th>
+                  </tr>
+                  <tr>
+                     <th>Serial No</th>
+                     <th>Capacity (KW)</th>
+                     <th>Inverter No</th>
+                     <th>Inverter Barcode</th>
+                  </tr>
+               </thead>
+               <tbody>
+                  {% for item in inverter_items %}
+                  <tr>
+                     <td>{{ forloop.counter }}</td>
+                     <td>{{ item.wattage}} kw</td>
+                     <td>{{ item.barcode_data }}</td>
+                     <td>
+                             {% if item.barcode_type == 'CODE39' %}
+                                 <img src="{{ item.image.url }}" alt="Barcode Image" class="zoomable-image" style="width: 150px; height: auto; cursor: zoom-in;">
+                             {% elif item.barcode_path %}
+                                 {% if item.barcode_path.url %}
+                                     <img src="{{ item.barcode_path.url }}" alt="Barcode Image" class="zoomable-image" style="width: 150px; height: auto; cursor: zoom-in;">
+                                 {% else %}
+                                     <p>No barcode image available</p>
+                                 {% endif %}
+                             {% else %}
+                                 <p>No barcode information available</p>
+                             {% endif %}
+                         </td>
+
+                  </tr>
+                  {% endfor %}
+               </tbody>
+            </table>
+         </div>
+      </div>
+   </div>
+   {% endif %}
+   <!-- Modal for PDF Generation -->
+   <div class="modal fade" id="pdfModal" tabindex="-1" role="dialog" aria-labelledby="pdfModalLabel" aria-hidden="true">
+      <div class="modal-dialog" role="document">
+         <div class="modal-content">
+            <div class="modal-header">
+               <h5 class="modal-title" id="pdfModalLabel">Generate PDF</h5>
+               <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+               <span aria-hidden="true">&times;</span>
+               </button>
+            </div>
+            <form id="pdfForm" method="POST" action="{% url 'detect_barcodes-generate_pdf' %}">
+               {% csrf_token %}
+               <div class="modal-body">
+                  <p>Selected Company : <b><span id="selectedCompanySpan"></span></b></p>
+                  <p>Selected Product : <b><span id="selectedProductSpan"></span></b></p>
+                  <input type="hidden" name="selected_company" id="selected_company">
+                  <input type="hidden" name="selected_product" id="selected_product">
+                  <label for="invoiceNumber">Invoice Number:</label>
+                  <input type="text" class="form-control" id="invoiceNumber" name="invoice_number"  required>
+<!--                  <label>Serial No</label>-->
+                  <br>
+                  <label for="radio_serial" style="margin-left: 20px;"><input type="radio" value="serial" id="radio_serial" name="no" checked /><span>Serial No</span>  </label>
+
+   <!--               <label>Barcode No</label>-->
+
+                  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                  <label for="radio_barcode" style="margin-right: 200px;"><input type="radio" value="barcode" id="radio_barcode" name="no" /><span>Barcode No</span> </label>
+
+               </div>
+               <div class="modal-footer">
+                  <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                  <button type="submit" class="btn btn-primary" id="generate-pdf">Generate PDF</button>
+                  <input type="hidden" name="selected_no" id="selected_no">
+               </div>
+            </form>
+         </div>
+      </div>
+   </div>
+</div>
+<!-- Zoomed Image Container -->
+<div class="zoom-image-container zoomed-out">
+   <span class="close-zoom-image">&times;</span>
+   <img class="zoom-image">
+</div>
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js" integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=" crossorigin="anonymous"></script>
+<!-- Add this JavaScript code within your HTML page or in a separate script file -->
+<style>
+    #preview {
+        display: none; /* Initially hide the button */
+    }
+</style>
+
+<script>
+
+    const companyDropdown = document.getElementById('company');
+    const productDropdown = document.getElementById('product');
+    const generatepreview = document.getElementById('preview');
+
+
+    // Update button visibility based on input values
+    function updateButtonVisibility() {
+        const isCompanySelected = companyDropdown.value !== '';
+        const isProductSelected = productDropdown.value !== '';
+
+        generatepreview.style.display = (isCompanySelected && isProductSelected) ? 'block' : 'none';
+
+    }
+
+    // Listen for changes in the dropdowns
+    companyDropdown.addEventListener('change', updateButtonVisibility);
+    productDropdown.addEventListener('change', updateButtonVisibility);
+
+    // Store selected values when the form is submitted
+   document.getElementById('barcode-form').addEventListener('submit', function(event) {
+       localStorage.setItem('selectedCompany', document.getElementById('company').value);
+       localStorage.setItem('selectedProduct', document.getElementById('product').value);
+   });
+
+   // Set stored values to the dropdowns when Generate PDF button is clicked
+   document.getElementById('generate-pdf1').addEventListener('click', function() {
+       var selectedCompany = localStorage.getItem('selectedCompany');
+       var selectedProduct = localStorage.getItem('selectedProduct');
+
+       if (selectedCompany) {
+           document.getElementById('company').value = selectedCompany;
+       }
+
+        if (selectedProduct) {
+            productDropdown.value = selectedProduct;
+        }
+    });
+
+    // Initial button visibility
+    updateButtonVisibility();
+</script>
+<script>
+        // JavaScript code to capture and send selected company value and radio button choice when the "Generate PDF" button is clicked
+      document.getElementById('generate-pdf1').addEventListener('click', function() {
+          var selectedCompany = document.getElementById('company').value;
+          var selectedProduct = document.getElementById('product').value;
+          //var selectedNo = document.querySelector('input[name="no"]:checked').value; // Get the selected radio button value
+
+          // Populate the modal
+          document.getElementById('selectedCompanySpan').textContent = selectedCompany;
+          document.getElementById('selectedProductSpan').textContent = selectedProduct;
+
+          // Set the values in hidden input fields within the modal form
+          document.getElementById('selected_company').value = selectedCompany;
+          document.getElementById('selected_product').value = selectedProduct;
+          //document.getElementById('selected_no').value = selectedNo; // Store the selected radio button choice
+
+            // Add an event listener to the radio buttons
+          $('input[name="no"]').on('change', function () {
+              // Update the selectedNo hidden input field when the radio button selection changes
+              selectedNo = $('input[name="no"]:checked').val();
+              document.getElementById('selected_no').value = selectedNo;
+          });
+
+          // Open the modal
+          $('#pdfModal').modal('show');
+      });
+
+
+
+       // JavaScript code for form submission within the modal
+    document.getElementById('pdfForm').addEventListener('submit', function(event) {
+      event.preventDefault(); // Prevent the form from submitting
+
+      // Get the form data
+      var formData = new FormData(this);
+
+
+      // Send the form data to the server for PDF generation
+      fetch('{% url "detect_barcodes-generate_pdf" %}', {
+          method: 'POST',
+          body: formData
+      })
+      .then(response => response.blob())
+      .then(blob => {
+          // Create a blob URL for the PDF and open it in a new tab
+          var pdfUrl = URL.createObjectURL(blob);
+          window.open(pdfUrl, '_blank');
+      })
+      .catch(error => console.error('Error:', error));
+
+      // Close the modal
+      $('#pdfModal').modal('hide');
+   });
+          // document.getElementById('generate-pdf').addEventListener('click', function() {
+            //  var selectedCompany = document.getElementById('company').value;
+             // var selectedProduct = document.getElementById('product').value;  // Add this line
+
+
+              // Get the CSRF token
+              // var csrfToken = document.getElementsByName('csrfmiddlewaretoken')[0].value;
+
+              // Assuming the PDF generation URL is 'detect_barcodes/generate_pdf/'
+             // var pdfGenerateUrl = '{% url 'detect_barcodes-generate_pdf' %}';
+
+              // Create a form dynamically and submit it
+              // var form = document.createElement('form');
+              // form.method = 'POST';
+              // form.action = pdfGenerateUrl;
+
+              // Add the CSRF token to the form data
+              // var csrfInput = document.createElement('input');
+              // csrfInput.type = 'hidden';
+              // csrfInput.name = 'csrfmiddlewaretoken';
+              // csrfInput.value = csrfToken;
+              // form.appendChild(csrfInput);
+
+              // var hiddenInput = document.createElement('input');
+              // hiddenInput.type = 'hidden';
+              // hiddenInput.name = 'selected_company';
+              // hiddenInput.value = selectedCompany;
+
+              // form.appendChild(hiddenInput);
+
+              // var hiddenProductInput = document.createElement('input');  // Add this block
+              // hiddenProductInput.type = 'hidden';
+              // hiddenProductInput.name = 'selected_product';
+              // hiddenProductInput.value = selectedProduct;
+              // form.appendChild(hiddenProductInput);
+
+
+              // document.body.appendChild(form);
+              // form.submit();
+          // });
+
+</script>
+<script>
+   // Zoom-in and Zoom-out functionality
+   document.addEventListener("DOMContentLoaded", function () {
+       var zoomableImages = document.querySelectorAll(".zoomable-image");
+       var zoomImageContainer = document.querySelector(".zoom-image-container");
+       var zoomImage = document.querySelector(".zoom-image");
+       var closeZoomImage = document.querySelector(".close-zoom-image");
+
+       function showZoomedImage(src) {
+           zoomImage.src = src;
+           zoomImageContainer.classList.remove("zoomed-out");
+       }
+
+       function hideZoomedImage() {
+           zoomImageContainer.classList.add("zoomed-out");
+       }
+
+       function handleKeyDown(event) {
+           if (event.key === "Escape") {
+               hideZoomedImage();
+           }
+       }
+
+       zoomableImages.forEach(function (img) {
+           img.addEventListener("click", function () {
+               showZoomedImage(this.src);
+           });
+       });
+
+       zoomImageContainer.addEventListener("click", hideZoomedImage);
+       zoomImage.addEventListener("click", function (event) {
+           event.stopPropagation();
+       });
+       closeZoomImage.addEventListener("click", hideZoomedImage);
+       document.addEventListener("keydown", handleKeyDown);
+   });
+</script>
+
+          <!-- Add these in the head section of your HTML -->
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.4.0/jspdf.umd.min.js"></script>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js" integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=" crossorigin="anonymous"></script>
+
+<script>
+    function printTable() {
+        // Get both tables using their respective IDs
+        const solarTable = $('#yourDataTable').DataTable();
+        const inverterTable = $('#inverterDataTable').DataTable();
+
+        // Get headers and data for both tables
+        const solarHeader = [...getHeaderWithoutActions(solarTable)];
+        const inverterHeader = [...getHeaderWithoutActions(inverterTable)];
+
+        const solarFilteredData = solarTable.rows({ search: 'applied' }).data().toArray();
+        const inverterFilteredData = inverterTable.rows({ search: 'applied' }).data().toArray();
+
+        const cleanSolarData = solarFilteredData.map((row) => {
+            const rowDataWithoutActions = row.filter((_, columnIndex) => !isActionColumn(solarTable, columnIndex));
+            return [...rowDataWithoutActions];
+        });
+
+        const cleanInverterData = inverterFilteredData.map((row) => {
+            const rowDataWithoutActions = row.filter((_, columnIndex) => !isActionColumn(inverterTable, columnIndex));
+            return [...rowDataWithoutActions];
+        });
+
+        // Create print content for both tables
+        const printWindow = window.open('', '_blank');
+        printWindow.document.open();
+        printWindow.document.write(`
+            <html>
+            <head>
+                <title>Filtered Tables Print</title>
+                <style>
+                    body {
+                        font-family: Arial, sans-serif;
+                        text-align: center;
+                    }
+                    table {
+                        width: 80%;
+                        margin: 20px auto;
+                        border-collapse: collapse;
+                        color: black;
+                    }
+                    th, td {
+                        border: 1px solid black;
+                        padding: 8px;
+                        text-align: center;
+                    }
+                    th {
+                        background-color: #f2f2f2;
+                        font-weight: bold;
+                        font-size: 14px;
+                    }
+                    td {
+                        font-size: 12px;
+                        color: black;
+                    }
+                    h1 {
+                        text-align: center;
+                    }
+                </style>
+            </head>
+            <body>
+                <h1 class="page-heading">DB Solar Pvt Ltd. Ch.SambhajiNagar</h1>
+                <h3 class="page-heading" style="margin-top: -10px;">Solar Modal Records List</h3>
+                <table style="margin-top: 20px;">
+                    <thead>
+                        <tr>
+                            ${solarHeader.map(h => `<th>${h}</th>`).join('')}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${cleanSolarData.map(row =>
+                            '<tr>' + row.map((cell, index) => {
+                                if (index === row.length - 5) {
+                                    return `<td style="text-align: left; padding-left: 20px;">${cell}</td>`;
+                                }
+                                if (index === row.length - 1) {
+                                    return `<td style="color: black;">${cell}</td>`;
+                                }
+                                if (index === row.length - 4) {
+                                    return `<td style="text-align: left;">${cell}</td>`;
+                                }
+
+                                return `<td>${cell}</td>`;
+                            }).join('') + '</tr>'
+                        ).join('')}
+                    </tbody>
+                </table>
+
+                <h3 class="page-heading" style="margin-top: 40px;">Inverter Records List</h3>
+                <table style="margin-top: 20px;">
+                    <thead>
+                        <tr>
+                            ${inverterHeader.map(h => `<th>${h}</th>`).join('')}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${cleanInverterData.map(row =>
+                            '<tr>' + row.map((cell, index) => {
+                                if (index === row.length - 5) {
+                                    return `<td style="text-align: left; padding-left: 20px;">${cell}</td>`;
+                                }
+                                if (index === row.length - 1) {
+                                    return `<td style="color: black;">${cell}</td>`;
+                                }
+                                if (index === row.length - 4) {
+                                    return `<td style="text-align: left;">${cell}</td>`;
+                                }
+
+                                return `<td>${cell}</td>`;
+                            }).join('') + '</tr>'
+                        ).join('')}
+                    </tbody>
+                </table>
+            </body>
+            </html>
+        `);
+        printWindow.document.close();
+        printWindow.print();
+    }
+
+    function getHeaderWithoutActions(table) {
+        return table.columns().header().toArray().map(th => th.innerText).filter(header => header !== 'Action' && header !== 'Sr No.');
+    }
+
+    function isActionColumn(table, columnIndex) {
+        const header = table.columns().header().toArray()[columnIndex].innerText;
+        return header === 'Action' || header === 'Sr No.';
+    }
+</script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script>
+    function copyToClipboard() {
+        const tables = [
+            { id: 'yourDataTable', label: 'Solar Consumer List' },
+            { id: 'inverterDataTable', label: 'Inverter Consumer List' }
+        ];
+
+        let clipboardContent = '';
+
+        tables.forEach(({ id, label }) => {
+            const tableElement = $(`#${id}`);
+
+            // Check if the table exists and is visible
+            if (!tableElement.length || !tableElement.is(':visible')) {
+                return; // Skip if the table is not found or not visible
+            }
+
+            const table = tableElement.DataTable();
+            const filteredData = table.rows({ search: 'applied' }).data().toArray();
+
+            // Skip if no data is present in the filtered rows
+            if (!filteredData.length) {
+                return;
+            }
+
+            const header = [...getHeaderWithoutActions(table)];
+            const cleanData = filteredData.map((row) => {
+                // Remove the last column (e.g., Panel Barcode or Inverter Barcode)
+                const rowDataWithoutLastColumn = row.slice(0, row.length - 1); // Remove last column
+                const rowDataWithoutActions = rowDataWithoutLastColumn.filter((_, columnIndex) => !isActionColumn(table, columnIndex));
+                return [...rowDataWithoutActions];
+            });
+
+            const tableData = [header.slice(0, header.length - 1), ...cleanData]; // Remove the last header
+
+            // Convert table data to plain text format
+            const plainTextTable = tableData.map(row => row.map(cell => stripHtml(cell)).join('\t')).join('\n');
+
+            // Append this table's data to the clipboard content with a label
+            clipboardContent += `${label}:\n\n${plainTextTable}\n\n`;
+        });
+
+        // If no tables have data, show an alert and stop
+        if (!clipboardContent.trim()) {
+            alert('No data available to copy.');
+            return;
+        }
+
+        // Copy the combined content to the clipboard
+        const plainText = document.createElement('textarea');
+        plainText.textContent = clipboardContent.trim();
+        document.body.appendChild(plainText);
+        plainText.select();
+        document.execCommand('copy');
+        document.body.removeChild(plainText);
+        alert('Filtered tables copied to clipboard!');
+    }
+
+    // Function to strip HTML tags
+    function stripHtml(html) {
+        let doc = new DOMParser().parseFromString(html, 'text/html');
+        return doc.body.textContent || "";
+    }
+
+    // Helper function to get headers without action columns
+    function getHeaderWithoutActions(table) {
+        const headers = table.columns().header().toArray().map(th => th.innerText);
+        return headers.filter(header => header !== 'Action' && header !== 'Sr No.');
+    }
+
+    // Helper function to identify action columns
+    function isActionColumn(table, columnIndex) {
+        const header = table.column(columnIndex).header();
+        const headerText = $(header).text();
+        return headerText === 'Action' || headerText === 'Sr No.';
+    }
+
+</script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script>
+   function generateExcel() {
+        // Function to get headers excluding specific columns
+        function getFilteredHeaders(table, excludeColumnName) {
+            const headers = [];
+            table.columns().header().each(function (header, index) {
+                const headerText = $(header).text().trim();
+                if (headerText !== excludeColumnName) {
+                    headers.push({ index, text: headerText });
+                }
+            });
+            return headers;
+        }
+
+        // Function to clean data (remove specific columns by name)
+        function cleanData(row, excludeColumnIndex) {
+            return row.filter((_, columnIndex) => columnIndex !== excludeColumnIndex);
+        }
+
+        // Initialize arrays to hold combined data
+        let combinedData = [];
+
+        // Process solar table if available
+        const table1 = $('#yourDataTable').DataTable();
+        const hasSolarData = table1.rows({ search: 'applied' }).count() > 0;
+
+        if (hasSolarData) {
+            const headers1 = getFilteredHeaders(table1, 'Panel Barcode');
+            const panelBarcodeIndex = table1.columns().header().toArray().findIndex(header => $(header).text().trim() === 'Panel Barcode');
+            const filteredData1 = table1.rows({ search: 'applied' }).data().toArray();
+            const cleanData1 = filteredData1.map(row => cleanData(row, panelBarcodeIndex));
+
+            // Add Solar data to combinedData with the heading
+            combinedData.push(
+                ['Solar Modal Records'],  // Heading for Solar table
+                ...[headers1.map(h => h.text), ...cleanData1]  // Data for Solar table
+            );
+        }
+
+        // Process inverter table if available
+        const table2 = $('#inverterDataTable').DataTable();
+        const hasInverterData = table2.rows({ search: 'applied' }).count() > 0;
+
+        if (hasInverterData) {
+            const headers2 = getFilteredHeaders(table2, 'Inverter Barcode');
+            const inverterBarcodeIndex = table2.columns().header().toArray().findIndex(header => $(header).text().trim() === 'Inverter Barcode');
+            const filteredData2 = table2.rows({ search: 'applied' }).data().toArray();
+            const cleanData2 = filteredData2.map(row => cleanData(row, inverterBarcodeIndex));
+
+            // Add Inverter data to combinedData with the heading
+            if (combinedData.length > 0) {
+                combinedData.push([]);  // Blank row between Solar and Inverter data
+            }
+            combinedData.push(
+                ['Inverter Records'],  // Heading for Inverter table
+                ...[headers2.map(h => h.text), ...cleanData2]  // Data for Inverter table
+            );
+        }
+
+        // If neither Solar nor Inverter data exists, show an alert and exit
+        if (combinedData.length === 0) {
+            alert('No data available to export.');
+            return;
+        }
+
+        // Get the company name from the hidden input
+        const companyName = $('#companyName').val();
+        const fileName = companyName ? `${companyName}.xlsx` : 'exported_data.xlsx';
+
+        // Create a new workbook
+        const wb = XLSX.utils.book_new();
+
+        // Convert combined data to a sheet
+        const ws = XLSX.utils.aoa_to_sheet(combinedData);
+
+        // Append the sheet to the workbook
+        XLSX.utils.book_append_sheet(wb, ws, 'Combined Data');
+
+        // Write the file with the company name
+        XLSX.writeFile(wb, fileName);
+    }
+</script>
+
+{% endblock content %}

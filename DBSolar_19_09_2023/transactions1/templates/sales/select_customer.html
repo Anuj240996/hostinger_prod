@@ -1,0 +1,173 @@
+{% extends 'partials/base.html' %}
+{% block title %} New Purchase {% endblock title %}
+{% block content %}
+
+<!--<div style="color:#575757; font-style: bold; font-size: 3rem; border-bottom: 1px solid white;">New Sales</div>-->
+<!--<br>-->
+<!--<form method="post" id="saleForm" action="{% url 'select_customer' %}">-->
+<!--    {% csrf_token %}-->
+
+<!--    &lt;!&ndash; Cust_type Dropdown &ndash;&gt;-->
+<!--    <div class="form-group">-->
+<!--        <label for="Cust_type">Consumer Type</label>-->
+<!--        <select id="Cust_type" class="form-control text-capitalize" name="Cust_type">-->
+<!--            <option value="">&#45;&#45;Select Consumer Type&#45;&#45;</option>-->
+<!--            {% for customer in customers %}-->
+<!--                <option value="{{ customer.Cust_type }}">{{ customer.Cust_type }}</option>-->
+<!--            {% endfor %}-->
+<!--        </select>-->
+<!--    </div>-->
+
+<!--    &lt;!&ndash; Comp_name Dropdown (Initially hidden) &ndash;&gt;-->
+<!--    <div class="form-group" id="supplierDropdown" style="display: none;">-->
+<!--        <label for="supplier">Consumer</label>-->
+<!--        <select id="supplier" class="form-control text-capitalize" name="supplier">-->
+<!--            <option value="">&#45;&#45;Select Consumer&#45;&#45;</option>-->
+<!--        </select>-->
+<!--    </div>-->
+
+<!--    &lt;!&ndash; Hidden input to store selected supplier value &ndash;&gt;-->
+<!--    <input type="hidden" id="selectedSupplier" name="selected_supplier">-->
+
+<!--    <br>-->
+<!--    <div class="align-middle">-->
+<!--        <button type="submit" class="btn btn-success">Next</button>-->
+<!--        <a href="{% url 'sales-list' %}" class="btn btn-secondary">Cancel</a>-->
+<!--    </div>-->
+
+<!--</form>-->
+
+<!--<script>-->
+<!--    document.getElementById('Cust_type').addEventListener('change', function() {-->
+<!--        let custType = this.value;-->
+<!--        if (custType) {-->
+<!--            // Show the supplier dropdown-->
+<!--            document.getElementById('supplierDropdown').style.display = 'block';-->
+
+<!--            // Fetch related Comp_name values based on Cust_type-->
+<!--            fetch(`/transactions/get-customers/${custType}/`)-->
+<!--            .then(response => response.json())-->
+<!--            .then(data => {-->
+<!--                let supplierSelect = document.getElementById('supplier');-->
+<!--                supplierSelect.innerHTML = '<option value="">&#45;&#45;Select Consumer&#45;&#45;</option>';  // Reset options-->
+<!--                data.suppliers.forEach(supplier => {-->
+<!--                    supplierSelect.innerHTML += `<option value="${supplier.id}">${supplier.name}</option>`;-->
+<!--                });-->
+<!--            });-->
+<!--        } else {-->
+<!--            // Hide the supplier dropdown if no Cust_type is selected-->
+<!--            document.getElementById('supplierDropdown').style.display = 'none';-->
+<!--        }-->
+<!--    });-->
+
+<!--    // Set selected supplier to hidden input before submitting the form-->
+<!--    document.getElementById('saleForm').addEventListener('submit', function() {-->
+<!--        let selectedSupplier = document.getElementById('supplier').value;-->
+<!--        document.getElementById('selectedSupplier').value = selectedSupplier;-->
+<!--    });-->
+<!--</script>-->
+
+
+<div style="color:#575757; font-style: bold; font-size: 3rem; border-bottom: 1px solid white;">New Sales</div>
+<br>
+<form method="post" id="saleForm" action="{% url 'select_customer' %}">
+    {% csrf_token %}
+
+
+    <!-- Cust_type Dropdown -->
+    <div class="form-group">
+        <label for="Cust_type"><b>Consumer Type</b></label>
+        <select id="Cust_type" class="form-control text-capitalize" name="Cust_type">
+            <option value="">--Select Consumer Type--</option>
+            {% for customer in customers %}
+                <option value="{{ customer.Cust_type }}">{{ customer.Cust_type }}</option>
+            {% endfor %}
+        </select>
+    </div>
+
+
+    <!-- Comp_name Dropdown (Initially hidden) -->
+    <div class="form-group" id="supplierDropdown" style="display: none;">
+        <label for="supplier"><b>Consumer</b></label>
+        <select id="supplier" class="form-control text-capitalize" name="supplier">
+            <option value="">--Select Consumer--</option>
+        </select>
+    </div>
+
+    <!-- Hidden input to store selected supplier value -->
+    <input type="hidden" id="selectedSupplier" name="selected_supplier">
+
+     <!-- DC Type Radio Buttons -->
+    <div class="form-group">
+        <label for="dcType"><b>Select DC Type</b></label><br>
+<!--        <div>-->
+<!--            <input type="radio" class="checkbox-input" id="individualDC" name="dc_type" value="individual" required>-->
+<!--            <label for="individualDC">Individual DC</label>-->
+<!--        </div>-->
+        <label class="checkbox-label">
+             <input type="radio" class="checkbox-input" id="individualDC" name="dc_type" value="individual" required>
+             <b>Individual DC</b>
+        </label>
+        <label class="checkbox-label">
+             <input type="radio" class="checkbox-input" id="selectedDC" name="dc_type" value="selected" required>
+             <b>Favourite List DC</b>
+        </label>
+
+<!--        <div>-->
+<!--            <input type="radio" class="checkbox-input" id="selectedDC" name="dc_type" value="selected" required>-->
+<!--            <label for="selectedDC">Selected DC</label>-->
+<!--        </div>-->
+    </div>
+
+
+    <br>
+    <div class="align-middle">
+        <button type="submit" class="btn btn-success">Next</button>
+        <a href="{% url 'sales-list' %}" class="btn btn-secondary">Cancel</a>
+    </div>
+
+</form>
+
+<script>
+
+    document.getElementById('Cust_type').addEventListener('change', function() {
+        let custType = this.value;
+        if (custType) {
+            document.getElementById('supplierDropdown').style.display = 'block';
+
+            fetch(`/transactions/get-customers/${custType}/`)
+            .then(response => response.json())
+            .then(data => {
+                let supplierSelect = document.getElementById('supplier');
+                supplierSelect.innerHTML = '<option value="">--Select Consumer--</option>';
+                data.suppliers.forEach(supplier => {
+                    supplierSelect.innerHTML += `<option value="${supplier.id}">${supplier.name}</option>`;
+                });
+            });
+        } else {
+            document.getElementById('supplierDropdown').style.display = 'none';
+        }
+    });
+
+    // Update the selectedSupplier field when the supplier dropdown changes
+    document.getElementById('supplier').addEventListener('change', function () {
+        document.getElementById('selectedSupplier').value = this.value;
+    });
+
+    // Ensure the selectedSupplier field is set before form submission
+    document.getElementById('saleForm').addEventListener('submit', function (event) {
+        const selectedSupplier = document.getElementById('supplier').value;
+        document.getElementById('selectedSupplier').value = selectedSupplier;
+
+        const selectedDCType = document.querySelector('input[name="dc_type"]:checked').value;
+        if (selectedDCType === 'selected' && !selectedSupplier) {
+            alert('Please select a consumer for Selected DC.');
+            event.preventDefault();
+        }
+    });
+
+
+</script>
+
+
+{% endblock content %}

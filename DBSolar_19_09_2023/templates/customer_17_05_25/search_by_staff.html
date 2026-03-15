@@ -1,0 +1,1182 @@
+{% extends 'partials/base.html' %}
+{% load static %}
+{% block content %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@mdi/font/css/materialdesignicons.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.4.0/jspdf.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/exceljs/dist/exceljs.min.js"></script>
+
+<script src="https://rawgit.com/eKoopmans/html2pdf/master/dist/html2pdf.bundle.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/exceljs/dist/exceljs.min.js"></script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.9.2/html2pdf.bundle.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/exceljs/dist/exceljs.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/clipboard@2.0.8/dist/clipboard.min.js"></script>
+
+
+<section class="content">
+   <div class="content-header">
+      <div class="container-fluid">
+         <div class="row mb-2">
+            <div class="col-sm-6">
+               <h1 class="m-0">Search</h1>
+            </div>
+<!--            <div class="col-sm-6">-->
+<!--               <ol class="breadcrumb float-sm-right">-->
+<!--                  <li class="breadcrumb-item"><a href="{% url 'firereport-dashboard' %}">Home</a></li>-->
+<!--                  <li class="breadcrumb-item active">Search</li>-->
+<!--               </ol>-->
+<!--            </div>-->
+
+                      <!-- Add these buttons inside the col-auto div -->
+<div class="col-auto text-right float-right ml-auto">
+    <div class="dt-buttons btn-group flex-wrap">
+<!--       <a href="#" class="btn btn-outline-primary mr-2" name="download" id="download-pdf"><i class="fas fa-download"></i>Download</a>-->
+<!--       <a id="generate-pdf-all" href="#" class="btn btn-primary" type="button" title="PDF"><i class="fas fa-file-pdf fs-4" style="font-size: 1.1rem;"></i></a>-->
+        <a id="generate-excel-all" href="#" class="btn btn-primary" title="Excel"><i class="mdi mdi-microsoft-excel" style="font-size: 18px;"></i></a>
+        <a id="copy-table" href="#" class="btn btn-primary" title="Print"><i class="fas fa-solid fa-copy"></i></a>
+        <a id="generate-print-all" href="#" class="btn btn-primary" title="Print"><i class="fas fa-solid fa-print"></i></a>
+
+<!--         <a href="{% url 'user-add' %}" class="btn btn-primary"  title="New User"><i class="fas fa-plus"></i></a>-->
+<!--       <button class="btn btn-outline-primary mr-2" id="generate-pdf"><i class="fas fa-file-pdf"></i> Generate PDF</button>-->
+<!--       <button class="btn btn-outline-primary" id="generate-excel"><i class="fas fa-file-excel"></i> Generate Excel</button>-->
+    </div>
+</div>
+
+         </div>
+      </div>
+   </div>
+   <div class="container-fluid">
+      <div class="row">
+         <!-- left column -->
+         <div class="col-md-12">
+            <!-- general form elements -->
+            <div class="card card-primary">
+               <div class="card-header">
+                  <h3 class="card-title">Search</h3>
+               </div>
+               <!-- form start -->
+               <!--                    <form method="post">-->
+               <!--                        {% csrf_token %}-->
+               <!--                        <div class="card-body">-->
+               <!--                            <div class="form-group">-->
+               <!--                                <label>Search Report by Consumer Name/Mobile No/Location</label>-->
+               <!--                                <input type="text" name="searchdata" class="form-control"-->
+               <!--                                       placeholder="Enter Consumer Name/Mobile No./Location" required>-->
+               <!--                            </div>-->
+               <!--                        </div>-->
+               <!--                        <div class="card-footer">-->
+               <!--                            <button type="submit" class="btn btn-primary">Search</button>-->
+               <!--                        </div>-->
+               <!--                    </form>-->
+               <!-- search_form.html -->
+               <form method="post" id="searchForm">
+                  {% csrf_token %}
+                  <div class="row mb-1">
+                     <div class="col-md-12">
+<!--                   question class static script address     static/css/main.css 74-->
+<!--                        <div class="question">-->
+                          <div class="checkbox-column">
+                              {% if user.is_superuser %}
+                                <label>Search Staff / Consumer</label><br><br>
+
+                                <!-- Check if 'search_by' is 'staff' -->
+                                {% if search_by == 'staff' %}
+                                    <label class="checkbox-label">
+                                        <input type="radio" class="checkbox-input" name="search_by" value="staff" id="radio_1" checked>
+                                        <b>Search by Staff</b>
+                                    </label>
+                                {% else %}
+                                    <label class="checkbox-label">
+                                        <input type="radio" class="checkbox-input" name="search_by" value="staff" id="radio_1">
+                                        <b>Search by Staff</b>
+                                    </label>
+                                {% endif %}
+
+                                <!-- Check if 'search_by' is 'consumer' -->
+                                {% if search_by == 'consumer' %}
+                                    <label class="checkbox-label">
+                                        <input type="radio" class="checkbox-input" name="search_by" value="consumer" id="radio_2" checked>
+                                        <b>Search by Consumer</b>
+                                    </label>
+                                {% else %}
+                                    <label class="checkbox-label">
+                                        <input type="radio" class="checkbox-input" name="search_by" value="consumer" id="radio_2">
+                                        <b>Search by Consumer</b>
+                                    </label>
+                                {% endif %}
+                            {% endif %}
+
+<!--                           <label for="radio_2"><span><b>Search by Consumer</b></span></label>-->
+<!--                          </div>-->
+                           </div>
+                     </div>
+                  </div>
+                  <div class="card-footer">
+                  {% if user.is_superuser %}
+                  {% if search_by == "staff" %}
+                   <div class="form-group row">
+                      <label for="staff_assignee" class="col-sm-2 col-form-label"><b>Select Staff to Search:</b></label>
+                    <div class="col-sm-10">
+                        <select name="staff_assignee" id="staff_assignee" class="form-control" style="width: 100%;">
+                           <option value="" {% if not staff_assignee %}selected{% endif %}>All</option>
+                           {% for staff in staff_list %}
+                           <option value="{{ staff.id }}" {% if staff_assignee and staff_assignee.id == staff.id %}selected{% endif %}>{{ staff.get_full_name }}</option>
+                           {% endfor %}
+                        </select>
+                     </div>
+                  </div>
+
+                        <div class="form-group row">
+                           <label class="col-md-2 col-form-label"><b>Filter By Days:</b></label><br>
+                           <div class="col-md-4">
+                              <select name="report_filter" class="form-control">
+                                 <option value="all" {% if report_filter == 'all' %}selected{% endif %}> All </option>
+                                 <option value="week" {% if report_filter == 'week' %}selected{% endif %}>Weekly</option>
+                                 <option value="month" {% if report_filter == 'month' %}selected{% endif %}>Monthly</option>
+                              </select>
+                           </div>
+
+
+
+                           <label class="col-md-2 col-form-label"><b>Filter by Status:</b></label><br>
+                         <div class="col-md-4">
+                             <select name="status_filter" class="form-control">
+                                 <option value="" {% if status_filter == "" %}selected{% endif %}>All</option>
+                                 <option value="Commersial" {% if status_filter == "Commersial" %}selected{% endif %}>Commersial</option>
+                                 <option value="Goverment" {% if status_filter == "Goverment" %}selected{% endif %}>Goverment</option>
+                                 <option value="Industrial" {% if status_filter == "Industrial" %}selected{% endif %}>Industrial</option>
+                                 <option value="Residential" {% if status_filter == "Residential" %}selected{% endif %}>Residential</option>
+
+                             </select>
+                         </div>
+                        </div>
+
+                  {% elif search_by == "consumer" %}
+                  <div class="form-group row">
+                     <label><b>Search Consumer by Name/Mobile No/Location:</b></label>
+                      <div class="col-sm-8">
+                     <input type="text" name="consumer_search_data" placeholder="Enter Consumer Name/Mobile No./Location" class="form-control">
+                  </div>
+                  </div>
+                  {% endif %}
+                  {% else %}
+                  {% if search_by == "consumer" %}
+                  <div class="form-group row">
+                     <label><b>Search Consumer by Name/Mobile No/Location:</b></label>
+                     <div class="col-sm-10">
+                     <input type="text" name="consumer_search_data" placeholder="Enter Consumer Name/Mobile No./Location" class="form-control">
+                     </div>
+                  </div>
+                  {% endif %}
+                  {% endif %}
+                  <div>
+                     <button type="submit" style="width: 100%;">Search</button>
+                  </div>
+                  </div>
+               </form>
+
+            </div>
+               {% if customer %}
+               <div class="card-body">
+                  {% if search_by == "staff" %}
+                  <h4 align="center">Result against Staff Name "<span style="color: red">{{ staff_assignee.get_full_name }}</span>" keyword</h4>
+                  {% elif search_by == "consumer" %}
+                  <h4 align="center">Result against Consumer Name "<span style="color: red">{{consumer_search_data}}</span>" keyword </h4>
+                  {% endif %}
+                  <hr/>
+                  <div class="table-responsive">
+                     <table id="yourDataTable" class="table table-bordered table-striped">
+                        <thead style="text-align:center;">
+                           <tr>
+                              <th>Sr No</th>
+                              <th>Consumer ID</th>
+                              <th>Consumar Name</th>
+                              <th>Mobile Number</th>
+                              <th>Plant Capacity</th>
+                              <th>Location</th>
+                              <th>PO Date</th>
+                              <th>Consumer Type</th>
+                               <th> Assign Engineer</th>
+<!--                              <th>Current Status</th>-->
+<!--                                                              <th>Action</th>-->
+                           </tr>
+                        </thead>
+                        <tbody style="text-align:center;">
+                           {% if user.is_authenticated and user.is_staff and user.is_superuser %}
+                           {% for i in customer %}
+                           <tr>
+                              <td>{{forloop.counter}}</td>
+                              <td>{{i.Cust_id}}</td>
+                              <td>{{i.Comp_name}}</td>
+                              <td>{{i.phone}}</td>
+                              <td>{{i.Plant_Capacity}} Kw</td>
+                              <td>{{i.City}}</td>
+                              <td>{{i.po_date}}</td>
+
+                              <td>{{i.Cust_type}}</td>
+
+                               <td>{{i.Engg_Assign.first_name}} {{i.Engg_Assign.last_name}}</td>
+                           </tr>
+                           {% endfor %}
+                           {% else %}
+                           {% for i in customer %}
+                           {% if i.AssignTo == user %}
+                           <tr>
+                              <td>{{forloop.counter}}</td>
+                              <td>{{i.Cust_id}}</td>
+                              <td>{{i.Comp_name}}</td>
+                              <td>{{i.phone}}</td>
+                              <td>{{i.City}}</td>
+                              <td>{{i.po_date}}</td>
+<!--                              <td>{{i.AssignTo.first_name}} {{i.AssignTo.last_name}}</td>-->
+                               <td>
+                                   {% if i.Engg_Assign.first_name and i.Engg_Assign.last_name %}
+                                        {{ i.Engg_Assign.first_name }} {{ i.Engg_Assign.last_name }}
+                                    {% else %}
+                                        Admin
+                                    {% endif %}
+                               </td>
+                           </tr>
+                           {% endif %}
+                           {% endfor %}
+                           {% endif%}
+                        </tbody>
+                     </table>
+                  </div>
+               </div>
+               {% else %}
+                  <h4 align="center" style="color: red;">Searching Data Not Found</h4>
+               {% endif %}
+            </div>
+         </div>
+      </div>
+
+   </div>
+</section>
+<script>
+   // JavaScript to automatically submit the form when radio button is changed
+   const searchForm = document.getElementById('searchForm');
+   const radioInputs = document.querySelectorAll('input[type="radio"][name="search_by"]');
+   radioInputs.forEach((radio) => {
+       radio.addEventListener('change', () => {
+           searchForm.submit();
+       });
+   });
+</script>
+
+<script>
+   const searchByRadios = document.querySelectorAll('input[name="search_by"]');
+   const staffDropdown = document.getElementById('staffDropdown');
+   const reportFilterDropdown = document.getElementById('reportFilterDropdown');
+   const statusFilterDropdown = document.getElementById('statusFilterDropdown');
+
+   searchByRadios.forEach((radio) => {
+      radio.addEventListener('change', () => {
+         const selectedValue = radio.value;
+         if (selectedValue === 'staff') {
+            staffDropdown.style.display = 'block';
+            reportFilterDropdown.style.display = 'block';
+            statusFilterDropdown.style.display = 'block';
+         } else {
+            staffDropdown.style.display = 'none';
+            reportFilterDropdown.style.display = 'none';
+            statusFilterDropdown.style.display = 'none';
+         }
+      });
+   });
+</script>
+
+<style>
+   .badge {
+   border: 2px solid black ;
+   background-color: white;
+   color: black;
+   padding: 10px 20px 10px 20px;
+   font-size: 14px;
+   cursor: pointer;
+   float: center;
+   border-radius: 50px
+   }
+   .badge1 {
+   border: 2px solid black ;
+   background-color: white;
+   color: black;
+   padding: 5.5px 12px 20px 11px;
+   font-size: 14px;
+   cursor: pointer;
+   float: right;
+   border-radius: 30px
+   }
+   /* Green */
+   .success:hover {
+   border-color: green;
+   background-color: white;
+   color: green;
+   }
+   .success {
+   background-color: green;
+   border-color: green;
+   color: white;
+   }
+   /* Blue */
+   .info:hover {
+   border-color: #2196F3;
+   background: white;
+   color: dodgerblue;
+   }
+   .info {
+   background: #2196F3;
+   border-color: #2196F3;
+   color: white;
+   }
+   /* Orange */
+   .warning:hover {
+   border-color: #ff9800;
+   background: white;
+   color: orange;
+   }
+   .warning {
+   background: #ff9800;
+   border-color: #ff9800;
+   color: white;
+   }
+   /* Red */
+   .danger:hover {
+   border-color: #f44336;
+   background: white;
+   color: red;
+   }
+   .danger {
+   background: #f44336;
+   border-color: #f44336;
+   color: white;
+   }
+   /* Gray #e7e7e7 */
+   .default:hover {
+   border-color: yellow;
+   background: white;
+   color: yellow;
+   }
+   .default {
+   background: yellow;
+   border-color: yellow;
+   color: black;
+   }
+</style>
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    let dataTable = $('#yourDataTable').DataTable();
+    if ($.fn.dataTable.isDataTable('#yourDataTable')) {
+        dataTable.destroy();
+    }
+
+    dataTable = $('#yourDataTable').DataTable({
+        scrollX: true,
+        scrollCollapse: true,
+        fixedHeader: {
+            header: true,
+            footer: false
+        },
+
+        columnDefs: [
+           { targets: 0, orderable: false } // Disable sorting for the Sr No. column (zero-based)
+        ]
+
+
+//        dom: 'Blfrtip',
+//        buttons: [
+//            'copy', 'csv', 'excel', 'pdf',
+ //       ],
+    });
+
+
+
+    // Add the buttons to the pagination area
+    $('#yourDataTable_paginate').append(`
+        <button class="btn btn-outline-primary mr-2" id="generate-csv-all"><i class="fas fa-file-csv"></i> Generate CSV All</button>
+        <button class="btn btn-outline-primary mr-2" id="generate-excel-all"><i class="fas fa-file-excel"></i> Generate Excel All</button>
+        <button class="btn btn-outline-primary" id="generate-pdf-all"><i class="fas fa-file-pdf"></i> Generate PDF All</button>
+    `);
+
+    document.getElementById('generate-csv-all').addEventListener('click', function (event) {
+        event.preventDefault();
+        generateCSVAll();
+    });
+
+    document.getElementById('generate-excel-all').addEventListener('click', function (event) {
+        event.preventDefault();
+        generateExcelAll();
+    });
+
+    document.getElementById('generate-pdf-all').addEventListener('click', function (event) {
+        event.preventDefault();
+        generatePDFAll();
+    });
+
+       document.getElementById('generate-print-all').addEventListener('click', function (event) {
+        event.preventDefault();
+        printTable();
+    });
+
+        document.getElementById('copy-table').addEventListener('click', function (event) {
+        event.preventDefault();
+        copyTableToClipboard();
+    });
+
+
+
+function copyTableToClipboard() {
+    const table = $('#yourDataTable').DataTable();
+
+    // Order the DataTable by the "Sr No." column
+    table.order([0, 'asc']).draw();
+
+    const clipboard = new ClipboardJS('#copy-table', {
+        text: function () {
+            let text = '';
+
+            // Copy table header
+            text += getTableHeaders().join('\t') + '\n';
+
+            // Copy filtered table body with reindexed "Sr No."
+            let serialNumber = 1;
+            table.rows({ search: 'applied' }).data().each(function (row) {
+              if (row[0] !== 'Action') { // Skip the "Action" column
+                row[0] = serialNumber++; // Reassign sequential "Sr No." values
+                row.forEach(function (cell) {
+                    // Extract text content without HTML tags
+                    const cellText = document.createElement('div');
+                    cellText.innerHTML = cell;
+                    text += cellText.textContent.trim() + '\t';
+                });
+                text += '\n';
+              }
+            });
+
+            return text;
+        }
+    });
+
+    clipboard.on('success', function (e) {
+        alert('Filtered table content copied to clipboard!');
+        e.clearSelection();
+    });
+
+    clipboard.on('error', function (e) {
+        console.error('Error copying to clipboard:', e.action);
+    });
+}
+
+function getTableHeaders() {
+    const headerCells = document.querySelectorAll('#yourDataTable thead th');
+    return Array.from(headerCells).map(cell => cell.innerText);
+}
+
+
+
+function generateCSVAll(filename = 'generated_csv_all.csv') {
+    const csvContent = [];
+    const headerRow = [];
+    $('#yourDataTable thead th').each(function () {
+        headerRow.push($(this).text());
+    });
+    csvContent.push(headerRow.join(','));
+
+    // Add data rows for all pages
+    for (let i = 0; i < dataTable.page.info().pages; i++) {
+        dataTable.page(i).draw('page');
+        const dataRows = [];
+        $('#yourDataTable tbody tr').each(function () {
+            const rowData = [];
+            $(this).find('td').each(function () {
+                if ($(this).hasClass('table-avatar')) {
+                    // Extract text from the <a> elements within the .table-avatar cell
+                    rowData.push($(this).find('a').text().trim());
+                } else {
+                    rowData.push($(this).text());
+                }
+            });
+            dataRows.push(rowData.join(','));
+        });
+        csvContent.push(dataRows.join('\n'));
+    }
+
+    // Save the CSV file
+    const blob = new Blob([csvContent.join('\n')], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = window.URL.createObjectURL(blob);
+    link.download = filename;
+    link.click();
+}
+
+
+function generateExcelAll(filename = 'generated_excel_all.xlsx') {
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet('Sheet 1');
+
+// Add header row
+//        const headerRow = worksheet.addRow([
+//            'Sr No.',
+//            'Staff ID',
+//            'Username',
+//            'Full Name',
+//            'Phone',
+//            'Email',
+//            'Department',
+//        ]);
+
+    // Add header row
+    const headerRow = [];
+    $('#yourDataTable thead th').each(function () {
+        headerRow.push($(this).text());
+    });
+    worksheet.addRow(headerRow);
+
+    // Add data rows for all pages
+    for (let i = 0; i < dataTable.page.info().pages; i++) {
+        dataTable.page(i).draw('page');
+        $('#yourDataTable tbody tr').each(function () {
+            const rowData = [];
+            $(this).find('td').each(function () {
+                if ($(this).hasClass('table-avatar')) {
+                    // Extract text from the <a> elements within the .table-avatar cell
+                    rowData.push($(this).find('a').text().trim());
+                } else {
+                    rowData.push($(this).text());
+                }
+            });
+            worksheet.addRow(rowData);
+        });
+    }
+
+    // Save the Excel file
+    workbook.xlsx.writeBuffer().then(data => {
+        const blob = new Blob([data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+        const link = document.createElement('a');
+        link.href = window.URL.createObjectURL(blob);
+        link.download = filename;
+        link.click();
+    });
+}
+
+
+<!--function printTable() {-->
+<!--    // Open a new window and print the table content-->
+<!--    const printWindow = window.open('', '_blank');-->
+<!--    printWindow.document.write('<html><head><title>Print</title></head><body>');-->
+<!--    //printWindow.document.write('<style>@media print { table { width: 100%; } } </style>');-->
+<!--    printWindow.document.write('<style>@media print { table { width: 100%; border-collapse: collapse; } th, td { border: 1px solid black; padding: 5px; } } </style>');-->
+
+<!--     // Include a banner image in the printed report-->
+<!--        printWindow.document.write('<style>img.banner { max-width: 100%; height: auto; margin: 10px 0; }</style>');-->
+<!--        printWindow.document.write('<img class="banner" src="{% static "images/dblogo2001.png" %}" style="width: 450px; height: 40px;">');-->
+<!--     -->
+<!--       // Get the selected staff name or consumer name-->
+<!--        let selectedName = '';-->
+<!--        if ($('input[name="search_by"]:checked').val() === 'staff') {-->
+<!--            selectedName = $('#staff_assignee option:selected').text();-->
+
+<!--            // Get the selected report_filter and status_filter values-->
+<!--            const reportFilter = $('select[name="report_filter"]').val();-->
+<!--            const statusFilter = $('select[name="status_filter"]').val();-->
+
+<!--            // Include staff_assignee in bold-->
+<!--           // printWindow.document.write('<h1>Report Search By <span style="font-weight: bold;">' + selectedName + '</span></h1>');-->
+
+<!--            // Include report_filter and status_filter in smaller font-->
+<!--            // printWindow.document.write('<p style="font-size: 150%;"> Filtered By: ' + reportFilter + '  |  Status: ' + statusFilter + '</p>');-->
+
+<!--             // Capitalize the first character of reportFilter-->
+<!--            const capitalizedReportFilter = reportFilter.charAt(0).toUpperCase() + reportFilter.slice(1);-->
+
+<!--            // Include staff_assignee in bold-->
+<!--            printWindow.document.write('<h1 style="margin: 0; text-align: center;">Search Report for <span style="font-weight: bold; margin: 0;">' + selectedName + '</span></h1>');-->
+
+<!--            // Include capitalizedReportFilter and status_filter in smaller font, centered-->
+<!--            printWindow.document.write('<p style="font-size: 120%; margin: 0; text-align: center;">Report Filtered By: ' + capitalizedReportFilter + '  |  Status Filter: ' + statusFilter + '</p>');-->
+<!--        } else {-->
+<!--            selectedName = $('input[name="consumer_search_data"]').val();-->
+<!--            printWindow.document.write('<h1>Report Search By ' + selectedName + '</h1>');-->
+<!--        }-->
+
+
+
+<!--    // Customize the heading for the print view-->
+<!--    printWindow.document.write('<h1>Report Search By </h1>');-->
+
+<!--    printWindow.document.write('<table>');-->
+
+
+<!--&lt;!&ndash;    // Add header row&ndash;&gt;-->
+<!--&lt;!&ndash;    printWindow.document.write('<thead><tr>');&ndash;&gt;-->
+<!--&lt;!&ndash;    $('#yourDataTable thead th').each(function () {&ndash;&gt;-->
+<!--&lt;!&ndash;        printWindow.document.write('<th>' + $(this).text() + '</th>');&ndash;&gt;-->
+<!--&lt;!&ndash;    });&ndash;&gt;-->
+<!--    // Add header row-->
+<!--    printWindow.document.write('<thead><tr>');-->
+<!--    $('#yourDataTable thead th').each(function () {-->
+<!--        if ($(this).text() !== 'Action') {-->
+<!--            printWindow.document.write('<th>' + $(this).text() + '</th>');-->
+<!--        }-->
+<!--    });-->
+<!--    printWindow.document.write('</tr></thead>');-->
+
+<!--    // Add data rows for all pages-->
+<!--    for (let i = 0; i < dataTable.page.info().pages; i++) {-->
+<!--        dataTable.page(i).draw('page');-->
+<!--        $('#yourDataTable tbody tr').each(function () {-->
+<!--            printWindow.document.write('<tr>');-->
+<!--            $(this).find('td').each(function () {-->
+
+<!--                if ($(this).hasClass('table-avatar')) {-->
+<!--                    // Extract text from the <a> elements within the .table-avatar cell-->
+<!--                    printWindow.document.write('<td>' + $(this).find('a').text().trim() + '</td>');-->
+<!--                } else {-->
+<!--                    printWindow.document.write('<td>' + $(this).text() + '</td>');-->
+<!--                }-->
+<!--            });-->
+<!--            printWindow.document.write('</tr>');-->
+<!--        });-->
+<!--    }-->
+
+<!--    printWindow.document.write('</table>');-->
+<!--    printWindow.document.write('</body></html>');-->
+<!--    printWindow.document.close();-->
+<!--    printWindow.print();-->
+<!--}-->
+
+
+
+
+<!--function printTable() {-->
+<!--    // Open a new window and print the table content-->
+<!--    const printWindow = window.open('', '_blank');-->
+<!--    printWindow.document.write('<html><head><title>Print</title></head><body>');-->
+
+
+
+<!--    // Include a banner image in the printed report-->
+<!--    const imageUrl = '{% static "images/dblogo2001.png" %}';-->
+<!--    printWindow.document.write('<style>img.banner { max-width: 100%; height: auto; margin: 10px 0; }</style>');-->
+<!--    printWindow.document.write('<img class="banner" id="bannerImage" src="' + imageUrl + '" style="width: 450px; height: 40px;">');-->
+
+<!--    // Wait for the image to load before printing-->
+<!--    const bannerImage = printWindow.document.getElementById('bannerImage');-->
+<!--    bannerImage.onload = function () {-->
+
+
+
+
+<!--      // Get the selected staff name or consumer name-->
+<!--        let selectedName = '';-->
+<!--        if ($('input[name="search_by"]:checked').val() === 'staff') {-->
+<!--            selectedName = $('#staff_assignee option:selected').text();-->
+
+<!--            // Get the selected report_filter and status_filter values-->
+<!--            const reportFilter = $('select[name="report_filter"]').val();-->
+<!--            const statusFilter = $('select[name="status_filter"]').val();-->
+
+
+<!--            // Capitalize the first character of reportFilter-->
+<!--            const capitalizedReportFilter = reportFilter.charAt(0).toUpperCase() + reportFilter.slice(1);-->
+
+<!--            // Include staff_assignee in bold-->
+<!--            printWindow.document.write('<h1 style="margin: 0; text-align: center;">Search Report for staff <span style="font-weight: bold; margin: 0;">' + selectedName + '</span></h1>');-->
+
+<!--            // Include capitalizedReportFilter and status_filter in smaller font, centered-->
+<!--            printWindow.document.write('<p style="font-size: 120%; margin: 0; text-align: center;">Report Filtered By: ' + capitalizedReportFilter + '  |  Status Filter: ' + statusFilter + '</p> <br>');-->
+<!--        } else {-->
+<!--            selectedName = $('input[name="consumer_search_data"]').val();-->
+<!--            printWindow.document.write('<h1 style="padding: 10px; text-align: center;">Report Search By ' + selectedName + '</h1> <br>');-->
+<!--        }-->
+
+<!--        // Customize the heading for the print view-->
+
+<!--        printWindow.document.write('<table style="width: 100%; border-collapse: collapse; border: 1px solid black;">');-->
+
+<!--        // Add header row-->
+<!--        printWindow.document.write('<thead><tr>');-->
+<!--        $('#yourDataTable thead th').each(function () {-->
+<!--            if ($(this).text() !== 'Action') {-->
+<!--                printWindow.document.write('<th style="border: 1px solid black; padding: 10px;">' + $(this).text() + '</th>');-->
+<!--            }-->
+<!--        });-->
+
+<!--        printWindow.document.write('</tr></thead>');-->
+
+<!--        // Add data rows for all pages-->
+<!--        for (let i = 0; i < dataTable.page.info().pages; i++) {-->
+<!--            dataTable.page(i).draw('page');-->
+
+
+<!--            $('#yourDataTable tbody tr').each(function () {-->
+<!--                printWindow.document.write('<tr>');-->
+<!--                $(this).find('td').each(function () {-->
+<!--                    if ($(this).hasClass('table-avatar')) {-->
+<!--                        // Extract text from the <a> elements within the .table-avatar cell-->
+<!--                        printWindow.document.write('<td style="border: 1px solid black; padding: 10px;">' + $(this).find('a').text().trim() + '</td>');-->
+<!--                    } else {-->
+<!--                        printWindow.document.write('<td style="border: 1px solid black; padding: 10px;">' + $(this).text() + '</td>');-->
+<!--                    }-->
+<!--                });-->
+<!--                printWindow.document.write('</tr>');-->
+<!--            });-->
+<!--        }-->
+
+
+
+<!--        printWindow.document.write('</table></body></html>');-->
+<!--        printWindow.document.close();-->
+
+
+<!--        printWindow.print();-->
+<!--    };-->
+
+<!--    // Set the source of the banner image-->
+<!--    bannerImage.src = imageUrl;-->
+
+<!--}-->
+
+
+<!--function printTable() {-->
+<!--    // Open a new window and print the table content-->
+<!--    const printWindow = window.open('', '_blank');-->
+<!--    printWindow.document.write('<html><head><title>Print</title></head><body>');-->
+
+<!--    // Include a banner image in the printed report-->
+<!--    const imageUrl = '{% static "images/dblogo2001.png" %}';-->
+<!--    printWindow.document.write('<style>img.banner { max-width: 100%; height: auto; margin: 0px 50px; }</style>');-->
+<!--    printWindow.document.write('<style>@media print { #header, #footer { display: block; position: fixed; left: 0; right: 0; } }</style>');-->
+
+<!--    // Header section with banner image-->
+<!--    printWindow.document.write('<div id="header" style="text-align: center; margin-bottom: 100px;">');-->
+<!--    printWindow.document.write('<img class="banner" id="bannerImage" src="' + imageUrl + '" style="width: 450px; height: 40px;">');-->
+<!--    printWindow.document.write('</div>');-->
+
+<!--    // Footer section with page number and print information-->
+<!--    printWindow.document.write('<div id="footer" style="position: fixed; bottom: 0; left: 0; right: 0; text-align: center;">');-->
+<!--    printWindow.document.write('<p style="font-size: 80%;">Page <span class="pageNumber"></span> | Printed by [Your Name]</p>');-->
+<!--    printWindow.document.write('</div>');-->
+
+<!--    // Wait for the image to load before printing-->
+<!--    const bannerImage = printWindow.document.getElementById('bannerImage');-->
+<!--    bannerImage.onload = function () {-->
+
+<!--        // Get the selected staff name or consumer name-->
+<!--        let selectedName = '';-->
+
+<!--        // Add a new page with the header-->
+<!--        printWindow.document.write('<div style="page-break-before: always;"></div>');-->
+
+<!--        // Content for the pages-->
+<!--        for (let i = 0; i < dataTable.page.info().pages; i++) {-->
+<!--            dataTable.page(i).draw('page');-->
+
+<!--            // Add a new page for each iteration-->
+<!--            if (i > 0) {-->
+<!--                printWindow.document.write('<div style="page-break-before: always;"></div>');-->
+<!--            }-->
+
+<!--            // Content for the current page-->
+<!--            printWindow.document.write('<div style="margin-top: 20px;">');-->
+<!--                    if ($('input[name="search_by"]:checked').val() === 'staff') {-->
+<!--            selectedName = $('#staff_assignee option:selected').text();-->
+
+<!--            // Get the selected report_filter and status_filter values-->
+<!--            const reportFilter = $('select[name="report_filter"]').val();-->
+<!--            const statusFilter = $('select[name="status_filter"]').val();-->
+
+<!--            // Capitalize the first character of reportFilter-->
+<!--            const capitalizedReportFilter = reportFilter.charAt(0).toUpperCase() + reportFilter.slice(1);-->
+
+<!--            // Include staff_assignee in bold-->
+<!--            printWindow.document.write('<h1 style="margin: 10px; text-align: center;">Search Report for staff <span style="font-weight: bold; margin: 0;">' + selectedName + '</span></h1>');-->
+
+<!--             // Include staff_assignee in bold-->
+<!--            printWindow.document.write('<h1 style="margin: 10px; text-align: center;">Search Report for staff <span style="font-weight: bold; margin: 0;">' + selectedName + '</span></h1>');-->
+
+<!--            // Include capitalizedReportFilter and status_filter in smaller font, centered-->
+<!--            printWindow.document.write('<p style="font-size: 120%; margin: 10px 0; text-align: center;">Report Filtered By: ' + capitalizedReportFilter + '  |  Status Filter: ' + statusFilter + '</p>');-->
+<!--        } else {-->
+<!--            selectedName = $('input[name="consumer_search_data"]').val();-->
+<!--            printWindow.document.write('<h1 style="padding: 10px; text-align: center;">Report Search By ' + selectedName + '</h1>');-->
+<!--        }-->
+
+<!--            printWindow.document.write('<table style="width: 100%; border-collapse: collapse; border: 1px solid black;">');-->
+
+<!--            // Add header row-->
+<!--            printWindow.document.write('<thead><tr>');-->
+<!--            $('#yourDataTable thead th').each(function () {-->
+<!--                if ($(this).text() !== 'Action') {-->
+<!--                    printWindow.document.write('<th style="border: 1px solid black; padding: 10px;">' + $(this).text() + '</th>');-->
+<!--                }-->
+<!--            });-->
+<!--            printWindow.document.write('</tr></thead>');-->
+
+<!--            // Add data rows for the current page-->
+<!--            $('#yourDataTable tbody tr').each(function () {-->
+<!--                printWindow.document.write('<tr>');-->
+<!--                $(this).find('td').each(function () {-->
+<!--                    if ($(this).hasClass('table-avatar')) {-->
+<!--                        // Extract text from the <a> elements within the .table-avatar cell-->
+<!--                        printWindow.document.write('<td style="border: 1px solid black; padding: 10px;">' + $(this).find('a').text().trim() + '</td>');-->
+<!--                    } else {-->
+<!--                        printWindow.document.write('<td style="border: 1px solid black; padding: 10px;">' + $(this).text() + '</td>');-->
+<!--                    }-->
+<!--                });-->
+<!--                printWindow.document.write('</tr>');-->
+<!--            });-->
+
+<!--            printWindow.document.write('</table></div>');-->
+<!--        }-->
+
+<!--        printWindow.document.write('</body></html>');-->
+<!--        printWindow.document.close();-->
+
+<!--        // Print page with header and footer-->
+<!--        printWindow.print();-->
+<!--    };-->
+
+<!--    // Set the source of the banner image-->
+<!--    bannerImage.src = imageUrl;-->
+<!--}-->
+
+
+
+
+<!--function printTable() {-->
+<!--    // Open a new window and print the table content-->
+<!--    const printWindow = window.open('', '_blank');-->
+<!--    printWindow.document.write('<html><head><title>Print</title></head><body>');-->
+
+<!--    // Include a banner image in the printed report-->
+<!--    const imageUrl = '{% static "images/dblogo2001.png" %}';-->
+<!--    printWindow.document.write('<style>img.banner { max-width: 100%; height: auto; margin: 0px 50px; }</style>');-->
+<!--    printWindow.document.write('<style>@media print { #header, #footer { display: block; position: fixed; left: 0; right: 0; } }</style>');-->
+<!--    printWindow.document.write('<style>@media print { body { margin: 20px; } }</style>');-->
+
+<!--&lt;!&ndash;    printWindow.document.write('<style>@media print { body { margin: 20px; } }</style>');&ndash;&gt;-->
+
+<!--    // Header section with banner image-->
+<!--    printWindow.document.write('<div id="header" style="text-align: center; margin-bottom: 20px; padding-bottom: 20px; border-bottom: 1px solid black;">');-->
+
+<!--    printWindow.document.write('<img class="banner" id="bannerImage" src="' + imageUrl + '" style="width: 450px; height: 40px;">');-->
+<!--    printWindow.document.write('</div>');-->
+
+<!--    // Footer section with page number and print information-->
+<!--    printWindow.document.write('<div id="footer" style="position: fixed; bottom: 0; left: 0; right: 0; text-align: center; padding-top: 20px; border-top: 1px solid black;">');-->
+
+<!--    printWindow.document.write('<p style="font-size: 80%;">Page <span class="pageNumber"></span> | Printed by [Your Name]</p>');-->
+<!--    printWindow.document.write('</div>');-->
+
+<!--    // Wait for the image to load before printing-->
+<!--    const bannerImage = printWindow.document.getElementById('bannerImage');-->
+<!--    bannerImage.onload = function () {-->
+
+<!--    // Get the selected staff name or consumer name-->
+<!--    let selectedName = '';-->
+
+<!--        if ($('input[name="search_by"]:checked').val() === 'staff') {-->
+<!--            selectedName = $('#staff_assignee option:selected').text();-->
+
+<!--		  // Get the selected report_filter and status_filter values-->
+<!--            const reportFilter = $('select[name="report_filter"]').val();-->
+<!--            const statusFilter = $('select[name="status_filter"]').val();-->
+
+<!--            // Capitalize the first character of reportFilter-->
+<!--            const capitalizedReportFilter = reportFilter.charAt(0).toUpperCase() + reportFilter.slice(1);-->
+
+<!--            // Include staff_assignee in bold-->
+<!--            printWindow.document.write('<h1 style="margin: 0; text-align: center;">Search Report for staff <span style="font-weight: bold; margin-top: 15px;">' + selectedName + '</span></h1>');-->
+
+<!--            // Include capitalizedReportFilter and status_filter in smaller font, centered-->
+<!--            printWindow.document.write('<p style="font-size: 120%; text-align: center;  margin-top: 20px;">Report Filtered By: ' + capitalizedReportFilter + '  |  Status Filter: ' + statusFilter + '</p> <br>');-->
+<!--        } else {-->
+<!--            selectedName = $('input[name="consumer_search_data"]').val();-->
+<!--            printWindow.document.write('<h1 style="padding: 10px; text-align: center; margin-top: 10px;">Report Search By ' + selectedName + '</h1> <br>');-->
+<!--        }-->
+
+<!--    // Customize the heading for the print view-->
+<!--    printWindow.document.write('<table style="width: 100%; border-collapse: collapse; border: 1px solid black; top: 50px; bottom: 30px;" >');-->
+
+
+<!--    // Add header row-->
+<!--    printWindow.document.write('<thead style="margin-bottom: 90px; margin-top: 200px;"><tr>'); // Added margin-bottom to the thead-->
+
+<!--        $('#yourDataTable thead th').each(function () {-->
+<!--            if ($(this).text() !== 'Action') {-->
+<!--                printWindow.document.write('<th style="border: 1px solid black; padding: 10px; margin-top: 100px;">' + $(this).text() + '</th>');-->
+<!--            }-->
+<!--        });-->
+
+<!--        printWindow.document.write('</tr></thead>');-->
+
+<!--        // Add data rows for all pages-->
+<!--        for (let i = 0; i < dataTable.page.info().pages; i++) {-->
+<!--            dataTable.page(i).draw('page');-->
+
+<!--            $('#yourDataTable tbody tr').each(function () {-->
+<!--                printWindow.document.write('<tr>');-->
+<!--                $(this).find('td').each(function () {-->
+<!--                    if ($(this).hasClass('table-avatar')) {-->
+<!--                        // Extract text from the <a> elements within the .table-avatar cell-->
+<!--                        printWindow.document.write('<td style="border: 1px solid black; padding: 10px;">' + $(this).find('a').text().trim() + '</td>');-->
+
+<!--                    } else {-->
+<!--                        printWindow.document.write('<td style="border: 1px solid black; padding: 10px;">' + $(this).text() + '</td>');-->
+<!--                    }-->
+<!--                });-->
+<!--                printWindow.document.write('</tr>');-->
+<!--            });-->
+<!--        }-->
+<!--        printWindow.document.write('</table></body></html>');-->
+<!--        printWindow.document.close();-->
+<!--        printWindow.print();-->
+<!--    };-->
+
+<!--    // Set the source of the banner image-->
+<!--    bannerImage.src = imageUrl;-->
+<!--}-->
+
+
+
+function printTable() {
+    // Open a new window and print the table content
+    const printWindow = window.open('', '_blank');
+    printWindow.document.write('<html><head><title>Print</title></head><body>');
+
+    // Include a banner image in the printed report
+    const imageUrl = '{% static "images/dblogo2001.png" %}';
+    printWindow.document.write('<style>img.banner { max-width: 100%; height: auto; margin: 0px 50px; }</style>');
+    printWindow.document.write('<style>@media print { #header, #footer { display: block; position: fixed; left: 0; right: 0; } }</style>');
+    printWindow.document.write('<style>@media print { body { margin: 20px; } }</style>');
+
+    // Header section with banner image
+    printWindow.document.write('<div id="header" style="text-align: center; margin-bottom: 20px; padding-bottom: 20px; border-bottom: 1px solid black;">');
+    printWindow.document.write('<img class="banner" id="bannerImage" src="' + imageUrl + '" style="width: 450px; height: 40px;">');
+    printWindow.document.write('</div>');
+
+    // Footer section with page number and print information
+    printWindow.document.write('<div id="footer" style="position: fixed; bottom: 0; left: 0; right: 0; text-align: center; padding-top: 20px; border-top: 1px solid black;">');
+    printWindow.document.write('<p style="font-size: 80%;">Page <span class="pageNumber"></span> | Printed by [Your Name]</p>');
+    printWindow.document.write('</div>');
+
+    // Wait for the image to load before printing
+    const bannerImage = printWindow.document.getElementById('bannerImage');
+    bannerImage.onload = function () {
+        // Get the selected staff name or consumer name
+        let selectedName = '';
+
+        if ($('input[name="search_by"]:checked').val() === 'staff') {
+            selectedName = $('#staff_assignee option:selected').text();
+
+		  // Get the selected report_filter and status_filter values
+            const reportFilter = $('select[name="report_filter"]').val();
+            const statusFilter = $('select[name="status_filter"]').val();
+
+            // Capitalize the first character of reportFilter
+            const capitalizedReportFilter = reportFilter.charAt(0).toUpperCase() + reportFilter.slice(1);
+
+            // Include staff_assignee in bold
+            printWindow.document.write('<h1 style="margin: 0; text-align: center;">Search Report for staff <span style="font-weight: bold; margin-top: 15px;">' + selectedName + '</span></h1>');
+
+            // Include capitalizedReportFilter and status_filter in smaller font, centered
+            printWindow.document.write('<p style="font-size: 120%; text-align: center;  margin-top: 20px;">Report Filtered By: ' + capitalizedReportFilter + '  |  Status Filter: ' + statusFilter + '</p> <br>');
+        } else {
+            selectedName = $('input[name="consumer_search_data"]').val();
+            printWindow.document.write('<h1 style="padding: 10px; text-align: center; margin-top: 10px;">Report Search By ' + selectedName + '</h1> <br>');
+        }
+
+        // Customize the heading for the print view
+        printWindow.document.write('<table style="width: 100%; border-collapse: collapse; border: 1px solid black;">');
+
+        // Add header row for initial display (not repeated on each page)
+        printWindow.document.write('<thead style="display: none;"><tr>');
+        $('#yourDataTable thead th').each(function () {
+            if ($(this).text() !== 'Action') {
+                printWindow.document.write('<th style="border: 1px solid black; padding: 10px;">' + $(this).text() + '</th>');
+            }
+        });
+        printWindow.document.write('</tr></thead>');
+
+        // Add data rows for all pages
+        for (let i = 0; i < dataTable.page.info().pages; i++) {
+            dataTable.page(i).draw('page');
+
+            // Add header row for each page
+            printWindow.document.write('<thead><tr>');
+            $('#yourDataTable thead th').each(function () {
+                if ($(this).text() !== 'Action') {
+                    printWindow.document.write('<th style="border: 1px solid black; padding: 10px;">' + $(this).text() + '</th>');
+                }
+            });
+            printWindow.document.write('</tr></thead>');
+
+            // Add data rows
+            $('#yourDataTable tbody tr').each(function () {
+                printWindow.document.write('<tr>');
+                $(this).find('td').each(function () {
+                    if ($(this).hasClass('table-avatar')) {
+                        // Extract text from the <a> elements within the .table-avatar cell
+                        printWindow.document.write('<td style="border: 1px solid black; padding: 10px;">' + $(this).find('a').text().trim() + '</td>');
+                    } else {
+                        printWindow.document.write('<td style="border: 1px solid black; padding: 10px;">' + $(this).text() + '</td>');
+                    }
+                });
+                printWindow.document.write('</tr>');
+            });
+        }
+        printWindow.document.write('</table></body></html>');
+        printWindow.document.close();
+        printWindow.print();
+    };
+
+    // Set the source of the banner image
+    bannerImage.src = imageUrl;
+}
+
+
+
+
+<!--function printTable() {-->
+<!--    // Open a new window and print the table content-->
+<!--    const printWindow = window.open('', '_blank');-->
+<!--    const imageUrl = '{% static "images/dblogo2001.png" %}';-->
+
+<!--    printWindow.document.write('<html><head><title>Print</title></head><body>');-->
+
+<!--    // Include a banner image in the printed report-->
+<!--    printWindow.document.write('<style>img.banner { max-width: 100%; height: auto; margin: 10px 0; }</style>');-->
+<!--    printWindow.document.write('<img class="banner" src="' + imageUrl + '" style="width: 450px; height: 40px;">');-->
+
+<!--    // Get the selected staff name or consumer name-->
+<!--    let selectedName = '';-->
+<!--    if ($('input[name="search_by"]:checked').val() === 'staff') {-->
+<!--        selectedName = $('#staff_assignee option:selected').text();-->
+
+<!--        // Get the selected report_filter and status_filter values-->
+<!--        const reportFilter = $('select[name="report_filter"]').val();-->
+<!--        const statusFilter = $('select[name="status_filter"]').val();-->
+
+<!--        // Capitalize the first character of reportFilter-->
+<!--        const capitalizedReportFilter = reportFilter.charAt(0).toUpperCase() + reportFilter.slice(1);-->
+
+<!--        // Include staff_assignee in bold-->
+<!--        printWindow.document.write('<h1 style="margin: 0; text-align: center;">Search Report for <span style="font-weight: bold; margin: 0;">' + selectedName + '</span></h1>');-->
+
+<!--        // Include capitalizedReportFilter and status_filter in smaller font, centered-->
+<!--        printWindow.document.write('<p style="font-size: 120%; margin: 0; text-align: center;">Report Filtered By: ' + capitalizedReportFilter + '  |  Status Filter: ' + statusFilter + '</p>');-->
+<!--    } else {-->
+<!--        selectedName = $('input[name="consumer_search_data"]').val();-->
+<!--        printWindow.document.write('<h1 style="text-align: center;">Report Search By ' + selectedName + '</h1>');-->
+<!--    }-->
+
+<!--    // Customize the heading for the print view-->
+<!--    printWindow.document.write('<table style="width: 100%; border-collapse: collapse; border: 1px solid black;">');-->
+
+<!--    // Add header row-->
+<!--    printWindow.document.write('<thead><tr>');-->
+<!--    $('#yourDataTable thead th').each(function () {-->
+<!--        if ($(this).text() !== 'Action') {-->
+<!--            printWindow.document.write('<th style="border: 1px solid black; padding: 10px;">' + $(this).text() + '</th>');-->
+<!--        }-->
+<!--    });-->
+<!--    printWindow.document.write('</tr></thead>');-->
+
+<!--    // Add data rows for all pages-->
+<!--    for (let i = 0; i < dataTable.page.info().pages; i++) {-->
+<!--        dataTable.page(i).draw('page');-->
+<!--        printWindow.document.write('<html><head></head><body>'); // New header for each page-->
+<!--        // Reprint banner image on each page-->
+<!--        printWindow.document.write('<img class="banner" src="' + imageUrl + '" style="width: 450px; height: 40px;">');-->
+<!--        // Continue with the table content-->
+<!--        printWindow.document.write('<table style="width: 100%; border-collapse: collapse; border: 1px solid black;">');-->
+<!--        printWindow.document.write('<thead><tr>');-->
+<!--        $('#yourDataTable thead th').each(function () {-->
+<!--            if ($(this).text() !== 'Action') {-->
+<!--                printWindow.document.write('<th style="border: 1px solid black; padding: 10px;">' + $(this).text() + '</th>');-->
+<!--            }-->
+<!--        });-->
+<!--        printWindow.document.write('</tr></thead>');-->
+<!--        $('#yourDataTable tbody tr').each(function () {-->
+<!--            printWindow.document.write('<tr>');-->
+<!--            $(this).find('td').each(function () {-->
+<!--                if ($(this).hasClass('table-avatar')) {-->
+<!--                    // Extract text from the <a> elements within the .table-avatar cell-->
+<!--                    printWindow.document.write('<td style="border: 1px solid black; padding: 10px;">' + $(this).find('a').text().trim() + '</td>');-->
+<!--                } else {-->
+<!--                    printWindow.document.write('<td style="border: 1px solid black; padding: 10px;">' + $(this).text() + '</td>');-->
+<!--                }-->
+<!--            });-->
+<!--            printWindow.document.write('</tr>');-->
+<!--        });-->
+<!--        printWindow.document.write('</table></body></html>'); // Close the body and html tags for each page-->
+<!--    }-->
+
+<!--    printWindow.document.write('</body></html>');-->
+<!--    printWindow.document.close();-->
+<!--    printWindow.print();-->
+<!--}-->
+
+
+
+function generatePDFAll(filename = 'generated_pdf_all.pdf') {
+    const pdf = new jsPDF();
+    const pdfContent = [];
+
+    // Add header row
+    const headerRow = [];
+    $('#yourDataTable thead th').each(function () {
+        headerRow.push($(this).text());
+    });
+    pdfContent.push(headerRow);
+
+    // Add data rows for all pages
+    for (let i = 0; i < dataTable.page.info().pages; i++) {
+        dataTable.page(i).draw('page');
+        $('#yourDataTable tbody tr').each(function () {
+            const rowData = [];
+            $(this).find('td').each(function () {
+                if ($(this).hasClass('table-avatar')) {
+                    // Extract text from the <a> elements within the .table-avatar cell
+                    rowData.push($(this).find('a').text().trim());
+                } else {
+                    rowData.push($(this).text());
+                }
+            });
+            pdfContent.push(rowData);
+        });
+    }
+
+    // Generate PDF
+    pdf.autoTable({
+        head: [headerRow],
+        body: pdfContent.slice(1),
+    });
+
+    // Save the PDF file
+    if (filename) {
+        pdf.save(filename);
+    } else {
+        const pdfDataUri = pdf.output('datauristring');
+        const tab = window.open();
+        tab.document.write('<iframe width="100%" height="100%" src="' + pdfDataUri + '" frameborder="0" allowfullscreen></iframe>');
+    }
+}
+
+
+     $('#yourDataTable tbody tr').each(function(index) {
+        $(this).find('td:first').text(index + 1);
+    });
+
+      dataTable.on('order.dt search.dt', function() {
+        dataTable.column(0, { search: 'applied', order: 'applied' }).nodes().each(function(cell, i) {
+            cell.innerHTML = i + 1;
+        });
+    }).draw();
+
+
+});
+</script>
+
+{% endblock %}

@@ -1,0 +1,21 @@
+
+{% extends 'partials/base.html' %}
+{% block title %}Order Page{% endblock %}
+{% load static %}
+{% block content %}
+<link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" rel="stylesheet">
+
+    {% if messages %}
+        <ul class="messages">
+            {% for message in messages %}
+            {% if message.tags %} <script> alert("{{ message|safe }}") </script> {% endif %}{% endfor %}
+        </ul>
+    {% endif %}
+   <h1>Update Company Name</h1>
+    <form method="post">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <button type="submit">Update</button>
+    </form>
+
+{% endblock %}

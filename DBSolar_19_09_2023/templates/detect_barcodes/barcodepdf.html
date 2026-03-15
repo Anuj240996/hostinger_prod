@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Selected Checkbox Values</title>
+</head>
+<body>
+
+    <h1>Selected Checkbox Values</h1>
+<form id="checkboxForm">
+    {% csrf_token %}
+    {% for company in companies %}
+        <label>
+            <input type="checkbox" name="selectedCompanies[]" value="{{ company }}">
+            {{ company }}
+        </label><br>
+    {% endfor %}
+    <div>
+        <label for="companySelect">Select a Company:</label>
+        <select id="companySelect">
+            <option value="">Select Company</option>
+            {% for company in companies %}
+                <option value="{{ company }}">{{ company }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <div>
+        <label>Barcode Images:</label>
+        <input type="checkbox" id="barcodeCheckbox" name="selectedImages[]" value="barcode"> <!-- Add id attribute -->
+    </div>
+    <div>
+        <label>Inverter Images:</label>
+        <input type="checkbox" id="inverterCheckbox" name="selectedImages[]" value="inverter"> <!-- Add id attribute -->
+    </div>
+    <button type="button" id="showSelected">Show Selected</button>
+    <button type="button" id="generatePDF">Generate PDF</button>
+</form>
+
+
+<div id="imagesDiv" style="display: none;">
+    <!-- Display barcode and inverter images here -->
+</div>
+
+<table id="selectedTable" style="display: none;">
+    <thead>
+        <tr>
+            <th>Serial No</th>
+            <th>Selected Companies</th>
+            <th>Barcode Data</th>
+        </tr>
+    </thead>
+    <tbody>
+        <!-- Selected companies will be displayed here -->
+    </tbody>
+</table>
+
+
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+     const showSelectedButton = document.getElementById('showSelected');
+    const generatePDFButton = document.getElementById('generatePDF');
+    const companySelect = document.getElementById('companySelect');
+    const barcodeCheckbox = document.getElementById('barcodeCheckbox');
+    const inverterCheckbox = document.getElementById('inverterCheckbox');
+    const selectedTable = document.getElementById('selectedTable');
+    const imagesDiv = document.getElementById('imagesDiv');
+    const csrfToken = document.querySelector('input[name="csrfmiddlewaretoken"]').value;
+
+    showSelectedButton.addEventListener('click', () => {
+        const selectedCompanies = Array.from(document.querySelectorAll('input[name="selectedCompanies[]"]:checked'))
+            .map(input => input.value);
+
+        if (selectedCompanies.length > 0) {
+            selectedTable.style.display = 'table';
+            const tbody = selectedTable.querySelector('tbody');
+            tbody.innerHTML = selectedCompanies.map((company, index) => `<tr><td>${index + 1}</td><td>${company}</td></tr>`).join('');
+        } else {
+            selectedTable.style.display = 'none';
+        }
+
+
+
+
+
+
+        const selectedCompany = companySelect.value;
+        const selectedImages = [];
+
+        if (barcodeCheckbox.checked) {
+            selectedImages.push('barcode');
+        }
+        if (inverterCheckbox.checked) {
+            selectedImages.push('inverter');
+        }
+
+         if (selectedImages.length > 0 && selectedCompany) {
+            imagesDiv.innerHTML = '';
+
+            selectedImages.forEach(imageType => {
+                fetch(`/detect_barcodes/get_images/?selected_company=${selectedCompany}&image_type=${imageType}`)
+                    .then(response => response.json())
+
+                     // Within the fetch block
+                    .then(data => {
+                        console.log(data); // Check the received data
+                        console.log(data.barcode_data); // Check the barcode_data array
+
+
+                        const imageTable = document.createElement('table');
+                        data.barcode_paths.forEach((path, index) => {
+                            const imageRow = document.createElement('tr');
+                            const serialNumberCell = document.createElement('td');
+                            serialNumberCell.textContent = index + 1;
+                            const imageCell = document.createElement('td');
+                            const image = document.createElement('img');
+                            image.src = path;
+                            image.alt = 'Barcode Image';
+                            image.style.maxWidth = '100px'; // Adjust the max width as needed
+                            imageCell.appendChild(image);
+                            imageRow.appendChild(serialNumberCell);
+                            imageRow.appendChild(imageCell);
+
+                            // Add barcode_data cell
+                            const barcodeDataCell = document.createElement('td');
+                            barcodeDataCell.textContent = data.barcode_data[index]; // Access barcode_data array
+                            imageRow.appendChild(barcodeDataCell);
+
+                            imageTable.appendChild(imageRow);
+                        });
+
+                        imagesDiv.innerHTML = ''; // Clear previous content
+                        imagesDiv.appendChild(imageTable);
+                        imagesDiv.style.display = 'block';
+                    });
+
+
+            });
+        } else {
+            imagesDiv.innerHTML = '';
+            imagesDiv.style.display = 'none';
+        }
+    });
+
+    generatePDFButton.addEventListener('click', () => {
+        const selectedCompanies = Array.from(document.querySelectorAll('input[name="selectedCompanies[]"]:checked'))
+            .map(input => input.value);
+
+        if (selectedCompanies.length > 0) {
+            $.ajax({
+                type: 'GET',
+                url: '/detect_barcodes/generate_pdf/',
+                data: {
+                    selectedCompanies: selectedCompanies,
+                    csrfmiddlewaretoken: csrfToken
+                },
+                success: function(response) {
+                    alert(response.message);  // Replace with actual PDF generation logic
+                },
+                error: function(error) {
+                    alert('PDF generation failed');
+                }
+            });
+        }
+    });
+});
+</script>
+
+</body>
+</html>

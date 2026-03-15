@@ -1,0 +1,1516 @@
+<!DOCTYPE html>
+{% extends 'partials/base.html' %}
+{% block title %}Order Page{% endblock %}
+{% block content %}
+
+<!--    <div class="card-body">-->
+<!--        &lt;!&ndash; left column &ndash;&gt;-->
+<!--        <div class="col-md-12">-->
+<!--            &lt;!&ndash; general form elements &ndash;&gt;-->
+<!--            <div class="card card-primary">-->
+
+<!--         {% if messages %}-->
+<!--        <ul class="messages">-->
+<!--            {% for message in messages %}-->
+<!--            {% if message.tags %} <script> alert("{{ message }}") </script> {% endif %}{% endfor %}-->
+<!--        </ul>{% endif %}-->
+
+<!--  <form method="post"  enctype="multipart/form-data" action="{% url 'customer-Site_Inspection_Details' %}">-->
+<!--    {% csrf_token %}-->
+<!--      <div class="card-header">-->
+<!--                    <h3 align="center">Customer Site Inspection Details</h3>-->
+<!--                </div>-->
+<!--      <br>-->
+<!--                <div class="form-group row">-->
+<!--                    <label for="comp_name" class="col-sm-2 col-form-label">Company Name:</label>-->
+<!--                    <div class="col-sm-10">-->
+<!--                        <select id="companySelect" onchange="fetchData()" class="form-control" style="width: 100%;">-->
+<!--&lt;!&ndash;                        <select id="comp_name" name="comp_name" class="form-control" style="width: 100%;">&ndash;&gt;-->
+<!--                            <option value="">&#45;&#45;&#45;&#45; Select a company &#45;&#45;&#45;&#45;</option>-->
+<!--                            {% for company in companies %}-->
+<!--                                <option value="{{ company.Comp_name }}">{{ company.Comp_name }}</option>-->
+<!--                            {% endfor %}-->
+<!--&lt;!&ndash;    <h2>Company Data</h2>&ndash;&gt;-->
+<!--    <p>Meters: <input type="hidden" id="meters" readonly></p>-->
+
+<!--&lt;!&ndash;    <p>Inverters Count: <span id="inverterCount"></span></p>&ndash;&gt;-->
+<!--          </select>-->
+<!--                    </div>-->
+<!--                </div>-->
+
+
+
+
+<!--                <div id="customer_details" style="display: none;">-->
+<!--                    <div class="form-group row">-->
+
+<!--                        <div class="col-md-6">-->
+<!--                        <label for="phone" class="col-form-label">Phone :</label>-->
+
+<!--                            <input type="text" id="phone" name="phone" value="" readonly class="form-control">-->
+<!--                        </div>-->
+<!--                         <div class="col-md-6">-->
+<!--                            <label for="address" class="col-form-label">Address :</label>-->
+
+<!--                            <input type="text" id="address" name="address" value="" readonly class="form-control">-->
+<!--                        </div>-->
+<!--                    </div>-->
+
+<!--                    <div class="form-group row">-->
+<!--                        <div class="col-md-6">-->
+<!--                            <label for="city" class="col-form-label">City :</label>-->
+
+<!--                            <input type="text" id="city" name="city" value="" readonly class="form-control">-->
+<!--&lt;!&ndash;                             <input type="hidden" id="phone" name="phone" value="" readonly class="form-control">&ndash;&gt;-->
+<!--&lt;!&ndash;                            <input type="hidden" id="address" name="address" value="" readonly class="form-control">&ndash;&gt;-->
+<!--                        </div>-->
+<!--                         <div class="col-md-6">-->
+<!--                            <label for="plant_capacity" class="col-form-label">Plant Capacity :</label>-->
+
+<!--                            <input type="text" id="plant_capacity" name="plant_capacity" value="" readonly class="form-control">-->
+<!--                            <input type="hidden" id="new_customer_id" name="new_customer_id" value="" readonly class="form-control">-->
+<!--                        </div>-->
+<!--                    </div>-->
+
+<!--                    &lt;!&ndash; Add more fields here &ndash;&gt;-->
+<!--                </div>-->
+<!--      <hr>-->
+<!-- <h5 for="meter_image">Solar Module Details:</h5>-->
+<!--      <fieldset>-->
+<!--    <table width="100%">-->
+<!--        <tr align="center">-->
+<!--            <th>Company</th>-->
+<!--            <th>Wattage</th>-->
+<!--            <th>Quantity</th>-->
+<!--            <th>Completed</th>-->
+<!--            <th>Reason For Not Complete</th>-->
+<!--        </tr>-->
+<!--        <tr align="center">-->
+<!--&lt;!&ndash;            <td><input id="solar_company" type="text" readonly></td>&ndash;&gt;-->
+<!--            <td><span id="solar_company"></span></td>-->
+<!--            <td><span id="sol_wattage"></span></td>-->
+<!--            <td><span id="solarPanelCount"></span></td>-->
+<!--            <td><input type="checkbox" class="checkbox-input"></td>-->
+<!--            <td width="30%"><input type="text"></td>-->
+
+<!--        </tr>-->
+
+<!--    </table>-->
+<!--          </fieldset>-->
+<!--<fieldset>-->
+<!--    <h5>Inverter Details:</h5>-->
+<!--    <table width="100%">-->
+<!--        <tr align="center">-->
+<!--            <th>Company</th>-->
+<!--            <th>Wattage</th>-->
+<!--            <th>Quantity</th>-->
+<!--            <th>Completed</th>-->
+<!--            <th>Reason For Not Complete</th>-->
+<!--        </tr>-->
+<!--        <tr align="center">-->
+<!--            <td><span id="inverter_company"></span></td>-->
+<!--            <td><span id="inv_wattage"></span></td>-->
+<!--            <td><span id="inverterCount"></span></td>-->
+<!--            <td><input type="checkbox" class="checkbox-input"></td>-->
+<!--            <td width="30%"><input type="text"></td>-->
+<!--        </tr>-->
+<!--    </table>-->
+<!--    </fieldset>-->
+
+<!--<fieldset>-->
+<!--    <fieldset>-->
+<!--    <h5><span id="meter_type"></span> Details:</h5>-->
+<!--    <table width="100%">-->
+<!--        <tr align="center">-->
+<!--&lt;!&ndash;            <th>Meters Type</th>&ndash;&gt;-->
+<!--            <th>Make</th>-->
+<!--            <th>Capacity</th>-->
+<!--            <th>Serial_no</th>-->
+<!--            <th>Completed</th>-->
+<!--            <th>Reason For Not Complete</th>-->
+<!--        </tr>-->
+<!--        <tr align="center">-->
+<!--&lt;!&ndash;            <td><span id="meter_type"></span></td>&ndash;&gt;-->
+<!--            <td><span id="meter_make"></span></td>-->
+<!--            <td><span id="meter_capacity"></span></td>-->
+<!--            <td><span id="meter_serial_no"></span></td>-->
+<!--            <td><input type="checkbox" class="checkbox-input"></td>-->
+<!--            <td width="30%"><input type="text"></td>-->
+<!--        </tr>-->
+<!--    </table>-->
+<!--    </fieldset>-->
+
+<!--      <fieldset>-->
+<!--    <h5><span id="transformer_type"></span> Details:</h5>-->
+<!--    <table width="100%">-->
+<!--        <tr align="center">-->
+<!--&lt;!&ndash;            <th>Meters Type</th>&ndash;&gt;-->
+<!--            <th>Make</th>-->
+<!--            <th>Capacity</th>-->
+<!--            <th>Serial_no</th>-->
+<!--            <th>Completed</th>-->
+<!--            <th>Reason For Not Complete</th>-->
+<!--        </tr>-->
+<!--        <tr align="center">-->
+<!--&lt;!&ndash;            <td><span id="meter_type"></span></td>&ndash;&gt;-->
+<!--            <td><span id="transformer_make"></span></td>-->
+<!--            <td><span id="transformer_capacity"></span></td>-->
+<!--            <td><span id="transformer_serial_no"></span></td>-->
+<!--            <td><input type="checkbox" class="checkbox-input"></td>-->
+<!--            <td width="30%"><input type="text"></td>-->
+<!--        </tr>-->
+<!--    </table>-->
+<!--    </fieldset>-->
+<!--</fieldset>-->
+
+
+<!--<fieldset>-->
+<!--    <fieldset>-->
+<!--    <h5> Generation Meters Details:</h5>-->
+<!--    <table width="100%">-->
+<!--        <tr align="center">-->
+<!--&lt;!&ndash;            <th>Meters Type</th>&ndash;&gt;-->
+<!--            <th>Make</th>-->
+<!--            <th>Capacity</th>-->
+<!--            <th>Quantity</th>-->
+<!--            <th>Completed</th>-->
+<!--           <th>Reason For Not Complete</th>-->
+<!--        </tr>-->
+<!--        <tr align="center">-->
+<!--&lt;!&ndash;            <td><span id="meter_type"></span></td>&ndash;&gt;-->
+<!--            <td><span id="gen_make"></span></td>-->
+<!--            <td><span id="gen_capacity"></span></td>-->
+<!--            <td><span id="gen_count"></span></td>-->
+<!--            <td><input type="checkbox" class="checkbox-input"></td>-->
+<!--            <td width="30%"><input type="text"></td>-->
+<!--        </tr>-->
+<!--    </table>-->
+<!--    </fieldset>-->
+
+<!--      <fieldset>-->
+<!--    <h5> Gen. CT Meters Details:</h5>-->
+<!--    <table width="100%">-->
+<!--        <tr align="center">-->
+<!--&lt;!&ndash;            <th>Meters Type</th>&ndash;&gt;-->
+<!--            <th>Make</th>-->
+<!--            <th>Capacity</th>-->
+<!--            <th>Quantity</th>-->
+<!--            <th>Completed</th>-->
+<!--            <th>Reason For Not Complete</th>-->
+<!--        </tr>-->
+<!--        <tr align="center">-->
+<!--&lt;!&ndash;            <td><span id="meter_type"></span></td>&ndash;&gt;-->
+<!--            <td><span id="ct_make"></span></td>-->
+<!--            <td><span id="ct_capacity"></span></td>-->
+<!--            <td><span id="ct_count"></span></td>-->
+<!--            <td><input type="checkbox" class="checkbox-input"></td>-->
+<!--            <td width="30%"><input type="text"></td>-->
+<!--        </tr>-->
+<!--    </table>-->
+<!--    </fieldset>-->
+<!--</fieldset>-->
+<!--      <fieldset>-->
+<!--<table width="100%">-->
+
+
+<!--    <tr>-->
+<!--        <th colspan="5">-->
+<!--            <h5>AC Panel Cabling Details:</h5>-->
+<!--        </th>-->
+<!--    </tr>-->
+
+<!--    <tr align="center">-->
+<!--        <th colspan="3"> </th>-->
+<!--        <th>Completed</th>-->
+<!--        <th>Reason For Not Complete</th>-->
+<!--    </tr>-->
+<!--    <tr align="center">-->
+<!--        <th colspan="3"><h5>AC Panel Cabling Fitting Proper </h5></th>-->
+<!--        <td><input type="checkbox" class="checkbox-input"> </td>-->
+<!--        <td><input type="text"></td>-->
+<!--    </tr>-->
+
+
+<!--     <tr>-->
+<!--        <th colspan="5">-->
+<!--            <h5>DC Panel Cabling Details:</h5>-->
+<!--        </th>-->
+<!--    </tr>-->
+<!--    <tr align="center">-->
+<!--        <th colspan="3"> </th>-->
+<!--        <th>Completed</th>-->
+<!--        <th>Reason For Not Complete</th>-->
+<!--    </tr>-->
+<!--    <tr align="center">-->
+<!--        <th colspan="3"><h5>DC Panel Cabling Fitting Proper </h5></th>-->
+<!--        <td><input type="checkbox" class="checkbox-input"> </td>-->
+<!--        <td><input type="text"></td>-->
+<!--    </tr>-->
+
+
+<!--    <tr>-->
+<!--        <th colspan="5">-->
+<!--            <h5>Fabrication Details:</h5>-->
+<!--        </th>-->
+<!--    </tr>-->
+<!--    <tr align="center">-->
+<!--        <th colspan="3"></th>-->
+<!--        <th>Completed</th>-->
+<!--       <th>Reason For Not Complete</th>-->
+<!--    </tr>-->
+<!--    <tr align="center">-->
+<!--        <td colspan="3"> <h5>Fabrication Proper Installed</h5></td>-->
+<!--        <td><input type="checkbox" class="checkbox-input"> </td>-->
+<!--        <td><input type="text"></td>-->
+<!--    </tr>-->
+
+
+
+<!--    <tr>-->
+<!--        <th colspan="5">-->
+<!--            <h5>Wackway Details:</h5>-->
+<!--        </th>-->
+<!--    </tr>-->
+<!--    <tr align="center">-->
+<!--        <th colspan="3"></th>-->
+<!--        <th>Completed</th>-->
+<!--        <th>Reason For Not Complete</th>-->
+<!--    </tr>-->
+<!--    <tr align="center">-->
+<!--        <td colspan="3"><h5> Wackway Proper Installed</h5></td>-->
+<!--        <td><input type="checkbox" class="checkbox-input"> </td>-->
+<!--        <td><input type="text"></td>-->
+<!--    </tr>-->
+
+
+<!--    <tr>-->
+<!--        <th colspan="5">-->
+<!--            <h5>Pipeline Details:</h5>-->
+<!--        </th>-->
+<!--    </tr>-->
+<!--    <tr align="center">-->
+<!--        <th colspan="3"> </th>-->
+<!--        <th>Completed</th>-->
+<!--        <th>Reason For Not Complete</th>-->
+<!--    </tr>-->
+<!--    <tr align="center">-->
+<!--        <td colspan="3"> <h5>Pipeline Installed Proper fitting</h5></td>-->
+<!--        <td><input type="checkbox" class="checkbox-input"> </td>-->
+<!--        <td><input type="text"></td>-->
+<!--    </tr>-->
+
+<!--    <tr>-->
+<!--        <th colspan="5">-->
+<!--            <h5>Ropeway Details:</h5>-->
+<!--        </th>-->
+<!--    </tr>-->
+<!--    <tr align="center">-->
+<!--        <th colspan="3"> </th>-->
+<!--        <th>Completed</th>-->
+<!--        <th>Reason For Not Complete</th>-->
+<!--    </tr>-->
+<!--    <tr align="center">-->
+<!--        <td colspan="3"> <h5>Ropeway Proper Installed</h5></td>-->
+<!--        <td><input type="checkbox" class="checkbox-input"> </td>-->
+<!--        <td><input type="text"></td>-->
+<!--    </tr>-->
+
+<!--    <tr>-->
+<!--        <th colspan="5">-->
+<!--            <h5>Rolling Details:</h5>-->
+<!--        </th>-->
+<!--    </tr>-->
+<!--    <tr align="center">-->
+<!--        <th colspan="3"> </th>-->
+<!--        <th>Completed</th>-->
+<!--        <th>Reason For Not Complete</th>-->
+<!--    </tr>-->
+<!--    <tr align="center">-->
+<!--        <td colspan="3"> <h5>Rolling Proper Installed</h5></td>-->
+<!--        <td><input type="checkbox" class="checkbox-input"> </td>-->
+<!--        <td><input type="text"></td>-->
+<!--    </tr>-->
+
+<!--    <tr>-->
+<!--        <th colspan="5">-->
+<!--            <h5>Check Overall Details:</h5>-->
+<!--        </th>-->
+<!--    </tr>-->
+<!--    <tr align="center">-->
+<!--        <th colspan="5"> </th>-->
+
+<!--    </tr>-->
+<!--    <tr align="center">-->
+<!--        <td colspan="5"> <textarea cols="5" rows="5"></textarea> </td>-->
+
+<!--    </tr>-->
+<!--</table>-->
+<!--      </fieldset>-->
+
+<!--      <label class="checkbox-label"> <input type="checkbox" class="checkbox-input"> <b>Above all Information Correct</b></label>-->
+<!--      <br>-->
+<!--    <input type="submit" value="Submit" id="submit" class="btn-primary">-->
+
+
+<!--  </form>-->
+<!--            </div>-->
+<!--        </div>-->
+<!--    </div>-->
+<!--<script src="https://code.jquery.com/jquery-3.6.0.min.js"-->
+<!--    integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=" crossorigin="anonymous"></script>-->
+
+<!--&lt;!&ndash;<script>&ndash;&gt;-->
+<!--&lt;!&ndash;    $(document).ready(function () {&ndash;&gt;-->
+
+<!--&lt;!&ndash;        //$("#barcodeForm").submit(function (e) {&ndash;&gt;-->
+<!--&lt;!&ndash;          //  e.preventDefault();&ndash;&gt;-->
+
+<!--&lt;!&ndash;        // Handle form submission&ndash;&gt;-->
+<!--&lt;!&ndash;        $('form').submit(function(event) {&ndash;&gt;-->
+<!--&lt;!&ndash;        //     event.preventDefault();&ndash;&gt;-->
+
+<!--&lt;!&ndash;        });&ndash;&gt;-->
+
+<!--&lt;!&ndash;        $('#comp_name').on('change', function() {&ndash;&gt;-->
+<!--&lt;!&ndash;                    var selectedCompany = $(this).val();&ndash;&gt;-->
+<!--&lt;!&ndash;                    if (selectedCompany !== '') {&ndash;&gt;-->
+<!--&lt;!&ndash;                      $.ajax({&ndash;&gt;-->
+<!--&lt;!&ndash;                        url: '/detect_barcodes/get_customer_details/',&ndash;&gt;-->
+<!--&lt;!&ndash;                        type: 'GET',&ndash;&gt;-->
+<!--&lt;!&ndash;                        data: { 'comp_name': selectedCompany },&ndash;&gt;-->
+<!--&lt;!&ndash;                        dataType: 'json',&ndash;&gt;-->
+<!--&lt;!&ndash;                        success: function(data) {&ndash;&gt;-->
+<!--&lt;!&ndash;                          if (data) {&ndash;&gt;-->
+<!--&lt;!&ndash;                            $('#phone').val(data.phone);&ndash;&gt;-->
+<!--&lt;!&ndash;                            $('#address').val(data.Address);&ndash;&gt;-->
+<!--&lt;!&ndash;                            $('#city').val(data.City);&ndash;&gt;-->
+<!--&lt;!&ndash;                            // $('#plant_capacity').val(data.Plant_Capacity);&ndash;&gt;-->
+<!--&lt;!&ndash;                            $('#plant_capacity').val(data.Plant_Capacity + " KW");&ndash;&gt;-->
+<!--&lt;!&ndash;                            $('#new_customer_id').val(data.new_customer_id); // Add the new field here&ndash;&gt;-->
+<!--&lt;!&ndash;                            $('#comp_name').val(data.Comp_name);&ndash;&gt;-->
+<!--&lt;!&ndash;                            // Update other fields as needed&ndash;&gt;-->
+
+<!--&lt;!&ndash;                            $('#customer_details').show();&ndash;&gt;-->
+<!--&lt;!&ndash;                          } else {&ndash;&gt;-->
+<!--&lt;!&ndash;                            // Clear the textbox values when no company is selected&ndash;&gt;-->
+<!--&lt;!&ndash;                            $('#phone').val('');&ndash;&gt;-->
+<!--&lt;!&ndash;                            $('#address').val('');&ndash;&gt;-->
+<!--&lt;!&ndash;                            $('#city').val('');&ndash;&gt;-->
+<!--&lt;!&ndash;                            $('#plant_capacity').val('');&ndash;&gt;-->
+<!--&lt;!&ndash;                            $('#new_customer_id').val(''); // Clear the new field&ndash;&gt;-->
+<!--&lt;!&ndash;                            $('#comp_name').val('');&ndash;&gt;-->
+<!--&lt;!&ndash;                            // Clear other fields as needed&ndash;&gt;-->
+
+<!--&lt;!&ndash;                            $('#customer_details').hide();&ndash;&gt;-->
+<!--&lt;!&ndash;                          }&ndash;&gt;-->
+<!--&lt;!&ndash;                        }&ndash;&gt;-->
+<!--&lt;!&ndash;                      });&ndash;&gt;-->
+<!--&lt;!&ndash;                    }&ndash;&gt;-->
+<!--&lt;!&ndash;                  });&ndash;&gt;-->
+
+<!--&lt;!&ndash;    });&ndash;&gt;-->
+<!--&lt;!&ndash;</script>&ndash;&gt;-->
+<!--&lt;!&ndash;<script>&ndash;&gt;-->
+<!--&lt;!&ndash;  // Function to handle the detected barcode values from the child page&ndash;&gt;-->
+<!--&lt;!&ndash;  function handleDetectedBarcodes(barcodes) {&ndash;&gt;-->
+<!--&lt;!&ndash;    document.getElementById('detected_barcodes').value = barcodes.join(', ');&ndash;&gt;-->
+<!--&lt;!&ndash;  }&ndash;&gt;-->
+
+<!--&lt;!&ndash;  // Function to listen for messages from the child page&ndash;&gt;-->
+<!--&lt;!&ndash;  window.addEventListener('message', function(event) {&ndash;&gt;-->
+<!--&lt;!&ndash;    if (event.data.detectedBarcodes) {&ndash;&gt;-->
+<!--&lt;!&ndash;      handleDetectedBarcodes(event.data.detectedBarcodes);&ndash;&gt;-->
+<!--&lt;!&ndash;    }&ndash;&gt;-->
+<!--&lt;!&ndash;  });&ndash;&gt;-->
+<!--&lt;!&ndash;</script>&ndash;&gt;-->
+<!--&lt;!&ndash; Child Page: detect_barcodes.html &ndash;&gt;-->
+<!--&lt;!&ndash; Site_Technical_Details.html &ndash;&gt;-->
+
+
+
+
+<!--&lt;!&ndash;<script>&ndash;&gt;-->
+<!--&lt;!&ndash;    // Retrieve count value from URL query parameter&ndash;&gt;-->
+<!--&lt;!&ndash;    var urlParams = new URLSearchParams(window.location.search);&ndash;&gt;-->
+<!--&lt;!&ndash;    var detectedBarcodesCount = urlParams.get('count');&ndash;&gt;-->
+
+<!--&lt;!&ndash;    // Use the detectedBarcodesCount value as needed&ndash;&gt;-->
+<!--&lt;!&ndash;    console.log("Detected Barcodes Count:", detectedBarcodesCount);&ndash;&gt;-->
+<!--&lt;!&ndash;  </script>&ndash;&gt;-->
+<!--&lt;!&ndash;    <script>&ndash;&gt;-->
+<!--&lt;!&ndash;        function fetchData() {&ndash;&gt;-->
+<!--&lt;!&ndash;            var companyName = document.getElementById("companySelect").value;&ndash;&gt;-->
+<!--&lt;!&ndash;            fetch('/customer/get-company-data/?company_name=' + companyName)&ndash;&gt;-->
+<!--&lt;!&ndash;                .then(response => response.json())&ndash;&gt;-->
+<!--&lt;!&ndash;                .then(data => {&ndash;&gt;-->
+<!--&lt;!&ndash;                    document.getElementById("meters").value = data.meters;&ndash;&gt;-->
+<!--&lt;!&ndash;                    //document.getElementById("solarPanelCount").value = data.solarPanelCount;&ndash;&gt;-->
+<!--&lt;!&ndash;                    document.getElementById("solarPanelCount").innerText = data.solarPanelCount;&ndash;&gt;-->
+<!--&lt;!&ndash;                    document.getElementById("inverterCount").innerText = data.inverterCount;&ndash;&gt;-->
+<!--&lt;!&ndash;                    document.getElementById("solar_company").innerText = data.solar_company;&ndash;&gt;-->
+<!--&lt;!&ndash;                    //document.getElementById("inverterCount").value = data.inverterCount;&ndash;&gt;-->
+<!--&lt;!&ndash;                });&ndash;&gt;-->
+<!--&lt;!&ndash;        }&ndash;&gt;-->
+<!--&lt;!&ndash;    </script>&ndash;&gt;-->
+
+<!--&lt;!&ndash;<script>&ndash;&gt;-->
+<!--&lt;!&ndash;        function fetchData() {&ndash;&gt;-->
+<!--&lt;!&ndash;            var companyName = document.getElementById("companySelect").value;&ndash;&gt;-->
+<!--&lt;!&ndash;            fetch('/customer/get-company-data/?company_name=' + companyName)&ndash;&gt;-->
+<!--&lt;!&ndash;                .then(response => response.json())&ndash;&gt;-->
+<!--&lt;!&ndash;                .then(data => {&ndash;&gt;-->
+<!--&lt;!&ndash;                    document.getElementById("meters").value = data.meters;&ndash;&gt;-->
+<!--&lt;!&ndash;                    document.getElementById("solarPanelCount").innerText = data.solarPanelCount;&ndash;&gt;-->
+<!--&lt;!&ndash;                    document.getElementById("inverterCount").innerText = data.inverterCount;&ndash;&gt;-->
+
+<!--&lt;!&ndash;                    var solarPanelContainer = document.getElementById("solarPanelContainer");&ndash;&gt;-->
+<!--&lt;!&ndash;                    solarPanelContainer.innerHTML = '';&ndash;&gt;-->
+<!--&lt;!&ndash;                    data.solarPanelData.forEach(function(item) {&ndash;&gt;-->
+<!--&lt;!&ndash;                        var div = document.createElement('div');&ndash;&gt;-->
+<!--&lt;!&ndash;                        div.innerHTML = '<label>Company: </label><input type="text" value="' + item[0] + '" readonly><label>Wattage: </label><input type="text" value="' + item[1] + '" readonly>';&ndash;&gt;-->
+<!--&lt;!&ndash;                        solarPanelContainer.appendChild(div);&ndash;&gt;-->
+<!--&lt;!&ndash;                    });&ndash;&gt;-->
+
+<!--&lt;!&ndash;                    var inverterContainer = document.getElementById("inverterContainer");&ndash;&gt;-->
+<!--&lt;!&ndash;                    inverterContainer.innerHTML = '';&ndash;&gt;-->
+<!--&lt;!&ndash;                    data.inverterData.forEach(function(item) {&ndash;&gt;-->
+<!--&lt;!&ndash;                        var div = document.createElement('div');&ndash;&gt;-->
+<!--&lt;!&ndash;                        div.innerHTML = '<label>Company: </label><input type="text" value="' + item[0] + '" readonly><label>Wattage: </label><input type="text" value="' + item[1] + '" readonly>';&ndash;&gt;-->
+<!--&lt;!&ndash;                        inverterContainer.appendChild(div);&ndash;&gt;-->
+<!--&lt;!&ndash;                    });&ndash;&gt;-->
+<!--&lt;!&ndash;                });&ndash;&gt;-->
+<!--&lt;!&ndash;        }&ndash;&gt;-->
+<!--&lt;!&ndash;    </script>&ndash;&gt;-->
+
+
+<!--&lt;!&ndash;<script>&ndash;&gt;-->
+<!--&lt;!&ndash;        function fetchData() {&ndash;&gt;-->
+<!--&lt;!&ndash;            var companyName = document.getElementById("companySelect").value;&ndash;&gt;-->
+<!--&lt;!&ndash;            fetch('/customer/get-company-data/?company_name=' + companyName)&ndash;&gt;-->
+<!--&lt;!&ndash;                .then(response => response.json())&ndash;&gt;-->
+<!--&lt;!&ndash;                .then(data => {&ndash;&gt;-->
+<!--&lt;!&ndash;                    document.getElementById("meters").value = data.meters;&ndash;&gt;-->
+<!--&lt;!&ndash;                    document.getElementById("solarPanelCount").innerText = data.solarPanelCount;&ndash;&gt;-->
+<!--&lt;!&ndash;                    document.getElementById("inverterCount").innerText = data.inverterCount;&ndash;&gt;-->
+
+<!--&lt;!&ndash;                    // Solar Panel Details&ndash;&gt;-->
+<!--&lt;!&ndash;                    document.getElementById("solar_company").innerText = data.solarPanelData[0][0];&ndash;&gt;-->
+<!--&lt;!&ndash;                    //document.getElementById("solar_company").value = data.solarPanelData[0][0];&ndash;&gt;-->
+<!--&lt;!&ndash;                    document.getElementById("sol_wattage").innerText = data.solarPanelData[0][1];&ndash;&gt;-->
+
+<!--&lt;!&ndash;                    // Inverter Details&ndash;&gt;-->
+<!--&lt;!&ndash;                    document.getElementById("inverter_company").innerText = data.inverterData[0][0];&ndash;&gt;-->
+<!--&lt;!&ndash;                    document.getElementById("inv_wattage").innerText = data.inverterData[0][1];&ndash;&gt;-->
+<!--&lt;!&ndash;                });&ndash;&gt;-->
+<!--&lt;!&ndash;        }&ndash;&gt;-->
+<!--&lt;!&ndash;    </script>&ndash;&gt;-->
+
+
+<!--<script>-->
+<!--        function fetchData() {-->
+<!--            var companyName = document.getElementById("companySelect").value;-->
+
+<!--            // Clear previous data-->
+<!--            document.getElementById("meters").value = '';-->
+<!--            document.getElementById("solar_company").innerText = '';-->
+<!--            document.getElementById("sol_wattage").innerText = '';-->
+<!--            document.getElementById("solarPanelCount").innerText = '';-->
+<!--            document.getElementById("inverter_company").innerText = '';-->
+<!--            document.getElementById("inv_wattage").innerText = '';-->
+<!--            document.getElementById("inverterCount").innerText = '';-->
+
+<!--            document.getElementById("meter_type").innerText = '';-->
+<!--            document.getElementById("meter_make").innerText = '';-->
+<!--            document.getElementById("meter_capacity").innerText = '';-->
+<!--            document.getElementById("meter_serial_no").innerText = '';-->
+<!--            document.getElementById("transformer_type").innerText = '';-->
+<!--            document.getElementById("transformer_make").innerText = '';-->
+<!--            document.getElementById("transformer_capacity").innerText = '';-->
+<!--            document.getElementById("transformer_serial_no").innerText = '';-->
+
+<!--            document.getElementById("gen_make").innerText = '';-->
+<!--            document.getElementById("gen_capacity").innerText = '';-->
+<!--            //document.getElementById("gen_serial_no").innerText = '';-->
+<!--            document.getElementById("gen_count").innerText = '';-->
+<!--            document.getElementById("ct_make").innerText = '';-->
+<!--            document.getElementById("ct_capacity").innerText = '';-->
+<!--            //document.getElementById("ct_serial_no").innerText = '';-->
+<!--            document.getElementById("ct_count").innerText = '';-->
+
+<!--            fetch('/customer/get-company-data/?company_name=' + companyName)-->
+<!--                .then(response => response.json())-->
+<!--                .then(data => {-->
+<!--                    document.getElementById("meters").value = data.meters;-->
+<!--                    document.getElementById("solarPanelCount").innerText = data.solarPanelCount;-->
+<!--                    document.getElementById("inverterCount").innerText = data.inverterCount;-->
+<!--                    document.getElementById("gen_count").innerText = data.gen_count;-->
+<!--                    document.getElementById("ct_count").innerText = data.gen_count;-->
+
+<!--                    if (data.solarPanelData.length > 0) {-->
+<!--                        document.getElementById("solar_company").innerText = data.solarPanelData[0][0];-->
+<!--                        document.getElementById("sol_wattage").innerText = data.solarPanelData[0][1];-->
+<!--                    }-->
+
+<!--                    if (data.inverterData.length > 0) {-->
+<!--                        document.getElementById("inverter_company").innerText = data.inverterData[0][0];-->
+<!--                        document.getElementById("inv_wattage").innerText = data.inverterData[0][1];-->
+<!--                    }-->
+
+<!--                    if (data.meter_names.length > 0) {-->
+<!--                        document.getElementById("meter_type").innerText = data.meter_names[0][0];-->
+<!--                        document.getElementById("meter_make").innerText = data.meter_names[0][1];-->
+<!--                        document.getElementById("meter_capacity").innerText = data.meter_names[0][2];-->
+<!--                        document.getElementById("meter_serial_no").innerText = data.meter_names[0][3];-->
+<!--                    }-->
+
+<!--                    if (data.transformer_names.length > 0) {-->
+<!--                        document.getElementById("transformer_type").innerText = data.transformer_names[0][0];-->
+<!--                        document.getElementById("transformer_make").innerText = data.transformer_names[0][1];-->
+<!--                        document.getElementById("transformer_capacity").innerText = data.transformer_names[0][2];-->
+<!--                        document.getElementById("transformer_serial_no").innerText = data.transformer_names[0][3];-->
+<!--                    }-->
+
+<!--                    if (data.generationnames.length > 0) {-->
+<!--                        document.getElementById("gen_make").innerText = data.generationnames[0][0];-->
+<!--                        document.getElementById("gen_capacity").innerText = data.generationnames[0][1];-->
+<!--                        //document.getElementById("gen_serial_no").innerText = data.generationnames[0][2];-->
+<!--                    }-->
+
+<!--                    if (data.gen_names.length > 0) {-->
+<!--                        document.getElementById("ct_make").innerText = data.gen_names[0][0];-->
+<!--                        document.getElementById("ct_capacity").innerText = data.gen_names[0][1];-->
+<!--                        //document.getElementById("ct_serial_no").innerText = data.gen_names[0][2];-->
+<!--                    }-->
+<!--                });-->
+<!--        }-->
+<!--    </script>-->
+
+<!--    <script>-->
+<!--        function toggleTextbox(checkboxId, textboxId) {-->
+<!--            var checkbox = document.getElementById(checkboxId);-->
+<!--            var textbox = document.getElementById(textboxId);-->
+<!--            if (checkbox.checked) {-->
+<!--                textbox.classList.add('hidden');-->
+<!--            } else {-->
+<!--                textbox.classList.remove('hidden');-->
+<!--            }-->
+<!--        }-->
+<!--    </script>-->
+
+
+
+<!-- <style>-->
+<!--        .hidden {-->
+<!--            display: none;-->
+<!--        }-->
+<!--        table {-->
+<!--            width: 100%;-->
+<!--            border-collapse: collapse;-->
+<!--        }-->
+<!--        th, td {-->
+<!--            border: none;-->
+<!--            padding: 12px;-->
+<!--            text-align: center;-->
+<!--        }-->
+<!--        th {-->
+<!--            background-color: #f2f2f2;-->
+<!--        }-->
+<!--        input[type="text"], textarea {-->
+<!--            width: 100%;-->
+<!--            padding: 6px;-->
+<!--            box-sizing: border-box;-->
+<!--        }-->
+<!--        .checkmark {-->
+
+<!--            width: 30px;-->
+<!--            height: 30px;-->
+<!--            text-align: center;-->
+<!--            vertical-align: middle;-->
+<!--            font-size: 25px;-->
+<!--            color: green;-->
+<!--            font-weight: bold;-->
+<!--        }-->
+
+
+<!--    </style>-->
+<!--&lt;!&ndash;<style>&ndash;&gt;-->
+<!--&lt;!&ndash;    /* Style for the checkbox */&ndash;&gt;-->
+<!--&lt;!&ndash;    .checkbox-input {&ndash;&gt;-->
+<!--&lt;!&ndash;        display: block;&ndash;&gt;-->
+<!--&lt;!&ndash;        margin: 0 auto; /* Center the checkbox */&ndash;&gt;-->
+<!--&lt;!&ndash;        background-color: green;&ndash;&gt;-->
+<!--&lt;!&ndash;    }&ndash;&gt;-->
+
+<!--&lt;!&ndash;    /* Style for the checkbox when checked */&ndash;&gt;-->
+<!--&lt;!&ndash;    .checkbox-input:checked {&ndash;&gt;-->
+<!--&lt;!&ndash;         background-color: lightgreen !important; /* Change background color when checked */&ndash;&gt;-->
+<!--&lt;!&ndash;    }&ndash;&gt;-->
+<!--&lt;!&ndash;</style>&ndash;&gt;-->
+<!--<style>-->
+<!--    /* Centering the checkbox in the table cell */-->
+<!--    td {-->
+<!--        text-align: center;-->
+<!--    }-->
+
+<!--    /* Custom style for the checkbox */-->
+<!--    .checkbox-input {-->
+<!--        width: 25px;-->
+<!--        height: 25px;-->
+<!--        margin: 0 auto; /* Center the checkbox */-->
+<!--        appearance: none; /* Remove default styling */-->
+<!--        background-color: white; /* Default background color */-->
+<!--        cursor: pointer;-->
+<!--        border: 2px solid black; /* Border for the checkbox */-->
+<!--        border-radius: 4px; /* Optional: make the corners rounded */-->
+<!--        display: inline-block;-->
+<!--        vertical-align: middle;-->
+<!--        position: relative;-->
+<!--    }-->
+
+<!--    /* Check mark styling */-->
+<!--    .checkbox-input:checked::after {-->
+<!--        content: "";-->
+<!--        position: absolute;-->
+<!--        top: 0px;-->
+<!--        left: 8px;-->
+<!--        width: 9px;-->
+<!--        height: 18px;-->
+<!--        border: solid white;-->
+<!--        border-width: 0 4px 4px 0;-->
+<!--        transform: rotate(45deg);-->
+<!--    }-->
+
+<!--    /* Change background color when checked */-->
+<!--    .checkbox-input:checked {-->
+<!--        background-color: green; /* Change background color when checked */-->
+<!--    }-->
+<!--</style>-->
+
+<style xmlns="http://www.w3.org/1999/html" xmlns="http://www.w3.org/1999/html">
+    .hidden {
+        display: none;
+    }
+    table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+    th, td {
+        border: none;
+        padding: 12px;
+        text-align: center;
+    }
+    th {
+        background-color: #f2f2f2;
+    }
+    tr > td {
+        vertical-align: middle;
+    }
+
+    input[type="text"], textarea {
+        width: 100%;
+        padding: 6px;
+        box-sizing: border-box;
+        border: 2px solid #ccc; /* Default border color */
+        transition: border-color 0.3s; /* Smooth transition for border color */
+    }
+    input[type="text"]:hover, textarea:hover {
+        border-color: orange; /* Change border color on hover */
+    }
+    input[type="text"]:focus, textarea:focus {
+        border-color: blue; /* Change border color when focused */
+    }
+    .checkmark {
+        width: 30px;
+        height: 30px;
+        text-align: center;
+        vertical-align: middle;
+        font-size: 25px;
+        color: green;
+        font-weight: bold;
+    }
+    /* Centering the checkbox in the table cell */
+    td {
+        text-align: center;
+    }
+    /* Custom style for the checkbox */
+    .checkbox-input {
+        width: 25px;
+        height: 25px;
+        margin: 0 auto; /* Center the checkbox */
+        appearance: none; /* Remove default styling */
+        background-color: white; /* Default background color */
+        cursor: pointer;
+        border: 2px solid black; /* Border for the checkbox */
+        border-radius: 4px; /* Optional: make the corners rounded */
+        display: inline-block;
+        vertical-align: middle;
+        position: relative;
+    }
+    /* Check mark styling */
+    .checkbox-input:checked::after {
+        content: "";
+        position: absolute;
+        top: 0px;
+        left: 8px;
+        width: 9px;
+        height: 18px;
+        border: solid white;
+        border-width: 0 4px 4px 0;
+        transform: rotate(45deg);
+    }
+    /* Change background color when checked */
+    .checkbox-input:checked {
+        background-color: green; /* Change background color when checked */
+    }
+
+</style>
+
+
+<style>
+    /* Dropdown List remove the arrow code and change the colour  */
+
+    /* Dropdown list styles */
+    select {
+        width: calc(100% - 20px); /* Adjust width to accommodate for the arrow */
+        padding: 6px;
+        box-sizing: border-box;
+        border: 2px solid #ccc;
+        transition: border-color 0.3s;
+        cursor: pointer;
+        -webkit-appearance: none; /* Remove default arrow for WebKit browsers */
+        -moz-appearance: none; /* Remove default arrow for Firefox */
+        appearance: none; /* Remove default arrow */
+      //  background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" fill="%23000"><path d="M7 10l5 5 5-5z"/><path d="M0 0h24v24H0z" fill="none"/></svg>'); /* Add custom arrow */
+        background-repeat: no-repeat;
+        background-position: right 8px top 50%; /* Adjust position of custom arrow */
+        background-size: 16px 16px; /* Adjust size of custom arrow */
+    }
+
+    /* Dropdown list hover effect */
+    select:hover {
+        border-color: orange;
+    }
+
+    /* Dropdown list focus effect */
+    select:focus {
+        border-color: blue;
+    }
+
+    /* Ensure dropdown in table takes full width */
+    .table-responsive .dropdown {
+       width: 100%;
+    }
+
+    .table-responsive .dropdown .dropdown-menu {
+       width: 100%;
+    }
+</style>
+
+<br>
+<br>
+    <form id="inspectionForm" method="post" action="">
+        {% csrf_token %}
+        <h3>Final Inspection Report</h3>
+          <label for="comp_name" class="col-sm-2 col-form-label">Company Name:</label>
+                    <div class="col-sm-10">
+                        {% if user.is_authenticated and user.is_staff and user.is_superuser %}
+                        <select id="companySelect" name="company_name" onchange="fetchData()" class="form-control text-capitalize" style="width: 100%;">
+                            <option value="">---- Select a company ----</option>
+                               {% if companies %}
+                                {% for company in companies %}
+                                  <option value="{{ company.Comp_name }}">{{ company.Comp_name }}</option>
+                                {% endfor %}
+                              {% else %}
+                                <option value="">No completed company found</option>
+                              {% endif %}
+                              <p>Meters: <input type="hidden" id="meters" readonly></p>
+                        </select>
+                        {% else %}
+<!--                        <select id="companySelect" name="company_name" onchange="fetchData()" class="form-control text-capitalize" style="width: 100%;">-->
+<!--                            <option value="">&#45;&#45;&#45;&#45; Select a company &#45;&#45;&#45;&#45;</option>-->
+<!--                               {% if companies %}-->
+<!--                                {% for company in companies %}-->
+<!--                                 {% if company.Engg_Assign == user %}-->
+<!--                                  <option value="{{ company.Comp_name }}">{{ company.Comp_name }}</option>-->
+<!--                                   {% else %}-->
+<!--                                  <option value="">No completed company found</option>-->
+<!--                                 {% endif %}-->
+
+<!--                                {% endfor %}-->
+
+<!--                              {% endif %}-->
+<!--                              <p>Meters: <input type="hidden" id="meters" readonly></p>-->
+<!--                        </select>-->
+
+                         <select id="companySelect" name="company_name" onchange="fetchData()" class="form-control text-capitalize" style="width: 100%;">
+        <option value="">---- Select a company ----</option>
+        {% if companies %}
+            {% with found=False %}
+                {% for company in companies %}
+                    {% if company.Engg_Assign == user %}
+                        <option value="{{ company.Comp_name }}">{{ company.Comp_name }}</option>
+                        {% if not found %}
+                            {% with found=True %}
+                            {% endwith %}
+                        {% endif %}
+                    {% endif %}
+                {% endfor %}
+                {% if not found and companies|length == 0 %}
+                    <option value="">No completed company found</option>
+                {% endif %}
+            {% endwith %}
+        {% else %}
+            <option value="">No completed company found</option>
+        {% endif %}
+    </select>
+    <p> <input type="hidden" id="meters" readonly></p>
+
+                        {% endif %}
+
+                    </div>
+
+        <br><br>
+{% if companies %}
+    <h3 align="center">Inspection Report for <span id="selected_company_name"></span></h3>
+
+        <fieldset>
+            <div class="table-responsive">
+        <table width="100%">
+            <tr>
+                <th><h6><b>Section</b></h6></th>
+                <th><h6><b>Company</b></h6></th>
+                <th><h6><b>Wattage</b></h6></th>
+                <th><h6><b>Quantity</b></h6></th>
+                <th><h6><b>Completed</b></h6></th>
+                <th><h6><b>Status</b></h6></th>
+            </tr>
+            <tr align="center">
+                <td><b>Solar Module Details</b></td>
+                <td><span id="solar_company"></span></td>
+				<td><span id="sol_wattage"></span> <b>Kw</b></td>
+				<td>{{ solarPanelCount }}<span id="solarPanelCount"></span></td>
+                <td>
+                    <input type="checkbox" id="solarModuleCompleted" name="solar_Module_Completed" class="checkbox-input" onchange="toggleTextbox('solarModuleCompleted', 'solarModuleReason', 'solarModuleCheckmark')">
+
+                </td>
+<!--                <td>-->
+<!--                    <span id="solarModuleCheckmark" class="hidden checkmark">✓</span>-->
+<!--                    <input type="text" id="solarModuleReason" placeholder="Reason for not complete">-->
+<!--                </td>-->
+                 <td>
+
+                        <select id="solarModuleReason" name="solar_Module_Reason" onchange="toggleDropdown('solarModuleCompleted', 'solarModuleReason', 'solarModuleCheckmark')">
+                            <option value="" disabled selected>Select Reason</option>
+                            <option value="In Progress">In Progress</option>
+                            <option value="Not Started">Not Started</option>
+                            <option value="Waiting For Resources">Waiting For Resources</option>
+                            <option value="Technical Issue">Technical Issue</option>
+                            <option value="Other">Other</option> <!-- Add the "Other" option -->
+                        </select>
+                        <span id="solarModuleCheckmark" class="hidden checkmark">✓</span>
+                        <input type="text" id="solarModuleReason_other" name="solar_Module_Reason_other" class="hidden" placeholder="Enter Other Reason"> <!-- Textbox for custom input -->
+<!--                        <span id="solarModuleCheckmark" class="hidden checkmark">✓</span>-->
+
+                    </td>
+            </tr>
+            <tr>
+                <td><b>Inverter Details</b></td>
+                 <td><span id="inverter_company"></span></td>
+				<td><span id="inv_wattage"></span> <b>Kw</b></td>
+				<td><span id="inverterCount"></span></td>
+                <td>
+                    <input type="checkbox" id="inverterCompleted" name="inverter_Completed" class="checkbox-input" onchange="toggleTextbox('inverterCompleted', 'inverterReason', 'inverterCheckmark')">
+
+                </td>
+                <td>
+                    <span id="inverterCheckmark" class="hidden checkmark">✓</span>
+<!--                    <input type="text" id="inverterReason" placeholder="Reason for not complete">-->
+                    <select id="inverterReason" name="inverter_Reason" onchange="toggleDropdown('inverterCompleted', 'inverterReason', 'inverterCheckmark')">
+                            <option value="" disabled selected>Select Reason</option>
+                            <option value="In Progress">In Progress</option>
+                            <option value="Not Started">Not Started</option>
+                            <option value="Waiting For Resources">Waiting For Resources</option>
+                            <option value="Technical Issue">Technical Issue</option>
+                            <option value="Other">Other</option> <!-- Add the "Other" option -->
+                    </select>
+                    <input type="text" id="inverterReason_other" name="inverter_Reason_other" class="hidden" placeholder="Enter Other Reason"> <!-- Textbox for custom input -->
+                </td>
+            </tr>
+            <tr>
+                <td><b><span id="meter_type"></span> Details</b></td>
+                <td><span id="meter_make"></span></td>
+				<td><span id="meter_capacity"></span></td>
+				<td><span id="meter_serial_no"></span></td>
+                <td>
+                    <input type="checkbox" id="netMeterCompleted" name="net_Meter_Completed" class="checkbox-input" onchange="toggleTextbox('netMeterCompleted', 'netMeterReason', 'netMeterCheckmark')">
+
+                </td>
+                <td>
+                    <span id="netMeterCheckmark" class="hidden checkmark">✓</span>
+<!--                    <input type="text" id="netMeterReason" placeholder="Reason for not complete">-->
+                    <select id="netMeterReason" name="net_Meter_Reason" onchange="toggleDropdown('netMeterCompleted', 'netMeterReason', 'netMeterCheckmark')">
+                            <option value="" disabled selected>Select Reason</option>
+                            <option value="In Progress">In Progress</option>
+                            <option value="Not Started">Not Started</option>
+                            <option value="Waiting For Resources">Waiting For Resources</option>
+                            <option value="Technical Issue">Technical Issue</option>
+                            <option value="Other">Other</option> <!-- Add the "Other" option -->
+                    </select>
+                    <input type="text" id="netMeterReason_other" name="net_Meter_Reason_other" class="hidden" placeholder="Enter Other Reason"> <!-- Textbox for custom input -->
+                </td>
+            </tr>
+
+            <tr id="transformerRow" {% if not transformer_make %} style="display: none;" {% endif %}>
+                <td><b><span id="transformer_type"></span> Details</b></td>
+                <td><span id="transformer_make"></span></td>
+				<td><span id="transformer_capacity"></span></td>
+				<td><span id="transformer_serial_no"></span></td>
+                <td>
+                    <input type="checkbox" id="ctCompleted" name="ct_Completed" class="checkbox-input" onchange="toggleTextbox('ctCompleted', 'ctReason', 'ctCheckmark')">
+
+                </td>
+                <td>
+                    <span id="ctCheckmark" class="hidden checkmark">✓</span>
+<!--                    <input type="text" id="ctReason" placeholder="Reason for not complete">-->
+                    <select id="ctReason" name="ct_Reason" onchange="toggleDropdown('ctCompleted', 'ctReason', 'ctCheckmark')">
+                            <option value="" disabled selected>Select Reason</option>
+                            <option value="In Progress">In Progress</option>
+                            <option value="Not Started">Not Started</option>
+                            <option value="Waiting For Resources">Waiting For Resources</option>
+                            <option value="Technical Issue">Technical Issue</option>
+                            <option value="Other">Other</option> <!-- Add the "Other" option -->
+                    </select>
+                    <input type="text" id="ctCheckmark_other" name="ct_Checkmark_other" class="hidden" placeholder="Enter Other Reason"> <!-- Textbox for custom input -->
+                </td>
+            </tr>
+            <tr>
+                <td><b>Generation Meters Details</b></td>
+                <td><span id="gen_make"></span></td>
+				<td><span id="gen_capacity"></span></td>
+				<td><span id="gen_count"></span></td>
+                <td>
+                    <input type="checkbox" id="generationMetersCompleted" name="generation_Meters_Completed" class="checkbox-input" onchange="toggleTextbox('generationMetersCompleted', 'generationMetersReason', 'generationMetersCheckmark')">
+
+                </td>
+                <td>
+                    <span id="generationMetersCheckmark" class="hidden checkmark">✓</span>
+<!--                    <input type="text" id="generationMetersReason" placeholder="Reason for not complete">-->
+                    <select id="generationMetersReason" name="generation_Meters_Reason" onchange="toggleDropdown('generationMetersCompleted', 'generationMetersReason', 'generationMetersCheckmark')">
+                            <option value="" disabled selected>Select Reason</option>
+                            <option value="In Progress">In Progress</option>
+                            <option value="Not Started">Not Started</option>
+                            <option value="Waiting For Resources">Waiting For Resources</option>
+                            <option value="Technical Issue">Technical Issue</option>
+                            <option value="Other">Other</option> <!-- Add the "Other" option -->
+                    </select>
+                    <input type="text" id="generationMetersReason_other" name="generation_Meters_Reason_other" class="hidden" placeholder="Enter Other Reason"> <!-- Textbox for custom input -->
+                </td>
+            </tr>
+            <tr id="CT_Row" {% if not ct_make %} style="display: none;" {% endif %}>
+                <td><b>Gen. CT Meters Details</b></td>
+                <td><span id="ct_make"></span></td>
+				<td><span id="ct_capacity"></span></td>
+				<td><span id="ct_count"></span></td>
+                <td>
+                    <input type="checkbox" id="genCTMetersCompleted" name="gen_CT_Meters_Completed" class="checkbox-input" onchange="toggleTextbox('genCTMetersCompleted', 'genCTMetersReason', 'genCTMetersCheckmark')">
+
+                </td>
+                <td>
+                    <span id="genCTMetersCheckmark" class="hidden checkmark">✓</span>
+<!--                    <input type="text" id="genCTMetersReason" placeholder="Reason for not complete">-->
+                    <select id="genCTMetersReason" name="gen_CT_Meters_Reason" onchange="toggleDropdown('genCTMetersCompleted', 'genCTMetersReason', 'genCTMetersCheckmark')">
+                            <option value="" disabled selected>Select Reason</option>
+                            <option value="In Progress">In Progress</option>
+                            <option value="Not Started">Not Started</option>
+                            <option value="Waiting For Resources">Waiting For Resources</option>
+                            <option value="Technical Issue">Technical Issue</option>
+                            <option value="Other">Other</option> <!-- Add the "Other" option -->
+                    </select>
+                    <input type="text" id="genCTMetersReason_other" name="gen_CT_Meters_Reason_other" class="hidden" placeholder="Enter Other Reason"> <!-- Textbox for custom input -->
+                </td>
+            </tr>
+        </table>
+            </div>
+
+        </fieldset>
+        <br><br>
+        <fieldset>
+        <table width="100%">
+            <tr>
+                <th>Detail</th>
+                <th>Completed</th>
+                <th>Status</th>
+            </tr>
+            <tr>
+                <td><b>AC Panel Cabling</b></td>
+                <td>
+                    <input type="checkbox" id="acPanelCablingCompleted" name="ac_Panel_Cabling_Completed" class="checkbox-input" onchange="toggleTextbox('acPanelCablingCompleted', 'acPanelCablingReason', 'acPanelCablingCheckmark')">
+
+                </td>
+                <td>
+                    <span id="acPanelCablingCheckmark" class="hidden checkmark">✓</span>
+<!--                    <input type="text" id="acPanelCablingReason" placeholder="Reason for not complete">-->
+                    <select id="acPanelCablingReason" name="ac_Panel_Cabling_Reason" onchange="toggleDropdown('acPanelCablingCompleted', 'acPanelCablingReason', 'acPanelCablingCheckmark')">
+                            <option value="" disabled selected>Select Reason</option>
+                            <option value="In Progress">In Progress</option>
+                            <option value="Not Started">Not Started</option>
+                            <option value="Waiting For Resources">Waiting For Resources</option>
+                            <option value="Technical Issue">Technical Issue</option>
+                            <option value="No Material Available">No Material Available</option>
+                            <option value="Out of Requirement">Out of Requirement</option>
+                            <option value="Other">Other</option> <!-- Add the "Other" option -->
+                    </select>
+                    <input type="text" id="acPanelCablingReason_other" name="ac_Panel_Cabling_Reason_other" class="hidden" placeholder="Enter Other Reason"> <!-- Textbox for custom input -->
+                </td>
+            </tr>
+            <tr>
+                <td><b>DC Panel Cabling</b></td>
+                <td>
+                    <input type="checkbox" id="dcPanelCablingCompleted" name="dc_Panel_Cabling_Completed" class="checkbox-input" onchange="toggleTextbox('dcPanelCablingCompleted', 'dcPanelCablingReason', 'dcPanelCablingCheckmark')">
+
+                </td>
+                <td>
+                    <span id="dcPanelCablingCheckmark" class="hidden checkmark">✓</span>
+<!--                    <input type="text" id="dcPanelCablingReason" placeholder="Reason for not complete">-->
+                    <select id="dcPanelCablingReason" name="dc_Panel_Cabling_Reason" onchange="toggleDropdown('dcPanelCablingCompleted', 'dcPanelCablingReason', 'dcPanelCablingCheckmark')">
+                            <option value="" disabled selected>Select Reason</option>
+                            <option value="In Progress">In Progress</option>
+                            <option value="Not Started">Not Started</option>
+                            <option value="Waiting For Resources">Waiting For Resources</option>
+                            <option value="Technical Issue">Technical Issue</option>
+                            <option value="No Material Available">No Material Available</option>
+                            <option value="Out of Requirement">Out of Requirement</option>
+                            <option value="Other">Other</option> <!-- Add the "Other" option -->
+                    </select>
+                    <input type="text" id="dcPanelCablingReason_other" name="dc_Panel_Cabling_Reason_other" class="hidden" placeholder="Enter Other Reason"> <!-- Textbox for custom input -->
+                </td>
+            </tr>
+            <tr>
+                <td><b>Fabrication</b></td>
+                <td>
+                    <input type="checkbox" id="fabricationCompleted" name="fabrication_Completed" class="checkbox-input" onchange="toggleTextbox('fabricationCompleted', 'fabricationReason', 'fabricationCheckmark')">
+
+                </td>
+                <td>
+                    <span id="fabricationCheckmark" class="hidden checkmark">✓</span>
+<!--                    <input type="text" id="fabricationReason" placeholder="Reason for not complete">-->
+                    <select id="fabricationReason" name="fabrication_Reason" onchange="toggleDropdown('fabricationCompleted', 'fabricationReason', 'fabricationCheckmark')">
+                            <option value="" disabled selected>Select Reason</option>
+                            <option value="In Progress">In Progress</option>
+                            <option value="Not Started">Not Started</option>
+                            <option value="Waiting For Resources">Waiting For Resources</option>
+                            <option value="Technical Issue">Technical Issue</option>
+                            <option value="No Material Available">No Material Available</option>
+                            <option value="Out of Requirement">Out of Requirement</option>
+                            <option value="Other">Other</option> <!-- Add the "Other" option -->
+                    </select>
+                    <input type="text" id="fabricationReason_other" name="fabrication_Reason_other" class="hidden" placeholder="Enter Other Reason"> <!-- Textbox for custom input -->
+                </td>
+            </tr>
+            <tr>
+                <td><b>Walkway</b></td>
+                <td>
+                    <input type="checkbox" id="walkwayCompleted" name="walkway_Completed" class="checkbox-input" onchange="toggleTextbox('walkwayCompleted', 'walkwayReason', 'walkwayCheckmark')">
+
+                </td>
+                <td>
+                    <span id="walkwayCheckmark" class="hidden checkmark">✓</span>
+<!--                    <input type="text" id="walkwayReason" placeholder="Reason for not complete">-->
+                    <select id="walkwayReason" name="walkway_Reason" onchange="toggleDropdown('walkwayCompleted', 'walkwayReason', 'walkwayCheckmark')">
+                            <option value="" disabled selected>Select Reason</option>
+                            <option value="In Progress">In Progress</option>
+                            <option value="Not Started">Not Started</option>
+                            <option value="Waiting For Resources">Waiting For Resources</option>
+                            <option value="Technical Issue">Technical Issue</option>
+                            <option value="No Material Available">No Material Available</option>
+                            <option value="Out of Requirement">Out of Requirement</option>
+                            <option value="Other">Other</option> <!-- Add the "Other" option -->
+                    </select>
+                    <input type="text" id="walkwayReason_other" name="walkway_Reason_other" class="hidden" placeholder="Enter Other Reason"> <!-- Textbox for custom input -->
+                </td>
+            </tr>
+            <tr>
+                <td><b>Cleanup Pipeline</b></td>
+                <td>
+                    <input type="checkbox" id="pipelineCompleted" name="pipeline_Completed" class="checkbox-input" onchange="toggleTextbox('pipelineCompleted', 'pipelineReason', 'pipelineCheckmark')">
+
+                </td>
+                <td>
+                    <span id="pipelineCheckmark" class="hidden checkmark">✓</span>
+<!--                    <input type="text" id="pipelineReason" placeholder="Reason for not complete">-->
+                    <select id="pipelineReason" name="pipeline_Reason" onchange="toggleDropdown('pipelineCompleted', 'pipelineReason', 'pipelineCheckmark')">
+                            <option value="" disabled selected>Select Reason</option>
+                            <option value="In Progress">In Progress</option>
+                            <option value="Not Started">Not Started</option>
+                            <option value="Waiting For Resources">Waiting For Resources</option>
+                            <option value="Technical Issue">Technical Issue</option>
+                            <option value="No Material Available">No Material Available</option>
+                            <option value="Out of Requirement">Out of Requirement</option>
+                            <option value="Other">Other</option> <!-- Add the "Other" option -->
+                    </select>
+                    <input type="text" id="pipelineReason_other" name="pipeline_Reason_other" class="hidden" placeholder="Enter Other Reason"> <!-- Textbox for custom input -->
+                </td>
+            </tr>
+            <tr>
+                <td><b>Ropeway</b></td>
+                <td>
+                    <input type="checkbox" id="ropewayCompleted" name="ropeway_Completed" class="checkbox-input" onchange="toggleTextbox('ropewayCompleted', 'ropewayReason', 'ropewayCheckmark')">
+
+                </td>
+                <td>
+                    <span id="ropewayCheckmark" class="hidden checkmark">✓</span>
+<!--                    <input type="text" id="ropewayReason" placeholder="Reason for not complete">-->
+                    <select id="ropewayReason" name="ropeway_Reason" onchange="toggleDropdown('ropewayCompleted', 'ropewayReason', 'ropewayCheckmark')">
+                           <option value="" disabled selected>Select Reason</option>
+                            <option value="In Progress">In Progress</option>
+                            <option value="Not Started">Not Started</option>
+                            <option value="Waiting For Resources">Waiting For Resources</option>
+                            <option value="Technical Issue">Technical Issue</option>
+                            <option value="No Material Available">No Material Available</option>
+                            <option value="Out of Requirement">Out of Requirement</option>
+                            <option value="Other">Other</option> <!-- Add the "Other" option -->
+                    </select>
+                    <input type="text" id="ropewayReason_other" name="ropeway_Reason_other" class="hidden" placeholder="Enter Other Reason"> <!-- Textbox for custom input -->
+                </td>
+            </tr>
+            <tr>
+                <td><b>Rolling</b></td>
+                <td>
+                    <input type="checkbox" id="rollingCompleted" name="rolling_Completed" class="checkbox-input" onchange="toggleTextbox('rollingCompleted', 'rollingReason', 'rollingCheckmark')">
+
+
+                </td>
+                <td>
+                    <span id="rollingCheckmark" class="hidden checkmark">✓</span>
+<!--                    <input type="text" id="rollingReason" placeholder="Reason for not complete">-->
+                    <select id="rollingReason" name="rolling_Reason" onchange="toggleDropdown('rollingCompleted', 'rollingReason', 'rollingCheckmark')">
+                           <option value="" disabled selected></option>
+                            <option value="In Progress">In Progress</option>
+                            <option value="Not Started">Not Started</option>
+                            <option value="Waiting For Resources">Waiting For Resources</option>
+                            <option value="Technical Issue">Technical Issue</option>
+                            <option value="No Material Available">No Material Available</option>
+                            <option value="Out of Requirement">Out of Requirement</option>
+                            <option value="Other">Other</option> <!-- Add the "Other" option -->
+                    </select>
+                    <input type="text" id="rollingReason_other" name="rolling_Reason_other" class="hidden" placeholder="Enter Other Reason"> <!-- Textbox for custom input -->
+                </td>
+            </tr>
+        </table>
+
+        <br><br>
+        <div>
+            <label for="overallDetails"><b>Conclusion</b></label>
+            <textarea id="overallDetails" name="overall_Details" cols="3" rows="3" required></textarea>
+        </div>
+
+        <div>
+
+            <label class="checkbox-label" for="infoCorrect" style="text-align: left;"><input type="checkbox" id="infoCorrect" name="info_Correct" class="checkbox-input"> &nbsp;&nbsp;&nbsp; I hereby confirm that the information provided above is correct, and I acknowledge that I will be responsible for any missinformation provided.</label>
+<!--            <label class="checkbox-label"> <input type="checkbox" class="checkbox-input"> &nbsp;&nbsp;&nbsp; <b>Above all Information Correct</b></label>-->
+        </div>
+      </fieldset>
+        <br>
+        <div align="center">
+        <button type="submit" id="submit" hidden="">Submit</button>
+            </div>
+    </form>
+{% endif %}
+<script>
+document.getElementById('infoCorrect').addEventListener('change', function() {
+    var submitButton = document.getElementById('submit');
+    submit.hidden = !this.checked;
+});
+
+document.getElementById('inspectionForm').addEventListener('submit', function(event) {
+    var confirmation = confirm('Are you sure you want to submit the report?');
+    if (!confirmation) {
+        event.preventDefault(); // Prevent form submission if user cancels
+    }
+});
+</script>
+<script>
+        function fetchData() {
+            var companyName = document.getElementById("companySelect").value;
+
+            // Clear previous data
+            document.getElementById("meters").value = '';
+            document.getElementById("solar_company").innerText = '';
+            document.getElementById("sol_wattage").innerText = '';
+            document.getElementById("solarPanelCount").innerText = '';
+            document.getElementById("inverter_company").innerText = '';
+            document.getElementById("inv_wattage").innerText = '';
+            document.getElementById("inverterCount").innerText = '';
+
+            document.getElementById("meter_type").innerText = '';
+            document.getElementById("meter_make").innerText = '';
+            document.getElementById("meter_capacity").innerText = '';
+            document.getElementById("meter_serial_no").innerText = '';
+            document.getElementById("transformer_type").innerText = '';
+            document.getElementById("transformer_make").innerText = '';
+            document.getElementById("transformer_capacity").innerText = '';
+            document.getElementById("transformer_serial_no").innerText = '';
+
+            document.getElementById("gen_make").innerText = '';
+            document.getElementById("gen_capacity").innerText = '';
+            //document.getElementById("gen_serial_no").innerText = '';
+            document.getElementById("gen_count").innerText = '';
+            document.getElementById("ct_make").innerText = '';
+            document.getElementById("ct_capacity").innerText = '';
+            //document.getElementById("ct_serial_no").innerText = '';
+            document.getElementById("ct_count").innerText = '';
+
+            fetch('/customer/get-company-data/?company_name=' + companyName)
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById("meters").value = data.meters;
+                    document.getElementById("solarPanelCount").innerText = data.solarPanelCount;
+                    document.getElementById("inverterCount").innerText = data.inverterCount;
+                    document.getElementById("gen_count").innerText = data.gen_count;
+                    document.getElementById("ct_count").innerText = data.gen_count;
+                    document.getElementById("meter_serial_no").innerText = data.meter_count;
+                    document.getElementById("transformer_serial_no").innerText = data.meter_count;
+                    document.getElementById("selected_company_name").innerText = data.selected_company_name;
+
+
+                    if (data.solarPanelData.length > 0) {
+                        document.getElementById("solar_company").innerText = data.solarPanelData[0][0];
+                        document.getElementById("sol_wattage").innerText = data.solarPanelData[0][1];
+                    }
+
+                    if (data.inverterData.length > 0) {
+                        document.getElementById("inverter_company").innerText = data.inverterData[0][0];
+                        document.getElementById("inv_wattage").innerText = data.inverterData[0][1];
+                    }
+
+                    if (data.meter_names.length > 0) {
+                        document.getElementById("meter_type").innerText = data.meter_names[0][0];
+                        document.getElementById("meter_make").innerText = data.meter_names[0][1];
+                        document.getElementById("meter_capacity").innerText = data.meter_names[0][2];
+                        //document.getElementById("meter_serial_no").innerText = data.meter_names[0][3];
+                    }
+
+                    if (data.transformer_names.length > 0) {
+                        document.getElementById("transformer_type").innerText = data.transformer_names[0][0];
+                        document.getElementById("transformer_make").innerText = data.transformer_names[0][1];
+                        document.getElementById("transformer_capacity").innerText = data.transformer_names[0][2];
+                        //document.getElementById("transformer_serial_no").innerText = data.transformer_names[0][3];
+                    }
+
+
+                    if (data.transformer_names[0][1]) {
+                        document.getElementById("transformerRow").style.display = ""; // Show the row
+                        document.getElementById("transformer_type").innerText = data.transformer_names[0][0];
+                        document.getElementById("transformer_make").innerText = data.transformer_names[0][1];
+                        document.getElementById("transformer_capacity").innerText = data.transformer_names[0][2];
+                    } else {
+                        document.getElementById("transformerRow").style.display = "none"; // Hide the row
+                    }
+
+
+                    if (data.generationnames.length > 0) {
+                        document.getElementById("gen_make").innerText = data.generationnames[0][0];
+                        document.getElementById("gen_capacity").innerText = data.generationnames[0][1];
+                        //document.getElementById("gen_serial_no").innerText = data.generationnames[0][2];
+                    }
+
+                    if (data.gen_names.length > 0) {
+                        document.getElementById("ct_make").innerText = data.gen_names[0][0];
+                        document.getElementById("ct_capacity").innerText = data.gen_names[0][1];
+                        //document.getElementById("ct_serial_no").innerText = data.gen_names[0][2];
+                    }
+
+                    if (data.gen_names[0][0]) {
+                        document.getElementById("CT_Row").style.display = ""; // Show the row
+                        document.getElementById("ct_make").innerText = data.gen_names[0][0];
+                        document.getElementById("ct_capacity").innerText = data.gen_names[0][1];
+                        document.getElementById("ct_serial_no").innerText = data.gen_names[0][2];
+                    } else {
+                        document.getElementById("CT_Row").style.display = "none"; // Hide the row
+                    }
+
+
+                });
+        }
+    </script>
+<!--<script>-->
+<!--        function toggleTextbox(checkboxId, textboxId, checkmarkId) {-->
+<!--            var checkbox = document.getElementById(checkboxId);-->
+<!--            var textbox = document.getElementById(textboxId);-->
+<!--            var checkmark = document.getElementById(checkmarkId);-->
+<!--            if (checkbox.checked) {-->
+<!--                textbox.classList.add('hidden');-->
+<!--                checkmark.classList.remove('hidden');-->
+<!--            } else {-->
+<!--                textbox.classList.remove('hidden');-->
+<!--                checkmark.classList.add('hidden');-->
+<!--            }-->
+<!--        }-->
+<!--    </script>-->
+
+<!--&lt;!&ndash; Inside the form &ndash;&gt;-->
+<!--<script>-->
+<!--    function toggleDropdown(checkboxId, dropdownId, checkmarkId) {-->
+<!--        var checkbox = document.getElementById(checkboxId);-->
+<!--        var dropdown = document.getElementById(dropdownId);-->
+<!--        var checkmark = document.getElementById(checkmarkId);-->
+<!--        var otherReasonId = dropdownId + "_other"; // Generate id for the textbox associated with this dropdown-->
+<!--        var otherReason = document.getElementById(otherReasonId); // Get the textbox element-->
+<!--        if (dropdown.value === "Other") {-->
+<!--            otherReason.classList.remove('hidden'); // Show the textbox when "Other" is selected-->
+<!--            //checkmark.classList.add('hidden'); // Hide the checkmark-->
+<!--        } else {-->
+<!--            otherReason.classList.add('hidden'); // Hide the textbox when other options are selected-->
+<!--            //checkmark.classList.remove('hidden'); // Show the checkmark-->
+<!--        }-->
+
+<!--    }-->
+<!--</script>-->
+
+
+<!--    <script>-->
+<!--        function toggleTextbox(checkboxId, textboxId, checkmarkId) {-->
+<!--            var checkbox = document.getElementById(checkboxId);-->
+<!--            var textbox = document.getElementById(textboxId);-->
+<!--            var checkmark = document.getElementById(checkmarkId);-->
+<!--            if (checkbox.checked) {-->
+<!--                textbox.classList.add('hidden');-->
+<!--                checkmark.classList.remove('hidden');-->
+<!--                otherReason.classList.add('hidden'); // Hide the textbox when other options are selected-->
+<!--            } else {-->
+<!--                textbox.classList.remove('hidden');-->
+<!--                checkmark.classList.add('hidden');-->
+<!--            }-->
+<!--        }-->
+
+<!--        function toggleDropdown(checkboxId, dropdownId, checkmarkId) {-->
+<!--            var checkbox = document.getElementById(checkboxId);-->
+<!--            var dropdown = document.getElementById(dropdownId);-->
+<!--            var checkmark = document.getElementById(checkmarkId);-->
+<!--            var otherReasonId = dropdownId + "_other"; // Generate id for the textbox associated with this dropdown-->
+<!--            var otherReason = document.getElementById(otherReasonId); // Get the textbox element-->
+
+<!--            if (dropdown.value === "Other") {-->
+<!--                otherReason.classList.remove('hidden'); // Show the textbox when "Other" is selected-->
+<!--            } else {-->
+<!--                otherReason.classList.add('hidden'); // Hide the textbox when other options are selected-->
+<!--                //dropdown.removeAttribute('required');-->
+<!--                otherReason.removeAttribute('required');-->
+
+<!--            }-->
+
+<!--            if (checkbox.checked) {-->
+<!--                dropdown.classList.add('hidden');-->
+<!--                otherReason.classList.add('hidden'); // Hide the textbox when other options are selected-->
+<!--                checkmark.classList.remove('hidden');-->
+<!--                dropdown.removeAttribute('required');-->
+<!--                otherReason.removeAttribute('required');-->
+<!--            } else {-->
+<!--                dropdown.classList.remove('hidden');-->
+<!--                checkmark.classList.add('hidden');-->
+<!--                //dropdown.setAttribute('required', 'required');-->
+<!--                //otherReason.setAttribute('required', 'required');-->
+<!--                dropdown.removeAttribute('required');-->
+<!--                otherReason.removeAttribute('required');-->
+<!--            }-->
+<!--        }-->
+<!--    </script>-->
+
+
+<script>
+    function toggleTextbox(checkboxId, textboxId, checkmarkId) {
+        var checkbox = document.getElementById(checkboxId);
+        var textbox = document.getElementById(textboxId);
+        var checkmark = document.getElementById(checkmarkId);
+
+        if (checkbox.checked) {
+            if (textbox) {
+                textbox.classList.add('hidden');
+                textbox.removeAttribute('required');
+            }
+            checkmark.classList.remove('hidden');
+        } else {
+            if (textbox) {
+                textbox.classList.remove('hidden');
+                textbox.setAttribute('required', 'required');
+            }
+            checkmark.classList.add('hidden');
+        }
+    }
+
+    function toggleDropdown(checkboxId, dropdownId, checkmarkId) {
+        var checkbox = document.getElementById(checkboxId);
+        var dropdown = document.getElementById(dropdownId);
+        var checkmark = document.getElementById(checkmarkId);
+        var otherReasonId = dropdownId + "_other";
+        var otherReason = document.getElementById(otherReasonId);
+
+        if (dropdown.value === "Other") {
+            otherReason.classList.remove('hidden');
+            otherReason.setAttribute('required', 'required');
+        } else {
+            otherReason.classList.add('hidden');
+            otherReason.removeAttribute('required');
+        }
+
+        if (checkbox.checked) {
+            dropdown.classList.add('hidden');
+            dropdown.removeAttribute('required');
+            if (otherReason) {
+                otherReason.classList.add('hidden');
+                otherReason.removeAttribute('required');
+            }
+            checkmark.classList.remove('hidden');
+        } else {
+            dropdown.classList.remove('hidden');
+            checkmark.classList.add('hidden');
+
+            if (dropdown.value === "") {
+                dropdown.setAttribute('required', 'required');
+            } else {
+                dropdown.removeAttribute('required');
+            }
+        }
+    }
+
+    // Initial call to set required attributes on page load
+    document.addEventListener("DOMContentLoaded", function() {
+        var checkboxes = document.querySelectorAll('.checkbox-input');
+        checkboxes.forEach(function(checkbox) {
+            var textboxId = checkbox.id.replace('Completed', 'Reason');
+            var checkmarkId = checkbox.id + 'Checkmark';
+            toggleTextbox(checkbox.id, textboxId, checkmarkId);
+        });
+
+        var dropdowns = document.querySelectorAll('select');
+        dropdowns.forEach(function(dropdown) {
+            var checkboxId = dropdown.id.replace('Reason', 'Completed');
+            var checkmarkId = checkboxId + 'Checkmark';
+            toggleDropdown(checkboxId, dropdown.id, checkmarkId);
+        });
+
+        // Add event listeners to each checkbox
+        checkboxes.forEach(function(checkbox) {
+            checkbox.addEventListener('change', function() {
+                var row = checkbox.closest('tr');
+                var textboxId = checkbox.id.replace('Completed', 'Reason');
+                var checkmarkId = checkbox.id + 'Checkmark';
+                toggleTextbox(checkbox.id, textboxId, checkmarkId);
+                toggleDropdown(checkbox.id, textboxId, checkmarkId);
+            });
+        });
+
+        // Add event listeners to each dropdown
+        dropdowns.forEach(function(dropdown) {
+            dropdown.addEventListener('change', function() {
+                var row = dropdown.closest('tr');
+                var checkboxId = dropdown.id.replace('Reason', 'Completed');
+                var checkmarkId = checkboxId + 'Checkmark';
+                toggleDropdown(checkboxId, dropdown.id, checkmarkId);
+            });
+        });
+    });
+
+</script>
+{% endblock %}
+

@@ -1,0 +1,1123 @@
+{% extends 'partials/base.html' %}
+{% block title %}Order Page{% endblock %}
+{% load static %} {% block content %}
+
+<!--   <div class="card-body">-->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@mdi/font/css/materialdesignicons.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.9.2/html2pdf.bundle.js"></script>
+
+<!-- Include DataTables stylesheets -->
+<link rel="stylesheet" type="text/css" href="path/to/datatables.min.css" />
+<link rel="stylesheet" href="{% static 'assets/plugins/datatables/datatables.min.css' %}" />
+<script src="{% static 'assets/js/jquery.min.js' %}"></script>
+<script type="text/javascript" charset="utf8" src="{% static 'assets/plugins/datatables/datatables.min.js' %}"></script>
+
+<!-- Include DataTables stylesheets -->
+<link rel="stylesheet" type="text/css" href="{% static 'assets/plugins/datatables/datatables.min.css' %}" />
+
+<!-- Include jQuery -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js" integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=" crossorigin="anonymous"></script>
+
+<!-- Include DataTables script -->
+<script type="text/javascript" charset="utf8" src="{% static 'assets/plugins/datatables/datatables.min.js' %}"></script>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        // Function to initialize DataTable for a specific table
+        function initializeDataTable(tableClass) {
+            // Destroy existing DataTable instance if it exists
+            if ($.fn.DataTable.isDataTable(`.${tableClass}`)) {
+                $(`.${tableClass}`).DataTable().destroy();
+            }
+
+             // Initialize DataTable for the specified table with pagination
+            $(`.${tableClass}`).DataTable({
+                paging: true, // Enable pagination
+                searching: true, // Enable search box
+                // Add any other DataTables options you need
+            });
+        }
+
+
+        // ... (your existing code)
+
+        // Initialize DataTable for the solar table
+        initializeDataTable("solar-table");
+
+        // Initialize DataTable for the inverter table
+        initializeDataTable("inverter-table");
+
+        // Initialize DataTable for the replace table
+        initializeDataTable("replace-table");
+
+
+    });
+</script>
+
+
+          <div class="col-md-12">
+             <!-- general form elements -->
+             <div class="card card-primary">
+                 <div class="card-header" align="center">
+<!--                     <h3>Consumer Product Details</h3>-->
+                     {% if user_record.first_name %}
+                       <h3 class="page-title text-capitalize">{{ user_record.first_name | upper }} {{ user_record.last_name | upper  }} PROJECT DETAILS</h3>
+                       {% else %}
+                        <h3 class="page-title text-capitalize">{{ user_record.Comp_name | upper }} PROJECT DETAILS</h3>
+                     {% endif %}
+                 </div>
+                 <form method="POST" action="{% url 'detect_barcodes-display_product' %}" id="barcode-form" style="background: #dddddd;">
+                     {% csrf_token %}
+                     <h3>Plant Information</h3>
+                     <div class="form-group row">
+                         <div class="col-md-8 table-responsive">
+                             <table id="yourDataTable" class="table solar-table customDataTable">
+                                 <tr>
+                                     <th colspan="3">Company Name</th>
+                                     <th colspan="5" class="text-capitalize">{{ user_record.Comp_name | upper }}</th>
+                                 </tr>
+                                 <tr>
+                                     <th colspan="3">Plant Capacity</th>
+                                     <th colspan="5" class="text-capitalize">{{ user_record.Plant_Capacity }} Kw</th>
+                                 </tr>
+                                 <tr>
+                                     <th colspan="3">Load Sanction</th>
+                                     <th colspan="5" class="text-capitalize">{{ user_record.loadsancution }} Kw</th>
+                                 </tr>
+                                 <tr>
+                                     <th colspan="3">Phase</th>
+                                     <th colspan="5" class="text-capitalize">{{ user_record.phase }} Phase</th>
+                                 </tr>
+                                  <!-- Solar Module Row -->
+                        <tr id="solarModuleRow" style="display: none;">
+                           {% if solar_items %}
+                            <th colspan="2">Solar Module Company</th>
+<!--                            <td colspan="2" class="text-capitalize" style="color: blue;">{{ user_record.solar_comp }}</td>-->
+                            <td colspan="2" class="text-capitalize" style="color: blue;">{{ solar_items.0.company_name }}</td>
+                            <th>Quantity</th>
+                            <td class="text-capitalize" style="color: blue;">{{ user_record.qunt_solar }}</td>
+                            <th>Warranty</th>
+                            <td class="text-capitalize" style="color: blue;">{{ user_record.sol_warranty }} Year</td>
+                            {% endif %}
+                        </tr>
+                        <!-- Inverter Row -->
+                        <tr id="inverterRow" style="display: none;">
+                            {% if inverter_items %}
+                            <th colspan="2">Inverter Company</th>
+<!--                            <td colspan="2" class="text-capitalize" style="color: blue;">{{ user_record.UPSC }}</td>-->
+                            <td colspan="2" class="text-capitalize" style="color: blue;">{{ inverter_items.0.company_name }}</td>
+                            <th>Quantity</th>
+                            <td class="text-capitalize" style="color: blue;">{{ user_record.qunt_inv }}</td>
+                            <th>Warranty</th>
+                            <td class="text-capitalize" style="color: blue;">{{ user_record.inv_warranty }} Year</td>
+                            {% endif %}
+                        </tr>
+                             </table>
+                         </div>
+                         <div class="col-md-4 container">
+
+                             <style>
+                                 @keyframes blink {
+                                     0% {
+                                         opacity: 1;
+                                     }
+                                     50% {
+                                         opacity: 0;
+                                     }
+                                     100% {
+                                         opacity: 1;
+                                     }
+                                 }
+                                 .blink {
+                                     animation: blink 1s infinite;
+                                 }
+                             </style>
+                             <fieldset class="custom-fieldset">
+                               <h4 style="text-align: center;"> Project Status</h4>
+<!--                              <ul style="list-style-type: none; padding: 0; text-align: center; margin-top: 6px;">-->
+                               <h6 style="text-align: center; margin-top: 6px;">
+                                 <b><span id="projectStatus" style="font-size: 20px;"></span></b>
+                               </h6>
+<!--                              </ul>-->
+<!--                              <h4 style="text-align: center; color: green;"> Date</h4>-->
+                               {% for field, data in progress_data.items %} {% if field == 'Meter Installation Date' %}{% if data.value == True %}
+
+                                                         <p style="text-align: center; color: green; font-size: 20px;"><b> DATE - </b><b style="text-align: center; color: black;">{{ data.date|date:"d / m / Y" }}</b></p>
+
+                                                     {% endif %} {% endif %} {% endfor %}
+
+
+                             </fieldset>
+                             <!-- Add this element where you want to display project status -->
+<!--                              <p>Project Status: <span id="projectStatus">Pending</span></p>-->
+
+
+                             <fieldset class="custom-fieldset">
+                                 {% if progress_warranty %}
+                                 <h4 style="text-align: center;"> O & M Warranty</h4>
+
+                                 <ul style="list-style-type: none; padding: 0; text-align: center; margin-top: 6px;">
+                                     {% for warranty_type, warranty_data in progress_warranty.items %} {% if warranty_type == 'O & M Warranty' %}
+                                     <li>
+                                         <h6 style="text-align: center;">
+    <!--                                         {{ warranty_type }} :<br> -->
+                                             {% if warranty_data.remaining_days > 0 %}
+                                             <span style="color: blue;" class="blink">{{ warranty_data.remaining_days }} days left</span>
+                                             {% else %}
+                                             <span style="color: red; text-align: center;" class="blink">
+                                                 &nbsp;Expired
+                                                 <p style="font-size: 14px; color: red; text-align: center; margin-top: 2px;">({{ warranty_data.remaining_days | default:'0' }} days ago)</p>
+                                             </span>
+                                             {% endif %}
+                                         </h6>
+                                     </li>
+                                     {% endif %} {% endfor %}
+                                 </ul>
+                                 {% else %}
+                                     <p style="text-align: center;">No <b style="color: blue;"> O & M warranty </b> information Upcoming.</p>
+                                 {% endif %}
+                          </fieldset>
+                         </div>
+
+                     </div>
+                 </form>
+             </div>
+         </div>
+
+         <br>
+         <div class="col-md-12">
+             <!-- general form elements -->
+             <div class="card card-primary">
+                 <br>
+                 <div class="col-md-12" align="center">
+                     <button id="solarCollapsible" class="collapsible" style="width: 100%;">Solar Module<span class="collapsible-status"></span></button>
+                     <div class="content col-md-12" style="text-align: center; margin: 0 auto;">
+                         {% if solar_items %}
+                         <br />
+                         <fieldset>
+
+                                     <caption>
+                                         <h3 style="background-color: #2b6b6e;">Solar Module Items</h3>
+                                     </caption>
+                                    <div class="table-responsive">
+                                     <table style="width: 100%;" class="table solar-table customDataTable">
+
+                                         <thead>
+                                             <tr>
+                                                 <th colspan="2" class="text-capitalize">
+                                                     <b>Make : </b>{{ solar_items.0.company_name }} <br />
+                                                     <b>Wattage :</b> {{ unique_wattages|join:"," }} Kw
+                                                 </th>
+                                                 <th>
+                                                     <b>Total Quantity : </b>{{ solar_panel_total_quantity }} Nos.
+                                                     <br />
+                                                     {% for item in solar_panel_quantity_by_wattage %}
+                                                     <b>Quantity for Model Type {{ item.wattage }} Kw:</b> {{ item.total_quantity }} Nos.
+                                                     <br />
+                                                     {% endfor %}
+                                                 </th>
+                                             </tr>
+
+
+                                             <tr style="background-color: lightgray;" align="center">
+                                                 <th>Serial No</th>
+                                                 <th>Wattage/ Kw</th>
+                                                 <th>Barcode No</th>
+                                             </tr>
+                                         </thead>
+                                         <tbody>
+                                             {% for item in solar_items %}
+                                             <tr align="center">
+                                                 <td>{{ forloop.counter }}</td>
+                                                 <td class="label-field">
+                                                     <span>{{ item.wattage }} Kw</span>
+                                                     <input type="text" name="wattage_{{ item.pk }}" class="editable-text" value="{{ item.wattage }}" style="display: none;" />
+                                                 </td>
+                                                 <td>{{ item.barcode_data }}</td>
+                                             </tr>
+                                             {% endfor %}
+                                         </tbody>
+                                     </table>
+                                 </div>
+         <!--                    </div>-->
+                         </fieldset>
+                         {% endif %}
+                         <br />
+                     </div>
+
+                     <button id="inverterCollapsible" class="collapsible" style="width: 100%;">Inverter<span class="collapsible-status"></span></button>
+
+                     <div class="content col-md-12" style="text-align: center; margin: 0 auto;">
+                         {% if inverter_items %}
+                         <br />
+                         <fieldset>
+
+                                     <caption>
+                                         <h3 style="background-color: #2b6b6e;">Inverter Items</h3>
+                                     </caption>
+                                    <div class="table-responsive">
+                                     <table id="inverterDataTable" style="width: 100%;" class="table inverter-table customDataTable">
+                                         <thead>
+                                             <tr>
+                                                 <th colspan="2" class="text-capitalize">
+                                                     <b>Make : </b>{{ inverter_items.0.company_name }} <br />
+                                                     <b>Wattage :</b> {{ inverter_wattages|join:"," }} Kw
+                                                 </th>
+                                                 <th>
+                                                     <b>Total Quantity : </b>{{ inverter_panel_total_quantity }} Nos.
+                                                     <br />
+                                                     {% for item in inverter_panel_quantity_by_wattage %}
+                                                     <b>Quantity for Model Type {{ item.wattage }} Kw :</b> {{ item.total_quantity }} Nos.
+                                                     <br />
+                                                     {% endfor %}
+                                                 </th>
+                                             </tr>
+
+                                             <tr style="background-color: lightgray;" align="center">
+                                                 <th>Serial No</th>
+                                                 <th>Wattage/ Kw</th>
+                                                 <th>Barcode No</th>
+                                             </tr>
+                                         </thead>
+                                         <tbody>
+                                             {% for item in inverter_items %}
+                                             <tr align="center">
+                                                 <td>{{ forloop.counter }}</td>
+                                                 <td class="label-field">
+                                                     <span>{{ item.wattage }} Kw</span>
+                                                     <input type="text" name="wattage_{{ item.pk }}" class="editable-text" value="{{ item.wattage }}" style="display: none;" />
+                                                 </td>
+                                                 <td>{{ item.barcode_data }}</td>
+                                             </tr>
+                                             {% endfor %}
+                                         </tbody>
+                                     </table>
+                                 </div>
+         <!--                    </div>-->
+                         </fieldset>
+                         {% endif %}
+                         <br />
+                     </div>
+
+                     {% if replace_items %}
+                     <button class="collapsible" style="width: 100%;">Replace Item</button>
+                     <div class="content col-md-12" style="text-align: center; margin: 0 auto;">
+                         <br />
+                         <fieldset>
+                                     <caption>
+                                         <h3 style="background-color: #2b6b6e;">Replace Items</h3>
+                                     </caption>
+                                    <div class="table-responsive">
+                                     <table id="replaceDataTable" style="width: 100%;" class="table replace-table customDataTable">
+                                         <thead>
+                                             <tr>
+                                                 <th colspan="2" class="text-capitalize">
+                                                     <b>Make : </b>{{ replace_items.0.company_name }} <br />
+                                                     <b>Wattage :</b> {{ replace_wattages|join:"," }} Kw
+                                                 </th>
+                                                 <th>
+                                                     <b>Total Quantity : </b>{{ replace_panel_total_quantity }} Nos.
+                                                     <br />
+                                                     {% for item in replace_panel_quantity_by_wattage %}
+                                                     <b>Quantity for Model Type {{ item.wattage }} Kw :</b> {{ item.total_quantity }} Nos.
+                                                     <br />
+                                                     {% endfor %}
+                                                 </th>
+                                             </tr>
+                                             <tr style="background-color: lightgray;" align="center">
+                                                 <th>Serial No</th>
+                                                 <th>Wattage/ Kw</th>
+                                                 <th>Barcode No</th>
+                                             </tr>
+                                         </thead>
+                                         <tbody>
+                                             {% for item in replace_items %}
+                                             <tr align="center">
+                                                 <td>{{ forloop.counter }}</td>
+                                                 <td class="label-field"><span>{{ item.wattage }} Kw</span><input type="text" name="wattage_{{ item.pk }}" class="editable-text" value="{{ item.wattage }}" style="display: none;" /></td>
+                                                 <td>{{ item.barcode_data }}</td>
+                                             </tr>
+                                             {% endfor %}
+                                         </tbody>
+                                     </table>
+                                 </div>
+         <!--                    </div>-->
+                         </fieldset>
+
+                         <br />
+                     </div>
+                     {% endif %}
+                     <button id="netMetersCollapsible" class="collapsible" style="width: 100%;">Net Meters<span class="collapsible-status"></span></button>
+                     <div class="content col-md-12" style="text-align: center; margin: 0 auto;">
+                         <br />
+                         {% if selected_comp_name %} {% if meters_records %}
+                         <fieldset>
+                             <caption>
+                                 <h3 style="background-color: #2b6b6e;">{% if meters_records.0.meter_type %} {{ meters_records.0.meter_type }} Details {% endif %}</h3>
+                             </caption>
+                             <div class="table-responsive">
+                                 <!-- Add table-responsive class here -->
+                                 <table id="meters-table" style="width: 100%; border: 1px solid lightblack;" border="1" class="highlight-on-check">
+                                     <!-- Meter Table Header -->
+                                     <thead>
+                                         <tr>
+                                             <th style="width: 200px; text-align: center;">Serial No</th>
+                                             <th style="width: 300px; text-align: center;">Meter Type</th>
+                                             <th style="width: 400px; text-align: center;">Make</th>
+                                             <th style="width: 300px; text-align: center;">Capacity</th>
+                                             <th style="width: 400px; text-align: center;">Serial Number</th>
+                                         </tr>
+                                     </thead>
+                                     <!-- Meter Table Body -->
+                                     <tbody>
+                                         {% for record in meters_records %}
+                                         <tr>
+                                             <td style="text-align: center;">{{ forloop.counter }}</td>
+                                             <td style="color: red;">{{ record.meter_type }}</td>
+                                             <td>{{ record.make }}</td>
+                                             <td style="text-align: center;">{{ record.capacity }}</td>
+                                             <td>{{ record.serial_no }}</td>
+                                         </tr>
+                                         {% endfor %}
+                                     </tbody>
+                                 </table>
+                             </div>
+                         </fieldset>
+
+                         {% if meters_records.0.transformer_type != "None" %}
+                         <fieldset>
+                             <caption>
+                                 <h3 style="background-color: #2b6b6e;">{% if meters_records.0.transformer_type %} {{ meters_records.0.transformer_type }} Meter Details {% endif %}</h3>
+                             </caption>
+                             <div class="table-responsive">
+                                 <!-- Add table-responsive class here -->
+                                 <table id="meters-table" style="width: 100%; border: 1px solid lightblack;"  border="1" class="highlight-on-check">
+                                     <!-- Meter Table Header -->
+                                     <thead>
+                                         <tr>
+                                             <th style="width: 200px; text-align: center;">Serial No</th>
+                                             <th style="width: 400px; text-align: center;">Type</th>
+                                             <th style="width: 400px; text-align: center;">Make</th>
+                                             <th style="width: 300px; text-align: center;">Capacity</th>
+                                             <th style="width: 400px; text-align: center;">Serial Number</th>
+                                         </tr>
+                                     </thead>
+                                     <!-- Meter Table Body -->
+                                     <tbody>
+                                         {% for record in meters_records %}
+                                         <tr>
+                                             <td style="text-align: center;">{{ forloop.counter }}</td>
+                                             <td style="color: red;">{{ record.transformer_type }}</td>
+                                             <td>{{ record.transformer_make }}</td>
+                                             <td style="text-align: center;">{{ record.transformer_capacity }}</td>
+                                             <td>{{ record.transformer_serial_number }}</td>
+                                         </tr>
+                                         {% endfor %}
+                                     </tbody>
+                                 </table>
+                             </div>
+                         </fieldset>
+                         {% endif %} {% endif %}
+                         <br />
+                         {% if generation_meter_records %}
+                         <fieldset>
+                             <caption>
+                                 {% if generation_meter_records.0.CT_make %}
+                                 <h3 style="background-color: #2b6b6e;">Generation With CT Meters</h3>
+                                 {% else %}
+                                 <h3 style="background-color: #2b6b6e;">Generation Meters</h3>
+                                 {% endif %}
+                             </caption>
+                             <div class="table-responsive">
+                                 <!-- Add table-responsive class here -->
+                                 <table class="highlight-on-check" style="width: 100%; border: 1px solid lightblack;" border="1" id="generation-meters-table">
+                                     <!-- Generation Meter Table Header -->
+                                     <thead>
+                                         <tr>
+                                             <th style="width: 200px; text-align: center;">Sr No.</th>
+                                             <th style="width: 400px; text-align: center;">Gen. Meter Make</th>
+                                             <th style="width: 300px; text-align: center;">Gen. Meter Capacity</th>
+                                             <th style="width: 400px; text-align: center;">Gen. Meter Serial Number</th>
+                                             {% if generation_meter_records.0.CT_make %}
+                                             <th style="width: 400px; text-align: center;">CT Make</th>
+                                             <th style="width: 300px; text-align: center;">CT Capacity</th>
+                                             <th style="width: 400px; text-align: center;">CT Serial Number</th>
+                                             {% endif %}
+                                         </tr>
+                                     </thead>
+                                     <!-- Generation Meter Table Body -->
+                                     <tbody>
+                                         {% for record in generation_meter_records %}
+                                         <tr>
+                                             <td style="text-align: center;">{{ forloop.counter }}</td>
+                                             <td>{{ record.make }}</td>
+                                             <td>{{ record.capacity }}</td>
+                                             <td>{{ record.serial_no }}</td>
+                                             {% if record.CT_make %}
+                                             <td>{{ record.CT_make }}</td>
+                                             <td>{{ record.CT_capacity }}</td>
+                                             <td>{{ record.CT_serial_no }}</td>
+                                             {% endif %}
+                                         </tr>
+                                         {% endfor %}
+                                     </tbody>
+                                 </table>
+                             </div>
+                         </fieldset>
+                         <br />
+                         {% endif %} {% endif %}
+                     </div>
+
+                     <button id="msebDetailsCollapsible" class="collapsible" style="width: 100%;">MSEB Status<span class="collapsible-status"></span></button>
+                     <!--        <div class="content col-md-11" style="text-align: center; margin: 0 auto;">-->
+                     <!--<div class="content" style="overflow-y: auto;overflow-x: hidden;">-->
+                     <div class="content col-md-12" style="text-align: center; margin: 0 auto; overflow-y: auto; overflow-x: hidden;">
+                         <style>
+                             table {
+                                 font-family: arial, sans-serif;
+                                 border-collapse: collapse;
+                                 width: 100%;
+                             }
+
+                             td,
+                             th {
+                                 //border: 1px solid #dddddd;
+                                 text-align: center;
+                                 padding: 8px;
+                             }
+
+                             tr:nth-child(even) {
+                                 background-color: #dddddd;
+                             }
+                             th {
+                                 background-color: #dddddd;
+                             }
+                         </style>
+                         {% if progress_data %}
+                         <link
+                             rel="stylesheet"
+                             href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.2.0/css/all.min.css"
+                             integrity="sha512-xh6O/CkQoPOWDdYTDqeRdPCVd1SpvCA9XXcUnZS2FmJNp1coAFzvtCN9BmamE+4aHK8yyUHUSCcJHgXloTyT2A=="
+                             crossorigin="anonymous"
+                             referrerpolicy="no-referrer"
+                         />
+                         <link href="{% static 'css/progress-bar.css' %}" rel="stylesheet" type="text/css" />
+
+                         <div class="content-wrapper">
+                             <div class="row">
+                                 <div class="col-lg-12 grid-margin stretch-card">
+                                     <div class="card">
+                                         <div class="card-body">
+                                             <h3 class="card-title">MSEB Status</h3>
+                                             <h5>Consumer : {{ customer.Comp_name }}</h5>
+
+                                             <!--<p class="card-description">Dashboard <code>order-status</code></p>-->
+                                             <hr />
+                                             <div class="table-responsive">
+                                                 <h5>MSEB Timeline</h5>
+                                                 <ol class="ProgressBar">
+                                                     {% with first_zero_found=False %} {% for field, data in progress_data.items %} {% if not data.value and not first_zero_found %} {% with first_zero_found=True %}
+                                                     <li class="ProgressBar-step is-yellow">
+                                                         <!--                           <li class="ProgressBar-step is-yellow {% if not first_zero_found %}is-pending{% endif %}" onclick="showHint(event, '{{ field }}', '{{ data.date|date:"Y-m-d" }}')">-->
+
+                                                         {% endwith %} {% else %}
+                                                     </li>
+
+                                                     <li class="ProgressBar-step {% if data.value %}is-complete{% elif not data.value %}is-pending{% endif %}" onclick="showHint(event, '{{ field }}', '{{ data.date|date:'Y-m-d' }}')">
+                                                         {% endif %}
+                                                         <svg class="ProgressBar-icon">
+                                                             {% if data.value %}
+                                                             <use xlink:href="#checkmark-bold" />
+                                                             {% else %}
+                                                             <use xlink:href="#dot-icon" />
+                                                             <!-- Add your dot icon here -->
+                                                             {% endif %}
+                                                         </svg>
+                                                         <!--                          <span class="ProgressBar-stepLabel">{{ field }}{% if data.date %} <br><span class="date">( {{ data.date|date:"d / m / Y" }} )</span>{% endif %}</span>-->
+                                                         <span class="ProgressBar-stepLabel">{{ field }}</span>
+                                                     </li>
+                                                     {% endfor %} {% endwith %}
+                                                 </ol>
+                                                 <br />
+                                                 <br />
+
+                                                 <div align="right" style="margin-bottom: 0px;">
+                                                     <button class="btn btn-primary" id="view"><i class="nav-icon fa fa-eye" aria-hidden="true"></i> View Details</button>
+                                                 </div>
+                                             </div>
+
+                                             <svg xmlns="http://www.w3.org/2000/svg">
+                                                 <symbol id="checkmark-bold" viewBox="0 0 24 24">
+                                                     <path d="M20.285 2l-11.285 11.567-5.286-5.011-3.714 3.716 9 8.728 15-15.285z" />
+                                                 </symbol>
+                                                 <!-- Define your dot icon here -->
+                                             </svg>
+                                         </div>
+
+                                         <!--            <div class="col-lg-8 grid-margin stretch-card" id="tableContainer" style="display: none;">-->
+                                         <div class="vertical-line" id="verticalLine" style="display: none;"></div>
+                                         <!-- Table Container -->
+                                         <div class="col-12 text-center" id="tableContainer" style="display: none; margin: auto;" style="margin-bottom: -500px;">
+                                             <h5>Consumer : {{ customer.Comp_name }} MSEB Details</h5>
+                                             <!-- table_records.html -->
+
+                                             <table class="table mx-auto" border="1" style="margin: auto;">
+                                                 <!--                <table id="yourDataTable" class="table table-hover table-center table.dataTable.table-sm mb-0 datatable table.sm">-->
+
+                                                 <thead class="table-success">
+                                                     <tr align="center">
+                                                         <th>Sr. No</th>
+                                                         <th>Phase</th>
+                                                         <th>Status</th>
+                                                         <th>Completion Date</th>
+                                                     </tr>
+                                                 </thead>
+                                                 <tbody>
+                                                     {% for field, data in progress_data.items %} {% if data.value == True %}
+                                                     <tr>
+                                                         <td align="center">{{ forloop.counter }}</td>
+                                                         <td>{{ field }}</td>
+                                                         <td align="center">Work Done</td>
+                                                         <td align="center">{{ data.date|date:"d / m / Y" }}</td>
+                                                     </tr>
+                                                     {% endif %} {% endfor %}
+                                                 </tbody>
+                                             </table>
+                                             <br />
+                                         </div>
+                                     </div>
+                                 </div>
+                             </div>
+                         </div>
+
+                         <div id="hintWindow" style="display: none; position: absolute; background-color: gray; color: black; border: 1px solid black; padding: 10px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); z-index: 100;">
+                             <p id="hintMessage" style="font-weight: bold; color: black;"></p>
+                             <p id="hintDate" style="font-weight: bold; color: black;"></p>
+                         </div>
+
+                         {% else %}
+                         <p><b> We're still in the queue for the data to be updated..</b></p>
+                         {% endif %}
+                         <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/2.1.3/jquery.min.js"></script>
+                         <script>
+                             function showHint(event, fieldName, date) {
+                                 var hintMessage = "Phase: " + fieldName + "<br>Message: Work Completed";
+                                 document.getElementById("hintMessage").innerHTML = hintMessage;
+                                 document.getElementById("hintDate").innerText = "Date: " + formatDate(date);
+                                 var hintWindow = document.getElementById("hintWindow");
+                                 var target = event.currentTarget;
+                                 var rect = target.getBoundingClientRect();
+                                 var parentRect = target.parentNode.getBoundingClientRect();
+                                 hintWindow.style.display = "block";
+                                 hintWindow.style.left = rect.left - parentRect.left - -80 + "px";
+                                 hintWindow.style.top = event.clientY - hintWindow.offsetHeight - 50 + "px";
+
+                                 // Hide the hint window after 3 seconds (3000 milliseconds)
+                                 setTimeout(function () {
+                                     hintWindow.style.display = "none";
+                                 }, 3000);
+                             }
+
+                             function formatDate(dateString) {
+                                 var date = new Date(dateString);
+                                 var day = date.getDate();
+                                 var month = date.getMonth() + 1;
+                                 var year = date.getFullYear();
+                                 return day + "-" + month + "-" + year;
+                             }
+
+                             $(document).ready(function () {
+                                 $("#view").click(function () {
+                                     $("#tableContainer").toggle();
+                                 });
+                             });
+                         </script>
+                         <script>
+
+                             #tableContainer {
+                                 display: none; /* Hide the table initially */
+                                 margin: 50px auto; /* Center the container horizontally with some top margin */
+                                 max-width: 800px; /* Adjust the maximum width as needed */
+                                 max-height: 400px; /* Set a maximum height for the container */
+                                 overflow-y: auto; /* Enable vertical scrolling */
+                                 overflow-x: hidden; /* Hide horizontal scrollbar if present */
+                             }
+
+                             $(document).ready(function() {
+                                 $('#view').click(function() {
+                                     $('#tableContainer').toggle();
+                                     $('#verticalLine').toggle(); // Toggle the vertical line
+                                 });
+                             });
+                         </script>
+                     </div>
+
+                     <button class="collapsible" style="width: 100%;">Warranty Details</button>
+                     <div class="content col-md-12" style="text-align: center; margin: 0 auto;">
+                         {% if progress_warranty %}
+                         <br />
+                         <fieldset>
+                                     <caption>
+                                         <h3 style="background-color: #2b6b6e;">Warranty Information</h3>
+                                     </caption>
+                                 <div class="table-responsive">
+                                     <table style="width: 100%; border: 1px solid #ddddd1;" border="1" class="table solar-table">
+                                         <thead>
+                                             <tr>
+                                                 <th width="50%">
+                                                     <h6><strong>Warranty Type</strong></h6>
+                                                 </th>
+                                                 <th width="25%">
+                                                     <h6><strong>Warranty Till UpTo</strong></h6>
+                                                 </th>
+                                                 <th width="25%">
+                                                     <h6><strong>Remaining Days</strong></h6>
+                                                 </th>
+                                             </tr>
+                                         </thead>
+                                         <tbody>
+                                             {% for field, data in progress_warranty.items %} {% if 'Warranty' in field %}
+
+                                             <tr>
+                                                 <td><b>{{ field }}</b></td>
+                                                 <td>
+                                                     {% if data.value %} {{ data.date|date:"d/m/Y" }} {% else %} Not Available {% endif %}
+                                                 </td>
+                                                 <td>
+                                                     {% if data.remaining_days > 0 %} {{ data.remaining_days }} days left{% else %}
+                                                     <!--                            Expired-->
+                                                     <span style="color: red; text-align: center;">
+                                                         &nbsp;Expired
+                                                         <p style="font-size: 14px; color: red; text-align: center;">({{ data.remaining_days | default:'0' }} days ago)</p>
+                                                     </span>
+                                                     {% endif %}
+                                                 </td>
+                                             </tr>
+                                             {% endif %} {% endfor %}
+                                         </tbody>
+                                     </table>
+                                     </div>
+                                     <br />
+                         </fieldset>
+                         <br />
+                         {% endif %}
+                     </div>
+                     <!--</form>-->
+                 </div>
+                 <br />
+             </div>
+         </div>
+<!--       </div>-->
+
+<script src="https://cdn.jsdelivr.net/npm/exceljs/dist/exceljs.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+
+
+<style>
+    /* CSS to style the table for small screens */
+    @media (max-width: 768px) {
+        .table-responsive table {
+            display: block;
+            overflow-x: auto;
+            white-space: nowrap;
+            width: 100%;
+        }
+
+        .table-responsive table thead,
+        .table-responsive table tbody,
+        {
+            display: block;
+            vertical-align: top;
+        }
+
+
+    }
+</style>
+<style>
+    body {
+        //padding: 50px;
+        background: #fff;
+    }
+
+    .wrapper {
+        width: 70%;
+        margin: 0 auto; /* Center the wrapper */
+    }
+
+    @media (max-width: 992px) {
+        .wrapper {
+            width: 100%;
+        }
+    }
+
+    .collapsible {
+        background-color: white;
+        color: #08979c;
+        cursor: pointer;
+        padding: 18px;
+        width: 98%; /* Adjusted width */
+        border: none;
+        text-align: left;
+        outline: none;
+        font-size: 15px;
+        font-weight: bold;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        word-spacing: 3px;
+        text-decoration: none;
+        position: relative; /* Add position relative */
+        margin: 0 auto; /* Center the collapsible */
+        position: relative; /* Add position relative */
+        padding-right: 30px; /* Add right padding to create space for the status indicator */
+    }
+
+    .collapsible-status {
+        position: absolute; /* Position the status indicator */
+        top: 50%; /* Vertically center the status indicator */
+        right: 70px; /* Adjust the distance from the right side */
+        transform: translateY(-50%); /* Center vertically */
+    }
+
+    .collapsible:before {
+        content: "";
+        position: absolute;
+        bottom: 0;
+        left: 50%; /* Center the border horizontally */
+        transform: translateX(-50%); /* Adjust the position to center */
+        width: 95%; /* Adjusted width of the bottom border */
+        height: 1px; /* Border thickness */
+        background-color: #ccc; /* Border color */
+    }
+
+    .active,
+    .collapsible:hover {
+        background-color: lightblue;
+    }
+
+    .collapsible:after {
+        content: ""; /* Clear content */
+        background-image: url("{% static "images/downimage1.png" %}");
+        background-size: contain;
+        width: 20px; /* Adjust size as needed */
+        height: 20px;
+        display: inline-block;
+        margin-left: 5px;
+        transition: all 0.5s;
+        float: right;
+    }
+
+    .active:after {
+        -webkit-transform: rotate(180deg);
+        -moz-transform: rotate(180deg);
+        transform: rotate(180deg);
+    }
+
+    .content {
+        padding: 0 18px;
+        max-height: 0;
+        overflow: hidden;
+        transition: max-height 0.2s ease-out;
+        background-color: #f1f1f1;
+    }
+</style>
+
+<script>
+    // Script for desktop mode
+    if (window.matchMedia("(min-width: 768px)").matches) {
+        $(document).ready(function() {
+            // Function to update collapsible status based on quantity comparison
+            function updateCollapsibleStatus(quantity, totalQuantity, collapsibleElement) {
+                if (totalQuantity >= quantity) {
+                    // If quantity is equal to or greater than totalQuantity, set status to Completed
+                    collapsibleElement.find('.collapsible-status').html('<img src="{% static 'images/check (3).gif' %}" style="width: 30px;"> Completed');
+                    collapsibleElement.find('.collapsible-status').css('color', 'green');
+                } else {
+                    // If quantity is less than totalQuantity, set status to Pending
+                    collapsibleElement.find('.collapsible-status').html('<img src="{% static 'images/pending1.gif' %}" alt="Pending" style="width: 30px;"> Pending');
+                    collapsibleElement.find('.collapsible-status').css('color', 'orange');
+                }
+            }
+
+            // Update collapsible status for Solar Panel section
+            var solarCollapsible = $('#solarCollapsible');
+            updateCollapsibleStatus({{ user_record.qunt_solar }}, {{ solar_panel_total_quantity }}, solarCollapsible);
+
+            // Update collapsible status for Inverter section
+            var inverterCollapsible = $('#inverterCollapsible');
+            updateCollapsibleStatus({{ user_record.qunt_inv }}, {{ inverter_panel_total_quantity }}, inverterCollapsible);
+        });
+
+
+     // Function to update collapsible status based on the provided conditions
+     function updateCollapsibleStatus(collapsibleElement, condition1, condition2) {
+         if (condition1 && condition2) {
+             // If both conditions are met, set status to Completed
+             collapsibleElement.find('.collapsible-status').html('<img src="{% static 'images/check (3).gif' %}" style="width: 30px;"> Completed');
+             collapsibleElement.find('.collapsible-status').css('color', 'green');
+         } else {
+             // If any condition is not met, set status to Pending
+             collapsibleElement.find('.collapsible-status').html('<img src="{% static 'images/pending1.gif' %}" alt="Pending" style="width: 30px;"> Pending');
+             collapsibleElement.find('.collapsible-status').css('color', 'orange');
+         }
+     }
+
+     // Update collapsible status for Net Meters Details section
+     var netMetersCollapsible = $('#netMetersCollapsible');
+     updateCollapsibleStatus(netMetersCollapsible, {% if meters_records %}true{% else %}false{% endif %}, {% if generation_meter_records %}true{% else %}false{% endif %});
+
+     // Update collapsible status for MSEB Details section
+     // var msebDetailsCollapsible = $('#msebDetailsCollapsible');
+     // updateCollapsibleStatus(msebDetailsCollapsible, {% if mseb_installation_date %}true{% else %}false{% endif %}, {% if another_condition %}true{% else %}false{% endif %});
+
+
+    $(document).ready(function() {
+         // Function to update collapsible status based on the MSEB installation date
+         function updateMSEBCollapsibleStatus(collapsibleElement, installationDate) {
+             if (installationDate === true) {
+                 // If installation date is true, set status to Completed
+                 collapsibleElement.find('.collapsible-status').html('<img src="{% static 'images/check (3).gif' %}" style="width: 30px;"> Completed');
+                 collapsibleElement.find('.collapsible-status').css('color', 'green');
+             } else if (installationDate === false) {
+                 // If installation date is false, set status to Pending
+                 collapsibleElement.find('.collapsible-status').html('<img src="{% static 'images/pending1.gif' %}" alt="Pending" style="width: 30px;"> Pending');
+                 collapsibleElement.find('.collapsible-status').css('color', 'orange');
+             } else {
+                 // If installation date is null (or any other unexpected value), set status to Upcoming
+                 collapsibleElement.find('.collapsible-status').html('Upcoming');
+                 collapsibleElement.find('.collapsible-status').css('color', 'blue');
+             }
+         }
+
+         // Update collapsible status for MSEB Details section
+         var msebDetailsCollapsible = $('#msebDetailsCollapsible');
+         var msebInstallationDate = '{{ mseb_installation_date }}'; // Ensure the correct value is passed from the backend
+         // Convert string 'true'/'false' to boolean true/false
+         msebInstallationDate = msebInstallationDate.trim().toLowerCase() === 'true'; // Convert to lowercase and trim whitespace
+         updateMSEBCollapsibleStatus(msebDetailsCollapsible, msebInstallationDate);
+         console.log(msebInstallationDate);
+     });
+
+   } else { // Script for mobile mode
+        $(document).ready(function() {
+            // Function to update collapsible status based on quantity comparison
+            function updateCollapsibleStatus(quantity, totalQuantity, collapsibleElement) {
+                if (totalQuantity >= quantity) {
+                    // If quantity is equal to or greater than totalQuantity, set status to Completed
+                    collapsibleElement.find('.collapsible-status').html('<img src="{% static 'images/check (3).gif' %}" style="width: 30px;">');
+                } else {
+                    // If quantity is less than totalQuantity, set status to Pending
+                    collapsibleElement.find('.collapsible-status').html('<img src="{% static 'images/pending1.gif' %}" alt="Pending" style="width: 30px;">');
+                }
+            }
+
+            // Update collapsible status for Solar Panel section
+            var solarCollapsible = $('#solarCollapsible');
+            updateCollapsibleStatus({{ user_record.qunt_solar }}, {{ solar_panel_total_quantity }}, solarCollapsible);
+
+            // Update collapsible status for Inverter section
+            var inverterCollapsible = $('#inverterCollapsible');
+            updateCollapsibleStatus({{ user_record.qunt_inv }}, {{ inverter_panel_total_quantity }}, inverterCollapsible);
+        });
+
+        // Function to update collapsible status based on the provided conditions
+     function updateCollapsibleStatus(collapsibleElement, condition1, condition2) {
+         if (condition1 && condition2) {
+             // If both conditions are met, set status to Completed
+             collapsibleElement.find('.collapsible-status').html('<img src="{% static 'images/check (3).gif' %}" style="width: 30px;">');
+
+         } else {
+             // If any condition is not met, set status to Pending
+             collapsibleElement.find('.collapsible-status').html('<img src="{% static 'images/pending1.gif' %}" alt="Pending" style="width: 30px;">');
+
+         }
+     }
+
+     // Update collapsible status for Net Meters Details section
+     var netMetersCollapsible = $('#netMetersCollapsible');
+     updateCollapsibleStatus(netMetersCollapsible, {% if meters_records %}true{% else %}false{% endif %}, {% if generation_meter_records %}true{% else %}false{% endif %});
+
+     // Update collapsible status for MSEB Details section
+     // var msebDetailsCollapsible = $('#msebDetailsCollapsible');
+     // updateCollapsibleStatus(msebDetailsCollapsible, {% if mseb_installation_date %}true{% else %}false{% endif %}, {% if another_condition %}true{% else %}false{% endif %});
+
+
+    $(document).ready(function() {
+         // Function to update collapsible status based on the MSEB installation date
+         function updateMSEBCollapsibleStatus(collapsibleElement, installationDate) {
+             if (installationDate === true) {
+                 // If installation date is true, set status to Completed
+                 collapsibleElement.find('.collapsible-status').html('<img src="{% static 'images/check (3).gif' %}" style="width: 30px;">');
+
+             } else if (installationDate === false) {
+                 // If installation date is false, set status to Pending
+                 collapsibleElement.find('.collapsible-status').html('<img src="{% static 'images/pending1.gif' %}" alt="Pending" style="width: 30px;">');
+
+             } else {
+                 // If installation date is null (or any other unexpected value), set status to Upcoming
+                 collapsibleElement.find('.collapsible-status').html('Upcoming');
+
+             }
+         }
+
+         // Update collapsible status for MSEB Details section
+         var msebDetailsCollapsible = $('#msebDetailsCollapsible');
+         var msebInstallationDate = '{{ mseb_installation_date }}'; // Ensure the correct value is passed from the backend
+         // Convert string 'true'/'false' to boolean true/false
+         msebInstallationDate = msebInstallationDate.trim().toLowerCase() === 'true'; // Convert to lowercase and trim whitespace
+         updateMSEBCollapsibleStatus(msebDetailsCollapsible, msebInstallationDate);
+         console.log(msebInstallationDate);
+     });
+    }
+
+</script>
+<script>
+    $(document).ready(function() {
+    // Function to check collapsible statuses and update project status
+    function updateProjectStatus() {
+        var solarStatus = $('#solarCollapsible .collapsible-status img').attr('src');
+        var inverterStatus = $('#inverterCollapsible .collapsible-status img').attr('src');
+        var netMetersStatus = $('#netMetersCollapsible .collapsible-status img').attr('src');
+        var msebDetailsStatus = $('#msebDetailsCollapsible .collapsible-status img').attr('src');
+
+        if (solarStatus.includes('check') && inverterStatus.includes('check') && netMetersStatus.includes('check') && msebDetailsStatus.includes('check')) {
+            // If all statuses are "Completed", set project status to "Complete"
+             $('#projectStatus').html('<img src="{% static 'images/check 5.gif' %}" style="width: 70px;"> COMPLETED');
+            $('#projectStatus').css('color', 'green');
+        } else {
+            // If any one of the statuses is "Pending", set project status to "Pending"
+             $('#projectStatus').html('<img src="{% static 'images/pending1.gif' %}" alt="Pending" style="width: 60px;"> PENDING');
+            $('#projectStatus').css('color', 'orange');
+        }
+    }
+
+    // Initially update project status on page load
+    updateProjectStatus();
+
+    // Add event listener for collapsible sections
+    $('.collapsible').on('click', function() {
+        // After collapsible is clicked, update project status
+        updateProjectStatus();
+    });
+});
+
+</script>
+
+<script>
+    var coll = document.getElementsByClassName("collapsible");
+    var i;
+
+    for (i = 0; i < coll.length; i++) {
+        coll[i].addEventListener("click", function () {
+            this.classList.toggle("active");
+            var content = this.nextElementSibling;
+            if (content.style.maxHeight) {
+                content.style.maxHeight = null;
+            } else {
+                content.style.maxHeight = content.scrollHeight + "px";
+            }
+        });
+    }
+</script>
+
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js" integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=" crossorigin="anonymous"></script>
+
+<!-- Include jQuery -->
+<script src="path/to/jquery.min.js"></script>
+
+<!-- Include DataTables script -->
+<script type="text/javascript" charset="utf8" src="path/to/datatables.min.js"></script>
+
+
+<script>
+    $(document).ready(function () {
+        // Destroy existing DataTable instance if it exists
+        if ($.fn.DataTable.isDataTable(".customDataTable")) {
+            $(".customDataTable").DataTable().destroy();
+        }
+
+        // Initialize DataTable for all tables with the common class
+        var dataTable = $(".customDataTable").DataTable({
+            "paging": true, // Enable pagination
+            "searching": true, // Enable search box
+            "ordering": true // Enable ordering (sorting)
+        });
+
+        // Add event listener to the global search input
+        $("#globalSearch").on("input", function () {
+            dataTable.search(this.value).draw();
+        });
+    });
+
+</script>
+
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js" integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=" crossorigin="anonymous"></script>
+<script>
+    $(document).ready(function () {
+        $("#preview").on("click", function () {
+            var selectedProduct = $("#product").val();
+            $.ajax({
+                url: "{% url 'detect_barcodes-display_product' %}",
+                type: "POST",
+                data: {
+                    product: selectedProduct,
+                    csrfmiddlewaretoken: "{{ csrf_token }}",
+                },
+                success: function (response) {
+                    $("#tables-container").html(response);
+                },
+                error: function (xhr, errmsg, err) {
+                    console.log(xhr.status + ": " + xhr.responseText);
+                },
+            });
+        });
+    });
+</script>
+
+<style>
+    .custom-fieldset {
+      background-color: #f0f0f0;
+      border: 2px solid blue;
+      border-radius: 5px;
+      //padding: 10px;
+    }
+
+    .custom-fieldset legend {
+      font-weight: bold;
+    }
+</style>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        var solarCollapsible = $('#solarCollapsible');
+        var inverterCollapsible = $('#inverterCollapsible');
+
+        function updateVisibility(collapsible, rowId) {
+            var status = collapsible.find('.collapsible-status').text().trim();
+            if (status.includes('Completed')) {
+                document.getElementById(rowId).style.display = '';
+            } else {
+                document.getElementById(rowId).style.display = 'none';
+            }
+        }
+
+        function updateCollapsibleStatus(quantity, totalQuantity, collapsibleElement) {
+            if (totalQuantity >= quantity) {
+                collapsibleElement.find('.collapsible-status').html('<img src="{% static 'images/check (3).gif' %}" style="width: 30px;"> Completed');
+                collapsibleElement.find('.collapsible-status').css('color', 'green');
+            } else {
+                collapsibleElement.find('.collapsible-status').html('<img src="{% static 'images/pending1.gif' %}" alt="Pending" style="width: 30px;"> Pending');
+                collapsibleElement.find('.collapsible-status').css('color', 'orange');
+            }
+        }
+
+        updateCollapsibleStatus({{ user_record.qunt_solar }}, {{ solar_panel_total_quantity }}, solarCollapsible);
+        updateCollapsibleStatus({{ user_record.qunt_inv }}, {{ inverter_panel_total_quantity }}, inverterCollapsible);
+
+        updateVisibility(solarCollapsible, 'solarModuleRow');
+        updateVisibility(inverterCollapsible, 'inverterRow');
+
+    });
+</script>
+{% endblock %}

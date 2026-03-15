@@ -1,0 +1,110 @@
+{% extends 'partials/base.html' %}
+{% load static %}
+{% block content %}
+
+<div class="content container-fluid">
+               <div class="page-header">
+                  <div class="row">
+                     <div class="col-sm-12">
+                        <h3 class="page-title text-capitalize">Welcome  {{user.first_name}} !</h3>
+                        <ul class="breadcrumb">
+                            <h3 class="m-0">Dashboard</h3>
+                        </ul>
+                     </div>
+                  </div>
+               </div>
+
+               <div class="row">
+                  <div class="col-xl-4 col-sm-6 col-12 d-flex">
+                  <div class="card bg-two w-100  my-card shadow">
+                        <a href="{% url 'firereport-assignRequest' %}">
+                        <div class="card-body">
+                           <div class="db-widgets d-flex justify-content-between align-items-center">
+                              <div class="db-icon">
+                                 <i class="fas fa-crown"></i>
+                              </div>
+                              <div class="db-info">
+                                 <h3>{{totalAssign}}</h3>
+                                 <h6>Assigned Complaint</h6>
+                              </div>
+                           </div>
+                        </div>
+                        </a>
+                     </div>
+
+                  </div>
+                  <div class="col-xl-4 col-sm-6 col-12 d-flex">
+                      <div class="card bg-three w-100  my-card shadow">
+                        <a href="{% url 'firereport-teamontheway' %}">
+                        <div class="card-body">
+                           <div class="db-widgets d-flex justify-content-between align-items-center">
+                              <div class="db-icon">
+                                 <i class="fas fa-building"></i>
+                              </div>
+                              <div class="db-info">
+                                 <h3>{{totalontheway}}</h3>
+                                 <h6>Team On The Way</h6>
+                              </div>
+                           </div>
+                        </div>
+                        </a>
+                     </div>
+
+                  </div>
+                  <div class="col-xl-4 col-sm-6 col-12 d-flex">
+                    <div class="card bg-four w-100  my-card shadow">
+                        <a href="{% url 'firereport-workinprogress' %}">
+                        <div class="card-body">
+                           <div class="db-widgets d-flex justify-content-between align-items-center">
+                              <div class="db-icon">
+                                 <i class="fas fa-file-invoice-dollar"></i>
+                              </div>
+                              <div class="db-info">
+                                 <h3>{{totalworkprocess}}</h3>
+                                 <h6>Work in Progress</h6>
+                              </div>
+                           </div>
+                        </div>
+                     </a>
+                     </div>
+                  </div>
+               </div>
+               <div class="row">
+                  <div class="col-xl-4 col-sm-6 col-12 d-flex">
+                    <div class="card bg-four w-100  my-card shadow">
+                      <a href="{% url 'firereport-completeRequest' %}">
+                        <div class="card-body">
+                           <div class="db-widgets d-flex justify-content-between align-items-center">
+                              <div class="db-icon">
+                                 <i class="fas fa-file-invoice-dollar"></i>
+                              </div>
+                              <div class="db-info">
+                                 <h3>{{totalreqcomplete}}</h3>
+                                 <h6>Complaint Resolved</h6>
+                              </div>
+                           </div>
+                        </div>
+                     </a>
+                     </div>
+                  </div>
+                  <div class="col-xl-4 col-sm-6 col-12 d-flex">
+                    <div class="card bg-four w-100  my-card shadow">
+                        <a href="{% url 'firereport-allRequest' %}">
+                        <div class="card-body">
+                           <div class="db-widgets d-flex justify-content-between align-items-center">
+                              <div class="db-icon">
+                                 <i class="fas fa-file-invoice-dollar"></i>
+                              </div>
+                              <div class="db-info">
+                                 <h3>{{totalfire}}</h3>
+                                 <h6>All Complaints</h6>
+                              </div>
+                           </div>
+                        </div>
+                     </a>
+                     </div>
+                  </div>
+
+               </div>
+</div>
+{% endblock %}

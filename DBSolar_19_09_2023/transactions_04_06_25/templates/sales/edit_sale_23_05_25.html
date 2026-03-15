@@ -1,0 +1,2820 @@
+{% extends 'partials/base.html' %}
+{% load static %}
+{% block title %} New Purchase {% endblock title %}
+{% block content %}
+
+<script type="text/javascript" src="{% static 'js/jquery-3.2.1.slim.min.js' %}"></script>
+<script type="text/javascript" src="{% static 'js/dialogbox.js' %}"></script>
+
+<!--<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@mdi/font/css/materialdesignicons.min.css">-->
+<!--<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>-->
+<!--<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>-->
+
+<!--<br><h1>Edit Bill</h1>-->
+<!--<form method="post" id="billForm">-->
+<!--    <h1 align="center" class="text-capitalize">Bill - {{ sale_bill.billno }}</h1>-->
+<!--    {% csrf_token %}-->
+<!--        &lt;!&ndash; Sale Bill Details &ndash;&gt;-->
+<!--    <h3>Bill Information</h3>-->
+<!--    <p><strong>Bill No:</strong> {{ sale_bill.billno }}</p>-->
+<!--    <p><strong>Customer Name:</strong> {{ sale_bill.Cust_id.Comp_name }}</p>-->
+<!--    <p><strong>Phone:</strong> {{ sale_bill.Cust_id.phone }}</p>-->
+<!--    <p><strong>Address:</strong> {{ sale_bill.Cust_id.Address }}</p>-->
+<!--    <p><strong>Email:</strong> {{ sale_bill.Cust_id.email }}</p>-->
+<!--    <p><strong>GSTIN:</strong> {{ sale_bill.Cust_id.gstin }}</p>-->
+
+<!--<fieldset>-->
+<!--    <div class="table-responsive">-->
+<!--        <table id="billTable" class="table table-hover table-center table-sm" style="width: 100%;">-->
+<!--            <thead class="thead-dark align-middle" align="center">-->
+<!--                <tr>-->
+<!--                    <th>Sr No</th>-->
+<!--                    <th>Category</th>-->
+<!--                    <th>SubCategory</th>-->
+<!--                    <th>Stock Name</th>-->
+<!--                     <th>Available Quantity</th>-->
+<!--                    <th>Quantity</th>-->
+<!--                    <th>Actions</th>-->
+<!--                </tr>-->
+<!--            </thead>-->
+<!--&lt;!&ndash;                <tbody>&ndash;&gt;-->
+<!--&lt;!&ndash;            {% for item in sale_items %}&ndash;&gt;-->
+<!--&lt;!&ndash;            <tr>&ndash;&gt;-->
+<!--&lt;!&ndash;                <td>{{ item.stock.name }}</td>&ndash;&gt;-->
+<!--&lt;!&ndash;                <td>&ndash;&gt;-->
+<!--&lt;!&ndash;                    <input type="number" name="quantity_{{ item.pk }}" value="{{ item.quantity }}" />&ndash;&gt;-->
+<!--&lt;!&ndash;                </td>&ndash;&gt;-->
+<!--&lt;!&ndash;                <td>&ndash;&gt;-->
+<!--&lt;!&ndash;                    <input type="text" name="totalprice_{{ item.pk }}" value="{{ item.totalprice }}" hidden="hidden"/>&ndash;&gt;-->
+<!--&lt;!&ndash;                </td>&ndash;&gt;-->
+<!--&lt;!&ndash;            </tr>&ndash;&gt;-->
+<!--&lt;!&ndash;            {% endfor %}&ndash;&gt;-->
+<!--&lt;!&ndash;        </tbody>&ndash;&gt;-->
+
+<!--            <tbody align="center">-->
+<!--                {% for item in sale_items %}-->
+<!--                <tr data-id="{{ item.id }}">-->
+<!--                    <td class="sr-no">{{ forloop.counter }}</td>-->
+<!--&lt;!&ndash;                    <td>{{ stock.category.name }}</td>&ndash;&gt;-->
+<!--&lt;!&ndash;                    <td>{{ stock.subcategory.name }}</td>&ndash;&gt;-->
+<!--                    <td>{{ item.stock.category.name }}</td>-->
+<!--                    <td>{{ item.stock.subcategory.name }}</td>-->
+<!--                    <td align="left">{{ item.stock.name }}</td>-->
+<!--                     <td>-->
+<!--                        <span>{{ item.stock.quantity }}</span> &lt;!&ndash; Available stock quantity &ndash;&gt;-->
+<!--                    </td>-->
+<!--                    <td>-->
+<!--&lt;!&ndash;                        <input type="number" name="quantities[]" class="form-control quantity-input"&ndash;&gt;-->
+<!--&lt;!&ndash;                               value="{{ item.quantity }}" min="1" required />&ndash;&gt;-->
+<!--                        <input type="number" class="form-control" name="quantity_{{ item.pk }}" value="{{ item.quantity }}" />-->
+<!--                    </td>-->
+<!--                    <td>-->
+<!--                        <button type="button" class="removeRow">Remove</button>-->
+<!--                    </td>-->
+<!--&lt;!&ndash;                    <input type="hidden" name="stock_ids[]" value="{{ stock.id }}" />&ndash;&gt;-->
+<!--                    <input type="hidden" name="existing_ids[]" value="{{ item.pk }}" />-->
+
+<!--                </tr>-->
+<!--                {% endfor %}-->
+<!--            </tbody>-->
+<!--        </table>-->
+<!--    </div>-->
+<!--</fieldset>-->
+
+<!--<h3>Add Stock:</h3>-->
+<!--<fieldset>-->
+<!--    <div class="form-row mt-3">-->
+<!--        <div class="col">-->
+<!--            <label for="categorySelect">Category:</label>-->
+<!--            <select id="categorySelect" class="form-control">-->
+<!--                <option value="">Select Category</option>-->
+<!--                {% for category in categories %}-->
+<!--                <option value="{{ category.id }}">{{ category.name }}</option>-->
+<!--                {% endfor %}-->
+<!--            </select>-->
+<!--        </div>-->
+<!--        <div class="col">-->
+<!--            <label for="subcategorySelect">SubCategory:</label>-->
+<!--            <select id="subcategorySelect" class="form-control" disabled>-->
+<!--                <option value="">Select SubCategory</option>-->
+<!--            </select>-->
+<!--        </div>-->
+<!--    </div>-->
+<!--    <div class="form-row mt-3">-->
+<!--        <div class="col d-flex align-items-center">-->
+<!--            <label for="stockSelect" class="mr-2">Stock:</label>-->
+<!--            <select id="stockSelect" class="form-control mr-2" disabled>-->
+<!--                <option value="">Select Stock</option>-->
+<!--            </select>-->
+<!--            <input type="number" id="stockQuantity" class="form-control mr-2" min="1" placeholder="Quantity" disabled />-->
+<!--            <button type="button" id="addRow" class="btn btn-primary" style="width: 250px;" disabled>Add</button>-->
+<!--        </div>-->
+<!--    </div>-->
+<!--</fieldset>-->
+
+<!--<br>-->
+<!--<div align="center">-->
+<!--    <button type="submit">Save Changes</button>-->
+
+<!--</div>-->
+<!--</form>-->
+
+<!--<script>-->
+<!--    document.addEventListener('DOMContentLoaded', function () {-->
+<!--        const categorySelect = document.getElementById('categorySelect');-->
+<!--        const subcategorySelect = document.getElementById('subcategorySelect');-->
+<!--        const stockSelect = document.getElementById('stockSelect');-->
+<!--        const stockQuantity = document.getElementById('stockQuantity');-->
+<!--        const addRow = document.getElementById('addRow');-->
+<!--        const tableBody = document.getElementById('billTable').querySelector('tbody');-->
+
+<!--        // Populate subcategories based on category-->
+<!--        categorySelect.addEventListener('change', function () {-->
+<!--            const categoryId = this.value;-->
+<!--            subcategorySelect.innerHTML = '<option value="">Select SubCategory</option>';-->
+<!--            stockSelect.innerHTML = '<option value="">Select Stock</option>';-->
+<!--            stockQuantity.value = '';-->
+<!--            stockSelect.disabled = true;-->
+<!--            stockQuantity.disabled = true;-->
+<!--            addRow.disabled = true;-->
+
+<!--            if (categoryId) {-->
+<!--                fetch(`/inventory/get_subcategories_edit/?category_id=${categoryId}`)-->
+<!--                    .then(response => response.json())-->
+<!--                    .then(data => {-->
+<!--                        data.subcategories.forEach(subcategory => {-->
+<!--                            const option = document.createElement('option');-->
+<!--                            option.value = subcategory.id;-->
+<!--                            option.textContent = subcategory.name;-->
+<!--                            subcategorySelect.appendChild(option);-->
+<!--                        });-->
+<!--                        subcategorySelect.disabled = false;-->
+<!--                    });-->
+<!--            } else {-->
+<!--                subcategorySelect.disabled = true;-->
+<!--            }-->
+<!--        });-->
+
+<!--        subcategorySelect.addEventListener('change', function () {-->
+<!--            const subcategoryId = this.value;-->
+<!--            stockSelect.innerHTML = '<option value="">Select Stock</option>';-->
+<!--            stockQuantity.value = '';-->
+<!--            stockQuantity.disabled = true;-->
+<!--            addRow.disabled = true;-->
+
+<!--            if (subcategoryId) {-->
+<!--                fetch(`/inventory/get_stocks_edit/?subcategory_id=${subcategoryId}`)-->
+<!--                    .then(response => response.json())-->
+<!--                    .then(data => {-->
+<!--                        // Get all existing stock IDs from the table using the correct attribute name-->
+<!--                        const existingStockIds = Array.from(-->
+<!--                            tableBody.querySelectorAll('input[name="existing_ids[]"]')-->
+<!--                        ).map(input => input.value);-->
+
+<!--                        // Filter and add stocks to dropdown-->
+<!--                        data.stocks.forEach(stock => {-->
+<!--                            if (!existingStockIds.includes(stock.id.toString())) {-->
+<!--                                const option = document.createElement('option');-->
+<!--                                option.value = stock.id;-->
+<!--                                option.textContent = stock.name;-->
+<!--                                stockSelect.appendChild(option);-->
+<!--                            }-->
+<!--                        });-->
+<!--                        stockSelect.disabled = false;-->
+<!--                    });-->
+<!--            } else {-->
+<!--                stockSelect.disabled = true;-->
+<!--            }-->
+<!--        });-->
+
+
+<!--        stockSelect.addEventListener('change', function () {-->
+<!--            stockQuantity.disabled = !this.value;-->
+<!--            addRow.disabled = !this.value;-->
+<!--        });-->
+
+
+<!--        addRow.addEventListener('click', function () {-->
+<!--            const stockId = stockSelect.value;-->
+<!--            const stockName = stockSelect.options[stockSelect.selectedIndex].text;-->
+<!--            const availableQuantity = stockSelect.selectedOptions[0].getAttribute('data-quantity'); // Retrieve available quantity-->
+<!--            const categoryText = categorySelect.options[categorySelect.selectedIndex].text;-->
+<!--            const subcategoryText = subcategorySelect.options[subcategorySelect.selectedIndex].text;-->
+<!--            const quantity = stockQuantity.value;-->
+
+<!--            if (!stockId || !quantity) return;-->
+
+<!--            const row = document.createElement('tr');-->
+<!--            row.innerHTML = `-->
+<!--                <td class="sr-no">${tableBody.children.length + 1}</td>-->
+<!--                <td>${categoryText}</td>-->
+<!--                <td>${subcategoryText}</td>-->
+<!--                <td>${stockName}</td>-->
+<!--                <td><span>Available: ${availableQuantity}</span></td> &lt;!&ndash; Display Available Quantity &ndash;&gt;-->
+<!--                <td><input type="number" name="quantities[]" class="form-control quantity-input" value="${quantity}" min="1" required /></td>-->
+<!--                <td><button type="button" class="removeRow">Remove</button></td>-->
+<!--                <input type="hidden" name="stock_ids[]" value="${stockId}" />-->
+<!--            `;-->
+<!--            tableBody.appendChild(row);-->
+<!--            updateSrNo();-->
+<!--            stockSelect.querySelector(`option[value="${stockId}"]`).remove();-->
+<!--            stockQuantity.value = '';-->
+<!--            stockQuantity.disabled = true;-->
+<!--        });-->
+
+
+<!--        tableBody.addEventListener('click', function (event) {-->
+<!--            if (event.target.classList.contains('removeRow')) {-->
+<!--                const row = event.target.closest('tr');-->
+<!--                row.remove();-->
+<!--                updateSrNo();-->
+<!--            }-->
+<!--        });-->
+
+<!--        function updateSrNo() {-->
+<!--            document.querySelectorAll('#billTable tbody .sr-no').forEach((cell, index) => {-->
+<!--                cell.innerText = index + 1;-->
+<!--            });-->
+<!--        }-->
+<!--    });-->
+<!--</script>-->
+
+
+<!--<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@mdi/font/css/materialdesignicons.min.css">-->
+<!--<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>-->
+<!--<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>-->
+
+<!--<br><h1>Edit Bill</h1>-->
+<!--<form method="post" id="billForm">-->
+<!--    <h1 align="center" class="text-capitalize">Bill - {{ sale_bill.billno }}</h1>-->
+<!--    {% csrf_token %}-->
+<!--    &lt;!&ndash; Sale Bill Details &ndash;&gt;-->
+<!--    <h3>Bill Information</h3>-->
+<!--    <p><strong>Bill No:</strong> {{ sale_bill.billno }}</p>-->
+<!--    <p><strong>Customer Name:</strong> {{ sale_bill.Cust_id.Comp_name }}</p>-->
+<!--    <p><strong>Phone:</strong> {{ sale_bill.Cust_id.phone }}</p>-->
+<!--    <p><strong>Address:</strong> {{ sale_bill.Cust_id.Address }}</p>-->
+<!--    <p><strong>Email:</strong> {{ sale_bill.Cust_id.email }}</p>-->
+<!--    <p><strong>GSTIN:</strong> {{ sale_bill.Cust_id.gstin }}</p>-->
+
+<!--<fieldset>-->
+<!--    <div class="table-responsive">-->
+<!--        <table id="billTable" class="table table-hover table-center table-sm" style="width: 100%;">-->
+<!--            <thead class="thead-dark align-middle" align="center">-->
+<!--                <tr>-->
+<!--                    <th>Sr No</th>-->
+<!--                    <th>Category</th>-->
+<!--                    <th>SubCategory</th>-->
+<!--                    <th>Stock Name</th>-->
+<!--                    <th>Available Quantity</th>-->
+<!--                    <th>Quantity</th>-->
+<!--                    <th>Actions</th>-->
+<!--                </tr>-->
+<!--            </thead>-->
+<!--            <tbody align="center">-->
+<!--                {% for item in sale_items %}-->
+<!--                <tr data-id="{{ item.id }}">-->
+<!--                    <td class="sr-no">{{ forloop.counter }}</td>-->
+<!--                    <td>{{ item.stock.category.name }}</td>-->
+<!--                    <td>{{ item.stock.subcategory.name }}</td>-->
+<!--                    <td align="left">{{ item.stock.name }}</td>-->
+<!--                    <td>{{ item.stock.quantity }}</td> &lt;!&ndash; Display available stock quantity &ndash;&gt;-->
+<!--                    <td>-->
+<!--                        <input type="number" class="form-control" name="quantity_{{ item.pk }}" value="{{ item.quantity }}" />-->
+<!--                    </td>-->
+<!--                    <td>-->
+<!--                        <button type="button" class="removeRow">Remove</button>-->
+<!--                    </td>-->
+<!--                    <input type="hidden" name="existing_ids[]" value="{{ item.pk }}" />-->
+<!--                    <input type="hidden" name="existing_stock_ids[]" value="{{ item.stock.id }}" /> &lt;!&ndash; Store stock ID &ndash;&gt;-->
+<!--                </tr>-->
+<!--                {% endfor %}-->
+<!--            </tbody>-->
+<!--        </table>-->
+<!--    </div>-->
+<!--</fieldset>-->
+
+<!--<h3>Add Stock:</h3>-->
+<!--<fieldset>-->
+<!--    <div class="form-row mt-3">-->
+<!--        <div class="col">-->
+<!--            <label for="categorySelect">Category:</label>-->
+<!--            <select id="categorySelect" class="form-control">-->
+<!--                <option value="">Select Category</option>-->
+<!--                {% for category in categories %}-->
+<!--                <option value="{{ category.id }}">{{ category.name }}</option>-->
+<!--                {% endfor %}-->
+<!--            </select>-->
+<!--        </div>-->
+<!--        <div class="col">-->
+<!--            <label for="subcategorySelect">SubCategory:</label>-->
+<!--            <select id="subcategorySelect" class="form-control" disabled>-->
+<!--                <option value="">Select SubCategory</option>-->
+<!--            </select>-->
+<!--        </div>-->
+<!--    </div>-->
+<!--    <div class="form-row mt-3">-->
+<!--        <div class="col d-flex align-items-center">-->
+<!--            <label for="stockSelect" class="mr-2">Stock:</label>-->
+<!--            <select id="stockSelect" class="form-control mr-2" disabled>-->
+<!--                <option value="">Select Stock</option>-->
+<!--            </select>-->
+<!--            <input type="number" id="stockQuantity" class="form-control mr-2" min="1" placeholder="Quantity" disabled />-->
+<!--            <span id="availableQuantitySpan"></span> &lt;!&ndash; Display the available quantity for new stock &ndash;&gt;-->
+<!--            <button type="button" id="addRow" class="btn btn-primary" style="width: 250px;" disabled>Add</button>-->
+<!--        </div>-->
+<!--    </div>-->
+<!--</fieldset>-->
+
+<!--<br>-->
+<!--<div align="center">-->
+<!--    <button type="submit">Save Changes</button>-->
+<!--</div>-->
+<!--</form>-->
+
+<!--<script>-->
+<!--    document.addEventListener('DOMContentLoaded', function () {-->
+<!--        const categorySelect = document.getElementById('categorySelect');-->
+<!--        const subcategorySelect = document.getElementById('subcategorySelect');-->
+<!--        const stockSelect = document.getElementById('stockSelect');-->
+<!--        const stockQuantity = document.getElementById('stockQuantity');-->
+<!--        const availableQuantitySpan = document.getElementById('availableQuantitySpan');-->
+<!--        const addRow = document.getElementById('addRow');-->
+<!--        const tableBody = document.getElementById('billTable').querySelector('tbody');-->
+
+<!--        // Populate subcategories based on category-->
+<!--        categorySelect.addEventListener('change', function () {-->
+<!--            const categoryId = this.value;-->
+<!--            subcategorySelect.innerHTML = '<option value="">Select SubCategory</option>';-->
+<!--            stockSelect.innerHTML = '<option value="">Select Stock</option>';-->
+<!--            availableQuantitySpan.innerText = '';-->
+<!--            stockQuantity.value = '';-->
+<!--            stockSelect.disabled = true;-->
+<!--            stockQuantity.disabled = true;-->
+<!--            addRow.disabled = true;-->
+
+<!--            if (categoryId) {-->
+<!--                fetch(`/inventory/get_subcategories_edit/?category_id=${categoryId}`)-->
+<!--                    .then(response => response.json())-->
+<!--                    .then(data => {-->
+<!--                        data.subcategories.forEach(subcategory => {-->
+<!--                            const option = document.createElement('option');-->
+<!--                            option.value = subcategory.id;-->
+<!--                            option.textContent = subcategory.name;-->
+<!--                            subcategorySelect.appendChild(option);-->
+<!--                        });-->
+<!--                        subcategorySelect.disabled = false;-->
+<!--                    });-->
+<!--            } else {-->
+<!--                subcategorySelect.disabled = true;-->
+<!--            }-->
+<!--        });-->
+
+<!--        // Populate stocks based on subcategory-->
+<!--        subcategorySelect.addEventListener('change', function () {-->
+<!--            const subcategoryId = this.value;-->
+<!--            stockSelect.innerHTML = '<option value="">Select Stock</option>';-->
+<!--            availableQuantitySpan.innerText = '';-->
+<!--            stockQuantity.value = '';-->
+<!--            stockQuantity.disabled = true;-->
+<!--            addRow.disabled = true;-->
+
+<!--            if (subcategoryId) {-->
+<!--                fetch(`/inventory/get_stocks_edit/?subcategory_id=${subcategoryId}`)-->
+<!--                    .then(response => response.json())-->
+<!--                    .then(data => {-->
+<!--                        const existingStockIds = Array.from(tableBody.querySelectorAll('input[name="existing_stock_ids[]"]')).map(input => input.value);-->
+
+<!--                        data.stocks.forEach(stock => {-->
+<!--                            if (!existingStockIds.includes(stock.id.toString())) {-->
+<!--                                const option = document.createElement('option');-->
+<!--                                option.value = stock.id;-->
+<!--                                option.textContent = stock.name;-->
+<!--                                stockSelect.appendChild(option);-->
+<!--                            }-->
+<!--                        });-->
+<!--                        stockSelect.disabled = false;-->
+<!--                    });-->
+<!--            } else {-->
+<!--                stockSelect.disabled = true;-->
+<!--            }-->
+<!--        });-->
+
+<!--        // Update available quantity when stock is selected-->
+<!--        stockSelect.addEventListener('change', function () {-->
+<!--            const stockId = this.value;-->
+<!--            stockQuantity.disabled = !stockId;-->
+<!--            addRow.disabled = !stockId;-->
+
+<!--            if (stockId) {-->
+<!--                // Fetch available stock quantity from the server-->
+<!--                fetch(`/inventory/get_stock_quantity/?stock_id=${stockId}`)-->
+<!--                    .then(response => response.json())-->
+<!--                    .then(data => {-->
+<!--                        availableQuantitySpan.innerText = `Available Quantity: ${data.quantity}`;-->
+<!--                    });-->
+<!--            } else {-->
+<!--                availableQuantitySpan.innerText = '';-->
+<!--            }-->
+<!--        });-->
+
+<!--&lt;!&ndash;        addRow.addEventListener('click', function () {&ndash;&gt;-->
+<!--&lt;!&ndash;            const stockId = stockSelect.value;&ndash;&gt;-->
+<!--&lt;!&ndash;            const stockName = stockSelect.options[stockSelect.selectedIndex].text;&ndash;&gt;-->
+<!--&lt;!&ndash;            const categoryText = categorySelect.options[categorySelect.selectedIndex].text;&ndash;&gt;-->
+<!--&lt;!&ndash;            const subcategoryText = subcategorySelect.options[subcategorySelect.selectedIndex].text;&ndash;&gt;-->
+<!--&lt;!&ndash;            const quantity = stockQuantity.value;&ndash;&gt;-->
+
+<!--&lt;!&ndash;            if (!stockId || !quantity) return;&ndash;&gt;-->
+
+<!--&lt;!&ndash;            // Fetch the available stock quantity again to make sure it is displayed&ndash;&gt;-->
+<!--&lt;!&ndash;            fetch(`/inventory/get_stock_quantity/?stock_id=${stockId}`)&ndash;&gt;-->
+<!--&lt;!&ndash;                .then(response => response.json())&ndash;&gt;-->
+<!--&lt;!&ndash;                .then(data => {&ndash;&gt;-->
+<!--&lt;!&ndash;                    const availableQuantity = data.quantity;&ndash;&gt;-->
+
+<!--&lt;!&ndash;                    const row = document.createElement('tr');&ndash;&gt;-->
+<!--&lt;!&ndash;                    row.innerHTML = `&ndash;&gt;-->
+<!--&lt;!&ndash;                        <td class="sr-no">${tableBody.children.length + 1}</td>&ndash;&gt;-->
+<!--&lt;!&ndash;                        <td>${categoryText}</td>&ndash;&gt;-->
+<!--&lt;!&ndash;                        <td>${subcategoryText}</td>&ndash;&gt;-->
+<!--&lt;!&ndash;                        <td>${stockName}</td>&ndash;&gt;-->
+<!--&lt;!&ndash;                        <td>${availableQuantity}</td> &lt;!&ndash; Dynamically added available stock quantity &ndash;&gt;&ndash;&gt;-->
+<!--&lt;!&ndash;                        <td><input type="number" class="form-control" name="new_quantity[]" value="${quantity}" /></td>&ndash;&gt;-->
+<!--&lt;!&ndash;                        <td><button type="button" class="removeRow">Remove</button></td>&ndash;&gt;-->
+<!--&lt;!&ndash;                        <input type="hidden" name="new_stock_ids[]" value="${stockId}" />&ndash;&gt;-->
+<!--&lt;!&ndash;                    `;&ndash;&gt;-->
+<!--&lt;!&ndash;                    tableBody.appendChild(row);&ndash;&gt;-->
+<!--&lt;!&ndash;                    updateSrNo();&ndash;&gt;-->
+
+<!--&lt;!&ndash;                    // Reset form inputs&ndash;&gt;-->
+<!--&lt;!&ndash;                    stockSelect.value = '';&ndash;&gt;-->
+<!--&lt;!&ndash;                    stockQuantity.value = '';&ndash;&gt;-->
+<!--&lt;!&ndash;                    availableQuantitySpan.innerText = '';&ndash;&gt;-->
+<!--&lt;!&ndash;                    addRow.disabled = true;&ndash;&gt;-->
+<!--&lt;!&ndash;                });&ndash;&gt;-->
+<!--&lt;!&ndash;        });&ndash;&gt;-->
+
+<!--&lt;!&ndash;        // Remove row&ndash;&gt;-->
+<!--&lt;!&ndash;        tableBody.addEventListener('click', function (e) {&ndash;&gt;-->
+<!--&lt;!&ndash;            if (e.target && e.target.classList.contains('removeRow')) {&ndash;&gt;-->
+<!--&lt;!&ndash;                e.target.closest('tr').remove();&ndash;&gt;-->
+<!--&lt;!&ndash;                updateSrNo();&ndash;&gt;-->
+<!--&lt;!&ndash;            }&ndash;&gt;-->
+<!--&lt;!&ndash;        });&ndash;&gt;-->
+
+<!--&lt;!&ndash;        function updateSrNo() {&ndash;&gt;-->
+<!--&lt;!&ndash;            const rows = tableBody.querySelectorAll('tr');&ndash;&gt;-->
+<!--&lt;!&ndash;            rows.forEach((row, index) => {&ndash;&gt;-->
+<!--&lt;!&ndash;                row.querySelector('.sr-no').textContent = index + 1;&ndash;&gt;-->
+<!--&lt;!&ndash;            });&ndash;&gt;-->
+<!--&lt;!&ndash;        }&ndash;&gt;-->
+<!--    });-->
+<!--</script>-->
+<!--<script>-->
+<!--    document.addEventListener('DOMContentLoaded', function () {-->
+<!--        const tableBody = document.getElementById('billTable').querySelector('tbody');-->
+
+<!--        // Function to validate quantities for both existing and new rows-->
+<!--        function validateQuantities() {-->
+<!--            let isValid = true;-->
+
+<!--            // Validate each row-->
+<!--            tableBody.querySelectorAll('tr').forEach(row => {-->
+<!--                const quantityInput = row.querySelector('input[name^="quantity"]'); // Quantity input-->
+<!--                const availableQuantity = parseInt(row.querySelector('td:nth-child(5)').textContent || "0", 10); // Available Quantity from table-->
+
+<!--                if (quantityInput) {-->
+<!--                    const newQuantity = parseInt(quantityInput.value || "0", 10); // New Quantity entered by the user-->
+
+<!--                    // If new quantity exceeds available quantity, mark as invalid-->
+<!--                    if (newQuantity > availableQuantity) {-->
+<!--                        isValid = false;-->
+<!--                        quantityInput.classList.add('is-invalid');-->
+<!--                        quantityInput.setCustomValidity(`Quantity cannot exceed ${availableQuantity}`);-->
+<!--                    } else {-->
+<!--                        quantityInput.classList.remove('is-invalid');-->
+<!--                        quantityInput.setCustomValidity(''); // Reset validity-->
+<!--                    }-->
+<!--                }-->
+<!--            });-->
+
+<!--            return isValid;-->
+<!--        }-->
+
+<!--        // Trigger validation on quantity field input-->
+<!--        tableBody.addEventListener('input', function (e) {-->
+<!--            if (e.target && e.target.matches('input[name^="quantity"]')) {-->
+<!--                validateQuantities();-->
+<!--            }-->
+<!--        });-->
+
+<!--        // Validate quantities when the form is submitted-->
+<!--        const form = document.getElementById('billForm');-->
+<!--        form.addEventListener('submit', function (e) {-->
+<!--            if (!validateQuantities()) {-->
+<!--                e.preventDefault(); // Prevent form submission if validation fails-->
+<!--                alert('Please ensure all quantities are within available stock limits.');-->
+<!--            }-->
+<!--        });-->
+
+<!--        // Add new rows dynamically with validation-->
+<!--        const addRow = document.getElementById('addRow');-->
+<!--        const stockSelect = document.getElementById('stockSelect');-->
+<!--        const stockQuantity = document.getElementById('stockQuantity');-->
+
+<!--        addRow.addEventListener('click', function () {-->
+<!--            const stockId = stockSelect.value;-->
+<!--            const stockName = stockSelect.options[stockSelect.selectedIndex].text;-->
+<!--            const availableQuantitySpan = document.getElementById('availableQuantitySpan').textContent;-->
+<!--            const availableQuantity = parseInt(availableQuantitySpan.replace('Available Quantity: ', '') || "0", 10);-->
+<!--            const quantity = parseInt(stockQuantity.value || "0", 10);-->
+
+<!--            if (!stockId || !quantity) return;-->
+
+<!--            if (quantity > availableQuantity) {-->
+<!--                alert(`Quantity cannot exceed available stock (${availableQuantity}).`);-->
+<!--                return;-->
+<!--            }-->
+
+<!--            const row = document.createElement('tr');-->
+<!--            row.innerHTML = `-->
+<!--                <td class="sr-no">${tableBody.children.length + 1}</td>-->
+<!--                <td>${document.getElementById('categorySelect').options[document.getElementById('categorySelect').selectedIndex].text}</td>-->
+<!--                <td>${document.getElementById('subcategorySelect').options[document.getElementById('subcategorySelect').selectedIndex].text}</td>-->
+<!--                <td>${stockName}</td>-->
+<!--                <td>${availableQuantity}</td> &lt;!&ndash; Available Quantity &ndash;&gt;-->
+<!--                <td>-->
+<!--                    <input type="number" class="form-control" name="new_quantity[]" value="${quantity}" />-->
+<!--                </td>-->
+<!--                <td><button type="button" class="removeRow">Remove</button></td>-->
+<!--                <input type="hidden" name="new_stock_ids[]" value="${stockId}" />-->
+<!--            `;-->
+<!--              tableBody.appendChild(row);-->
+<!--                    updateSrNo();-->
+<!--                    stockSelect.querySelector(`option[value="${stockId}"]`).remove();-->
+<!--                    stockQuantity.value = '';-->
+<!--                    stockQuantity.disabled = true;-->
+<!--        });-->
+
+<!--        // Update serial numbers-->
+<!--        function updateSrNo() {-->
+<!--            const rows = tableBody.querySelectorAll('tr');-->
+<!--            rows.forEach((row, index) => {-->
+<!--                row.querySelector('.sr-no').textContent = index + 1;-->
+<!--            });-->
+<!--        }-->
+
+<!--        // Remove row-->
+<!--        tableBody.addEventListener('click', function (e) {-->
+<!--            if (e.target && e.target.classList.contains('removeRow')) {-->
+<!--                e.target.closest('tr').remove();-->
+<!--                updateSrNo();-->
+<!--            }-->
+<!--        });-->
+<!--    });-->
+
+<!--</script>-->
+
+
+<!--<script>-->
+<!--    document.addEventListener('DOMContentLoaded', function() {-->
+<!--        // Confirmation dialog for form submission-->
+<!--        const form = document.getElementById('billForm');-->
+
+<!--        form.addEventListener('submit', function(event) {-->
+<!--            event.preventDefault(); // Prevent form from submitting immediately-->
+
+<!--            // Show confirmation dialog-->
+<!--            const userConfirmed = confirm('Are you sure you want to save the changes?');-->
+<!--            if (userConfirmed) {-->
+<!--                // Display the success message in an alert box-->
+<!--                alert("**Bill No: " + "{{ sale_bill.billno }}" + "** Records Updated Successfully!");-->
+
+<!--                // Proceed to submit the form-->
+<!--                form.submit();-->
+<!--            }-->
+<!--        });-->
+<!--    });-->
+<!--</script>-->
+
+<!-- Existing HTML -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@mdi/font/css/materialdesignicons.min.css">
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<!--<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>-->
+
+<br><h1>Edit Bill</h1>
+<form method="post" id="billForm">
+    <h1 align="center" class="text-capitalize">Sales Bill - {{ sale_bill.billno }}</h1>
+    {% csrf_token %}
+    <!-- Sale Bill Details -->
+    <h3>Bill Information</h3>
+    <p><strong>Bill No:</strong> {{ sale_bill.billno }}</p>
+    <p><strong>Customer Name:</strong> {{ sale_bill.Cust_id.Comp_name }}</p>
+    <p><strong>Phone:</strong> {{ sale_bill.Cust_id.phone }}</p>
+    <p><strong>Address:</strong> {{ sale_bill.Cust_id.Address }}</p>
+    <p><strong>Email:</strong> {{ sale_bill.Cust_id.email }}</p>
+    <p><strong>GSTIN:</strong> {{ sale_bill.Cust_id.gstin }}</p>
+
+    <!-- Bill Table -->
+    <fieldset>
+        <div class="table-responsive">
+            <table id="billTable" class="table table-hover table-center table-sm" style="width: 100%;">
+                <thead class="thead-dark align-middle" align="center">
+                    <tr>
+                        <th>Sr No</th>
+                        <th>Category</th>
+                        <th>SubCategory</th>
+                        <th>Stock Name</th>
+                        <th>Available Quantity</th>
+                        <th>Quantity</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody align="center">
+                    {% for item in sale_items %}
+                    <tr data-id="{{ item.id }}">
+                        <td class="sr-no">{{ forloop.counter }}</td>
+                        <td>{{ item.stock.category.name }}</td>
+                        <td>{{ item.stock.subcategory.name }}</td>
+<!--                        <td align="left">{{ item.stock.name }}</td>-->
+
+                        <td>
+                            &nbsp;<a href="#" class="stockName text-capitalize form-control-plaintext">{{ item.stock.name }}<br></a>
+                            <a href="{% url 'get_serial_numbers' %}?stock_id={{ item.stock.id }}"></a>
+
+                            {% if item.serials.exists %}
+                                &nbsp;&nbsp;<small class="custom-small" style="color: black">Sr No:
+                                    {% for serial in item.serials %}
+                                        {{ serial.serialNo }}{% if not forloop.last %}, {% endif %}
+                                    {% endfor %}
+<!--                                    <span class="stockNameDisplay" style="margin: 0; padding: 0;"></span>-->
+                                  </small>
+                            {% endif %}
+                            <small class="custom-small">
+                                <span class="stockNameDisplay" style="margin: 0; padding: 0;"></span>
+                            </small>
+                        </td>
+
+<!--                        <td>{{ item.stock.quantity }} <small>{{item.stock.purchase.short_name}}</small></td>-->
+<!--                        &lt;!&ndash; Available Quantity Column &ndash;&gt;-->
+<!--&lt;!&ndash;                                <div class="form-group col-md-2 text-center">&ndash;&gt;-->
+<!--                                    <div class="d-flex justify-content-center align-items-center mt-1">-->
+<!--                                        <input type="hidden" class="form-control stock-quantity" value="${stock.quantity}" readonly>-->
+<!--                                        <span class="badge ${stock.quantity > stock.stock_alert ? 'success' : 'danger'}">${stock.quantity} <small>${stock.purchase}</small></span>-->
+<!--                                    </div>-->
+<!--&lt;!&ndash;                                </div>&ndash;&gt;-->
+                        <td>
+                            <div class="d-flex justify-content-center align-items-center mt-1">
+                                <input type="hidden" class="form-control stock-quantity" value="{{ item.stock.quantity }}" readonly>
+                                {% if item.stock.quantity > item.stock.stock_alert %}
+                                    <span class="badge success">
+                                        {{ item.stock.quantity }} <small>{{ item.stock.purchase.short_name }}</small>
+                                    </span>
+                                {% else %}
+                                    <span class="badge danger">
+                                        {{ item.stock.quantity }} <small>{{ item.stock.purchase.short_name }}</small>
+                                    </span>
+                                {% endif %}
+                            </div>
+                        </td>
+
+
+                        <td>
+
+                            <div class="input-group">
+<!--                                        <input type="number" min="1" class="form-control" style="text-align: center;" name="quantity_{{ item.pk }}" value="{{ item.quantity }}" />-->
+                                        <input type="number" min="1" class="form-control quantity-input" style="text-align: center;" name="quantity_{{ item.pk }}" value="{{ item.quantity }}" />
+                                        <div class="input-group-append">
+                                            <span class="input-group-text me-2">{{item.stock.purchase.short_name}}</span>
+                                        </div>
+
+                                        <div class="warning-message" style="color: red; display: none;">Quantity exceeds available stock!</div>
+                                    </div>
+                        </td>
+                        <td><button type="button" class="removeRow">Remove</button></td>
+                        <input type="hidden" name="existing_ids[]" value="{{ item.pk }}" />
+                        <input type="hidden" name="existing_stock_ids[]" value="{{ item.stock.id }}" />
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </fieldset>
+
+    <!-- Add Stock -->
+    <h3>Add Stock:</h3>
+    <fieldset>
+        <div class="form-row mt-3">
+            <div class="col">
+                <label for="categorySelect">Category:</label>
+                <select id="categorySelect" class="form-control">
+                    <option value="">Select Category</option>
+                    {% for category in categories %}
+                    <option value="{{ category.id }}">{{ category.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col">
+                <label for="subcategorySelect">SubCategory:</label>
+                <select id="subcategorySelect" class="form-control" disabled>
+                    <option value="">Select SubCategory</option>
+                </select>
+            </div>
+        </div>
+        <div class="form-row mt-3">
+            <div class="col d-flex align-items-center">
+                <label for="stockSelect" class="mr-2">Stock:</label>
+                <select id="stockSelect" class="form-control mr-2" disabled>
+                    <option value="">Select Stock</option>
+                </select>
+                <input type="number" id="stockQuantity" min="1" class="form-control mr-2" placeholder="Quantity" disabled />
+                <span id="availableQuantitySpan"></span>
+                <button type="button" id="addRow" class="btn btn-primary" disabled>Add</button>
+            </div>
+        </div>
+    </fieldset>
+
+    <!-- Save Changes Button -->
+    <br>
+    <div align="center">
+<!--        <button type="button" id="initialSubmitButton" class="btn btn-success" style="width: 200px; margin-right: 10px;">Save Changes</button>-->
+        <button type="submit" id="submitBtn">Save Changes</button>
+    </div>
+</form>
+
+<!--<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@mdi/font/css/materialdesignicons.min.css">-->
+<!--<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>-->
+<!--<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>-->
+
+<!--<br><h1>Edit Bill</h1>-->
+<!--<form method="post" id="billForm">-->
+<!--    <h1 align="center" class="text-capitalize">Bill - {{ sale_bill.billno }}</h1>-->
+<!--    {% csrf_token %}-->
+<!--    &lt;!&ndash; Sale Bill Details &ndash;&gt;-->
+<!--    <h3>Bill Information</h3>-->
+<!--    <p><strong>Bill No:</strong> {{ sale_bill.billno }}</p>-->
+<!--    <p><strong>Customer Name:</strong> {{ sale_bill.Cust_id.Comp_name }}</p>-->
+<!--    <p><strong>Phone:</strong> {{ sale_bill.Cust_id.phone }}</p>-->
+<!--    <p><strong>Address:</strong> {{ sale_bill.Cust_id.Address }}</p>-->
+<!--    <p><strong>Email:</strong> {{ sale_bill.Cust_id.email }}</p>-->
+<!--    <p><strong>GSTIN:</strong> {{ sale_bill.Cust_id.gstin }}</p>-->
+
+<!--<fieldset>-->
+<!--    <div class="table-responsive">-->
+<!--        <table id="billTable" class="table table-hover table-center table-sm" style="width: 100%;">-->
+<!--            <thead class="thead-dark align-middle" align="center">-->
+<!--                <tr>-->
+<!--                    <th>Sr No</th>-->
+<!--                    <th>Category</th>-->
+<!--                    <th>SubCategory</th>-->
+<!--                    <th>Stock Name</th>-->
+<!--                    <th>Available Quantity</th>-->
+<!--                    <th>Quantity</th>-->
+<!--                    <th>Actions</th>-->
+<!--                </tr>-->
+<!--            </thead>-->
+<!--            <tbody align="center">-->
+<!--                {% for item in sale_items %}-->
+<!--                <tr data-id="{{ item.id }}">-->
+<!--                    <td class="sr-no">{{ forloop.counter }}</td>-->
+<!--                    <td>{{ item.stock.category.name }}</td>-->
+<!--                    <td>{{ item.stock.subcategory.name }}</td>-->
+<!--                    <td align="left">{{ item.stock.name }}</td>-->
+<!--                    <td>{{ item.stock.quantity }}</td> &lt;!&ndash; Display available stock quantity &ndash;&gt;-->
+<!--                    <td>-->
+<!--                        <input type="number" min="1" class="form-control" name="quantity_{{ item.pk }}" value="{{ item.quantity }}" />-->
+<!--                    </td>-->
+<!--                    <td> <button type="button" class="removeRow">Remove</button> </td>-->
+
+<!--                    <input type="hidden" name="existing_ids[]" value="{{ item.pk }}" />-->
+<!--                    <input type="hidden" name="existing_stock_ids[]" value="{{ item.stock.id }}" /> &lt;!&ndash; Store stock ID &ndash;&gt;-->
+<!--                </tr>-->
+<!--                {% endfor %}-->
+<!--            </tbody>-->
+<!--        </table>-->
+<!--    </div>-->
+<!--</fieldset>-->
+
+<!--<h3>Add Stock:</h3>-->
+<!--<fieldset>-->
+<!--    <div class="form-row mt-3">-->
+<!--        <div class="col">-->
+<!--            <label for="categorySelect">Category:</label>-->
+<!--            <select id="categorySelect" class="form-control">-->
+<!--                <option value="">Select Category</option>-->
+<!--                {% for category in categories %}-->
+<!--                <option value="{{ category.id }}">{{ category.name }}</option>-->
+<!--                {% endfor %}-->
+<!--            </select>-->
+<!--        </div>-->
+<!--        <div class="col">-->
+<!--            <label for="subcategorySelect">SubCategory:</label>-->
+<!--            <select id="subcategorySelect" class="form-control" disabled>-->
+<!--                <option value="">Select SubCategory</option>-->
+<!--            </select>-->
+<!--        </div>-->
+<!--    </div>-->
+<!--    <div class="form-row mt-3">-->
+<!--        <div class="col d-flex align-items-center">-->
+<!--            <label for="stockSelect" class="mr-2">Stock:</label>-->
+<!--            <select id="stockSelect" class="form-control mr-2" disabled>-->
+<!--                <option value="">Select Stock</option>-->
+<!--            </select>-->
+<!--            <input type="number" id="stockQuantity" min="1" class="form-control mr-2" min="1" placeholder="Quantity" disabled />-->
+<!--            <span id="availableQuantitySpan"></span> &lt;!&ndash; Display the available quantity for new stock &ndash;&gt;-->
+<!--            <button type="button" id="addRow" class="btn btn-primary" style="width: 250px;" disabled>Add</button>-->
+<!--        </div>-->
+<!--    </div>-->
+<!--</fieldset>-->
+<!--<br>-->
+<!--<div align="center">-->
+<!--    <button type="submit">Save Changes</button>-->
+<!--</div>-->
+<!--</form>-->
+
+
+
+<!--&lt;!&ndash; Modal for Serial Numbers &ndash;&gt;-->
+<!--<div class="modal fade" id="serialNumberModal" tabindex="-1" role="dialog" aria-labelledby="serialNumberModalLabel" aria-hidden="true">-->
+<!--    <div class="modal-dialog" role="document">-->
+<!--        <div class="modal-content">-->
+<!--            <div class="modal-header">-->
+<!--                <h5 class="modal-title" id="serialNumberModalLabel">Select Serial Numbers</h5>-->
+<!--                <button type="button" class="close" data-dismiss="modal" aria-label="Close">-->
+<!--                    <span aria-hidden="true">&times;</span>-->
+<!--                </button>-->
+<!--            </div>-->
+<!--            <div class="modal-body">-->
+<!--                <form id="serialNumberForm">-->
+<!--                    <div id="serial-number-container">-->
+<!--                        &lt;!&ndash; Checkboxes will be dynamically added here &ndash;&gt;-->
+<!--                    </div>-->
+<!--                </form>-->
+<!--            </div>-->
+<!--            <div class="modal-footer">-->
+<!--                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>-->
+<!--                <button type="button" class="btn btn-primary" id="saveSerialNumbers">Save Serial Numbers</button>-->
+<!--            </div>-->
+<!--        </div>-->
+<!--    </div>-->
+<!--</div>-->
+
+
+<!-- Modal for Serial Numbers -->
+<div class="modal fade" id="serialNumberModal" tabindex="-1" role="dialog" aria-labelledby="serialNumberModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="serialNumberModalLabel">Select Serial Numbers</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="serialNumberForm">
+                    <div id="serial-number-container">
+                        <!-- Checkboxes will be dynamically added here -->
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" id="saveSerialNumbers">Save Serial Numbers</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!--<script>-->
+<!--   $(document).ready(function () {-->
+<!--        var selectedStockId;-->
+<!--        var selectedSerialNumbers = {};-->
+
+<!--        $(document).on('click', '.stockName', function (e) {-->
+<!--            e.preventDefault();-->
+
+<!--            var stockRow = $(this).closest('tr');-->
+<!--            selectedStockId = stockRow.find('input[name*="stock"]').val();-->
+<!--            var quantity = parseInt(stockRow.find('input[name*="quantity"]').val()) || 0;-->
+
+<!--            // Fetch serial numbers for selected stock-->
+<!--            $.ajax({-->
+<!--                url: '{% url "get_serial_numbers" %}', // Update with your correct URL-->
+<!--                data: { stock_id: selectedStockId },-->
+<!--                success: function (data) {-->
+<!--                    var serialNumbers = data.serial_numbers;-->
+<!--                    $('#serial-number-container').empty();-->
+
+<!--                    serialNumbers.forEach(function (serial) {-->
+<!--                        // Use 'checked' value directly from the response-->
+<!--                        var isChecked = serial.checked ? 'checked' : '';  // 'checked' from the response-->
+<!--                        var checkbox = `-->
+<!--                            <div class="form-check">-->
+<!--                                <input class="form-check-input" type="checkbox" value="${serial.serialNo}" id="serialNo-${serial.serialNo}" ${isChecked}>-->
+<!--                                <label class="form-check-label" for="serialNo-${serial.serialNo}">${serial.serialNo}</label>-->
+<!--                            </div>`;-->
+<!--                        $('#serial-number-container').append(checkbox);-->
+<!--                    });-->
+
+<!--                    // Limit checkboxes based on entered quantity-->
+<!--                    updateCheckboxState(quantity);-->
+
+<!--                    // Show the modal-->
+<!--                    $('#serialNumberModal').modal('show');-->
+<!--                }-->
+<!--            });-->
+<!--        });-->
+
+<!--        // Update checkbox state based on quantity-->
+<!--        function updateCheckboxState(quantity) {-->
+<!--            $('#serial-number-container input[type="checkbox"]').off('change').on('change', function () {-->
+<!--                var checkedCount = $('#serial-number-container input[type="checkbox"]:checked').length;-->
+
+<!--                if (checkedCount > quantity) {-->
+<!--                    $(this).prop('disabled', true);-->
+<!--                } else {-->
+<!--                    $(this).prop('disabled', false);-->
+<!--                }-->
+<!--            });-->
+<!--        }-->
+
+<!--        // Handle saving serial numbers-->
+<!--        $('#saveSerialNumbers').on('click', function () {-->
+<!--            var checkedSerials = $('#serial-number-container input[type="checkbox"]:checked').map(function () {-->
+<!--                return $(this).val();-->
+<!--            }).get();-->
+
+<!--            selectedSerialNumbers[selectedStockId] = checkedSerials;-->
+
+<!--            // Update the table row with selected serials-->
+<!--            var stockRow = $('input[value="' + selectedStockId + '"]').closest('tr');-->
+<!--            stockRow.find('.stockNameDisplay').text(`Selected Serials: ${checkedSerials.join(', ')}`);-->
+
+<!--            // Add or update the hidden input field for serials in the form-->
+<!--            const hiddenFieldName = `serials-${selectedStockId}`;-->
+<!--            let hiddenField = $(`input[name="${hiddenFieldName}"]`);-->
+
+<!--            if (hiddenField.length > 0) {-->
+<!--                hiddenField.val(checkedSerials.join(','));-->
+<!--            } else {-->
+<!--                hiddenField = $('<input>')-->
+<!--                    .attr('type', 'hidden')-->
+<!--                    .attr('name', hiddenFieldName)-->
+<!--                    .val(checkedSerials.join(','));-->
+<!--                $('#billForm').append(hiddenField);-->
+<!--            }-->
+
+<!--            $('#serialNumberModal').modal('hide');-->
+<!--        });-->
+<!--    });-->
+
+<!--</script>-->
+<!--<script>-->
+<!--    $(document).ready(function () {-->
+<!--        var selectedStockId;-->
+<!--        var selectedSerialNumbers = {};-->
+
+<!--        $(document).on('click', '.stockName', function (e) {-->
+<!--            e.preventDefault();-->
+
+<!--            var stockRow = $(this).closest('tr');-->
+<!--            selectedStockId = stockRow.find('input[name*="stock"]').val();-->
+<!--            var quantity = parseInt(stockRow.find('input[name*="quantity"]').val()) || 0;-->
+
+<!--            // Fetch serial numbers for selected stock-->
+<!--            $.ajax({-->
+<!--                url: '{% url "get_serial_numbers" %}', // Update with your correct URL-->
+<!--                data: { stock_id: selectedStockId },-->
+<!--                success: function (data) {-->
+<!--                    var serialNumbers = data.serial_numbers;-->
+<!--                    $('#serial-number-container').empty();-->
+
+<!--                    serialNumbers.forEach(function (serial) {-->
+<!--                        var isChecked = serial.checked ? 'checked' : '';-->
+<!--                        var checkbox = `-->
+<!--                            <div class="form-check">-->
+<!--                                <input class="form-check-input" type="checkbox" value="${serial.serialNo}" id="serialNo-${serial.serialNo}" ${isChecked}>-->
+<!--                                <label class="form-check-label" for="serialNo-${serial.serialNo}">${serial.serialNo}</label>-->
+<!--                            </div>`;-->
+<!--                        $('#serial-number-container').append(checkbox);-->
+<!--                    });-->
+
+<!--                    // Initial validation on modal open-->
+<!--                    initialValidation(quantity);-->
+
+<!--                    // Show the modal-->
+<!--                    $('#serialNumberModal').modal('show');-->
+<!--                }-->
+<!--            });-->
+<!--        });-->
+
+<!--        // Initial validation on modal open-->
+<!--        function initialValidation(quantity) {-->
+<!--            var checkedCount = $('#serial-number-container input[type="checkbox"]:checked').length;-->
+
+<!--            if (checkedCount > quantity) {-->
+<!--                alert("Serial No More than the available quantity. Please uncheck some items.");-->
+<!--                enableAllCheckboxes(); // Enable all checkboxes for adjustment-->
+<!--            }-->
+
+<!--            updateCheckboxState(quantity); // Apply dynamic validation-->
+<!--        }-->
+
+<!--        // Enable all checkboxes-->
+<!--        function enableAllCheckboxes() {-->
+<!--            $('#serial-number-container input[type="checkbox"]').prop('disabled', false);-->
+<!--        }-->
+
+<!--        // Update checkbox state dynamically-->
+<!--        function updateCheckboxState(quantity) {-->
+<!--            $('#serial-number-container input[type="checkbox"]').off('change').on('change', function () {-->
+<!--                var checkedCount = $('#serial-number-container input[type="checkbox"]:checked').length;-->
+
+<!--                if (checkedCount > quantity) {-->
+<!--                    alert("Checked count exceeds the allowed quantity. Please uncheck some items.");-->
+<!--                    enableAllCheckboxes(); // Allow users to uncheck items-->
+<!--                } else if (checkedCount === quantity) {-->
+<!--                    // Disable unchecked checkboxes when the limit is reached-->
+<!--                    $('#serial-number-container input[type="checkbox"]').each(function () {-->
+<!--                        if (!$(this).is(':checked')) {-->
+<!--                            $(this).prop('disabled', true);-->
+<!--                        }-->
+<!--                    });-->
+<!--                } else {-->
+<!--                    // Enable all checkboxes if below the limit-->
+<!--                    enableAllCheckboxes();-->
+<!--                }-->
+<!--            });-->
+<!--        }-->
+
+<!--        // Handle saving serial numbers-->
+<!--        $('#saveSerialNumbers').on('click', function () {-->
+<!--            var checkedSerials = $('#serial-number-container input[type="checkbox"]:checked').map(function () {-->
+<!--                return $(this).val();-->
+<!--            }).get();-->
+
+<!--            var stockRow = $('input[value="' + selectedStockId + '"]').closest('tr');-->
+<!--            var quantity = parseInt(stockRow.find('input[name*="quantity"]').val()) || 0;-->
+
+<!--            // Final validation before saving-->
+<!--            if (checkedSerials.length > quantity) {-->
+<!--                alert("Checked count exceeds the allowed quantity. Please adjust your selection.");-->
+<!--                return;-->
+<!--            }-->
+
+<!--            selectedSerialNumbers[selectedStockId] = checkedSerials;-->
+
+<!--            // Update the table row with selected serials-->
+<!--            stockRow.find('.stockNameDisplay').text(`Selected Serials: ${checkedSerials.join(', ')}`);-->
+
+<!--            // Add or update the hidden input field for serials in the form-->
+<!--            const hiddenFieldName = `serials-${selectedStockId}`;-->
+<!--            let hiddenField = $(`input[name="${hiddenFieldName}"]`);-->
+
+<!--            if (hiddenField.length > 0) {-->
+<!--                hiddenField.val(checkedSerials.join(','));-->
+<!--            } else {-->
+<!--                hiddenField = $('<input>')-->
+<!--                    .attr('type', 'hidden')-->
+<!--                    .attr('name', hiddenFieldName)-->
+<!--                    .val(checkedSerials.join(','));-->
+<!--                $('#billForm').append(hiddenField);-->
+<!--            }-->
+
+<!--            $('#serialNumberModal').modal('hide');-->
+<!--        });-->
+<!--    });-->
+
+<!--</script>-->
+
+<!--<script>-->
+<!--    $(document).ready(function () {-->
+<!--        var selectedStockId;-->
+<!--        var selectedSerialNumbers = {};-->
+
+<!--        $(document).on('click', '.stockName', function (e) {-->
+<!--            e.preventDefault();-->
+
+<!--            var stockRow = $(this).closest('tr');-->
+<!--            selectedStockId = stockRow.find('input[name*="stock"]').val();-->
+<!--            var quantity = parseInt(stockRow.find('input[name*="quantity"]').val()) || 0;-->
+
+<!--            // Fetch serial numbers for selected stock-->
+<!--            $.ajax({-->
+<!--                url: '{% url "get_serial_numbers" %}', // Update with your correct URL-->
+<!--                data: { stock_id: selectedStockId },-->
+<!--                success: function (data) {-->
+<!--                    var serialNumbers = data.serial_numbers;-->
+<!--                    $('#serial-number-container').empty();-->
+
+<!--                    serialNumbers.forEach(function (serial) {-->
+<!--                        var isChecked = serial.checked ? 'checked' : '';-->
+<!--                        var checkbox = `-->
+<!--                            <div class="form-check">-->
+<!--                                <input class="form-check-input" type="checkbox" value="${serial.serialNo}" id="serialNo-${serial.serialNo}" ${isChecked}>-->
+<!--                                <label class="form-check-label" for="serialNo-${serial.serialNo}">${serial.serialNo}</label>-->
+<!--                            </div>`;-->
+<!--                        $('#serial-number-container').append(checkbox);-->
+<!--                    });-->
+
+<!--                    // Initial validation on modal open-->
+<!--                    initialValidation(quantity);-->
+
+<!--                    // Show the modal-->
+<!--                    $('#serialNumberModal').modal('show');-->
+<!--                }-->
+<!--            });-->
+<!--        });-->
+
+<!--        // Initial validation on modal open-->
+<!--        function initialValidation(quantity) {-->
+<!--            var checkedCount = $('#serial-number-container input[type="checkbox"]:checked').length;-->
+
+<!--            if (checkedCount > quantity) {-->
+<!--                alert("Serial No more than the available quantity. Please uncheck some items.");-->
+<!--                enableUncheckedCheckboxes(); // Enable only checked checkboxes for adjustment-->
+<!--            } else if (checkedCount === quantity) {-->
+<!--                disableUncheckedCheckboxes(); // Disable all unchecked checkboxes-->
+<!--            }-->
+
+<!--            updateCheckboxState(quantity); // Apply dynamic validation-->
+<!--        }-->
+
+<!--        // Enable all checkboxes-->
+<!--        function enableUncheckedCheckboxes() {-->
+<!--            $('#serial-number-container input[type="checkbox"]').prop('disabled', false);-->
+<!--        }-->
+
+<!--        // Disable all unchecked checkboxes-->
+<!--        function disableUncheckedCheckboxes() {-->
+<!--            $('#serial-number-container input[type="checkbox"]').each(function () {-->
+<!--                if (!$(this).is(':checked')) {-->
+<!--                    $(this).prop('disabled', true);-->
+<!--                }-->
+<!--            });-->
+<!--        }-->
+
+<!--        // Update checkbox state dynamically-->
+<!--        function updateCheckboxState(quantity) {-->
+<!--            $('#serial-number-container input[type="checkbox"]').off('change').on('change', function () {-->
+<!--                var checkedCount = $('#serial-number-container input[type="checkbox"]:checked').length;-->
+
+<!--                if (checkedCount > quantity) {-->
+<!--                    alert("Checked count exceeds the allowed quantity. Please uncheck some items.");-->
+<!--                    enableUncheckedCheckboxes(); // Allow users to uncheck items-->
+<!--                } else if (checkedCount === quantity) {-->
+<!--                    disableUncheckedCheckboxes(); // Disable unchecked checkboxes-->
+<!--                } else {-->
+<!--                    enableUncheckedCheckboxes(); // Enable all checkboxes if below the limit-->
+<!--                }-->
+<!--            });-->
+<!--        }-->
+
+<!--        // Handle saving serial numbers-->
+<!--        $('#saveSerialNumbers').on('click', function () {-->
+<!--            var checkedSerials = $('#serial-number-container input[type="checkbox"]:checked').map(function () {-->
+<!--                return $(this).val();-->
+<!--            }).get();-->
+
+<!--            var stockRow = $('input[value="' + selectedStockId + '"]').closest('tr');-->
+<!--            var quantity = parseInt(stockRow.find('input[name*="quantity"]').val()) || 0;-->
+
+<!--            // Final validation before saving-->
+<!--            if (checkedSerials.length > quantity) {-->
+<!--                alert("Checked count exceeds the allowed quantity. Please adjust your selection.");-->
+<!--                return;-->
+<!--            }-->
+
+<!--            selectedSerialNumbers[selectedStockId] = checkedSerials;-->
+
+<!--            // Update the table row with selected serials-->
+<!--            stockRow.find('.stockNameDisplay').text(`Selected Serials: ${checkedSerials.join(', ')}`);-->
+
+<!--            // Add or update the hidden input field for serials in the form-->
+<!--            const hiddenFieldName = `serials-${selectedStockId}`;-->
+<!--            let hiddenField = $(`input[name="${hiddenFieldName}"]`);-->
+
+<!--            if (hiddenField.length > 0) {-->
+<!--                hiddenField.val(checkedSerials.join(','));-->
+<!--            } else {-->
+<!--                hiddenField = $('<input>')-->
+<!--                    .attr('type', 'hidden')-->
+<!--                    .attr('name', hiddenFieldName)-->
+<!--                    .val(checkedSerials.join(','));-->
+<!--                $('#billForm').append(hiddenField);-->
+<!--            }-->
+
+<!--            $('#serialNumberModal').modal('hide');-->
+<!--        });-->
+<!--    });-->
+<!--</script>-->
+
+
+
+<!--&lt;!&ndash; -&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&ndash;&gt;-->
+<!--<script>-->
+<!--    $(document).ready(function () {-->
+<!--        var selectedStockId;-->
+<!--        var selectedSerialNumbers = {};-->
+
+<!--        $(document).on('click', '.stockName', function (e) {-->
+<!--            e.preventDefault();-->
+
+<!--            var stockRow = $(this).closest('tr');-->
+<!--            selectedStockId = stockRow.find('input[name*="stock"]').val();-->
+<!--            var quantity = parseInt(stockRow.find('input[name*="quantity"]').val()) || 0;-->
+
+<!--            // Fetch serial numbers for selected stock-->
+<!--            $.ajax({-->
+<!--                url: '{% url "get_serial_numbers" %}', // Update with your correct URL-->
+<!--                data: { stock_id: selectedStockId },-->
+<!--                success: function (data) {-->
+<!--                    var serialNumbers = data.serial_numbers;-->
+<!--                    $('#serial-number-container').empty();-->
+
+<!--                    serialNumbers.forEach(function (serial) {-->
+<!--                        var isChecked = serial.checked ? 'checked' : '';-->
+<!--                        var checkbox = `-->
+<!--                            <div class="form-check">-->
+<!--                                <input class="form-check-input" type="checkbox" value="${serial.serialNo}" id="serialNo-${serial.serialNo}" ${isChecked}>-->
+<!--                                <label class="form-check-label" for="serialNo-${serial.serialNo}">${serial.serialNo}</label>-->
+<!--                            </div>`;-->
+<!--                        $('#serial-number-container').append(checkbox);-->
+<!--                    });-->
+
+<!--                    // Initial validation on modal open-->
+<!--                    initialValidation(quantity);-->
+
+<!--                    // Show the modal-->
+
+<!--                    $('#serialNumberModal').modal('show');-->
+<!--                }-->
+<!--            });-->
+<!--        });-->
+
+<!--        // Initial validation on modal open-->
+<!--        function initialValidation(quantity) {-->
+<!--            var checkedCount = $('#serial-number-container input[type="checkbox"]:checked').length;-->
+
+<!--            if (checkedCount > quantity) {-->
+<!--                alert("Checked count exceeds the allowed quantity. Empty checkboxes will be disabled.");-->
+<!--                disableUncheckedCheckboxes(); // Disable all unchecked checkboxes-->
+<!--            } else if (checkedCount === quantity) {-->
+<!--                disableUncheckedCheckboxes(); // Disable all unchecked checkboxes-->
+<!--            }-->
+
+<!--            updateCheckboxState(quantity); // Apply dynamic validation-->
+<!--        }-->
+
+<!--        // Enable all checkboxes-->
+<!--        function enableUncheckedCheckboxes() {-->
+<!--            $('#serial-number-container input[type="checkbox"]').prop('disabled', false);-->
+<!--        }-->
+
+<!--        // Disable all unchecked checkboxes-->
+<!--        function disableUncheckedCheckboxes() {-->
+<!--            $('#serial-number-container input[type="checkbox"]').each(function () {-->
+<!--                if (!$(this).is(':checked')) {-->
+<!--                    $(this).prop('disabled', true);-->
+<!--                }-->
+<!--            });-->
+<!--        }-->
+
+<!--        // Update checkbox state dynamically-->
+<!--        function updateCheckboxState(quantity) {-->
+<!--            $('#serial-number-container input[type="checkbox"]').off('change').on('change', function () {-->
+<!--                var checkedCount = $('#serial-number-container input[type="checkbox"]:checked').length;-->
+
+<!--                if (checkedCount > quantity) {-->
+<!--                    alert("Checked count exceeds the allowed quantity. Empty checkboxes will be disabled.");-->
+<!--                    disableUncheckedCheckboxes(); // Disable all unchecked checkboxes-->
+<!--                } else if (checkedCount === quantity) {-->
+<!--                    disableUncheckedCheckboxes(); // Disable unchecked checkboxes-->
+<!--                } else {-->
+<!--                    enableUncheckedCheckboxes(); // Enable all checkboxes if below the limit-->
+<!--                }-->
+<!--            });-->
+<!--        }-->
+
+<!--&lt;!&ndash;        // Handle saving serial numbers&ndash;&gt;-->
+<!--&lt;!&ndash;        $('#saveSerialNumbers').on('click', function () {&ndash;&gt;-->
+<!--&lt;!&ndash;            var checkedSerials = $('#serial-number-container input[type="checkbox"]:checked').map(function () {&ndash;&gt;-->
+<!--&lt;!&ndash;                return $(this).val();&ndash;&gt;-->
+<!--&lt;!&ndash;            }).get();&ndash;&gt;-->
+
+<!--&lt;!&ndash;            var stockRow = $('input[value="' + selectedStockId + '"]').closest('tr');&ndash;&gt;-->
+<!--&lt;!&ndash;            var quantity = parseInt(stockRow.find('input[name*="quantity"]').val()) || 0;&ndash;&gt;-->
+
+<!--&lt;!&ndash;            // Final validation before saving&ndash;&gt;-->
+<!--&lt;!&ndash;            if (checkedSerials.length > quantity) {&ndash;&gt;-->
+<!--&lt;!&ndash;                alert("Checked count exceeds the allowed quantity. Please adjust your selection.");&ndash;&gt;-->
+<!--&lt;!&ndash;                return;&ndash;&gt;-->
+<!--&lt;!&ndash;            }&ndash;&gt;-->
+
+<!--&lt;!&ndash;            selectedSerialNumbers[selectedStockId] = checkedSerials;&ndash;&gt;-->
+
+<!--&lt;!&ndash;            // Update the table row with selected serials&ndash;&gt;-->
+<!--&lt;!&ndash;            stockRow.find('.stockNameDisplay').text(`Selected Serials: ${checkedSerials.join(', ')}`);&ndash;&gt;-->
+
+<!--&lt;!&ndash;            // Add or update the hidden input field for serials in the form&ndash;&gt;-->
+<!--&lt;!&ndash;            const hiddenFieldName = `serials-${selectedStockId}`;&ndash;&gt;-->
+<!--&lt;!&ndash;            let hiddenField = $(`input[name="${hiddenFieldName}"]`);&ndash;&gt;-->
+
+<!--&lt;!&ndash;            if (hiddenField.length > 0) {&ndash;&gt;-->
+<!--&lt;!&ndash;                hiddenField.val(checkedSerials.join(','));&ndash;&gt;-->
+<!--&lt;!&ndash;            } else {&ndash;&gt;-->
+<!--&lt;!&ndash;                hiddenField = $('<input>')&ndash;&gt;-->
+<!--&lt;!&ndash;                    .attr('type', 'hidden')&ndash;&gt;-->
+<!--&lt;!&ndash;                    .attr('name', hiddenFieldName)&ndash;&gt;-->
+<!--&lt;!&ndash;                    .val(checkedSerials.join(','));&ndash;&gt;-->
+<!--&lt;!&ndash;                $('#billForm').append(hiddenField);&ndash;&gt;-->
+<!--&lt;!&ndash;            }&ndash;&gt;-->
+<!--&lt;!&ndash;            alert("Serial numbers updated successfully!");&ndash;&gt;-->
+<!--&lt;!&ndash;            $('#serialNumberModal').modal('hide');&ndash;&gt;-->
+<!--&lt;!&ndash;        });&ndash;&gt;-->
+
+<!--          $('#saveSerialNumbers').on('click', function () {-->
+<!--                var checkedSerials = $('#serial-number-container input[type="checkbox"]:checked').map(function () {-->
+<!--                    return $(this).val();-->
+<!--                }).get();-->
+
+<!--                var uncheckedSerials = $('#serial-number-container input[type="checkbox"]:not(:checked)').map(function () {-->
+<!--                    return $(this).val();-->
+<!--                }).get();-->
+
+<!--                var stockRow = $('input[value="' + selectedStockId + '"]').closest('tr');-->
+<!--                var quantity = parseInt(stockRow.find('input[name*="quantity"]').val()) || 0;-->
+
+<!--                // Final validation before saving-->
+<!--                if (checkedSerials.length > quantity) {-->
+<!--                    alert("Checked count exceeds the allowed quantity. Please adjust your selection.");-->
+<!--                    return;-->
+<!--                }-->
+
+<!--                selectedSerialNumbers[selectedStockId] = checkedSerials;-->
+
+<!--                // Update the table row with selected serials-->
+<!--                stockRow.find('.stockNameDisplay').text(`Selected Serials: ${checkedSerials.join(', ')}`);-->
+
+<!--                // Add or update the hidden input field for serials in the form-->
+<!--                const hiddenFieldName = `serials-${selectedStockId}`;-->
+<!--                let hiddenField = $(`input[name="${hiddenFieldName}"]`);-->
+
+<!--                if (hiddenField.length > 0) {-->
+<!--                    hiddenField.val(checkedSerials.join(','));-->
+<!--                } else {-->
+<!--                    hiddenField = $('<input>')-->
+<!--                        .attr('type', 'hidden')-->
+<!--                        .attr('name', hiddenFieldName)-->
+<!--                        .val(checkedSerials.join(','));-->
+<!--                    $('#billForm').append(hiddenField);-->
+<!--                }-->
+
+<!--                // Send AJAX request to update the PurchaseSerial table-->
+<!--                $.ajax({-->
+<!--                    type: 'POST',-->
+<!--                    url: '{% url "update_sales_billno_edit" %}', // Update with your correct URL-->
+<!--                    data: {-->
+<!--                        checkedSerialNumbers: JSON.stringify(checkedSerials),-->
+<!--                        uncheckedSerialNumbers: JSON.stringify(uncheckedSerials),-->
+<!--                        csrfmiddlewaretoken: '{{ csrf_token }}'-->
+<!--                    },-->
+<!--                    success: function (response) {-->
+<!--                        if (response.success) {-->
+<!--                            $('#serialNumberModal').modal('hide');-->
+<!--                            alert('Serial numbers updated successfully.');-->
+<!--                        } else {-->
+<!--                            alert('An error occurred while updating serial numbers.');-->
+<!--                        }-->
+<!--                    },-->
+<!--                    error: function () {-->
+<!--                        alert('Failed to update serial numbers. Please try again.');-->
+<!--                    }-->
+<!--                });-->
+<!--            });-->
+<!--    });-->
+<!--</script>-->
+<!--&lt;!&ndash;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&ndash;&gt;-->
+
+<!--<script>-->
+<!--    $(document).ready(function () {-->
+<!--        var selectedStockId;-->
+<!--        var selectedSerialNumbers = {};-->
+
+<!--        $(document).on('click', '.stockName', function (e) {-->
+<!--            e.preventDefault();-->
+
+<!--            var stockRow = $(this).closest('tr');-->
+<!--            selectedStockId = stockRow.find('input[name*="stock"]').val();-->
+<!--            var quantity = parseInt(stockRow.find('input[name*="quantity"]').val()) || 0;-->
+
+<!--            // Fetch serial numbers for selected stock-->
+<!--            $.ajax({-->
+<!--                url: '{% url "get_serial_numbers_edit" %}', // Correct URL-->
+<!--                data: { stock_id: selectedStockId,-->
+<!--                        sales_billno: '{{ sale_bill }}',-->
+<!--                },-->
+<!--                success: function (data) {-->
+<!--                    var serialNumbers = data.serial_numbers;-->
+<!--                    $('#serial-number-container').empty();-->
+
+<!--                    serialNumbers.forEach(function (serial) {-->
+<!--                        var isChecked = serial.checked ? 'checked' : '';-->
+<!--                        var checkbox = `-->
+<!--                            <div class="form-check">-->
+<!--                                <input class="form-check-input" type="checkbox" value="${serial.serialNo}" id="serialNo-${serial.serialNo}" ${isChecked}>-->
+<!--                                <label class="form-check-label" for="serialNo-${serial.serialNo}">${serial.serialNo}</label>-->
+<!--                            </div>`;-->
+<!--                        $('#serial-number-container').append(checkbox);-->
+<!--                    });-->
+
+<!--                    // Run initial validation-->
+<!--                    initialValidation(quantity);-->
+
+<!--                    // Open the modal only after validations-->
+<!--                    $('#serialNumberModal').modal('show');-->
+<!--                },-->
+<!--                error: function () {-->
+<!--                    alert("Failed to fetch serial numbers. Please try again.");-->
+<!--                }-->
+<!--            });-->
+<!--        });-->
+
+<!--        // Initial validation on modal open-->
+<!--        function initialValidation(quantity) {-->
+<!--            var checkedCount = $('#serial-number-container input[type="checkbox"]:checked').length;-->
+
+<!--            if (checkedCount > quantity) {-->
+<!--                alert("Checked count exceeds the allowed quantity. Adjusting checkboxes.");-->
+<!--                disableUncheckedCheckboxes();-->
+<!--            } else if (checkedCount === quantity) {-->
+<!--                disableUncheckedCheckboxes();-->
+<!--            }-->
+
+<!--            updateCheckboxState(quantity); // Bind dynamic validation-->
+<!--        }-->
+
+<!--        // Enable all checkboxes-->
+<!--        function enableUncheckedCheckboxes() {-->
+<!--            $('#serial-number-container input[type="checkbox"]').prop('disabled', false);-->
+<!--        }-->
+
+<!--        // Disable all unchecked checkboxes-->
+<!--        function disableUncheckedCheckboxes() {-->
+<!--            $('#serial-number-container input[type="checkbox"]').each(function () {-->
+<!--                if (!$(this).is(':checked')) {-->
+<!--                    $(this).prop('disabled', true);-->
+<!--                }-->
+<!--            });-->
+<!--        }-->
+
+<!--        // Update checkbox state dynamically-->
+<!--        function updateCheckboxState(quantity) {-->
+<!--            $('#serial-number-container input[type="checkbox"]').off('change').on('change', function () {-->
+<!--                var checkedCount = $('#serial-number-container input[type="checkbox"]:checked').length;-->
+
+<!--                if (checkedCount > quantity) {-->
+<!--                    alert("Checked count exceeds the allowed quantity.");-->
+<!--                    disableUncheckedCheckboxes();-->
+<!--                } else if (checkedCount === quantity) {-->
+<!--                    disableUncheckedCheckboxes();-->
+<!--                } else {-->
+<!--                    enableUncheckedCheckboxes();-->
+<!--                }-->
+<!--            });-->
+<!--        }-->
+
+<!--        $('#saveSerialNumbers').on('click', function () {-->
+<!--            var checkedSerials = $('#serial-number-container input[type="checkbox"]:checked').map(function () {-->
+<!--                return $(this).val();-->
+<!--            }).get();-->
+
+<!--            var uncheckedSerials = $('#serial-number-container input[type="checkbox"]:not(:checked)').map(function () {-->
+<!--                return $(this).val();-->
+<!--            }).get();-->
+
+<!--            var stockRow = $('input[value="' + selectedStockId + '"]').closest('tr');-->
+<!--            var quantity = parseInt(stockRow.find('input[name*="quantity"]').val()) || 0;-->
+
+<!--            // Final validation before saving-->
+<!--            if (checkedSerials.length > quantity) {-->
+<!--                alert("Checked count exceeds the allowed quantity. Please adjust your selection.");-->
+<!--                return;-->
+<!--            }-->
+
+<!--            selectedSerialNumbers[selectedStockId] = checkedSerials;-->
+
+<!--            // Update the table row with selected serials-->
+<!--            stockRow.find('.stockNameDisplay').text(`Selected Serials: ${checkedSerials.join(', ')}`);-->
+
+<!--            // Add or update the hidden input field for serials in the form-->
+<!--            const hiddenFieldName = `serials-${selectedStockId}`;-->
+<!--            let hiddenField = $(`input[name="${hiddenFieldName}"]`);-->
+
+<!--            if (hiddenField.length > 0) {-->
+<!--                hiddenField.val(checkedSerials.join(','));-->
+<!--            } else {-->
+<!--                hiddenField = $('<input>')-->
+<!--                    .attr('type', 'hidden')-->
+<!--                    .attr('name', hiddenFieldName)-->
+<!--                    .val(checkedSerials.join(','));-->
+<!--                $('#billForm').append(hiddenField);-->
+<!--            }-->
+
+<!--            // Send AJAX request to update the PurchaseSerial table-->
+<!--            $.ajax({-->
+<!--                type: 'POST',-->
+<!--                url: '{% url "update_sales_billno_edit" %}', // Correct URL-->
+<!--                data: {-->
+<!--                    checkedSerialNumbers: JSON.stringify(checkedSerials),-->
+<!--                    uncheckedSerialNumbers: JSON.stringify(uncheckedSerials),-->
+<!--                    csrfmiddlewaretoken: '{{ csrf_token }}'-->
+<!--                },-->
+<!--                success: function (response) {-->
+<!--                    if (response.success) {-->
+<!--                        $('#serialNumberModal').modal('hide');-->
+<!--                        alert('Serial numbers updated successfully.');-->
+<!--                    } else {-->
+<!--                        alert('An error occurred while updating serial numbers.');-->
+<!--                    }-->
+<!--                },-->
+<!--                error: function () {-->
+<!--                    alert('Failed to update serial numbers. Please try again.');-->
+<!--                }-->
+<!--            });-->
+<!--        });-->
+<!--    });-->
+
+<!--</script>-->
+<!--??????????????????????????????????????????????????????????????????????????????-->
+
+
+<script>
+    $(document).ready(function () {
+        var selectedStockId;
+        var selectedSerialNumbers = {};
+
+        $(document).on('click', '.stockName', function (e) {
+            e.preventDefault();
+
+            var stockRow = $(this).closest('tr');
+            selectedStockId = stockRow.find('input[name*="stock"]').val();
+<!--            var quantity = parseInt(stockRow.find('input[name*="quantity"]').val()) || 0;-->
+            var quantityInput = stockRow.find('.quantity-input');
+            var quantity = parseInt(quantityInput.val()) || 0;
+
+            // Fetch serial numbers for selected stock
+            $.ajax({
+                url: '{% url "get_serial_numbers_edit" %}',
+                data: {
+                    stock_id: selectedStockId,
+                    sales_billno: '{{ sale_bill }}',
+                },
+                success: function (data) {
+                    console.log('Serial Numbers:', data.serial_numbers);
+                    var serialNumbers = data.serial_numbers;
+                    $('#serial-number-container').empty();
+
+                    serialNumbers.forEach(function (serial) {
+                        var isChecked = serial.checked ? 'checked' : '';
+                        var checkbox = `
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" value="${serial.serialNo}" id="serialNo-${serial.serialNo}" ${isChecked}>
+                                <label class="form-check-label" for="serialNo-${serial.serialNo}">${serial.serialNo}</label>
+                            </div>`;
+                        $('#serial-number-container').append(checkbox);
+                    });
+                    console.log('Initial Quantity:', quantity);
+                    initialValidation(quantity);
+                    $('#serialNumberModal').modal('show');
+                },
+                error: function () {
+                    alert("Failed to fetch serial numbers. Please try again.");
+                }
+            });
+        });
+
+        function initialValidation(quantity) {
+            var checkedCount = $('#serial-number-container input[type="checkbox"]:checked').length;
+            console.log('Initial Checked Count:', checkedCount, 'Quantity:', quantity);
+
+            // Enable all checkboxes initially
+            enableUncheckedCheckboxes();
+            if (checkedCount > quantity) {
+                alert("Checked count exceeds the allowed quantity. Adjusting checkboxes.");
+                disableUncheckedCheckboxes();
+            } else if (checkedCount === quantity) {
+                disableUncheckedCheckboxes();
+            }
+
+            updateCheckboxState(quantity);
+        }
+
+        function enableUncheckedCheckboxes() {
+            $('#serial-number-container input[type="checkbox"]').prop('disabled', false);
+        }
+
+        function disableUncheckedCheckboxes() {
+            $('#serial-number-container input[type="checkbox"]').each(function () {
+                if (!$(this).is(':checked')) {
+                    $(this).prop('disabled', true);
+                }
+            });
+        }
+
+        function updateCheckboxState(quantity) {
+            $('#serial-number-container input[type="checkbox"]').off('change').on('change', function () {
+                var checkedCount = $('#serial-number-container input[type="checkbox"]:checked').length;
+
+                if (checkedCount > quantity) {
+                    alert("Checked count exceeds the allowed quantity.");
+                    disableUncheckedCheckboxes();
+                } else if (checkedCount === quantity) {
+                    disableUncheckedCheckboxes();
+                } else {
+                    enableUncheckedCheckboxes();
+                }
+            });
+        }
+
+        $('#saveSerialNumbers').on('click', function () {
+            var checkedSerials = $('#serial-number-container input[type="checkbox"]:checked').map(function () {
+                return $(this).val();
+            }).get();
+
+            // var stockRow = $('input[value="' + selectedStockId + '"]').closest('tr');
+            // var quantity = parseInt(stockRow.find('input[name*="quantity"]').val()) || 0;
+
+            // Correctly find the quantity input using class
+            var stockRow = $('input[value="' + selectedStockId + '"]').closest('tr');
+            var quantityInput = stockRow.find('.quantity-input'); // Use class selector
+            var quantity = parseInt(quantityInput.val()) || 0; // Parse value
+
+
+            // Final validation
+            if (checkedSerials.length > quantity) {
+                alert("Checked count exceeds the allowed quantity. Please adjust your selection.");
+                return;
+            }
+
+            // Temporarily store the selected serial numbers
+            selectedSerialNumbers[selectedStockId] = checkedSerials;
+
+            // Update the table row with selected serials
+            // stockRow.find('.stockNameDisplay').text(`Selected Serials: ${checkedSerials.join(', ')}`);
+
+             // Update the table row with selected serials in green color
+            stockRow.find('.stockNameDisplay').addClass('green-text').text(`Selected Serials: ${checkedSerials.join(', ')}`);
+
+            // Add or update hidden input for serials in the form
+            const hiddenFieldName = `serials-${selectedStockId}`;
+            let hiddenField = $(`input[name="${hiddenFieldName}"]`);
+
+            if (hiddenField.length > 0) {
+                hiddenField.val(checkedSerials.join(','));
+            } else {
+                hiddenField = $('<input>')
+                    .attr('type', 'hidden')
+                    .attr('name', hiddenFieldName)
+                    .val(checkedSerials.join(','));
+                $('#billForm').append(hiddenField);
+            }
+
+            $('#serialNumberModal').modal('hide');
+            alert('Serial numbers updated successfully.');
+        });
+    });
+
+</script>
+
+
+
+<!--<div class="modal fade" id="serialNumberModal" tabindex="-1" role="dialog" aria-labelledby="serialNumberModalLabel" aria-hidden="true">-->
+<!--    <div class="modal-dialog" role="document">-->
+<!--        <div class="modal-content">-->
+<!--            <div class="modal-header">-->
+<!--                <h5 class="modal-title" id="serialNumberModalLabel">Select Serial Numbers</h5>-->
+<!--                <button type="button" class="close" data-dismiss="modal" aria-label="Close">-->
+<!--                    <span aria-hidden="true">&times;</span>-->
+<!--                </button>-->
+<!--            </div>-->
+<!--            <div class="modal-body">-->
+<!--                <form id="serialNumberForm">-->
+<!--                    <div id="serial-number-container">-->
+<!--                        &lt;!&ndash; Checkboxes will be dynamically added here &ndash;&gt;-->
+<!--                    </div>-->
+<!--                </form>-->
+<!--            </div>-->
+<!--            <div class="modal-footer">-->
+<!--                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>-->
+<!--                <button type="button" class="btn btn-primary" id="saveSerialNumbers">Save Serial Numbers</button>-->
+<!--            </div>-->
+<!--        </div>-->
+<!--    </div>-->
+<!--</div>-->
+
+<!--&lt;!&ndash;<script type="text/javascript">&ndash;&gt;-->
+<!--&lt;!&ndash;$(document).ready(function() {&ndash;&gt;-->
+<!--&lt;!&ndash;    var selectedStockId;&ndash;&gt;-->
+<!--&lt;!&ndash;    var selectedSerialNumbers = {};&ndash;&gt;-->
+
+<!--&lt;!&ndash;    // When clicking on stock name, open modal and load serial numbers&ndash;&gt;-->
+<!--&lt;!&ndash;    $(document).on('click', '.stockName', function(e) {&ndash;&gt;-->
+<!--&lt;!&ndash;        e.preventDefault();&ndash;&gt;-->
+<!--&lt;!&ndash;        selectedStockId = $(this).closest('.form-row').find('input[name*="stock"]').val();&ndash;&gt;-->
+
+<!--&lt;!&ndash;        // Fetch the quantity from the purchase form&ndash;&gt;-->
+<!--&lt;!&ndash;        var quantity = parseInt($(this).closest('.form-row').find('input[name*="quantity"]').val()) || 0;&ndash;&gt;-->
+
+<!--&lt;!&ndash;        // Fetch serial numbers for the selected stock&ndash;&gt;-->
+<!--&lt;!&ndash;        $.ajax({&ndash;&gt;-->
+<!--&lt;!&ndash;            url: '{% url "get_serial_numbers" %}', // Add appropriate URL here&ndash;&gt;-->
+<!--&lt;!&ndash;            data: { 'stock_id': selectedStockId },&ndash;&gt;-->
+<!--&lt;!&ndash;            success: function(data) {&ndash;&gt;-->
+<!--&lt;!&ndash;                var serialNumbers = data.serial_numbers; // Assume the data contains a list of serial numbers&ndash;&gt;-->
+<!--&lt;!&ndash;                $('#serial-number-container').empty();&ndash;&gt;-->
+
+<!--&lt;!&ndash;                // Dynamically add checkboxes for each serial number&ndash;&gt;-->
+<!--&lt;!&ndash;                serialNumbers.forEach(function(serial) {&ndash;&gt;-->
+<!--&lt;!&ndash;                    var isChecked = selectedSerialNumbers[selectedStockId] && selectedSerialNumbers[selectedStockId].includes(serial.serialNo);&ndash;&gt;-->
+<!--&lt;!&ndash;                    var checkbox = `<div class="form-check">&ndash;&gt;-->
+<!--&lt;!&ndash;                        <input class="form-check-input" type="checkbox" value="${serial.serialNo}" id="serialNo-${serial.serialNo}" ${isChecked ? 'checked' : ''}>&ndash;&gt;-->
+<!--&lt;!&ndash;                        <label class="form-check-label" for="serialNo-${serial.serialNo}">${serial.serialNo}</label>&ndash;&gt;-->
+<!--&lt;!&ndash;                    </div>`;&ndash;&gt;-->
+<!--&lt;!&ndash;                    $('#serial-number-container').append(checkbox);&ndash;&gt;-->
+<!--&lt;!&ndash;                });&ndash;&gt;-->
+
+<!--&lt;!&ndash;                // Set the maximum selection based on quantity&ndash;&gt;-->
+<!--&lt;!&ndash;                updateCheckboxState(quantity);&ndash;&gt;-->
+
+<!--&lt;!&ndash;                $('#serialNumberModal').modal('show');&ndash;&gt;-->
+<!--&lt;!&ndash;            }&ndash;&gt;-->
+<!--&lt;!&ndash;        });&ndash;&gt;-->
+<!--&lt;!&ndash;    });&ndash;&gt;-->
+
+<!--&lt;!&ndash;    // Update the checkbox state based on selected quantity&ndash;&gt;-->
+<!--&lt;!&ndash;    function updateCheckboxState(quantity) {&ndash;&gt;-->
+<!--&lt;!&ndash;        $('#serial-number-container input[type="checkbox"]').off('change').on('change', function() {&ndash;&gt;-->
+<!--&lt;!&ndash;            var checkedCount = $('#serial-number-container input[type="checkbox"]:checked').length;&ndash;&gt;-->
+
+<!--&lt;!&ndash;            // Enable/disable checkboxes based on checked count and quantity&ndash;&gt;-->
+<!--&lt;!&ndash;            if (checkedCount >= quantity) {&ndash;&gt;-->
+<!--&lt;!&ndash;                $('#serial-number-container input[type="checkbox"]').not(':checked').prop('disabled', true);&ndash;&gt;-->
+<!--&lt;!&ndash;            } else {&ndash;&gt;-->
+<!--&lt;!&ndash;                $('#serial-number-container input[type="checkbox"]').prop('disabled', false);&ndash;&gt;-->
+<!--&lt;!&ndash;            }&ndash;&gt;-->
+<!--&lt;!&ndash;        });&ndash;&gt;-->
+<!--&lt;!&ndash;    }&ndash;&gt;-->
+
+<!--&lt;!&ndash;    // Save selected serial numbers when the modal is submitted&ndash;&gt;-->
+<!--&lt;!&ndash;    $('#saveSerialNumbers').on('click', function() {&ndash;&gt;-->
+<!--&lt;!&ndash;        var checkedSerials = [];&ndash;&gt;-->
+<!--&lt;!&ndash;        $('#serial-number-container input[type="checkbox"]:checked').each(function() {&ndash;&gt;-->
+<!--&lt;!&ndash;            checkedSerials.push($(this).val());&ndash;&gt;-->
+<!--&lt;!&ndash;        });&ndash;&gt;-->
+
+<!--&lt;!&ndash;        // Store the selected serials for the stock&ndash;&gt;-->
+<!--&lt;!&ndash;        selectedSerialNumbers[selectedStockId] = checkedSerials;&ndash;&gt;-->
+
+<!--&lt;!&ndash;        // Display selected serial numbers below stock name in the table&ndash;&gt;-->
+<!--&lt;!&ndash;        var stockRow = $('input[value="' + selectedStockId + '"]').closest('.form-row');&ndash;&gt;-->
+<!--&lt;!&ndash;        stockRow.find('.stockNameDisplay').html('Selected Serials: ' + checkedSerials.join(', '));&ndash;&gt;-->
+
+<!--&lt;!&ndash;        // Now manually append these serial numbers to hidden fields in the purchase form&ndash;&gt;-->
+<!--&lt;!&ndash;        var hiddenField = $('<input>')&ndash;&gt;-->
+<!--&lt;!&ndash;            .attr('type', 'hidden')&ndash;&gt;-->
+<!--&lt;!&ndash;            .attr('name', 'serials-' + selectedStockId)&ndash;&gt;-->
+<!--&lt;!&ndash;            .val(checkedSerials.join(','));&ndash;&gt;-->
+
+<!--&lt;!&ndash;        // Append the hidden field to the form (purchaseForm)&ndash;&gt;-->
+<!--&lt;!&ndash;        $('#purchaseForm').append(hiddenField);&ndash;&gt;-->
+
+<!--&lt;!&ndash;        $('#serialNumberModal').modal('hide');&ndash;&gt;-->
+<!--&lt;!&ndash;    });&ndash;&gt;-->
+
+<!--&lt;!&ndash;    // Prevent actual form submission at this stage&ndash;&gt;-->
+<!--&lt;!&ndash;    $('#purchaseForm').on('submit', function(e) {&ndash;&gt;-->
+<!--&lt;!&ndash;        e.preventDefault();&ndash;&gt;-->
+<!--&lt;!&ndash;        // You can add more logic here if needed, but we prevent saving to the database&ndash;&gt;-->
+<!--&lt;!&ndash;       // alert('Serial numbers appended to form but not saved in the database.');&ndash;&gt;-->
+<!--&lt;!&ndash;    });&ndash;&gt;-->
+<!--&lt;!&ndash;});&ndash;&gt;-->
+<!--&lt;!&ndash;</script>&ndash;&gt;-->
+
+<!--<script>-->
+<!--    $(document).ready(function () {-->
+<!--        var selectedStockId;-->
+<!--        var selectedSerialNumbers = {};-->
+
+<!--        // When clicking on stock name, open modal and load serial numbers-->
+<!--        $(document).on('click', '.stockName', function (e) {-->
+<!--            e.preventDefault();-->
+
+<!--            // Identify the stock row-->
+<!--            var stockRow = $(this).closest('tr');-->
+
+<!--            // Fetch stock ID from the hidden input field in the same row-->
+<!--            selectedStockId = stockRow.find('input[name*="stock"]').val();-->
+
+<!--            // Fetch the quantity entered in the row-->
+<!--            var quantity = parseInt(stockRow.find('input[name*="quantity"]').val()) || 0;-->
+
+<!--            // Fetch serial numbers for the selected stock-->
+<!--            $.ajax({-->
+<!--                url: '{% url "get_serial_numbers" %}', // Update with your correct URL-->
+<!--                data: { stock_id: selectedStockId },-->
+<!--                success: function (data) {-->
+<!--                    var serialNumbers = data.serial_numbers; // Assume the server sends a list of serial numbers-->
+<!--                    $('#serial-number-container').empty();-->
+
+<!--                    // Add checkboxes dynamically for each serial number-->
+<!--                    serialNumbers.forEach(function (serial) {-->
+<!--                        var isChecked = selectedSerialNumbers[selectedStockId] && selectedSerialNumbers[selectedStockId].includes(serial.serialNo);-->
+<!--                        var checkbox = `-->
+<!--                            <div class="form-check">-->
+<!--                                <input class="form-check-input" type="checkbox" value="${serial.serialNo}" id="serialNo-${serial.serialNo}" ${isChecked ? 'checked' : ''}>-->
+<!--                                <label class="form-check-label" for="serialNo-${serial.serialNo}">${serial.serialNo}</label>-->
+
+<!--                            </div>`;-->
+<!--                        $('#serial-number-container').append(checkbox);-->
+<!--                    });-->
+
+<!--                    // Limit checkbox selection based on quantity-->
+<!--                    updateCheckboxState(quantity);-->
+
+<!--                    // Show the modal-->
+<!--                    $('#serialNumberModal').modal('show');-->
+<!--                }-->
+<!--            });-->
+<!--        });-->
+
+<!--        // Limit checkbox selection based on entered quantity-->
+<!--        function updateCheckboxState(quantity) {-->
+<!--            $('#serial-number-container input[type="checkbox"]').off('change').on('change', function () {-->
+<!--                var checkedCount = $('#serial-number-container input[type="checkbox"]:checked').length;-->
+
+<!--                // Disable extra checkboxes if the limit is reached-->
+<!--                if (checkedCount >= quantity) {-->
+<!--                    $('#serial-number-container input[type="checkbox"]:not(:checked)').prop('disabled', true);-->
+<!--                } else {-->
+<!--                    $('#serial-number-container input[type="checkbox"]').prop('disabled', false);-->
+<!--                }-->
+<!--            });-->
+<!--        }-->
+<!--        function updateCheckboxState(quantity) {-->
+<!--            $('#serial-number-container input[type="checkbox"]').off('change').on('change', function () {-->
+<!--                var checkedCount = $('#serial-number-container input[type="checkbox"]:checked').length;-->
+
+<!--                // Disable extra checkboxes if the limit is reached-->
+<!--                if (checkedCount >= quantity) {-->
+<!--                    $('#serial-number-container input[type="checkbox"]:not(:checked)').prop('disabled', true);-->
+<!--                } else {-->
+<!--                    // Enable all checkboxes if the limit is not reached-->
+<!--                    $('#serial-number-container input[type="checkbox"]').prop('disabled', false);-->
+<!--                }-->
+<!--            });-->
+<!--        }-->
+
+
+<!--        $('#saveSerialNumbers').on('click', function () {-->
+<!--            const checkedSerials = [];-->
+<!--            $('#serial-number-container input[type="checkbox"]:checked').each(function () {-->
+<!--                checkedSerials.push($(this).val());-->
+<!--            });-->
+
+<!--            // Store selected serials for the stock-->
+<!--            selectedSerialNumbers[selectedStockId] = checkedSerials;-->
+
+<!--            // Update the display in the table row-->
+<!--            const stockRow = $('input[value="' + selectedStockId + '"]').closest('tr');-->
+<!--            stockRow.find('.stockNameDisplay').text('Selected Serials: ' + checkedSerials.join(', '));-->
+
+<!--            // Add or update a hidden field for these serial numbers-->
+<!--            const hiddenFieldName = `serials-${selectedStockId}`;-->
+<!--            let hiddenField = $(`input[name="${hiddenFieldName}"]`);-->
+
+<!--            if (hiddenField.length > 0) {-->
+<!--                hiddenField.val(checkedSerials.join(','));-->
+<!--            } else {-->
+<!--                hiddenField = $('<input>')-->
+<!--                    .attr('type', 'hidden')-->
+<!--                    .attr('name', hiddenFieldName)-->
+<!--                    .val(checkedSerials.join(','));-->
+<!--                $('#billForm').append(hiddenField);-->
+<!--            }-->
+
+<!--            $('#serialNumberModal').modal('hide');-->
+<!--        });-->
+
+<!--    });-->
+<!--</script>-->
+
+
+<!-- Modal Structure -->
+<div class="modal fade" id="confirmationModal" tabindex="-1" aria-labelledby="confirmationModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="confirmationModalLabel">Confirm Details</h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <form id="modalForm">
+
+            <div class="toggle-container" style="display: flex; justify-content: center; align-items: center; width: 100%;">
+                <div id="currentBillLabel" class="toggle-label" style="display: flex; flex-direction: column; align-items: center; margin-right: 20px; width: 180px;">
+                    <span style="line-height: 1.5;">Current Bill</span>
+                    <span class="checkmark" id="checkCurrent" style="margin-left: 30px; line-height: 1.5;">✔</span>
+                </div>
+                <div id="previousBillLabel" class="toggle-label" style="display: flex; flex-direction: column; align-items: center; width: 180px;">
+                    <span style="line-height: 1.5;">Previous Bill</span>
+                    <span class="checkmark" id="checkPrevious" style="margin-left: 30px; line-height: 1.5;">✔</span>
+                </div>
+            </div>
+
+          <!-- Previous Bill and Previous Date Fields -->
+          <div class="form-group" id="previousBillField">
+            <label for="eway_no">Prev. Delivery Challan No <span style="color: red;">*</span></label>
+            <input type="text" id="eway_no" name="eway_no" class="form-control" value="{{ sale_bill_details.eway }}">
+          </div>
+          <div class="form-group" id="previousDateField">
+            <label for="bill_date">Prev. Bill Date <span style="color: red;">*</span></label>
+            <input type="date" id="bill_date" name="bill_date" class="form-control" value="{{ sale_bill_details.tcs }}">
+          </div>
+
+          <div class="form-group">
+            <label for="veh_no">Vehicle No</label>
+            <input type="text" id="veh_no" name="veh_no" class="form-control" value="{{ sale_bill_details.veh }}">
+          </div>
+          <div class="form-group">
+            <label for="arrange">Arrange By <span style="color: red;">*</span></label>
+            <input type="text" id="arrange" name="arrange" class="form-control" value="{{ sale_bill_details.sgst }}" required>
+          </div>
+            <div class="form-group">
+            <label for="handby">Handled By <span style="color: red;">*</span></label>
+            <input type="text" id="handby" name="handby" class="form-control" value="{{ sale_bill_details.igst }}" required>
+          </div>
+<!--          <div class="form-group">-->
+<!--            <label for="destination">Source <span style="color: red;">*</span></label>-->
+<!--            <select id="destination" name="destination" class="form-control" value="{{ sale_bill_details.destination }}" required>-->
+<!--              <option value="" disabled selected></option>-->
+<!--              <option value="Warehouse" {% if billdetails.destination == "Warehouse" %}selected{% endif %}>Warehouse</option>-->
+<!--              <option value="Office" {% if billdetails.destination == "Office" %}selected{% endif %}>Office</option>-->
+<!--              <option value="Vendor" {% if billdetails.destination == "Vendor" %}selected{% endif %}>Vendor</option>-->
+<!--            </select>-->
+<!--          </div>-->
+            <div class="form-group">
+              <label for="destination">Source <span style="color: red;">*</span></label>
+              <select id="destination" name="destination" class="form-control" required>
+                <option value="" disabled {% if not sale_bill_details.destination %}selected{% endif %}></option>
+                <option value="Warehouse" {% if sale_bill_details.destination == "Warehouse" %}selected{% endif %}>Warehouse</option>
+                <option value="Office" {% if sale_bill_details.destination == "Office" %}selected{% endif %}>Office</option>
+                <option value="Vendor" {% if sale_bill_details.destination == "Vendor" %}selected{% endif %}>Vendor</option>
+              </select>
+            </div>
+
+          <div class="form-group">
+            <label for="po_no">PO No</label>
+            <input type="text" id="po_no" name="po_no" class="form-control" value="{{ sale_bill_details.po }}" required>
+          </div>
+          <div class="form-group">
+            <label for="po_date">PO Date</label>
+            <input type="date" id="po_date" name="po_date" class="form-control" value="{{ sale_bill_details.cgst }}" required>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+        <button type="button" id="modalSubmitButton" class="btn btn-primary">Submit</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const categorySelect = document.getElementById('categorySelect');
+        const subcategorySelect = document.getElementById('subcategorySelect');
+        const stockSelect = document.getElementById('stockSelect');
+        const stockQuantity = document.getElementById('stockQuantity');
+        const availableQuantitySpan = document.getElementById('availableQuantitySpan');
+        const addRow = document.getElementById('addRow');
+        const tableBody = document.getElementById('billTable').querySelector('tbody');
+
+        // Populate subcategories based on category
+        categorySelect.addEventListener('change', function () {
+            const categoryId = this.value;
+            subcategorySelect.innerHTML = '<option value="">Select SubCategory</option>';
+            stockSelect.innerHTML = '<option value="">Select Stock</option>';
+            availableQuantitySpan.innerText = '';
+            stockQuantity.value = '';
+            stockSelect.disabled = true;
+            stockQuantity.disabled = true;
+            addRow.disabled = true;
+
+            if (categoryId) {
+                fetch(`/inventory/get_subcategories_edit/?category_id=${categoryId}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        data.subcategories.forEach(subcategory => {
+                            const option = document.createElement('option');
+                            option.value = subcategory.id;
+                            option.textContent = subcategory.name;
+                            subcategorySelect.appendChild(option);
+                        });
+                        subcategorySelect.disabled = false;
+                    });
+            } else {
+                subcategorySelect.disabled = true;
+            }
+        });
+
+        // Populate stocks based on subcategory
+        subcategorySelect.addEventListener('change', function () {
+            const subcategoryId = this.value;
+            stockSelect.innerHTML = '<option value="">Select Stock</option>';
+            availableQuantitySpan.innerText = '';
+            stockQuantity.value = '';
+            stockQuantity.disabled = true;
+            addRow.disabled = true;
+
+            if (subcategoryId) {
+                fetch(`/inventory/get_stocks_edit/?subcategory_id=${subcategoryId}`)
+                    .then(response => response.json())
+                    .then(data => {
+
+                        const existingStockIds = Array.from(tableBody.querySelectorAll('input[name="existing_stock_ids[]"]')).map(input => input.value);
+
+                        data.stocks.forEach(stock => {
+                            if (!existingStockIds.includes(stock.id.toString())) {
+                                const option = document.createElement('option');
+                                option.value = stock.id;
+                                option.textContent = stock.name;
+                                stockSelect.appendChild(option);
+                            }
+                        });
+                        stockSelect.disabled = false;
+                    });
+            } else {
+                stockSelect.disabled = true;
+            }
+        });
+
+        // Update available quantity when stock is selected
+        stockSelect.addEventListener('change', function () {
+            const stockId = this.value;
+            stockQuantity.disabled = !stockId;
+            addRow.disabled = !stockId;
+
+            if (stockId) {
+                // Fetch available stock quantity from the server
+                fetch(`/inventory/get_stock_quantity/?stock_id=${stockId}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        availableQuantitySpan.innerText = `Available Quantity: ${data.quantity}`;
+
+                        // Store fetched data for later use
+                        stockSelect.setAttribute('data-quantity', data.quantity);
+                        stockSelect.setAttribute('data-stock-alert', data.stock_alert);
+                        stockSelect.setAttribute('data-purchase', data.purchase);
+                    });
+            } else {
+                availableQuantitySpan.innerText = '';
+                stockSelect.removeAttribute('data-quantity');
+                stockSelect.removeAttribute('data-stock-alert');
+                stockSelect.removeAttribute('data-purchase');
+            }
+        });
+
+<!--        addRow.addEventListener('click', function () {-->
+<!--            const stockId = stockSelect.value;-->
+<!--            const stockName = stockSelect.options[stockSelect.selectedIndex].text;-->
+<!--            const categoryText = categorySelect.options[categorySelect.selectedIndex].text;-->
+<!--            const subcategoryText = subcategorySelect.options[subcategorySelect.selectedIndex].text;-->
+<!--            const quantity = stockQuantity.value;-->
+
+<!--            if (!stockId || !quantity) return;-->
+
+<!--            // Fetch the available stock quantity again to make sure it is displayed-->
+<!--            fetch(`/inventory/get_stock_quantity/?stock_id=${stockId}`)-->
+<!--                .then(response => response.json())-->
+<!--                .then(data => {-->
+<!--                    const availableQuantity = data.quantity;-->
+
+<!--                    const row = document.createElement('tr');-->
+<!--                    row.innerHTML = `-->
+<!--                        <td class="sr-no">${tableBody.children.length + 1}</td>-->
+<!--                        <td>${categoryText}</td>-->
+<!--                        <td>${subcategoryText}</td>-->
+<!--                        <td>${stockName}</td>-->
+<!--                        <td>${availableQuantity}</td> &lt;!&ndash; Dynamically added available stock quantity &ndash;&gt;-->
+<!--                        <td><input type="number" class="form-control" name="new_quantity[]" value="${quantity}" /></td>-->
+<!--                        <td><button type="button" class="removeRow">Remove</button></td>-->
+<!--                        <input type="hidden" name="new_stock_ids[]" value="${stockId}" />-->
+<!--                    `;-->
+<!--                    tableBody.appendChild(row);-->
+<!--                    updateSrNo();-->
+
+<!--                    // Reset form inputs-->
+<!--                    stockSelect.value = '';-->
+<!--                    stockQuantity.value = '';-->
+<!--                    availableQuantitySpan.innerText = '';-->
+<!--                    addRow.disabled = true;-->
+<!--                });-->
+<!--        });-->
+
+<!--        // Remove row-->
+<!--        tableBody.addEventListener('click', function (e) {-->
+<!--            if (e.target && e.target.classList.contains('removeRow')) {-->
+<!--                e.target.closest('tr').remove();-->
+<!--                updateSrNo();-->
+<!--            }-->
+<!--        });-->
+
+<!--        function updateSrNo() {-->
+<!--            const rows = tableBody.querySelectorAll('tr');-->
+<!--            rows.forEach((row, index) => {-->
+<!--                row.querySelector('.sr-no').textContent = index + 1;-->
+<!--            });-->
+<!--        }-->
+    });
+</script>
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const tableBody = document.getElementById('billTable').querySelector('tbody');
+
+        // Function to validate quantities for both existing and new rows
+<!--        function validateQuantities() {-->
+<!--            let isValid = true;-->
+
+<!--            // Validate each row-->
+<!--            tableBody.querySelectorAll('tr').forEach(row => {-->
+<!--                const quantityInput = row.querySelector('input[name^="quantity"]'); // Quantity input-->
+<!--                const availableQuantity = parseInt(row.querySelector('td:nth-child(5)').textContent || "0", 10); // Available Quantity from table-->
+<!--                const existingValue = parseInt(quantityInput.defaultValue || "0", 10); // Existing value before edit-->
+<!--                const newValue = parseInt(quantityInput.value || "0", 10); // New Quantity entered by the user-->
+<!--                const additionalQuantity = newValue - existingValue; // Calculate additional quantity-->
+
+<!--&lt;!&ndash;                if (quantityInput) {&ndash;&gt;-->
+<!--&lt;!&ndash;                    const newQuantity = parseInt(quantityInput.value || "0", 10); // New Quantity entered by the user&ndash;&gt;-->
+
+<!--&lt;!&ndash;                    // If new quantity exceeds available quantity, mark as invalid&ndash;&gt;-->
+<!--&lt;!&ndash;                    if (newQuantity > availableQuantity) {&ndash;&gt;-->
+<!--&lt;!&ndash;                        isValid = false;&ndash;&gt;-->
+<!--&lt;!&ndash;                        quantityInput.classList.add('is-invalid');&ndash;&gt;-->
+<!--&lt;!&ndash;                        quantityInput.setCustomValidity(`Quantity cannot exceed ${availableQuantity}`);&ndash;&gt;-->
+<!--&lt;!&ndash;                    } else {&ndash;&gt;-->
+<!--&lt;!&ndash;                        quantityInput.classList.remove('is-invalid');&ndash;&gt;-->
+<!--&lt;!&ndash;                        quantityInput.setCustomValidity(''); // Reset validity&ndash;&gt;-->
+<!--&lt;!&ndash;                    }&ndash;&gt;-->
+
+<!--                if (quantityInput) {-->
+<!--                    if (isNaN(newValue) || newValue <= 0) {-->
+<!--                        isValid = false;-->
+<!--                        quantityInput.classList.add('is-invalid');-->
+<!--                        quantityInput.setCustomValidity('Quantity must be greater than 0.');-->
+<!--                    } else if (additionalQuantity > availableQuantity) {-->
+<!--                        isValid = false;-->
+<!--                        quantityInput.classList.add('is-invalid');-->
+<!--                        quantityInput.setCustomValidity(`Additional quantity cannot exceed ${availableQuantity}`);-->
+<!--                    } else {-->
+<!--                        quantityInput.classList.remove('is-invalid');-->
+<!--                        quantityInput.setCustomValidity('');-->
+<!--                    }-->
+<!--                }-->
+
+<!--            });-->
+<!--            return isValid;-->
+<!--        }-->
+
+          function validateQuantities() {
+            let isValid = true;
+
+            // Validate each row
+            tableBody.querySelectorAll('tr').forEach(row => {
+                const quantityInput = row.querySelector('input[name^="quantity"]'); // Quantity input
+                const availableQuantityCell = row.querySelector('td:nth-child(5)'); // Available Quantity cell
+
+                if (!quantityInput || !availableQuantityCell) {
+                    return; // Skip rows with missing inputs or data
+                }
+
+                const availableQuantity = parseInt(availableQuantityCell.textContent || "0", 10); // Available Quantity
+                const existingValue = parseInt(quantityInput.defaultValue || "0", 10); // Existing value before edit
+                const newValue = parseInt(quantityInput.value || "0", 10); // New Quantity entered by the user
+                const additionalQuantity = newValue - existingValue; // Calculate additional quantity
+
+                if (isNaN(newValue) || newValue <= 0) {
+                    isValid = false;
+                    quantityInput.classList.add('is-invalid');
+                    quantityInput.setCustomValidity('Quantity must be greater than 0.');
+                } else if (additionalQuantity > availableQuantity) {
+                    isValid = false;
+                    quantityInput.classList.add('is-invalid');
+                    quantityInput.setCustomValidity(`Additional quantity cannot exceed ${availableQuantity}`);
+                } else {
+                    quantityInput.classList.remove('is-invalid');
+                    quantityInput.setCustomValidity('');
+                }
+
+                 // Show the validity message
+                quantityInput.reportValidity();
+            });
+
+            return isValid;
+        }
+
+
+
+
+
+        // Trigger validation on quantity field input
+        tableBody.addEventListener('input', function (e) {
+            if (e.target && e.target.matches('input[name^="quantity"]')) {
+                validateQuantities();
+            }
+        });
+
+        // Validate quantities when the form is submitted
+        const form = document.getElementById('billForm');
+        form.addEventListener('submit', function (e) {
+            if (!validateQuantities()) {
+                e.preventDefault(); // Prevent form submission if validation fails
+                alert('Please ensure all quantities are within available stock limits.');
+            }
+        });
+
+        // Add new rows dynamically with validation
+        const addRow = document.getElementById('addRow');
+        const stockSelect = document.getElementById('stockSelect');
+        const stockQuantity = document.getElementById('stockQuantity');
+
+        addRow.addEventListener('click', function () {
+            const stockId = stockSelect.value;
+            const stockName = stockSelect.options[stockSelect.selectedIndex].text;
+            // const availableQuantity = stockSelect.selectedOptions[0].getAttribute('data-quantity'); // Retrieve available quantity
+            const stockAlert = parseInt(stockSelect.getAttribute('data-stock-alert') || "0", 10);
+            const purchase = stockSelect.getAttribute('data-purchase') || "N/A";
+            const categoryText = categorySelect.options[categorySelect.selectedIndex].text;
+            const subcategoryText = subcategorySelect.options[subcategorySelect.selectedIndex].text;
+            const quantity = stockQuantity.value;
+
+			const availableQuantitySpan = document.getElementById('availableQuantitySpan').textContent;
+            const availableQuantity = parseInt(availableQuantitySpan.replace('Available Quantity: ', '') || "0", 10);
+
+            // const quantity = parseInt(stockQuantity.value || "0", 10);
+
+            // if (!stockId || !quantity) return;
+            if (!stockId || quantity <= 0) {
+                alert('Please enter a valid quantity greater than 0.');
+                return;
+            }
+
+            if (quantity > availableQuantity) {
+                alert(`Quantity cannot exceed available stock (${availableQuantity}).`);
+                return;
+            }
+
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td class="sr-no">${tableBody.children.length + 1}</td>
+                <td>${categoryText}</td>
+                <td>${subcategoryText}</td>
+                <td>
+                   &nbsp;<a href="#" class="stockName text-capitalize form-control-plaintext">${stockName}</a>
+                         <a href="{% url 'get_serial_numbers' %}?stock_id={{ item.stock.id }}"></a>
+                            <small class="custom-small">
+                                   <span class="stockNameDisplay" style="margin: 0; padding: 0;"></span>
+                            </small>
+                </td>
+                 <td>
+                    <div class="d-flex justify-content-center align-items-center mt-1">
+                        <input type="hidden" class="form-control stock-quantity" value="${availableQuantity}" readonly>
+                        <span class="badge ${availableQuantity > stockAlert ? 'success' : 'danger'}">
+                            ${availableQuantity} <small>${purchase}</small>
+                        </span>
+                    </div>
+                </td>
+
+                <td>
+                      <div class="input-group">
+                          <input type="number" name="quantities[]" class="form-control quantity-input" value="${quantity}" min="1" readonly />
+                          <div class="input-group-append">
+                             <span class="input-group-text me-2">${purchase}</span>
+                          </div>
+                      </div>
+                </td>
+                <td><button type="button" class="removeRow">Remove</button></td>
+                <input type="hidden" name="stock_ids[]" value="${stockId}" />
+            `;
+              tableBody.appendChild(row);
+                    updateSrNo();
+                    stockSelect.querySelector(`option[value="${stockId}"]`).remove();
+                    stockQuantity.value = '';
+                    stockQuantity.disabled = true;
+        });
+
+        // Update serial numbers
+        function updateSrNo() {
+            const rows = tableBody.querySelectorAll('tr');
+            rows.forEach((row, index) => {
+                row.querySelector('.sr-no').textContent = index + 1;
+            });
+        }
+
+		function updateSrNo() {
+            document.querySelectorAll('#billTable tbody .sr-no').forEach((cell, index) => {
+                cell.innerText = index + 1;
+            });
+        }
+
+        // Remove row
+        tableBody.addEventListener('click', function (e) {
+            if (e.target && e.target.classList.contains('removeRow')) {
+                e.target.closest('tr').remove();
+                updateSrNo();
+                validateQuantities(); // Revalidate rows
+            }
+        });
+
+        tableBody.addEventListener('click', function (e) {
+            if (e.target && e.target.classList.contains('removeRow')) {
+                e.target.closest('tr').remove();
+                updateSrNo();
+                validateQuantities(); // Revalidate rows
+            }
+        });
+
+        // Handle submit button click
+        $('#submitBtn').on('click', function (event) {
+            event.preventDefault(); // Prevent form submission immediately
+            if (validateQuantities()) {
+                $('#confirmationModal').modal('show'); // Show confirmation modal if validation passes
+            } else {
+                alert('Please ensure all quantities are within available stock limits.');
+            }
+        });
+
+        // Handle confirmation modal submit
+        $('#modalSubmitButton').on('click', function() {
+            // After confirmation, submit the form
+            const form = document.getElementById('billForm');
+            form.submit();
+            $('#confirmationModal').modal('hide'); // Hide the confirmation modal
+            alert("**Bill No: " + "{{ sale_bill.billno }}" + "** Records Updated Successfully!"); // Show success message
+        });
+
+
+<!--        // Handle submit button click-->
+<!--        $('#submitBtn').on('click', function () {-->
+<!--            if (validateQuantities()) {-->
+<!--                $('#confirmationModal').modal('show'); // Show confirmation modal if validation passes-->
+<!--            }-->
+<!--        });-->
+
+<!--        // Handle confirmation modal submission-->
+<!--        $('#modalSubmitButton').on('click', function () {-->
+<!--            $('#confirmationModal').modal('hide'); // Close the modal-->
+<!--             $('#billForm').submit(); // Submit the form-->
+<!--        });-->
+
+
+
+<!--        document.getElementById('billForm').onsubmit = function(event) {-->
+<!--                event.preventDefault(); // Prevent form from submitting immediately-->
+<!--                // Show confirmation dialog-->
+<!--                const userConfirmed = confirm('Are you sure you want to save the changes?');-->
+<!--                if (userConfirmed) {-->
+<!--                    // Display the success message in an alert box-->
+<!--                    alert("**Bill No: " + "{{ sale_bill.billno }}" + "** Records Updated Successfully!");-->
+
+<!--                    // Proceed to submit the form-->
+<!--                    form.submit();-->
+<!--                }-->
+<!--         };-->
+
+    });
+</script>
+
+<!--<script>-->
+<!--	document.addEventListener('DOMContentLoaded', function () {-->
+<!--        const categorySelect = document.getElementById('categorySelect');-->
+<!--        const subcategorySelect = document.getElementById('subcategorySelect');-->
+<!--        const stockSelect = document.getElementById('stockSelect');-->
+<!--        const stockQuantity = document.getElementById('stockQuantity');-->
+<!--        const availableQuantitySpan = document.getElementById('availableQuantitySpan');-->
+<!--        const addRow = document.getElementById('addRow');-->
+<!--        const tableBody = document.getElementById('billTable').querySelector('tbody');-->
+
+<!--        // Populate subcategories based on category-->
+<!--        categorySelect.addEventListener('change', function () {-->
+<!--            const categoryId = this.value;-->
+<!--            subcategorySelect.innerHTML = '<option value="">Select SubCategory</option>';-->
+<!--            stockSelect.innerHTML = '<option value="">Select Stock</option>';-->
+<!--            availableQuantitySpan.innerText = '';-->
+<!--            stockQuantity.value = '';-->
+<!--            stockSelect.disabled = true;-->
+<!--            stockQuantity.disabled = true;-->
+<!--            addRow.disabled = true;-->
+
+<!--            if (categoryId) {-->
+<!--                fetch(`/inventory/get_subcategories_edit/?category_id=${categoryId}`)-->
+<!--                    .then(response => response.json())-->
+<!--                    .then(data => {-->
+<!--                        data.subcategories.forEach(subcategory => {-->
+<!--                            const option = document.createElement('option');-->
+<!--                            option.value = subcategory.id;-->
+<!--                            option.textContent = subcategory.name;-->
+<!--                            subcategorySelect.appendChild(option);-->
+<!--                        });-->
+<!--                        subcategorySelect.disabled = false;-->
+<!--                    });-->
+<!--            } else {-->
+<!--                subcategorySelect.disabled = true;-->
+<!--            }-->
+<!--        });-->
+
+<!--        // Populate stocks based on subcategory-->
+<!--        subcategorySelect.addEventListener('change', function () {-->
+<!--            const subcategoryId = this.value;-->
+<!--            stockSelect.innerHTML = '<option value="">Select Stock</option>';-->
+<!--            availableQuantitySpan.innerText = '';-->
+<!--            stockQuantity.value = '';-->
+<!--            stockQuantity.disabled = true;-->
+<!--            addRow.disabled = true;-->
+
+<!--            if (subcategoryId) {-->
+<!--                fetch(`/inventory/get_stocks_edit/?subcategory_id=${subcategoryId}`)-->
+<!--                    .then(response => response.json())-->
+<!--                    .then(data => {-->
+<!--                        const existingStockIds = Array.from(tableBody.querySelectorAll('input[name="existing_stock_ids[]"]')).map(input => input.value);-->
+<!--                        data.stocks.forEach(stock => {-->
+<!--                            if (!existingStockIds.includes(stock.id.toString())) {-->
+<!--                                const option = document.createElement('option');-->
+<!--                                option.value = stock.id;-->
+<!--                                option.textContent = stock.name;-->
+<!--                                stockSelect.appendChild(option);-->
+<!--                            }-->
+<!--                        });-->
+<!--                        stockSelect.disabled = false;-->
+<!--                    });-->
+<!--            } else {-->
+<!--                stockSelect.disabled = true;-->
+<!--            }-->
+<!--        });-->
+
+<!--        // Update available quantity when stock is selected-->
+<!--        stockSelect.addEventListener('change', function () {-->
+<!--            const stockId = this.value;-->
+<!--            stockQuantity.disabled = !stockId;-->
+<!--            addRow.disabled = !stockId;-->
+
+<!--            if (stockId) {-->
+<!--                fetch(`/inventory/get_stock_quantity/?stock_id=${stockId}`)-->
+<!--                    .then(response => response.json())-->
+<!--                    .then(data => {-->
+<!--                        availableQuantitySpan.innerText = `Available Quantity: ${data.quantity}`;-->
+<!--                        stockSelect.setAttribute('data-quantity', data.quantity);-->
+<!--                        stockSelect.setAttribute('data-stock-alert', data.stock_alert);-->
+<!--                        stockSelect.setAttribute('data-purchase', data.purchase);-->
+<!--                    });-->
+<!--            } else {-->
+<!--                availableQuantitySpan.innerText = '';-->
+<!--                stockSelect.removeAttribute('data-quantity');-->
+<!--                stockSelect.removeAttribute('data-stock-alert');-->
+<!--                stockSelect.removeAttribute('data-purchase');-->
+<!--            }-->
+<!--        });-->
+
+<!--        // Function to validate quantities for both existing and new rows-->
+<!--        function validateQuantities() {-->
+<!--            let isValid = true;-->
+<!--            tableBody.querySelectorAll('tr').forEach(row => {-->
+<!--                const quantityInput = row.querySelector('input[name^="quantity"]');-->
+<!--                const availableQuantity = parseInt(row.querySelector('td:nth-child(5)').textContent || "0", 10);-->
+<!--                const existingValue = parseInt(quantityInput.defaultValue || "0", 10);-->
+<!--                const newValue = parseInt(quantityInput.value || "0", 10);-->
+<!--                const additionalQuantity = newValue - existingValue;-->
+
+<!--                if (quantityInput) {-->
+<!--                    if (isNaN(newValue) || newValue <= 0) {-->
+<!--                        isValid = false;-->
+<!--                        quantityInput.classList.add('is-invalid');-->
+<!--                        quantityInput.setCustomValidity('Quantity must be greater than 0.');-->
+<!--                    } else if (additionalQuantity > availableQuantity) {-->
+<!--                        isValid = false;-->
+<!--                        quantityInput.classList.add('is-invalid');-->
+<!--                        quantityInput.setCustomValidity(`Additional quantity cannot exceed ${availableQuantity}`);-->
+<!--                    } else {-->
+<!--                        quantityInput.classList.remove('is-invalid');-->
+<!--                        quantityInput.setCustomValidity('');-->
+<!--                    }-->
+<!--                }-->
+<!--            });-->
+<!--            return isValid;-->
+<!--        }-->
+
+<!--        // Handle submit button click-->
+<!--        $('#submitBtn').on('click', function (event) {-->
+<!--            event.preventDefault(); // Prevent form submission immediately-->
+<!--            if (validateQuantities()) {-->
+<!--                $('#confirmationModal').modal('show'); // Show confirmation modal if validation passes-->
+<!--            } else {-->
+<!--                alert('Please ensure all quantities are within available stock limits.');-->
+<!--            }-->
+<!--        });-->
+
+<!--        // Handle confirmation modal submit-->
+<!--        $('#modalSubmitButton').on('click', function() {-->
+<!--            // After confirmation, submit the form-->
+<!--            const form = document.getElementById('billForm');-->
+<!--            form.submit();-->
+<!--            $('#confirmationModal').modal('hide'); // Hide the confirmation modal-->
+<!--            alert("**Bill No: " + "{{ sale_bill.billno }}" + "** Records Updated Successfully!"); // Show success message-->
+<!--        });-->
+
+<!--    });-->
+<!--</script>-->
+
+<script type="text/javascript">
+$(document).ready(function() {
+    // Initialize the previous bill fields to show by default
+    $('#previousBillLabel').addClass('active');
+    $('#checkPrevious').show(); // Show checkmark for Previous Bill
+    $('#previousBillField').show(); // Ensure the fields are shown initially
+    $('#previousDateField').show();
+
+
+
+
+<!--    // Display the modal only after validation-->
+<!--    $('#initialSubmitButton').on('click', function() {-->
+<!--            $('#confirmationModal').modal('show'); // Open the modal only if validation passes-->
+<!--    });-->
+
+    // Click event for Current Bill label
+    $('#currentBillLabel').on('click', function() {
+        // Set this label as active and remove active state from the other
+        $(this).addClass('active');
+        $('#previousBillLabel').removeClass('active');
+        $('#checkCurrent').show(); // Show checkmark for Current Bill
+        $('#checkPrevious').hide(); // Hide checkmark for Previous Bill
+
+        // Hide previous bill fields
+        $('#previousBillField').hide();
+        $('#eway_no').val(''); // Clear input
+        $('#previousDateField').hide();
+        $('#bill_date').val(''); // Clear input
+    });
+
+    // Click event for Previous Bill label
+    $('#previousBillLabel').on('click', function() {
+        // Set this label as active and remove active state from the other
+        $(this).addClass('active');
+        $('#currentBillLabel').removeClass('active');
+        $('#checkPrevious').show(); // Show checkmark for Previous Bill
+        $('#checkCurrent').hide(); // Hide checkmark for Current Bill
+
+        // Show previous bill fields
+        $('#previousBillField').show();
+        $('#previousDateField').show();
+    });
+
+    // Handle the modal's submit button
+    $('#modalSubmitButton').on('click', function() {
+        // Retrieve the value from the modal input fields
+        const eway_no = $('#eway_no').val();
+        const bill_date = $('#bill_date').val();
+        const veh_no = $('#veh_no').val();
+        const arrange = $('#arrange').val();
+        const handby = $('#handby').val();
+        const destination = $('#destination').val();
+        const po_no = $('#po_no').val();
+        const po_date = $('#po_date').val();
+
+        // Check if required fields are filled based on selected bill type
+        const isCurrentBill = $('#currentBillLabel').hasClass('active');
+        const isPreviousBill = $('#previousBillLabel').hasClass('active');
+
+        // Validate fields based on the selected bill type
+        if (isCurrentBill) {
+            // For Current Bill, only check handby and destination
+            if (arrange && handby && destination) {
+                // Append modal input data to the main form
+                $('#billForm').append($('<input>', {type: 'hidden', name: 'veh_no', value: veh_no}));
+                $('#billForm').append($('<input>', {type: 'hidden', name: 'arrange', value: arrange}));
+                $('#billForm').append($('<input>', {type: 'hidden', name: 'handby', value: handby}));
+                $('#billForm').append($('<input>', {type: 'hidden', name: 'destination', value: destination}));
+                $('#billForm').append($('<input>', {type: 'hidden', name: 'po_no', value: po_no}));
+                $('#billForm').append($('<input>', {type: 'hidden', name: 'po_date', value: po_date}));
+
+                // Hide the modal
+                $('#confirmationModal').modal('hide');
+
+                // Submit the form after hiding the modal
+                $('#billForm').submit();
+            } else {
+                alert("Please fill in all required fields in the modal (Handby and Destination).");
+            }
+        } else if (isPreviousBill) {
+            // For Previous Bill, check that eway_no, bill_date, handby, and destination are filled
+            if (arrange && eway_no && bill_date && handby && destination) {
+                // Append modal input data to the main form
+                $('#billForm').append($('<input>', {type: 'hidden', name: 'eway_no', value: eway_no}));
+                $('#billForm').append($('<input>', {type: 'hidden', name: 'bill_date', value: bill_date}));
+                $('#billForm').append($('<input>', {type: 'hidden', name: 'veh_no', value: veh_no}));
+                $('#billForm').append($('<input>', {type: 'hidden', name: 'arrange', value: arrange}));
+                $('#billForm').append($('<input>', {type: 'hidden', name: 'handby', value: handby}));
+                $('#billForm').append($('<input>', {type: 'hidden', name: 'destination', value: destination}));
+                $('#billForm').append($('<input>', {type: 'hidden', name: 'po_no', value: po_no}));
+                $('#billForm').append($('<input>', {type: 'hidden', name: 'po_date', value: po_date}));
+
+                // Hide the modal
+                $('#confirmationModal').modal('hide');
+
+                // Submit the form after hiding the modal
+                $('#billForm').submit();
+            } else {
+                alert("Please fill in all required fields in the modal (Eway No, Bill Date, Handby, and Destination).");
+            }
+        }
+    });
+});
+</script>
+
+
+
+
+<!--    <h1>Edit Sale Bill</h1>-->
+
+<!--    &lt;!&ndash; Sale Bill Details &ndash;&gt;-->
+<!--    <h3>Bill Information</h3>-->
+<!--    <p><strong>Bill No:</strong> {{ sale_bill.billno }}</p>-->
+<!--    <p><strong>Customer Name:</strong> {{ sale_bill.Cust_id.Comp_name }}</p>-->
+<!--    <p><strong>Phone:</strong> {{ sale_bill.Cust_id.phone }}</p>-->
+<!--    <p><strong>Address:</strong> {{ sale_bill.Cust_id.Address }}</p>-->
+<!--    <p><strong>Email:</strong> {{ sale_bill.Cust_id.email }}</p>-->
+<!--    <p><strong>GSTIN:</strong> {{ sale_bill.Cust_id.gstin }}</p>-->
+
+<!--    &lt;!&ndash; Sale Items &ndash;&gt;-->
+<!--    <h3>Sale Items</h3>-->
+<!--    <table border="1">-->
+<!--        <thead>-->
+<!--            <tr>-->
+<!--                <th>Stock</th>-->
+<!--                <th>Quantity</th>-->
+<!--                <th>Price Per Unit</th>-->
+<!--                <th>Total Price</th>-->
+<!--            </tr>-->
+<!--        </thead>-->
+<!--        <tbody>-->
+<!--            {% for item in sale_items %}-->
+<!--            <tr>-->
+<!--                <td>{{ item.stock.name }}</td>-->
+<!--                <td>{{ item.quantity }}</td>-->
+<!--                <td>{{ item.perprice }}</td>-->
+<!--                <td>{{ item.totalprice }}</td>-->
+<!--            </tr>-->
+<!--            {% endfor %}-->
+<!--        </tbody>-->
+<!--    </table>-->
+
+<!--    &lt;!&ndash; Sale Bill Details &ndash;&gt;-->
+<!--    {% if sale_bill_details %}-->
+<!--    <h3>Additional Details</h3>-->
+<!--    <p><strong>E-Way:</strong> {{ sale_bill_details.eway }}</p>-->
+<!--    <p><strong>Vehicle:</strong> {{ sale_bill_details.veh }}</p>-->
+<!--    <p><strong>Destination:</strong> {{ sale_bill_details.destination }}</p>-->
+<!--    <p><strong>Final Amount:</strong> {{ sale_bill_details.final_amount }}</p>-->
+<!--    {% endif %}-->
+
+<!--    &lt;!&ndash; Dropdown Lists &ndash;&gt;-->
+<!--    <h3>Related Data</h3>-->
+<!--    <h3>Categories</h3>-->
+<!--    <select>-->
+<!--        {% for category in categories %}-->
+<!--        <option value="{{ category.id }}">{{ category.name }}</option>-->
+<!--        {% endfor %}-->
+<!--    </select>-->
+
+<!--    <h3>Subcategories</h3>-->
+<!--    <select>-->
+<!--        {% for subcategory in subcategories %}-->
+<!--        <option value="{{ subcategory.id }}">{{ subcategory.name }}</option>-->
+<!--        {% endfor %}-->
+<!--    </select>-->
+
+<!--    <h3>Stocks</h3>-->
+<!--    <select>-->
+<!--        {% for stock in stocks %}-->
+<!--        <option value="{{ stock.id }}">{{ stock.name }}</option>-->
+<!--        {% endfor %}-->
+<!--    </select>-->
+
+<style>
+    .success {
+
+        color: #28a745; /* Text color */
+        border: 3px solid #28a745; /* Border color */
+        padding: 5px 8px;
+        border-radius: 5px;
+        font-size: 80%;
+    }
+
+    .danger {
+
+        color: #dc3545; /* Text color */
+        border: 3px solid #dc3545; /* Border color */
+        padding: 5px 8px;
+        border-radius: 5px;
+        font-size: 80%;
+    }
+
+    .custom-flex {
+        display: flex;
+        align-items: center; /* Vertically center input and image */
+    }
+    .custom-flex input {
+        margin-right: 10px; /* Add some space between the input and the image */
+    }
+</style>
+<style>
+    .success {
+
+        color: #28a745; /* Text color */
+        border: 3px solid #28a745; /* Border color */
+        padding: 5px 8px;
+        border-radius: 5px;
+        font-size: 80%;
+    }
+
+    .danger {
+
+        color: #dc3545; /* Text color */
+        border: 3px solid #dc3545; /* Border color */
+        padding: 5px 8px;
+        border-radius: 5px;
+        font-size: 80%;
+    }
+
+    .custom-flex {
+        display: flex;
+        align-items: center; /* Vertically center input and image */
+    }
+    .custom-flex input {
+        margin-right: 10px; /* Add some space between the input and the image */
+    }
+</style>
+<style>
+        /* Container for toggle labels */
+        .toggle-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%; /* Adjust width as necessary */
+        }
+
+        .toggle-label {
+            width: 100px; /* Width for labels */
+            text-align: center;
+            padding: 10px;
+            border-radius: 5px; /* Rounded corners */
+            background-color: white; /* Default background color */
+            transition: background-color 0.3s, color 0.3s; /* Transition for smooth effect */
+            border: 1px solid #ccc; /* Optional border */
+            cursor: pointer; /* Show pointer cursor on hover */
+            position: relative; /* For the checkmark */
+        }
+
+        /* Styles for active labels */
+        .active {
+            background-color: green; /* Background color when active */
+            color: white; /* Text color for active state */
+        }
+
+        .checkmark {
+            position: absolute;
+            top: 5px;
+            left: 5px;
+            font-size: 20px;
+            display: none; /* Hide by default */
+            color: white; /* White color for checkmark */
+        }
+
+        /* Previous Bill and Previous Date Fields */
+        .form-group {
+            margin-top: 20px; /* Spacing above fields */
+        }
+
+        .green-text {
+            color: green;
+<!--            font-weight: bold;-->
+        }
+
+    </style>
+{% endblock content %}

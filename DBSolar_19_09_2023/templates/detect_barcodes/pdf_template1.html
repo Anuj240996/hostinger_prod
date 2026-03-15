@@ -1,0 +1,47 @@
+{% extends '../base.html' %}
+
+{% load static %}
+
+{% block content %}
+<!-- pdf_template.html -->
+
+<style>
+    table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    th, td {
+        border: 1px solid black;
+        padding: 8px;
+        text-align: left;
+        border: none;  /* Remove the outline */
+    }
+</style>
+
+<table>
+    <thead>
+        <tr>
+            <th>Serial Number</th>
+            <th>Barcode Data</th>
+            <th>Barcode Type</th>
+            <th>Solar Plate Company</th>
+            <th>Wattage</th>
+            <th>Last Modified at</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for barcode in detected_barcodes %}
+            <tr>
+                <td>{{ forloop.counter }}</td>
+                <td>{{ barcode.barcode_data }}</td>
+                <td>{{ barcode.barcode_type }}</td>
+                <td>{{ barcode.solarPlateCompany }}</td>
+                <td>{{ barcode.wattage }}</td>
+                <td>{{ barcode.file_saved_at }}</td>
+            </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+{% endblock content %}

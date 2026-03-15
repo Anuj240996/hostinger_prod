@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+{% extends 'partials/base.html' %}
+{% block title %}Order Page{% endblock %}
+{% block content %}
+
+<div></div>
+<div></div>
+<div class="form-group">
+    <button type="button" class="btn btn-primary btn-sm m-3" data-toggle="modal" data-target="#myModal">Select Consumer Type</button>
+</div>
+
+<div class="modal fade" id="myModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="exampleModalLabel">Select Consumer Type</h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+      </div>
+
+
+      <div class="modal-body">
+        <form method="post">
+          {% csrf_token %}
+          <div class="form-group">
+            <label for="department">Select Consumer Type</label>
+            <select class="form-control" id="department" name="department" onchange="openPage(this.value)">
+              <option value="">--- Select Consmer --- </option>
+              <option value="{% url 'customer-Cust_emp' %}">Residential</option>
+              <option value="{% url 'customer-Comm_Cust' %}">Commercial </option>
+              <option value="{% url 'customer-Comp_Cust' %}">Industrial</option>
+              <option value="{% url 'customer-Govt_Cust' %}">Government</option>
+
+            </select>
+          </div>
+          <div class="modal-footer">
+            <button type="submit" id="submitButton" class="btn btn-primary">Save</button>
+          </div>
+        </form>
+      </div>
+
+      <!-- jQuery -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+<!-- Bootstrap JavaScript -->
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+
+     <script>
+  // Get the modal element
+  var modal = document.getElementById("myModal");
+
+  // Get the <span> element that closes the modal
+  var closeBtn = document.getElementsByClassName("close")[0];
+
+  // Get the select element
+  var departmentSelect = document.getElementById("department");
+
+  // Function to open the modal
+  function openModal() {
+    modal.style.display = "block";
+  }
+
+  // Function to close the modal
+  function closeModal() {
+    modal.style.display = "none";
+  }
+
+
+
+  // Event listener for close button click
+  closeBtn.addEventListener("click", closeModal);
+
+       // Event listener for select element change
+        //  departmentSelect.addEventListener("change", function() {
+        //  var selectedOption = departmentSelect.options[departmentSelect.selectedIndex];
+        // var url = selectedOption.value;
+        // window.open(url, "_self");
+        // });
+
+  // Event listener for submit button click
+  var submitButton = document.getElementById("submitButton");
+  submitButton.addEventListener("click", function(event) {
+    event.preventDefault();
+    var selectedOption = departmentSelect.options[departmentSelect.selectedIndex];
+    var url = selectedOption.value;
+    window.open(url, "_self");
+  });
+</script>
+
+    </div>
+  </div>
+</div>
+
+</div>
+
+</div>
+</div>
+
+{% endblock %}

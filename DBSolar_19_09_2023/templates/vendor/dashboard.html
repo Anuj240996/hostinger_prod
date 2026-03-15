@@ -1,0 +1,62 @@
+{% extends 'partials/base.html' %}
+{% load static %}
+
+{% block title %}Vendor Dashboard{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+  <div class="row mb-3">
+    <div class="col-12">
+      <div class="card shadow">
+        <div class="card-header bg-primary text-white">
+          <h4 class="mb-0">Vendor Dashboard</h4>
+        </div>
+        <div class="card-body">
+          <div class="row">
+            <div class="col-md-6">
+              <p class="mb-1"><strong>Vendor:</strong> {{ vendor_account.vendor.name }}</p>
+              <p class="mb-1"><strong>Vendor ID:</strong> {{ vendor_account.vendor.vendor_id|default:vendor_account.vendor.id }}</p>
+              <p class="mb-0"><strong>Login:</strong> {{ vendor_account.user.username }}</p>
+            </div>
+            <div class="col-md-6 text-md-end">
+              <a class="btn btn-secondary" href="{% url 'user-logout' %}">Logout</a>
+            </div>
+          </div>
+          <hr>
+          <div class="row">
+            <div class="col-md-4 mb-3">
+              <div class="card h-100">
+                <div class="card-body">
+                  <h6 class="card-title">Suppliers</h6>
+                  <p class="card-text text-muted">View suppliers list.</p>
+                  <a href="{% url 'suppliers-list' %}" class="btn btn-outline-primary btn-sm">Open</a>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-4 mb-3">
+              <div class="card h-100">
+                <div class="card-body">
+                  <h6 class="card-title">Vendors</h6>
+                  <p class="card-text text-muted">View vendors list.</p>
+                  <a href="{% url 'vendor-list' %}" class="btn btn-outline-primary btn-sm">Open</a>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-4 mb-3">
+              <div class="card h-100">
+                <div class="card-body">
+                  <h6 class="card-title">Purchases</h6>
+                  <p class="card-text text-muted">View purchase entries.</p>
+                  <a href="{% url 'purchases-list' %}" class="btn btn-outline-primary btn-sm">Open</a>
+                </div>
+              </div>
+            </div>
+          </div>
+          <small class="text-muted">Note: access to each module is still controlled by your permissions.</small>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+

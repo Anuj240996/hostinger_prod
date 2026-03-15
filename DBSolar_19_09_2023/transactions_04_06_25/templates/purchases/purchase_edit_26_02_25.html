@@ -1,0 +1,1987 @@
+{% extends 'partials/base.html' %}
+{% load static %}
+{% block title %} New Purchase {% endblock title %}
+{% block content %}
+<br>
+<script type="text/javascript" src="{% static 'js/jquery-3.2.1.slim.min.js' %}"></script>
+<script type="text/javascript" src="{% static 'js/dialogbox.js' %}"></script>
+
+<!-- Existing HTML -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@mdi/font/css/materialdesignicons.min.css">
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<!--<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>-->
+
+<h1>Edit Bill</h1>
+<form method="post" id="billForm">
+    <h1 align="center" class="text-capitalize">Sales Bill - {{ purchase_bill.billno }}</h1>
+    {% csrf_token %}
+	<!-- Sale Bill Details -->
+    <h3>Bill Information</h3>
+    <p><strong>Bill No:</strong> {{ purchase_bill.billno }}</p>
+    <p><strong>Customer Name:</strong> {{ purchase_bill.supplier.name }}</p>
+    <p><strong>Phone:</strong> {{ purchase_bill.supplier.phone }}</p>
+    <p><strong>Address:</strong> {{ purchase_bill.supplier.address }}</p>
+    <p><strong>Email:</strong> {{ purchase_bill.supplier.email }}</p>
+    <p><strong>GSTIN:</strong> {{ purchase_bill.supplier.gstin }}</p>
+
+
+        <h3>Add Stock:</h3>
+    <fieldset>
+        <div class="form-row mt-3">
+            <div class="col">
+                <label for="categorySelect">Category:</label>
+                <select id="categorySelect" class="form-control">
+                    <option value="">Select Category</option>
+                    {% for category in categories %}
+                    <option value="{{ category.id }}">{{ category.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col">
+                <label for="subcategorySelect">SubCategory:</label>
+                <select id="subcategorySelect" class="form-control" disabled>
+                    <option value="">Select SubCategory</option>
+                </select>
+            </div>
+        </div>
+        <div class="form-row mt-3">
+<!--            <div class="col d-flex align-items-center">-->
+            <div class="col d-flex align-items-center">
+                <label for="stockSelect" class="mr-2">Stock:</label>
+                <select id="stockSelect" class="form-control mr-2" disabled>
+                    <option value="">Select Stock</option>
+                </select>
+                <input type="number" id="stockQuantity" min="1" class="form-control mr-2" placeholder="Quantity" disabled />
+                <span id="availableQuantitySpan"></span>
+<!--                 <div class="col-md-3">-->
+<!--            <label>GST Toggle</label>-->
+<!--            <input type="checkbox" id="gstToggle">-->
+<!--        </div>-->
+
+                &nbsp;&nbsp;<button type="button" id="addRow" class="btn btn-primary" disabled>Add</button>
+                {% if purchase_bill_details.gst_amount != 0 %}
+                 <label class="checkbox-label"><input type="checkbox" class="checkbox-input" id="gstToggle" name="gstToggle" checked> GST</label>
+                {% else %}
+                 <label class="checkbox-label"><input type="checkbox" class="checkbox-input" id="gstToggle" name="gstToggle"> GST</label>
+                {% endif %}
+            </div>
+        </div>
+    </fieldset>
+
+    <!-- Bill Table -->
+    <fieldset>
+        <div class="table-responsive">
+            <table id="billTable" class="table table-hover table-center table-sm" style="width: 100%;">
+                <thead class="thead-dark align-middle" align="center">
+                    <tr>
+                        <th>Sr No</th>
+                        <th>Category</th>
+                        <th>SubCategory</th>
+                        <th>Stock Name</th>
+                        <th>Available Quantity</th>
+                        <th>Quantity</th>
+                        <th>Rate</th>
+                         <!-- GST header cell: initially hidden (d-none) -->
+                        <th class="gst-header d-none">GST (%)</th>
+                        <th>Total</th>
+                    </tr>
+                </thead>
+                <tbody align="center">
+                    {% for item in purchase_items %}
+                    <!-- Each row is marked with the class "form-row" -->
+                    <tr data-id="{{ item.id }}" class="form-row">
+                        <td class="sr-no">{{ forloop.counter }}</td>
+                        <td>{{ item.stock.category.name }}</td>
+                        <td>{{ item.stock.subcategory.name }}</td>
+
+
+                        <td>
+                            &nbsp;<a href="#" class="stockName text-capitalize form-control-plaintext">
+                                {{ item.stock.name }}<br>
+                            </a>
+                            <a href="{% url 'get_serial_numbers' %}?stock_id={{ item.stock.id }}"></a>
+
+                            {% if item.serials.exists %}
+                                &nbsp;&nbsp;
+                                <small class="custom-small" style="color: black">
+                                    Sr No:
+                                    {% for serial in item.serials %}
+                                        {{ serial.serialNo }}{% if not forloop.last %}, {% endif %}
+                                    {% endfor %}
+
+                                </small>
+                            {% endif %}
+                            <small class="custom-small">
+                                <span class="stockNameDisplay" style="margin: 0; padding: 0;"></span>
+                            </small>
+                        </td>
+
+                        <td>
+                            <div class="d-flex justify-content-center align-items-center mt-1">
+                                <input type="hidden" class="form-control stock-quantity" value="{{ item.stock.quantity }}" readonly>
+                                {% if item.stock.quantity > item.stock.stock_alert %}
+                                    <span class="badge success">
+                                        {{ item.stock.quantity }} <small>{{ item.stock.purchase.short_name }}</small>
+                                    </span>
+                                {% else %}
+                                    <span class="badge danger">
+                                        {{ item.stock.quantity }} <small>{{ item.stock.purchase.short_name }}</small>
+                                    </span>
+                                {% endif %}
+                            </div>
+                        </td>
+                        <td>
+                            <div class="input-group">
+                                <!-- Add class "quantity" so that JS picks it up -->
+                                <input type="number" min="1" class="form-control quantity" style="text-align: center;" name="quantity_{{ item.pk }}" value="{{ item.quantity }}" />
+                                <div class="input-group-append">
+                                    <span class="input-group-text me-2">{{ item.stock.purchase.short_name }}</span>
+                                </div>
+                                <input type="hidden" class="form-control stock-purchase" name="purchase" value="{{ item.stock.purchase.short_name }}" readonly>
+                                <input type="hidden" class="form-control stock-purchase" name="purchase_id" value="{{ item.stock.purchase }}" readonly>
+                            </div>
+                             <!-- Error message for quantity -->
+                            <small class="text-danger quantity-error" style="display: none;"></small>
+                            <!-- Error message for quantity -->
+                            <small class="text-danger serial-error" style="display: none;"></small>
+                        </td>
+                        <td>
+                            <div class="input-group">
+                                <!-- Add class "price" so that JS picks it up -->
+                                <input type="number" min="1" class="form-control price" style="text-align: center;" name="perprice_{{ item.pk }}" value="{{ item.perprice }}" />
+                            </div>
+                            <!-- Error message for perprice -->
+                            <small class="text-danger price-error" style="display: none;"></small>
+                        </td>
+                         <!-- GST cell (initially hidden); displays the GST percentage from stock -->
+                        <td class="gst-cell d-none">
+                            <span class="gst_value">{{ item.stock.gst|floatformat:-2 }}%</span>
+                        </td>
+                        <td>
+
+                            <div class="input-group">
+
+                                <div class="custom-flex">
+                                    <!-- This textbox shows the per‑row total -->
+                                    <input type="text" style="text-align: right;" class="textinput form-control totalprice me-2" value="0.00" readonly>
+
+                                    <img src="{% static 'images/letter-x (1).png' %}" class="removeRow" alt="Remove" style="cursor: pointer; width: 15px; height: 15px;">
+                                </div>
+                            </div>
+
+                        </td>
+                        <!-- Hidden fields to keep track of records -->
+                        <input type="hidden" name="existing_ids[]" value="{{ item.pk }}" />
+                        <input type="hidden" name="existing_stock_ids[]" value="{{ item.stock.id }}" />
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </fieldset>
+
+<!--  <link-->
+<!--    rel="stylesheet"-->
+<!--    href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css"-->
+<!--  />-->
+  <style>
+    /* Override the display property for .form-row when used on table rows */
+    tr.form-row {
+      display: table-row !important;
+    }
+  </style>
+<hr style="background: black;">
+    <!-- Totals Section -->
+<!--    <div class="row">-->
+<!--        <div class="col-md-3">-->
+<!--            <label>Total Quantity</label>-->
+<!--            <input type="text" id="total_quantity" class="form-control" readonly value="0">-->
+<!--        </div>-->
+<!--        <div class="col-md-3">-->
+<!--            <label>Total Amount</label>-->
+<!--            <input type="text" id="total_amount" class="form-control" readonly value="0.00">-->
+<!--        </div>-->
+<!--    </div>-->
+<!--    <div class="row" style="text-align: right;">-->
+<!--     <div class="col-md-3">-->
+
+<!--        </div>-->
+<!--        <div class="col-md-3" >-->
+<!--    </div>-->
+<!--        <div class="col-md-3">-->
+<!--    <label>Total Quantity</label>-->
+<!--    <input type="text" id="total_quantity" class="form-control" readonly value="0" style="text-align: right;">-->
+<!--  </div>-->
+<!--  <div class="col-md-3">-->
+<!--    <label>Total Amount</label>-->
+<!--    <input type="text" id="total_amount" class="form-control" readonly value="0.00" style="text-align: right;">-->
+<!--  </div>-->
+<!--</div>-->
+
+<!--    <div class="row" style="text-align: right;">-->
+<!--    <div class="col-md-3" >-->
+<!--    </div>-->
+<!--        <div class="col-md-3" >-->
+<!--    </div>-->
+<!--            <div class="col-md-3" id="gstvalues" style="display: none;">-->
+<!--              <label> GST </label>-->
+<!--              <input type="text" id="gst_values" class="form-control" readonly value="" style="text-align: right;">-->
+<!--&lt;!&ndash;            </div>&ndash;&gt;-->
+<!--          </div>-->
+<!--        <div class="col-md-3" id="gstamount" style="display: none;">-->
+<!--            <label>GST Amount</label>-->
+<!--            <input type="text" id="gst_amount" class="form-control" readonly value="0.00" style="text-align: right;">-->
+<!--        </div>-->
+<!--    </div>-->
+
+
+<!--    <div class="row" style="text-align: right;">-->
+<!--    <div class="col-md-3" >-->
+<!--    </div>-->
+<!--        <div class="col-md-3" >-->
+<!--    </div>-->
+<!--        <div class="col-md-3" >-->
+<!--    </div>-->
+
+<!--    &lt;!&ndash; Round Off textbox: initially hidden &ndash;&gt;-->
+<!--        <div class="col-md-3" id="roundoffDiv" style="display: none;">-->
+<!--            <label>Round Off</label>-->
+<!--            <input type="text" id="round_off" class="form-control" readonly value="0.00" style="text-align: right;">-->
+<!--        </div>-->
+<!--    </div>-->
+
+<!--    <div class="row" style="text-align: right;">-->
+<!--        <div class="col-md-3" >-->
+<!--        </div>-->
+<!--            <div class="col-md-3" >-->
+<!--        </div>-->
+<!--            <div class="col-md-3" >-->
+<!--        </div>-->
+<!--        <div class="col-md-3">-->
+<!--            <label>Delivery Charges</label>-->
+<!--            <input type="text" id="delivery_charges" class="form-control" value="0.00" min="0" style="text-align: right;">-->
+<!--        </div>-->
+
+<!--       </div>-->
+    <!-- Row 1: Total Quantity & Total Amount -->
+<div class="row" style="text-align: right;">
+  <div class="col-md-3">
+    <!-- Empty column -->
+  </div>
+  <div class="col-md-3">
+    <!-- Empty column -->
+  </div>
+  <div class="col-md-3">
+    <div class="input-group">
+      <div class="input-group-prepend">
+        <span class="input-group-text"> Total Quantity</span>
+      </div>
+      <input type="text" id="total_quantity" class="form-control" readonly value="0" style="text-align: right;">
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="input-group">
+      <div class="input-group-prepend">
+        <span class="input-group-text"> Total Amount</span>
+      </div>
+      <input type="text" id="total_amount" name="total_amount" class="form-control" readonly value="0.00" style="text-align: right;">
+    </div>
+  </div>
+</div>
+
+<!-- Row 2: GST & GST Amount (initially hidden) -->
+<div class="row" style="text-align: right;">
+  <div class="col-md-3">
+    <!-- Empty column -->
+  </div>
+  <div class="col-md-3">
+    <!-- Empty column -->
+  </div>
+  <div class="col-md-3" id="gstvalues" style="display: none;">
+      <br>
+    <div class="input-group">
+      <div class="input-group-prepend">
+        <span class="input-group-text"> GST</span>
+      </div>
+      <input type="text" id="gst_values" name="gst_values" class="form-control" readonly value="" style="text-align: right;">
+    </div>
+  </div>
+  <div class="col-md-3" id="gstamount" style="display: none;">
+      <br>
+    <div class="input-group">
+      <div class="input-group-prepend">
+        <span class="input-group-text"> GST Amount</span>
+      </div>
+      <input type="text" id="gst_amount" name="gst_amount" class="form-control" readonly value="0.00" style="text-align: right;">
+    </div>
+  </div>
+</div>
+<br>
+<!-- Row 3: Round Off (initially hidden) -->
+<div class="row" style="text-align: right;">
+  <div class="col-md-3">
+    <!-- Empty column -->
+  </div>
+  <div class="col-md-3">
+    <!-- Empty column -->
+  </div>
+  <div class="col-md-3">
+    <!-- Empty column -->
+  </div>
+  <div class="col-md-3" id="roundoffDiv" style="display: none;">
+    <div class="input-group">
+      <div class="input-group-prepend">
+        <span class="input-group-text"> Round Off</span>
+      </div>
+      <input type="text" id="round_off" name="round_off" class="form-control" readonly value="0.00" style="text-align: right;">
+    </div>
+  </div>
+</div>
+<br>
+<!-- Row 4: Delivery Charges -->
+<div class="row" style="text-align: right;">
+  <div class="col-md-3">
+    <!-- Empty column -->
+  </div>
+  <div class="col-md-3">
+    <!-- Empty column -->
+  </div>
+  <div class="col-md-3">
+    <!-- Empty column -->
+  </div>
+  <div class="col-md-3">
+    <div class="input-group">
+      <div class="input-group-prepend">
+        <span class="input-group-text">Delivery Charges</span>
+      </div>
+      <input type="text" id="delivery_charges" name="delivery_charges" class="form-control" value="0.00" min="0" style="text-align: right;">
+    </div>
+  </div>
+</div>
+
+
+<br>
+    <div class="row" style="text-align: right;">
+    <div class="col-md-3" >
+    </div>
+        <div class="col-md-3" >
+    </div>
+        <div class="col-md-3" >
+    </div>
+<!--        <div class="col-md-3">-->
+<!--            <label><b>Final Amount</b></label>-->
+<!--            <input type="text" id="final_amount" class="form-control" readonly value="₹ 0.00" style="text-align: right;">-->
+<!--        </div>-->
+        <div class="col-md-3">
+          <div class="input-group">
+            <span class="input-group-text"><b>Final Amount</b></span>
+            <input type="text" id="final_amount" name="final_amount" class="form-control" readonly value="₹ 0.00" style="text-align: right;">
+          </div>
+        </div>
+
+    </div>
+
+
+    <br>
+    <!-- Hidden field for round off adjustment -->
+<!--    <input type="text" id="round_off" value="0.00">-->
+    <!-- Optional controls for Delivery Charges and GST toggle -->
+        <!-- Add Stock -->
+
+    <!-- Save Changes Button -->
+    <br>
+    <div align="center">
+
+        <button type="submit" id="submitBtn">Save Changes</button>
+    </div>
+</form>
+
+<!-- Include jQuery if not already included -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<!--&lt;!&ndash; Modal for Serial Numbers &ndash;&gt;-->
+<!--<div class="modal fade" id="serialNumberModal" tabindex="-1" role="dialog" aria-labelledby="serialNumberModalLabel" aria-hidden="true">-->
+<!--    <div class="modal-dialog" role="document">-->
+<!--        <div class="modal-content">-->
+<!--            <div class="modal-header">-->
+<!--                <h5 class="modal-title" id="serialNumberModalLabel">Select Serial Numbers</h5>-->
+<!--                <button type="button" class="close" data-dismiss="modal" aria-label="Close">-->
+<!--                    <span aria-hidden="true">&times;</span>-->
+<!--                </button>-->
+<!--            </div>-->
+<!--            <div class="modal-body">-->
+<!--                <form id="serialNumberForm">-->
+<!--                    <div id="serial-number-container">-->
+<!--                        &lt;!&ndash; Checkboxes will be dynamically added here &ndash;&gt;-->
+<!--                    </div>-->
+<!--                </form>-->
+<!--            </div>-->
+<!--            <div class="modal-footer">-->
+<!--                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>-->
+<!--                <button type="button" class="btn btn-primary" id="saveSerialNumbers">Save Serial Numbers</button>-->
+<!--            </div>-->
+<!--        </div>-->
+<!--    </div>-->
+<!--</div>-->
+
+<!--<script>-->
+<!--    $(document).ready(function () {-->
+<!--        var selectedStockId;-->
+<!--        var selectedSerialNumbers = {};-->
+
+<!--        $(document).on('click', '.stockName', function (e) {-->
+<!--            e.preventDefault();-->
+
+<!--            var stockRow = $(this).closest('tr');-->
+<!--            selectedStockId = stockRow.find('input[name*="stock"]').val();-->
+<!--            var quantity = parseInt(stockRow.find('input[name*="quantity"]').val()) || 0;-->
+
+<!--            // Fetch serial numbers for selected stock-->
+<!--            $.ajax({-->
+<!--                url: '{% url "get_serial_numbers_edit" %}',-->
+<!--                data: {-->
+<!--                    stock_id: selectedStockId,-->
+<!--                    sales_billno: '{{ purchase_bill }}',-->
+<!--                },-->
+<!--                success: function (data) {-->
+<!--                    var serialNumbers = data.serial_numbers;-->
+<!--                    $('#serial-number-container').empty();-->
+
+<!--                    serialNumbers.forEach(function (serial) {-->
+<!--                        var isChecked = serial.checked ? 'checked' : '';-->
+<!--                        var checkbox = `-->
+<!--                            <div class="form-check">-->
+<!--                                <input class="form-check-input" type="checkbox" value="${serial.serialNo}" id="serialNo-${serial.serialNo}" ${isChecked}>-->
+<!--                                <label class="form-check-label" for="serialNo-${serial.serialNo}">${serial.serialNo}</label>-->
+<!--                            </div>`;-->
+<!--                        $('#serial-number-container').append(checkbox);-->
+<!--                    });-->
+
+<!--                    initialValidation(quantity);-->
+<!--                    $('#serialNumberModal').modal('show');-->
+<!--                },-->
+<!--                error: function () {-->
+<!--                    alert("Failed to fetch serial numbers. Please try again.");-->
+<!--                }-->
+<!--            });-->
+<!--        });-->
+
+<!--        function initialValidation(quantity) {-->
+<!--            var checkedCount = $('#serial-number-container input[type="checkbox"]:checked').length;-->
+
+<!--            if (checkedCount > quantity) {-->
+<!--                alert("Checked count exceeds the allowed quantity. Adjusting checkboxes.");-->
+<!--                disableUncheckedCheckboxes();-->
+<!--            } else if (checkedCount === quantity) {-->
+<!--                disableUncheckedCheckboxes();-->
+<!--            }-->
+
+<!--            updateCheckboxState(quantity);-->
+<!--        }-->
+
+<!--        function enableUncheckedCheckboxes() {-->
+<!--            $('#serial-number-container input[type="checkbox"]').prop('disabled', false);-->
+<!--        }-->
+
+<!--        function disableUncheckedCheckboxes() {-->
+<!--            $('#serial-number-container input[type="checkbox"]').each(function () {-->
+<!--                if (!$(this).is(':checked')) {-->
+<!--                    $(this).prop('disabled', true);-->
+<!--                }-->
+<!--            });-->
+<!--        }-->
+
+<!--        function updateCheckboxState(quantity) {-->
+<!--            $('#serial-number-container input[type="checkbox"]').off('change').on('change', function () {-->
+<!--                var checkedCount = $('#serial-number-container input[type="checkbox"]:checked').length;-->
+
+<!--                if (checkedCount > quantity) {-->
+<!--                    alert("Checked count exceeds the allowed quantity.");-->
+<!--                    disableUncheckedCheckboxes();-->
+<!--                } else if (checkedCount === quantity) {-->
+<!--                    disableUncheckedCheckboxes();-->
+<!--                } else {-->
+<!--                    enableUncheckedCheckboxes();-->
+<!--                }-->
+<!--            });-->
+<!--        }-->
+
+<!--        $('#saveSerialNumbers').on('click', function () {-->
+<!--            var checkedSerials = $('#serial-number-container input[type="checkbox"]:checked').map(function () {-->
+<!--                return $(this).val();-->
+<!--            }).get();-->
+
+<!--            var stockRow = $('input[value="' + selectedStockId + '"]').closest('tr');-->
+<!--            var quantity = parseInt(stockRow.find('input[name*="quantity"]').val()) || 0;-->
+
+<!--            // Final validation-->
+<!--            if (checkedSerials.length > quantity) {-->
+<!--                alert("Checked count exceeds the allowed quantity. Please adjust your selection.");-->
+<!--                return;-->
+<!--            }-->
+
+<!--            // Temporarily store the selected serial numbers-->
+<!--            selectedSerialNumbers[selectedStockId] = checkedSerials;-->
+
+<!--            // Update the table row with selected serials-->
+<!--            // stockRow.find('.stockNameDisplay').text(`Selected Serials: ${checkedSerials.join(', ')}`);-->
+
+<!--             // Update the table row with selected serials in green color-->
+<!--            stockRow.find('.stockNameDisplay').addClass('green-text').text(`Selected Serials: ${checkedSerials.join(', ')}`);-->
+
+<!--            // Add or update hidden input for serials in the form-->
+<!--            const hiddenFieldName = `serials-${selectedStockId}`;-->
+<!--            let hiddenField = $(`input[name="${hiddenFieldName}"]`);-->
+
+<!--            if (hiddenField.length > 0) {-->
+<!--                hiddenField.val(checkedSerials.join(','));-->
+<!--            } else {-->
+<!--                hiddenField = $('<input>')-->
+<!--                    .attr('type', 'hidden')-->
+<!--                    .attr('name', hiddenFieldName)-->
+<!--                    .val(checkedSerials.join(','));-->
+<!--                $('#billForm').append(hiddenField);-->
+<!--            }-->
+
+<!--            $('#serialNumberModal').modal('hide');-->
+<!--            alert('Serial numbers updated successfully.');-->
+<!--        });-->
+<!--    });-->
+
+<!--</script>-->
+
+
+<!-- Modal for Serial Number Entry -->
+<div class="modal fade" id="serialNumberModal" tabindex="-1" role="dialog" aria-labelledby="serialNumberModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="serialNumberModalLabel">Enter Serial Numbers</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="serialNumberForm">
+                    <div id="serial-number-container">
+                        <!-- Textboxes will be dynamically added here -->
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" id="saveSerialNumbers">Save Serial Numbers</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!--<script>-->
+<!--    $(document).ready(function() {-->
+<!--        // Event handler for clicking on stockName-->
+<!--        $(document).on('click', '.stockName', function(event) {-->
+<!--            event.preventDefault();-->
+<!--            var $row = $(this).closest('.form-row'); // Get the current row-->
+<!--            var quantity = parseInt($row.find('.quantity').val()); // Get the quantity value from the current row-->
+
+<!--            if (quantity > 0) {-->
+<!--                // Clear previous textboxes-->
+<!--                $('#serial-number-container').empty();-->
+
+<!--                // Dynamically create textboxes based on the quantity-->
+<!--                for (var i = 0; i < quantity; i++) {-->
+<!--                    var inputHtml = `-->
+<!--                        <div class="form-group">-->
+<!--                            <label for="serial_${i}">Serial Number ${i + 1}:</label>-->
+<!--                            <input type="text" class="form-control" id="serial_${i}" name="serial_${i}" required>-->
+<!--                        </div>`;-->
+<!--                    $('#serial-number-container').append(inputHtml);-->
+<!--                }-->
+
+<!--                // Show the modal-->
+<!--                $('#serialNumberModal').modal('show');-->
+
+<!--                // Attach the row index to the modal's save button-->
+<!--                $('#saveSerialNumbers').data('row', $row);-->
+<!--            }-->
+<!--        });-->
+
+<!--        $('#saveSerialNumbers').on('click', function() {-->
+<!--            var serialNumbers = [];-->
+<!--            $('#serial-number-container input').each(function() {-->
+<!--                serialNumbers.push($(this).val());-->
+<!--            });-->
+
+<!--            // Join the serial numbers with commas-->
+<!--            var serialNumbersString = serialNumbers.join(', ');-->
+
+<!--            // Get the row where the stockName was clicked-->
+<!--            var $row = $(this).data('row');-->
+
+<!--            // Update the stockName field to show the serial numbers below it-->
+<!--&lt;!&ndash;            $row.find('.stockNameDisplay').text(serialNumbersString);&ndash;&gt;-->
+<!--            $row.find('.stockNameDisplay').html(serialNumbersString); // Use .html() to set the content properly-->
+
+<!--            // Add hidden inputs to store serial numbers for backend-->
+<!--            for (var i = 0; i < serialNumbers.length; i++) {-->
+<!--                $row.append('<input type="hidden" name="serial_numbers_' + $row.index() + '[]" value="' + serialNumbers[i] + '">');-->
+<!--            }-->
+
+<!--            // Hide the modal-->
+<!--            $('#serialNumberModal').modal('hide');-->
+<!--        });-->
+
+<!--    });-->
+
+<!--</script>-->
+
+<!--<script>-->
+<!--  $(document).ready(function() {-->
+<!--     var selectedStockId;-->
+
+<!--    // When clicking on a stock name-->
+<!--    $(document).on('click', '.stockName', function(event) {-->
+<!--      event.preventDefault();-->
+
+<!--      var stockRow = $(this).closest('tr');-->
+<!--      selectedStockId = stockRow.find('input[name*="stock"]').val();-->
+<!--      var quantity = parseInt(stockRow.find('input[name*="quantity"]').val()) || 0;-->
+
+<!--      var $row = $(this).closest('.form-row'); // current row-->
+<!--      var quantity = parseInt($row.find('.quantity').val()); // quantity from the row-->
+
+<!--      // Clear any previous textboxes-->
+<!--      $('#serial-number-container').empty();-->
+
+<!--      // Get identifiers from the row (ensure your row includes these data attributes)-->
+<!--      var billno = $row.data('billno');-->
+<!--      var stockId = $row.data('stock-id');-->
+
+<!--      // AJAX GET: Fetch existing serial numbers from the backend-->
+<!--      $.ajax({-->
+<!--        // url: '/get_purchase_serial_numbers/',-->
+<!--        url: '{% url "get_purchase_serial_numbers" %}', // Add appropriate URL here-->
+<!--        method: 'GET',-->
+<!--        data: {-->
+<!--                stock_id: selectedStockId,-->
+<!--                billno: '{{ purchase_bill }}',-->
+<!--        },-->
+<!--        success: function(response) {-->
+<!--          // Assume response is a JSON object like: { "serialNumbers": ["SN1", "SN2", ...] }-->
+<!--          var existingSerials = response.serialNumbers || [];-->
+
+<!--          // Create textboxes based on the quantity.-->
+<!--          // Pre-fill with an existing serial if available; otherwise leave empty.-->
+<!--          for (var i = 0; i < quantity; i++) {-->
+<!--            var serialValue = existingSerials[i] ? existingSerials[i] : '';-->
+<!--            var inputHtml = `-->
+<!--              <div class="form-group">-->
+<!--                <label for="serial_${i}">Serial Number ${i + 1}:</label>-->
+<!--                <input type="text" class="form-control" id="serial_${i}" name="serial_${i}" value="${serialValue}" required>-->
+<!--              </div>`;-->
+<!--            $('#serial-number-container').append(inputHtml);-->
+<!--          }-->
+
+
+<!--          // Show the modal once fields are populated-->
+<!--          $('#serialNumberModal').modal('show');-->
+<!--          // Save the current row for later reference-->
+<!--          $('#saveSerialNumbers').data('row', $row);-->
+<!--        },-->
+<!--        error: function(xhr, status, error) {-->
+<!--          console.log('Error fetching serial numbers:', error);-->
+<!--          // On error, simply create empty textboxes-->
+<!--          for (var i = 0; i < quantity; i++) {-->
+<!--            var inputHtml = `-->
+<!--              <div class="form-group">-->
+<!--                <label for="serial_${i}">Serial Number ${i + 1}:</label>-->
+<!--                <input type="text" class="form-control" id="serial_${i}" name="serial_${i}" required>-->
+<!--              </div>`;-->
+<!--            $('#serial-number-container').append(inputHtml);-->
+<!--          }-->
+<!--          $('#serialNumberModal').modal('show');-->
+<!--          $('#saveSerialNumbers').data('row', $row);-->
+<!--        }-->
+<!--      });-->
+<!--    });-->
+
+<!--    // When clicking the Save Serial Numbers button-->
+<!--    $('#saveSerialNumbers').on('click', function() {-->
+<!--      var serialNumbers = [];-->
+<!--      // Collect all serial number inputs-->
+<!--      $('#serial-number-container input').each(function() {-->
+<!--        serialNumbers.push($(this).val().trim());-->
+<!--      });-->
+
+<!--      // Retrieve the row associated with this modal session-->
+<!--      var $row = $(this).data('row');-->
+<!--      var billno = $row.data('billno');-->
+<!--      var stockId = $row.data('stock-id');-->
+<!--       // var stockId = $row.find('input[name="existing_stock_ids[]"]').val(); // Ensure this is captured-->
+
+<!--      // AJAX POST: Update serial numbers in the backend.-->
+<!--      // (Ensure that you pass the CSRF token; here we assume you're in a Django template.)-->
+<!--      $.ajax({-->
+
+<!--        url: '{% url "update_purchase_serial_numbers" %}', // Add appropriate URL here-->
+<!--        method: 'POST',-->
+<!--        data: {-->
+<!--          // billno: billno,-->
+<!--          // stock_id: stockId,-->
+<!--          stock_id: selectedStockId,-->
+<!--          billno: '{{ purchase_bill.billno }}',-->
+
+<!--          // You can send the serial numbers as a JSON string if needed-->
+<!--          serial_numbers: JSON.stringify(serialNumbers),-->
+<!--          csrfmiddlewaretoken: '{{ csrf_token }}'-->
+<!--        },-->
+<!--        success: function(response) {-->
+<!--          // Update the UI – for example, display the serial numbers in a dedicated element.-->
+<!--          var serialNumbersString = serialNumbers.join(', ');-->
+<!--          $row.find('.stockNameDisplay').html(serialNumbersString);-->
+
+<!--          // (Optional) Remove previously appended hidden inputs and add updated ones.-->
+<!--          $row.find('input[name^="serial_numbers_"]').remove();-->
+<!--          for (var i = 0; i < serialNumbers.length; i++) {-->
+<!--            $row.append('<input type="hidden" name="serial_numbers_' + $row.index() + '[]" value="' + serialNumbers[i] + '">');-->
+<!--          }-->
+<!--          // Hide the modal after a successful update.-->
+<!--          $('#serialNumberModal').modal('hide');-->
+<!--        },-->
+<!--        error: function(xhr, status, error) {-->
+<!--          console.log('Error updating serial numbers:', error);-->
+<!--          alert('Error updating serial numbers');-->
+<!--        }-->
+<!--      });-->
+<!--    });-->
+
+<!--  });-->
+<!--</script>-->
+
+<script>
+  $(document).ready(function() {
+     var selectedStockId;
+	 var serialNumbersData = {}; // To store serial numbers temporarily
+
+
+    // When clicking on a stock name
+    $(document).on('click', '.stockName', function(event) {
+      event.preventDefault();
+
+      var stockRow = $(this).closest('tr');
+      selectedStockId = stockRow.find('input[name*="stock"]').val();
+      var quantity = parseInt(stockRow.find('input[name*="quantity"]').val()) || 0;
+
+      var $row = $(this).closest('.form-row'); // current row
+      var quantity = parseInt($row.find('.quantity').val()); // quantity from the row
+
+      // Clear any previous textboxes
+      $('#serial-number-container').empty();
+
+      // Get identifiers from the row (ensure your row includes these data attributes)
+      var billno = $row.data('billno');
+      var stockId = $row.data('stock-id');
+
+      // AJAX GET: Fetch existing serial numbers from the backend
+      $.ajax({
+        // url: '/get_purchase_serial_numbers/',
+        url: '{% url "get_purchase_serial_numbers" %}', // Add appropriate URL here
+        method: 'GET',
+        data: {
+                stock_id: selectedStockId,
+                billno: '{{ purchase_bill }}',
+        },
+        success: function(response) {
+          // Assume response is a JSON object like: { "serialNumbers": ["SN1", "SN2", ...] }
+          var existingSerials = response.serialNumbers || [];
+
+          // Create textboxes based on the quantity.
+          // Pre-fill with an existing serial if available; otherwise leave empty.
+          for (var i = 0; i < quantity; i++) {
+            var serialValue = existingSerials[i] ? existingSerials[i] : '';
+            var inputHtml = `
+              <div class="form-group">
+                <label for="serial_${i}">Serial Number ${i + 1}:</label>
+                <input type="text" class="form-control" id="serial_${i}" name="serial_${i}" value="${serialValue}" required>
+              </div>`;
+            $('#serial-number-container').append(inputHtml);
+          }
+
+          // Show the modal once fields are populated
+          $('#serialNumberModal').modal('show');
+          // Save the current row for later reference
+          $('#saveSerialNumbers').data('row', $row);
+        },
+        error: function(xhr, status, error) {
+          console.log('Error fetching serial numbers:', error);
+          // On error, simply create empty textboxes
+          for (var i = 0; i < quantity; i++) {
+            var inputHtml = `
+              <div class="form-group">
+                <label for="serial_${i}">Serial Number ${i + 1}:</label>
+                <input type="text" class="form-control" id="serial_${i}" name="serial_${i}" required>
+              </div>`;
+            $('#serial-number-container').append(inputHtml);
+          }
+          $('#serialNumberModal').modal('show');
+          $('#saveSerialNumbers').data('row', $row);
+        }
+      });
+    });
+
+    // When clicking the Save Serial Numbers button
+    $('#saveSerialNumbers').on('click', function() {
+      var serialNumbers = [];
+      // Collect all serial number inputs
+      $('#serial-number-container input').each(function() {
+        serialNumbers.push($(this).val().trim());
+      });
+
+      // Retrieve the row associated with this modal session
+      var $row = $(this).data('row');
+      var billno = $row.data('billno');
+      var stockId = $row.find('input[name="existing_stock_ids[]"]').val() || $row.find('input[name="stock_ids[]"]').val();
+
+            // Store the serial numbers temporarily
+            serialNumbersData[stockId] = serialNumbers;
+
+            // Update the UI – for example, display the serial numbers in a dedicated element.
+            var serialNumbersString = serialNumbers.join(', ');
+            $row.find('.stockNameDisplay').html(serialNumbersString);
+
+            // Hide the modal after a successful update.
+            $('#serialNumberModal').modal('hide');
+        });
+
+        // Handle form submission
+        $('#billForm').on('submit', function(event) {
+            // Append serial numbers to the form data
+            for (var stockId in serialNumbersData) {
+                if (serialNumbersData.hasOwnProperty(stockId)) {
+                    var serialNumbers = serialNumbersData[stockId];
+                    for (var i = 0; i < serialNumbers.length; i++) {
+                        $(this).append(`<input type="hidden" name="serials-${stockId}[]" value="${serialNumbers[i]}">`);
+
+                    }
+                }
+            }
+        });
+    });
+</script>
+
+
+<!-- Modal Structure -->
+<div class="modal fade" id="confirmationModal" tabindex="-1" aria-labelledby="confirmationModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="confirmationModalLabel">Confirm Details</h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <form id="modalForm">
+            <div class="toggle-container" style="display: flex; justify-content: center; align-items: center; width: 100%;">
+                <div id="currentBillLabel" class="toggle-label" style="display: flex; flex-direction: column; align-items: center; margin-right: 20px; width: 180px;">
+                    <span style="line-height: 1.5;">Current Bill</span>
+                    <span class="checkmark" id="checkCurrent" style="margin-left: 30px; line-height: 1.5;">✔</span>
+                </div>
+                <div id="previousBillLabel" class="toggle-label" style="display: flex; flex-direction: column; align-items: center; width: 180px;">
+                    <span style="line-height: 1.5;">Previous Bill</span>
+                    <span class="checkmark" id="checkPrevious" style="margin-left: 30px; line-height: 1.5;">✔</span>
+                </div>
+            </div>
+
+          <!-- Previous Bill and Previous Date Fields -->
+          <div class="form-group" id="previousBillField">
+            <label for="eway_no">Prev. Delivery Challan No <span style="color: red;">*</span></label>
+            <input type="text" id="eway_no" name="eway_no" class="form-control" value="{{ purchase_bill_details.eway }}">
+          </div>
+          <div class="form-group" id="previousDateField">
+            <label for="bill_date">Prev. Bill Date <span style="color: red;">*</span></label>
+            <input type="date" id="bill_date" name="bill_date" class="form-control" value="{{ purchase_bill_details.tcs }}">
+          </div>
+
+          <div class="form-group">
+            <label for="veh_no">Vehicle No</label>
+            <input type="text" id="veh_no" name="veh_no" class="form-control" value="{{ purchase_bill_details.veh }}">
+          </div>
+          <div class="form-group">
+            <label for="arrange">Arrange By <span style="color: red;">*</span></label>
+            <input type="text" id="arrange" name="arrange" class="form-control" value="{{ purchase_bill_details.sgst }}" required>
+          </div>
+            <div class="form-group">
+            <label for="handby">Handled By <span style="color: red;">*</span></label>
+            <input type="text" id="handby" name="handby" class="form-control" value="{{ purchase_bill_details.igst }}" required>
+          </div>
+            <div class="form-group">
+              <label for="destination">Source <span style="color: red;">*</span></label>
+              <select id="destination" name="destination" class="form-control" required>
+                <option value="" disabled {% if not purchase_bill_details.destination %}selected{% endif %}></option>
+                <option value="Warehouse" {% if purchase_bill_details.destination == "Warehouse" %}selected{% endif %}>Warehouse</option>
+                <option value="Office" {% if purchase_bill_details.destination == "Office" %}selected{% endif %}>Office</option>
+                <option value="Vendor" {% if purchase_bill_details.destination == "Vendor" %}selected{% endif %}>Vendor</option>
+              </select>
+            </div>
+
+          <div class="form-group">
+            <label for="po_no">PO No</label>
+            <input type="text" id="po_no" name="po_no" class="form-control" value="{{ purchase_bill_details.po }}" required>
+          </div>
+          <div class="form-group">
+            <label for="po_date">PO Date</label>
+            <input type="date" id="po_date" name="po_date" class="form-control" value="{{ purchase_bill_details.cgst }}" required>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+        <button type="button" id="modalSubmitButton" class="btn btn-primary">Submit</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const categorySelect = document.getElementById('categorySelect');
+        const subcategorySelect = document.getElementById('subcategorySelect');
+        const stockSelect = document.getElementById('stockSelect');
+        const stockQuantity = document.getElementById('stockQuantity');
+        const availableQuantitySpan = document.getElementById('availableQuantitySpan');
+        const addRow = document.getElementById('addRow');
+        const tableBody = document.getElementById('billTable').querySelector('tbody');
+
+        // Populate subcategories based on category
+        categorySelect.addEventListener('change', function () {
+            const categoryId = this.value;
+            subcategorySelect.innerHTML = '<option value="">Select SubCategory</option>';
+            stockSelect.innerHTML = '<option value="">Select Stock</option>';
+            availableQuantitySpan.innerText = '';
+            stockQuantity.value = '';
+            stockSelect.disabled = true;
+            stockQuantity.disabled = true;
+            addRow.disabled = true;
+
+            if (categoryId) {
+                fetch(`/inventory/get_subcategories_edit/?category_id=${categoryId}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        data.subcategories.forEach(subcategory => {
+                            const option = document.createElement('option');
+                            option.value = subcategory.id;
+                            option.textContent = subcategory.name;
+                            subcategorySelect.appendChild(option);
+                        });
+                        subcategorySelect.disabled = false;
+                    });
+            } else {
+                subcategorySelect.disabled = true;
+            }
+        });
+
+        // Populate stocks based on subcategory
+        subcategorySelect.addEventListener('change', function () {
+            const subcategoryId = this.value;
+            stockSelect.innerHTML = '<option value="">Select Stock</option>';
+            availableQuantitySpan.innerText = '';
+            stockQuantity.value = '';
+            stockQuantity.disabled = true;
+            addRow.disabled = true;
+
+            if (subcategoryId) {
+                fetch(`/inventory/get_stocks_edit/?subcategory_id=${subcategoryId}`)
+                    .then(response => response.json())
+                    .then(data => {
+
+                        const existingStockIds = Array.from(tableBody.querySelectorAll('input[name="existing_stock_ids[]"]')).map(input => input.value);
+
+                        data.stocks.forEach(stock => {
+                            if (!existingStockIds.includes(stock.id.toString())) {
+                                const option = document.createElement('option');
+                                option.value = stock.id;
+                                option.textContent = stock.name;
+                                option.setAttribute('data-gst', stock.gst);
+                                stockSelect.appendChild(option);
+                            }
+                        });
+                        stockSelect.disabled = false;
+
+                        updateFinalAmount();
+                        updateGSTValues(); // Update GST values
+                    });
+            } else {
+                stockSelect.disabled = true;
+            }
+        });
+
+
+        // Update available quantity when stock is selected
+        stockSelect.addEventListener('change', function () {
+            const stockId = this.value;
+            stockQuantity.disabled = !stockId;
+            addRow.disabled = !stockId;
+            // stockSelect.disabled = true;
+            // subcategorySelect.disabled = true;
+
+            if (stockId) {
+                // Fetch available stock quantity from the server
+                fetch(`/inventory/get_stock_quantity/?stock_id=${stockId}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        availableQuantitySpan.innerText = `Available Quantity: ${data.quantity}`;
+                        // availableQuantitySpan.innerText = ``;
+
+                        // Store fetched data for later use
+                        stockSelect.setAttribute('data-quantity', data.quantity);
+                        stockSelect.setAttribute('data-stock-alert', data.stock_alert);
+                        stockSelect.setAttribute('data-gst', data.gst);
+                        stockSelect.setAttribute('data-purchase', data.purchase);
+                    });
+            } else {
+                availableQuantitySpan.innerText = '';
+                stockSelect.removeAttribute('data-quantity');
+                stockSelect.removeAttribute('data-stock-alert');
+                stockSelect.removeAttribute('data-gst');
+                stockSelect.removeAttribute('data-purchase');
+            }
+        });
+    });
+</script>
+<!-- Main Calculation, Remove Row, GST Toggle, and Unique GST Script -->
+<script>
+$(document).ready(function() {
+
+  // Update per-row totals and overall totals
+  function updateTotals() {
+    var totalQuantity = 0;
+    var totalAmount = 0;
+    $('.form-row').each(function() {
+      var quantity = parseFloat($(this).find('.quantity').val()) || 0;
+      var price = parseFloat($(this).find('.price').val()) || 0;
+      var rowTotal = quantity * price;
+      $(this).find('.totalprice').val(rowTotal.toFixed(2));
+      totalQuantity += quantity;
+      totalAmount += rowTotal;
+    });
+    $('#total_quantity').val(totalQuantity);
+    $('#total_amount').val(totalAmount.toFixed(2));
+  }
+
+  // Calculate overall GST amount
+  function calculateGST() {
+    var totalGstAmount = 0;
+    $('.form-row').each(function() {
+      var quantity = parseFloat($(this).find('.quantity').val()) || 0;
+      var price = parseFloat($(this).find('.price').val()) || 0;
+      // Get GST percentage from the row (remove the "%" sign)
+      var gstPercent = parseFloat($(this).find('.gst_value').text().replace('%','')) || 5;
+      var gstValue = (price * quantity * gstPercent) / 100;
+      totalGstAmount += gstValue;
+    });
+    $('#gst_amount').val(totalGstAmount.toFixed(2));
+  }
+
+  // Update final amount using Math.round so that the final value is the nearest whole number.
+  // Also compute the round off value as the difference.
+  function updateFinalAmount() {
+    var totalAmount = parseFloat($('#total_amount').val()) || 0;
+    var gstAmount = parseFloat($('#gst_amount').val()) || 0;
+    var deliveryCharges = parseFloat($('#delivery_charges').val()) || 0;
+    var baseFinal = ($('#gstToggle').is(':checked')) ? totalAmount + gstAmount : totalAmount;
+    baseFinal += deliveryCharges;
+    var roundedFinal = Math.round(baseFinal);
+    var roundOffValue = roundedFinal - baseFinal;
+    $('#round_off').val(roundOffValue.toFixed(2));
+    $('#final_amount').val('₹ ' + roundedFinal.toFixed(2));
+  }
+
+  // Update unique GST values from all rows into the extra textbox
+  function updateGSTValues() {
+    var gstSet = new Set();
+    $('.form-row').each(function() {
+      var gstText = $(this).find('.gst_value').text().trim();
+      if (gstText) {
+        gstSet.add(gstText);
+      }
+    });
+    $('#gst_values').val(Array.from(gstSet).join(', '));
+  }
+
+  // Update row serial numbers
+  function updateRowNumbers() {
+    $('.form-row').each(function(index) {
+      $(this).find('.sr-no').text(index + 1);
+    });
+  }
+
+  // Listen for changes on quantity, price, or delivery charges to trigger recalculation
+  $(document).on('input change', '.quantity, .price, #delivery_charges', function() {
+    updateTotals();
+    if ($('#gstToggle').is(':checked')) {
+      calculateGST();
+    } else {
+      $('#gst_amount').val("0.00");
+    }
+    updateFinalAmount();
+    updateGSTValues();
+  });
+
+  // GST Toggle: show/hide round off textbox and GST column
+  $('#gstToggle').on('change', function() {
+    if ($(this).is(':checked')) {
+      $('#roundoffDiv').show();
+      $('#gstvalues').show();
+      $('#gstamount').show();
+      $('.gst-header').removeClass('d-none');
+      $('.gst-cell').removeClass('d-none');
+      calculateGST();
+    } else {
+      $('#roundoffDiv').hide();
+      $('#gstvalues').hide();
+      $('#gstamount').hide();
+      $('.gst-header').addClass('d-none');
+      $('.gst-cell').addClass('d-none');
+      $('#gst_amount').val("0.00");
+    }
+    updateFinalAmount();
+    updateGSTValues();
+  });
+
+  // Remove row event handler (for both existing and new rows)
+  $(document).on('click', '.removeRow', function() {
+    $(this).closest('tr').remove();
+    updateRowNumbers();
+    updateTotals();
+    if ($('#gstToggle').is(':checked')) {
+      calculateGST();
+    } else {
+      $('#gst_amount').val("0.00");
+    }
+    updateFinalAmount();
+    updateGSTValues();
+  });
+
+  // Initial calculations on page load
+  updateTotals();
+  if ($('#gstToggle').is(':checked')) {
+    calculateGST();
+  }
+  updateFinalAmount();
+  updateGSTValues();
+});
+</script>
+<script>
+$(document).ready(function() {
+    // Function to toggle GST fields visibility
+    function toggleGSTFields() {
+        if ($('#gstToggle').is(':checked')) {
+            $('#roundoffDiv').show();
+            $('#gstvalues').show();
+            $('#gstamount').show();
+            $('.gst-header').removeClass('d-none');
+            $('.gst-cell').removeClass('d-none');
+        } else {
+            $('#roundoffDiv').hide();
+            $('#gstvalues').hide();
+            $('#gstamount').hide();
+            $('.gst-header').addClass('d-none');
+            $('.gst-cell').addClass('d-none');
+        }
+    }
+
+    // Call the function on page load
+    toggleGSTFields();
+
+    // Bind the function to the change event of the checkbox
+    $('#gstToggle').on('change', toggleGSTFields);
+});
+</script>
+<!-- New Row Addition Script (using vanilla JavaScript) -->
+<!--<script>-->
+<!--document.addEventListener('DOMContentLoaded', function () {-->
+<!--  const tableBody = document.getElementById('billTable').querySelector('tbody');-->
+<!--  const addRow = document.getElementById('addRow');-->
+<!--  // These dropdowns/fields must exist in your page:-->
+<!--  const stockSelect = document.getElementById('stockSelect');-->
+<!--  const stockQuantity = document.getElementById('stockQuantity');-->
+<!--  const categorySelect = document.getElementById('categorySelect');-->
+<!--  const subcategorySelect = document.getElementById('subcategorySelect');-->
+
+<!--  addRow.addEventListener('click', function () {-->
+<!--    const stockId = stockSelect.value;-->
+<!--    const stockName = stockSelect.options[stockSelect.selectedIndex].text;-->
+<!--    const stockAlert = parseInt(stockSelect.getAttribute('data-stock-alert') || "0", 10);-->
+
+<!--    const purchase = stockSelect.getAttribute('data-purchase') || "N/A";-->
+<!--    const categoryText = categorySelect.options[categorySelect.selectedIndex].text;-->
+<!--    const subcategoryText = subcategorySelect.options[subcategorySelect.selectedIndex].text;-->
+<!--    const quantity = stockQuantity.value;-->
+
+<!--    // Assume available quantity is displayed in an element with id "availableQuantitySpan"-->
+<!--    const availableQuantitySpan = document.getElementById('availableQuantitySpan').textContent;-->
+<!--    const availableQuantity = parseInt(availableQuantitySpan.replace('Available Quantity: ', '') || "0", 10);-->
+
+<!--    if (!stockId || quantity <= 0) {-->
+<!--      alert('Please enter a valid quantity greater than 0.');-->
+<!--      return;-->
+<!--    }-->
+
+<!--    // Get GST value for this stock from a data attribute on the stockSelect element-->
+<!--    const gstValue = stockSelect.getAttribute('data-gst') || '0';-->
+
+<!--    // Create a new row with the required classes and GST cell.-->
+<!--    const row = document.createElement('tr');-->
+<!--    row.classList.add('form-row');-->
+<!--    row.innerHTML = `-->
+<!--      <td class="sr-no">${tableBody.children.length + 1}</td>-->
+<!--      <td>${categoryText}</td>-->
+<!--      <td>${subcategoryText}</td>-->
+<!--      <td>-->
+<!--        &nbsp;<a href="#" class="stockName text-capitalize form-control-plaintext">${stockName}</a>-->
+<!--        <a href="{% url 'get_serial_numbers' %}?stock_id=${stockId}"></a>-->
+<!--        <small class="custom-small">-->
+<!--          <span class="stockNameDisplay" style="margin: 0; padding: 0;"></span>-->
+<!--        </small>-->
+<!--      </td>-->
+<!--      <td>-->
+<!--        <div class="d-flex justify-content-center align-items-center mt-1">-->
+<!--          <input type="hidden" class="form-control stock-quantity" value="${availableQuantity}" readonly>-->
+<!--          <span class="badge ${availableQuantity > stockAlert ? 'success' : 'danger'}">-->
+<!--            ${availableQuantity} <small>${purchase}</small>-->
+<!--          </span>-->
+<!--        </div>-->
+<!--      </td>-->
+<!--      <td>-->
+<!--        <div class="input-group">-->
+<!--          <input type="number" name="quantities[]" class="form-control quantity" value="${quantity}" min="1" />-->
+<!--          <div class="input-group-append">-->
+<!--            <span class="input-group-text me-2">${purchase}</span>-->
+<!--          </div>-->
+<!--        </div>-->
+<!--      </td>-->
+<!--      <td>-->
+<!--        <div class="input-group">-->
+<!--          <input type="number" name="perprices[]" class="form-control price" value="0" min="1" />-->
+<!--        </div>-->
+<!--      </td>-->
+<!--      &lt;!&ndash; New row GST cell: add the GST value from stockSelect; assign d-none initially &ndash;&gt;-->
+<!--      <td class="gst-cell d-none">-->
+<!--        <span class="gst_value">${gstValue}%</span>-->
+<!--      </td>-->
+<!--      <td>-->
+<!--        <div class="input-group">-->
+<!--          <div class="custom-flex">-->
+<!--            <input type="text" style="text-align: right;" class="textinput form-control totalprice me-2" value="0.00" readonly>-->
+<!--            <img src="{% static 'images/letter-x (1).png' %}" class="removeRow" alt="Remove" style="cursor: pointer; width: 15px; height: 15px;">-->
+<!--          </div>-->
+<!--        </div>-->
+<!--      </td>-->
+<!--      <input type="hidden" name="stock_ids[]" value="${stockId}" />-->
+<!--    `;-->
+<!--    tableBody.appendChild(row);-->
+
+<!--    // Update row numbers-->
+<!--    document.querySelectorAll('#billTable tbody .sr-no').forEach((cell, index) => {-->
+<!--      cell.innerText = index + 1;-->
+<!--    });-->
+
+<!--    // If GST is toggled ON, ensure the new row's GST cell is visible.-->
+<!--    if (document.getElementById('gstToggle').checked) {-->
+<!--      row.querySelector('.gst-cell').classList.remove('d-none');-->
+<!--    }-->
+
+<!--    // Trigger recalculation (updateTotals is defined in the jQuery scope)-->
+<!--    if (typeof updateTotals === "function") {-->
+<!--      updateTotals();-->
+<!--    }-->
+
+<!--    // Optionally, remove the selected stock option from the dropdown-->
+<!--    const optionToRemove = stockSelect.querySelector(`option[value="${stockId}"]`);-->
+<!--    if (optionToRemove) {-->
+<!--      optionToRemove.remove();-->
+<!--    }-->
+
+<!--    stockQuantity.value = '';-->
+<!--    stockQuantity.disabled = true;-->
+<!--  });-->
+<!--});-->
+<!--</script>-->
+<script>
+$(document).ready(function() {
+    // Function to validate quantity and perprice fields
+    function validateForm() {
+        let isValid = true;
+        $('.form-row').each(function() {
+            const quantity = parseFloat($(this).find('.quantity').val());
+            const perprice = parseFloat($(this).find('.price').val());
+            const existingSerialsCount = $(this).find('.custom-small').text().split(',').filter(Boolean).length;
+            const updatedSerialsCount = $(this).find('.stockNameDisplay').text().split(',').filter(Boolean).length;
+            const serialNumbers = updatedSerialsCount > 0 ? updatedSerialsCount : existingSerialsCount;
+
+
+
+
+<!--            if (quantity <= 0) {-->
+<!--                alert("Quantity must be greater than 0.");-->
+<!--                isValid = false;-->
+<!--                return false; // Exit the loop-->
+<!--            }-->
+<!--            if (perprice <= 0) {-->
+<!--                alert("Rate must be greater than 0.");-->
+<!--                isValid = false;-->
+<!--                return false; // Exit the loop-->
+<!--            }-->
+
+            // Reset error messages
+            $(this).find('.quantity-error').hide().text('');
+            $(this).find('.price-error').hide().text('');
+            $(this).find('.serial-error').hide().text('');
+
+            // Check if quantity is greater than 0
+            if (quantity <= 0) {
+                // alert("Quantity must be greater than 0.")
+                $(this).find('.quantity-error').text('Quantity must be greater than 0.').show();
+                isValid = false;
+            }
+
+            // Check if perprice is greater than 0
+            if (perprice <= 0) {
+                // alert("Rate must be greater than 0.");
+                $(this).find('.price-error').text('Rate must be greater than 0.').show();
+                isValid = false;
+            }
+
+            // Check if quantity is less than the number of serial numbers
+            if (quantity < serialNumbers) {
+                alert(`Quantity (${quantity}) cannot be less than the number of serial numbers (${serialNumbers}).`);
+                $(this).find('.serial-error').text('Quantity less than serial Number.').show();
+                isValid = false;
+                return false; // Exit the loop
+            }
+        });
+        return isValid;
+    }
+
+
+
+  // Handle submit button click
+   $('#submitBtn').on('click', function (event) {
+       event.preventDefault(); // Prevent form submission immediately
+        if (validateForm()) {
+          $('#confirmationModal').modal('show'); // Show confirmation modal if validation passes
+<!--        } else {-->
+<!--           alert('Please ensure all quantities are within available stock limits.');-->
+        }
+   });
+
+});
+</script>
+
+
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  const tableBody = document.getElementById('billTable').querySelector('tbody');
+  const addRow = document.getElementById('addRow');
+  // These dropdowns/fields must exist on your page:
+  const stockSelect = document.getElementById('stockSelect');
+  const stockQuantity = document.getElementById('stockQuantity');
+  const categorySelect = document.getElementById('categorySelect');
+  const subcategorySelect = document.getElementById('subcategorySelect');
+
+  addRow.addEventListener('click', function () {
+    const stockId = stockSelect.value;
+    const stockName = stockSelect.options[stockSelect.selectedIndex].text;
+    const gst = stockSelect.options[stockSelect.selectedIndex].getAttribute('data-gst');
+    const stockAlert = parseInt(stockSelect.getAttribute('data-stock-alert') || "0", 10);
+    const purchase = stockSelect.getAttribute('data-purchase') || "N/A";
+    const categoryText = categorySelect.options[categorySelect.selectedIndex].text;
+    const subcategoryText = subcategorySelect.options[subcategorySelect.selectedIndex].text;
+    const quantity = stockQuantity.value;
+
+    // Assume available quantity is displayed in an element with id "availableQuantitySpan"
+    const availableQuantitySpan = document.getElementById('availableQuantitySpan').textContent;
+    const availableQuantity = parseInt(availableQuantitySpan.replace('Available Quantity: ', '') || "0", 10);
+
+    if (!stockId || quantity <= 0) {
+      alert('Please enter a valid quantity greater than 0.');
+      return;
+    }
+
+    // Get GST value from the currently selected option instead of the select element.
+    const selectedOption = stockSelect.options[stockSelect.selectedIndex];
+    // const gstValue = selectedOption.getAttribute('data-gst') || '0';
+
+    // Create a new row with the required classes and GST cell.
+    const row = document.createElement('tr');
+    row.classList.add('form-row');
+    row.innerHTML = `
+      <td class="sr-no">${tableBody.children.length + 1}</td>
+      <td>${categoryText}</td>
+      <td>${subcategoryText}</td>
+      <td>
+        &nbsp;<a href="#" class="stockName text-capitalize form-control-plaintext">${stockName}</a>
+        <a href="{% url 'get_serial_numbers' %}?stock_id=${stockId}"></a>
+        <small class="custom-small">
+          <span class="stockNameDisplay" style="margin: 0; padding: 0;"></span>
+        </small>
+      </td>
+      <td>
+        <div class="d-flex justify-content-center align-items-center mt-1">
+          <input type="hidden" class="form-control stock-quantity" value="${availableQuantity}" readonly>
+          <span class="badge ${availableQuantity > stockAlert ? 'success' : 'danger'}">
+            ${availableQuantity} <small>${purchase}</small>
+          </span>
+        </div>
+      </td>
+      <td>
+        <div class="input-group">
+          <input type="number" name="quantities[]" class="form-control quantity" value="${quantity}" min="1" />
+          <div class="input-group-append">
+            <span class="input-group-text me-2">${purchase}</span>
+          </div>
+        </div>
+        <!-- Error message for perprice -->
+        <small class="text-danger quantity-error" style="display: none;"></small>
+        <small class="text-danger serial-error" style="display: none;"></small>
+      </td>
+      <td>
+        <div class="input-group">
+          <input type="number" name="perprices[]" class="form-control price" value="0" min="1" />
+        </div>
+        <!-- Error message for perprice -->
+         <small class="text-danger price-error" style="display: none;"></small>
+      </td>
+      <!-- New row GST cell: add the GST value from the selected option; assign d-none initially -->
+      <td class="gst-cell d-none">
+
+      <span class="gst_value">${parseFloat(gst)}%</span>
+
+      </td>
+      <td>
+        <div class="input-group">
+          <div class="custom-flex">
+            <input type="text" style="text-align: right;" class="textinput form-control totalprice me-2" value="0.00" readonly>
+            <img src="{% static 'images/letter-x (1).png' %}" class="removeRow" alt="Remove" style="cursor: pointer; width: 15px; height: 15px;">
+          </div>
+        </div>
+      </td>
+      <input type="hidden" name="stock_ids[]" value="${stockId}" />
+    `;
+    tableBody.appendChild(row);
+
+    // Update row numbers
+    document.querySelectorAll('#billTable tbody .sr-no').forEach((cell, index) => {
+      cell.innerText = index + 1;
+    });
+
+    // If GST is toggled ON, ensure the new row's GST cell is visible.
+    if (document.getElementById('gstToggle').checked) {
+      row.querySelector('.gst-cell').classList.remove('d-none');
+    }
+
+    // Trigger recalculation (updateTotals is defined in the jQuery scope)
+    if (typeof updateTotals === "function") {
+      updateTotals();
+    }
+
+    // Optionally, remove the selected stock option from the dropdown
+    const optionToRemove = stockSelect.querySelector(`option[value="${stockId}"]`);
+    if (optionToRemove) {
+      optionToRemove.remove();
+    }
+
+    stockQuantity.value = '';
+    stockQuantity.disabled = true;
+  });
+
+
+  // Handle submit button click
+  // $('#submitBtn').on('click', function (event) {
+      // event.preventDefault(); // Prevent form submission immediately
+       // if (validateQuantities()) {
+       //   $('#confirmationModal').modal('show'); // Show confirmation modal if validation passes
+       // } else {
+       //    alert('Please ensure all quantities are within available stock limits.');
+       // }
+  // });
+
+
+  // Handle confirmation modal submit
+  $('#modalSubmitButton').on('click', function() {
+     // After confirmation, submit the form
+     const form = document.getElementById('billForm');
+     form.submit();
+     $('#confirmationModal').modal('hide'); // Hide the confirmation modal
+     alert("**Bill No: " + "{{ purchase_bill.billno }}" + "** Records Updated Successfully!"); // Show success message
+  });
+
+});
+</script>
+
+<!--<script>-->
+<!--$(document).ready(function() {-->
+
+<!--    // Function to update per-row totals and overall totals-->
+<!--    function updateTotals() {-->
+<!--        var totalQuantity = 0;-->
+<!--        var totalAmount = 0;-->
+<!--        $('.form-row').each(function() {-->
+<!--            var quantity = parseFloat($(this).find('.quantity').val()) || 0;-->
+<!--            var price = parseFloat($(this).find('.price').val()) || 0;-->
+<!--            var rowTotal = quantity * price;-->
+<!--            $(this).find('.totalprice').val(rowTotal.toFixed(2));-->
+<!--            totalQuantity += quantity;-->
+<!--            totalAmount += rowTotal;-->
+
+
+<!--        });-->
+<!--        $('#total_quantity').val(totalQuantity);-->
+<!--        $('#total_amount').val(totalAmount.toFixed(2));-->
+<!--    }-->
+
+<!--    // Function to calculate the overall GST amount-->
+<!--    function calculateGST() {-->
+<!--        var totalGstAmount = 0;-->
+<!--        $('.form-row').each(function() {-->
+<!--            var quantity = parseFloat($(this).find('.quantity').val()) || 0;-->
+<!--            var price = parseFloat($(this).find('.price').val()) || 0;-->
+<!--            // Get the GST percentage from the row's GST cell (remove the "%" sign)-->
+<!--            var gstPercent = parseFloat($(this).find('.gst_value').text().replace('%','')) || 5;-->
+<!--            var gstValue = (price * quantity * gstPercent) / 100;-->
+<!--            totalGstAmount += gstValue;-->
+<!--        });-->
+<!--        $('#gst_amount').val(totalGstAmount.toFixed(2));-->
+<!--    }-->
+
+<!--    // Function to update the final amount (includes delivery charges and rounding)-->
+<!--    function updateFinalAmount() {-->
+<!--        var totalAmount = parseFloat($('#total_amount').val()) || 0;-->
+<!--        var gstAmount = parseFloat($('#gst_amount').val()) || 0;-->
+<!--        var deliveryCharges = parseFloat($('#delivery_charges').val()) || 0;-->
+
+<!--        // If GST is applied, add GST amount; otherwise use total amount only.-->
+<!--        var baseFinal = ($('#gstToggle').is(':checked')) ? totalAmount + gstAmount : totalAmount;-->
+<!--        baseFinal += deliveryCharges;-->
+
+<!--        // Rounding logic: calculate the adjustment (roundoff)-->
+<!--        var decimalPart = baseFinal - Math.floor(baseFinal);-->
+<!--        var adjustment = 0;-->
+
+
+<!--        if (decimalPart <= 0.49) {-->
+<!--            adjustment = -decimalPart;-->
+<!--            baseFinal = Math.floor(baseFinal);-->
+<!--        } else {-->
+<!--            adjustment = 1 - decimalPart;-->
+<!--            baseFinal = Math.ceil(baseFinal);-->
+<!--        }-->
+<!--        var adjustedFinal = baseFinal + adjustment;-->
+
+<!--        // If GST is checked, show roundoff value; otherwise set it to 0.-->
+<!--        if ($('#gstToggle').is(':checked')) {-->
+<!--            $('#round_off').val(adjustment.toFixed(2));-->
+<!--        } else {-->
+<!--            $('#round_off').val("0.00");-->
+<!--        }-->
+<!--        $('#final_amount').val('₹ ' + adjustedFinal.toFixed(2));-->
+
+<!--    }-->
+
+<!--    // Function to update row serial numbers after any change-->
+<!--    function updateRowNumbers() {-->
+<!--        $('.form-row').each(function(index) {-->
+<!--            $(this).find('.sr-no').text(index + 1);-->
+<!--        });-->
+
+<!--    }-->
+
+<!--    // Listen for changes on quantity, price, or delivery charges to trigger recalculation-->
+<!--    $(document).on('input change', '.quantity, .price, #delivery_charges', function() {-->
+<!--        updateTotals();-->
+<!--        if ($('#gstToggle').is(':checked')) {-->
+<!--            calculateGST();-->
+<!--        } else {-->
+<!--            $('#gst_amount').val("0.00");-->
+<!--        }-->
+<!--        updateFinalAmount();-->
+<!--    });-->
+
+<!--    // When the GST toggle checkbox changes, show/hide the round off textbox and GST column-->
+<!--    $('#gstToggle').on('change', function() {-->
+<!--        if ($(this).is(':checked')) {-->
+<!--            $('#roundoffDiv').show();-->
+<!--            $('#gstvalues').show();-->
+<!--            $('#gstamount').show();-->
+<!--            $('.gst-header').removeClass('d-none');-->
+<!--            $('.gst-cell').removeClass('d-none');-->
+<!--            calculateGST();-->
+<!--        } else {-->
+<!--            $('#roundoffDiv').hide();-->
+<!--            $('#gstvalues').hide();-->
+<!--            $('#gstamount').hide();-->
+<!--            $('.gst-header').addClass('d-none');-->
+<!--            $('.gst-cell').addClass('d-none');-->
+<!--            $('#gst_amount').val("0.00");-->
+<!--        }-->
+<!--        updateFinalAmount();-->
+<!--    });-->
+
+<!--    // Remove row event handler (works for both existing and dynamically added rows)-->
+<!--    $(document).on('click', '.removeRow', function() {-->
+<!--        $(this).closest('tr').remove();-->
+<!--        updateRowNumbers();-->
+<!--        updateTotals();-->
+<!--        if ($('#gstToggle').is(':checked')) {-->
+<!--            calculateGST();-->
+<!--        } else {-->
+<!--            $('#gst_amount').val("0.00");-->
+<!--        }-->
+<!--        updateFinalAmount();-->
+<!--    });-->
+
+<!--    // Initial calculations on page load-->
+<!--    updateTotals();-->
+<!--    if ($('#gstToggle').is(':checked')) {-->
+<!--        calculateGST();-->
+<!--    }-->
+<!--    updateFinalAmount();-->
+<!--});-->
+<!--</script>-->
+
+<!--<script>-->
+<!--document.addEventListener('DOMContentLoaded', function () {-->
+<!--    const tableBody = document.getElementById('billTable').querySelector('tbody');-->
+<!--    const addRow = document.getElementById('addRow');-->
+<!--    const stockSelect = document.getElementById('stockSelect');-->
+<!--    const stockQuantity = document.getElementById('stockQuantity');-->
+<!--    const categorySelect = document.getElementById('categorySelect');-->
+<!--    const subcategorySelect = document.getElementById('subcategorySelect');-->
+
+<!--    addRow.addEventListener('click', function () {-->
+<!--        const stockId = stockSelect.value;-->
+<!--        const stockName = stockSelect.options[stockSelect.selectedIndex].text;-->
+
+<!--        const stockAlert = parseInt(stockSelect.getAttribute('data-stock-alert') || "0", 10);-->
+<!--        const purchase = stockSelect.getAttribute('data-purchase') || "N/A";-->
+<!--        const categoryText = categorySelect.options[categorySelect.selectedIndex].text;-->
+<!--        const subcategoryText = subcategorySelect.options[subcategorySelect.selectedIndex].text;-->
+<!--        const quantity = stockQuantity.value;-->
+
+<!--        // Assume the available quantity is shown in an element with id "availableQuantitySpan"-->
+<!--        const availableQuantitySpan = document.getElementById('availableQuantitySpan').textContent;-->
+<!--        const availableQuantity = parseInt(availableQuantitySpan.replace('Available Quantity: ', '') || "0", 10);-->
+
+
+
+
+<!--        if (!stockId || quantity <= 0) {-->
+<!--            alert('Please enter a valid quantity greater than 0.');-->
+
+<!--            return;-->
+<!--        }-->
+
+<!--        // Create a new row and add the "form-row" class so it is picked up by the calculation functions-->
+<!--        const row = document.createElement('tr');-->
+<!--        row.classList.add('form-row');-->
+<!--        row.innerHTML = `-->
+<!--            <td class="sr-no">${tableBody.children.length + 1}</td>-->
+<!--            <td>${categoryText}</td>-->
+<!--            <td>${subcategoryText}</td>-->
+<!--            <td>-->
+<!--                &nbsp;<a href="#" class="stockName text-capitalize form-control-plaintext">${stockName}</a>-->
+<!--                <a href="{% url 'get_serial_numbers' %}?stock_id=${stockId}"></a>-->
+<!--                <small class="custom-small">-->
+<!--                    <span class="stockNameDisplay" style="margin: 0; padding: 0;"></span>-->
+<!--                </small>-->
+<!--            </td>-->
+<!--            <td>-->
+<!--                <div class="d-flex justify-content-center align-items-center mt-1">-->
+<!--                    <input type="hidden" class="form-control stock-quantity" value="${availableQuantity}" readonly>-->
+<!--                    <span class="badge ${availableQuantity > stockAlert ? 'success' : 'danger'}">-->
+<!--                        ${availableQuantity} <small>${purchase}</small>-->
+<!--                    </span>-->
+<!--                </div>-->
+<!--            </td>-->
+<!--            <td>-->
+<!--                <div class="input-group">-->
+<!--                    &lt;!&ndash; Note: The quantity input now uses the class "quantity" so that its value is included in calculations &ndash;&gt;-->
+<!--                    <input type="number" name="quantities[]" class="form-control quantity" value="${quantity}" min="1" />-->
+<!--                    <div class="input-group-append">-->
+<!--                        <span class="input-group-text me-2">${purchase}</span>-->
+<!--                    </div>-->
+<!--                </div>-->
+<!--            </td>-->
+<!--            <td>-->
+<!--                <div class="input-group">-->
+<!--                    <input type="number" name="perprices[]" class="form-control price" value="0" min="1" />-->
+<!--                </div>-->
+<!--            </td>-->
+<!--             &lt;!&ndash; New row GST cell; initially hidden (d-none) &ndash;&gt;-->
+<!--            <td class="gst-cell d-none">-->
+<!--                <span class="gst_value">${gstValue}%</span>-->
+<!--            </td>-->
+<!--            <td>-->
+<!--                <div class="input-group">-->
+<!--                    <div class="custom-flex">-->
+<!--                        <input type="text" style="text-align: right;" class="textinput form-control totalprice me-2" value="0.00" readonly>-->
+<!--                        <img src="{% static 'images/letter-x (1).png' %}" class="removeRow" alt="Remove" style="cursor: pointer; width: 15px; height: 15px;">-->
+<!--                    </div>-->
+<!--                </div>-->
+
+<!--            </td>-->
+
+<!--            <input type="hidden" name="stock_ids[]" value="${stockId}" />-->
+<!--        `;-->
+<!--        tableBody.appendChild(row);-->
+
+<!--		// Update serial numbers for all rows-->
+<!--        document.querySelectorAll('#billTable tbody .sr-no').forEach((cell, index) => {-->
+<!--            cell.innerText = index + 1;-->
+<!--        });-->
+
+<!--        // Trigger recalculation by calling updateTotals() (which is defined in the jQuery scope)-->
+<!--        if (typeof updateTotals === "function") {-->
+<!--            updateTotals();-->
+
+<!--        }-->
+
+<!--        // Optionally, remove the selected stock option from the dropdown-->
+<!--        const optionToRemove = stockSelect.querySelector(`option[value="${stockId}"]`);-->
+<!--        if (optionToRemove) {-->
+<!--            optionToRemove.remove();-->
+<!--        }-->
+
+<!--        // Reset and disable the stock quantity field as needed-->
+<!--        stockQuantity.value = '';-->
+<!--        stockQuantity.disabled = true;-->
+
+<!--    });-->
+
+<!--	// Handle submit button click-->
+<!--        $('#submitBtn').on('click', function (event) {-->
+<!--            event.preventDefault(); // Prevent form submission immediately-->
+<!--            // if (validateQuantities()) {-->
+<!--                $('#confirmationModal').modal('show'); // Show confirmation modal if validation passes-->
+<!--            // } else {-->
+<!--            //    alert('Please ensure all quantities are within available stock limits.');-->
+<!--            // }-->
+<!--        });-->
+
+<!--        // Handle confirmation modal submit-->
+<!--        $('#modalSubmitButton').on('click', function() {-->
+<!--            // After confirmation, submit the form-->
+<!--            const form = document.getElementById('billForm');-->
+<!--            form.submit();-->
+<!--            $('#confirmationModal').modal('hide'); // Hide the confirmation modal-->
+<!--            alert("**Bill No: " + "{{ purchase_bill.billno }}" + "** Records Updated Successfully!"); // Show success message-->
+<!--        });-->
+
+<!--});-->
+<!--</script>-->
+
+<script type="text/javascript">
+$(document).ready(function() {
+    // Initialize the previous bill fields to show by default
+    $('#previousBillLabel').addClass('active');
+    $('#checkPrevious').show(); // Show checkmark for Previous Bill
+    $('#previousBillField').show(); // Ensure the fields are shown initially
+    $('#previousDateField').show();
+
+
+    // Click event for Current Bill label
+    $('#currentBillLabel').on('click', function() {
+        // Set this label as active and remove active state from the other
+        $(this).addClass('active');
+        $('#previousBillLabel').removeClass('active');
+        $('#checkCurrent').show(); // Show checkmark for Current Bill
+        $('#checkPrevious').hide(); // Hide checkmark for Previous Bill
+
+        // Hide previous bill fields
+        $('#previousBillField').hide();
+        $('#eway_no').val(''); // Clear input
+        $('#previousDateField').hide();
+        $('#bill_date').val(''); // Clear input
+    });
+
+    // Click event for Previous Bill label
+    $('#previousBillLabel').on('click', function() {
+        // Set this label as active and remove active state from the other
+        $(this).addClass('active');
+        $('#currentBillLabel').removeClass('active');
+        $('#checkPrevious').show(); // Show checkmark for Previous Bill
+        $('#checkCurrent').hide(); // Hide checkmark for Current Bill
+
+        // Show previous bill fields
+        $('#previousBillField').show();
+        $('#previousDateField').show();
+    });
+
+    // Handle the modal's submit button
+    $('#modalSubmitButton').on('click', function() {
+        // Retrieve the value from the modal input fields
+        const eway_no = $('#eway_no').val();
+        const bill_date = $('#bill_date').val();
+        const veh_no = $('#veh_no').val();
+        const arrange = $('#arrange').val();
+        const handby = $('#handby').val();
+        const destination = $('#destination').val();
+        const po_no = $('#po_no').val();
+        const po_date = $('#po_date').val();
+
+        // Check if required fields are filled based on selected bill type
+        const isCurrentBill = $('#currentBillLabel').hasClass('active');
+        const isPreviousBill = $('#previousBillLabel').hasClass('active');
+
+        // Validate fields based on the selected bill type
+        if (isCurrentBill) {
+            // For Current Bill, only check handby and destination
+            if (arrange && handby && destination) {
+                // Append modal input data to the main form
+                $('#billForm').append($('<input>', {type: 'hidden', name: 'veh_no', value: veh_no}));
+                $('#billForm').append($('<input>', {type: 'hidden', name: 'arrange', value: arrange}));
+                $('#billForm').append($('<input>', {type: 'hidden', name: 'handby', value: handby}));
+                $('#billForm').append($('<input>', {type: 'hidden', name: 'destination', value: destination}));
+                $('#billForm').append($('<input>', {type: 'hidden', name: 'po_no', value: po_no}));
+                $('#billForm').append($('<input>', {type: 'hidden', name: 'po_date', value: po_date}));
+
+                // Hide the modal
+                $('#confirmationModal').modal('hide');
+
+                // Submit the form after hiding the modal
+                $('#billForm').submit();
+            } else {
+                alert("Please fill in all required fields in the modal (Handby and Destination).");
+            }
+        } else if (isPreviousBill) {
+            // For Previous Bill, check that eway_no, bill_date, handby, and destination are filled
+            if (arrange && eway_no && bill_date && handby && destination) {
+                // Append modal input data to the main form
+                $('#billForm').append($('<input>', {type: 'hidden', name: 'eway_no', value: eway_no}));
+                $('#billForm').append($('<input>', {type: 'hidden', name: 'bill_date', value: bill_date}));
+                $('#billForm').append($('<input>', {type: 'hidden', name: 'veh_no', value: veh_no}));
+                $('#billForm').append($('<input>', {type: 'hidden', name: 'arrange', value: arrange}));
+                $('#billForm').append($('<input>', {type: 'hidden', name: 'handby', value: handby}));
+                $('#billForm').append($('<input>', {type: 'hidden', name: 'destination', value: destination}));
+                $('#billForm').append($('<input>', {type: 'hidden', name: 'po_no', value: po_no}));
+                $('#billForm').append($('<input>', {type: 'hidden', name: 'po_date', value: po_date}));
+
+                // Hide the modal
+                $('#confirmationModal').modal('hide');
+
+                // Submit the form after hiding the modal
+                $('#billForm').submit();
+            } else {
+                alert("Please fill in all required fields in the modal (Eway No, Bill Date, Handby, and Destination).");
+            }
+        }
+    });
+});
+</script>
+
+<style>
+    .success {
+
+        color: #28a745; /* Text color */
+        border: 3px solid #28a745; /* Border color */
+        padding: 5px 8px;
+        border-radius: 5px;
+        font-size: 80%;
+    }
+
+    .danger {
+
+        color: #dc3545; /* Text color */
+        border: 3px solid #dc3545; /* Border color */
+        padding: 5px 8px;
+        border-radius: 5px;
+        font-size: 80%;
+    }
+
+    .custom-flex {
+        display: flex;
+        align-items: center; /* Vertically center input and image */
+    }
+    .custom-flex input {
+        margin-right: 10px; /* Add some space between the input and the image */
+    }
+</style>
+<style>
+    .success {
+
+        color: #28a745; /* Text color */
+        border: 3px solid #28a745; /* Border color */
+        padding: 5px 8px;
+        border-radius: 5px;
+        font-size: 80%;
+    }
+
+    .danger {
+
+        color: #dc3545; /* Text color */
+        border: 3px solid #dc3545; /* Border color */
+        padding: 5px 8px;
+        border-radius: 5px;
+        font-size: 80%;
+    }
+
+    .custom-flex {
+        display: flex;
+        align-items: center; /* Vertically center input and image */
+    }
+    .custom-flex input {
+        margin-right: 10px; /* Add some space between the input and the image */
+    }
+</style>
+<style>
+        /* Container for toggle labels */
+        .toggle-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%; /* Adjust width as necessary */
+        }
+
+        .toggle-label {
+            width: 100px; /* Width for labels */
+            text-align: center;
+            padding: 10px;
+            border-radius: 5px; /* Rounded corners */
+            background-color: white; /* Default background color */
+            transition: background-color 0.3s, color 0.3s; /* Transition for smooth effect */
+            border: 1px solid #ccc; /* Optional border */
+            cursor: pointer; /* Show pointer cursor on hover */
+            position: relative; /* For the checkmark */
+        }
+
+        /* Styles for active labels */
+        .active {
+            background-color: green; /* Background color when active */
+            color: white; /* Text color for active state */
+        }
+
+        .checkmark {
+            position: absolute;
+            top: 5px;
+            left: 5px;
+            font-size: 20px;
+            display: none; /* Hide by default */
+            color: white; /* White color for checkmark */
+        }
+
+        /* Previous Bill and Previous Date Fields */
+        .form-group {
+            margin-top: 20px; /* Spacing above fields */
+        }
+
+        .green-text {
+            color: green;
+<!--            font-weight: bold;-->
+        }
+
+    </style>
+
+{% endblock content %}
+
+

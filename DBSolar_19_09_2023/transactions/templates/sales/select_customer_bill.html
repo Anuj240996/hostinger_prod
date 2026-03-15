@@ -1,0 +1,70 @@
+{% extends 'partials/base.html' %}
+{% block title %} New Purchase {% endblock title %}
+{% block content %}
+
+<div style="color:#575757; font-style: bold; font-size: 3rem; border-bottom: 1px solid white;">New Sales</div>
+<br>
+<form method="post" id="saleForm" action="{% url 'select_customer_bill' %}">
+    {% csrf_token %}
+
+    <!-- Cust_type Dropdown -->
+    <div class="form-group">
+        <label for="Cust_type">Consumer Type</label>
+        <select id="Cust_type" class="form-control text-capitalize" name="Cust_type">
+            <option value="">--Select Consumer Type--</option>
+            {% for customer in customers %}
+                <option value="{{ customer.Cust_type }}">{{ customer.Cust_type }}</option>
+            {% endfor %}
+        </select>
+    </div>
+
+    <!-- Comp_name Dropdown (Initially hidden) -->
+    <div class="form-group" id="supplierDropdown" style="display: none;">
+        <label for="supplier">Consumer</label>
+        <select id="supplier" class="form-control text-capitalize" name="supplier">
+            <option value="">--Select Consumer--</option>
+        </select>
+    </div>
+
+    <!-- Hidden input to store selected supplier value -->
+    <input type="hidden" id="selectedSupplier" name="selected_supplier">
+
+    <br>
+    <div class="align-middle">
+        <button type="submit" class="btn btn-success">Next</button>
+        <a href="{% url 'sales-list' %}" class="btn btn-secondary">Cancel</a>
+    </div>
+
+</form>
+
+<script>
+    document.getElementById('Cust_type').addEventListener('change', function() {
+        let custType = this.value;
+        if (custType) {
+            // Show the supplier dropdown
+            document.getElementById('supplierDropdown').style.display = 'block';
+
+            // Fetch related Comp_name values based on Cust_type
+            fetch(`/transactions/get-customers/${custType}/`)
+            .then(response => response.json())
+            .then(data => {
+                let supplierSelect = document.getElementById('supplier');
+                supplierSelect.innerHTML = '<option value="">--Select Consumer--</option>';  // Reset options
+                data.suppliers.forEach(supplier => {
+                    supplierSelect.innerHTML += `<option value="${supplier.id}">${supplier.name}</option>`;
+                });
+            });
+        } else {
+            // Hide the supplier dropdown if no Cust_type is selected
+            document.getElementById('supplierDropdown').style.display = 'none';
+        }
+    });
+
+    // Set selected supplier to hidden input before submitting the form
+    document.getElementById('saleForm').addEventListener('submit', function() {
+        let selectedSupplier = document.getElementById('supplier').value;
+        document.getElementById('selectedSupplier').value = selectedSupplier;
+    });
+</script>
+
+{% endblock content %}

@@ -1,0 +1,357 @@
+{% extends 'partials/base.html' %}
+{% load static %}
+
+{% block content %}
+ {% if messages %}
+        <ul class="messages">
+            {% for message in messages %}
+            {% if message.tags %} <script> alert("{{ message }}") </script> {% endif %}{% endfor %}
+        </ul>
+    {% endif %}
+
+  <h1>Filter Ex-Employee</h1>
+  <div class="form-group">
+    <br><br>
+    <button type="button" class="btn btn-primary btn-sm d-block" data-toggle="modal" data-target="#myModal" style="width: 200px; height: 50px; font-size: 18px;">
+      <b>Re-Assign To</b>
+    </button>
+    <div class="modal fade" id="myModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+      <div class="modal-dialog" role="document">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="exampleModalLabel">Re-Assign Employee</h5>
+            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+              <span aria-hidden="true">&times;</span>
+            </button>
+          </div>
+          <div class="modal-body">
+            <form method="post" action="{% url 'customer-change_staff' %}">
+              {% csrf_token %}
+              <table width="100%">
+                <tr>
+                  <th>Department:</th>
+                  <td>
+                    <select id="department" name="department" class="form-control" required>
+                      <option value="">Select Department</option>
+                      {% for department in unique_departments %}
+                        <option value="{{ department }}">{{ department }}</option>
+                      {% endfor %}
+                    </select>
+                  </td>
+                </tr>
+                <tr>
+                  <th>Re-Assign To:</th>
+                  <td>
+                    <select id="first_name" name="AssignTo" class="form-control" required disabled>
+                      <option value="">-- Select Name --</option>
+                    </select>
+                  </td>
+                </tr>
+              </table>
+              <div class="modal-footer">
+                <button type="submit" name="submit" class="btn btn-primary">Submit</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {% if filtered_customers %}
+<form id="updateForm" method="post" action="{% url 'customer-save_change_staff' %}">
+  {% if filtered_customers.0.Engg_Assign %}
+  <h1 align="center">Ex.<span style="color: red;">{{ filtered_customers.0.Engg_Assign.first_name }} {{ filtered_customers.0.Engg_Assign.last_name }}</span> Assigned Consumer List</h1>
+    {% endif %}
+  {% csrf_token %}
+    <table class="table solar-table customDataTable">
+      <tr align="center" style="background-color: lightgray;">
+        <th style="width: 50px; text-align: center">Select</th>
+        <th style="width: 100px; text-align: center">Customer ID</th>
+        <th style="width: 400px; text-align: center">Company Name</th>
+        <th style="width: 300px; text-align: center">City</th>
+        <th style="width: 250px; text-align: center">Plant Capacity</th>
+        <th class="department-header" style="width: 300px; text-align: center; display: None;">Department</th>
+        <th class="engineer-header" style="width: 300px; text-align: center; display: None;">Engineers</th>
+        <!-- Add more fields as needed -->
+      </tr>
+      {% for customer in filtered_customers %}
+        <tr align="center">
+          <td>
+            <!-- Ensure each checkbox has the name 'selected_customers[]' and value set to customer ID -->
+
+            <input type="checkbox" class="update-checkbox checkbox-input" data-customer-id="{{ customer.Cust_id }}" name="selected_customers[]" value="{{ customer.Cust_id }}">
+
+          </td>
+          <td class="form-group">{{ customer.Cust_id }}</td>
+          <td class="form-group">{{ customer.Comp_name }}</td>
+          <td class="form-group">{{ customer.City }}</td>
+          <td class="form-group">{{ customer.Plant_Capacity }} Kw</td>
+          <td class="department-header">
+            <div class="form-group department-group" style="display: none;">
+              <!-- Ensure each department dropdown has the name 'department1' -->
+              <select class="form-control department-dropdown" name="department1">
+                <option value="">Select Department</option>
+                {% for department in unique_departments1 %}
+                  <option value="{{ department }}">{{ department }}</option>
+                {% endfor %}
+              </select>
+            </div>
+          </td>
+          <td class="engineer-header">
+            <div class="form-group engineer-group"  style="display: none;">
+              <select class="form-control engineer-dropdown" name="AssignTo1[]" required disabled>
+                <option value="">-- Select Name --</option>
+              </select>
+            </div>
+            <!-- Hidden input field to store the selected engineer value -->
+            <input type="hidden" id="AssignTo1" name="AssignTo1">
+
+          </td>
+          <!-- Add more fields as needed -->
+        </tr>
+      {% endfor %}
+    </table>
+
+  <br>
+          <div class="form-group" align="center">
+            <button type="submit" name="action" id="submitBtn" value="submit" style="width: 600px; display: none;">Update The Re-Assign Employee</button>
+
+        </div>
+
+<!--    <input type="submit">-->
+</form>
+
+  {% endif %}
+
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+  $(document).ready(function() {
+    // Function to update submit button visibility based on checkbox state
+    function updateSubmitButtonVisibility() {
+      var checkedCheckboxes = $('.update-checkbox:checked').length;
+      var submitButton = $('#submitBtn');
+      if (checkedCheckboxes > 0) {
+        submitButton.show();
+      } else {
+        submitButton.hide();
+      }
+    }
+
+    // Event handler for checkbox change
+    $('.update-checkbox').change(function() {
+      updateSubmitButtonVisibility();
+    });
+
+    // Initially update submit button visibility based on checkbox state
+    updateSubmitButtonVisibility();
+  });
+</script>
+
+<script>
+  $(document).ready(function() {
+    // Function to update row background color based on checkbox state
+    function updateRowColor(checkbox) {
+      var row = checkbox.closest('tr');
+      if (checkbox.prop('checked')) {
+        row.css('background-color', '#68A2B9');
+      } else {
+        row.css('background-color', 'white');
+      }
+    }
+
+    // Event handler for checkbox change
+    $('.update-checkbox').change(function() {
+      updateRowColor($(this));
+    });
+
+    // Initially update row colors based on checkbox state
+    $('.update-checkbox').each(function() {
+      updateRowColor($(this));
+    });
+  });
+</script>
+
+  <script>
+    $(document).ready(function() {
+      var allUsers = [
+        {% for user in all_users %}
+          {
+            id: {{ user.id }},
+            firstName: "{{ user.first_name }}",
+            lastName: "{{ user.last_name }}",
+            department: "{{ user.profile.department }}"
+          },
+        {% endfor %}
+      ];
+
+      $('.update-checkbox').change(function() {
+        var isChecked = $(this).prop('checked');
+        var row = $(this).closest('tr');
+        var departmentGroup = row.find('.department-group');
+        var engineerGroup = row.find('.engineer-group');
+
+        if (isChecked) {
+          departmentGroup.show();
+          engineerGroup.show();
+        } else {
+          departmentGroup.hide();
+          engineerGroup.hide();
+        }
+      });
+
+      $('#department').change(function() {
+        var selectedDepartment = $(this).val();
+        var filteredUsers = allUsers.filter(function(user) {
+          return user.department === selectedDepartment;
+        });
+
+        var firstNamesDropdown = $('#first_name');
+        firstNamesDropdown.empty();
+        firstNamesDropdown.append($('<option>', {
+          value: '',
+          text: '-- Select Name --'
+        }));
+        filteredUsers.forEach(function(user) {
+          var fullName = user.firstName + ' ' + user.lastName;
+          firstNamesDropdown.append($('<option>', {
+            value: user.id,
+            text: fullName
+          }));
+        });
+
+        if (selectedDepartment) {
+          firstNamesDropdown.prop('disabled', false);
+        } else {
+          firstNamesDropdown.prop('disabled', true);
+        }
+      });
+
+      $('#department').change();
+    });
+  </script>
+
+<script>
+    $(document).ready(function() {
+        var allUsers1 = [
+            {% for user in all_users1 %}
+            {
+                id: {{ user.id }},
+                firstName: "{{ user.first_name }}",
+                lastName: "{{ user.last_name }}",
+                department: "{{ user.profile.department }}"
+            },
+            {% endfor %}
+        ];
+
+        // Function to populate engineer dropdown
+        function populateEngineerDropdown(row) {
+            var selectedDepartment = row.find('.department-dropdown').val();
+            var engineerDropdown = row.find('.engineer-dropdown'); // Find the engineer dropdown within the same row
+            var filteredUsers = allUsers1.filter(function(user) {
+                return user.department === selectedDepartment;
+            });
+
+            var firstNamesDropdown = $('#first_name1');
+            engineerDropdown.empty(); // Clear the dropdown
+            engineerDropdown.append($('<option>', {
+                value: '',
+                text: '-- Select Name --'
+            }));
+            filteredUsers.forEach(function(user) {
+                var fullName = user.firstName + ' ' + user.lastName;
+                engineerDropdown.append($('<option>', {
+                    value: user.id,
+                    text: fullName
+                }));
+            });
+
+            if (selectedDepartment) {
+                engineerDropdown.prop('disabled', false); // Enable the dropdown
+                engineerDropdown.show(); // Show the dropdown if a department is selected
+            } else {
+                engineerDropdown.prop('disabled', true); // Disable the dropdown
+                engineerDropdown.hide(); // Hide the dropdown if no department is selected
+            }
+        }
+
+        // Event handler for checkbox change
+        $('.update-checkbox').change(function() {
+            var totalCheckboxes = $('.update-checkbox').length;
+            var checkedCheckboxes = $('.update-checkbox:checked').length;
+            var allUnchecked = checkedCheckboxes === 0;
+
+            if (allUnchecked) {
+                $('.department-header').hide();
+                $('.engineer-header').hide();
+            } else {
+                $('.department-header').show();
+                $('.engineer-header').show();
+            }
+
+            var isChecked = $(this).prop('checked');
+            var row = $(this).closest('tr');
+            var departmentGroup = row.find('.department-group');
+            var engineerGroup = row.find('.engineer-group');
+            var departmentHeader = row.find('.department-header');
+            var engineerHeader = row.find('.engineer-header');
+
+            if (isChecked) {
+                departmentGroup.show();
+                engineerGroup.show();
+                departmentHeader.show(); // Show department header within this row
+                engineerHeader.show(); // Show engineer header within this row
+
+                // Get the selected user ID from the engineer dropdown
+                var selectedUserId = row.find('.engineer-dropdown').val();
+                $('#AssignTo1').val(selectedUserId); // Set AssignTo1 value
+            } else {
+                departmentGroup.hide();
+                engineerGroup.hide();
+                departmentHeader.hide(); // Hide department header within this row
+                engineerHeader.hide(); // Hide engineer header within this row
+            }
+        });
+
+
+
+        // Event handler for engineer dropdown change
+        //$('.engineer-dropdown').change(function() {
+          //  var selectedUserId = $(this).val();
+            //$('#AssignTo1').val(selectedUserId); // Set AssignTo1 value to selected user ID
+       // });
+
+        // Event handler for department dropdown change
+        $(document).on('change', '.department-dropdown', function() {
+            var row = $(this).closest('tr');
+            var isChecked = row.find('.update-checkbox').prop('checked');
+            if (isChecked) {
+                populateEngineerDropdown(row); // Populate engineer dropdown if checkbox is checked and department is selected
+            }
+        });
+
+        // Initially hide engineer dropdown groups
+        $('.engineer-group').hide();
+        $('.department-header').hide();
+        $('.engineer-header').hide();
+
+        // Initial population of engineer dropdowns based on checkbox status and department selection
+        $('.update-checkbox:checked').each(function() {
+            var row = $(this).closest('tr');
+            populateEngineerDropdown(row);
+        });
+
+           // Event handler for department dropdown change
+      //  $('#first_name1').change(function() {
+        //    var selectedAssignTo = $(this).val();
+          //  $('#reassign_to1').val(selectedAssignTo); // Set the value of hidden input field
+       // });
+
+        // Trigger the change event when the page loads to initialize the hidden input field
+       // $('#first_name1').change();
+
+    });
+</script>
+
+{% endblock %}
+

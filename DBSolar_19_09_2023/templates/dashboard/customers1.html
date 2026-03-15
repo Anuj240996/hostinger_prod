@@ -1,0 +1,183 @@
+{% extends 'partials/base.html' %}
+{% block title %}Order Page{% endblock %}
+{% load static %}
+{% block content %}
+
+<style>
+   html, body {
+   min-height: 50%;
+   }
+   body, div, form, input, select, textarea, label, p {
+   padding: 0;
+   margin: 0;
+   outline: none;
+   font-family: Roboto, Arial, sans-serif;
+   font-size: 14px;
+   color: #666;
+   line-height: 22px;
+   }
+   .testbox {
+   display: flex;
+   justify-content: center;
+   align-items: center;
+   height: inherit;
+   padding: 20px;
+   }
+   form {
+   width: 100%;
+   padding: 10px;
+   border-radius: 1px;
+   background: #fff;
+   box-shadow: 0 0 0;
+   }
+   .input, select, textarea {
+   margin-bottom: 5px;
+   border: 1px solid #ccc;
+   border-radius: 3px;
+   }
+   input {
+   width: calc(100% - 10px);
+   padding: 5px;
+   }
+   input[type="date"] {
+   padding: 4px 5px;
+   }
+   .item:hover p, .item:hover i, .question:hover p, .question label:hover, input:hover::placeholder {
+   color:  #fff;
+   }
+   .item input:hover, .item select:hover, .item textarea:hover {
+   border: 1px solid transparent;
+   box-shadow: 0 0 3px 0  #669999;
+   color: #000;
+   }
+   .item {
+   position: relative;
+   margin: 0 0;
+   }
+   .colums {
+   display:flex;
+   justify-content:space-between;
+   flex-direction:row;
+   flex-wrap:wrap;
+   }
+   .colums div {
+   width:42%;
+   }
+   .btn-block {
+   margin-top: 20px;
+   }
+   button {
+   margin-top: 18px;
+   width: 150px;
+   height:50px;
+   padding: 8px;
+   border: none;
+   border-radius: 5px;
+   background:  #669999;
+   font-size: 16px;
+   color: #fff;
+   cursor: pointer;
+   }
+   button:hover {
+   background:  #fff;
+   .btn-shadow: 0 0 3px 10px  #669999;
+   }
+   .btn:hover p, .btn:hover i, .question:hover p, .question label:hover {
+   color:  green;
+   }
+   }
+</style>
+<div class="wrapper">
+   <div class="content container-fluid">
+      <div class="page-header">
+         <div class="row align-items-center">
+            <div class="col">
+               <h3 class="page-title">Customer</h3>
+               <ul class="breadcrumb">
+                  <li class="breadcrumb-item"><a href="index.html">Dashboard</a></li>
+                  <li class="breadcrumb-item active">Customer</li>
+               </ul>
+            </div>
+            <div class="col-auto text-right float-right ml-auto">
+               <a href="#" class="btn btn-outline-primary mr-2"><i class="fas fa-download"></i>Download</a>
+               <a href="add-student.html" class="btn btn-primary"><i class="fas fa-plus"></i></a>
+            </div>
+         </div>
+      </div>
+      <div class="row">
+         <div class="col-sm-12">
+            <div class="card card-table">
+               <div class="card-body">
+                  <div class="table-responsive">
+                     <form method="post" hx-post="" hx-target="body">
+                        {% csrf_token %}
+                        <div class="colums">
+                           <div class="item1">
+                              <label>Employee First/Last Name</label><br>
+                              <input type="text" id="name" name="name" value="{{ name }}" placeholder="Enter Name/Mobile/Cust_id/city"><br>
+                           </div>
+                           <div class="item1">
+                              <label>Department</label><br>
+                              <input type="text" id="dept" name="dept" value="{{ dept }}" placeholder="Enter Customer Type"><br>
+                           </div>
+                           <!--        <button type="submit" class="btn btn-primary">Submit</button>-->
+                           <button  class="btn btn-defalut" type="submit"><i class='fas fa-search-plus fa-3x'></i></button>
+                        </div>
+                     </form>
+                     {% if customer %}
+                     <h4 align="center">Result against "<span style="color: red">{{name}}</span>" keyword </h4>
+                     <div class="table-responsive">
+                     <table class="table table-hover table-center table.dataTable.table-sm mb-0 datatable table.sm">
+                        <thead class="table-success">
+                           <tr>
+                              <th scope="col">Sr No.</th>
+                              <th scope="col">Staff ID</th>
+                              <th scope="col">Full Name</th>
+                              <th scope="col">Phone</th>
+                              <th scope="col">Email</th>
+                              <th scope="col">Department</th>
+                              <th scope="col">Action</th>
+                           </tr>
+                        </thead>
+                        <tbody>
+                           {% for customer in customer %}
+                           <tr>
+                              <td>{{forloop.counter}}</td>
+                              <td>DB/{{ customer.id }}</td>
+                              <td>
+                                  <h2 class="table-avatar">
+                                      <a href="{% url 'dashboard-customer-detail' customer.id %}" class="avatar avatar-sm mr-2"><img class="avatar-img rounded-circle" src="{{ customer.image.url }}" alt=""></a>
+                                      <a href="{% url 'dashboard-customer-detail' customer.id %}">{{ customer.first_name }} {{ customer.last_name }}</a>
+                                  </h2>
+                              </td>
+
+                              <td>
+                                 <a href="{% url 'dashboard-customer-detail' customer.id %}">{{ customer.first_name }} {{ customer.last_name }}</a>
+                              </td>
+                              <td>{{ customer.profile.phone }}</td>
+                              <td>{{ customer.email }}</td>
+                              <td>{{ customer.profile.department }}</td>
+                              <td>
+                                 <div class="actions">
+                                    <a href="edit-teacher.html" class="btn btn-sm bg-success-light mr-2">
+                                    <i class="fas fa-pen"></i>
+                                    </a>
+                                    <a href="#" class="btn btn-sm bg-danger-light">
+                                    <i class="fas fa-trash"></i>
+                                    </a>
+                                 </div>
+                              </td>
+                           </tr>
+                        </tbody>
+                        {% endfor %}
+                     </table>
+                     </div>
+                     {% endif %}
+                  </div>
+               </div>
+            </div>
+         </div>
+      </div>
+   </div>
+</div>
+{% endblock %}

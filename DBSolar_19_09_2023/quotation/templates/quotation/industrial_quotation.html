@@ -1,0 +1,854 @@
+<!DOCTYPE html>
+{% load static %}
+{% load active_link_tags %}
+{% load group_filters %}
+{% load indian_filters %}
+{% load number_filters %}
+{% load custom_filters %}
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Quotation for Grid-Tied Rooftop Solar PV System</title>
+  <style>
+    @page {
+      size: A4;
+      margin: 150px 30px 70px 30px;
+      @frame header_frame {
+        -pdf-frame-content: header_content;
+        top: 0px;
+        left: 0px;
+        width: 885px;
+        height: 180px;
+      }
+      @frame footer_frame {
+        -pdf-frame-content: footer_content;
+        top: 785pt;
+        left: 0pt;
+        width: 597pt;
+        height: 100pt;
+      }
+    }
+
+    body {
+      font-family: DejaVu Sans, Arial, sans-serif;
+      font-size: 16px;
+      line-height: 1.4;
+      margin: 0;
+      padding: 0;
+      text-align: justify;
+
+    }
+
+    h1, h2, h3 {
+      text-align: center;
+      margin: 5px 0;
+    }
+    h4 {
+      text-align: left;
+      margin: 5px 0;
+      margin-left: 20px;
+      margin-right: 20px;
+
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 8px;
+      table-layout: fixed;
+    }
+
+    th, td {
+      border: 1px solid #000;
+      padding: 4px;
+      padding-bottom: 2px;
+      padding-top: 4px;
+      vertical-align: top;
+      word-wrap: break-word;
+    }
+
+    th {
+      background: #ADD8E6;
+      text-align: center;
+      font-weight: bold;
+    }
+
+    .no-border td, .no-border th {
+      border: none !important;
+    }
+
+    .center {
+      text-align: center;
+
+    }
+
+
+    .right {
+      text-align: right;
+    }
+
+
+
+    .left {
+      text-align: left;
+    }
+
+    .bold {
+      font-weight: bold;
+
+
+
+
+    }
+
+    .space-top {
+      margin-top: 12px;
+    }
+
+    .section-heading {
+      background-color: #0A66C2;
+      color: white;
+      padding: 5px;
+      margin-top: 15px;
+      font-size: 16px;
+
+    }
+
+    .indent-left {
+      padding-left: 8px;
+
+
+    }
+
+    .highlight {
+      background-color: yellow;
+    }
+
+    .main-ol {
+      line-height: 1.6;
+
+      padding-left: 20px;
+    }
+
+    .main-ol ol {
+      list-style-type: lower-alpha;
+      margin-top: 5px;
+      margin-left: 20px;
+    }
+
+    .contact-info {
+      font-size: 11px;
+      line-height: 1.3;
+    }
+
+    .amount-column {
+      text-align: right;
+      padding-right: 10px;
+    }
+  </style>
+</head>
+<body>
+  <!-- Header -->
+  <div id="header_content" style="margin:0; padding:0;">
+    <img src="{% static 'images/quotation_bg1.jpg' %}"
+         style="width:595pt; height:100pt; display:block; margin:0; padding:0;">
+  </div>
+
+  <!-- Footer -->
+  <div id="footer_content" style="margin:0; padding:0;">
+    <img src="{% static 'images/address.jpg' %}"
+         style="width:595pt; height:60pt; display:block; margin:0; padding:0;">
+  </div>
+
+  <!-- Page 1 Content -->
+  <div>
+
+
+    <h2>QUOTATION FOR GRID-TIED ROOFTOP SOLAR PV SYSTEM</h2>
+
+    <table bgcolor="yellow" align="center" class="no-border">
+      <tr>
+        <td width="50%" style="padding-top: 7px;"><strong>QUOTATION REF NO:</strong>
+              {% if quotation.consumer_type == 'Residential' %}
+                DB/Res/{{ quotation.quotation_no }}/
+                {% now "y" as this_year %}{{ this_year }}
+              {% elif quotation.consumer_type == 'Commercial' %}
+                DB/Comm/{{ quotation.quotation_no }}/
+                {% now "y" as this_year %}{{ this_year }}
+               {% elif quotation.consumer_type == 'Industrial' %}
+                DB/Ind/{{ quotation.quotation_no }}/
+                {% now "y" as this_year %}{{ this_year }}
+              {% endif %}
+        </td>
+        <td width="50%" class="right"  style="padding-top: 7px;"><strong>DATE –</strong>
+<!--          {{ quotation.date }}-->
+          <span class="info-value">
+                        {% if formatted_date %}
+                            {{ formatted_date }}
+                        {% elif quotation.quotation_date %}
+                            {{ quotation.quotation_date|date:"d/m/Y" }}
+
+                        {% endif %}
+                    </span>
+        </td>
+      </tr>
+    </table>
+<!-- In your industrial_quotation.html template, find the CO2 section and update it: -->
+
+<!--&lt;!&ndash; Environmental Benefits Section &ndash;&gt;-->
+<!--<div style="margin: 20px 0; padding: 15px; background-color: #f0f8ff; border-left: 4px solid #4a6cf7;">-->
+<!--    <h3 style="color: #1e41d1; margin-bottom: 15px;">Environmental Benefits</h3>-->
+
+<!--    <table style="width: 100%; border-collapse: collapse; margin-bottom: 15px;">-->
+<!--        <tr>-->
+<!--            <td style="width: 70%; padding: 8px; border-bottom: 1px solid #ddd;">-->
+<!--                <strong>CO₂ Emission Reduction:</strong><br>-->
+<!--                <small>Based on Indian grid emission factor of 0.82 kg CO₂/kWh</small>-->
+<!--            </td>-->
+<!--            <td style="width: 30%; padding: 8px; border-bottom: 1px solid #ddd; text-align: right; font-weight: bold;">-->
+<!--                {{ co2_reduction_tons_per_year }} tons/year-->
+<!--            </td>-->
+<!--        </tr>-->
+<!--        <tr>-->
+<!--            <td style="padding: 8px; border-bottom: 1px solid #ddd;">-->
+<!--                <strong>Equivalent Trees Planted:</strong><br>-->
+<!--                <small>1 ton CO₂ reduction ≈ 50 mature trees</small>-->
+<!--            </td>-->
+<!--            <td style="padding: 8px; border-bottom: 1px solid #ddd; text-align: right; font-weight: bold;">-->
+<!--                {{ co2_reduction_tons_per_year|floatformat:0 }} trees-->
+<!--            </td>-->
+<!--        </tr>-->
+<!--        <tr>-->
+<!--            <td style="padding: 8px;">-->
+<!--                <strong>Energy Generated Annually:</strong>-->
+<!--            </td>-->
+<!--            <td style="padding: 8px; text-align: right; font-weight: bold;">-->
+<!--                {{ units_generated_per_year|floatformat:0 }} kWh-->
+<!--            </td>-->
+<!--        </tr>-->
+<!--    </table>-->
+
+<!--    &lt;!&ndash; Calculation details &ndash;&gt;-->
+<!--    <div style="background-color: #e8f4fd; padding: 10px; border-radius: 5px; font-size: 12px; margin-top: 10px;">-->
+<!--        <strong>Calculation Details:</strong><br>-->
+<!--        CO₂ Reduction = {{ quotation.plant_capacity_kw.capacity|default:0 }} kW × 4 hrs/day × 365 days × 0.00082 tons/kWh<br>-->
+<!--        = {{ units_generated_per_year|floatformat:0 }} kWh/year × 0.00082 tons/kWh<br>-->
+<!--        = {{ co2_reduction_tons_per_year }} tons CO₂/year-->
+<!--    </div>-->
+<!--</div>-->
+
+    <table class="no-border" bgcolor="yellow" style="margin-top: 20px;" align="center">
+      <tr>
+        <td width="60%" style="margin-left: 20px; padding-top: 10px;"><strong>To –</strong><br>
+        <strong style="margin-left: 50px;">{{ quotation.consumer_name }}</strong></td>
+
+        <td width="40%" style="margin-left: 20px; padding-top: 10px;"><strong>PROJECT SITE ADDRESS:</strong><br>
+        {{ quotation.consumer_address1 }} ,<br>
+        {{ quotation.consumer_address2 }}</td>
+      </tr>
+    </table>
+
+    <h4 class="space-top" align="left"> <span  style="background-color: #0A66C2; color: white; font-size: 17px;"><u>SUBJECT:</u></span></h4>
+<!--    <h3 class="section-heading" style="margin-top: 20px;">SUBJECT:</h3>-->
+    <p class="justify bold" style="margin-left: 20px; margin-right: 20px; line-height: 1.8;">PROPOSAL FOR DESIGN,SUPPLY,INSTALLATION,TESTING & COMMISSIONING OF <span class="black">{{ quotation.plant_capacity_kw|clean_decimal  }} kWp</span> GRID-TIED ROOFTOP SOLAR PV SYSTEM</p>
+<p class="justify" style="margin-left: 20px; margin-right: 20px;">
+    <strong>Dear Sir,</strong></p>
+
+<!--    <div class="justify" style="margin-left: 20px; margin-right: 20px; line-height: 1.8;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Thank you for considering HERAMB INDUSTRIES for your solar energy needs.We are pleased to present this comprehensive proposal for the establishment of a <span class="black"> <b> &nbsp;{{ quotation.plant_capacity_kw|clean_decimal  }} kWp</b></span> Grid - Tied Rooftop Solar Photovoltaic (PV) system at your facility located at Ahmednagar.This proposal outlines our genuine and competitive offer, designed  to  provide  you  with  significant energy savings and a sustainable power solution.</div>-->
+
+<!--    <div style="margin-left: 20px; margin-right: 20px; line-height: 1.8;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Our team, led by Dhrmendra Bhandari and Abhijeet Deshmukh, has carefully assessed your requirements and site conditions to provide a solution that maximizes energy generation and ensures long-term reliability.</div>-->
+<p class="justify" style="margin-left: 20px; margin-right: 20px; line-height: 1.8; text-indent: 40px; ">
+    Thank you for considering HERAMB INDUSTRIES for your solar energy needs.
+    We are pleased to present this comprehensive proposal for the establishment
+    of a <b>{{ quotation.plant_capacity_kw|clean_decimal }} kWp</b> Grid-Tied
+    Rooftop Solar Photovoltaic (PV) system at your facility located at Ahmednagar.
+    This proposal outlines our genuine and competitive offer, designed to provide
+    you with significant energy savings and a sustainable power solution.
+</p>
+<p class="justify" style="margin-left: 20px; margin-right: 20px; line-height: 1.8; text-indent: 40px; ">
+    Our team, led by Dhrmendra Bhandari and Abhijeet Deshmukh, has carefully assessed
+    your requirements and site conditions to provide a solution that maximizes energy
+    generation and ensures long-term reliability.
+</p>
+
+    <h3 class="space-top" align="left" style="margin-left: 20px;"> <span  style="background-color: #0A66C2; color: white; font-size: 17px;"><u>1. EXECUTIVE SUMMARY:</u></span></h3>
+<!--    <h3 class="section-heading">1. EXECUTIVE SUMMARY: -</h3>-->
+
+  <p class="justify" style="margin-left: 20px; margin-right: 20px; line-height: 1.8; text-indent: 40px; ">
+    This quotation details  the design, supply, installation , testing, and  commissioning of a <span class="black"> <b> &nbsp;{{ quotation.plant_capacity_kw|clean_decimal  }} kWp</b></span> Grid-Tied Rooftop Solar PV System. The system is engineered to offset a significant portion of your electricity consumption, reduce your carbon footprint, and provide an excellent return on investment through reduced operational costs. We offer a complete turnkey solution, ensuring a seamless transition to solar power.</p>
+  </p>
+
+  <!-- Page Break -->
+  <pdf:nextpage />
+  <!-- Page 2 Content -->
+  <div>
+    <h3 class="space-top" align="left" style="margin-left: 20px;"> <span  style="background-color: #0A66C2; color: white; font-size: 17px;"><u>2. PROPOSED SYSTEM OVERVIEW:</u></span></h3>
+<!--    <h3 class="section-heading">2. PROPOSED SYSTEM OVERVIEW: -</h3>-->
+
+    <table class="no-border"  align="center" style="margin-left: 20px; margin-right: 20px;">
+      <tr>
+        <td><b>•</b></td>
+        <td width="40%"><strong>System Type:</strong></td>
+        <td width="60%">Grid-Tied Rooftop Solar PV System</td>
+      </tr>
+      <tr>
+        <td><b>•</b></td>
+        <td><strong>Total Capacity:</strong></td>
+        <td>{{ quotation.dc_capacity|clean_decimal }} kWp (DC) / {{ quotation.ac_capacity|clean_decimal }} kWh (AC)</td>
+      </tr>
+      <tr>
+        <td><b>•</b></td>
+        <td style="text-align: left;"><strong>Annual Energy Generation (Estimated):</strong></td>
+        <td>{{ yearly_saving|indian_format }} kWh/ Approximate year (based on site irradiance and system design) for 1st year / 1&#37; degradation then .5&#37; degradation.</td>
+      </tr>
+      <tr>
+        <td><b>•</b></td>
+        <td><strong>CO2 Emission Reduction:</strong></td>
+        <td> {{ co2_reduction_tons_per_year }} tons /year</td>
+      </tr>
+      <tr>
+        <td><b>•</b></td>
+        <td><strong>Projected Savings (Year 1):</strong></td>
+        <td>{{ basic_cost_per_watt|indian_format_with_decimals }} Rs/ Watt INR – Approximate</td>
+      </tr>
+      <tr>
+        <td><b>•</b></td>
+        <td><strong>System Components:</strong></td>
+        <td>High-efficiency Topcon n-type non DCR PV Modules, String Inverters, Robust Mounting Structure, AC/DC Distribution & Protection, Earthing, Cabling, and Monitoring System.</td>
+      </tr>
+    </table>
+
+    <h3 class="space-top" align="left" style="margin-left: 20px;"> <span  style="background-color: #0A66C2; color: white; font-size: 17px;"><u>3. SCOPE OF WORK (By HERAMB INDUSTRIES) : </u></span></h3>
+<!--    <h3 class="section-heading">3. SCOPE OF WORK (By HERAMB INDUSTRIES) : -</h3>-->
+<!--    <p class="bold">-->
+    <div class="justify bold" style="margin-left: 20px; margin-right: 20px;">
+      Our comprehensive turnkey solution includes:</div>
+
+    <h4 style="margin-left: 0px; margin-right: 20px; line-height: 1.8; text-indent: 40px; ">Design & Engineering:</h4>
+    <ul style="line-height: 1.5; padding-left: 60px;">
+      <li>Detailed Site Survey & Feasibility Study.</li>
+      <li>System Sizing & Layout Design (including shadow analysis).</li>
+      <li>Electrical SLD (Single Line Diagram) preparation.</li>
+      <li>Structural analysis of the rooftop (if required, third-party/Paid service).</li>
+      <li>Submission of detailed engineering drawings for approval.</li>
+    </ul>
+
+    <h4 style="margin-left: 0px; margin-right: 20px; line-height: 1.8; text-indent: 40px;">Procurement & Supply:</h4>
+    <ul style="line-height: 1.5; padding-left: 60px;">
+      <li>High-efficiency Solar PV Modules.</li>
+      <li>Grid-Tied String Inverters.</li>
+      <li>Robust Mounting Structure (Aluminum/Galvanized Iron).</li>
+      <li>DC & AC Cables, Conduits, and Trays.</li>
+      <li>DC & AC Distribution Boards, String Combiner Boxes.</li>
+      <li>Earthing System.</li>
+      <li>Monitoring System (remote monitoring unit).</li>
+      <li>All necessary hardware, connectors (MC4), and safety components.</li>
+    </ul>
+  </div>
+  <!-- Page Break -->
+  <pdf:nextpage />
+  <div>
+    <h4 style="margin-left: 0px; margin-right: 20px; line-height: 1.8; text-indent: 40px; ">Installation & Commissioning:</h4>
+    <ul style="line-height: 1.5; padding-left: 60px;">
+<!--    <h4>Installation & Commissioning:</h4>-->
+<!--    <ul style="line-height: 1.6; padding-left: 30px;">-->
+      <li>Foundation and mounting structure installation.</li>
+      <li>PV Module installation and string wiring.</li>
+      <li>Inverter installation and electrical connections.</li>
+      <li>Installation of AC/DC distribution boards and protective devices.</li>
+      <li>Installation of earthing.</li>
+      <li>Cabling, cable management, and trenching (if applicable).</li>
+      <li>Comprehensive testing of the entire system.</li>
+      <li>Final commissioning and handover.</li>
+    </ul>
+
+    <h4 style="margin-left: 0px; margin-right: 20px; line-height: 1.8; text-indent: 40px; ">Liaison & Approvals:</h4>
+    <ul style="line-height: 1.5; padding-left: 60px;">
+<!--    <h4>Liaison & Approvals:</h4>-->
+<!--    <ul style="line-height: 1.6; padding-left: 30px;">-->
+      <li>Assistance with MSEDCL/CEIG approval processes for net metering.</li>
+      <li>All necessary documentation for project completion and approvals.</li>
+    </ul>
+
+    <h4 style="margin-left: 0px; margin-right: 20px; line-height: 1.8; text-indent: 40px; ">Training & Documentation:</h4>
+    <ul style="line-height: 1.5; padding-left: 60px;">
+<!--    <h4>Training & Documentation:</h4>-->
+<!--    <ul style="line-height: 1.6; padding-left: 30px;">-->
+      <li>Operational training for your designated personnel.</li>
+      <li>Provision of user manuals, warranties, and as-built drawings.</li>
+    </ul>
+
+    <h3 class="space-top" align="left" style="margin-left: 20px;"> <span  style="background-color: #0A66C2; color: white; font-size: 17px;"><u>4. CUSTOMER RESPONSIBILITIES :</u></span></h3>
+<!--    <h3 class="section-heading">4. CUSTOMER RESPONSIBILITIES :</h3>-->
+    <h4 style="margin-left: 0px; margin-right: 20px; line-height: 1.8; text-indent: 40px; ">To ensure timely project completion, the Buyer shall be responsible for:</h4>
+    <ul class="justify" style="line-height: 1.5; padding-left: 60px;  margin-right: 20px;">
+<!--    <p>To ensure timely project completion, the Buyer shall be responsible for:</p>-->
+<!--    <ul style="line-height: 1.6; padding-left: 30px;">-->
+      <li>Providing clear access to the rooftop and site facilities.</li>
+      <li>Ensuring structural integrity of the rooftop for solar load (if not included in seller scope).</li>
+      <li>Providing necessary electrical single-phase/three-phase supply at the interconnection point.</li>
+      <li>Cooperation in obtaining necessary local permits or No Objection Certificates (NOCs) from building management or local authorities, if required.</li>
+      <li>Any civil work beyond the scope of mounting structure foundations (e.g., roof waterproofing, parapet wall modifications, etc.) if not explicitly included in the seller's BOQ.</li>
+      <li>Load Extension Charges Amount (if applicable and in consumer scope).</li>
+      <li>Water outlet connection, water pressure pump (if applicable and in consumer scope).</li>
+      <li>Ladder, Internet Access or Wi-Fi Network on Roof or Shed (if applicable and in consumer scope).</li>
+    </ul>
+  </div>
+  <!-- Page Break -->
+  <pdf:nextpage />
+  <!-- Page 4 Content -->
+  <div>
+    <h3 class="space-top" align="left" style="margin-left: 20px;"> <span  style="background-color: #0A66C2; color: white; font-size: 17px;"><u>5. BILL OF QUANTITIES (BOQ) & TECHNICAL SPECIFICATIONS :</u></span></h3>
+<!--    <h3 class="section-heading">5. BILL OF QUANTITIES (BOQ) & TECHNICAL SPECIFICATIONS :</h3>-->
+    <p style="margin-left: 20px; margin-right: 20px; padding-top: -10px; text-indent: 50px;">
+    Below is a detailed breakdown of the major components and quantities proposed for your <span class="black"> <b> &nbsp;{{ quotation.plant_capacity_kw|clean_decimal }} kWp</b></span> system:</p>
+    <table style="font-size: 13px; padding-bottom: 0px; padding-top: 20px;"  align="center">
+      <tr>
+        <th width="7%">SR.NO</th>
+        <th width="50%">PRODUCTS DESCRIPTION</th>
+        <th width="23%">Make</th>
+        <th width="20%">Quantity</th>
+      </tr>
+      <tr style="margin-left: 10px;">
+        <td align="center"><b>•</b></td>
+        <td>SOLAR MODULE - {{ quotation.panel_type }} / {{ quotation.panel_capacity_watt }} watt
+          <br> <b>Warranty</b> - {{ quotation.panel_manufacturing_warranty }} year manufacture & {{ quotation.panel_performance_warranty }} year Performances</td>
+        <td>{{ quotation.panel_company_names }}</td>
+        <td> {{ quotation.panel_qty }}</td>
+      </tr>
+      <tr style="margin-left: 10px;">
+        <td align="center"><b>•</b></td>
+        <td>INVERTERS – {{ quotation.inv_capacity_kw|clean_decimal }} kw
+          <br><b>Warranty</b> - {{ quotation.inverter_warranty }} years</td>
+        <td>{{ quotation.inverter_company_names }}</td>
+        <td>{{ quotation.inverter_qty }}</td>
+      </tr>
+      <tr style="margin-left: 10px;">
+        <td align="center"><b>•</b></td>
+        <td>RMS</td>
+        <td>Inbuilt</td>
+        <td>1</td>
+      </tr>
+      <tr style="margin-left: 10px;">
+        <td align="center"><b>•</b></td>
+        <td>MOUNTING STRUCTURE</td>
+        <td>Aluminum</td>
+        <td>Entire project</td>
+      </tr>
+      <tr style="margin-left: 10px;">
+        <td align="center"><b>•</b></td>
+        <td>SAFTY RAILING</td>
+        <td>GI/ coloured</td>
+        <td>Entire project</td>
+      </tr>
+      <tr style="margin-left: 10px;">
+        <td align="center"><b>•</b></td>
+        <td>FRP WALKWAY / 25 x 300 mm</td>
+        <td>FRP</td>
+        <td>Entire project</td>
+      </tr>
+      <tr style="margin-left: 10px;">
+        <td align="center"><b>•</b></td>
+        <td>DC UV CABLING</td>
+        <td>Polycab</td>
+        <td>Entire project</td>
+      </tr>
+      <tr style="margin-left: 10px;">
+        <td align="center"><b>•</b></td>
+        <td>AC ARMOURED CABLING</td>
+        <td>Polycab</td>
+        <td>As per Design</td>
+      </tr>
+      <tr style="margin-left: 10px;">
+        <td align="center"><b>•</b></td>
+        <td>GI TRAY</td>
+        <td>G.I.</td>
+        <td>Entire project</td>
+      </tr>
+      <tr style="margin-left: 10px;">
+        <td align="center"><b>•</b></td>
+        <td>EARTHINGS PITS FOR INVERTERS/ PANELS / LA</td>
+        <td>Excel</td>
+        <td>3</td>
+      </tr>
+      <tr style="margin-left: 10px;">
+        <td align="center"><b>•</b></td>
+        <td>LIGHTING ARRESTOR -</td>
+        <td>ESE</td>
+        <td>1</td>
+      </tr>
+      <tr style="margin-left: 10px;">
+        <td align="center"><b>•</b></td>
+        <td>PVC PIPE CONDUITS/UV TIES</td>
+        <td>Uv protected</td>
+        <td>Entire project</td>
+      </tr>
+      <tr style="margin-left: 10px;">
+        <td align="center"><b>•</b></td>
+        <td>ACDB BOX /switchgears</td>
+        <td>L&T</td>
+        <td>1</td>
+      </tr>
+      <tr style="margin-left: 10px;">
+        <td align="center"><b>•</b></td>
+        <td>DCDB BOX</td>
+        <td>NA</td>
+        <td>NA</td>
+      </tr>
+      <tr style="margin-left: 10px;">
+        <td align="center"><b>•</b></td>
+        <td>MC4 CONNECTORS</td>
+        <td>NINBO</td>
+        <td>Entire project</td>
+      </tr>
+      <tr style="margin-left: 10px;">
+        <td align="center"><b>•</b></td>
+        <td>EARTHING PATTI /CABLE CONDUCTOR</td>
+        <td>GI</td>
+        <td>Entire project</td>
+      </tr>
+      <tr style="margin-left: 10px;">
+        <td align="center"><b>•</b></td>
+        <td>NETMETERING & GENERATION METER</td>
+        <td>L&T</td>
+        <td>2</td>
+      </tr>
+      <tr style="margin-left: 10px;">
+        <td align="center"><b>•</b></td>
+        <td>ALL REQUIRED HARDWARE FOR PROJECT</td>
+        <td>Yes</td>
+        <td>Yes</td>
+      </tr>
+      <tr style="margin-left: 10px;">
+        <td align="center"><b>•</b></td>
+        <td>INSTALLATION & COMMISSIONING</td>
+        <td>Yes</td>
+        <td>Yes</td>
+      </tr>
+      <tr style="margin-left: 10px;">
+        <td align="center"><b>•</b></td>
+        <td>TRANSPORT & HANDLING</td>
+        <td>Yes</td>
+        <td>Yes</td>
+      </tr>
+      <tr style="margin-left: 10px;">
+        <td align="center"><b>•</b></td>
+        <td>ENGGINEERING SUPERVISION</td>
+        <td>Yes</td>
+        <td>Yes</td>
+      </tr>
+      <tr style="margin-left: 10px;">
+        <td align="center"><b>•</b></td>
+        <td>MSEDCL LIASONING</td>
+        <td>Yes</td>
+        <td>Yes</td>
+      </tr>
+    </table>
+  </div>
+
+  <!-- Page Break -->
+  <pdf:nextpage />
+
+  <!-- Page 5 Content -->
+  <div>
+
+    <h3 class="space-top" align="left" style="margin-left: 20px;"> <span  style="background-color: #0A66C2; color: white; font-size: 17px;"><u>6. COMMERCIAL OFFER :</u></span></h3>
+<!--    <h3 class="section-heading">6. COMMERCIAL OFFER : -</h3>-->
+    <div style="margin-left: 20px; margin-right: 20px;">A. Project cost breakdown:</div>
+    <table style="font-size: 14px; padding-bottom: 0px; padding-top: 20px; margin-left: 10px;"  align="center">
+      <tr>
+        <th width="80%">DESCRIPTION</th>
+        <th width="20%">AMOUNT (INR)</th>
+      </tr>
+      <tr>
+        <td>TOTAL MATERIAL COST (AS PER BOQ)</td>
+        <td class="amount-column" rowspan="5" style="padding: 0; margin: 0; vertical-align: middle; text-align: right; padding-right: 10px;">{{ quotation.net_amount|indian_format_with_decimals }}</td>
+      </tr>
+      <tr>
+        <td>INSTALLATION & COMMISSIONING CHARGES</td>
+<!--        <td class="amount-column">1</td>-->
+      </tr>
+      <tr>
+        <td>TRANSPORT, CRANE HANDLING & ENGINEERS SUPERVISION</td>
+<!--        <td class="amount-column">1</td>-->
+      </tr>
+      <tr>
+        <td>CEIG & MSEDCL LIAISING & OFFICIAL FEES</td>
+<!--        <td class="amount-column">1</td>-->
+      </tr>
+      <tr>
+        <td>PROFIT MARGIN % OF BASIC AMOUNT</td>
+<!--        <td class="amount-column">1</td>-->
+      </tr>
+      {% if quotation.special_discount and quotation.special_discount > 0 %}
+      <tr>
+        <td class="bold">SPECIAL DISCOUNT</td>
+        <td class="amount-column bold">{{ quotation.special_discount|indian_format_with_decimals }}</td>
+      </tr>
+      {% endif %}
+      <tr>
+        <td class="bold">SUBTOTAL (BASIC AMOUNT)</td>
+        <td class="amount-column bold">{{ after_discount_amount|indian_format_with_decimals }}</td>
+      </tr>
+      <tr>
+        <td>GST @ 5 &#37; ( 70 &#37; OF BASIC AMOUNT )</td>
+        <td class="amount-column">{{ quotation.gst_5_amount|indian_format_with_decimals }}</td>
+      </tr>
+      <tr>
+        <td>GST @ 18 &#37; ( 30 &#37; OF BASIC AMOUNT )</td>
+        <td class="amount-column">{{ quotation.gst_18_amount|indian_format_with_decimals }}</td>
+      </tr>
+      <tr>
+        <td class="bold">TOTAL PROJECT COST (EXCLUDING ROUND-UP)</td>
+        <td class="amount-column bold">{{ quotation.final_amount|indian_format_with_decimals }}</td>
+      </tr>
+      <tr>
+        <td class="bold" bgcolor="lightgray">TOTAL – {{ amount_words }}.</td>
+        <td class="amount-column bold" bgcolor="lightgray">{{ quotation.final_amount|indian_format_with_decimals }}</td>
+      </tr>
+<!--      <tr>-->
+<!--        <td class="bold">BASIC COST PER WATT</td>-->
+<!--        <td class="amount-column bold">27.50 Rs /Watt</td>-->
+<!--      </tr>-->
+      <tr>
+        <td class="bold">BASIC COST PER WATT</td>
+        <td class="amount-column bold">
+          {{ basic_cost_per_watt|indian_format_with_decimals }} Rs/ Watt
+        </td>
+      </tr>
+    </table>
+    <h4 style="margin-top: 15px;">B. Payment terms: -</h4>
+    <ul style="line-height: 1.8; padding-left: 30px;">
+      <li><strong>30 &#37;</strong> with Purchase Order (P0) & Advance.</li>
+      <li><strong>50 &#37;</strong> before dispatch of major materials (panels, inverters) to site against Performa invoice.</li>
+      <li><strong>10 &#37;</strong> After completion of Solar Installation.</li>
+      <li><strong>10 &#37;</strong> After Final Commissioning and successful Net Metering approval.</li>
+    </ul>
+  </div>
+
+  <!-- In your industrial_quotation.html template, find the CO2 section and update it: -->
+
+<!--&lt;!&ndash; Environmental Benefits Section &ndash;&gt;-->
+<!--<div style="margin: 1px 0; padding: 1px; background-color: #f0f8ff; border-left: 4px solid #4a6cf7;">-->
+<!--     <h3 class="space-top" align="left" style="color: #1e41d1; margin-bottom: 0px; margin-left: 17px;">&nbsp;&nbsp;Environmental Benefits</h3>-->
+<!--    <table style="width: 100%; border-collapse: collapse; margin-bottom: 5px;" align="center">-->
+<!--        <tr>-->
+<!--            <td style="width: 70%; margin-left: 10px;">-->
+<!--                <strong>CO<sub>2</sub> Emission Reduction:</strong><br>-->
+<!--                <small>Based on Indian grid emission factor of 0.82 kg CO<sub>2</sub> / kWh</small>-->
+<!--            </td>-->
+<!--            <td style="width: 30%; padding: 8px; text-align: right; font-weight: bold;">-->
+<!--                {{ co2_reduction_tons_per_year }} tons/year-->
+<!--            </td>-->
+<!--        </tr>-->
+<!--        <tr>-->
+<!--            <td style="width: 70%; margin-left: 10px;">-->
+<!--                <strong>Equivalent Trees Planted:</strong><br>-->
+<!--                <small>1 ton CO<sub>2</sub> reduction ≈ 50 mature trees</small>-->
+<!--            </td>-->
+<!--            <td style="width: 30%; padding: 8px; text-align: right; font-weight: bold;">-->
+<!--                {{ co2_reduction_tons_per_year|floatformat:0|default:0|add:"0" }} trees-->
+<!--            </td>-->
+<!--        </tr>-->
+<!--    </table>-->
+
+<!--&lt;!&ndash;    &lt;!&ndash; Calculation details &ndash;&gt;&ndash;&gt;-->
+<!--&lt;!&ndash;    <div style="background-color: #e8f4fd; padding: 10px; border-radius: 5px; font-size: 12px; margin-top: 10px;">&ndash;&gt;-->
+<!--&lt;!&ndash;        <strong>Calculation Details:</strong><br>&ndash;&gt;-->
+<!--&lt;!&ndash;        CO₂ Reduction = {{ quotation.plant_capacity_kw.capacity|default:0 }} kW × 4 hrs/day × 365 days × 0.00082 tons/kWh<br>&ndash;&gt;-->
+<!--&lt;!&ndash;        = {{ units_generated_per_year|floatformat:0 }} kWh/year × 0.00082 tons/kWh<br>&ndash;&gt;-->
+<!--&lt;!&ndash;        = {{ co2_reduction_tons_per_year }} tons CO₂/year&ndash;&gt;-->
+<!--&lt;!&ndash;    </div>&ndash;&gt;-->
+<!--</div>-->
+<!-- Environmental Benefits Section -->
+<div style="margin: 1px 0; padding: 1px; margin-top: 20px;">
+    <div style="background-color: #f0f8ff; border-left: 4px solid #4a6cf7; padding: 5px 0; margin-bottom: 5px;">
+        <h3 class="space-top" align="left" style="color: #1e41d1; margin: 0; margin-left: 17px;">&nbsp;&nbsp;Environmental Benefits</h3>
+    </div>
+
+    <table style="width: 100%; border-collapse: collapse; margin-top: 20px; margin-bottom: 5px;" align="center">
+        <tr>
+            <td style="width: 70%; margin-left: 10px;">
+                <strong>CO<sub>2</sub> Emission Reduction:</strong><br>
+                <small>Based on Indian grid emission factor of 0.82 kg CO<sub>2</sub> / kWh</small>
+            </td>
+            <td style="width: 30%; padding: 8px; text-align: right; font-weight: bold;">
+                {{ co2_reduction_tons_per_year }} tons/year
+            </td>
+        </tr>
+        <tr>
+            <td style="width: 70%; margin-left: 10px;">
+                <strong>Equivalent Trees Planted:</strong><br>
+                <small>1 ton CO<sub>2</sub> reduction ≈ 50 mature trees</small>
+            </td>
+            <td style="width: 30%; padding: 8px; text-align: right; font-weight: bold;">
+                {{ co2_reduction_tons_per_year|floatformat:0|default:0|add:"0" }} trees
+            </td>
+        </tr>
+    </table>
+</div>
+  <!-- Page Break -->
+  <pdf:nextpage />
+
+  <!-- Page 6 Content -->
+  <div>
+    <h3 class="space-top" align="left" style="margin-left: 20px;"> <span  style="background-color: #0A66C2; color: white; font-size: 17px;"><u>7. FINANCIAL BENEFITS & PAYBACK ANALYSIS :</u></span></h3>
+<!--    <h3 class="section-heading">7. FINANCIAL BENEFITS & PAYBACK ANALYSIS :</h3>-->
+    <table style="font-size: 14px; padding-bottom: 0px; padding-top: 20px; margin-left: 10px;" align="center">
+      <tr>
+        <th width="50%">PARAMETER</th>
+        <th width="25%">VALUE</th>
+        <th width="25%">UNIT</th>
+      </tr>
+      <tr>
+        <td>PLANT CAPACITY (DC)</td>
+        <td class="center">{{ quotation.plant_capacity_kw|clean_decimal  }}</td>
+        <td class="center">kWp</td>
+
+      </tr>
+      <tr>
+        <td>ESTIMATED UNITS GENERATED / YEAR <bR>(Approx. Year)</td>
+        <td class="center">{{ units_generated_per_year|indian_format }}</td>
+        <td class="center">kWh</td>
+      </tr>
+      <tr>
+        <td>AVERAGE ELECTRICITY COST</td>
+        <td class="center">{{ unit_rate|indian_format }}</td>
+        <td class="center">RS./kWh</td>
+      </tr>
+      <tr>
+        <td>YEARLY SAVING (ESTIMATED)</td>
+        <td class="center">{{ yearly_saving|indian_format }}</td>
+        <td class="center">RS./YEAR</td>
+      </tr>
+      <tr>
+        <td>TOTAL INVESTMENT COST</td>
+        <td class="center">{{ quotation.final_amount|indian_format_with_decimals }}</td>
+        <td class="center">RS./SYSTEM</td>
+      </tr>
+      <tr>
+        <td class="bold">ESTIMATED PAYBACK PERIOD</td>
+        <td class="center bold">{{ payback_period }}</td>
+        <td class="center bold">YEARS</td>
+      </tr>
+    </table>
+
+    <h3 class="space-top" align="left" style="margin-left: 20px;"> <span  style="background-color: #0A66C2; color: white; font-size: 17px;"><u>8. TERMS & CONDITIONS: </u></span></h3>
+
+<!--    <h3 class="section-heading space-top">8. TERMS & CONDITIONS</h3>-->
+    <li><h4 style="line-height: 1.5; margin-left: 40px;">1. Quotation Validity:</h4></li>
+    <div style="line-height: 1.6; margin-left: 60px;"> This quotation is valid for <strong>7 days</strong> from the date of issuance.</div>
+
+    <li><h4 style="line-height: 1.5; margin-left: 40px;">2. GST:</h4></li>
+    <div style="line-height: 1.6; margin-left: 60px; margin-right: 30px;">All quoted prices are inclusive of applicable GST, unless otherwise specified.</div>
+
+    <li><h4 style="line-height: 1.5; margin-left: 40px;">3. Completion Period:</h4></li>
+    <div style="line-height: 1.6; margin-left: 60px; margin-right: 40px;">The project will be completed within <strong>60 days</strong> from the date of advance payment and receipt of necessary site readiness from the buyer.
+    </div>
+
+    <h4 style="line-height: 1.5; margin-left: 40px;">4. Warranties:</h4>
+    <ul style="line-height: 1.7; padding-left: 60px; padding-right: 40px;">
+      <li><strong>PV Modules:</strong> {{ quotation.panel_manufacturing_warranty }} years manufacturing warranty and {{ quotation.panel_performance_warranty }} years linear power output warranty.</li>
+      <li><strong>Inverters:</strong> {{ quotation.inverter_company_names }} or Equivalent - {{ quotation.inverter_warranty }} years</li>
+      <li><strong>Mounting Structure:</strong> {{ quotation.structure_warranty }} years warranty on
+        {% if quotation.structure_type == 'Tin Shade' %}
+            <!-- Display Tin Shade information -->
+             <b>{{ quotation.structure_type }}  Structure  </b>
+        {% else %}
+            <b>{{ quotation.structure_type }} </b>
+        {% endif %} hardware.</li>
+<!--    </ul>-->
+<!--    <br>-->
+<!--    <div style="line-height: 1.8; margin-left: 40px;">-->
+   <li> <strong>Workmanship:</strong> HERAMB INDUSTRIES will provide a 1-year workmanship warranty for the installation.</li>
+    </ul>
+    <h4 style="line-height: 1.5; margin-left: 40px;">5. Force Majeure:</h4>
+    <div style="line-height: 1.8; margin-left: 60px; margin-right: 40px; text-indent: 40px; padding-top: -8px;">HERAMB INDUSTRIES shall not be liable for any delay or failure in performance arising out of causes beyond its reasonable control, including but not limited to acts of God, war, terrorism, civil disturbance, epidemic, or government regulations.</div>
+
+    </div>
+
+  </div>
+
+  <!-- Page Break -->
+  <pdf:nextpage />
+
+  <!-- Page 7 Content -->
+  <div>
+    <ol start="6">
+     <li><h4 style="line-height: 1.5; margin-left: 35px;">6. Dispute Resolution:</h4></li>
+    <div style="line-height: 1.5; margin-left: 60px; margin-right: 40px; text-indent: 40px; padding-top: -8px;">Any disputes arising shall be resolved amicably through discussion. Failing which, they shall be subject to the exclusive jurisdiction of courts in CHH Sambhaji Nagar MH.</div>
+
+    <!-- CUSTOM TERMS (From database) -->
+    {% for term in quotation.terms_conditions.all %}
+         <li style="padding-left: 60px; line-height: 1.5;">
+            {% if term.has_yellow_background %}
+                <span style="background-color: yellow; line-height: 1.8; margin-left: 35px;">{{ term.content }}</span>
+            {% else %}
+              {{ term.content }}
+            {% endif %}
+        </li>
+
+    {% endfor %}
+    </ol>
+    <h3 align="left" style="margin-left: 20px;"> <span  style="background-color: #0A66C2; color: white; font-size: 17px;"><u>9. AGREEMENT AND ACCEPTANCE:</u></span></h3>
+<!--    <h3 class="section-heading space-top">9. AGREEMENT AND ACCEPTANCE</h3>-->
+    <div style="line-height: 1.5; margin-left: 60px; margin-right: 40px; text-indent: 40px;">This document constitutes an offer by HERAMB INDUSTRIES to provide the goods and services described herein. By signing below, the parties acknowledge that they have read, understand, and accept the terms and conditions given above.</div>
+    <div style="line-height: 1.5; margin-left: 60px; margin-right: 40px; text-indent: 40px;">We look forward to partnering with you to power your facility with clean, sustainable solar energy. Please do not hesitate to contact us for any clarifications or further discussions.</div>
+    <div class="space-top">
+
+<!--      <p class="contact-info">-->
+<!--        <strong>GST No.:-27AIPPD9639RIZ6 PAN No:- AIPPD9639R BANK:-SVCB</strong><br><br>-->
+<!--        <strong>Mr. Abhijeet Deshmukh</strong><br>-->
+<!--        <strong>Mr. Dharmendra Bhandari</strong><br>-->
+<!--        <strong>98600477744/9158088886</strong><br><br>-->
+
+<!--      </p>-->
+       <h4 align="left"> <span  style="background-color: #0A66C2; color: white; font-size: 17px; padding-top: -20px;"><u>Bank Details:</u></span></h4>
+
+  <div style=" line-height: 1.8; margin-left: 40px; font-size: 15px; padding-top: -10px;">
+  <b>A/C Name -</b> Heramb Industries<br>
+  <b>GST No -</b> 123457896541332<br>
+  <b>PAN No -</b> ABC12358G<br>
+  <b>A/C No -</b> 112233665544778<br>
+  <b>IFSC CODE -</b> SVSB000123<br>
+  <b>Bank Name -</b> SVC CO-OP Bank<br>
+  <b>Branch Name -</b> Aurangabad / Chh. SambhajiNagar<br>
+</div>
+    </div>
+  </div>
+  <table class="no-border">
+    <tr style="border: none; margin-left: 14px;">
+      <td>  <b style="font-size: 20px;">Contact Person: </b>
+<!--           <div style="margin-left: 30px; font-weight: bold; font-size: 15px;">Mr.{{ quotation.employee_name }}<br>-->
+<!--            7588540555-->
+<!--             </div>-->
+        {# quotation_pdf_template.html #}
+<!--        <h3>Representatives</h3>-->
+        {% if representatives %}
+<!--          <ol>-->
+          {% for rep in representatives %}
+<!--            <li style="margin-left: 20px;">-->
+<!--        <span style="margin-left: 20px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{{ forloop.counter }}. {{ rep.name }}{% if rep.contact %} - {{ rep.contact }}{% endif %}<br></span>-->
+        <div style="margin-left: 20px; margin-bottom: 2px;">
+          <b>{{ forloop.counter }}. {{ rep.name }}{% if rep.contact %} - {{ rep.contact }}{% endif %}</b>
+        </div>
+
+<!--            </li>-->
+          {% endfor %}
+<!--          </ol>-->
+        {% else %}
+          <p>No representatives selected.</p>
+        {% endif %}
+
+      </td>
+      <td><div style="font-size: 16px; fon; margin-left: 20px; text-align: center;">
+  <b>With Regards,</b>
+   <img src="{% static 'images/sign.jpeg' %}"
+         style="width:85pt; height:65pt; display:block; margin:0; padding:0; padding-top: -10px;">
+      <b>M/S HERAMB INDUSTRIES</b>
+</div></td>
+    </tr>
+  </table>
+
+</body>
+</html>

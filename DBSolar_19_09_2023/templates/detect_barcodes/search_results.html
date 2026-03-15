@@ -1,0 +1,59 @@
+{% extends 'partials/base.html' %}
+{% load static %}
+{% block content %}
+
+
+<!-- BarcodeSearchApp/templates/search_barcode.html -->
+ <div class="col-md-12">
+            <!-- general form elements -->
+            <div class="card card-primary">
+                <div class="card-header">
+                    <h3>Upload Barcode Number</h3>
+                </div>
+<form method="post" action="{% url 'detect_barcodes-search_results' %}">
+    {% csrf_token %}
+    <label for="barcode_value">Enter Barcode Value:</label>
+    <input type="text" name="barcode_value" required><br><br>
+    <input type="submit" value="Search">
+</form>
+    </div>
+ </div>
+ <div class="col-md-12">
+            <!-- general form elements -->
+            <div class="card card-primary">
+                <div class="card-header">
+                    <h3>Uploaded Barcode Information</h3>
+                </div>
+                 <div class="card-header">
+<table>
+{% if barcode_image %}
+<tr>
+<Th colspan="2">    <h3>Barcode Details:</h3></Th>
+</tr>
+<p><tr><th><b>Barcode Data :</b> </th><td>{{ barcode_image.barcode_data }}</td></tr></p>
+<p><tr><th><b>Company Name :</b> </th><td class="text-capitalize">{{ barcode_image.company }}</td></tr></p>
+<p><tr><th><b>Wattage :</b> </th><td class="text-capitalize">{{ barcode_image.wattage }} Kw</td></tr></p>
+<p><tr><th><b>Solar Panel Company :</b> </th><td class="text-capitalize">{{ barcode_image.company_name }}</td></tr></p>
+<p><tr><th><b>Product Type :</b> </th><td class="text-capitalize">{{ barcode_image.product_name }}</td></tr></p>
+
+    <!-- Add other barcode details here -->
+
+<tr><th colspan="2">    <h3>Customer Details:</h3></th></tr>
+<p><tr><th><b>Address :</b> </th><td class="text-capitalize">{{ customer.Address }}</td></tr></p>
+<p><tr><th><b>Plant Capacity :</b> </th><td class="text-capitalize">{{ customer.Plant_Capacity }} Kw</td></tr></p>
+<p><tr><th><b>Customer Type :</b> </th><td class="text-capitalize">{{ customer.Cust_type }}</td></tr></p>
+<p><tr><th><b>City :</b> </th><td class="text-capitalize">{{ customer.City }}</td></tr></p>
+<p><tr><th><b>Email :</b> </th><td>{{ customer.email }}</td></tr></p>
+<p><tr><th><b>Contact No. :</b> </th><td class="text-capitalize">{{ customer.phone }}</td></tr></p>
+<p><tr><th><b>State :</b> </th><td class="text-capitalize">{{ customer.state }}</td></tr></p>
+    <!-- Add other customer details here -->
+{% else %}
+    {% if request.method == 'POST' %}
+    <tr><th colspan="2">    <p>No results found for the given barcode.</p></th></tr>
+    {% endif %}
+{% endif %}
+</table>
+            </div>
+ </div>
+ </div>
+{% endblock content %}

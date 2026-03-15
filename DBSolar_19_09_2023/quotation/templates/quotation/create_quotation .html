@@ -1,0 +1,1462 @@
+{% extends 'partials/base.html' %}
+{% load static %}
+{% load indian_filters %}
+
+{% block title %}Create Quotation{% endblock %}
+{% block content %}
+<style>
+.other-details-disabled {
+    background-color: #ffe5e5 !important; /* light red */
+}
+
+.inv-item {
+    margin-bottom: 8px;
+}
+
+.inv-item input[type=checkbox] {
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+    margin-right: 6px;
+}
+
+.inv-warranty-input {
+    margin-left: 10px;
+    width: 180px;
+}
+</style>
+<style>
+/* -------- Fieldset Active / Inactive -------- */
+fieldset {
+    background-color: #ffffff;
+    border: 2px solid #4a6cf7;
+    border-radius: 10px;
+    padding: 15px;
+    transition: all 0.3s ease;
+}
+
+/* Active Fieldset */
+fieldset.active-fieldset {
+    background-color: #dbe3ff;
+    border-color: #1e41d1;
+    box-shadow: 0 0 10px rgba(0, 34, 120, 0.3);
+}
+
+/* -------- Highlight Focused Input -------- */
+input.form-control,
+select.form-control {
+    transition: all 0.25s ease-in-out;
+    border: 1px solid #b5b5b5;
+}
+
+input.form-control:focus,
+select.form-control:focus {
+    border-color: #1e41d1;
+    box-shadow: 0 0 6px rgba(0, 34, 120, 0.3);
+    transform: scale(1.02);   /* textbox resize effect */
+}
+
+/* Prevent layout breaking */
+.input-group:focus-within {
+    transform: scale(1.02);
+}
+</style>
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+
+    const fieldsets = document.querySelectorAll("fieldset");
+
+    /* Highlight fieldset when clicked */
+    fieldsets.forEach(fs => {
+        fs.addEventListener("click", () => activateFieldset(fs));
+    });
+
+    /* Highlight fieldset when any textbox inside is focused */
+    const allInputs = document.querySelectorAll("input, select, textarea");
+
+    allInputs.forEach(input => {
+        input.addEventListener("focus", function () {
+            let fs = this.closest("fieldset");
+            if (fs) activateFieldset(fs);
+        });
+    });
+
+    function activateFieldset(activeFs) {
+        fieldsets.forEach(fs => fs.classList.remove("active-fieldset"));
+        activeFs.classList.add("active-fieldset");
+    }
+});
+</script>
+<style>
+    .checkbox-label {
+    display: block;
+    margin-bottom: 10px; /* Adjust this value to control spacing */
+    padding: 5px 0;
+}
+
+/* Or for horizontal layout with spacing */
+.checkbox-label {
+    display: inline-block;
+    margin-right: 20px; /* Adjust this value to control spacing */
+    margin-bottom: 10px;
+    padding: 5px;
+}
+
+/* New styles for Proposed System */
+.system-na-disabled {
+    background-color: #f8f9fa !important;
+    color: #6c757d !important;
+}
+
+.capacity-input {
+    transition: all 0.3s ease;
+}
+</style>
+
+<h3>Create New Quotation</h3>
+<!-- Display passed consumer information -->
+{% if passed_consumer_type and passed_consumer_no %}
+<div class="alert alert-info">
+    <strong>Consumer Information:</strong>
+    Type: {{ passed_consumer_type }} |
+    Consumer No: {{ passed_consumer_no }}
+</div>
+{% endif %}
+
+{% if form.errors %}
+<div style="color:red;">
+  <strong>Form Errors:</strong>
+  <ul>
+  {% for field, errors in form.errors.items %}
+    <li>{{ field }}: {{ errors|join:", " }}</li>
+  {% endfor %}
+  </ul>
+</div>
+{% endif %}
+
+{% if form.errors %}
+   <div style="color:red; font-weight:bold;">
+       {{ form.errors }}
+   </div>
+{% endif %}
+
+{% if formset.errors %}
+   <div style="color:red; font-weight:bold;">
+       {{ formset.errors }}
+   </div>
+{% endif %}
+
+<div class="testbox">
+<form method="post">
+  {% csrf_token %}
+
+  <fieldset>
+    <legend>Consumer Details</legend>
+
+      <!-- NEW: Consumer Type Field -->
+    <div class="row mb-3 align-items-center">
+        <div class="col-md-6 item1">
+            {{ form.consumer_type.label_tag }} {{ form.consumer_type }}
+        </div>
+        <div class="col-md-6 item1">
+            {{ form.consumer_no.label_tag }} {{ form.consumer_no }}
+        </div>
+    </div>
+
+    <!-- NEW: Title Radio Buttons -->
+    <div class="row mb-3 align-items-center">
+        <div class="col-md-12 item1">
+            <label>Title:</label><br>
+            <div class="form-check form-check-inline">
+                <input class="form-check-input" type="radio" name="title" id="title_mr" value="Mr" checked>
+                <label class="form-check-label" for="title_mr">Mr</label>
+            </div>
+            <div class="form-check form-check-inline">
+                <input class="form-check-input" type="radio" name="title" id="title_ms" value="Ms">
+                <label class="form-check-label" for="title_ms">Ms</label>
+            </div>
+        </div>
+    </div>
+  <div class="row mb-1 align-items-center">
+   <div class="col-md-12 item1">
+    {{ form.consumer_name.label_tag }} {{ form.consumer_name }}
+   </div>
+ <div class="col-md-6 mb-3 item1">
+    {{ form.consumer_address1.label_tag }} {{ form.consumer_address1 }}
+     </div>
+ <div class="col-md-6 mb-3 item1">
+    {{ form.consumer_address2.label_tag }} {{ form.consumer_address2 }}
+     </div>
+ <div class="col-md-6 item1">
+    {{ form.consumer_no.label_tag }} {{ form.consumer_no }}
+     </div>
+ <div class="col-md-6 item1">
+    {{ form.consumer_mobile.label_tag }} {{ form.consumer_mobile }}
+ </div>
+  </div>
+  </fieldset>
+
+<fieldset>
+    <legend>Quotation Meta</legend>
+    <div class="row mb-1 align-items-center">
+   <div class="col-md-4 mb-3 item1">
+    {{ form.date.label_tag }} {{ form.date }}
+   </div>
+
+        <div class="col-md-4 mb-3 item1">
+    {{ form.plant_capacity_kw.label_tag }}
+    <div class="input-group">
+        {{ form.plant_capacity_kw }}
+        <button type="button" class="btn btn-success" id="openPlantCapacityModal"
+                style="border-top-left-radius: 0; border-bottom-left-radius: 0; width: 40px;"
+                title="Add New Plant Capacity">+</button>
+    </div>
+</div>
+        <div class="col-md-4 mb-3 item1">
+<!--    {{ form.employee_name.label_tag }} -->
+    Representative Name  {{ form.employee_name }}
+   </div>
+    </div>
+
+<!-- Add Representative Modal -->
+<div id="repModal" style="display:none; position:fixed; z-index:9999; left:0; top:0; right:0; bottom:0; align-items:center; justify-content:center;">
+  <div style="background:white; margin:auto; padding:20px; border-radius:6px; max-width:420px; box-shadow:0 6px 18px rgba(0,0,0,0.2);">
+    <h3>Add Representative</h3>
+    <label>Name</label><br>
+    <input type="text" id="repName" style="width:100%; margin-bottom:8px;">
+    <label>Contact</label><br>
+    <input type="text" id="repContact" style="width:100%; margin-bottom:8px;">
+    <div style="text-align:right;">
+      <button type="button" id="closeRepModal">Cancel</button>
+      <button type="button" id="saveRepBtn">Save</button>
+    </div>
+  </div>
+</div>
+<!--</div>-->
+  </fieldset>
+
+  <fieldset>
+    <legend>Solar Panel Details</legend>
+    <div class="row mb-1 align-items-center">
+   <div class="col-md-4 mb-3 item1">
+    {{ form.panel_type.label_tag }} {{ form.panel_type }}
+   </div>
+   <div class="col-md-4 mb-3 item1">
+    {{ form.panel_capacity_watt.label_tag }} {{ form.panel_capacity_watt }}
+   </div>
+
+   <div class="col-md-4 mb-3 item1">
+    {{ form.panel_qty.label_tag }} {{ form.panel_qty }}
+   </div>
+    </div>
+
+
+    <strong>Solar Panel Companies:</strong><br>
+    <button type="button" id="openPanelModal">+ Add New Panel Company</button>
+      <div class="inv-item item1">
+    {% for c in panel_companies %}
+        <label class="checkbox-label">
+            <input type="checkbox" name="panel_companies" value="{{ c.id }}">
+            {{ c.name }}
+        </label>
+    {% empty %}
+        <em>No panel companies added yet.</em>
+    {% endfor %}
+</div>
+
+  <div class="row mb-1 align-items-center">
+   <div class="col-md-6 mb-3 item1">
+    <label>Manufacturing Warranty:</label>
+    {{ form.panel_manufacturing_warranty }}
+        </div>
+   <div class="col-md-6 mb-3 item1">
+
+    <label>Performance Warranty:</label>
+    {{ form.panel_performance_warranty }}
+   </div>
+    </div>
+  </fieldset>
+
+  <fieldset>
+    <legend>Inverter</legend>
+   <div class="row mb-1 align-items-center">
+   <div class="col-md-4 mb-3 item1">
+    {{ form.inv_phase.label_tag }} {{ form.inv_phase }}
+   </div>
+   <div class="col-md-4 mb-3 item1">
+    {{ form.inv_capacity_kw.label_tag }} {{ form.inv_capacity_kw }}
+   </div>
+   <div class="col-md-4 mb-3 item1">
+    {{ form.inverter_qty.label_tag }} {{ form.inverter_qty }}
+   </div>
+   </div>
+
+    <strong>Inverter Companies:</strong><br>
+
+        <button type="button" id="openInverterModal">+ Add New Inverter Company</button>
+<style>
+.inv-companies-container1 {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: flex-start;
+}
+
+.inv-item1 {
+    display: flex;
+    align-items: center;
+    min-height: 35px;
+    flex: 0 0 auto;
+}
+
+.checkbox-label1 {
+    display: flex;
+    align-items: center;
+    min-width: 100px;
+    margin-right: 3px;000000
+}
+
+.inv-checkbox1 {
+    margin-right: 3px;
+    width: 16px;
+    height: 16px;
+}
+
+.warranty-input1 {
+    display: none;
+    min-width: 80px;
+    margin-left: 1px;
+    padding: 3px 6px;
+}
+
+/* Ensure consistent spacing when warranty box is visible */
+.inv-item1.with-warranty1 {
+    min-width: 280px; /* Reduced from 350px */
+}
+</style>
+
+<div class="inv-companies-container1">
+    {% for company in inverter_companies %}
+    <div class="inv-item1" id="inv_item_{{ company.id }}">
+        <label class="checkbox-label">
+            <input type="checkbox"
+                   name="inverter_companies"
+                   value="{{ company.id }}"
+                   class="inv-checkbox1 inv-company-checkbox1"
+                   data-company-id="{{ company.id }}"
+                   onchange="toggleWarrantyBox(this)">
+            {{ company.name }}
+        </label>
+
+        <!-- Hidden Warranty Box -->
+        <input type="text"
+               name="inverter_warranty_{{ company.id }}"
+               placeholder="Enter Warranty"
+               class="warranty-input1 inv-warranty-input1"
+               id="warranty_box_{{ company.id }}">
+    </div>
+    {% endfor %}
+</div>
+
+<script>
+function toggleWarrantyBox(checkbox) {
+    const companyId = checkbox.dataset.companyId;
+    const warrantyBox = document.getElementById('warranty_box_' + companyId);
+    const invItem = document.getElementById('inv_item_' + companyId);
+
+    if (checkbox.checked) {
+        warrantyBox.style.display = 'inline-block';
+        invItem.classList.add('with-warranty');
+    } else {
+        warrantyBox.style.display = 'none';
+        invItem.classList.remove('with-warranty');
+    }
+}
+
+// Optional: Initialize on page load in case of form repopulation
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('.inv-company-checkbox1').forEach(checkbox => {
+        if (checkbox.checked) {
+            toggleWarrantyBox(checkbox);
+        }
+    });
+});
+</script>
+  </fieldset>
+
+<!-- PANEL COMPANY MODAL -->
+<div id="panelCompanyModal" style="display:none;
+     position:fixed; z-index:9999; left:0; top:0; right:0; bottom:0;
+     align-items:center; justify-content:center;">
+  <div style="background:white; margin:auto; padding:20px; border-radius:6px;
+              max-width:420px; box-shadow:0 6px 18px rgba(0,0,0,0.2);">
+
+      <h3>Add Solar Panel Company</h3>
+      <input type="text" id="panelCompanyName" placeholder="Company Name"
+             style="width:100%; margin-bottom:10px;">
+
+      <div style="text-align:right;">
+          <button type="button" id="closePanelModal">Cancel</button>
+          <button type="button" id="savePanelCompany">Save</button>
+      </div>
+  </div>
+</div>
+
+
+ <!-- INVERTER COMPANY MODAL -->
+<div id="invCompanyModal" style="display:none;
+     position:fixed; z-index:9999; left:0; top:0; right:0; bottom:0;
+     align-items:center; justify-content:center;">
+  <div style="background:white; margin:auto; padding:20px; border-radius:6px;
+              max-width:420px; box-shadow:0 6px 18px rgba(0,0,0,0.2);">
+
+      <h3>Add New Inverter Company</h3>
+      <input type="text" id="invCompanyName" placeholder="Company Name"
+             style="width:100%; margin-bottom:10px;">
+
+      <div style="text-align:right;">
+          <button type="button" id="closeInvModal">Cancel</button>
+          <button type="button" id="saveInvCompany">Save</button>
+      </div>
+  </div>
+</div>
+        <!-- NEW: Plant Capacity Modal -->
+          <div id="plantCapacityModal" style="display:none; position:fixed; z-index:9999; left:0; top:0; right:0; bottom:0; align-items:center; justify-content:center;">
+            <div style="background:white; margin:auto; padding:20px; border-radius:6px; max-width:420px; box-shadow:0 6px 18px rgba(0,0,0,0.2);">
+                <h3>Add New Plant Capacity</h3>
+                <input type="number" id="plantCapacityValue" step="0.1" min="0" placeholder="Capacity in kW" style="width:100%; margin-bottom:10px;">
+                <div style="text-align:right;">
+                    <button type="button" id="closePlantCapacityModal">Cancel</button>
+                    <button type="button" id="savePlantCapacity">Save</button>
+                </div>
+            </div>
+          </div>
+<script>
+// Plant Capacity Modal functionality
+document.addEventListener("DOMContentLoaded", function () {
+    const plantCapacityModal = document.getElementById("plantCapacityModal");
+    const openPlantCapacity = document.getElementById("openPlantCapacityModal");
+    const closePlantCapacity = document.getElementById("closePlantCapacityModal");
+    const savePlantCapacity = document.getElementById("savePlantCapacity");
+    const plantCapacityValue = document.getElementById("plantCapacityValue");
+
+    openPlantCapacity.onclick = () => {
+        plantCapacityValue.value = '';
+        plantCapacityModal.style.display = 'flex';
+        plantCapacityValue.focus();
+    };
+
+    closePlantCapacity.onclick = () => plantCapacityModal.style.display = 'none';
+
+    savePlantCapacity.onclick = function () {
+        const capacity = plantCapacityValue.value.trim();
+        if (!capacity) { alert("Enter capacity"); return; }
+
+        fetch("{% url 'quotation:add_plant_capacity_api' %}", {
+            method: "POST",
+            headers: {"X-CSRFToken": csrftoken},
+            body: new URLSearchParams({ capacity })
+        })
+        .then(resp => resp.json())
+        .then(data => {
+            if (!data.success) return alert(data.error);
+
+            // Update the dropdown
+            const select = document.querySelector('[name="plant_capacity_kw"]');
+            const option = document.createElement('option');
+            option.value = data.id;
+            option.textContent = data.capacity + ' kW';
+            select.appendChild(option);
+
+            // Select the new option
+            option.selected = true;
+
+            plantCapacityModal.style.display = "none";
+        });
+    };
+});
+
+// Your existing JavaScript code
+</script>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+
+    const csrftoken = getCookie('csrftoken');
+
+    // PANEL MODAL
+    const panelModal = document.getElementById("panelCompanyModal");
+    const openPanel = document.getElementById("openPanelModal");
+    const closePanel = document.getElementById("closePanelModal");
+    const savePanel = document.getElementById("savePanelCompany");
+    const panelCompanyName = document.getElementById("panelCompanyName");
+    const panelContainer = document.querySelector('[name="panel_companies"]').parentNode;
+
+    openPanel.onclick = () => {
+        panelCompanyName.value = '';
+        panelModal.style.display = 'flex';
+        panelCompanyName.focus();
+    };
+
+    closePanel.onclick = () => panelModal.style.display = 'none';
+
+    savePanel.onclick = function () {
+        const name = panelCompanyName.value.trim();
+        if (!name) { alert("Enter name"); return; }
+
+        fetch("{% url 'quotation:add_panel_company_api' %}", {
+            method: "POST",
+            headers: {"X-CSRFToken": csrftoken},
+            body: new URLSearchParams({ name })
+        })
+        .then(resp => resp.json())
+        .then(data => {
+            if (!data.success) return alert(data.error);
+
+            // Insert new checkbox immediately
+            const div = document.createElement("div");
+            div.classList.add("inv-item1");
+            div.innerHTML = `
+              <label>
+                <input type="checkbox" name="panel_companies" value="${data.id}" checked>
+                ${data.name}
+              </label>
+            `;
+            panelContainer.appendChild(div);
+
+
+            panelModal.style.display = "none";
+        });
+    };
+});
+</script>
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+
+    const csrftoken = getCookie('csrftoken');
+
+    // INVERTER MODAL
+    const invModal = document.getElementById("invCompanyModal");
+    const openInv = document.getElementById("openInverterModal");
+    const closeInv = document.getElementById("closeInvModal");
+    const saveInv = document.getElementById("saveInvCompany");
+    const invName = document.getElementById("invCompanyName");
+
+    // FIX: ensure new item always goes to bottom
+    const invContainer = document.querySelector('[name="inverter_companies"]').closest('div');
+
+    openInv.onclick = () => {
+        invName.value = '';
+        invModal.style.display = 'flex';
+        invName.focus();
+    };
+
+    closeInv.onclick = () => invModal.style.display = 'none';
+
+    saveInv.onclick = function () {
+        const name = invName.value.trim();
+        if (!name) { alert("Enter name"); return; }
+
+        fetch("{% url 'quotation:add_inverter_company_api' %}", {
+            method: "POST",
+            headers: {"X-CSRFToken": csrftoken},
+            body: new URLSearchParams({ name })
+        })
+        .then(resp => resp.json())
+        .then(data => {
+            if (!data.success) return alert(data.error);
+
+            const id = data.id;
+
+            // Always append at bottom
+            const div = document.createElement("div");
+            div.classList.add("inv-item");
+            div.innerHTML = `
+                <label>
+                    <input type="checkbox"
+                           name="inverter_companies"
+                           value="${id}"
+                           class="inv-company-checkbox"
+                           data-company-id="${id}"
+                           checked>
+                    ${data.name}
+                </label>
+
+                <input type="text"
+                    name="inverter_warranty_${id}"
+                    placeholder="Enter Warranty"
+                    class="inv-warranty-input"
+                    id="warranty_box_${id}"
+                    style="margin-left:10px;">
+            `;
+
+            document.querySelectorAll('[name="inverter_companies"]').item(
+                document.querySelectorAll('[name="inverter_companies"]').length - 1
+            ).closest("div").insertAdjacentElement("afterend", div);
+
+
+            invModal.style.display = "none";
+        });
+    };
+});
+</script>
+
+  <script>
+  document.addEventListener("DOMContentLoaded", function() {
+
+      document.querySelectorAll(".inv-company-checkbox").forEach(function(cb) {
+
+          cb.addEventListener("change", function() {
+
+              let id = this.dataset.companyId;
+              let box = document.getElementById("warranty_box_" + id);
+
+              if (this.checked) {
+                  box.style.display = "inline-block";
+              } else {
+                  box.value = "";
+                  box.style.display = "none";
+              }
+          });
+
+      });
+
+  });
+  </script>
+
+	<fieldset>
+    <legend>Structure</legend>
+     <div class="row mb-1 align-items-center">
+        <div class="col-md-6 mb-3 item1">
+                {{ form.structure_type.label_tag }} {{ form.structure_type }}
+        </div>
+        <div class="col-md-6 mb-3 item1">
+<!--            <div class="form-group">-->
+                <label>Structure Warranty</label>
+                {{ form.structure_warranty }}
+<!--            </div>-->
+        </div>
+     </div>
+        <div id="structure-heights" style="display:none;">
+            <div class="row mb-1 align-items-center">
+            <div class="col-md-6 mb-3 item1">
+                {{ form.structure_back_height_ft.label_tag }}  <div class="input-group">{{ form.structure_back_height_ft }}
+                  <span class="input-group-text" style="color: #495057;">Ft</span>
+
+                </div>
+            </div>
+            <div class="col-md-6 mb-3 item1">
+                {{ form.structure_front_height_ft.label_tag }} <div class="input-group">{{ form.structure_front_height_ft }}
+                <span class="input-group-text" style="color: #495057;">Ft</span>
+                </div>
+            </div>
+            </div>
+
+        </div>
+<!--     </div>-->
+  </fieldset>
+  <fieldset>
+    <legend>Pricing & Tax</legend>
+
+    {{ form.pricing_mode.label_tag }} {{ form.pricing_mode }}<br><br>
+
+    <div id="net-amount-field" style="display:none;">
+      <label for="id_net_amount_input">Enter Net Amount:</label>
+      {{ form.net_amount_input }}
+    </div>
+
+    <div id="final-amount-field" style="display:none;">
+      <label for="id_final_amount_input">Enter Final Amount:</label>
+      {{ form.final_amount_input }}
+    </div>
+    <br>
+
+    {{ form.special_discount.label_tag }} {{ form.special_discount|indian_format_with_decimals }}<br>
+    <label>5% GST (on 70%):</label>
+    {{ form.gst_5_percent|indian_format_with_decimals }}<br>
+
+    <label>18% GST (on 30%):</label>
+    {{ form.gst_18_percent|indian_format_with_decimals }}<br>
+
+    <div id="total-amount-display" style="margin-top:10px;">
+      <label>Total Amount (after GST & discount):</label>
+      <input type="text" id="id_total_amount" readonly style="background:#f7f7f7;">
+    </div>
+  </fieldset>
+
+    <script>
+      // helper to get CSRF token from cookie (Django default)
+      function getCookie(name) {
+          let cookieValue = null;
+          if (document.cookie && document.cookie !== '') {
+              const cookies = document.cookie.split(';');
+              for (let i = 0; i < cookies.length; i++) {
+                  const cookie = cookies[i].trim();
+                  if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                      cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                      break;
+                  }
+              }
+          }
+          return cookieValue;
+      }
+      const csrftoken = getCookie('csrftoken');
+    </script>
+    <fieldset id="proposedSystemFieldset">
+        <legend>Proposed System</legend>
+
+        <div class="row mb-3 align-items-center">
+            <div class="col-md-12 mb-3">
+                <div class="form-check form-switch">
+                    <input class="form-check-input" type="checkbox" id="system_na_checkbox" name="system_na"
+                           {% if form.system_na.value %}checked{% endif %}>
+                    <label class="form-check-label" for="system_na_checkbox" style="font-weight: bold; color: #dc3545;">
+                        Mark as Not Applicable (N.A.)
+                    </label>
+                    <small class="form-text text-muted d-block">
+                        Check this if the proposed system capacities are not applicable for this quotation.
+                    </small>
+                </div>
+            </div>
+        </div>
+
+        <div id="capacityFields">
+            <div class="row mb-1 align-items-center">
+                <div class="col-md-6 mb-3 item1">
+                    <label for="{{ form.dc_capacity.id_for_label }}" class="form-label item1">
+                        <i class="fas fa-bolt text-warning"></i> DC Capacity (kWp)
+                    </label>
+                    <div class="input-group">
+                        {{ form.dc_capacity }}
+                        <span class="input-group-text">kWp</span>
+                    </div>
+                    <small class="form-text text-muted">Direct Current capacity of the system</small>
+                </div>
+                <div class="col-md-6 mb-3 item1">
+                    <label for="{{ form.ac_capacity.id_for_label }}" class="form-label">
+                        <i class="fas fa-plug text-success"></i> AC Capacity (kWh)
+                    </label>
+                    <div class="input-group">
+                        {{ form.ac_capacity }}
+                        <span class="input-group-text">kWh</span>
+                    </div>
+                    <small class="form-text text-muted">Alternating Current capacity of the system</small>
+                </div>
+            </div>
+
+        </div>
+    </fieldset>
+
+    <!-- JavaScript for NA Checkbox functionality -->
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const naCheckbox = document.getElementById('system_na_checkbox');
+        const capacityFields = document.getElementById('capacityFields');
+        const dcCapacityInput = document.querySelector('[name="dc_capacity"]');
+        const acCapacityInput = document.querySelector('[name="ac_capacity"]');
+        const proposedSystemFieldset = document.getElementById('proposedSystemFieldset');
+
+        function toggleCapacityFields() {
+            if (naCheckbox.checked) {
+                // Hide and disable capacity fields
+                capacityFields.style.display = 'none';
+                dcCapacityInput.disabled = true;
+                acCapacityInput.disabled = true;
+
+                // Clear the values
+                dcCapacityInput.value = '';
+                acCapacityInput.value = '';
+
+                // Add visual indication
+                proposedSystemFieldset.classList.add('system-na-disabled');
+            } else {
+                // Show and enable capacity fields
+                capacityFields.style.display = 'block';
+                dcCapacityInput.disabled = false;
+                acCapacityInput.disabled = false;
+
+                // Remove visual indication
+                proposedSystemFieldset.classList.remove('system-na-disabled');
+            }
+        }
+
+        // Initialize on page load
+        toggleCapacityFields();
+
+        // Add event listener for checkbox changes
+        naCheckbox.addEventListener('change', toggleCapacityFields);
+
+        // Optional: Add input validation
+        dcCapacityInput.addEventListener('input', function() {
+            if (this.value < 0) {
+                this.value = '';
+            }
+        });
+
+        acCapacityInput.addEventListener('input', function() {
+            if (this.value < 0) {
+                this.value = '';
+            }
+        });
+
+        // Optional: Auto-calculate one capacity based on the other
+        // Uncomment if you want this functionality
+        /*
+        dcCapacityInput.addEventListener('blur', function() {
+            if (this.value && !acCapacityInput.value) {
+                // Typical conversion: AC ≈ DC * 0.85 (adjust as needed)
+                acCapacityInput.value = (parseFloat(this.value) * 0.85).toFixed(2);
+            }
+        });
+
+        acCapacityInput.addEventListener('blur', function() {
+            if (this.value && !dcCapacityInput.value) {
+                // Reverse calculation: DC ≈ AC / 0.85
+                dcCapacityInput.value = (parseFloat(this.value) / 0.85).toFixed(2);
+            }
+        });
+        */
+    });
+    </script>
+  <fieldset id="otherDetailsFieldset">
+
+      <legend>Other Details</legend>
+
+      <strong>Select Required Items:</strong><br>
+        <label class="checkbox-label inv-item item1">
+            <input type="checkbox" id="na_other_checkbox">
+            N.A.
+        </label>
+
+<div id="other-items-checkboxes" class="inv-item item1">
+      {% for item in form.other_items %}
+          <label class="checkbox-label">
+              {{ item.tag }}
+              {{ item.choice_label }}
+          </label>
+      {% endfor %}
+  </div>
+
+      <div id="dynamic-other-container"></div>
+
+      <button type="button" id="openOtherBtn">+ Add New Item</button>
+
+    </fieldset>
+
+<fieldset>
+    <legend>Contact Person Details</legend>
+    <!-- Representative section -->
+    <div class="row mb-1 align-items-center">
+        <div class="col-md-12 mb-3 item1">
+            <label>Representative</label><br>
+            <button type="button" id="openRepModal">+ Add Contact Person</button>
+            <div id="representatives-list" class="inv-item" style="margin-top:20px;">
+                {% for r in representatives %}
+                    <label class="checkbox-label">
+                        <input type="checkbox" name="representatives" value="{{ r.id }}">
+                        {{ r.name }}{% if r.contact %} — {{ r.contact }}{% endif %}<br>
+                    </label>
+                {% empty %}
+                    <em>No representatives yet.</em>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</fieldset>
+
+    <!-- Modal (keeps it inside page but the Save button must not submit the form) -->
+    <div id="otherModal" style="display:none; position:fixed; z-index:9999; left:0; top:0; right:0; bottom:0; align-items:center; justify-content:center;">
+      <div style="background:white; margin:auto; padding:20px; border-radius:6px; max-width:420px; box-shadow:0 6px 18px rgba(0,0,0,0.2);">
+        <h3>Add Other Item</h3>
+        <label for="otherItemName">Item Name</label><br>
+        <input type="text" id="otherItemName" style="width:100%" /><br><br>
+
+        <div style="text-align:right">
+          <button type="button" id="closeOtherBtn">Cancel</button>
+          <button type="button" id="saveOtherBtn">Save</button>
+        </div>
+      </div>
+    </div>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', function(){
+
+      const openBtn = document.getElementById('openOtherBtn');
+      const modal = document.getElementById('otherModal');
+      const closeBtn = document.getElementById('closeOtherBtn');
+      const saveBtn = document.getElementById('saveOtherBtn');
+      const itemInput = document.getElementById('otherItemName');
+      const otherContainer = document.getElementById('other-items-checkboxes');
+
+      openBtn.addEventListener('click', function(e){
+        itemInput.value = '';
+        modal.style.display = 'flex';
+        itemInput.focus();
+      });
+
+      closeBtn.addEventListener('click', function(){
+        modal.style.display = 'none';
+      });
+
+      // IMPORTANT: Save button is type="button" -> prevents form submit
+      saveBtn.addEventListener('click', function(){
+        const name = itemInput.value.trim();
+        if (!name) {
+          alert('Please enter a name');
+          return;
+        }
+
+        // disable while posting
+        saveBtn.disabled = true;
+
+        fetch("{% url 'quotation:add_other_item_api' %}", {
+          method: 'POST',
+          headers: {
+            'X-CSRFToken': csrftoken,
+            'Accept': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest',
+          },
+          body: new URLSearchParams({ name: name })
+        })
+        .then(resp => {
+          saveBtn.disabled = false;
+          if (!resp.ok) {
+            return resp.json().then(j => { throw j; });
+          }
+          return resp.json();
+        })
+        .then(data => {
+          if (data.success) {
+            // Append a new checkbox that matches ModelMultipleChoice expected structure:
+            // the form.field expects inputs named "other_items" with value=PK
+            const id = data.id;
+            const label = data.name;
+
+            const wrapper = document.createElement('div');
+            wrapper.classList.add("inv-item");
+            wrapper.innerHTML = `
+              <label>
+                <input type="checkbox" name="other_items" value="${id}" checked>
+                ${label}
+              </label>
+            `;
+            // Add the new checkbox at end of the current checkbox list
+            otherContainer.appendChild(wrapper);
+
+            modal.style.display = 'none';
+          } else {
+            alert(data.error || 'Unable to add item');
+          }
+        })
+        .catch(err => {
+          saveBtn.disabled = false;
+          console.error('Error adding other item:', err);
+          alert((err && err.error) ? err.error : 'Server error');
+        });
+      });
+
+      // prevent the Enter key in modal from submitting the parent form (optional)
+      itemInput.addEventListener('keydown', function(e){
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          saveBtn.click();
+        }
+      });
+
+    });
+    </script>
+<fieldset>
+    <legend>Terms & Conditions</legend>
+    <strong>Select Terms & Conditions:</strong><br>
+    <div id="terms-checkboxes" class="inv-item item1">
+        {% for term in terms_conditions %}
+            <label class="checkbox-label">
+                <input type="checkbox" name="terms_conditions" value="{{ term.id }}"
+                       data-has-yellow="{{ term.has_yellow_background|yesno:'true,false' }}"
+                       {% if term.has_yellow_background %}data-style="yellow"{% endif %}
+                       >
+                <span class="term-content {% if term.has_yellow_background %}yellow-bg{% endif %}">
+                    {{ term.content|truncatewords:10 }}
+                </span>
+            </label>
+        {% empty %}
+            <em>No terms and conditions added yet.</em>
+        {% endfor %}
+    </div>
+
+    <button type="button" id="openTermsModal">+ Add New Term</button>
+</fieldset>
+
+<!-- Terms & Conditions Modal -->
+<div id="termsModal" style="display:none; position:fixed; z-index:9999; left:0; top:0; right:0; bottom:0; align-items:center; justify-content:center;">
+  <div style="background:white; margin:auto; padding:20px; border-radius:6px; max-width:500px; box-shadow:0 6px 18px rgba(0,0,0,0.2);">
+    <h3>Add New Term & Condition</h3>
+    <label for="termsContent">Term Content:</label><br>
+    <textarea id="termsContent" style="width:100%; height:120px; margin-bottom:10px;" placeholder="Enter term and condition content..."></textarea>
+
+    <div style="margin-bottom: 15px;">
+        <label class="checkbox-label">
+            <input type="checkbox" id="yellowBackgroundCheckbox">
+            Add yellow background to this term
+        </label>
+    </div>
+
+    <div style="text-align:right">
+      <button type="button" id="closeTermsBtn">Cancel</button>
+      <button type="button" id="saveTermsBtn">Save</button>
+    </div>
+  </div>
+</div>
+
+<style>
+.yellow-bg {
+    background-color: yellow;
+    padding: 2px 4px;
+    border-radius: 3px;
+}
+
+.term-content {
+    display: inline-block;
+    padding: 2px 4px;
+    border-radius: 3px;
+    transition: background-color 0.3s ease;
+}
+
+/* Style for the yellow background checkbox in modal */
+#yellowBackgroundCheckbox {
+    width: 16px;
+    height: 16px;
+    margin-right: 8px;
+}
+
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function(){
+    // Terms & Conditions Modal
+    const openTermsBtn = document.getElementById('openTermsModal');
+    const termsModal = document.getElementById('termsModal');
+    const closeTermsBtn = document.getElementById('closeTermsBtn');
+    const saveTermsBtn = document.getElementById('saveTermsBtn');
+    const termsContent = document.getElementById('termsContent');
+    const yellowBackgroundCheckbox = document.getElementById('yellowBackgroundCheckbox');
+    const termsContainer = document.getElementById('terms-checkboxes');
+
+    openTermsBtn.addEventListener('click', function(e){
+        termsContent.value = '';
+        yellowBackgroundCheckbox.checked = false;
+        termsModal.style.display = 'flex';
+        termsContent.focus();
+    });
+
+    closeTermsBtn.addEventListener('click', function(){
+        termsModal.style.display = 'none';
+    });
+
+    saveTermsBtn.addEventListener('click', function(){
+        const content = termsContent.value.trim();
+        if (!content) {
+            alert('Please enter term content');
+            return;
+        }
+
+        const hasYellowBackground = yellowBackgroundCheckbox.checked;
+
+        saveTermsBtn.disabled = true;
+
+        fetch("{% url 'quotation:add_terms_condition_api' %}", {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': csrftoken,
+                'Accept': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest',
+            },
+            body: new URLSearchParams({
+                content: content,
+                has_yellow_background: hasYellowBackground
+            })
+        })
+        .then(resp => {
+            saveTermsBtn.disabled = false;
+            if (!resp.ok) {
+                return resp.json().then(j => { throw j; });
+            }
+            return resp.json();
+        })
+        .then(data => {
+            if (data.success) {
+                // Append new checkbox with yellow background if selected
+                const wrapper = document.createElement('div');
+                wrapper.classList.add("inv-item");
+                const yellowClass = data.has_yellow_background ? 'yellow-bg' : '';
+                const yellowData = data.has_yellow_background ? 'data-style="yellow"' : '';
+
+                wrapper.innerHTML = `
+                    <label class="checkbox-label">
+                        <input type="checkbox" name="terms_conditions" value="${data.id}"
+                               data-has-yellow="${data.has_yellow_background}"
+                               ${yellowData} checked>
+                        <span class="term-content ${yellowClass}">
+                            ${data.content}
+                        </span>
+                    </label>
+                `;
+                termsContainer.appendChild(wrapper);
+
+                termsModal.style.display = 'none';
+            } else {
+                alert(data.error || 'Unable to add term');
+            }
+        })
+        .catch(err => {
+            saveTermsBtn.disabled = false;
+            console.error('Error adding term:', err);
+            alert((err && err.error) ? err.error : 'Server error');
+        });
+    });
+
+    // Toggle yellow background when checkbox state changes
+    termsContainer.addEventListener('change', function(e) {
+        if (e.target.type === 'checkbox' && e.target.name === 'terms_conditions') {
+            const checkbox = e.target;
+            const termContentSpan = checkbox.nextElementSibling;
+            const hasYellowBackground = checkbox.getAttribute('data-has-yellow') === 'true';
+
+            if (checkbox.checked && hasYellowBackground) {
+                termContentSpan.classList.add('yellow-bg');
+            } else {
+                termContentSpan.classList.remove('yellow-bg');
+            }
+        }
+    });
+
+    // Initialize yellow backgrounds for existing checkboxes
+    function initializeTermBackgrounds() {
+        const termCheckboxes = termsContainer.querySelectorAll('input[name="terms_conditions"]');
+        termCheckboxes.forEach(checkbox => {
+            const termContentSpan = checkbox.nextElementSibling;
+            const hasYellowBackground = checkbox.getAttribute('data-has-yellow') === 'true';
+
+            if (checkbox.checked && hasYellowBackground) {
+                termContentSpan.classList.add('yellow-bg');
+            } else {
+                termContentSpan.classList.remove('yellow-bg');
+            }
+        });
+    }
+
+    // Initialize on page load
+    initializeTermBackgrounds();
+
+    // Prevent Enter key in modal from submitting parent form
+    termsContent.addEventListener('keydown', function(e){
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            saveTermsBtn.click();
+        }
+    });
+});
+</script>
+<script>
+    document.addEventListener('DOMContentLoaded', function(){
+      const dropdown = document.querySelector('[name="pricing_mode"]');
+      const netFieldDiv = document.getElementById('net-amount-field');
+      const finalFieldDiv = document.getElementById('final-amount-field');
+      const netInput = document.querySelector('[name="net_amount_input"]');
+      const finalInput = document.querySelector('[name="final_amount_input"]');
+      const gst5Input = document.querySelector('[name="gst_5_percent"]');
+      const gst18Input = document.querySelector('[name="gst_18_percent"]');
+      const discountInput = document.querySelector('[name="special_discount"]');
+      const totalDisplay = document.getElementById('id_total_amount');
+
+      function togglePricingFields(){
+        if(dropdown.value === 'net'){
+          netFieldDiv.style.display = 'block';
+          finalFieldDiv.style.display = 'none';
+          clearFields();
+        } else if(dropdown.value === 'final'){
+          finalFieldDiv.style.display = 'block';
+          netFieldDiv.style.display = 'none';
+          clearFields();
+        } else {
+          netFieldDiv.style.display = 'none';
+          finalFieldDiv.style.display = 'none';
+          clearFields();
+        }
+      }
+
+      // Indian Number Formatter
+      function formatIndianNumber(x) {
+            x = Number(x);
+            x = Math.round(x);
+            return x.toLocaleString('en-IN');
+      }
+
+      function clearFields(){
+        gst5Input.value = '';
+        gst18Input.value = '';
+        totalDisplay.value = '';
+      }
+
+      function calcFromNet(){
+        const net = parseFloat(netInput.value) || 0;
+        const discount = parseFloat(discountInput.value) || 0;
+        if(net <= 0) { clearFields(); return; }
+
+        // First apply discount to get taxable amount
+        const taxableAmount = net - discount;
+
+        // Then calculate GST on the taxable amount
+        const gst5 = (taxableAmount * 0.70) * 0.05;     // 5% on 70% of taxable amount
+        const gst18 = (taxableAmount * 0.30) * 0.18;    // 18% on 30% of taxable amount
+        const total = taxableAmount + gst5 + gst18;
+
+        gst5Input.value = gst5.toFixed(2);
+        gst18Input.value = gst18.toFixed(2);
+
+        totalDisplay.value = formatIndianNumber(total);
+
+      }
+
+      function calcFromFinal(){
+        const finalAmt = parseFloat(finalInput.value) || 0;
+        const discount = parseFloat(discountInput.value) || 0;
+        if(finalAmt <= 0) { clearFields(); return; }
+
+        // Reverse calculation: final amount includes GST but excludes discount
+        // So we need to find the taxable amount first
+        const gstFactor = (0.70 * 0.05) + (0.30 * 0.18); // combined GST %
+        const taxableAmount = finalAmt / (1 + gstFactor);
+
+        // Now calculate GST on taxable amount
+        const gst5 = (taxableAmount * 0.70) * 0.05;
+        const gst18 = (taxableAmount * 0.30) * 0.18;
+
+        // Net amount before discount = taxableAmount + discount
+        const netAmount = taxableAmount + discount;
+
+        gst5Input.value = gst5.toFixed(2);
+        gst18Input.value = gst18.toFixed(2);
+        totalDisplay.value = (taxableAmount + gst5 + gst18).toFixed(2);
+
+        // If you need to show the net amount somewhere
+        // netInput.value = netAmount.toFixed(2);
+        totalDisplay.value = formatIndianNumber(finalAmt);
+
+      }
+
+      dropdown.addEventListener('change', togglePricingFields);
+      netInput.addEventListener('input', calcFromNet);
+      finalInput.addEventListener('input', calcFromFinal);
+      discountInput.addEventListener('input', function(){
+        if(dropdown.value === 'net') calcFromNet();
+        if(dropdown.value === 'final') calcFromFinal();
+      });
+
+      togglePricingFields();
+    });
+</script>
+  <button type="submit">💾 Save & Generate PDF</button>
+<!--  <button type="button" id="saveAndGenerateBtn">💾 Save & Generate PDF</button>-->
+</form>
+
+</div>
+
+<script>
+  // show structure heights when GI or MS selected
+  function toggleStructureHeights() {
+    var st = document.querySelector('[name="structure_type"]').value;
+    var el = document.getElementById('structure-heights');
+    if (st === 'GI Structure' || st === 'MS Structure') {
+      el.style.display = 'block';
+    } else {
+      el.style.display = 'none';
+    }
+  }
+  document.addEventListener('DOMContentLoaded', function(){
+    var s = document.querySelector('[name="structure_type"]');
+    if (s) {
+      s.addEventListener('change', toggleStructureHeights);
+      toggleStructureHeights();
+    }
+    // toggle panel/company fields (optional UX)
+  });
+</script>
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const repModal = document.getElementById('repModal');
+        const openRep = document.getElementById('openRepModal');
+        const closeRep = document.getElementById('closeRepModal');
+        const saveRepBtn = document.getElementById('saveRepBtn');
+        const repName = document.getElementById('repName');
+        const repContact = document.getElementById('repContact');
+        const repList = document.getElementById('representatives-list');
+        const csrftoken = getCookie('csrftoken');
+
+        openRep.addEventListener('click', function() {
+            repName.value = '';
+            repContact.value = '';
+            repModal.style.display = 'flex';
+            repName.focus();
+        });
+        closeRep.addEventListener('click', function() {
+            repModal.style.display = 'none';
+        });
+
+        saveRepBtn.addEventListener('click', function() {
+            const name = repName.value.trim();
+            const contact = repContact.value.trim();
+            if (!name) { alert('Enter name'); return; }
+            saveRepBtn.disabled = true;
+
+            fetch("{% url 'quotation:add_representative_api' %}", {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': csrftoken,
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: new URLSearchParams({ name: name, contact: contact })
+            })
+            .then(resp => {
+                saveRepBtn.disabled = false;
+                if (!resp.ok) return resp.json().then(j => { throw j; });
+                return resp.json();
+            })
+            .then(data => {
+                if (!data.success) return alert(data.error || 'Error');
+
+                // Append new checkbox and select it
+                const wrapper = document.createElement('div');
+                wrapper.classList.add('inv-item');
+                wrapper.innerHTML = `
+                    <label class="checkbox-label">
+                        <input type="checkbox" name="representatives" value="${data.id}" checked>
+                        ${data.name}${data.contact ? ' — ' + data.contact : ''}
+                    </label>
+                `;
+                repList.appendChild(wrapper);
+                repModal.style.display = 'none';
+            })
+            .catch(err => {
+                console.error('error creating representative', err);
+                alert((err && err.error) ? err.error : 'Server error');
+                saveRepBtn.disabled = false;
+            });
+        });
+
+        // pressing Enter in the modal triggers Save
+        repName.addEventListener('keydown', function(e){ if (e.key === 'Enter') { e.preventDefault(); saveRepBtn.click(); } });
+        repContact.addEventListener('keydown', function(e){ if (e.key === 'Enter') { e.preventDefault(); saveRepBtn.click(); } });
+    });
+
+</script>
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    var sel = document.querySelector("select[name='plant_capacity_kw']");
+    if (!sel) return;
+
+    Array.from(sel.options).forEach(function (opt) {
+        let txt = opt.text.trim();
+
+        // Split number and unit (Kw)
+        let parts = txt.split(" ");
+        let numberPart = parts[0];  // "3.00"
+        let unitPart = parts.slice(1).join(" "); // "Kw" or ""
+
+        let num = Number(numberPart);
+
+        if (!isNaN(num)) {
+            if (Number.isInteger(num)) {
+                // Integer → remove decimals
+                numberPart = String(num);
+            } else {
+                // Decimal → remove trailing zeros
+                numberPart = num.toString();
+            }
+        }
+
+        // Rejoin with unit
+        opt.text = unitPart ? numberPart + " " + unitPart : numberPart;
+    });
+});
+</script>
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+
+    const naCheckbox = document.getElementById("na_other_checkbox");
+    const otherCheckboxWrapper = document.getElementById("other-items-checkboxes");
+    const otherCheckboxes = otherCheckboxWrapper.querySelectorAll('input[type="checkbox"]');
+    const addOtherBtn = document.getElementById("openOtherBtn");
+    const otherFieldset = document.getElementById("otherDetailsFieldset");
+
+    // Disable NA if any other checkbox is selected
+    // otherCheckboxes.forEach(cb => {
+        // cb.addEventListener("change", function () {
+            // naCheckbox.disabled = Array.from(otherCheckboxes).some(x => x.checked);
+        // });
+    // });
+    // Disable NA if any other checkbox is selected
+    otherCheckboxes.forEach(cb => {
+        cb.addEventListener("change", function () {
+
+            const anyChecked = Array.from(otherCheckboxes).some(x => x.checked);
+
+            if (anyChecked) {
+                // Instead of disabling → HIDE NA checkbox
+                naCheckbox.parentElement.style.display = "none";
+            } else {
+                // Show NA checkbox again
+                naCheckbox.parentElement.style.display = "inline-block";
+            }
+        });
+    });
+
+
+    // Behavior when NA is selected
+    naCheckbox.addEventListener("change", function () {
+
+        if (this.checked) {
+
+            // Uncheck and disable other checkboxes
+            otherCheckboxes.forEach(cb => {
+                cb.checked = false;
+                cb.disabled = true;
+            });
+
+            // Disable add button
+            addOtherBtn.disabled = true;
+
+            // Add light-red background
+            otherFieldset.classList.add("other-details-disabled");
+
+            // Hide checkboxes + add button
+            otherCheckboxWrapper.style.display = "none";
+            addOtherBtn.style.display = "none";
+
+        } else {
+
+            // Re-enable other checkboxes
+            otherCheckboxes.forEach(cb => {
+                cb.disabled = false;
+            });
+
+            // Enable add button
+            addOtherBtn.disabled = false;
+
+            // Remove red background
+            otherFieldset.classList.remove("other-details-disabled");
+
+            // Show checkboxes + add button
+            otherCheckboxWrapper.style.display = "block";
+            addOtherBtn.style.display = "inline-block";
+
+            // Re-enable NA if needed
+            naCheckbox.disabled = Array.from(otherCheckboxes).some(x => x.checked);
+        }
+
+    });
+
+});
+</script>
+{% endblock %}

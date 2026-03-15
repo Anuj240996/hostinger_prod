@@ -1,0 +1,64 @@
+================================================================================
+URGENT: YOU MUST RUN THE DATABASE FIX ON YOUR SERVER
+================================================================================
+
+The error you're seeing is because the DATABASE COLUMN doesn't have a DEFAULT value.
+The code changes are correct, but you MUST fix the database on your server.
+
+================================================================================
+STEP 1: CONNECT TO YOUR SERVER (SSH)
+================================================================================
+Connect to your server using SSH or terminal.
+
+================================================================================
+STEP 2: RUN THIS EXACT COMMAND
+================================================================================
+
+Copy and paste this ENTIRE command:
+
+cd /home/anujdeshmukh24/DBSolar_19_09_2023/DBSolar_19_09_2023 && source /home/anujdeshmukh24/env/bin/activate && python fix_all_id_columns.py
+
+This will fix:
+- customer_solarpump table
+- customer_controller table  
+- customer_meters table
+- customer_generationmeter table
+
+================================================================================
+STEP 3: RESTART YOUR DJANGO SERVER
+================================================================================
+
+After the script finishes:
+1. Stop your server (press Ctrl+C in the terminal where it's running)
+2. Restart it:
+   python manage.py runserver 0.0.0.0:8000
+   (or however you normally start it)
+
+================================================================================
+STEP 4: TEST
+================================================================================
+
+Try creating a meter entry again - the error should be gone!
+
+================================================================================
+WHY THIS IS NEEDED
+================================================================================
+
+The database columns don't have DEFAULT values set. When Django tries to insert
+a new row, PostgreSQL rejects it because:
+- The id column is NOT NULL
+- There's no DEFAULT value
+- PostgreSQL can't generate an ID automatically
+
+The fix script sets: DEFAULT nextval('sequence_name') which tells PostgreSQL
+to automatically generate IDs.
+
+================================================================================
+IF YOU CAN'T RUN THE SCRIPT
+================================================================================
+
+If you have direct database access (pgAdmin, psql, etc.), you can run the SQL
+from fix_id_column_complete.sql directly on your database.
+
+================================================================================
+

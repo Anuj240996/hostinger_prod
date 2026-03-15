@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+{% extends 'partials/base.html' %}
+{% block title %}Order Page{% endblock %}
+{% block content %}
+<style>
+    .image-preview {
+        display: flex;
+        flex-wrap: wrap;
+        margin-top: 10px;
+    }
+
+    .image-preview img {
+        max-width: 150px;
+        max-height: 150px;
+        margin: 5px;
+    }
+
+</style>
+
+<script>
+    function previewImage(event, previewId, previewContainerId) {
+        var previewContainer = document.getElementById(previewContainerId);
+        var files = event.target.files;
+
+        if (files && files.length > 0) {
+            previewContainer.innerHTML = ""; // Clear previous previews
+
+            for (var i = 0; i < files.length; i++) {
+                var file = files[i];
+                var reader = new FileReader();
+
+                reader.onload = (function (file) {
+                    return function (e) {
+                        var preview = document.createElement("img");
+                        preview.src = e.target.result;
+                        previewContainer.appendChild(preview);
+                    };
+                })(file);
+
+                reader.readAsDataURL(file);
+            }
+
+            previewContainer.style.display = 'flex';
+        } else {
+            previewContainer.style.display = 'none';
+        }
+    }
+</script>
+    <div class="card-body">
+        <!-- left column -->
+        <div class="col-md-12">
+            <!-- general form elements -->
+            <div class="card card-primary">
+
+<!--   {% if messages %}-->
+<!--    {% for message in messages %}-->
+<!--        <div class="alert alert-success alert-dismissible fade show" role="alert">-->
+<!--            {{ message }}-->
+<!--            <button type="button" class="close" data-dismiss="alert" aria-label="Close">-->
+<!--                <span aria-hidden="true">&times;</span>-->
+<!--            </button>-->
+<!--        </div>-->
+<!--    {% endfor %}-->
+<!--{% endif %}-->
+
+         {% if messages %}
+        <ul class="messages">
+            {% for message in messages %}
+            {% if message.tags %} <script> alert("{{ message }}") </script> {% endif %}{% endfor %}
+        </ul>{% endif %}
+
+
+  <form method="post"  enctype="multipart/form-data" action="{% url 'customer-Site_Technical_Details' %}">
+    {% csrf_token %}
+      <div class="card-header">
+                    <h3 align="center">Customer Site Details Form</h3>
+                </div>
+      <br>
+
+
+
+
+    <div class="form-group row">
+                    <label for="comp_name" class="col-sm-2 col-form-label">Company Name:</label>
+                    <div class="col-sm-10">
+                        <select id="comp_name" name="comp_name" class="form-control" style="width: 100%;">
+                            <option value="">---- Select a company ----</option>
+                            {% for company in companies %}
+                                <option value="{{ company.Comp_name }}">{{ company.Comp_name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+
+                <div id="customer_details" style="display: none;">
+                    <div class="form-group row">
+
+                        <div class="col-md-6">
+                        <label for="phone" class="col-form-label">Phone :</label>
+
+                            <input type="text" id="phone" name="phone" value="" readonly class="form-control">
+                        </div>
+                         <div class="col-md-6">
+                            <label for="address" class="col-form-label">Address :</label>
+
+                            <input type="text" id="address" name="address" value="" readonly class="form-control">
+                        </div>
+                    </div>
+
+                    <div class="form-group row">
+                        <div class="col-md-6">
+                            <label for="city" class="col-form-label">City :</label>
+
+                            <input type="text" id="city" name="city" value="" readonly class="form-control">
+<!--                             <input type="hidden" id="phone" name="phone" value="" readonly class="form-control">-->
+<!--                            <input type="hidden" id="address" name="address" value="" readonly class="form-control">-->
+                        </div>
+                         <div class="col-md-6">
+                            <label for="plant_capacity" class="col-form-label">Plant Capacity :</label>
+
+                            <input type="text" id="plant_capacity" name="plant_capacity" value="" readonly class="form-control">
+                            <input type="hidden" id="new_customer_id" name="new_customer_id" value="" readonly class="form-control">
+                        </div>
+                    </div>
+
+                    <!-- Add more fields here -->
+                </div>
+      <hr>
+
+
+<!--      <label>Detect Barcode:</label>-->
+<!--  <a href="{% url 'detect_barcodes-detect_barcodes' %}" target="_blank">Upload Barcode Image</a>-->
+<!--  &lt;!&ndash; Display detected barcode in a text field &ndash;&gt;-->
+<!--  <input type="text" id="detected_barcodes" name="detected_barcodes" readonly>-->
+<!--  <br><br>-->
+
+<!--    <label>Detect Barcode:</label>-->
+<!--    <a href="{% url 'detect_barcodes-detect_barcodes' %}">Upload Barcode Image</a>-->
+<!--    &lt;!&ndash; Display detected barcode in a text field &ndash;&gt;-->
+<!--    <input type="text" id="detected_barcode" name="detected_barcode" readonly>-->
+<!--    <br><br>-->
+
+<!--    <label>Detect Inverter:</label>-->
+<!--    <a href="{% url 'detect_barcodes-detect_inverter' %}">Upload Inverter Image</a>-->
+<!--    &lt;!&ndash; Display detected inverter barcode in a text field &ndash;&gt;-->
+<!--    <input type="text" id="detected_inverter" name="detected_inverter" readonly>-->
+<!--    <br><br>-->
+
+
+
+
+    <label for="meter_image">Select Meter Images:</label>
+    <input type="file" id="meter_image" name="meter_image" multiple accept="image/*" onchange="previewImage(event, 'meter_image_preview', 'meter_preview')">
+        <!-- Form fields and other code -->
+ <div id="meter_preview" class="image-preview zoomable-image">
+        <label>Meter Image Preview:</label>
+    </div>
+   <br>
+
+
+    <label for="netmeter_image">Select Netmeter Images:</label>
+    <input type="file" id="netmeter_image" name="netmeter_image" multiple accept="image/*" onchange="previewImage(event, 'netmeter_image_preview', 'netmeter_preview')">
+     <!-- Repeat the same pattern for other file input fields -->
+
+    <div id="netmeter_preview" class="image-preview zoomable-image">
+        <label>Netmeter Image Preview:</label>
+    </div>
+
+    <br>
+
+
+    <label for="abt_meter_image">Select ABT Meter Images:</label>
+    <input type="file" id="abt_meter_image" name="abt_meter_image" multiple accept="image/*" onchange="previewImage(event, 'abt_meter_image_preview', 'abt_meter_preview')">
+    <div id="abt_meter_preview" class="image-preview zoomable-image">
+        <label>ABT Meter Image Preview:</label>
+    </div>
+      <br>
+
+
+    <label for="ct_cubic_image">Select CT or Cubic Images:</label>
+    <input type="file" id="ct_cubic_image" name="ct_cubic_image" multiple accept="image/*" onchange="previewImage(event, 'ct_cubic_image_preview', 'ct_cubic_preview')">
+    <div id="ct_cubic_preview" class="image-preview zoomable-image" align="center">
+        <label>CT or Cubic Image Preview:</label>
+    </div>
+      <br>
+
+<!-- <button id="btn_DetectBarcode" class="btn btn-primary" type="submit">Scan-->
+<!--                            Barcode</button>-->
+
+    <input type="submit" value="Submit" id="submit" class="btn-primary">
+
+
+  </form>
+            </div>
+        </div>
+    </div>
+
+<!--<div class="zoom-image-container">-->
+<!--    <img class="zoomable-image" src="" alt="Zoomed Barcode Image">-->
+<!--</div>-->
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"
+    integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=" crossorigin="anonymous"></script>
+
+<script>
+    $(document).ready(function () {
+
+        //$("#barcodeForm").submit(function (e) {
+          //  e.preventDefault();
+
+        // Handle form submission
+        $('form').submit(function(event) {
+        //     event.preventDefault();
+
+        });
+
+        $('#comp_name').on('change', function() {
+                    var selectedCompany = $(this).val();
+                    if (selectedCompany !== '') {
+                      $.ajax({
+                        url: '/detect_barcodes/get_customer_details/',
+                        type: 'GET',
+                        data: { 'comp_name': selectedCompany },
+                        dataType: 'json',
+                        success: function(data) {
+                          if (data) {
+                            $('#phone').val(data.phone);
+                            $('#address').val(data.Address);
+                            $('#city').val(data.City);
+                            // $('#plant_capacity').val(data.Plant_Capacity);
+                            $('#plant_capacity').val(data.Plant_Capacity + " KW");
+                            $('#new_customer_id').val(data.new_customer_id); // Add the new field here
+                            $('#comp_name').val(data.Comp_name);
+                            // Update other fields as needed
+
+                            $('#customer_details').show();
+                          } else {
+                            // Clear the textbox values when no company is selected
+                            $('#phone').val('');
+                            $('#address').val('');
+                            $('#city').val('');
+                            $('#plant_capacity').val('');
+                            $('#new_customer_id').val(''); // Clear the new field
+                            $('#comp_name').val('');
+                            // Clear other fields as needed
+
+                            $('#customer_details').hide();
+                          }
+                        }
+                      });
+                    }
+                  });
+
+    });
+</script>
+<!--<script>-->
+<!--  // Function to handle the detected barcode values from the child page-->
+<!--  function handleDetectedBarcodes(barcodes) {-->
+<!--    document.getElementById('detected_barcodes').value = barcodes.join(', ');-->
+<!--  }-->
+
+<!--  // Function to listen for messages from the child page-->
+<!--  window.addEventListener('message', function(event) {-->
+<!--    if (event.data.detectedBarcodes) {-->
+<!--      handleDetectedBarcodes(event.data.detectedBarcodes);-->
+<!--    }-->
+<!--  });-->
+<!--</script>-->
+<!-- Child Page: detect_barcodes.html -->
+<!-- Site_Technical_Details.html -->
+
+
+
+
+<script>
+    // Retrieve count value from URL query parameter
+    var urlParams = new URLSearchParams(window.location.search);
+    var detectedBarcodesCount = urlParams.get('count');
+
+    // Use the detectedBarcodesCount value as needed
+    console.log("Detected Barcodes Count:", detectedBarcodesCount);
+  </script>
+{% endblock %}

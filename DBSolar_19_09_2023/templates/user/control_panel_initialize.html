@@ -1,0 +1,56 @@
+{% extends 'partials/base.html' %}
+{% load static %}
+
+{% block title %}Initialize Modules & Permissions{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow">
+                <div class="card-header bg-info text-white text-center">
+                    <h3><i class="fas fa-database"></i> Initialize Modules & Permissions</h3>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-warning">
+                        <h5><i class="fas fa-exclamation-triangle"></i> Important</h5>
+                        <p>This will create default modules and permissions for the system. This is a one-time setup operation.</p>
+                        <p><strong>Default modules that will be created:</strong></p>
+                        <ul>
+                            <li>Employee</li>
+                            <li>Customer</li>
+                            <li>Quotation</li>
+                            <li>Dashboard</li>
+                            <li>Product</li>
+                            <li>Inventory</li>
+                            <li>Transactions</li>
+                            <li>Fire Report</li>
+                            <li>Barcode</li>
+                        </ul>
+                        <p><strong>Default operations for each module:</strong></p>
+                        <ul>
+                            <li>Add</li>
+                            <li>View</li>
+                            <li>Edit</li>
+                            <li>Delete</li>
+                            <li>Export</li>
+                        </ul>
+                    </div>
+
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <i class="fas fa-database"></i> Initialize Modules & Permissions
+                            </button>
+                            <a href="{% url 'user:control_panel_home' %}" class="btn btn-secondary">
+                                <i class="fas fa-times"></i> Cancel
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

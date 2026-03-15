@@ -1,0 +1,507 @@
+
+{% extends 'partials/base.html' %}
+{% block title %}Order Page{% endblock %}
+{% load static %}
+{% block content %}
+
+<!--<div class="content container-fluid">-->
+
+<div class="page-header">
+   <div class="row">
+      <div class="col-sm-12">
+         <h3 class="page-title text-capitalize">Welcome {{ user.first_name }}</h3>
+
+          <div class="page-header">
+                 <div class="row align-items-center">
+                    <div class="col">
+
+                       <ul class="breadcrumb">
+                          <li class="breadcrumb-item"><a href="{% url 'dashboard-index' %}"><i class="fa fa-home" aria-hidden="true"></i> Home</a></li>
+                          <li class="breadcrumb-item">Consumer Warranty Dashboard</li>
+                       </ul>
+                    </div>
+                 </div>
+              </div>
+
+
+
+      </div>
+   </div>
+</div>
+<!--</div>-->
+<div class="col-md-12" style="text-align: left; margin: 0 auto;">
+<div class="row">
+   <div class="col-xl-3 col-sm-6 col-12 d-flex">
+
+      <div class="card bg-five w-100 my-card shadow">
+         <a class="text-decoration-none text-dark toggle-table" data-table="all_warranty" href="#">
+         <div class="card-body">
+            <div class="db-widgets d-flex justify-content-between align-items-center">
+               <div class="db-icon">
+                  <i class="fas fa-house-user"></i>
+               </div>
+                  <div class="db-info text-right">
+                     <h3>{{ total_warranty_count }}</h3>
+                     <h6>All Warranty Details</h6>
+                  </div>
+
+            </div>
+         </div>
+        </a>
+      </div>
+   </div>
+   <div class="col-xl-3 col-sm-6 col-12 d-flex">
+
+      <div class="card bg-six w-100 my-card shadow">
+         <a class="text-decoration-none text-dark toggle-table" data-table="remaining_30_days" href="#">
+         <div class="card-body">
+            <div class="db-widgets d-flex justify-content-between align-items-center">
+               <div class="db-icon">
+                 <i class="fas fa-industry"></i>
+               </div>
+                  <div class="db-info text-right">
+                     <h3>{{ remaining_30_days_count }}</h3>
+                     <h6>Remaning 30 days Details</h6>
+                  </div>
+            </div>
+         </div>
+        </a>
+      </div>
+   </div>
+   <div class="col-xl-3 col-sm-6 col-12 d-flex">
+
+       <div class="card bg-seven w-100 my-card shadow">
+        <a class="text-decoration-none text-dark toggle-table" data-table="remaining_15_days" href="#">
+         <div class="card-body">
+            <div class="db-widgets d-flex justify-content-between align-items-center">
+               <div class="db-icon">
+                  <i class="fas fa-city"></i>
+               </div>
+                  <div class="db-info text-right">
+                     <h3>{{ remaining_15_days_count }}</h3>
+                     <h6>Remaning 15 days Details</h6>
+                  </div>
+            </div>
+         </div>
+         </a>
+      </div>
+   </div>
+   <div class="col-xl-3 col-sm-6 col-12 d-flex">
+       <div class="card bg-eight w-100 my-card shadow">
+         <a class="text-decoration-none text-dark toggle-table" data-table="expired_warranty" href="#">
+         <div class="card-body">
+            <div class="db-widgets d-flex justify-content-between align-items-center">
+               <div class="db-icon">
+                  <i class="fas fa-clock"></i>
+               </div>
+                  <div class="db-info text-right">
+                     <h3>{{ expired_warranty_count }}</h3>
+                     <h6>Expire Warranty Details</h6>
+                  </div>
+            </div>
+         </div>
+         </a>
+      </div>
+   </div>
+</div>
+</div>
+<br><br>
+
+<!-- Tables -->
+<div class="col-md-12" style="text-align: left; margin: 0 auto;">
+<div id="all_warranty_table" class="table-container">
+    <h1>All Warranty</h1>
+    <div class="table-responsive">
+    <table border="1" class="customDataTable">
+        <thead>
+            <tr>
+                <th>Sr No</th>
+                <th>Company Name</th>
+                <th>Phone</th>
+                <th>City</th>
+                <th>Plant Capacity</th>
+                <th>O & M Warranty</th>
+                <th>Inverter Warranty</th>
+                <th>Solar Panel Warranty</th>
+<!--                <th>Remaining Days for COM Warranty</th>-->
+<!--                <th>Remaining Days for INV Warranty</th>-->
+<!--                <th>Remaining Days for SOL Warranty</th>-->
+            </tr>
+        </thead>
+        <tbody>
+            {% for comp_name, data in all_warranty.items %}
+            <tr class="{% if data.remaining_days_com >= 0 and data.remaining_days_com <= 30 %}warning-row{% endif %}">
+                <td>{{ forloop.counter }}</td>
+                <td style="text-align: left; padding-left: 25px;"><b>{{ comp_name | upper }}</b></td>
+                <td>{{ data.phone }}</td>
+                <td>{{ data.City }}</td>
+                <td>{{ data.Plant_Capacity }} Kw</td>
+                                    <td>
+                                        {% if data.remaining_days_com > 0 %}
+                                            {{ data.date_com|date:"d/m/Y" }} <br>
+                                            {{ data.remaining_days_com }} days
+                                        {% else %}
+                                            <span style="color: red;">{{ data.date_com|date:"d/m/Y" }} <br></span>
+                                            <span style="color: red;" class="blink">Expired</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if data.remaining_days_inv > 0 %}
+                                            {{ data.date_inv|date:"d/m/Y" }} <br>
+                                            {{ data.remaining_days_inv }} days
+                                        {% else %}
+                                            <span style="color: red;">{{ data.date_inv|date:"d/m/Y" }} <br></span>
+                                             <span style="color: red;" class="blink">Expired</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if data.remaining_days_sol > 0 %}
+                                            {{ data.date_sol|date:"d/m/Y" }} <br>
+                                            {{ data.remaining_days_sol }} days
+                                        {% else %}
+                                            <span style="color: red;">{{ data.date_sol|date:"d/m/Y" }} <br></span>
+                                            <span style="color: red;" class="blink">Expired</span>
+                                        {% endif %}
+                                    </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+</div>
+
+<div id="remaining_30_days_table" class="table-container" style="display: none;">
+    <h1>Remaining 30 Days Warranty</h1>
+    <div class="table-responsive">
+    <table border="1" class="customDataTable">
+        <thead>
+            <tr>
+                <th>Sr No</th>
+                <th>Company Name</th>
+                <th>Phone</th>
+                <th>City</th>
+                <th>Plant Capacity</th>
+                <th>O & M Warranty</th>
+                <th>Inverter Warranty</th>
+                <th>Solar Panel Warranty</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for comp_name, data in remaining_30_days.items %}
+            <tr class="{% if data.remaining_days_com >= 0 and data.remaining_days_com <= 30 %}warning-row{% endif %}">
+                <td>{{ forloop.counter }}</td>
+                <td style="text-align: left; padding-left: 25px;"><b>{{ comp_name | upper }}</b></td>
+                <td>{{ data.phone }}</td>
+                <td>{{ data.City }}</td>
+                <td>{{ data.Plant_Capacity }} Kw</td>
+                                    <td>
+                                        {% if data.remaining_days_com > 0 %}
+                                            {{ data.date_com|date:"d/m/Y" }} <br>
+                                            {{ data.remaining_days_com }} days
+                                        {% else %}
+                                            <span style="color: red;">{{ data.date_com|date:"d/m/Y" }} <br></span>
+                                             <span style="color: red;" class="blink">Expired</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if data.remaining_days_inv > 0 %}
+                                            {{ data.date_inv|date:"d/m/Y" }} <br>
+                                            {{ data.remaining_days_inv }} days
+                                        {% else %}
+                                            <span style="color: red;">{{ data.date_inv|date:"d/m/Y" }} <br></span>
+                                             <span style="color: red;" class="blink">Expired</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if data.remaining_days_sol > 0 %}
+                                            {{ data.date_sol|date:"d/m/Y" }} <br>
+                                            {{ data.remaining_days_sol }} days
+                                        {% else %}
+                                            <span style="color: red;">{{ data.date_sol|date:"d/m/Y" }} <br></span>
+                                             <span style="color: red;" class="blink">Expired</span>
+                                        {% endif %}
+                                    </td>
+
+
+            </tr>
+
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+</div>
+
+<div id="remaining_15_days_table" class="table-container" style="display: none;">
+    <h1>Remaining 15 Days Warranty</h1>
+    <div class="table-responsive">
+    <table border="1" class="customDataTable">
+        <thead>
+            <tr class="{% if data.remaining_days_com >= 0 and data.remaining_days_com <= 30 %}warning-row{% endif %}">
+                <th>Sr No</th>
+                <th>Company Name</th>
+                <th>Phone</th>
+                <th>City</th>
+                <th>Plant Capacity</th>
+                <th>O & M Warranty</th>
+                <th>Inverter Warranty</th>
+                <th>Solar Panel Warranty</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for comp_name, data in remaining_15_days.items %}
+            <tr class="{% if data.remaining_days_com >= 0 and data.remaining_days_com <= 15 %}warning-row{% endif %}">
+                <td>{{ forloop.counter }}</td>
+                <td style="text-align: left; padding-left: 25px;"><b>{{ comp_name | upper }}</b></td>
+                <td>{{ data.phone }}</td>
+                <td>{{ data.City }}</td>
+                <td>{{ data.Plant_Capacity }} Kw</td>
+                                    <td>
+                                        {% if data.remaining_days_com > 0 %}
+                                            {{ data.date_com|date:"d/m/Y" }} <br>
+                                            {{ data.remaining_days_com }} days
+                                        {% else %}
+                                            <span style="color: red;">{{ data.date_com|date:"d/m/Y" }} <br></span>
+                                             <span style="color: red;" class="blink">Expired</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if data.remaining_days_inv > 0 %}
+                                            {{ data.date_inv|date:"d/m/Y" }} <br>
+                                            {{ data.remaining_days_inv }} days
+                                        {% else %}
+                                            <span style="color: red;">{{ data.date_inv|date:"d/m/Y" }} <br></span>
+                                             <span style="color: red;" class="blink">Expired</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if data.remaining_days_sol > 0 %}
+                                            {{ data.date_sol|date:"d/m/Y" }} <br>
+                                            {{ data.remaining_days_sol }} days
+                                        {% else %}
+                                            <span style="color: red;">{{ data.date_sol|date:"d/m/Y" }} <br></span>
+                                             <span style="color: red;" class="blink">Expired</span>
+                                        {% endif %}
+                                    </td>
+
+
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+</div>
+
+
+<div id="expired_warranty_table" class="table-container" style="display: none;">
+    <h1>Expired Warranty</h1>
+   <div class="table-responsive">
+    <table border="1" class="customDataTable">
+        <thead>
+            <tr>
+                <th>Sr No</th>
+                <th>Company Name</th>
+                <th>Phone</th>
+                <th>City</th>
+                <th>Plant Capacity</th>
+                <th>O & M Warranty</th>
+                <th>Inverter Warranty</th>
+                <th>Solar Panel Warranty</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for comp_name, data in expired_warranty.items %}
+            <tr class="{% if data.remaining_days_com >= 0 and data.remaining_days_com <= 30 %}warning-row{% endif %}">
+                <td>{{ forloop.counter }}</td>
+                <td style="text-align: left; padding-left: 25px;"><b>{{ comp_name | upper }}</b></td>
+                <td>{{ data.phone }}</td>
+                <td>{{ data.City }}</td>
+                <td>{{ data.Plant_Capacity }} Kw</td>
+                                    <td>
+                                        {% if data.remaining_days_com > 0 %}
+                                            {{ data.date_com|date:"d/m/Y" }} <br>
+                                            {{ data.remaining_days_com }} days
+                                        {% else %}
+                                            <span style="color: red;">{{ data.date_com|date:"d/m/Y" }} <br></span>
+                                             <span style="color: red;" class="blink">Expired</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if data.remaining_days_inv > 0 %}
+                                            {{ data.date_inv|date:"d/m/Y" }} <br>
+                                            {{ data.remaining_days_inv }} days
+                                        {% else %}
+                                            <span style="color: red;">{{ data.date_inv|date:"d/m/Y" }} <br></span>
+                                             <span style="color: red;" class="blink">Expired</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if data.remaining_days_sol > 0 %}
+                                            {{ data.date_sol|date:"d/m/Y" }} <br>
+                                            {{ data.remaining_days_sol }} days
+                                        {% else %}
+                                            <span style="color: red;">{{ data.date_sol|date:"d/m/Y" }} <br></span>
+                                             <span style="color: red;" class="blink">Expired</span>
+                                        {% endif %}
+                                    </td>
+            </tr>
+
+            {% endfor %}
+        </tbody>
+
+    </table>
+</div>
+</div>
+</div>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js" integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=" crossorigin="anonymous"></script>
+
+<script>
+    $(document).ready(function () {
+        $(".toggle-table").click(function (e) {
+            e.preventDefault();
+            var tableToShow = $(this).data("table");
+            $(".table-container").hide(); // Hide all tables
+            $("#" + tableToShow + "_table").show(); // Show selected table
+        });
+    });
+</script>
+
+
+
+
+
+<style>
+    .warning-row {
+        background-color: yellow;
+    }
+
+</style>
+<style>
+                        @keyframes blink {
+                            0% {
+                                opacity: 1;
+                            }
+                            50% {
+                                opacity: 0;
+                            }
+                            100% {
+                                opacity: 1;
+                            }
+                        }
+                        .blink {
+                            animation: blink 1s infinite;
+                        }
+                    </style>
+<style>
+    .form-group {
+        margin-bottom: 10px;
+    }
+
+    table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    th,
+    td {
+        border: 1px solid #dddddd;
+        text-align: center;
+        padding: 8px;
+    }
+
+    th {
+        background-color: lightgray;
+    }
+
+    /* Highlight rows when checkbox is checked */
+    .highlighted-row {
+        background-color: #cb6843; /* Change to your preferred color */
+    }
+
+    .checkbox-input {
+        margin: 0 auto;
+        display: block;
+    }
+</style>
+
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js" integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=" crossorigin="anonymous"></script>
+
+<!-- Include jQuery -->
+<script src="path/to/jquery.min.js"></script>
+
+<!-- Include DataTables script -->
+<script type="text/javascript" charset="utf8" src="path/to/datatables.min.js"></script>
+
+<script>
+    $(document).ready(function () {
+        // Destroy existing DataTable instance if it exists
+        if ($.fn.DataTable.isDataTable(".customDataTable")) {
+            $(".customDataTable").DataTable().destroy();
+        }
+
+        // Initialize DataTable for all tables with the common class
+        var dataTable = $(".customDataTable").DataTable({
+            // Add any DataTables options you need
+            //  "paging": true, // Enable pagination
+            //  "searching": true // Enable search box
+        });
+
+        // Add event listener to the global search input
+        $("#globalSearch").on("input", function () {
+            dataTable.search(this.value).draw();
+        });
+    });
+</script>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js" integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=" crossorigin="anonymous"></script>
+<script>
+    $(document).ready(function () {
+        $("#preview").on("click", function () {
+            var selectedProduct = $("#product").val();
+            $.ajax({
+                url: "{% url 'detect_barcodes-display_product' %}",
+                type: "POST",
+                data: {
+                    product: selectedProduct,
+                    csrfmiddlewaretoken: "{{ csrf_token }}",
+                },
+                success: function (response) {
+                    $("#tables-container").html(response);
+                },
+                error: function (xhr, errmsg, err) {
+                    console.log(xhr.status + ": " + xhr.responseText);
+                },
+            });
+        });
+    });
+</script>
+<script>
+    $(document).ready(function () {
+    // Function to update row background color based on remaining days
+    function updateRowColor() {
+        $(".table-row").each(function () {
+            var remainingDaysCom = parseInt($(this).find(".remaining_days_com").text());
+            var remainingDaysInv = parseInt($(this).find(".remaining_days_inv").text());
+            var remainingDaysSol = parseInt($(this).find(".remaining_days_sol").text());
+
+            if (remainingDaysCom <= 30) {
+                $(this).addClass("warning-row");
+            } else {
+                $(this).removeClass("warning-row");
+            }
+        });
+    }
+
+    // Call the function on page load
+    updateRowColor();
+
+    // Add an event listener to update row color on collapsible toggle
+    $(".collapsible").on("click", function () {
+        setTimeout(function () {
+            updateRowColor();
+        }, 300); // Add a slight delay to ensure the collapsible content is fully expanded
+    });
+});
+
+</script>
+
+{% endblock %}

@@ -1,0 +1,321 @@
+{% extends 'partials/base.html' %}
+{% block title %}Order Page{% endblock %}
+{% block content %}
+
+<style>
+          /* Style for active fieldsets */
+    .active-fieldset {
+        background-color: #d3dbec; /* Gray background color for active fieldsets */
+         border-color: blue; /* Change the border color to red for active fieldsets */
+         border: 2px solid darkblue;
+    }
+
+    /* Style for deactivated fieldsets */
+    fieldset {
+        background-color: #ffffff; /* White background color for deactivated fieldsets */
+        border-color: blue; /* Change the border color to red for active fieldsets */
+    }
+
+   .checkbox-column {
+   display: inline-block;
+   }
+
+    /* Style all select elements */
+   select, /* Add select element */
+   select#userType /* Target the specific select element by ID */ {
+       width: 300px; /* Set the width as per your preference */
+       height: 30px;
+       font-size: 16px; /* Set the font size as per your preference */
+   }
+
+   /* Style the option elements within all select elements */
+   select option,
+   select#userType option{
+       font-size: 16px; /* Set the font size as per your preference */
+   }
+
+   /* Style the labels associated with select elements */
+   label[for],
+   label[for="userType"]{
+       font-size: 16px; /* Adjust the font size as per your preference */
+       margin-right: 10px; /* Add space to the right of the label */
+       font-weight: bold;
+   }
+</style>
+
+
+<h1>Generate PDF</h1>
+<form method="post">
+    {% csrf_token %}
+    <h3>Select fields to filter in PDF:</h3>
+    <fieldset>
+           <legend>Filter and Select Fields:</legend>
+
+            <div class="row mb-1 align-items-center">
+              <div class="col-md-4 mb-2 item1">
+                <label for="userType">Filter Users:</label>
+                <select id="userType" name="userType">
+                    <option value="all">All Consumer</option>
+                    <option value="Residential">Residential</option>
+                    <option value="Commersial">Commercial</option>
+                    <option value="Industrial">Industrial</option>
+                    <option value="Goverment">Government</option>
+                </select>
+            </div>
+             <div class="col-md-4 mb-3 item1">
+
+                <label for="fieldSelect">Select Field:</label>
+                <select id="fieldSelect" name="fieldSelect">
+                    <option value="">Select Field</option>
+                    <option value="all">All</option>
+                    <option value="Comp_name">Company Name</option>
+                    <option value="Plant_Capacity">Plant Capacity</option>
+                    <option value="loadsancution">Load Sanction</option>
+                    <option value="solar_comp">Solar Panel Company</option>
+                    <option value="UPSC">Inverter Company</option>
+                    <option value="City">City</option>
+                    <option value="state">State</option>
+                    <option value="Pincode">Pincode</option>
+                    <!-- Add more field options here -->
+                </select>
+            </div>
+             <div class="col-md-4 mb-3 item1">
+                <label for="valueSelect">Select Value:</label>
+                <select id="valueSelect" name="valueSelect" disabled>
+                    <option value="">Select a Field First</option>
+                    <!-- Options for values will be populated dynamically -->
+                </select>
+                <!-- Add a hidden input to pass the selected field value to the view -->
+                <input type="hidden" name="selectedField" id="selectedField" value="">
+                <!-- Add a hidden input to pass the selected value to the view -->
+                <input type="hidden" name="selectedValue" id="selectedValue" value="">
+
+
+            </div>
+         </div>
+    </fieldset>
+    <br>
+     <h3>Select fields to include in PDF:</h3>
+        <!-- Add a placeholder for the error message -->
+        <h3 id="max-fields-error" style="color: red; display: none;"></h3>
+
+            <div class="row mb-1 align-items-center">
+              <div class="col-md-4 mb-2 item1">
+                <fieldset>
+                    <legend>Consumer Details:</legend>
+                    <div class="checkbox-column">
+                        <label class="checkbox-label"><input type="checkbox" class="checkbox-input" name="customer_fields" value="Comp_name"> Consumer Name</label><br>
+                        <label class="checkbox-label"><input type="checkbox" class="checkbox-input" name="customer_fields" value="new_customer"> Username</label><br>
+                        <label class="checkbox-label"><input type="checkbox" class="checkbox-input" name="customer_fields" value="phone"> Contact No.</label><br>
+                        <label class="checkbox-label"><input type="checkbox" class="checkbox-input" name="customer_fields" value="email"> Email ID</label><br>
+                        <label class="checkbox-label" id="custTypeLabel" style="display: inline-flex;"><input type="checkbox" class="checkbox-input" name="customer_fields" value="Cust_type"> Consumer Type</label><br>
+                    </div>
+                </fieldset>
+              </div>
+
+
+              <div class="col-md-4 mb-2 item1">
+                  <fieldset>
+                    <legend>Plant Details:</legend>
+                    <div class="checkbox-column">
+                        <label class="checkbox-label"><input type="checkbox" class="checkbox-input" name="customer_fields" value="Plant_Capacity"> Plant Capacity</label><br>
+                        <label class="checkbox-label"><input type="checkbox" class="checkbox-input" name="customer_fields" value="current_load"> Previous Load Sanction</label><br>
+                        <label class="checkbox-label"><input type="checkbox" class="checkbox-input" name="customer_fields" value="loadsancution"> Final Load Sanction</label><br>
+                        <label class="checkbox-label"><input type="checkbox" class="checkbox-input" name="customer_fields" value="solar_comp"> Solar Panel Company</label><br>
+                        <label class="checkbox-label"><input type="checkbox" class="checkbox-input" name="customer_fields" value="UPSC"> Inverter Company</label><br>
+                        <!-- Add more profile fields here -->
+                    </div>
+                </fieldset>
+              </div>
+
+              <div class="col-md-4 mb-2 item1">
+                <fieldset>
+                    <legend>Consumer Address:</legend>
+                    <div class="checkbox-column">
+                        <label class="checkbox-label"><input type="checkbox" class="checkbox-input" name="customer_fields" value="po_date"> Purchase Order Date</label><br>
+                        <label class="checkbox-label"><input type="checkbox" class="checkbox-input" name="customer_fields" value="Address"> Address</label><br>
+                        <label class="checkbox-label"><input type="checkbox" class="checkbox-input" name="customer_fields" value="City"> City</label><br>
+                        <label class="checkbox-label"><input type="checkbox" class="checkbox-input" name="customer_fields" value="state"> State</label><br>
+                        <label class="checkbox-label"><input type="checkbox" class="checkbox-input" name="customer_fields" value="Pincode"> Pincode</label><br>
+                        <!-- Add more profile fields here -->
+                    </div>
+                </fieldset>
+              </div>
+               </div>
+
+<!--    <button type="submit" id="search-button" disabled>Generate PDF</button>-->
+
+
+       <br>
+<div class="row mb-1">
+         <div class="btn-block col-md-6">
+                   <button type="submit" id="search-button" style="width: 70%; height: 110%;" disabled>Generate PDF</button>
+         </div>
+    <br><br>
+
+         <div class="btn-block col-md-6">
+            <button type="Reset" href="/" style="width: 70%; height: 110%;">Clear</button>
+         </div>
+</div>
+<br>
+
+</form>
+
+
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        var searchButton = document.getElementById('search-button');
+        var userTypeSelect = document.getElementById('userType');
+        var custTypeLabel = document.getElementById('custTypeLabel');
+        var checkboxes = document.querySelectorAll('input[type="checkbox"]');
+        var errorMessage = document.getElementById('max-fields-error');
+        var maxCheckboxes = 5; // Set the maximum number of checkboxes allowed
+
+        checkboxes.forEach(function (checkbox) {
+            checkbox.addEventListener('change', function () {
+                var selectedCheckboxes = Array.from(checkboxes).filter(function (checkbox) {
+                    return checkbox.checked;
+                });
+
+                if (selectedCheckboxes.length > maxCheckboxes) {
+                    checkbox.checked = false; // Uncheck the current checkbox
+                    errorMessage.textContent = 'Maximum limit of checkboxes reached.';
+                    errorMessage.style.display = 'inline-block';
+                } else {
+                    errorMessage.style.display = 'none';
+                }
+
+                selectedCheckboxes = Array.from(checkboxes).filter(function (checkbox) {
+                    return checkbox.checked;
+                });
+
+                if (selectedCheckboxes.length === 0 || selectedCheckboxes.length > maxCheckboxes) {
+                    searchButton.disabled = true;
+                    errorMessage.textContent = 'Please select between 1 and 5 Checkbox fields.';
+                    errorMessage.style.display = 'block';
+                } else {
+                    searchButton.disabled = false;
+                }
+            });
+        });
+
+        userTypeSelect.addEventListener('change', function () {
+            if (userTypeSelect.value === 'all') {
+                // Hide the checkbox and label for Consumer Type
+                custTypeLabel.style.display = 'inline-flex';
+            } else {
+                // Show the checkbox and label for Consumer Type
+                custTypeLabel.style.display = 'none';
+            }
+        });
+    });
+</script>
+
+<!-- Modify the script in your HTML template -->
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        var searchButton = document.getElementById('search-button');
+        var fieldSelect = document.getElementById('fieldSelect');
+        var valueSelect = document.getElementById('valueSelect');
+        var errorMessage = document.getElementById('max-fields-error');
+        var selectedFieldInput = document.getElementById('selectedField');
+        var selectedValueInput = document.getElementById('selectedValue'); // Add this line
+        var fieldsets = document.querySelectorAll('fieldset');
+
+        fieldSelect.addEventListener('change', function () {
+            var selectedField = fieldSelect.value;
+
+
+            // Set the value of the hidden input to the selected field
+            selectedFieldInput.value = selectedField; // Add this line
+
+            if (selectedField === '') {
+                // If "All" or no field is selected, disable and reset the valueSelect dropdown
+                valueSelect.disabled = true;
+                valueSelect.innerHTML = '<option value="">Select a Field First</option>';
+                errorMessage.style.display = 'none';
+                searchButton.disabled = true;
+            } else {
+                // If a field is selected, enable valueSelect and fetch values dynamically
+                valueSelect.disabled = false;
+                if (selectedField === 'all') {
+                    // If "All" is selected in fieldSelect, display "All" option in valueSelect
+                    valueSelect.innerHTML = '<option value="All">All</option>';
+                } else {
+                    // If a specific field is selected, fetch values dynamically
+                    fetchValues(selectedField);
+                }
+            }
+        });
+
+         valueSelect.addEventListener('change', function () {
+            var selectedValue = valueSelect.value;
+
+            // Set the value of the hidden input to the selected value
+            selectedValueInput.value = selectedValue;
+
+            if (selectedValue === '') {
+                searchButton.disabled = true;
+                errorMessage.textContent = 'Please select a value.';
+                errorMessage.style.display = 'block';
+            } else {
+                searchButton.disabled = false;
+                errorMessage.style.display = 'none';
+            }
+        });
+
+
+        // Add click event listener to fieldsets
+        fieldsets.forEach(function (fieldset) {
+            fieldset.addEventListener('click', function () {
+                // Remove the 'active-fieldset' class from all fieldsets
+                fieldsets.forEach(function (fs) {
+                    fs.classList.remove('active-fieldset');
+                });
+
+                // Add the 'active-fieldset' class to the clicked fieldset
+                this.classList.add('active-fieldset');
+            });
+        });
+
+        function fetchValues(selectedField) {
+            // Make an AJAX request to your server to fetch values based on the selected field
+            var apiUrl = '/customer/get_values_for_field/?field=' + selectedField;
+
+            // Assuming you're using Fetch API for the AJAX request
+            fetch(apiUrl)
+                .then(function (response) {
+                    if (response.ok) {
+                        return response.json();
+                    } else {
+                        throw new Error('Failed to fetch values.');
+                    }
+                })
+                .then(function (data) {
+                    // Populate the valueSelect dropdown with retrieved values
+                    var options = '';
+                    data.values.forEach(function (value) {
+                        if (selectedField === 'Plant_Capacity') {
+                            options += '<option value="' + value + '"> ' + value + ' Kw</option>';
+                        } else if (selectedField === 'loadsancution') {
+                            options += '<option value="' + value + '"> ' + value + ' Kw</option>';
+                        } else {
+                            options += '<option value="' + value + '">' + value + '</option>';
+                        }
+                    });
+
+                    valueSelect.innerHTML = options;
+                })
+                .catch(function (error) {
+                    console.error(error);
+                    // Handle error
+                    valueSelect.innerHTML = '<option value="">Error fetching values</option>';
+                });
+        }
+    });
+</script>
+
+
+
+{% endblock %}

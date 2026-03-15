@@ -1,0 +1,107 @@
+
+<!--    <div class="col-md-4 mt-4">-->
+<!--        <div class="card">-->
+<!--            <div class="card-header bg-info text-white">-->
+<!--                Information-->
+<!--            </div>-->
+<!--            <div class="card-body">-->
+<!--                <marquee behavior="" direction="">-->
+<!--                    <h3 class="my-4">New Information</h3>-->
+<!--                </marquee>-->
+<!--            </div>-->
+<!--        </div>-->
+<!--    </div>-->
+<div class="content container-fluid">
+               <div class="page-header">
+                  <div class="row">
+                     <div class="col-sm-12">
+                        <h3 class="page-title text-capitalize">Welcome {{ user.first_name }}</h3>
+                        <ul class="breadcrumb">
+                           <a class="nav-link text-black" href="{% url 'dashboard-index' %}"><i class="fa fa-home" aria-hidden="true"></i> Home <span class="sr-only">(current)</span></a>
+
+                        </ul>
+                     </div>
+                  </div>
+               </div>
+               <div class="row">
+                  <div class="col-xl-3 col-sm-6 col-12 d-flex">
+
+                     <div class="card bg-one w-100 my-card shadow">
+                         <a class="text-decoration-none text-dark" href="{% url 'dashboard-index1' %}">
+                        <div class="card-body">
+                           <div class="db-widgets d-flex justify-content-between align-items-center">
+                              <div class="db-icon">
+                                 <i class="fas fa-user-graduate"></i>
+                              </div>
+                              <div class="db-info text-right">
+                                 <h3>{{ totalAdmin }}</h3>
+                                 <h6>Employees</h6>
+                              </div>
+                           </div>
+                        </div>
+                      </a>
+                     </div>
+
+                  </div>
+                  <div class="col-xl-3 col-sm-6 col-12 d-flex">
+
+                     <div class="card bg-two w-100 my-card shadow">
+                        <a class="text-decoration-none text-dark" href="{% url 'customer-view_all' %}">
+                        <div class="card-body">
+                           <div class="db-widgets d-flex justify-content-between align-items-center">
+                              <div class="db-icon">
+                                 <i class="fas fa-crown"></i>
+                              </div>
+                              <div class="db-info text-right">
+                                 <h3>{{ totalStockist }}</h3>
+                                 <h6>Consumers</h6>
+                              </div>
+                           </div>
+                        </div>
+                      </a>
+                     </div>
+
+                  </div>
+                  <div class="col-xl-3 col-sm-6 col-12 d-flex">
+
+                     <div class="card bg-three w-100 my-card shadow">
+                       <a class="text-decoration-none text-dark" href="{% url 'firereport-dashboard' %}">
+                        <div class="card-body">
+                           <div class="db-widgets d-flex justify-content-between align-items-center">
+                              <div class="db-icon">
+                                 <i class="fas fa-building"></i>
+                              </div>
+                              <div class="db-info text-right">
+                                 <h3>{{ totalfire }}</h3>
+                                 <h6>Complaints</h6>
+                              </div>
+                           </div>
+                        </div>
+                       </a>
+                     </div>
+
+                  </div>
+
+                  <div class="col-xl-3 col-sm-6 col-12 d-flex">
+
+                     <div class="card bg-four w-100 my-card shadow">
+                        <a class="text-decoration-none text-dark" href="{% url 'firereport-dashboard' %}">
+                        <div class="card-body">
+                           <div class="db-widgets d-flex justify-content-between align-items-center">
+                              <div class="db-icon">
+                                 <i class="fas fa-file-invoice-dollar"></i>
+                              </div>
+                              <div class="db-info text-right">
+                                 <h3>{{ totalFinance }}</h3>
+                                 <h6>Pending Compl.</h6>
+                              </div>
+                           </div>
+                        </div>
+                        </a>
+                     </div>
+
+                  </div>
+               </div>
+            </div>
+
+

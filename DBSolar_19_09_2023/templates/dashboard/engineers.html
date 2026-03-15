@@ -1,0 +1,88 @@
+{% extends 'partials/base.html' %}
+{% block title %}Engineers Page{% endblock %}
+{% block content %}
+{% include 'partials/topside.html' %}
+<div class="row justify-content-md-center">
+<!--    <div class="col-md-4"></div>-->
+    <div class="col-md-11">
+        <div class="table-responsive">
+        <table id="yourDataTable" class="table table-hover table-center table.dataTable.table-sm mb-0 datatable table.sm">
+            <thead class="table-success">
+                <tr>
+                    <th scope="col">Sr No.</th>
+                    <th scope="col">Staff ID</th>
+                    <th scope="col">Username</th>
+                    <th scope="col">Full Name</th>
+                    <th scope="col">Phone</th>
+                    <th scope="col">Email</th>
+                     <th scope="col">Designation</th>
+                    <th scope="col">Department</th>
+                    <th scope="col">Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for customer in customer %}
+
+<!--                {% if customer.profile.department == 'Engineers' %}-->
+                <tr>
+                    <td>{{forloop.counter}}</td>
+                    <td>DB_{{ customer.id }}</td>
+                    <td>DB_{{ customer.username }}</td>
+                    <td>{{ customer.first_name }} {{ customer.last_name }}</td>
+                    <td>{{ customer.profile.workphone }}</td>
+                    <td>{{ customer.email }}</td>
+                    <td>{{ customer.profile.designation }}</td>
+                    <td>{{ customer.profile.department }}</td>
+                    <th scope="row"><a class="btn btn-info btn-sm"
+                            href="{% url 'dashboard-customer-detail' customer.id %}">View</a></th>
+                </tr>
+<!--                {% endif %}-->
+                {% endfor %}
+            </tbody>
+        </table>
+        </div>
+    </div>
+</div>
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    let dataTable = $('#yourDataTable').DataTable();
+    //let dataTable = $('#yourDataTable').DataTable({
+    //    scrollX: true,
+    //    fixedHeader: true,
+    //    columnDefs: [
+    //        { targets: 0, orderable: false } // '0' represents the index of the 'Sr No.' column (zero-based)
+    //    ]
+    //});
+
+    // Check if the DataTable is already initialized
+    if ($.fn.dataTable.isDataTable('#yourDataTable')) {
+        dataTable.destroy(); // If initialized, destroy the DataTable
+    }
+
+    dataTable = $('#yourDataTable').DataTable({
+        scrollX: true, // Enable horizontal scrolling
+        //scrollY: '50vh', // Adjust the height as needed
+        scrollCollapse: true,
+        fixedHeader: {
+            header: true,
+            footer: false // Do not fix the footer to prevent it from moving
+        },
+        columnDefs: [
+           { targets: 0, orderable: false } // Disable sorting for the Sr No. column (zero-based)
+        ]
+
+    });
+
+     $('#yourDataTable tbody tr').each(function(index) {
+        $(this).find('td:first').text(index + 1);
+    });
+
+      dataTable.on('order.dt search.dt', function() {
+        dataTable.column(0, { search: 'applied', order: 'applied' }).nodes().each(function(cell, i) {
+            cell.innerHTML = i + 1;
+        });
+    }).draw();
+});
+</script>
+
+{% endblock %}

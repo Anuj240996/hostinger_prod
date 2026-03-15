@@ -1,0 +1,964 @@
+{% extends 'partials/base.html' %}
+{% block title %}Order Page{% endblock %}
+{% load static %}
+{% block content %}
+
+<style>
+        /* Add space between columns and rows */
+        table {
+            width: 100%;
+            // border-collapse: separate; /* Ensure border-spacing works */
+            border-spacing: 10px; /* Space between columns and rows */
+        }
+
+        .space {
+            padding: 10px; /* Space inside cells */
+            text-align: left; /* Align text to the left */
+        }
+</style>
+<style>
+  /* Hide the native radio input */
+  .btn-group label input[type="radio"] {
+      display: none;
+  }
+  .btn-group label.active::before {
+    color: transparent;
+  }
+
+  /* Style the label as an inline-flex container to align icon and text */
+  .btn-group label {
+      display: inline-flex;
+      align-items: center;
+      /* Optional: add some padding if needed */
+      padding: 0.5rem 1rem;
+  }
+  /* Insert a check mark before the label text */
+  .btn-group label::before {
+      content: "\2713";  /* Unicode check mark */
+      display: inline-block;
+      margin-right: 0.5rem;
+      font-size: 1.2rem;
+      color: transparent; /* hidden when not active */
+      transition: color 0.2s;
+  }
+  /* When the label is active, show the check mark in green */
+  .btn-group label.active::before {
+      color: white;  /* Bootstrap success green */
+  }
+</style>
+
+
+<!--<script>-->
+<!--// Automatically submit the form when the dropdown value changes-->
+<!--function loadDetails() {-->
+<!--    document.getElementById('company-form').submit();-->
+<!--}-->
+
+<!--&lt;!&ndash;// Add new row to the form (unchanged)&ndash;&gt;-->
+<!--&lt;!&ndash;function addRow(button) {&ndash;&gt;-->
+<!--&lt;!&ndash;    const table = document.getElementById('solar-pump-table');&ndash;&gt;-->
+<!--&lt;!&ndash;    const existingRows = table.rows.length - 1; // subtract header row&ndash;&gt;-->
+<!--&lt;!&ndash;    const pumpQunt = {{ selected_customer.pump_qunt|default:0 }};&ndash;&gt;-->
+<!--&lt;!&ndash;    const existingRecords = {{ solar_pumps.count|default:0 }};&ndash;&gt;-->
+<!--&lt;!&ndash;    const totalRows = existingRecords + existingRows;&ndash;&gt;-->
+<!--&lt;!&ndash;    if (totalRows >= pumpQunt) {&ndash;&gt;-->
+<!--&lt;!&ndash;        alert(`Cannot add more rows. Maximum allowed rows: ${pumpQunt}`);&ndash;&gt;-->
+<!--&lt;!&ndash;        return;&ndash;&gt;-->
+<!--&lt;!&ndash;    }&ndash;&gt;-->
+<!--&lt;!&ndash;    const row = table.insertRow(-1);&ndash;&gt;-->
+<!--&lt;!&ndash;    const srNo = existingRows + 1;&ndash;&gt;-->
+<!--&lt;!&ndash;    const cells = [&ndash;&gt;-->
+<!--&lt;!&ndash;        `<td style="text-align: center;">${srNo}</td>`,&ndash;&gt;-->
+<!--&lt;!&ndash;        '<td class="space"><input style="text-align: center;" type="text" class="form-control" name="pump_company[]" required></td>',&ndash;&gt;-->
+<!--&lt;!&ndash;        `<td class="space">&ndash;&gt;-->
+<!--&lt;!&ndash;            <div class="input-group">&ndash;&gt;-->
+<!--&lt;!&ndash;                <input style="text-align: center;" type="text" class="form-control" name="pump_hp[]" required>&ndash;&gt;-->
+<!--&lt;!&ndash;                <span class="input-group-text">HP</span>&ndash;&gt;-->
+<!--&lt;!&ndash;            </div>&ndash;&gt;-->
+<!--&lt;!&ndash;        </td>`,&ndash;&gt;-->
+<!--&lt;!&ndash;        '<td class="space"><input style="text-align: center;" type="text" class="form-control" name="serial_no[]" required></td>',&ndash;&gt;-->
+<!--&lt;!&ndash;        '<td class="space"><button type="button" style="width: 100%;" onclick="addRow(this)">+</button></td>'&ndash;&gt;-->
+<!--&lt;!&ndash;    ];&ndash;&gt;-->
+<!--&lt;!&ndash;    row.innerHTML = cells.join('');&ndash;&gt;-->
+<!--&lt;!&ndash;    button.parentElement.parentElement.removeChild(button.parentElement);&ndash;&gt;-->
+<!--&lt;!&ndash;}&ndash;&gt;-->
+
+<!--function addRow(button) {-->
+<!--    const table = document.getElementById('solar-pump-table');-->
+<!--    // Number of new records already added in the new records table-->
+<!--    const newRecordsCount = table.rows.length - 1; // subtract header row-->
+
+<!--    // Get the maximum allowed pumps from the hidden input-->
+<!--    const pumpQuntInput = document.getElementById('pump_qunt');-->
+<!--    const pumpQunt = pumpQuntInput ? parseInt(pumpQuntInput.value) : 0;-->
+
+<!--    // Get the current number of existing records from the main records table (updated via AJAX)-->
+<!--    let existingRecords = 0;-->
+<!--    const existingTable = document.getElementById('records-table');-->
+<!--    if (existingTable) {-->
+<!--        existingRecords = existingTable.querySelectorAll("tbody tr").length;-->
+<!--    }-->
+
+<!--    // Calculate total count: existing records + new rows in form-->
+<!--    const totalRows = existingRecords + newRecordsCount;-->
+<!--    if (totalRows >= pumpQunt) {-->
+<!--        alert(`Cannot add more rows. Maximum allowed rows: ${pumpQunt}`);-->
+<!--        return;-->
+<!--    }-->
+
+<!--    // Insert a new row at the end of the new records table-->
+<!--    const row = table.insertRow(-1);-->
+<!--    const srNo = newRecordsCount + 1;-->
+<!--    const cells = [-->
+<!--        `<td style="text-align: center;">${srNo}</td>`,-->
+<!--        '<td class="space"><input style="text-align: center;" type="text" class="form-control" name="pump_company[]" required></td>',-->
+<!--        `<td class="space">-->
+<!--            <div class="input-group">-->
+<!--                <input style="text-align: center;" type="text" class="form-control" name="pump_hp[]" required>-->
+<!--                <span class="input-group-text">HP</span>-->
+<!--            </div>-->
+<!--        </td>`,-->
+<!--        '<td class="space"><input style="text-align: center;" type="text" class="form-control" name="serial_no[]" required></td>',-->
+<!--        // New row gets its own add button; remove the add button from the previous row-->
+<!--        '<td class="space"><button type="button" style="width: 100%;" onclick="addRow(this)">+</button></td>'-->
+<!--    ];-->
+<!--    row.innerHTML = cells.join('');-->
+
+<!--    // Remove the add button from the previous last row so only the last row has it-->
+<!--    // (This assumes the button that was clicked is the only add button on that row.)-->
+<!--    button.parentElement.parentElement.removeChild(button.parentElement);-->
+<!--}-->
+
+
+<!--// Display success message after saving records-->
+<!--function showSuccessMessage() {-->
+<!--    {% if messages %}-->
+<!--        {% for message in messages %}-->
+<!--            alert("{{ message }}");-->
+<!--        {% endfor %}-->
+<!--    {% endif %}-->
+<!--}-->
+<!--</script>-->
+<script>
+// Automatically submit the form when the dropdown value changes
+function loadDetails() {
+    document.getElementById('company-form').submit();
+}
+
+document.addEventListener("DOMContentLoaded", function() {
+    const newRecordsForm = document.getElementById('new-records-form');
+    const solarPumpTable = document.getElementById('solar-pump-table');
+    // Store the default HTML for the new records table (header + initial row)
+    const defaultTableHTML = solarPumpTable.innerHTML;
+    // Get the maximum allowed pumps from the hidden input
+    const pumpQuntInput = document.getElementById('pump_qunt');
+    const pumpQunt = pumpQuntInput ? parseInt(pumpQuntInput.value) : 0;
+
+    if(newRecordsForm) {
+        newRecordsForm.addEventListener('submit', function(e) {
+            e.preventDefault();  // Prevent the normal form submission
+            const formData = new FormData(newRecordsForm);
+            fetch(newRecordsForm.action, {
+                method: "POST",
+                body: formData,
+                headers: {
+                    "X-Requested-With": "XMLHttpRequest"
+                },
+            })
+            .then(response => response.json())
+            .then(data => {
+                if(data.success) {
+                    // Update the existing records table with the new pump entries
+                    const tbody = document.querySelector("#records-table tbody");
+                    if(tbody && data.solar_pumps) {
+                        tbody.innerHTML = "";
+                        data.solar_pumps.forEach((pump, index) => {
+                            const tr = document.createElement("tr");
+                            tr.setAttribute("data-id", pump.id);
+                            tr.innerHTML = `
+                                <td style="width: 10%;">${index + 1}</td>
+                                <td class="data-cell" style="width: 30%;">${pump.pump_company}</td>
+                                <td class="data-cell" style="width: 30%;">${pump.pump_hp} <b>HP</B></td>
+                                <td class="data-cell" style="width: 30%;">${pump.serial_no}</td>
+                            `;
+                            tbody.appendChild(tr);
+                        });
+                    }
+                    alert(data.message);
+                    // Reset the new records table to its default state
+                    solarPumpTable.innerHTML = defaultTableHTML;
+
+                    // If the total records equal or exceed the pump_qunt, hide the new records section
+                    if(data.solar_pumps && data.solar_pumps.length >= pumpQunt) {
+                        const newRecordsSection = document.getElementById('new-records');
+                        if(newRecordsSection) {
+                            newRecordsSection.style.display = "none";
+                        }
+                    }
+                } else {
+                    alert(data.error || data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert("An error occurred while saving data.");
+            });
+        });
+    }
+});
+
+// The addRow function remains the same as before to dynamically add new rows and validate
+function addRow(button) {
+    const table = document.getElementById('solar-pump-table');
+    // Number of new rows added (excluding the header)
+    const newRecordsCount = table.rows.length - 1;
+
+    // Get the maximum allowed pumps from the hidden input
+    const pumpQuntInput = document.getElementById('pump_qunt');
+    const pumpQunt = pumpQuntInput ? parseInt(pumpQuntInput.value) : 0;
+
+    // Get the current number of existing records from the main records table
+    let existingRecords = 0;
+    const existingTable = document.getElementById('records-table');
+    if (existingTable) {
+        existingRecords = existingTable.querySelectorAll("tbody tr").length;
+    }
+
+    // Total count = existing records + new rows
+    const totalRows = existingRecords + newRecordsCount;
+    if (totalRows >= pumpQunt) {
+        alert(`Cannot add more rows. Maximum allowed rows: ${pumpQunt}`);
+        return;
+    }
+
+    // Insert a new row at the end of the new records table
+    const row = table.insertRow(-1);
+    const srNo = newRecordsCount + 1;
+    const cells = [
+        `<td style="text-align: center;">${srNo}</td>`,
+        '<td class="space"><input style="text-align: center;" type="text" class="form-control" name="pump_company[]" required></td>',
+        `<td class="space">
+            <div class="input-group">
+                <input style="text-align: center;" type="text" class="form-control" name="pump_hp[]" required>
+                <span class="input-group-text">HP</span>
+            </div>
+        </td>`,
+        '<td class="space"><input style="text-align: center;" type="text" class="form-control" name="serial_no[]" required></td>',
+        '<td class="space"><button type="button" style="width: 100%;" onclick="addRow(this)">+</button></td>'
+    ];
+    row.innerHTML = cells.join('');
+
+    // Remove the add button from the previous last row so that only the latest row has the add button
+    button.parentElement.parentElement.removeChild(button.parentElement);
+}
+</script>
+
+<h1>Solar Pump Entry Form</h1>
+{% if error %}
+    <p style="color: red;">{{ error }}</p>
+{% endif %}
+
+<!-- Form for selecting company -->
+<form id="company-form" method="post">
+    {% csrf_token %}
+    <label class="d-block text-center"><b>Select Entity</b></label>
+    <div class="d-flex justify-content-center">
+        <div class="btn-group" data-toggle="buttons" style="padding-left: 170px;">
+            <label class="btn btn-outline-success {% if entity_type == 'customer' %}active{% endif %}" id="new_customer">
+               <input type="radio" name="entity_type" value="customer" {% if entity_type == 'customer' %}checked{% endif %}>
+                <b>New Consumer</b>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+            </label>
+            <label class="btn btn-outline-success {% if entity_type == 'ext_customer' %}active{% endif %}" id="existing_customer">
+                <input type="radio" name="entity_type" value="ext_customer" {% if entity_type == 'ext_customer' %}checked{% endif %}>
+                <b>Existing Consumer</b>
+            </label>
+             <!-- Refresh Button -->
+<!--        <button type="button" class="btn btn-outline-primary ml-2" onclick="refreshPage()"><i class="fa fa-refresh" style="font-size:30px;color:red"></i></button>-->
+<!--            <button type="button" onclick="refreshPage()" style="border: none; background: none; padding: 0; cursor: pointer;">-->
+<!--    <i class="fa fa-refresh" style="font-size: 30px; color: red;" onmousedown="this.style.opacity=0.2" onmouseup="this.style.opacity=1"></i>-->
+<!--</button>-->
+        </div>
+
+<!--    <button type="button" onclick="refreshPage()" style="border: none; background: none; padding: 10; cursor: pointer; display: inline-flex; align-items: center;">-->
+<!--    <i class="fa fa-refresh" style="font-size: 30px; color: blue;" onmousedown="this.style.opacity=0.6" onmouseup="this.style.opacity=1"></i>-->
+<!--</button>-->
+        <button type="button" onclick="refreshPage()" style="border: none; background: none;  padding-left: 20px; cursor: pointer; display: inline-flex; align-items: center;">
+    <i class="fa fa-refresh refresh-icon" style="font-size: 30px; color: blue;"></i>
+</button>
+
+<style>
+    .refresh-icon:active {
+        transform: rotate(360deg);
+        transition: transform 0.50s ease-in-out;
+    }
+</style>
+
+</div>
+    <script>
+    // Function to refresh the page while keeping the selected entity type
+    function refreshPage() {
+        let selectedEntity = document.querySelector("input[name='entity_type']:checked").value;
+        localStorage.setItem("selected_entity", selectedEntity);
+        location.reload();
+    }
+    document.addEventListener("DOMContentLoaded", function() {
+        const newConsumerRadio = document.getElementById("new_customer");
+        const existingConsumerRadio = document.getElementById("existing_customer");
+        const companyDropdown = document.getElementById("comp_name");
+        const dropdownLabel = document.getElementById("dropdown-label");
+
+        // Store previously selected entity type
+        let selectedEntity = localStorage.getItem("selected_entity") || "customer";
+        // document.querySelector("input[name='entity_type'][value='customer']").checked = selectedEntity === "customer";
+        // document.querySelector("input[name='entity_type'][value='ext_customer']").checked = selectedEntity === "ext_customer";
+
+         // Set the radio button based on the stored value
+        document.querySelector(`input[name='entity_type'][value='${selectedEntity}']`).checked = true;
+
+        newConsumerRadio.classList.remove("active");
+        existingConsumerRadio.classList.remove("active");
+        if (selectedEntity === "customer") {
+            newConsumerRadio.classList.add("active");
+        } else {
+            existingConsumerRadio.classList.add("active");
+        }
+
+        const filteredCustomers = [
+            {% for customer in filtered_customers %}
+                { id: "{{ customer.Cust_id }}", name: "{{ customer.Comp_name }}" },
+            {% endfor %}
+        ];
+        const exactMatchCustomers = [
+            {% for customer in exact_match_customers %}
+                { id: "{{ customer.Cust_id }}", name: "{{ customer.Comp_name }}" },
+            {% endfor %}
+        ];
+
+        // Function to update dropdown list based on radio selection with a placeholder
+        function updateDropdown(customers, placeholder) {
+            companyDropdown.innerHTML = '<option value="">' + placeholder + '</option>';
+            customers.forEach(customer => {
+                const option = document.createElement("option");
+                option.value = customer.id;
+                option.textContent = customer.name;
+                companyDropdown.appendChild(option);
+            });
+        }
+
+        // Hide containers: company details, existing records, and new records sections.
+        function hideContainers() {
+            const companyDetails = document.getElementById("company-details");
+            if (companyDetails) { companyDetails.style.display = "none"; }
+            const existingRecords = document.getElementById("existing-records");
+            if (existingRecords) { existingRecords.style.display = "none"; }
+            const newRecords = document.getElementById("new-records");
+            if (newRecords) { newRecords.style.display = "none"; }
+        }
+
+        // Default load based on selected entity type and update the label and dropdown placeholder
+        if (selectedEntity === "customer") {
+            dropdownLabel.innerHTML = "<b>Select Consumer:</b>";
+            updateDropdown(filteredCustomers, "Select Consumer");
+        } else {
+            dropdownLabel.innerHTML = "<b>Select Existing Consumer:</b>";
+            updateDropdown(exactMatchCustomers, "Select Existing Consumer");
+        }
+
+        // When switching radio button, reset dropdown, update label/placeholder, and hide all related containers
+        newConsumerRadio.addEventListener("click", function() {
+            localStorage.setItem("selected_entity", "customer");
+            dropdownLabel.innerHTML = "<b>Select Consumer:</b>";
+            updateDropdown(filteredCustomers, "Select Consumer");
+            companyDropdown.selectedIndex = 0;
+            hideContainers();
+        });
+        existingConsumerRadio.addEventListener("click", function() {
+            localStorage.setItem("selected_entity", "ext_customer");
+            dropdownLabel.innerHTML = "<b>Select Existing Consumer:</b>";
+            updateDropdown(exactMatchCustomers, "Select Existing Consumer");
+            companyDropdown.selectedIndex = 0;
+            hideContainers();
+        });
+    });
+
+    </script>
+<!--<script>-->
+<!--document.addEventListener("DOMContentLoaded", function() {-->
+<!--    const newRecordsForm = document.getElementById('new-records-form');-->
+<!--    const solarPumpTable = document.getElementById('solar-pump-table');-->
+<!--    // Store the initial HTML of the table (header + default row)-->
+<!--    const defaultTableHTML = solarPumpTable.innerHTML;-->
+
+<!--    if(newRecordsForm) {-->
+<!--        newRecordsForm.addEventListener('submit', function(e) {-->
+<!--            e.preventDefault();  // Prevent normal form submission-->
+<!--            const formData = new FormData(newRecordsForm);-->
+<!--            fetch(newRecordsForm.action, {-->
+<!--                method: "POST",-->
+<!--                body: formData,-->
+<!--                headers: {-->
+<!--                    "X-Requested-With": "XMLHttpRequest"-->
+<!--                },-->
+<!--            })-->
+<!--            .then(response => response.json())-->
+<!--            .then(data => {-->
+<!--                if(data.success) {-->
+<!--                    // Update the existing records table with the new pump entries-->
+<!--                    const tbody = document.querySelector("#records-table tbody");-->
+<!--                    if(tbody && data.solar_pumps) {-->
+<!--                        tbody.innerHTML = "";-->
+<!--                        data.solar_pumps.forEach((pump, index) => {-->
+<!--                            const tr = document.createElement("tr");-->
+<!--                            tr.setAttribute("data-id", pump.id);-->
+<!--                            tr.innerHTML = `-->
+<!--                                <td style="width: 10%;">${index + 1}</td>-->
+<!--                                <td class="data-cell" style="width: 30%;">${pump.pump_company}</td>-->
+<!--                                <td class="data-cell" style="width: 30%;">${pump.pump_hp}</td>-->
+<!--                                <td class="data-cell" style="width: 30%;">${pump.serial_no}</td>-->
+<!--                            `;-->
+<!--                            tbody.appendChild(tr);-->
+<!--                        });-->
+<!--                    }-->
+<!--                    alert(data.message);-->
+<!--                    // Reset the new records table to its default state-->
+<!--                    solarPumpTable.innerHTML = defaultTableHTML;-->
+<!--                } else {-->
+<!--                    alert(data.error || data.message);-->
+<!--                }-->
+<!--            })-->
+<!--            .catch(error => {-->
+<!--                console.error('Error:', error);-->
+<!--                alert("An error occurred while saving data.");-->
+<!--            });-->
+<!--        });-->
+<!--    }-->
+<!--});-->
+<!--</script>-->
+
+    {% if messages %}
+        <script>
+            {% for message in messages %}
+                alert("{{ message|escapejs }}");
+            {% endfor %}
+        </script>
+    {% endif %}
+
+    <!-- Updated label for the dropdown -->
+    <label id="dropdown-label" for="comp_name"><b>Select Company :</b></label>
+    <select id="comp_name" class="form-control" name="comp_name" onchange="loadDetails()">
+        <option value="">Select a company</option>
+        {% for customer in customers %}
+            <option value="{{ customer.Cust_id }}" {% if selected_customer and selected_customer.Cust_id == customer.Cust_id %}selected{% endif %}>
+                {{ customer.Comp_name }}
+            </option>
+        {% endfor %}
+    </select>
+    <br>
+
+    <!-- Company Details Section -->
+    {% if selected_customer %}
+    <div id="company-details">
+        <h3 style="padding-left: 2%;">Selected Company Details :</h3>
+        <table border="1" style="width: 80%;" align="center">
+            <tr style="background: lightgrey;">
+                <th style="text-align: center;">Company Name</th>
+                <th style="text-align: center;">Pump Quantity</th>
+                <th style="text-align: center;">Pump Warranty</th>
+            </tr>
+            <tr>
+                <th style="text-align: center; width: 30%;">{{ selected_customer.Comp_name }}</th>
+                <td style="text-align: center; width: 30%;">{{ selected_customer.pump_qunt }} Nos.</td>
+                <td style="text-align: center; width: 30%;">{{ selected_customer.pump_warranty }} Year</td>
+            </tr>
+        </table>
+    </div>
+    {% endif %}
+
+
+    <!-- Hidden field for consumer_id added for update operations -->
+    {% if selected_customer %}
+        <input type="hidden" id="consumer_id" name="consumer_id" value="{{ selected_customer.Cust_id }}">
+    {% endif %}
+
+    <br>
+
+<!--    &lt;!&ndash; Existing Records Section &ndash;&gt;-->
+<!--    {% if solar_pumps %}-->
+<!--    <div id="existing-records">-->
+<!--        <h3 style="padding-left: 2%;">Existing Solar Pumps Records :</h3>-->
+<!--        {% if entity_type == "ext_customer" %}-->
+<!--        <div id="global-edit-controls" style="text-align:center; margin-bottom:10px;">-->
+<!--            <button id="edit-all-btn" type="button"><i class="fa fa-edit" style="font-size:18px"></i>&nbsp;  Edit All</button>-->
+<!--            <button id="save-all-btn" type="button" style="display:none; background: green;"><i class="fa fa-save" style="font-size:20px"></i>&nbsp;  Save Changes</button>-->
+<!--        </div>-->
+<!--        {% endif %}-->
+<!--&lt;!&ndash;        <table border="1" id="records-table" style="width: 80%;" align="center">&ndash;&gt;-->
+<!--&lt;!&ndash;            <thead>&ndash;&gt;-->
+<!--&lt;!&ndash;                <tr style="text-align: center; background: lightgrey;">&ndash;&gt;-->
+<!--&lt;!&ndash;                    <th>Sr No</th>&ndash;&gt;-->
+<!--&lt;!&ndash;                    <th>Pump Company</th>&ndash;&gt;-->
+<!--&lt;!&ndash;                    <th>Pump HP</th>&ndash;&gt;-->
+<!--&lt;!&ndash;                    <th>Serial No</th>&ndash;&gt;-->
+<!--&lt;!&ndash;                </tr>&ndash;&gt;-->
+<!--&lt;!&ndash;            </thead>&ndash;&gt;-->
+<!--&lt;!&ndash;            <tbody>&ndash;&gt;-->
+<!--&lt;!&ndash;                {% for pump in solar_pumps %}&ndash;&gt;-->
+<!--&lt;!&ndash;                <tr data-id="{{ pump.id }}">&ndash;&gt;-->
+<!--&lt;!&ndash;                    <td style="text-align: center; width: 10%;">{{ forloop.counter }}</td>&ndash;&gt;-->
+<!--&lt;!&ndash;&lt;!&ndash;                    <td class="data-cell" style="width: 30%;">{{ pump.pump_company }}</td>&ndash;&gt;&ndash;&gt;-->
+<!--&lt;!&ndash;&lt;!&ndash;                    <td class="data-cell" style="width: 30%;">{{ pump.pump_hp }}</td>&ndash;&gt;&ndash;&gt;-->
+<!--&lt;!&ndash;&lt;!&ndash;                    <td class="data-cell" style="width: 30%;">{{ pump.serial_no }}</td>&ndash;&gt;&ndash;&gt;-->
+<!--&lt;!&ndash;                     <td class="data-cell" style="padding-left: 10%; width: 30%;">{{ pump.pump_company }}</td>&ndash;&gt;-->
+<!--&lt;!&ndash;                     <td class="data-cell" style="padding-left: 12%; width: 30%;">{{ pump.pump_hp }}</td>&ndash;&gt;-->
+<!--&lt;!&ndash;                     <td class="data-cell" style="padding-left: 12%; width: 30%;">{{ pump.serial_no }}</td>&ndash;&gt;-->
+<!--&lt;!&ndash;                </tr>&ndash;&gt;-->
+<!--&lt;!&ndash;                {% endfor %}&ndash;&gt;-->
+<!--&lt;!&ndash;            </tbody>&ndash;&gt;-->
+<!--&lt;!&ndash;        </table>&ndash;&gt;-->
+<!--        <table border="1" id="records-table" style="width: 80%; margin: auto; text-align: center;">-->
+<!--    <thead>-->
+<!--        <tr style="background: lightgrey;">-->
+<!--            <th>Sr No</th>-->
+<!--            <th>Pump Company</th>-->
+<!--            <th>Pump HP</th>-->
+<!--            <th>Serial No</th>-->
+<!--        </tr>-->
+<!--    </thead>-->
+<!--    <tbody>-->
+<!--        {% for pump in solar_pumps %}-->
+<!--        <tr data-id="{{ pump.id }}">-->
+<!--            <td style="width: 10%;">{{ forloop.counter }}</td>-->
+<!--            <td class="data-cell" style="width: 30%;">{{ pump.pump_company }}</td>-->
+<!--            <td class="data-cell" style="width: 30%;">{{ pump.pump_hp }}</td>-->
+<!--            <td class="data-cell" style="width: 30%;">{{ pump.serial_no }}</td>-->
+<!--        </tr>-->
+<!--        {% endfor %}-->
+<!--    </tbody>-->
+<!--</table>-->
+<!--&lt;!&ndash; Hidden input to store deleted row IDs &ndash;&gt;-->
+<!--    </div>-->
+<!--    {% endif %}-->
+
+{% if solar_pumps %}
+    <div id="existing-records">
+        <h3 style="padding-left: 2%;">Existing Solar Pumps Records :</h3>
+        {% if entity_type == "ext_customer" %}
+        <div id="global-edit-controls" style="text-align:center; margin-bottom:10px;">
+            <button id="edit-all-btn" type="button"><i class="fa fa-edit" style="font-size:18px"></i>&nbsp;  Edit All</button>
+            <button id="save-all-btn" type="button" style="display:none; background: green;"><i class="fa fa-save" style="font-size:20px"></i>&nbsp;  Save Changes</button>
+        </div>
+        {% endif %}
+        <table border="1" id="records-table" style="width: 80%; margin: auto; text-align: center;">
+            <thead>
+                <tr style="background: lightgrey;">
+                    <th>Sr No</th>
+                    <th>Pump Company</th>
+                    <th>Pump HP</th>
+                    <th>Serial No</th>
+                    <th style="display: none;">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for pump in solar_pumps %}
+                <tr data-id="{{ pump.id }}">
+                    <td style="width: 10%;">{{ forloop.counter }}</td>
+                    <td class="data-cell" style="width: 25%;">{{ pump.pump_company }}</td>
+                    <td class="data-cell" style="width: 25%;">{{ pump.pump_hp }}  &nbsp;<b>HP</b></td>
+                    <td class="data-cell" style="width: 25%;">{{ pump.serial_no }}</td>
+                  <td class="delete-cell" style="display: none; border: none; text-align: center; vertical-align: middle;">
+                    <button class="delete-btn btn btn-primary refresh-icon" type="button"
+                        style="color: black; width: 90px; height: 35px; border: none; border-radius: 5px; font-weight: bold;">
+                        <i class="fa fa-trash-o" style="font-size: 20px; color: red;"></i> Delete
+                    </button>
+                  </td>
+
+
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+{% endif %}
+</form>
+<br>
+
+<!--&lt;!&ndash; New Records Section &ndash;&gt;-->
+<!--{% if allow_new_records %}-->
+<!--<div id="new-records">-->
+<!--    <h3 style="padding-left: 2%;">Enter New Solar Pump Details</h3>-->
+<!--    <form id="new-records-form" method="post" action="{% url 'solar_pump_entry' %}">-->
+<!--        {% csrf_token %}-->
+<!--        <fieldset>-->
+<!--            <table id="solar-pump-table" border="0">-->
+<!--                <tr class="space" align="center" style="background: lightgrey;">-->
+<!--                    <th class="space" style="text-align: center;">Sr No</th>-->
+<!--                    <th class="space" style="text-align: center;">Pump Company</th>-->
+<!--                    <th class="space" style="text-align: center;">Pump HP</th>-->
+<!--                    <th class="space" style="text-align: center;">Serial No</th>-->
+<!--                </tr>-->
+<!--                <tr class="space">-->
+<!--                    <td style="text-align: center;">1</td>-->
+<!--                    <td class="space"><input type="text" style="text-align: center;" class="form-control" name="pump_company[]" required></td>-->
+<!--                    <td class="space">-->
+<!--                        <div class="input-group">-->
+<!--                            <input type="text" style="text-align: center;" class="form-control" name="pump_hp[]" required>-->
+<!--                            <span class="input-group-text">HP</span>-->
+<!--                        </div>-->
+<!--                    </td>-->
+<!--                    <td class="space"><input style="text-align: center;" type="text" class="form-control" name="serial_no[]" required></td>-->
+<!--                    <td class="space"><button type="button" style="width: 100%;" onclick="addRow(this)">+</button></td>-->
+<!--                </tr>-->
+<!--            </table>-->
+<!--            <input type="hidden" name="consumer_id" value="{{ selected_customer.Cust_id }}">-->
+<!--            <input type="hidden" name="consumer_name" value="{{ selected_customer.Comp_name }}">-->
+<!--        </fieldset>-->
+<!--        <span align="center"> <button type="submit">Save</button> </span>-->
+<!--    </form>-->
+<!--</div>-->
+<!--{% endif %}-->
+<!-- New Records Section -->
+{% if allow_new_records and selected_customer %}
+<div id="new-records">
+    <h3 style="padding-left: 2%;">Enter New Solar Pump Details</h3>
+    <form id="new-records-form" method="post" action="{% url 'solar_pump_entry' %}">
+        {% csrf_token %}
+        <fieldset>
+              <!-- Hidden input for pump quantity -->
+            <input type="hidden" id="pump_qunt" value="{{ selected_customer.pump_qunt|default:0 }}">
+
+            <table id="solar-pump-table" border="0">
+                <tr class="space" align="center" style="background: lightgrey;">
+                    <th class="space" style="text-align: center;">Sr No</th>
+                    <th class="space" style="text-align: center;">Pump Company</th>
+                    <th class="space" style="text-align: center;">Pump HP</th>
+                    <th class="space" style="text-align: center;">Serial No</th>
+                </tr>
+                <tr class="space">
+                    <td style="text-align: center;">1</td>
+                    <td class="space"><input type="text" style="text-align: center;" class="form-control" name="pump_company[]" required></td>
+                    <td class="space">
+                        <div class="input-group">
+                            <input type="text" style="text-align: center;" class="form-control" name="pump_hp[]" required>
+                            <span class="input-group-text">HP</span>
+                        </div>
+                    </td>
+                    <td class="space"><input style="text-align: center;" type="text" class="form-control" name="serial_no[]" required></td>
+                    <td class="space"><button type="button" style="width: 100%;" onclick="addRow(this)">+</button></td>
+                </tr>
+            </table>
+            <input type="hidden" name="consumer_id" value="{{ selected_customer.Cust_id }}">
+            <input type="hidden" name="consumer_name" value="{{ selected_customer.Comp_name }}">
+        </fieldset>
+        <div align="center">
+            <button type="submit">Save</button>
+        </div>
+    </form>
+</div>
+{% endif %}
+{% if messages %}
+        <script>
+            {% for message in messages %}
+                alert("{{ message|escapejs }}");
+            {% endfor %}
+        </script>
+{% endif %}
+
+
+{% if entity_type == "ext_customer" %}
+<!--<script>-->
+<!--document.addEventListener("DOMContentLoaded", function () {-->
+<!--  const editAllBtn = document.getElementById("edit-all-btn");-->
+<!--  const saveAllBtn = document.getElementById("save-all-btn");-->
+<!--  const table = document.getElementById("records-table");-->
+
+<!--  // Apply padding-left to table cells initially-->
+<!--  function applyPadding() {-->
+<!--    table.querySelectorAll("tbody tr .data-cell").forEach(cell => {-->
+<!--      cell.style.paddingLeft = "10px";  // Add padding-->
+<!--    });-->
+<!--  }-->
+
+<!--  if (editAllBtn) {-->
+<!--    editAllBtn.addEventListener("click", function () {-->
+<!--      // Convert table cells to input fields and remove padding-left-->
+<!--      table.querySelectorAll("tbody tr").forEach(row => {-->
+<!--        row.querySelectorAll(".data-cell").forEach(cell => {-->
+<!--          const value = cell.innerText.trim();-->
+<!--          const input = document.createElement("input");-->
+<!--          input.type = "text";-->
+<!--          input.value = value;-->
+<!--          input.classList.add("form-control", "text-center");-->
+<!--          input.style.width = "100%"; // Full width input-->
+<!--          input.style.paddingLeft = "0px"; // Remove padding-left-->
+
+<!--          cell.innerHTML = "";-->
+<!--          cell.appendChild(input);-->
+<!--        });-->
+<!--      });-->
+
+<!--      editAllBtn.style.display = "none";-->
+<!--      saveAllBtn.style.display = "inline-block";-->
+<!--    });-->
+<!--  }-->
+
+<!--  if (saveAllBtn) {-->
+<!--    saveAllBtn.addEventListener("click", function () {-->
+<!--      const updates = [];-->
+<!--      table.querySelectorAll("tbody tr").forEach(row => {-->
+<!--        const id = row.dataset.id;-->
+<!--        const inputs = row.querySelectorAll("input");-->
+<!--        if (inputs.length >= 3) {-->
+<!--          updates.push({-->
+<!--            id: id,-->
+<!--            pump_company: inputs[0].value,-->
+<!--            pump_hp: inputs[1].value,-->
+<!--            serial_no: inputs[2].value-->
+<!--          });-->
+<!--        }-->
+<!--      });-->
+
+<!--      fetch("/customer/update_solar_pump/", {-->
+<!--        method: "POST",-->
+<!--        headers: {-->
+<!--          "Content-Type": "application/json",-->
+<!--          "X-CSRFToken": document.querySelector("[name=csrfmiddlewaretoken]").value-->
+<!--        },-->
+<!--        body: JSON.stringify({updates: updates})-->
+<!--      }).then(response => response.json())-->
+<!--        .then(data => {-->
+<!--          if (data.success) {-->
+<!--            alert(data.message);-->
+<!--            table.querySelectorAll("tbody tr").forEach(row => {-->
+<!--              row.querySelectorAll(".data-cell").forEach(cell => {-->
+<!--                const input = cell.querySelector("input");-->
+<!--                if (input) {-->
+<!--                  cell.innerHTML = input.value;-->
+
+<!--                }-->
+<!--              });-->
+<!--            });-->
+
+<!--            editAllBtn.style.display = "inline-block";-->
+<!--            saveAllBtn.style.display = "none";-->
+<!--          } else {-->
+<!--            alert("Update failed: " + data.message);-->
+<!--          }-->
+<!--        })-->
+<!--        .catch(error => {-->
+<!--          alert("Error updating records: " + error);-->
+<!--        });-->
+<!--    });-->
+<!--  }-->
+
+<!--  // Call this function initially to apply padding when showing data-->
+<!--  applyPadding();-->
+<!--});-->
+<!--</script>-->
+
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  const editAllBtn = document.getElementById("edit-all-btn");
+  const saveAllBtn = document.getElementById("save-all-btn");
+  const table = document.getElementById("records-table");
+
+  let deletedRows = [];
+
+
+  function applyPadding() {
+    table.querySelectorAll("tbody tr .data-cell").forEach(cell => {
+      cell.style.paddingLeft = "10px";
+
+    });
+  }
+
+  // Function to update the serial numbers after hiding a row
+  function updateSerialNumbers() {
+    let srNoCells = table.querySelectorAll("tbody tr:not([hidden]) .sr-no");
+    srNoCells.forEach((cell, index) => {
+      cell.textContent = index + 1;
+    });
+  }
+
+  if (editAllBtn) {
+    editAllBtn.addEventListener("click", function () {
+      table.querySelectorAll("tbody tr").forEach(row => {
+        row.querySelectorAll(".data-cell").forEach(cell => {
+          const value = cell.innerText.trim();
+          const input = document.createElement("input");
+          input.type = "text";
+          input.value = value;
+          input.classList.add("form-control", "text-center");
+          input.style.width = "100%";
+          input.style.paddingLeft = "0px";
+          cell.innerHTML = "";
+          cell.appendChild(input);
+        });
+
+        // Show delete button
+        row.querySelector(".delete-cell").style.display = "block";
+      });
+
+      editAllBtn.style.display = "none";
+      saveAllBtn.style.display = "inline-block";
+    });
+  }
+
+
+  table.addEventListener("click", function (event) {
+    if (event.target.classList.contains("delete-btn")) {
+      const row = event.target.closest("tr");
+      row.style.display = "none"; // Hide row
+      deletedRows.push(row.dataset.id); // Store ID for deletion
+
+    }
+  });
+
+  if (saveAllBtn) {
+    saveAllBtn.addEventListener("click", function () {
+      const updates = [];
+
+
+      table.querySelectorAll("tbody tr").forEach(row => {
+        if (row.style.display !== "none") {  // Only save visible rows
+
+
+          const id = row.dataset.id;
+          const inputs = row.querySelectorAll("input");
+          if (inputs.length >= 3) {
+            updates.push({
+              id: id,
+              pump_company: inputs[0].value,
+              // pump_hp: inputs[1].value,
+              pump_hp: inputs[1].value.replace(/\s*HP$/, ""),  // Remove " HP"
+              serial_no: inputs[2].value
+            });
+          }
+        }
+      });
+
+      // Get the consumer ID from the hidden input field (if available)
+      const consumerId = document.getElementById("consumer_id") ? document.getElementById("consumer_id").value : "";
+
+      fetch("/customer/update_solar_pump/", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-CSRFToken": document.querySelector("[name=csrfmiddlewaretoken]").value
+        },
+        // body: JSON.stringify({ updates: updates, deletes: deletedRows })  // Send both updates and deletions
+        body: JSON.stringify({ updates: updates, deletes: deletedRows, consumer_id: consumerId })
+      }).then(response => response.json())
+        .then(data => {
+          if (data.success) {
+            alert(data.message);
+            location.reload();  // Reload page to reflect changes
+          } else {
+            alert("Update failed: " + data.message);
+          }
+        })
+        .catch(error => {
+          alert("Error updating records: " + error);
+        });
+    });
+  }
+
+  applyPadding();
+});
+</script>
+
+
+
+
+<!--<script>-->
+<!--document.addEventListener("DOMContentLoaded", function () {-->
+<!--  const editAllBtn = document.getElementById("edit-all-btn");-->
+<!--  const saveAllBtn = document.getElementById("save-all-btn");-->
+<!--  const table = document.getElementById("records-table");-->
+
+<!--  let deletedRows = [];-->
+
+<!--  function applyPadding() {-->
+<!--    table.querySelectorAll("tbody tr .data-cell").forEach(cell => {-->
+<!--      cell.style.paddingLeft = "10px";-->
+<!--    });-->
+<!--  }-->
+
+<!--  if (editAllBtn) {-->
+<!--    editAllBtn.addEventListener("click", function () {-->
+<!--      table.querySelectorAll("tbody tr").forEach(row => {-->
+<!--        row.querySelectorAll(".data-cell").forEach(cell => {-->
+<!--          const value = cell.innerText.trim();-->
+<!--          const input = document.createElement("input");-->
+<!--          input.type = "text";-->
+<!--          input.value = value;-->
+<!--          input.classList.add("form-control", "text-center");-->
+<!--          input.style.width = "100%";-->
+<!--          input.style.paddingLeft = "0px";-->
+<!--          cell.innerHTML = "";-->
+<!--          cell.appendChild(input);-->
+<!--        });-->
+
+<!--        // Show delete button-->
+<!--        row.querySelector(".delete-cell").style.display = "block";-->
+<!--      });-->
+
+<!--      editAllBtn.style.display = "none";-->
+<!--      saveAllBtn.style.display = "inline-block";-->
+<!--    });-->
+<!--  }-->
+
+<!--  table.addEventListener("click", function (event) {-->
+<!--    if (event.target.classList.contains("delete-btn")) {-->
+<!--      const row = event.target.closest("tr");-->
+<!--      row.style.display = "none"; // Hide row-->
+<!--      deletedRows.push(row.dataset.id); // Store ID for deletion-->
+<!--    }-->
+<!--  });-->
+
+<!--  if (saveAllBtn) {-->
+<!--    saveAllBtn.addEventListener("click", function () {-->
+<!--      const updates = [];-->
+<!--      table.querySelectorAll("tbody tr").forEach(row => {-->
+<!--        if (row.style.display !== "none") {  // Only save visible rows-->
+<!--          const id = row.dataset.id;-->
+<!--          const inputs = row.querySelectorAll("input");-->
+<!--          if (inputs.length >= 3) {-->
+<!--            updates.push({-->
+<!--              id: id,-->
+<!--              pump_company: inputs[0].value,-->
+<!--              pump_hp: inputs[1].value,-->
+<!--              serial_no: inputs[2].value-->
+<!--            });-->
+<!--          }-->
+<!--        }-->
+<!--      });-->
+
+<!--      fetch("/customer/update_solar_pump/", {-->
+<!--        method: "POST",-->
+<!--        headers: {-->
+<!--          "Content-Type": "application/json",-->
+<!--          "X-CSRFToken": document.querySelector("[name=csrfmiddlewaretoken]").value-->
+<!--        },-->
+<!--        body: JSON.stringify({ updates: updates, deletes: deletedRows })  // Send both updates and deletions-->
+<!--      }).then(response => response.json())-->
+<!--        .then(data => {-->
+<!--          if (data.success) {-->
+<!--            alert(data.message);-->
+<!--            location.reload();  // Reload page to reflect changes-->
+<!--          } else {-->
+<!--            alert("Update failed: " + data.message);-->
+<!--          }-->
+<!--        })-->
+<!--        .catch(error => {-->
+<!--          alert("Error updating records: " + error);-->
+<!--        });-->
+<!--    });-->
+<!--  }-->
+
+<!--  applyPadding();-->
+<!--});-->
+<!--</script>-->
+
+    {% endif %}
+{% endblock %}

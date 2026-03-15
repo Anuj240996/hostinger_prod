@@ -1,0 +1,342 @@
+{% extends 'partials/base.html' %}
+{% load static %}
+{% load widget_tweaks %}
+{% block title %}Order Page{% endblock %}
+{% block content %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@mdi/font/css/materialdesignicons.min.css">
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+
+<br>
+<h3>Create Favorite List:</h3>
+<form id="favoriteForm">
+<!--  <div class="form-row">-->
+<!--    &lt;!&ndash; Create Favorite List Button &ndash;&gt;-->
+<!--    <button type="button" id="createFavoriteListBtn" class="btn btn-primary" style="width: 200px;">Create Favorite List</button>-->
+
+<!--    &lt;!&ndash; Favorite List Name Input (Hidden by default) &ndash;&gt;-->
+<!--    <div id="favoriteListControls" style="display: none; padding-left: 20px;">-->
+<!--      <input type="text" id="favoriteListName" placeholder="Enter favorite list name" class="form-control text-capitalize" style="display: inline-block; width: 400px;">&nbsp;&nbsp;&nbsp;-->
+<!--      <button type="button" id="submitFavoriteListBtn" class="btn btn-success">Submit List</button>-->
+<!--    </div>-->
+<!--  </div>-->
+
+  <!-- Category and Subcategory Filters -->
+  <div class="form-row mt-3">
+    <div class="col">
+      <select id="categoryDropdown" class="form-control">
+        <option value="all">All Categories</option>
+        {% for category in categories %}
+          <option value="{{ category.id }}">{{ category.name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col">
+      <select id="subcategoryDropdown" class="form-control" disabled>
+        <option value="all">All Subcategories</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="stock-table mt-4">
+    <h4 id="stock-heading" align="center" style="color: blue;"></h4>
+    <div class="table-responsive">
+      <table id="yourDataTable" class="table table-hover table-center table-sm">
+        <thead class="thead-dark align-middle">
+          <tr class="text-center">
+            <th>Sr No</th>
+            <th><input type="checkbox" id="selectAllCheckbox"> Select All</th>
+            <th>Stock Name</th>
+            <th>Quantity</th>
+            <th>Category Name</th>
+            <th>SubCategory Name</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody id="stock-list">
+          <!-- Stock rows will be inserted here -->
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <br><br>
+  <div id="selectedStocksList" style="display: none;">
+    <h5>Selected Stocks for Favorite List:</h5>
+    <div class="table-responsive">
+      <table id="favoriteStockList" class="table table-hover table-center table-sm">
+        <thead class="thead-dark align-middle" align="center">
+          <tr>
+            <th>Select</th>
+            <th>Serial No</th>
+            <th>Stock Name</th>
+            <th>Category</th>
+            <th>Subcategory</th>
+            <th>Quantity</th>
+            <th class="text-left">Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          <!-- Rows will be dynamically added here -->
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <hr>
+<!--  <div class="form-row">-->
+<!--    &lt;!&ndash; Create Favorite List Button &ndash;&gt;-->
+<!--    <button type="button" id="createFavoriteListBtn" class="btn btn-primary" style="width: 200px;">Create Favorite List</button>-->
+
+<!--    &lt;!&ndash; Favorite List Name Input (Hidden by default) &ndash;&gt;-->
+<!--    <div id="favoriteListControls" style="display: none; padding-left: 20px;">-->
+<!--      <input type="text" id="favoriteListName" placeholder="Enter favorite list name" class="form-control text-capitalize" style="display: inline-block; width: 400px;">&nbsp;&nbsp;&nbsp;-->
+<!--      <button type="button" id="submitFavoriteListBtn" class="btn btn-success">Submit List</button>-->
+<!--    </div>-->
+<!--  </div>-->
+
+
+<div class="form-row align-items-center" id="favoriteRow">
+  <!-- Create Favorite List Button -->
+  <div class="col" id="buttonContainer">
+    <button type="button" id="createFavoriteListBtn" class="btn btn-primary w-100">
+      Create Favorite List
+    </button>
+  </div>
+
+  <!-- Favorite List Name Input + Submit (Hidden by default) -->
+  <div class="d-none w-100" id="favoriteListControls">
+    <div class="row w-100">
+      <div class="col-3">
+        <button type="button" id="createFavoriteListBtnSmall" class="btn btn-primary w-100">
+          Create Favorite List
+        </button>
+      </div>
+      <div class="col-6">
+        <input type="text" id="favoriteListName" placeholder="Enter favorite list name"
+          class="form-control text-capitalize w-100">
+      </div>
+      <div class="col-3">
+        <button type="button" id="submitFavoriteListBtn" class="btn btn-success w-100">
+          Submit List
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  document.getElementById("createFavoriteListBtn").addEventListener("click", function () {
+    // Hide the full-width button row
+    document.getElementById("buttonContainer").classList.add("d-none");
+
+    // Show the 3-column layout (button + textbox + submit)
+    document.getElementById("favoriteListControls").classList.remove("d-none");
+  });
+</script>
+
+
+<script>
+let selectedStocks = [];  // Array to hold selected stock details
+
+function applyBackgroundToSelectedRows() {
+  document.querySelectorAll('#stock-list tr').forEach(row => {
+    const checkbox = row.querySelector('input[type="checkbox"]');
+    if (checkbox && selectedStocks.some(stock => stock.id == checkbox.dataset.stockId)) {
+      row.style.backgroundColor = '#d3f4ff';
+      checkbox.checked = true;
+    } else {
+      row.style.backgroundColor = '';
+      checkbox.checked = false;
+    }
+  });
+}
+
+function loadSubcategories(categoryId) {
+  $('#subcategoryDropdown').empty().append('<option value="all">All Subcategories</option>').prop('disabled', true);
+  if (categoryId !== 'all') {
+    fetch(`/inventory/get-subcategories1/?category_id=${categoryId}`)
+      .then(response => response.json())
+      .then(data => {
+        data.forEach(subcategory => $('#subcategoryDropdown').append(new Option(subcategory.name, subcategory.id)));
+        $('#subcategoryDropdown').prop('disabled', false);
+      });
+  }
+}
+
+function loadStocks(categoryId = 'all', subcategoryId = 'all') {
+  const stockList = document.getElementById('stock-list');
+  stockList.innerHTML = '';
+
+  fetch(`/inventory/get-stocks-all/?category_id=${categoryId}&subcategory_id=${subcategoryId}`)
+    .then(response => response.json())
+    .then(data => {
+      stockList.innerHTML = '';
+      data.forEach((stock, index) => {
+        const row = `
+          <tr>
+            <td class="text-center">${index + 1}</td>
+            <td class="text-center">
+              <input type="checkbox" class="checkbox-input" data-stock-id="${stock.id}" data-stock-name="${stock.name}" data-stock-category="${stock.category}" data-stock-subcategory="${stock.subcategory}" onclick='toggleStockSelection(${stock.id}, ${JSON.stringify(stock.name)}, ${JSON.stringify(stock.category)}, ${JSON.stringify(stock.subcategory)})'>
+            </td>
+            <td class="text-capitalize">${stock.name}</td>
+            <td class="text-center">${stock.quantity}</td>
+
+
+            <td class="text-center">${stock.category}</td>
+            <td class="text-center">${stock.subcategory}</td>
+
+            <td class="text-center">${stock.status ? 'Active' : 'Inactive'}</td>
+            <td class="text-center">
+              <input type="hidden" min="1" value="1" class="form-control form-control-sm quantity-input" style="width:70px;" onchange="updateStockQuantity(${stock.id}, this.value)">
+            </td>
+          </tr>
+        `;
+        stockList.innerHTML += row;
+      });
+      applyBackgroundToSelectedRows();
+      updateSelectAllCheckbox();
+    });
+}
+
+function updateSelectAllCheckbox() {
+  const allCheckboxes = document.querySelectorAll('#stock-list input[type="checkbox"]');
+  const checkedCheckboxes = Array.from(allCheckboxes).filter(cb => cb.checked);
+  const selectAllCheckbox = document.getElementById('selectAllCheckbox');
+  selectAllCheckbox.checked = (allCheckboxes.length > 0 && checkedCheckboxes.length === allCheckboxes.length);
+}
+
+$('#categoryDropdown').on('change', function() {
+  const categoryId = $(this).val();
+  loadSubcategories(categoryId);
+  loadStocks(categoryId, 'all');
+});
+
+$('#subcategoryDropdown').on('change', function() {
+  const categoryId = $('#categoryDropdown').val();
+  const subcategoryId = $(this).val();
+  loadStocks(categoryId, subcategoryId);
+});
+
+document.addEventListener('DOMContentLoaded', function() {
+  document.getElementById('selectAllCheckbox').addEventListener('change', function() {
+    const isChecked = this.checked;
+    document.querySelectorAll('#stock-list input[type="checkbox"]').forEach(checkbox => {
+      const stockId = parseInt(checkbox.dataset.stockId);
+      const stockName = checkbox.dataset.stockName;
+      const stockCategory = checkbox.dataset.stockCategory;
+      const stockSubcategory = checkbox.dataset.stockSubcategory;
+      toggleStockSelection(stockId, stockName, stockCategory, stockSubcategory, isChecked);
+    });
+  });
+});
+
+function toggleStockSelection(stockId, stockName, stockCategory, stockSubcategory, isChecked = null) {
+  const checkbox = document.querySelector(`#stock-list input[data-stock-id="${stockId}"]`);
+  if (isChecked !== null) {
+    checkbox.checked = isChecked;
+  } else {
+    isChecked = checkbox.checked;
+  }
+
+  const quantityInput = checkbox.closest('tr').querySelector('.quantity-input');
+  const quantity = quantityInput ? parseInt(quantityInput.value) : 1;
+
+  if (isChecked) {
+    if (!selectedStocks.some(stock => stock.id === stockId)) {
+      selectedStocks.push({ id: stockId, name: stockName, category: stockCategory, subcategory: stockSubcategory, quantity: quantity });
+    } else {
+      // Update quantity if already selected
+      const stock = selectedStocks.find(s => s.id === stockId);
+      stock.quantity = quantity;
+    }
+  } else {
+    selectedStocks = selectedStocks.filter(stock => stock.id !== stockId);
+  }
+
+  displaySelectedStocks();
+  applyBackgroundToSelectedRows();
+}
+
+function updateStockQuantity(stockId, quantity) {
+  const stock = selectedStocks.find(s => s.id === stockId);
+  if (stock) stock.quantity = parseInt(quantity);
+  displaySelectedStocks();
+}
+
+function displaySelectedStocks() {
+  const tbody = document.querySelector('#favoriteStockList tbody');
+  tbody.innerHTML = '';
+  selectedStocks.forEach((stock, index) => {
+    const row = document.createElement('tr');
+    row.innerHTML = `
+      <td class="text-center">
+        <input type="checkbox" checked onchange="toggleStockSelection(${stock.id}, '${stock.name}', '${stock.category}', '${stock.subcategory}', this.checked)">
+      </td>
+      <td class="text-center">${index + 1}</td>
+      <td class="text-capitalize">${stock.name}</td>
+      <td class="text-center">${stock.category}</td>
+      <td class="text-center">${stock.subcategory}</td>
+<!--       <td class="text-center">${stock.quantity}</td>-->
+      <td class="text-center">
+        <input type="number" min="1" value="${stock.quantity}" class="form-control form-control-sm favorite-quantity" style="width:70px;" onchange="updateStockQuantity(${stock.id}, this.value)">
+      </td>
+      <td>
+        <img src="{% static 'images/letter-x (1).png' %}" class="remove-form-row" alt="Remove" style="cursor:pointer;width:15px;height:15px;" onclick="removeStock(${stock.id})">
+      </td>
+    `;
+    tbody.appendChild(row);
+  });
+  document.getElementById('selectedStocksList').style.display = selectedStocks.length > 0 ? 'block' : 'none';
+}
+
+function removeStock(stockId) {
+  selectedStocks = selectedStocks.filter(stock => stock.id !== stockId);
+  const stockCheckbox = document.querySelector(`#stock-list input[data-stock-id="${stockId}"]`);
+  if (stockCheckbox) stockCheckbox.checked = false;
+  displaySelectedStocks();
+}
+
+document.getElementById('createFavoriteListBtn').addEventListener('click', function() {
+  document.getElementById('favoriteListControls').style.display = 'block';
+});
+
+document.getElementById('submitFavoriteListBtn').addEventListener('click', function() {
+  const favoriteListName = document.getElementById('favoriteListName').value;
+  if (!favoriteListName || selectedStocks.length === 0) {
+    alert('Please provide a list name and select at least one stock.');
+    return;
+  }
+
+  fetch('/inventory/create-favorite-list/', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-CSRFToken': '{{ csrf_token }}'
+    },
+    body: JSON.stringify({ name: favoriteListName, stocks: selectedStocks })
+  })
+  .then(response => response.json())
+  .then(data => {
+    if (data.message && data.message.includes('already exists')) {
+      alert(data.message);
+      document.getElementById('favoriteListName').value = '';
+      document.getElementById('favoriteListName').focus();
+    } else {
+      alert(data.message || 'Favorite list created successfully');
+      document.getElementById('favoriteListName').value = '';
+      document.getElementById('favoriteListName').value = '';
+<!--      document.getElementById('submitFavoriteListBtn').style.display = 'none';-->
+      selectedStocks = [];
+      displaySelectedStocks();
+      loadStocks();
+    }
+  });
+});
+
+$(document).ready(function() {
+  loadStocks();
+});
+</script>
+</form>
+{% endblock content %}

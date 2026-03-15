@@ -1,0 +1,122 @@
+/* Style the label associated with the checkboxes */
+.checkbox-label {
+    display: inline-flex;
+    align-items: center; /* Align the label with the checkbox */
+    margin-left: 25px;
+
+    border: red;
+}
+
+/* Style the checkboxes */
+.checkbox-input {
+    width: 20px; /* Adjust the width of the checkboxes */
+    height: 20px; /* Adjust the height of the checkboxes */
+    margin-right: 15px; /* Adjust spacing between checkbox and label */
+    border: red;
+}
+
+/* Style the checkboxes when checked */
+.checkbox-input:checked + .checkbox-label {
+    color: #669999; /* Text color when checkbox is checked */
+}
+html, body {
+      min-height: 100%;
+
+      }
+      body, div, form, input, select, textarea, label, p {
+      padding: 0;
+      margin: 0;
+      outline: none;
+      font-family: Roboto, Arial, sans-serif;
+      font-size: 14px;
+      color: #212529;
+      line-height: 23px;
+      }
+      h2 {
+      position: absolute;
+      margin: 0;
+      font-size: 40px;
+      color: #fff;
+      z-index: 2;
+      line-height: 83px;
+      }
+      textarea {
+      width: calc(100% - 12px);
+      padding: 5px;
+      }
+      .testbox {
+      display: flex;
+      justify-content: center;
+      align-item1s: center;
+      height: inherit;
+      padding: 10px;
+      }
+      form {
+      width: 95%;
+      align: center;
+      padding: 20px;
+      border-radius: 6px;
+      background: #fff;
+      box-shadow: 0 0 20px  #669999;
+      margin: 0 auto;
+      }
+
+
+
+
+      input[type=radio], input[type=checkbox]  {
+      display: block;
+      }
+
+
+
+      .btn-block {
+      margin-top: 10px;
+      text-align: center;
+      }
+      button {
+      width: 150px;
+      padding: 10px;
+      border: none;
+      border-radius: 10px;
+      background:  #055160;
+      font-size: 16px;
+      color: #fff;
+      cursor: pointer;
+      }
+      button:hover {
+      background:  #a3c2c2;
+      }
+      /* Style the fieldset and legend */
+/* Style the fieldset element */
+fieldset {
+    border: 1px solid black; /* Border style for the fieldset */
+    border-radius: 5px; /* Rounded corners for the fieldset */
+    padding: 10px; /* Add some padding inside the fieldset */
+    margin: 5px 0; /* Adjust margin as needed */
+
+}
+
+/* Style the legend element within fieldset */
+legend {
+    font-weight: bold; /* Make the legend text bold */
+    font-size: 16px; /* Adjust the font size as needed */
+    color: #555; /* Text color for the legend */
+    margin-bottom: 0px; /* Adjust spacing between legend and fieldset */
+    margin-left: 10px;
+    margin-right: 15px;
+}
+/* Style the select element */
+select#userType {
+    width: 200px; /* Set the width as per your preference */
+    font-size: 14px; /* Set the font size for the select */
+}
+
+/* Style the option elements within the select */
+select#userType option {
+    font-size: 20px; /* Set the font size for the options */
+}
+
+
+
+

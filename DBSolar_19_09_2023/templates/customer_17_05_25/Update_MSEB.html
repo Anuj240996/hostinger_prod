@@ -1,0 +1,786 @@
+{% extends 'partials/base.html' %}
+{% block title %}Order Page{% endblock %}
+{% load static %}
+{% block content %}
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://code.jquery.com/ui/1.12.1/jquery-ui.min.js"></script>
+<link rel="stylesheet" href="https://code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
+
+<style>
+    /* Set fixed width for Ok and Cancel columns */
+    #mseb_table_body .ok-column,
+    #mseb_table_body .cancel-column {
+        width: 130px;
+    }
+
+    .checkmark {
+        width: 30px;
+        height: 30px;
+        text-align: center;
+        vertical-align: middle;
+        font-size: 25px;
+        color: green;
+        font-weight: bold;
+    }
+
+    /* Change color of 'Done' to green */
+    #mseb_table_body .status.Done {
+        color: green;
+    }
+
+    /* Change color of 'In Process' to yellow */
+    #mseb_table_body .status.in-process {
+        color: yellow;
+    }
+
+    /* Adjust table body row height */
+    #mseb_table_body td,
+    #mseb_table_body th {
+        padding: 10px; /* Adjust padding to control row height */
+    }
+
+    /* Resize checkboxes */
+    #mseb_table_body input[type="checkbox"] {
+        width: 20px; /* Adjust width */
+        height: 20px; /* Adjust height */
+    }
+
+    .light-blue-background {
+        background-color: lightblue;
+    }
+
+</style>
+
+<!--<script>-->
+<!--    // Define fieldNames globally with their corresponding display names-->
+<!--    var fieldNames = {-->
+<!--        'load_extension': 'Load Extension',-->
+<!--        'flisibility': 'Off-Line Feasibility',-->
+<!--        'quotation': 'Firm Quotation Generation',-->
+<!--        'sent_to_bill': 'Sent to Bill',-->
+<!--        'net_meter': 'Net Metering Procedure',-->
+<!--        'flexibility': 'Technical Feasibility',-->
+<!--        'approval': 'Sanction/Approval',-->
+<!--        'meter_testing': 'Meter Testing',-->
+<!--        'agreement': 'Net Metering Agreement',-->
+<!--        'release': 'Meter Release',-->
+<!--        'installation_date': 'Meter Installation Date'-->
+<!--    };-->
+
+<!--    // Function to get CSRF token-->
+<!--    function getCookie(name) {-->
+<!--        let cookieValue = null;-->
+<!--        if (document.cookie && document.cookie !== '') {-->
+<!--            const cookies = document.cookie.split(';');-->
+<!--            for (let i = 0; i < cookies.length; i++) {-->
+<!--                const cookie = cookies[i].trim();-->
+<!--                if (cookie.substring(0, name.length + 1) === (name + '=')) {-->
+<!--                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));-->
+<!--                    break;-->
+<!--                }-->
+<!--            }-->
+<!--        }-->
+<!--        return cookieValue;-->
+<!--    }-->
+
+<!--    const csrfToken = getCookie('csrftoken');-->
+
+<!--    $(document).ready(function(){-->
+<!--        // Hide all rows except the first one initially-->
+<!--        $("tbody tr:not(:first)").hide();-->
+
+<!--        // Event listener for Comp_name dropdown change-->
+<!--        $("#fetchDataBtn").click(function() {-->
+<!--            var selectedCustId = $("#Comp_name").val();-->
+<!--            var selectedCompName = $("#Comp_name option:selected").text().split(' (ID: ')[0]; // Extract Comp_name-->
+<!--            $("#compName").val(selectedCompName); // Set Comp_name to hidden input field-->
+
+<!--            // AJAX request to fetch MSEB data for the selected company-->
+<!--            $.ajax({-->
+<!--                url: '/customer/get_mseb_data/',-->
+<!--                method: 'GET', // Use GET method to retrieve data-->
+<!--                data: {'cust_id': selectedCustId},-->
+<!--                dataType: 'json',-->
+<!--                success: function(response) {-->
+<!--                    console.log("Response:", response); // Log the response to inspect its structure-->
+<!--                    // Clear previous data-->
+<!--                    $("#mseb_table_body").empty();-->
+
+<!--                    if (response && response.error && response.error === "No data found for the selected company") {-->
+<!--                        // No data available for the selected company-->
+<!--                        console.log("No MSEB data available for the selected company");-->
+<!--                        createLoadExtensionRow(); // Create the first row with "Load Extension" field-->
+<!--                    } else {-->
+<!--                        // Populate form fields with fetched data-->
+<!--                        var msebData = response;-->
+<!--                        var html = '';-->
+<!--                        var showNextRow = false;-->
+<!--                        for (var key in msebData) {-->
+<!--                            if (msebData.hasOwnProperty(key)) {-->
+<!--                                var fieldName = key.replace('_ok', ''); // Extract field name-->
+<!--                                var fieldValue = msebData[key].value; // Extract field value-->
+<!--                                var createdAt = msebData[key].created_at; // Extract created_at date-->
+
+<!--                                if (fieldValue) {-->
+<!--                                    html += '<tr>';-->
+<!--                                    html += '<td>' + fieldNames[fieldName] + '</td>';-->
+<!--                                    html += '<td class="status Done">Done</td>'; // Updated from "Ok" to "Done"-->
+<!--                                    //html += '<td class="created-at">' + (createdAt ? formatDate(new Date(createdAt)) : '') + '</td>'; // Format createdAt as "d-m-Y"-->
+
+<!--                                    // Include both completion date input field and formatted creation date-->
+<!--                                    html += '<td class="completion-date-cell" style="display:none;"><input type="date" class="completion-date" placeholder="YYYY-MM-DD"></td>';-->
+<!--                                    html += '<td class="created-at-cell">' + (createdAt ? formatDate(new Date(createdAt)) : '') + '</td>';-->
+
+<!--                                    html += '<td class="completion" style="display:none;">Update</td>';-->
+<!--                                    html += '<td class="completion-checkmark"><span class="checkmark">✓</span></td>';-->
+<!--                                    html += '<td><input type="checkbox" class="ok-checkbox update-checkbox" name="' + key + '" value="ok"></td>';-->
+<!--                                    html += '</tr>';-->
+
+<!--                                    showNextRow = true;-->
+<!--                                }-->
+<!--                            }-->
+<!--                        }-->
+<!--                        $("#mseb_table_body").html(html);-->
+<!--                        // Show the table after populating the data-->
+<!--                        $("#mseb_table").show();-->
+<!--                    }-->
+<!--                },-->
+<!--                error: function(xhr, errmsg, err) {-->
+<!--                    // Handle error-->
+<!--                    console.log("Error:", errmsg);-->
+<!--                }-->
+<!--            });-->
+<!--        });-->
+
+
+<!--        // Function to format date-->
+<!--        function formatDate(date) {-->
+<!--            // Extract the components of the date-->
+<!--            var day = String(date.getDate()).padStart(2, '0'); // Pad with leading zero if needed-->
+<!--            var month = String(date.getMonth() + 1).padStart(2, '0'); // Months are zero-based; pad with leading zero if needed-->
+<!--            var year = date.getFullYear();-->
+<!--            // Return the formatted date string-->
+<!--            return day + '/' + month + '/' + year;-->
+<!--        }-->
+
+<!--        // Checkbox change event to show/hide completion date input and initialize date picker-->
+<!--        $(document).on('change', '.ok-checkbox', function() {-->
+<!--            var $this = $(this);-->
+<!--            var isChecked = $this.is(":checked");-->
+<!--            var $completionDateCell = $this.closest("tr").find(".completion-date-cell");-->
+<!--            var $completioncheckmark = $this.closest("tr").find(".completion-checkmark");-->
+<!--            var $createdAtCell = $this.closest("tr").find(".created-at-cell");-->
+<!--            var $completion = $this.closest("tr").find(".completion");-->
+
+<!--            if (isChecked) {-->
+<!--                // Show the completion date input field-->
+<!--                $completionDateCell.show();-->
+<!--                $completioncheckmark.hide();-->
+<!--                // Hide the formatted creation date-->
+<!--                $createdAtCell.hide();-->
+<!--                $completion.show();-->
+<!--            } else {-->
+<!--                // Hide the completion date input field-->
+<!--                $completionDateCell.hide();-->
+<!--                $completioncheckmark.show();-->
+<!--                // Show the formatted creation date-->
+<!--                $createdAtCell.show();-->
+<!--                $completion.hide();-->
+<!--            }-->
+<!--        });-->
+
+
+<!--        $('#saveBtn').click(function() {-->
+<!--            var updates = [];-->
+<!--            $('.update-checkbox:checked').each(function() {-->
+<!--                var $row = $(this).closest('tr');-->
+<!--                var phaseName = $row.find('td:first').text().trim(); // Get phase name from table-->
+<!--                var fieldName = ''; // Initialize fieldName-->
+
+<!--                // Find corresponding fieldName from fieldNames object-->
+<!--                for (var key in fieldNames) {-->
+<!--                    if (fieldNames.hasOwnProperty(key) && fieldNames[key] === phaseName) {-->
+<!--                        fieldName = key;-->
+<!--                        break;-->
+<!--                    }-->
+<!--                }-->
+
+<!--                var completionDate = $row.find('.completion-date').val();-->
+
+<!--                // Format the data object as needed-->
+<!--                var updateData = {-->
+<!--                    cust_id: $("#Comp_name").val(),-->
+<!--                    fieldName: fieldName,-->
+<!--                    createdAt: completionDate  // Assuming completionDate is already in correct format-->
+<!--                };-->
+
+<!--                updates.push(updateData);-->
+<!--            });-->
+
+<!--            // Log updates array to console for debugging-->
+<!--            console.log('Updates:', updates);-->
+
+<!--            // Check if updates array is empty-->
+<!--            if (updates.length === 0) {-->
+<!--                console.log('No updates to send');-->
+<!--                return; // Exit function if no updates-->
+<!--            }-->
+
+<!--            // Get CSRF token from cookie-->
+<!--            var csrftoken = getCookie('csrftoken');-->
+
+<!--            // Example AJAX request to send updates to server-->
+<!--            $.ajax({-->
+<!--                url: '/customer/Update_MSEB/',-->
+<!--                method: 'POST',-->
+<!--                headers: {-->
+<!--                    'X-CSRFToken': csrftoken  // Include CSRF token in headers-->
+<!--                },-->
+<!--                data: JSON.stringify({ updates: updates }),-->
+<!--                contentType: 'application/json',-->
+<!--                //success: function(response) {-->
+<!--                //    alert('Data saved successfully!');-->
+<!--                //    console.log(response);-->
+
+<!--                // },-->
+<!--                success: function(response) {-->
+<!--                    alert('Data saved successfully!');-->
+<!--                    console.log(response);-->
+<!--                    // Update the table rows-->
+<!--                    $('.update-checkbox:checked').each(function() {-->
+<!--                        var $row = $(this).closest('tr');-->
+<!--                        $row.find('.status').text('Done');-->
+<!--                        $row.find('.created-at-cell').text(formatDate(new Date()));-->
+<!--                        $(this).prop('checked', false).closest('tr').find('.completion-date-cell').hide();-->
+<!--                        $(this).closest('tr').find('.completion-checkmark').show();-->
+<!--                        $(this).closest('tr').find('.created-at-cell').show();-->
+<!--                        $(this).closest('tr').find('.completion').hide();-->
+<!--                    });-->
+<!--                },-->
+<!--                error: function(xhr, errmsg, err) {-->
+<!--                    console.log("Error:", errmsg);-->
+<!--                }-->
+<!--            });-->
+<!--        });-->
+
+<!--        // Function to retrieve CSRF token from cookie-->
+<!--        function getCookie(name) {-->
+<!--            var cookieValue = null;-->
+<!--            if (document.cookie && document.cookie !== '') {-->
+<!--                var cookies = document.cookie.split(';');-->
+<!--                for (var i = 0; i < cookies.length; i++) {-->
+<!--                    var cookie = cookies[i].trim();-->
+<!--                    // Check if cookie name matches the CSRF token cookie name-->
+<!--                    if (cookie.substring(0, name.length + 1) === (name + '=')) {-->
+<!--                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));-->
+<!--                        break;-->
+<!--                    }-->
+<!--                }-->
+<!--            }-->
+<!--            return cookieValue;-->
+<!--        }-->
+
+<!--    });-->
+<!--</script>-->
+
+<script>
+    // Define fieldNames globally with their corresponding display names
+    var fieldNames = {
+        'load_extension': 'Load Extension',
+        'flisibility': 'Off-Line Feasibility',
+        'quotation': 'Firm Quotation Generation',
+        'sent_to_bill': 'Sent to Bill',
+        'net_meter': 'Net Metering Procedure',
+        'flexibility': 'Technical Feasibility',
+        'approval': 'Sanction/Approval',
+        'meter_testing': 'Meter Testing',
+        'agreement': 'Net Metering Agreement',
+        'release': 'Meter Release',
+        'installation_date': 'Meter Installation Date'
+    };
+
+    // Function to get CSRF token
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+
+    const csrfToken = getCookie('csrftoken');
+
+    $(document).ready(function(){
+        // Hide all rows except the first one initially
+        $("tbody tr:not(:first)").hide();
+
+        // Event listener for Comp_name dropdown change
+        $("#fetchDataBtn").click(function() {
+            var selectedCustId = $("#Comp_name").val();
+            var selectedCompName = $("#Comp_name option:selected").text().split(' (ID: ')[0]; // Extract Comp_name
+            $("#compName").val(selectedCompName); // Set Comp_name to hidden input field
+
+            // AJAX request to fetch MSEB data for the selected company
+            $.ajax({
+                url: '/customer/get_mseb_data/',
+                method: 'GET', // Use GET method to retrieve data
+                data: {'cust_id': selectedCustId},
+                dataType: 'json',
+                success: function(response) {
+                    console.log("Response:", response); // Log the response to inspect its structure
+                    // Clear previous data
+                    $("#mseb_table_body").empty();
+
+                    if (response && response.error && response.error === "No data found for the selected company") {
+                        // No data available for the selected company
+                        console.log("No MSEB data available for the selected company");
+                        createLoadExtensionRow(); // Create the first row with "Load Extension" field
+                    } else {
+                        // Populate form fields with fetched data
+                        var msebData = response;
+                        var html = '';
+                        var showNextRow = false;
+                        for (var key in msebData) {
+                            if (msebData.hasOwnProperty(key)) {
+                                var fieldName = key.replace('_ok', ''); // Extract field name
+                                var fieldValue = msebData[key].value; // Extract field value
+                                var createdAt = msebData[key].created_at; // Extract created_at date
+
+                                if (fieldValue) {
+                                    html += '<tr>';
+                                    html += '<td>' + fieldNames[fieldName] + '</td>';
+                                    html += '<td class="status Done">Done</td>'; // Updated from "Ok" to "Done"
+                                    //html += '<td class="created-at">' + (createdAt ? formatDate(new Date(createdAt)) : '') + '</td>'; // Format createdAt as "d-m-Y"
+
+                                    // Include both completion date input field and formatted creation date
+                                    html += '<td class="completion-date-cell" style="display:none;"><input type="date" class="completion-date" placeholder="YYYY-MM-DD"></td>';
+                                    html += '<td class="created-at-cell">' + (createdAt ? formatDate(new Date(createdAt)) : '') + '</td>';
+
+                                    html += '<td class="completion" style="display:none;">Update</td>';
+                                    html += '<td class="completion-checkmark"><span class="checkmark">✓</span></td>';
+                                    html += '<td><input type="checkbox" class="ok-checkbox update-checkbox" name="' + key + '" value="ok"></td>';
+                                    html += '</tr>';
+
+                                    showNextRow = true;
+                                }
+                            }
+                        }
+                        $("#mseb_table_body").html(html);
+                        // Show the table after populating the data
+                        $("#mseb_table").show();
+                        $("#submit_button").show();
+                    }
+                },
+                error: function(xhr, errmsg, err) {
+                    // Handle error
+                    console.log("Error:", errmsg);
+                }
+            });
+        });
+
+        // Function to format date
+        function formatDate(date) {
+            // Extract the components of the date
+            var day = String(date.getDate()).padStart(2, '0'); // Pad with leading zero if needed
+            var month = String(date.getMonth() + 1).padStart(2, '0'); // Months are zero-based; pad with leading zero if needed
+            var year = date.getFullYear();
+            // Return the formatted date string
+            return day + '/' + month + '/' + year;
+        }
+
+        // Checkbox change event to show/hide completion date input and initialize date picker
+        $(document).on('change', '.ok-checkbox', function() {
+            var $this = $(this);
+            var isChecked = $this.is(":checked");
+            var $completionDateCell = $this.closest("tr").find(".completion-date-cell");
+            var $completioncheckmark = $this.closest("tr").find(".completion-checkmark");
+            var $createdAtCell = $this.closest("tr").find(".created-at-cell");
+            var $completion = $this.closest("tr").find(".completion");
+
+            if (isChecked) {
+                // Show the completion date input field
+                $completionDateCell.show();
+                $completioncheckmark.hide();
+                // Hide the formatted creation date
+                $createdAtCell.hide();
+                $completion.show();
+            } else {
+                // Hide the completion date input field
+                $completionDateCell.hide();
+                $completioncheckmark.show();
+                // Show the formatted creation date
+                $createdAtCell.show();
+                $completion.hide();
+            }
+        });
+
+        $('#saveBtn').click(function() {
+            var updates = [];
+            $('.update-checkbox:checked').each(function() {
+                var $row = $(this).closest('tr');
+                var phaseName = $row.find('td:first').text().trim(); // Get phase name from table
+                var fieldName = ''; // Initialize fieldName
+
+                // Find corresponding fieldName from fieldNames object
+                for (var key in fieldNames) {
+                    if (fieldNames.hasOwnProperty(key) && fieldNames[key] === phaseName) {
+                        fieldName = key;
+                        break;
+                    }
+                }
+
+                var completionDate = $row.find('.completion-date').val();
+
+                // Format the data object as needed
+                var updateData = {
+                    cust_id: $("#Comp_name").val(),
+                    fieldName: fieldName,
+                    createdAt: completionDate  // Assuming completionDate is already in correct format
+                };
+
+                updates.push(updateData);
+            });
+
+            // Log updates array to console for debugging
+            console.log('Updates:', updates);
+
+            // Check if updates array is empty
+            if (updates.length === 0) {
+                console.log('No updates to send');
+                return; // Exit function if no updates
+            }
+
+            // Get CSRF token from cookie
+            var csrftoken = getCookie('csrftoken');
+
+            // Example AJAX request to send updates to server
+            $.ajax({
+                url: '/customer/Update_MSEB/',
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': csrftoken  // Include CSRF token in headers
+                },
+                data: JSON.stringify({ updates: updates }),
+                contentType: 'application/json',
+                success: function(response) {
+                    alert('Data saved successfully!');
+                    console.log(response);
+                    // Update the table rows
+                    $('.update-checkbox:checked').each(function() {
+                        var $row = $(this).closest('tr');
+                        $row.find('.status').text('Done');
+                        var formattedDate = formatDate(new Date($(this).closest('tr').find('.completion-date').val()));
+                        $row.find('.created-at-cell').text(formattedDate);
+                        $(this).prop('checked', false).closest('tr').find('.completion-date-cell').hide();
+                        $(this).closest('tr').find('.completion-checkmark').show();
+                        $(this).closest('tr').find('.created-at-cell').show();
+                        $(this).closest('tr').find('.completion').hide();
+
+                        // Add the class for the light blue background
+                        $row.addClass('light-blue-background');
+                    });
+                },
+                error: function(xhr, errmsg, err) {
+                    console.log("Error:", errmsg);
+                }
+            });
+        });
+
+        // Function to retrieve CSRF token from cookie
+        function getCookie(name) {
+            var cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                var cookies = document.cookie.split(';');
+                for (var i = 0; i < cookies.length; i++) {
+                    var cookie = cookies[i].trim();
+                    // Check if cookie name matches the CSRF token cookie name
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+    });
+</script>
+
+
+<!--<script>-->
+<!--    // Define fieldNames globally with their corresponding display names-->
+<!--    var fieldNames = {-->
+<!--        'load_extension': 'Load Extension',-->
+<!--        'flisibility': 'Off-Line Feasibility',-->
+<!--        'quotation': 'Firm Quotation Generation',-->
+<!--        'sent_to_bill': 'Sent to Bill',-->
+<!--        'net_meter': 'Net Metering Procedure',-->
+<!--        'flexibility': 'Technical Feasibility',-->
+<!--        'approval': 'Sanction/Approval',-->
+<!--        'meter_testing': 'Meter Testing',-->
+<!--        'agreement': 'Net Metering Agreement',-->
+<!--        'release': 'Meter Release',-->
+<!--        'installation_date': 'Meter Installation Date'-->
+<!--    };-->
+
+<!--    // Function to get CSRF token-->
+<!--    function getCookie(name) {-->
+<!--        let cookieValue = null;-->
+<!--        if (document.cookie && document.cookie !== '') {-->
+<!--            const cookies = document.cookie.split(';');-->
+<!--            for (let i = 0; i < cookies.length; i++) {-->
+<!--                const cookie = cookies[i].trim();-->
+<!--                if (cookie.substring(0, name.length + 1) === (name + '=')) {-->
+<!--                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));-->
+<!--                    break;-->
+<!--                }-->
+<!--            }-->
+<!--        }-->
+<!--        return cookieValue;-->
+<!--    }-->
+
+<!--    const csrfToken = getCookie('csrftoken');-->
+
+<!--    $(document).ready(function(){-->
+<!--        // Hide all rows except the first one initially-->
+<!--        $("tbody tr:not(:first)").hide();-->
+
+<!--        // Event listener for Comp_name dropdown change-->
+<!--        $("#fetchDataBtn").click(function() {-->
+<!--            var selectedCustId = $("#Comp_name").val();-->
+<!--            var selectedCompName = $("#Comp_name option:selected").text().split(' (ID: ')[0]; // Extract Comp_name-->
+<!--            $("#compName").val(selectedCompName); // Set Comp_name to hidden input field-->
+
+<!--            // AJAX request to fetch MSEB data for the selected company-->
+<!--            $.ajax({-->
+<!--                url: '/customer/get_mseb_data/',-->
+<!--                method: 'GET', // Use GET method to retrieve data-->
+<!--                data: {'cust_id': selectedCustId},-->
+<!--                dataType: 'json',-->
+<!--                success: function(response) {-->
+<!--                    console.log("Response:", response); // Log the response to inspect its structure-->
+<!--                    // Clear previous data-->
+<!--                    $("#mseb_table_body").empty();-->
+
+<!--                    if (response && response.error && response.error === "No data found for the selected company") {-->
+<!--                        // No data available for the selected company-->
+<!--                        console.log("No MSEB data available for the selected company");-->
+<!--                        createLoadExtensionRow(); // Create the first row with "Load Extension" field-->
+<!--                    } else {-->
+<!--                        // Populate form fields with fetched data-->
+<!--                        var msebData = response;-->
+<!--                        var html = '';-->
+<!--                        var showNextRow = false;-->
+<!--                        for (var key in msebData) {-->
+<!--                            if (msebData.hasOwnProperty(key)) {-->
+<!--                                var fieldName = key.replace('_ok', ''); // Extract field name-->
+<!--                                var fieldValue = msebData[key].value; // Extract field value-->
+<!--                                var createdAt = msebData[key].created_at; // Extract created_at date-->
+
+<!--                                if (fieldValue) {-->
+<!--                                    html += '<tr>';-->
+<!--                                    html += '<td>' + fieldNames[fieldName] + '</td>';-->
+<!--                                    html += '<td class="status Done">Done</td>'; // Updated from "Ok" to "Done"-->
+<!--                                    //html += '<td class="created-at">' + (createdAt ? formatDate(new Date(createdAt)) : '') + '</td>'; // Format createdAt as "d-m-Y"-->
+
+<!--                                    // Include both completion date input field and formatted creation date-->
+<!--                                    html += '<td class="completion-date-cell" style="display:none;"><input type="date" class="completion-date" placeholder="YYYY-MM-DD"></td>';-->
+<!--                                    html += '<td class="created-at-cell">' + (createdAt ? formatDate(new Date(createdAt)) : '') + '</td>';-->
+
+<!--                                    html += '<td class="completion" style="display:none;">Update</td>';-->
+<!--                                    html += '<td class="completion-checkmark"><span class="checkmark">✓</span></td>';-->
+<!--                                    html += '<td><input type="checkbox" class="ok-checkbox update-checkbox" name="' + key + '" value="ok"></td>';-->
+<!--                                    html += '</tr>';-->
+
+<!--                                    showNextRow = true;-->
+<!--                                }-->
+<!--                            }-->
+<!--                        }-->
+<!--                        $("#mseb_table_body").html(html);-->
+<!--                        // Show the table after populating the data-->
+<!--                        $("#mseb_table").show();-->
+<!--                    }-->
+<!--                },-->
+<!--                error: function(xhr, errmsg, err) {-->
+<!--                    // Handle error-->
+<!--                    console.log("Error:", errmsg);-->
+<!--                }-->
+<!--            });-->
+<!--        });-->
+
+<!--        // Function to format date-->
+<!--        function formatDate(date) {-->
+<!--            // Extract the components of the date-->
+<!--            var day = String(date.getDate()).padStart(2, '0'); // Pad with leading zero if needed-->
+<!--            var month = String(date.getMonth() + 1).padStart(2, '0'); // Months are zero-based; pad with leading zero if needed-->
+<!--            var year = date.getFullYear();-->
+<!--            // Return the formatted date string-->
+<!--            return day + '/' + month + '/' + year;-->
+<!--        }-->
+
+<!--        // Checkbox change event to show/hide completion date input and initialize date picker-->
+<!--        $(document).on('change', '.ok-checkbox', function() {-->
+<!--            var $this = $(this);-->
+<!--            var isChecked = $this.is(":checked");-->
+<!--            var $completionDateCell = $this.closest("tr").find(".completion-date-cell");-->
+<!--            var $completioncheckmark = $this.closest("tr").find(".completion-checkmark");-->
+<!--            var $createdAtCell = $this.closest("tr").find(".created-at-cell");-->
+<!--            var $completion = $this.closest("tr").find(".completion");-->
+
+<!--            if (isChecked) {-->
+<!--                // Show the completion date input field-->
+<!--                $completionDateCell.show();-->
+<!--                $completioncheckmark.hide();-->
+<!--                // Hide the formatted creation date-->
+<!--                $createdAtCell.hide();-->
+<!--                $completion.show();-->
+<!--            } else {-->
+<!--                // Hide the completion date input field-->
+<!--                $completionDateCell.hide();-->
+<!--                $completioncheckmark.show();-->
+<!--                // Show the formatted creation date-->
+<!--                $createdAtCell.show();-->
+<!--                $completion.hide();-->
+<!--            }-->
+<!--        });-->
+
+<!--        $('#saveBtn').click(function() {-->
+<!--            var updates = [];-->
+<!--            $('.update-checkbox:checked').each(function() {-->
+<!--                var $row = $(this).closest('tr');-->
+<!--                var phaseName = $row.find('td:first').text().trim(); // Get phase name from table-->
+<!--                var fieldName = ''; // Initialize fieldName-->
+
+<!--                // Find corresponding fieldName from fieldNames object-->
+<!--                for (var key in fieldNames) {-->
+<!--                    if (fieldNames.hasOwnProperty(key) && fieldNames[key] === phaseName) {-->
+<!--                        fieldName = key;-->
+<!--                        break;-->
+<!--                    }-->
+<!--                }-->
+
+<!--                var completionDate = $row.find('.completion-date').val();-->
+
+<!--                // Format the data object as needed-->
+<!--                var updateData = {-->
+<!--                    cust_id: $("#Comp_name").val(),-->
+<!--                    fieldName: fieldName,-->
+<!--                    createdAt: completionDate  // Assuming completionDate is already in correct format-->
+<!--                };-->
+
+<!--                updates.push(updateData);-->
+<!--            });-->
+
+<!--            // Log updates array to console for debugging-->
+<!--            console.log('Updates:', updates);-->
+
+<!--            // Check if updates array is empty-->
+<!--            if (updates.length === 0) {-->
+<!--                console.log('No updates to send');-->
+<!--                return; // Exit function if no updates-->
+<!--            }-->
+
+<!--            // Get CSRF token from cookie-->
+<!--            var csrftoken = getCookie('csrftoken');-->
+
+<!--            // Example AJAX request to send updates to server-->
+<!--            $.ajax({-->
+<!--                url: '/customer/Update_MSEB/',-->
+<!--                method: 'POST',-->
+<!--                headers: {-->
+<!--                    'X-CSRFToken': csrftoken  // Include CSRF token in headers-->
+<!--                },-->
+<!--                data: JSON.stringify({ updates: updates }),-->
+<!--                contentType: 'application/json',-->
+<!--                success: function(response) {-->
+<!--                    alert('Data saved successfully!');-->
+<!--                    console.log(response);-->
+<!--                    // Update the table rows-->
+<!--                    $('.update-checkbox:checked').each(function() {-->
+<!--                        var $row = $(this).closest('tr');-->
+<!--                        $row.find('.status').text('Done');-->
+<!--                        $row.find('.created-at-cell').text(formatDate(new Date()));-->
+<!--                        $(this).prop('checked', false).closest('tr').find('.completion-date-cell').hide();-->
+<!--                        $(this).closest('tr').find('.completion-checkmark').show();-->
+<!--                        $(this).closest('tr').find('.created-at-cell').show();-->
+<!--                        $(this).closest('tr').find('.completion').hide();-->
+<!--                    });-->
+<!--                },-->
+<!--                error: function(xhr, errmsg, err) {-->
+<!--                    console.log("Error:", errmsg);-->
+<!--                }-->
+<!--            });-->
+<!--        });-->
+
+<!--        // Function to retrieve CSRF token from cookie-->
+<!--        function getCookie(name) {-->
+<!--            var cookieValue = null;-->
+<!--            if (document.cookie && document.cookie !== '') {-->
+<!--                var cookies = document.cookie.split(';');-->
+<!--                for (var i = 0; i < cookies.length; i++) {-->
+<!--                    var cookie = cookies[i].trim();-->
+<!--                    // Check if cookie name matches the CSRF token cookie name-->
+<!--                    if (cookie.substring(0, name.length + 1) === (name + '=')) {-->
+<!--                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));-->
+<!--                        break;-->
+<!--                    }-->
+<!--                }-->
+<!--            }-->
+<!--            return cookieValue;-->
+<!--        }-->
+<!--    });-->
+<!--</script>-->
+
+<form method="post">
+    {% csrf_token %}
+    <div class="col-md-12">
+        <div class="card card-primary">
+            <div class="card-header">
+                <h3>Update Consumer MSEB Details</h3>
+            </div>
+            <br>
+            <div class="d-flex align-items-end justify-content-center row">
+                <div class="col-sm-9">
+                    <label for="Comp_name"><b>Select Company Name:</b></label>
+                    <select class="form-control text-capitalize" name="Comp_name" id="Comp_name" autocomplete="on" required>
+                        <option value=""></option>
+                        {% for cust_id, comp_name, city in customers %}
+                            <option value="{{ cust_id }}">{{ comp_name }} , {{city}} &nbsp;&nbsp;&nbsp; ( <span style="color: red;">ID - {{ cust_id }}</span> )</option>
+                        {% endfor %}
+                    </select>
+                    <input type="hidden" id="compName">
+                </div>
+                <div class="col-sm-2">
+                    <button type="button" id="fetchDataBtn">Fetch Data</button>
+                </div>
+            </div>
+            <br><br>
+            <div class="table-responsive">
+                <table border="1" id="mseb_table" style="display: none;" class="col-lg-11 text-center" align="center">
+                    <thead class="table-success">
+                        <tr align="center">
+                            <th>Phase</th>
+                            <th>Status</th>
+                            <th>Completion Date</th>
+                            <th style="width: 130px; height: 50px;">Ok</th>
+                            <th>Update</th>
+                        </tr>
+                    </thead>
+                    <tbody id="mseb_table_body" align="center">
+                        <!-- Table rows will be populated dynamically -->
+                    </tbody>
+                </table>
+            </div>
+            <div class="text-center mt-3" style="display: none;" id="submit_button">
+                <button type="button" id="saveBtn" class="btn btn-primary">Save</button>
+            </div>
+        </div>
+    </div>
+</form>
+{% endblock %}

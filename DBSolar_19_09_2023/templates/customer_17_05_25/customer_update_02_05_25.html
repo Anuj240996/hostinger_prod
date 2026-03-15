@@ -1,0 +1,598 @@
+{% extends 'partials/base.html' %}
+{% block title %}Consumer Page{% endblock %}
+{% load static %}
+{% block content %}
+
+
+<div class="card shadow m-1">
+   <div class="card-body">
+      <div class="page-header">
+         <div class="row">
+            <div class="col-sm-12">
+<!--               <h3 class="page-title">Consumer Details</h3>-->
+               {% if customer.first_name %}
+               <h3 class="page-title text-capitalize">{{ customer.first_name }} {{ customer.last_name }} View Details</h3>
+               {% else %}
+                <h3 class="page-title text-capitalize">{{ customer.Comp_name }} View Details</h3>
+               {% endif %}
+               <ul class="breadcrumb" style="border-bottom : 2px solid orange">
+                  <li class="breadcrumb-item"><a href="students.html">Dashboard</a></li>
+                  <li class="breadcrumb-item active">Consumer Details</li>
+               </ul>
+            </div>
+         </div>
+      </div>
+
+      {% if messages %}
+       {% for message in messages %}
+        <div class="alert alert-{{ message.tags }}">
+                  {{ message }}
+        </div> {% endfor %}
+      {% endif %}
+      <form method="post" enctype="multipart/form-data">
+         {% csrf_token %}
+                  <h5 class="p-2 text-danger" style="border-bottom : 2px solid orange">Company Details View </h5>
+                 <fieldset style="border-color: blue;">
+                  <legend style="color: darkblue;">Company Details View</legend>
+                  <div class="form-row">
+                     <div class="col-sm-6 item1">
+                        <div class="form-group">
+                           <label> <b>Consumer ID :</b></label>
+                           <input type="text" name="custid" class="form-control text-capitalize" placeholder="Enter Consumer ID" value="{{ customer.Cust_id }}" readonly>
+                        </div>
+                     </div>
+                     <div class="col-sm-6 item1">
+                        <div class="form-group">
+                           <label> <b>Username :</b></label>
+                           <input type="text" name="user" class="form-control text-capitalize" placeholder="Enter Username" value="{{ customer.new_customer.username }}" readonly>
+                        </div>
+                     </div>
+
+
+
+                     <div class="col-sm-6 item1">
+                        <div class="form-group">
+                           <label><b> Consumer Type :</b></label>
+                           <input type="text" name="custtype" class="form-control text-capitalize" placeholder="Enter Consumer Type" value="{{ customer.Cust_type }}">
+                        </div>
+                     </div>
+					 <div class="col-sm-6 item1">
+						  <div class="form-group">
+							 <label><b> Project Type :</b></label>
+							 <select name="projecttype" class="form-control text-capitalize">
+								{% if customer.project_type %}
+								   <option value="{{ customer.project_type }}" selected>{{ customer.project_type }}</option>
+								{% endif %}
+								{% for project in project_types %}
+								   {% if project != customer.project_type %}
+									  <option value="{{ project }}">{{ project }}</option>
+								   {% endif %}
+								{% endfor %}
+							 </select>
+						  </div>
+					   </div>
+
+                     {% if customer.first_name %}
+                     <div class="col-sm-6 item1">
+                        <div class="form-group">
+                           <label> <b>First Name :</b></label>
+                           <input type="text" name="firstname" class="form-control text-capitalize" value="{{ customer.first_name }}">
+                        </div>
+                     </div>
+                     {% endif %}
+                     {% if customer.last_name %}
+                     <div class="col-sm-6 item1">
+                        <div class="form-group">
+                           <label><b> Last Name :</b></label>
+                           <input type="text" name="lastname" class="form-control text-capitalize" placeholder="Enter Lastname" value="{{ customer.last_name }}">
+                        </div>
+                     </div>
+                     {% endif %}
+                     {% if customer.Comp_name %}
+                     <div class="col-sm-12 item1">
+                        <div class="form-group">
+                           <label><b> Consumer/Farm Name :</b></label>
+                           <input type="text" name="compname" class="form-control text-capitalize" placeholder="Enter Consumer/Farm Name" value="{{ customer.Comp_name }}">
+                        </div>
+                     </div>
+                     {% endif %}
+                     {% if customer.Gender %}
+                     <div class="col-sm-6 item1">
+                        <div class="form-group">
+                           <label><b> Gender :</b></label>
+                           <input type="text" name="gen" class="form-control text-capitalize" placeholder="ener name" value="{{ customer.Gender }}">
+                        </div>
+                     </div>
+                     {% endif %}
+                      <div class="col-sm-6 item1">
+                        <div class="form-group">
+                           <label> <b>PO Order No :</b> </label>
+                           <input type="text" name="Cuspoorder" class="form-control text-capitalize" placeholder="Enter PO Date" value="{{ customer.po_order }}">
+                        </div>
+                     </div>
+
+                     <div class="col-sm-6 item1">
+                        <div class="form-group">
+                           <label> <b>PO Date :</b>   [{{ customer.po_date | date:'d/m/y' }}]</label>
+                           <input type="date" name="Cusactdate" class="form-control" placeholder="Enter PO Date" value="{{ customer.po_date }}">
+                        </div>
+                     </div>
+
+
+                   <div class="col-sm-6 item1">
+                        <div class="form-group">
+                           <label><b> Plant Capacity :</b></label>
+                           <div class="input-group">
+                           <input type="number" style="text-align: right;" name="plantcapacity" class="form-control text-capitalize" placeholder="Enter Plant Capacity" value="{{ customer.Plant_Capacity }}" min="0">
+                           <div class="input-group-append">
+                                        <span class="input-group-text" style="color:black; border:1px solid #ced4da;">Kw</span>
+                           </div>
+                            </div>
+                        </div>
+                     </div>
+                      <!-- somewhere in your .form-row, e.g. after Inverters Quantity -->
+                        <div class="col-sm-6 item1">
+                          <div class="form-group">
+                            <label><b>Phase :</b></label>
+                            <select name="phase" class="form-control text-capitalize">
+                              <option value="0" {% if customer.phase == 0 %}selected{% endif %}>Not Applicable</option>
+                              <option value="1" {% if customer.phase == 1 %}selected{% endif %}>1 Phase</option>
+                              <option value="2" {% if customer.phase == 2 %}selected{% endif %}>2 Phase</option>
+                            </select>
+                          </div>
+                        </div>
+
+                   </div>
+                  </fieldset>
+
+                   <div class="col-sm-12">
+                     <h5 class="p-2 text-danger" style="border-bottom : 2px solid orange">Projects Details View </h5>
+                   </div>
+                  <fieldset style="border-color: blue;">
+                      <legend style="color: darkblue;">Projects Details View</legend>
+                  <div class="form-row">
+
+                      <!-- Solar Plate Company Name -->
+                    <div class="col-sm-3 item1 project-detail-field">
+                        <div class="form-group">
+                            <label><b>Solar Module Make :</b></label>
+                            <input type="text" name="solarcomp" class="form-control text-capitalize" placeholder="Enter Solar Module Company Name" value="{{ customer.solar_comp }}">
+                        </div>
+                    </div>
+                     <div class="col-sm-3 item1 project-detail-field">
+                            <div class="form-group">
+                                <label><b>Solar Module Quantity :</b></label>
+                                <div class="input-group">
+                                    <input type="number" style="text-align: right;" name="qunt_solar" class="form-control" placeholder="Enter Solar Module Quantity" value="{{ customer.qunt_solar }}" min="0">
+                                    <div class="input-group-append">
+                                        <span class="input-group-text" style="color:black; border:1px solid #ced4da;">Nos.</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                     <!-- Solar Panel Warranty -->
+                        <div class="col-sm-3 item1 project-detail-field">
+                            <div class="form-group">
+                                <label><b>Solar Module Warranty :</b></label>
+                                <div class="input-group">
+                                    <input type="number" style="text-align: right;" name="sol_warranty" class="form-control" placeholder="Enter Solar Module Warranty" value="{{ customer.sol_warranty }}" min="0" required>
+                                    <div class="input-group-append">
+                                        <span class="input-group-text" style="color:black; border:1px solid #ced4da;">Years</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                    <!-- Inverter/Controller Company Name -->
+                    <div class="col-sm-3 item1 project-detail-field">
+                        <div class="form-group">
+                            <label><b id="inverter-label">Inverter Make :</b></label>
+                            <input type="text" name="UPSC" class="form-control text-capitalize" placeholder="Enter Inverter Company Name" value="{{ customer.UPSC }}">
+                        </div>
+                    </div>
+
+
+                          <!-- Total No. of Inverters -->
+                        <div class="col-sm-3 item1 project-detail-field">
+                            <div class="form-group">
+                                <label><b id="qunt_inv_label">Inverters Quantity :</b></label>
+                                <div class="input-group">
+                                    <input type="number" style="text-align: right;" name="qunt_inv" class="form-control" placeholder="Enter Inverter Phase" value="{{ customer.qunt_inv }}" min="0">
+                                    <div class="input-group-append">
+                                        <span class="input-group-text" style="color:black; border:1px solid #ced4da;">Nos.</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Inverter/Controller Warranty -->
+                        <div class="col-sm-3 item1 project-detail-field">
+                            <div class="form-group">
+                                <label><b id="inverter-warranty-label">Inverter Warranty :</b></label>
+                                <div class="input-group">
+                                    <input type="number" style="text-align: right;" name="inv_warranty" class="form-control" placeholder="Enter Inverter Warranty" value="{{ customer.inv_warranty }}" min="0" required>
+                                    <div class="input-group-append">
+                                        <span class="input-group-text" style="color:black; border:1px solid #ced4da;">Years</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+
+					<!-- Water Pump Fields -->
+                    <div class="col-sm-4 item1 water-pump" style="display: none;">
+				     <div class="form-group">
+                            <label><b>Solar Water Pump Make:</b></label>
+                            <input type="text" name="solar_pump" class="form-control" placeholder="Enter Solar Water Pump Make" value="{{ customer.solar_pump|default:'' }}" required>
+                        </div>
+                    </div>
+
+
+                        <!-- Solar Pump Quantity -->
+                        <div class="col-sm-4 item1 water-pump" style="display: none;">
+                            <div class="form-group">
+                                <label><b>Solar Water Pump Quantity :</b></label>
+                                <div class="input-group">
+                                    <input type="number" style="text-align: right;" name="pump_qunt" class="form-control" placeholder="Enter Water Pump Quantity" value="{{ customer.pump_qunt }}" min="0" required>
+                                    <div class="input-group-append">
+                                        <span class="input-group-text" style="color:black; border:1px solid #ced4da;">Nos.</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                         <!-- Pump Warranty -->
+                        <div class="col-sm-4 item1 water-pump" style="display: none;">
+                            <div class="form-group">
+                                <label><b>Solar Water Pump Warranty :</b></label>
+                                <div class="input-group">
+                                    <input type="number" style="text-align: right;" name="pump_warranty" class="form-control" placeholder="Enter Solar Water Pump Warranty" value="{{ customer.pump_warranty }}" min="0" required>
+                                    <div class="input-group-append">
+                                        <span class="input-group-text" style="color:black; border:1px solid #ced4da;">Years</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                      <div class="col-sm-3 item1 project-detail-field">
+                        <div class="form-group">
+                           <label><b> Inverter Software Company :</b></label>
+                           <input type="text" name="upssoft" class="form-control text-capitalize" placeholder="Enter Inverter Software Company" value="{{ customer.Ups_Soft }}">
+                        </div>
+                     </div>
+                      <!-- O & M Warranty -->
+                        <div class="col-sm-3 item1 project-detail-field">
+                            <div class="form-group">
+                                <label><b>O & M Warranty :</b></label>
+                                <div class="input-group">
+                                    <input type="number" style="text-align: right;" name="com_warranty" class="form-control" placeholder="Enter O & M Warranty" value="{{ customer.com_warranty }}" min="0" required>
+                                    <div class="input-group-append">
+                                        <span class="input-group-text" style="color:black; border:1px solid #ced4da;">Years</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+
+
+
+
+                        <!-- Engineer Assigned Dropdown -->
+                        <div class="col-sm-3 item1 project-detail-field">
+                            <label for="Engineer_Assigned"><b>Engineer Assigned</b></label>
+                            <select id="Engineer_Assigned" name="Engineer_Assigned" class="form-control text-capitalize" required>
+                                {% if customer.Engg_Assign %}
+                                    <option value="{{ customer.Engg_Assign.id }}" selected>{{ customer.Engg_Assign.first_name }} {{ customer.Engg_Assign.last_name }}</option>
+                                {% endif %}
+                                {% for engineer in engineers %}
+                                    {% if customer.Engg_Assign.id != engineer.id %}
+                                        <option value="{{ engineer.id }}">{{ engineer.first_name }} {{ engineer.last_name }}</option>
+                                    {% endif %}
+                                {% endfor %}
+                                <option value="1">Other</option>
+                            </select>
+                        </div>
+
+
+
+
+
+                  </div>
+                  </fieldset>
+
+                     <div class="col-sm-12">
+                        <h5 class="p-2 text-danger" style="border-bottom : 2px solid orange">Consumer Contact Details </h5>
+                     </div>
+                  <fieldset style="border-color: blue;">
+                      <legend style="color: darkblue;">Consumer Contact Details</legend>
+                    <div class="form-row">
+                     <div class="col-sm-6 item1">
+                        <div class="form-group">
+                           <label> <b> Consumer Phone No : </b></label>
+                           <input type="text" name="phone" class="form-control text-capitalize" value="{{ customer.phone }}" >
+                        </div>
+                     </div>
+                     <div class="col-sm-6 item1">
+                        <div class="form-group">
+                           <label> <b>Consumer Email ID :</b></label>
+                           <input type="email" name="email" class="form-control" value="{{ customer.email }}" >
+                        </div>
+                     </div>
+
+
+
+                     <div class="col-sm-6 item1">
+                        <div class="form-group">
+                           <label><b> Address :</b></label>
+                           <input type="text" name="address" class="form-control text-capitalize" placeholder="Enter Address" value="{{ customer.Address }}">
+                        </div>
+
+                     </div>
+                     <div class="col-sm-6 item1">
+                        <div class="form-group">
+                           <label> <b>City : </b> </label>
+                           <input type="text" name="city" class="form-control text-capitalize" placeholder="Enter City" value="{{ customer.City }}">
+                        </div>
+                     </div>
+
+                     <div class="col-sm-6 item1">
+                        <div class="form-group">
+                           <label> <b>State :</b></label>
+                           <input type="text" name="state" class="form-control text-capitalize" placeholder="Enter State" value="{{ customer.state }}">
+                        </div>
+                     </div>
+                     <div class="col-sm-6 item1">
+                        <div class="form-group">
+                           <label> <b>PinCode :</b></label>
+                           <input type="text" name="pincode" class="form-control text-capitalize" placeholder="Enter Pincode" value="{{ customer.Pincode }}">
+                        </div>
+                     </div>
+                    </div>
+                  </fieldset>
+
+
+                     <div class="col-sm-12" id="consumer-info-label">
+                        <h5 class="p-2 text-danger" style="border-bottom : 2px solid orange">Consumer Basic Information </h5>
+                     </div>
+                  <fieldset id="consumer-info" style="border-color: blue;">
+                      <legend style="color: darkblue;">Consumer Basic Information</legend>
+                    <div class="form-row">
+                     <div class="col-sm-4 item1">
+                        <div class="form-group">
+                           <label><b> Consumer Billing No :</b></label>
+
+                           <input type="text" name="consumer" class="form-control" placeholder="Enter Consumer Billing No" value="{{ customer.Consumer|default:''  }}" required>
+                        </div>
+                     </div>
+                     <div class="col-sm-4 item1">
+                        <div class="form-group">
+                           <label> <b>Current Load : </b> </label>
+                            <div class="input-group">
+                           <input type="number" style="text-align: right;" name="current_load" class="text-capitalize form-control" placeholder="Enter Billing Unit" value="{{ customer.current_load }}" min="0" required>
+                           <div class="input-group-append">
+                                        <span class="input-group-text" style="color:black; border:1px solid #ced4da;">Kw</span>
+                           </div>
+                            </div>
+
+                        </div>
+                     </div>
+                     <div class="col-sm-4 item1">
+                        <div class="form-group">
+                           <label> <b>MSEB Load Sanction : </b> </label>
+                           <div class="input-group">
+                           <input type="text" style="text-align: right;" name="loadsancution" class="form-control text-capitalize" placeholder="Enter MSEB Load Sanction" value="{{ customer.loadsancution|default:''  }}" min="0" required>
+                            <div class="input-group-append">
+                                        <span class="input-group-text" style="color:black; border:1px solid #ced4da;">Kw</span>
+                            </div>
+                            </div>
+
+                        </div>
+                     </div>
+
+                    </div>
+
+                  </fieldset>
+             <br>
+
+            <input type="submit" value="SUBMIT" class="btn btn-primary">
+
+
+
+      </form>
+   </div>
+</div>
+
+<!--	<script>-->
+<!--document.addEventListener('DOMContentLoaded', function() {-->
+<!--    const projectTypeSelect = document.querySelector('select[name="projecttype"]');-->
+<!--    const waterPumpGroups = document.querySelectorAll('.water-pump');-->
+<!--    const nonWaterPumpGroups = document.querySelectorAll('.non-water-pump');-->
+<!--    const inverterLabel = document.getElementById('inverter-label');-->
+<!--    const inverterWarrantyLabel = document.getElementById('inverter-warranty-label');-->
+<!--    const projectDetailFields = document.querySelectorAll('.project-detail-field');-->
+<!--	const quntinvLabel = document.getElementById('qunt_inv_label');-->
+<!--	const consumerInfoFieldset = document.getElementById("consumer-info");-->
+<!--	const consumerInfoFieldsetlabel = document.getElementById("consumer-info-label");-->
+
+
+<!--    function toggleFields() {-->
+<!--        const isWaterPump = projectTypeSelect.value === "Water Pump";-->
+
+<!--        // Toggle water pump fields-->
+<!--        waterPumpGroups.forEach(group => {-->
+<!--            group.style.display = isWaterPump ? 'block' : 'none';-->
+<!--            group.querySelectorAll('input').forEach(input => {-->
+<!--                input.disabled = !isWaterPump;-->
+<!--            });-->
+<!--        });-->
+
+<!--        // Toggle regular fields-->
+<!--        nonWaterPumpGroups.forEach(group => {-->
+<!--            group.style.display = isWaterPump ? 'none' : 'block';-->
+<!--            group.querySelectorAll('input').forEach(input => {-->
+<!--                input.disabled = isWaterPump;-->
+<!--            });-->
+<!--        });-->
+
+<!--        // Change label text for Inverter to Controller-->
+<!--        if (isWaterPump) {-->
+<!--            consumerInfoFieldset.style.display = "none";-->
+<!--            consumerInfoFieldsetlabel.style.display = "none";-->
+
+<!--            inverterLabel.textContent = "Controller Company Name :";-->
+<!--            inverterWarrantyLabel.textContent = "Controller Warranty* :";-->
+<!--            quntinvLabel.textContent = "Controller Quantity* :";-->
+<!--        } else {-->
+<!--            consumerInfoFieldset.style.display = "block";-->
+<!--            consumerInfoFieldsetlabel.style.display = "block";-->
+
+<!--            inverterLabel.textContent = "Inverter Company Name :";-->
+<!--            inverterWarrantyLabel.textContent = "Inverter Warranty* :";-->
+<!--            quntinvLabel.textContent = "Inverter Quantity* :";-->
+<!--        }-->
+
+<!--        // Change column width for project detail fields-->
+<!--        projectDetailFields.forEach(field => {-->
+<!--            if (isWaterPump) {-->
+<!--                field.classList.remove('col-sm-4');-->
+<!--                field.classList.add('col-sm-3');-->
+<!--            } else {-->
+<!--                field.classList.remove('col-sm-3');-->
+<!--                field.classList.add('col-sm-4');-->
+<!--            }-->
+<!--        });-->
+<!--    }-->
+
+<!--    // Initial state-->
+<!--    toggleFields();-->
+
+<!--    // Change listener-->
+<!--    projectTypeSelect.addEventListener('change', toggleFields);-->
+<!--});-->
+<!--</script>-->
+
+	<script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const projectTypeSelect = document.querySelector('select[name="projecttype"]');
+            const waterPumpGroups = document.querySelectorAll('.water-pump');
+            const nonWaterPumpGroups = document.querySelectorAll('.non-water-pump');
+            const inverterLabel = document.getElementById('inverter-label');
+            const inverterWarrantyLabel = document.getElementById('inverter-warranty-label');
+            const projectDetailFields = document.querySelectorAll('.project-detail-field');
+            const quntinvLabel = document.getElementById('qunt_inv_label');
+            const consumerInfoFieldset = document.getElementById("consumer-info");
+            const consumerInfoFieldsetlabel = document.getElementById("consumer-info-label");
+
+            // after your toggleFields() call, still inside DOMContentLoaded:
+            const firstInput = document.querySelector('input[name="firstname"]');
+            const lastInput  = document.querySelector('input[name="lastname"]');
+            const fullInput  = document.querySelector('input[name="compname"]');
+
+            function updateFullName() {
+              const fn = firstInput.value.trim();
+              const ln = lastInput.value.trim();
+              fullInput.value = [fn, ln].filter(s => s).join(' ');
+            }
+
+            // Init on page‑load
+            updateFullName();
+
+            // Recompute whenever either changes
+            firstInput.addEventListener('input', updateFullName);
+            lastInput .addEventListener('input', updateFullName);
+
+
+            function toggleFields() {
+                const isWaterPump = projectTypeSelect.value === "Water Pump";
+
+               // Toggle water pump fields
+            waterPumpGroups.forEach(group => {
+                group.style.display = isWaterPump ? 'block' : 'none';
+                group.querySelectorAll('input').forEach(input => {
+                    input.disabled = !isWaterPump;
+                    if (!isWaterPump) {
+                        input.removeAttribute('required');
+                    } else {
+                        input.setAttribute('required', 'required');
+                    }
+                });
+            });
+
+            // Toggle regular fields
+            nonWaterPumpGroups.forEach(group => {
+                group.style.display = isWaterPump ? 'none' : 'block';
+                group.querySelectorAll('input').forEach(input => {
+                    input.disabled = isWaterPump;
+                    if (isWaterPump) {
+                        input.removeAttribute('required');
+                    } else {
+                        input.setAttribute('required', 'required');
+                    }
+                });
+            });
+
+                // Change label text for Inverter to Controller
+                if (isWaterPump) {
+                    consumerInfoFieldset.style.display = "none";
+                    consumerInfoFieldsetlabel.style.display = "none";
+
+                    consumerInfoFieldset.querySelectorAll('input').forEach(input => {
+                        input.disabled = true;
+                        input.removeAttribute('required');
+                    });
+
+                    inverterLabel.textContent = "Controller Company Name :";
+                    inverterWarrantyLabel.textContent = "Controller Warranty* :";
+                    quntinvLabel.textContent = "Controller Quantity* :";
+                } else {
+                    consumerInfoFieldset.style.display = "block";
+                    consumerInfoFieldsetlabel.style.display = "block";
+
+                    consumerInfoFieldset.querySelectorAll('input').forEach(input => {
+                        input.disabled = false;
+                        input.setAttribute('required', 'required');
+                    });
+
+                    inverterLabel.textContent = "Inverter Company Name :";
+                    inverterWarrantyLabel.textContent = "Inverter Warranty* :";
+                    quntinvLabel.textContent = "Inverter Quantity* :";
+                }
+
+                // Change column width for project detail fields
+                projectDetailFields.forEach(field => {
+                    if (isWaterPump) {
+                        field.classList.remove('col-sm-4');
+                        field.classList.add('col-sm-4');
+                    } else {
+                        field.classList.remove('col-sm-3');
+                        field.classList.add('col-sm-4');
+                    }
+                });
+            }
+
+            // Initial state
+            toggleFields();
+
+            // Change listener
+            projectTypeSelect.addEventListener('change', toggleFields);
+
+        });
+        </script>
+
+{% if error == "no" %}
+<script>
+
+   {% if customer.first_name %}
+         alert(' {{customer.first_name }} {{customer.last_name }} Profile Update Successful');
+   {% else %}
+         alert(' {{customer.Comp_name }} Profile Update Successful');
+   {% endif %}
+   window.location = ('{% url 'customer-customer-updatepage' customer.Cust_id %}')
+</script>
+{% endif %}
+{% if error == "yes" %}
+<script>
+   alert('Something went wrong , Try Again...');
+</script>
+{% endif %}
+{% endblock %}

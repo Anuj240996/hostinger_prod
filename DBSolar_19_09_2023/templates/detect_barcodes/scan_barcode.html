@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Barcode Scanner</title>
+</head>
+<body>
+    <button id="scan-btn">Scan</button>
+    <div id="camera-container"></div>
+    <table id="barcode-table">
+        <thead>
+            <tr>
+                <th>Data</th>
+                <th>Type</th>
+                <th>Scan Time</th>
+            </tr>
+        </thead>
+        <tbody></tbody>
+    </table>
+    <button id="submit-btn">Submit</button>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/quagga/0.12.1/quagga.min.js"></script>
+    <script>
+        const scanButton = document.getElementById('scan-btn');
+        const tableBody = document.querySelector('#barcode-table tbody');
+        const submitButton = document.getElementById('submit-btn');
+        const scannedBarcodes = [];
+        let isScanning = false;
+
+        scanButton.addEventListener('click', () => {
+            if (isScanning) return;
+
+            isScanning = true;
+            const cameraContainer = document.getElementById('camera-container');
+
+            const constraints = {
+                video: {
+                    facingMode: { exact: 'environment' } // Select the rear camera
+                }
+            };
+
+            // Request access to the camera
+            navigator.mediaDevices.getUserMedia(constraints)
+                .then((stream) => {
+                    // Display the camera feed in the container
+                    cameraContainer.innerHTML = '';
+                    const video = document.createElement('video');
+                    cameraContainer.appendChild(video);
+                    video.srcObject = stream;
+                    video.play();
+
+                    Quagga.init({
+                        inputStream: {
+                            name: 'Live',
+                            type: 'LiveStream',
+                            target: video,
+                        },
+                        decoder: {
+                            readers: ['code_128_reader']  // Adjust based on the barcode types you want to decode
+                        }
+                    }, function (err) {
+                        if (err) {
+                            console.error(err);
+                            return;
+                        }
+                        Quagga.start();
+                    });
+
+                    const scannedCodes = new Set();  // To prevent duplicate scans
+
+                    Quagga.onDetected((result) => {
+                        if (!scannedCodes.has(result.codeResult.code)) {
+                            scannedCodes.add(result.codeResult.code);
+                            const barcodeData = result.codeResult.code;
+                            const barcodeType = result.codeResult.format;
+                            const scanTime = new Date().toLocaleString();
+                            scannedBarcodes.push({ data: barcodeData, type: barcodeType, scanTime });
+
+                            const newRow = tableBody.insertRow(-1);
+                            newRow.innerHTML = `<td>${barcodeData}</td><td>${barcodeType}</td><td>${scanTime}</td>`;
+                        }
+                    });
+                })
+                .catch((err) => {
+                    console.error(err);
+                })
+                .finally(() => {
+                    isScanning = false;
+                });
+        });
+
+        submitButton.addEventListener('click', () => {
+            // You can send the scannedBarcodes array to your Django view for database storage
+            // Use AJAX or another method to post the data to the server
+        });
+    </script>
+</body>
+</html>

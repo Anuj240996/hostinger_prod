@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Upload and Detect Barcode</title>
+</head>
+<body>
+    <h1>Upload and Detect Barcode</h1>
+    <form id="uploadForm" method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        <input type="file" name="file" accept=".pdf, .png, .jpg, .jpeg" required>
+        <button type="submit">Upload</button>
+    </form>
+    <div id="detectedBarcodes">
+        <!-- Display detected barcodes and related images here -->
+    </div>
+
+    <script>
+        const uploadForm = document.getElementById('uploadForm');
+        const detectedBarcodes = document.getElementById('detectedBarcodes');
+
+        uploadForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const formData = new FormData(uploadForm);
+            fetch('/detect_barcodes/ajax/handle_upload/', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    let tableHTML = '<h2>Detected Barcodes</h2><table><tr><th>Barcode</th><th>Image</th></tr>';
+                    data.barcodes.forEach(barcode => {
+                        tableHTML += '<tr><td>' + barcode + '</td><td><img src="' + barcode + '" alt="Barcode Image"></td></tr>';
+                    });
+                    tableHTML += '</table>';
+                    detectedBarcodes.innerHTML = tableHTML;
+                } else {
+                    detectedBarcodes.innerHTML = '';
+                }
+            });
+        });
+    </script>
+</body>
+</html>

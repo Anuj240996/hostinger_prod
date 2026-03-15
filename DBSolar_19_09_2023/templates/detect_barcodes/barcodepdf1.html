@@ -1,0 +1,221 @@
+{% extends '../base.html' %}
+
+{% load static %}
+
+{% block content %}
+<style>
+    /* CSS for the zoomed image */
+    .zoom-image-container {
+        display: none;
+        position: fixed;
+        z-index: 9999;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        max-width: 90%;
+        max-height: 90%;
+        background-color: #fff;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+        overflow: auto;
+        text-align: center;
+    }
+
+    .zoom-image {
+        max-width: 100%;
+        max-height: 100%;
+        margin: 0 auto;
+    }
+</style>
+
+
+
+<div class="row">
+    <div class="col-md-12">
+        <div id="barcodeResult" style="display: none;">
+            <table class="table justify-content-center">
+                <thead>
+                    <tr>
+                        <th>Serial Number</th>
+                        <th>Barcode Data</th>
+                        <th>Barcode Type</th>
+                        <th>Solar Plate Company</th>
+                        <th>Wattage</th>
+                        <th>Last Modified at</th>
+                        <th>Image</th>
+                    </tr>
+                </thead>
+                <tbody id="barcodeTableBody"></tbody>
+
+            </table>
+            <p id="noBarcodeMessage" style="display: none;">No barcode image found.</p>
+        </div>
+
+    </div>
+</div>
+
+<div class="zoom-image-container">
+    <img class="zoom-image" src="" alt="Zoomed Barcode Image">
+</div>
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js" integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=" crossorigin="anonymous"></script>
+
+<script>
+    $(document).ready(function() {
+        $("#barcodeForm").submit(function(e) {
+            e.preventDefault();
+
+            // Clear previously zoomed image
+            $(".zoom-image-container").fadeOut();
+
+            var formData = new FormData();
+            var images = $('#barcodeImage')[0].files;
+            var solarPlateCompany = $('#solarPlateCompany').val();
+            var wattage = $('#wattage').val();
+
+            for (var i = 0; i < images.length; i++) {
+                formData.append('image', images[i]);
+            }
+
+            formData.append('solarPlateCompany', solarPlateCompany);
+            formData.append('wattage', wattage);
+            formData.append('csrfmiddlewaretoken', $('input[name="csrfmiddlewaretoken"]').val());
+
+            $.ajax({
+                type: "POST",
+
+                data: formData,
+                processData: false,
+                contentType: false,
+                success: function(data) {
+                    var detectedBarcodes = {}; // Track detected barcodes
+                    var tableBody = $("#barcodeTableBody");
+                    tableBody.empty(); // Clear the table body
+
+                    // Clear the input fields
+                    $("#solarPlateCompany").val('');
+                    $("#wattage").val('');
+
+
+                    var serialNumber = 1;
+
+                    for (var i = 0; i < data.length; i++) {
+                        var barcodeData = data[i].barcode_data;
+                        var barcodeType = data[i].barcode_type;
+                        var fileSavedAt = data[i].file_saved_at;
+                        var imageSrc = URL.createObjectURL(images[i]);
+                        var message = data[i].message;
+
+                        if (barcodeData !== null && barcodeData !== '') {
+                            if (message === 'Barcode data already exists in the database.') {
+                                console.log("Barcode data already exists: " + barcodeData);
+                                duplicateBarcodesCount++;
+
+                                // Skip detection for duplicate barcode
+                                continue;
+                            }
+
+                            console.log(barcodeData);
+                            detectedBarcodesCount++;
+                            var row = $("<tr></tr>");
+                            row.append("<td>" + serialNumber++ + "</td>");
+                            row.append("<td>" + barcodeData + "</td>");
+                            row.append("<td>" + barcodeType + "</td>");
+                            row.append("<td>" + solarPlateCompany + "</td>");
+                            row.append("<td>" + wattage + "</td>");
+                            row.append("<td>" + fileSavedAt + "</td>");
+                            row.append("<td><img class='zoomable-image' src='" + imageSrc + "' alt='Barcode Image' style='max-width: 200px; max-height: 120px; cursor: zoom-in;'></td>");
+
+                            tableBody.append(row);
+
+                            detectedBarcodes[barcodeData] = true; // Add barcode to detected list
+                        } else {
+                            console.log("No barcode data found");
+                            notDetectedImagesCount++;
+                        }
+
+                        // Revoke object URLs after they have been used
+                        URL.revokeObjectURL(images[i]);
+                    }
+
+                    // Show the table
+                    $("#barcodeResult").show();
+
+                    // Update selected images count
+                    $("#selectedImagesCount").text(selectedImagesCount);
+
+                    // Update detected barcodes count
+                    $("#detectedBarcodesCount").text(detectedBarcodesCount);
+
+                    // Update duplicate barcodes count
+                    $("#duplicateBarcodesCount").text(duplicateBarcodesCount);
+
+                    // Update not detected images count
+                    $("#notDetectedImagesCount").text(notDetectedImagesCount);
+
+                    // Clear the selected file input
+                    $('#barcodeImage').val('');
+
+                    // Show or hide the "No barcode image found" message
+                    if (detectedBarcodesCount > 0) {
+                        $("#noBarcodeMessage").hide();
+                    } else {
+                        $("#noBarcodeMessage").show();
+                    }
+
+                    // Show alert message with the count of detected barcodes
+                    alert("Total Number of Barcode Images Detected: " + detectedBarcodesCount);
+
+                    // Show a message for duplicate barcodes
+                    if (duplicateBarcodesCount > 0) {
+                        alert("Already detected barcodes: " + duplicateBarcodesCount);
+                    }
+                },
+                error: function(error) {
+                    console.log(error);
+                }
+            });
+        });
+
+        $(document).on('click', '.zoomable-image', function() {
+            var imageSrc = $(this).attr("src");
+            var zoomImageContainer = $(".zoom-image-container");
+            var zoomImage = $(".zoom-image");
+
+            if (zoomImageContainer.is(":visible")) {
+                if (zoomImage.attr("src") === imageSrc) {
+                    // Clicked the same image, zoom out
+                    zoomImageContainer.fadeOut();
+                } else {
+                    // Clicked a different image, update the zoomed image
+                    zoomImage.attr("src", imageSrc);
+                }
+            } else {
+                // Zoom in on the clicked image
+                zoomImage.attr("src", imageSrc);
+                zoomImageContainer.fadeIn();
+            }
+        });
+
+        $(document).on('click', '.zoom-image-container', function() {
+            $(this).fadeOut();
+        });
+
+        $(document).on('keydown', function(e) {
+            if (e.keyCode === 27) {
+                $('.zoom-image-container').fadeOut();
+            }
+        });
+
+        // Check if the clicked element is not a zoomable image or zoom image container
+        $(document).on('click', function(e) {
+            var target = $(e.target);
+            var zoomImageContainer = $(".zoom-image-container");
+
+            // Check if the clicked element is not a zoomable image or zoom image container
+            if (!target.hasClass("zoomable-image") && !target.hasClass("zoom-image") && !target.hasClass("zoom-image-container")) {
+                zoomImageContainer.fadeOut();
+            }
+        });
+    });
+</script>
+{% endblock content %}

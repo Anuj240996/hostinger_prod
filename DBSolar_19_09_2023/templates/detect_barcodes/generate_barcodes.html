@@ -1,0 +1,67 @@
+{% extends '../base.html' %}
+
+{% load static %}
+
+{% block content %}
+<div class="row">
+    <h2>Generate Barcodes</h2>
+    <div class="col-md-10 mx-auto">
+        <form method="POST">
+            {% csrf_token %}
+            <div class="form-group row">
+                <div class="col-sm-5">
+                    <label for="company">Select a Consumer</label>
+                    <select class="form-control" id="company" name="company">
+                        <option value="">--Select Consumer--</option>  <!-- Add default option -->
+                        {% for company in companies|dictsort:"Comp_name" %}
+                        <option value="{{ company }}">{{ company }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-sm-5">
+                    <label for="barcodeData">Barcode Data</label>
+                    <select class="form-control" id="barcodeData" name="barcodeData">
+                        {% if selected_company %}
+                            {% for barcode_image in barcode_images %}
+                                <option value="{{ barcode_image.barcode_data }}">{{ barcode_image.barcode_data }}</option>
+                            {% endfor %}
+                        {% else %}
+                            <option value="">--Select Consumer First--</option>
+                        {% endif %}
+                    </select>
+                </div>
+                <div class="col-sm-2">
+                    <label for="btnGenerate">Click to generate</label>
+                    <button type="submit" id="btnGenerate" class="form-control btn btn-primary">Generate Barcode</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% if selected_company %}
+<div class="row mt-5">
+    <h4>Generated Barcodes for Consumer: {{ selected_company }}</h4>
+    <div class="col-md-10 mx-auto">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Barcode Data</th>
+                    <th>Barcode Type</th>
+                    <th>Barcode Image</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for barcode_data, barcode_type, barcode_path in barcodes %}
+                <tr>
+                    <td>{{ barcode_data }}</td>
+                    <td>{{ barcode_type }}</td>
+                    <td><img src="{{ barcode_path }}" alt="Barcode"></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endif %}
+{% endblock content %}

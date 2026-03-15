@@ -1,0 +1,1094 @@
+{% extends 'partials/base.html' %}
+{% load static %}
+{% block title %} New Purchase {% endblock title %}
+{% block content %}
+
+<br>
+<div style="color:#575757; font-style: bold; font-size: 3rem; border-bottom: 1px solid white;"
+     xmlns="http://www.w3.org/1999/html">New Sales</div>
+
+<br>
+<fieldset>
+<div class="panel panel-default">
+    <div class="panel-heading panel-heading-text">Consumer Details</div>
+
+    <div class="panel-body">
+          <div class="form-row">
+
+          <div class="form-group col-md-6">
+            <label for="id_name" class="panel-body-text">Consumer Name:</label>
+            <input type="text" class="form-control textinput text-capitalize" id="id_name" value="{{ supplier.Comp_name }}" disabled>
+        </div>
+         <div class="form-group col-md-6">
+            <label for="id_name" class="panel-body-text">Plant Capacity:</label>
+            <input type="text" class="form-control textinput text-capitalize" id="id_name" value="{{ supplier.Plant_Capacity }} Kw" disabled>
+        </div>
+          </div>
+        <div class="form-row">
+
+            <div class="form-group col-md-6">
+                <label for="id_gstin" class="panel-body-text">Address:</label>
+                <input type="gstin" class="form-control textinput text-capitalize" id="id_gstin" value="{{ supplier.Address }}" disabled>
+            </div>
+            <div class="form-group col-md-3">
+                <label for="id_phone" class="panel-body-text">City:</label>
+                <input type="text" class="form-control textinput text-capitalize" id="id_phone" value="{{ supplier.City }}" disabled>
+            </div>
+            <div class="form-group col-md-3">
+                <label for="id_phone" class="panel-body-text">Phone No:</label>
+                <input type="text" class="form-control textinput" id="id_phone" value="{{ supplier.phone }}" disabled>
+            </div>
+        </div>
+    </div>
+</div>
+</fieldset>
+<br>
+
+<form method="post" class="panel panel-default" id="purchaseForm">
+    {% csrf_token %}
+    {{ formset.management_form }}
+
+    <div class="panel-heading panel-heading-text">Product Details</div>
+
+<fieldset>
+    <!-- Dropdown list for selecting category -->
+    <div class="form-row">
+        <div class="form-group col-md-6">
+        <label for="category_dropdown" class="panel-body-text">Select Category:</label>
+        <select id="category_dropdown" class="form-control text-capitalize">
+            <option value="">Select Category</option>
+            {% for category in categories %}
+                <option value="{{ category.id }}">{{ category.name }}</option>
+            {% endfor %}
+        </select>
+        </div>
+        <div class="form-group col-md-6">
+        <label id="subcategory_label" for="subcategory_dropdown" class="panel-body-text" style="display: none;">Select Subcategory:</label>
+        <select id="subcategory_dropdown" class="form-control text-capitalize" style="display: none;">
+            <option value="">Select Subcategory</option>
+        </select>
+        </div>
+    </div>
+
+    <div class="row mb-1 align-items-center">
+        <div class="col-md-9 mb-2 item1">
+            <label id="stock_label" for="stock_dropdown" class="panel-body-text" style="display: none;">Select Stock:</label>
+            <select id="stock_dropdown" class="text-capitalize form-control" style="display: none;">
+                <option value="">Select Stock</option>
+            </select>
+        </div>
+        <div class="col-md-3 mb-2 item1" id="gstToggleContainer" style="display: none;"> <!-- Initially hidden -->
+            <div class="gst-label-container">
+                <span id="label_excl_gst" class="gst-label">Excl. GST</span>
+                <span id="label_incl_gst" class="gst-label" style="display: none;">Incl. GST</span>
+            </div>
+            <label class="switch ml-2">
+                <input type="checkbox" id="gstToggle" name="gstToggle">
+                <span class="slider"></span>
+            </label>
+
+        </div>
+    </div>
+</fieldset>
+
+    <div id="fieldset-container" style="display: none;">
+<fieldset>
+    <!-- Container for dynamically added form rows -->
+    <div id="stockitem">
+        <div class="panel-body">
+
+        </div>
+    </div>
+           <div style="width: 100%; display: flex; justify-content: flex-end;">
+            <hr style="background-color: black; width: 50%; border: none; height: 1px; margin: 0;">
+          </div><br>
+      <div class="form-group row" id="totals">
+          <div class="col-md-6">
+          </div>
+            <div class="col-md-3">
+                <div class="input-group">
+                    <div class="input-group-prepend">
+                        <span class="input-group-text">Total Quantity</span>
+                    </div>
+                    <input type="text" id="total_quantity" class="form-control" style="background-color: white;
+                           text-align: right; padding-right: 12px; font-weight: bold;" readonly>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="input-group">
+                    <div class="input-group-prepend">
+                        <span class="input-group-text">Basic Amount</span>
+                    </div>
+                    <input type="text" id="total_amount" name="total_amount" class="form-control pr-6" style="background-color: white; text-align: right; font-weight: bold" readonly>
+                </div>
+            </div>
+        </div>
+    <div class="row mb-1 align-items-center">
+        <div class="col-md-6 mb-2 item1">
+            <!-- You can add any other content here -->
+        </div>
+        <div class="col-md-3 mb-2 item1">
+            <!-- GST label inside the textbox -->
+            <div class="input-group">
+                <div class="input-group-prepend">
+                    <span class="input-group-text" id="gst_value_label" style="display: none;">GST</span>
+                </div>
+                <input type="text" id="gst_value" name="gst_value" class="form-control" value="0" style="display: block; background-color: white;
+                        text-align: right; padding-right: 12px;" readonly>
+            </div>
+        </div>
+        <div class="col-md-3 mb-4 item1">
+            <!-- GST Amount label inside the textbox -->
+            <div class="input-group">
+                <div class="input-group-prepend">
+                    <span class="input-group-text" id="gst_amount_label" style="display: none;">GST Amount</span>
+                </div>
+                <input type="text" id="gst_amount" name="gst_amount" class="form-control" value="0"
+                       style="background-color: white; text-align: right; padding-right: 12px;" readonly>
+            </div>
+        </div>
+    </div>
+     <div class="row mb-1 align-items-center">
+         <div class="col-md-9 mb-2 form-group">
+         </div>
+            <div class="col-md-3 mb-2 form-group">
+            <div class="input-group">
+                <div class="input-group-prepend">
+                    <span class="input-group-text" id="round_off_label" style="display: none;">Round Off</span>
+                </div>
+                <input type="text" id="round_off" name="round_off" class="form-control" value="100" style="display: none; background-color: white; text-align: right; padding-right: 12px;" readonly>
+            </div>
+        </div>
+     </div>
+<div class="row mb-1 align-items-center">
+         <div class="col-md-6 mb-2 form-group">
+         </div>
+
+    <div class="col-md-6 mb-2 form-group">
+    <div class="input-group">
+        <div class="input-group-prepend">
+            <span class="input-group-text" id="final_amount_label" style="display: none; color: black; font-weight: bold;">Final Amount (Incl. GST)</span>
+        </div>
+        <input type="text" id="final_amount" name="final_amount" class="form-control" value="100" style="display: none; background-color: white; text-align: right; padding-right: 12px; font-weight: bold;" readonly>
+    </div>
+</div>
+     </div>
+
+</fieldset>
+    </div>
+    <br>
+    <div class="text-center">
+<!--        <button type="submit" class="btn btn-success" style="width: 200px; margin-right: 10px;">Add to Purchases</button>-->
+           <button type="button" id="initialSubmitButton" class="btn btn-success" style="width: 200px; margin-right: 10px;">Add to Purchases</button>
+        <a href="{% url 'select_customer' %}" class="btn btn-danger" style="width: 200px; margin-right: 10px;">Go Back</a>
+        <a href="{% url 'sales-list' %}" class="btn btn-secondary" style="width: 200px;">Cancel</a>
+    </div>
+
+</form>
+
+<!-- Modal Structure -->
+<div class="modal fade" id="confirmationModal" tabindex="-1" aria-labelledby="confirmationModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="confirmationModalLabel">Confirm Details</h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+                <form id="modalForm">
+                    <div class="form-group">
+                        <label for="eway_no">Prev.Delivery Challan No <span style="color: red;">*</span></label>
+                        <input type="text" id="eway_no" name="eway_no" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="bill_date">Prev.Bill Date <span style="color: red;">*</span></label>
+                        <input type="date" id="bill_date" name="bill_date" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="veh_no">Vehicle No</label>
+                        <input type="text" id="veh_no" name="veh_no" class="form-control">
+                    </div>
+                    <div class="form-group">
+                        <label for="handby">Handled By <span style="color: red;">*</span></label>
+                        <input type="text" id="handby" name="handby" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="destination">Source <span style="color: red;">*</span></label>
+<!--                        <input type="text" id="destination" name="destination" class="form-control" required>-->
+                         <select id="destination" name="destination" class="form-control" style=" overflow: hidden; width: 100%;" required>
+                                                <option value="" disabled selected> </option>
+                                                <option value="Warehouse" {% if billdetails.destination == "Warehouse" %}selected{% endif %}>&nbsp;Warehouse</option>
+                                                <option value="Office" {% if billdetails.destination == "Office" %}selected{% endif %}>&nbsp;Office</option>
+                                                <option value="Vendor" {% if billdetails.destination == "Project Side" %}selected{% endif %}>&nbsp;Vendor</option>
+                                            </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="po_no">PO No</label>
+                        <input type="text" id="po_no" name="po_no" class="form-control">
+                    </div>
+                    <div class="form-group">
+                        <label for="po_date">PO Date</label>
+                        <input type="date" id="po_date" name="po_date" class="form-control">
+                    </div>
+                </form>
+            </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+        <button type="button" id="modalSubmitButton" class="btn btn-primary">Submit</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script type="text/javascript" src="{% static 'js/jquery-3.2.1.slim.min.js' %}"></script>
+<script type="text/javascript" src="{% static 'js/dialogbox.js' %}"></script>
+<style>
+    .success {
+
+        color: #28a745; /* Text color */
+        border: 3px solid #28a745; /* Border color */
+        padding: 5px 8px;
+        border-radius: 5px;
+        font-size: 80%;
+    }
+
+    .danger {
+
+        color: #dc3545; /* Text color */
+        border: 3px solid #dc3545; /* Border color */
+        padding: 5px 8px;
+        border-radius: 5px;
+        font-size: 80%;
+    }
+
+    .custom-flex {
+        display: flex;
+        align-items: center; /* Vertically center input and image */
+    }
+    .custom-flex input {
+        margin-right: 10px; /* Add some space between the input and the image */
+    }
+    /* Styling for toggle button */
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 60px;
+            height: 34px;
+            margin-top: 40px;  /* Remove any margin */
+        }
+
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 34px;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 26px;
+            width: 26px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+
+        input:checked + .slider {
+            background-color: #2196F3;
+        }
+
+        input:checked + .slider:before {
+            transform: translateX(26px);
+        }
+
+        .gst-label-container {
+            display: inline-block;
+        }
+
+        .gst-label {
+            font-weight: bold;
+            font-size: 1.3rem; /* Adjust size as needed */
+            margin-right: 10px;
+            display: inline-block;
+            vertical-align: middle;
+            margin-bottom: 25px;  /* Remove any margin */
+        }
+
+
+
+        #label_excl_gst {
+            color: #dc3545; /* Red for "Excl. GST" */
+        }
+
+        #label_incl_gst {
+            color: #28a745; /* Green for "Incl. GST" */
+        }
+
+        /* Switch styling */
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 60px;
+            height: 34px;
+            margin-left: 10px; /* Space between label and toggle */
+        }
+
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 26px;
+            width: 26px;
+            border-radius: 50%;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+        }
+
+        input:checked + .slider {
+            background-color: #2196F3;
+        }
+
+        input:checked + .slider:before {
+            transform: translateX(26px);
+        }
+
+        /* Rounded sliders */
+        .slider.round {
+            border-radius: 34px;
+        }
+
+        .slider.round:before {
+            border-radius: 50%;
+        }
+
+        /* Flex container to align labels and toggle on the same line */
+        .d-flex {
+            display: flex;
+            align-items: center;
+        }
+
+        .ml-2 {
+            margin-left: 10px;
+        }
+        .stockName {
+            margin-bottom: 0; /* Ensure no margin at the bottom of the stockName */
+        }
+
+        .custom-small {
+            color: #909494;
+            margin: 0; /* Remove any margin */
+            line-height: 1; /* Set line height to minimize space */
+            padding: 0; /* Remove any padding */
+        }
+
+
+</style>
+
+<div class="modal fade" id="serialNumberModal" tabindex="-1" role="dialog" aria-labelledby="serialNumberModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="serialNumberModalLabel">Select Serial Numbers</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="serialNumberForm">
+                    <div id="serial-number-container">
+                        <!-- Checkboxes will be dynamically added here -->
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" id="saveSerialNumbers">Save Serial Numbers</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<script type="text/javascript">
+$(document).ready(function() {
+    var selectedStockId;
+    var selectedSerialNumbers = {};
+
+    // When clicking on stock name, open modal and load serial numbers
+    $(document).on('click', '.stockName', function(e) {
+        e.preventDefault();
+        selectedStockId = $(this).closest('.form-row').find('input[name*="stock"]').val();
+
+        // Fetch the quantity from the purchase form
+        var quantity = parseInt($(this).closest('.form-row').find('input[name*="quantity"]').val()) || 0;
+
+        // Fetch serial numbers for the selected stock
+        $.ajax({
+            url: '{% url "get_serial_numbers" %}', // Add appropriate URL here
+            data: { 'stock_id': selectedStockId },
+            success: function(data) {
+                var serialNumbers = data.serial_numbers; // Assume the data contains a list of serial numbers
+                $('#serial-number-container').empty();
+
+                // Dynamically add checkboxes for each serial number
+                serialNumbers.forEach(function(serial) {
+                    var isChecked = selectedSerialNumbers[selectedStockId] && selectedSerialNumbers[selectedStockId].includes(serial.serialNo);
+                    var checkbox = `<div class="form-check">
+                        <input class="form-check-input" type="checkbox" value="${serial.serialNo}" id="serialNo-${serial.serialNo}" ${isChecked ? 'checked' : ''}>
+                        <label class="form-check-label" for="serialNo-${serial.serialNo}">${serial.serialNo}</label>
+                    </div>`;
+                    $('#serial-number-container').append(checkbox);
+                });
+
+                // Set the maximum selection based on quantity
+                updateCheckboxState(quantity);
+
+                $('#serialNumberModal').modal('show');
+            }
+        });
+    });
+
+    // Update the checkbox state based on selected quantity
+    function updateCheckboxState(quantity) {
+        $('#serial-number-container input[type="checkbox"]').off('change').on('change', function() {
+            var checkedCount = $('#serial-number-container input[type="checkbox"]:checked').length;
+
+            // Enable/disable checkboxes based on checked count and quantity
+            if (checkedCount >= quantity) {
+                $('#serial-number-container input[type="checkbox"]').not(':checked').prop('disabled', true);
+            } else {
+                $('#serial-number-container input[type="checkbox"]').prop('disabled', false);
+            }
+        });
+    }
+
+    // Save selected serial numbers when the modal is submitted
+    $('#saveSerialNumbers').on('click', function() {
+        var checkedSerials = [];
+        $('#serial-number-container input[type="checkbox"]:checked').each(function() {
+            checkedSerials.push($(this).val());
+        });
+
+        // Store the selected serials for the stock
+        selectedSerialNumbers[selectedStockId] = checkedSerials;
+
+        // Display selected serial numbers below stock name in the table
+        var stockRow = $('input[value="' + selectedStockId + '"]').closest('.form-row');
+        stockRow.find('.stockNameDisplay').html('Selected Serials: ' + checkedSerials.join(', '));
+
+        // Now manually append these serial numbers to hidden fields in the purchase form
+        var hiddenField = $('<input>')
+            .attr('type', 'hidden')
+            .attr('name', 'serials-' + selectedStockId)
+            .val(checkedSerials.join(','));
+
+        // Append the hidden field to the form (purchaseForm)
+        $('#purchaseForm').append(hiddenField);
+
+        $('#serialNumberModal').modal('hide');
+    });
+
+    // Prevent actual form submission at this stage
+    $('#purchaseForm').on('submit', function(e) {
+        e.preventDefault();
+        // You can add more logic here if needed, but we prevent saving to the database
+       // alert('Serial numbers appended to form but not saved in the database.');
+    });
+});
+</script>
+
+
+<script type="text/javascript">
+$(document).ready(function() {
+    var $gstToggleContainer = $('#gstToggleContainer');
+    var $gstLabel = $('#gstLabel');
+
+    // Handle category dropdown change
+    $('#category_dropdown').on('change', function() {
+        var categoryId = $(this).val();
+        var $subcategoryDropdown = $('#subcategory_dropdown');
+        var $subcategoryLabel = $('#subcategory_label');
+        var $stockDropdown = $('#stock_dropdown');
+        var $stockLabel = $('#stock_label');
+
+        if (categoryId) {
+            $.ajax({
+                url: '{% url "get_subcategories" %}',
+                data: { 'category_id': categoryId },
+                success: function(data) {
+                    $subcategoryDropdown.empty().append('<option value="">Select Subcategory</option>');
+                    $.each(data.subcategories, function(index, subcategory) {
+                        $subcategoryDropdown.append(`<option value="${subcategory.id}">${subcategory.name}</option>`);
+                    });
+                    $subcategoryDropdown.show();
+                    $subcategoryLabel.show();
+                },
+                error: function(xhr, status, error) {
+                    console.error("Error fetching subcategories: ", error);
+                }
+            });
+        } else {
+            $subcategoryDropdown.empty().append('<option value="">Select Subcategory</option>').hide();
+            $subcategoryLabel.hide();
+            $stockDropdown.empty().append('<option value="">Select Stock</option>').hide();
+            $stockLabel.hide();
+            $gstToggleContainer.hide(); // Hide toggle button when no category selected
+        }
+    });
+
+    // Handle subcategory dropdown change
+    $('#subcategory_dropdown').on('change', function() {
+        var subcategoryId = $(this).val();
+        var $stockDropdown = $('#stock_dropdown');
+        var $stockLabel = $('#stock_label');
+
+        if (subcategoryId) {
+            $.ajax({
+                url: '{% url "get_stocks" %}',
+                data: { 'subcategory_id': subcategoryId },
+                success: function(data) {
+                    $stockDropdown.empty().append('<option value="">Select Stock</option>');
+                    $.each(data.stocks, function(index, stock) {
+                        $stockDropdown.append(`<option value="${stock.id}" data-name="${stock.name}" data-price="${stock.price}">${stock.name}</option>`);
+                    });
+                    $stockDropdown.show();
+                    $stockLabel.show();
+                    $gstToggleContainer.show(); // Show the toggle button when stock dropdown is displayed
+                },
+                error: function(xhr, status, error) {
+                    console.error("Error fetching stocks: ", error);
+                }
+            });
+        } else {
+            $stockDropdown.empty().append('<option value="">Select Stock</option>').hide();
+            $stockLabel.hide();
+            $gstToggleContainer.hide(); // Hide toggle button when no subcategory is selected
+        }
+    });
+
+    // Handle GST toggle switch
+    $('#gstToggle').on('change', function() {
+        if ($(this).is(':checked')) {
+            $gstLabel.text('Including GST');
+        } else {
+            $gstLabel.text('Excluding GST');
+        }
+        toggleGSTFields();
+        updateFinalAmount();
+    });
+
+
+    function updateGSTValues() {
+        var gstValues = new Set(); // Use a Set to ensure uniqueness
+
+        // Collect unique GST values
+        $('#stockitem .gst_badge').each(function() {
+            var gstValueText = $(this).text().trim(); // Get text from GST badge
+            if (gstValueText) {
+                // Convert to float and format
+                var gstValue = parseFloat(gstValueText).toFixed(2); // Convert to float with 2 decimal places
+
+                // Remove trailing .00
+                if (gstValue.endsWith('.00')) {
+                    gstValue = gstValue.split('.')[0]; // Remove decimal part
+                }
+
+                // Append % symbol
+                gstValue = gstValue + '%';
+
+                gstValues.add(gstValue); // Add to the Set
+            }
+        });
+
+        // Join unique values with commas and update the textbox
+        $('#gst_value').val(Array.from(gstValues).join(' , '));
+    }
+
+
+    // Initialize total as 0
+    var total = 0;
+
+    $(document).on('change', '#stock_dropdown', function() {
+        var selectedStock = $(this).find(':selected');
+        var stockName = selectedStock.text();
+        var stockId = selectedStock.val();
+        var stockPrice = selectedStock.data('price');
+
+        $.ajax({
+            url: '{% url "get_stock_quantity" %}',
+            data: {
+                'stock_id': stockId
+            },
+            success: function(data) {
+                var stockQuantity = data.quantity;
+                var purchase = data.purchase;
+                var purchase_id = data.purchase_id;
+                var stockAlert = data.stock_alert;
+                var badgeClass = stockQuantity > stockAlert ? 'success' : 'danger';
+                var stockgst = data.gst;
+
+                if (stockId) {
+                    var serialNo = total + 1;
+
+                    var newRow = `<div class="row form-row">
+                        <input type="hidden" name="form-${total}-DELETE" id="id_form-${total}-DELETE">
+                        <div class="form-group col-md-1 text-center">
+                            ${total === 0 ? '<label class="panel-body-text" style="text-align: center; font-weight: bold;">Sr No</label>' : ''}
+                            <span class="form-control-plaintext">${serialNo}</span>
+                        </div>
+                        <div class="form-group col-md-4 text-center">
+                            ${total === 0 ? '<label class="panel-body-text" style="text-align: center; font-weight: bold;">Stock</label>' : ''}
+                            <div style="display: flex; flex-direction: column; align-items: center;">
+                                <a href="#" class="stockName text-capitalize form-control-plaintext">${stockName}</a>
+                                <input type="hidden" name="form-${total}-stock" value="${stockId}">
+                                  <small class="custom-small">
+                                    <span class="stockNameDisplay" style="margin: 0; padding: 0;"></span>
+                                </small>
+                            </div>
+                        </div>
+                        <div class="form-group col-md-1 text-center">
+                            ${total === 0 ? '<label class="panel-body-text" style="text-align: center; font-weight: bold;">Avb.Qunt.</label>' : ''}
+                            <div class="d-flex justify-content-center align-items-center mt-1">
+                                <input type="hidden" class="form-control stock-quantity" value="${stockQuantity}" readonly>
+                                <span class="badge ${badgeClass}">${stockQuantity} <small>${purchase}</small></span>
+                            </div>
+                        </div>
+                        <div class="form-group col-md-2 text-center">
+                            ${total === 0 ? '<label class="panel-body-text" style="text-align: center; font-weight: bold;">Quantity</label>' : ''}
+                            <div class="input-group">
+                                <input type="number" class="form-control quantity" style="text-align: center;" name="form-${total}-quantity" value="1">
+                                <div class="input-group-append">
+                                    <span class="input-group-text">${purchase}</span>
+                                </div>
+                            </div>
+                            <div class="warning-message" style="color: red; display: none;">Quantity exceeds available stock!</div>
+                        </div>
+                        <div class="form-group quantity-container col-md-2 text-center">
+                            ${total === 0 ? '<label class="panel-body-text" style="text-align: center; font-weight: bold;">Rate</label>' : ''}
+                            <input type="text" class="form-control price" name="form-${total}-perprice" required>
+                        </div>
+                         <div class="form-group gst-container col-md-1 text-center" style="display: none;">
+                            ${total === 0 ? '<label class="panel-body-text" id="gst_label" style="text-align: center; font-weight: bold;">GST</label>' : ''}
+                            <div class="d-flex justify-content-center align-items-center mt-1">
+                                <input type="hidden" class="form-control gst" value="${stockgst}" readonly>
+                                <span class="badge gst_badge" style="font-size: 1rem;" style="text-align: center;"> ${parseFloat(stockgst).toString().replace(/\.00$/, '')}%</span>
+                            </div>
+                        </div>
+                        <div class="form-group col-md-2 text-center">
+                            ${total === 0 ? '<label class="panel-body-text" style="text-align: center; font-weight: bold;">Total</label>' : ''}
+                            <div class="custom-flex">
+                                <input type="text" style="text-align: right;" class="textinput form-control totalprice me-2" value="${stockPrice}" readonly>
+                                <img src="{% static 'images/letter-x (1).png' %}" class="remove-form-row" alt="Remove" style="cursor: pointer; width: 15px; height: 15px;">
+                            </div>
+                        </div>
+                    </div>`;
+
+                    $('#stockitem .panel-body').append(newRow);
+                    total++;
+                    $('#id_form-TOTAL_FORMS').val(total);
+                    selectedStock.remove();
+
+                    // Attach the quantity change listener for this row
+                    attachQuantityChangeListener(total - 1, stockQuantity);
+                }
+
+                updateTotals();
+            }
+        });
+        $('#fieldset-container').show();
+    });
+
+    // Function to attach change listener to the quantity input
+    function attachQuantityChangeListener(rowIndex, stockQuantity) {
+        $(`input[name="form-${rowIndex}-quantity"]`).on('input', function() {
+            var enteredQuantity = parseInt($(this).val(), 10);
+            var warningMessage = $(this).closest('.form-row').find('.warning-message');
+
+            if (enteredQuantity > stockQuantity) {
+                warningMessage.show();  // Show warning if quantity exceeds stock
+            } else if (enteredQuantity <= stockQuantity && enteredQuantity >= 1) {
+                    // When the quantity is valid, hide the warning
+                    warningMessage.hide();
+                }
+            });
+<!--            // Automatically focus the quantity input when the row is added-->
+<!--            $(`input[name="form-${rowIndex}-quantity"]`).focus();-->
+        }
+
+
+
+    function deleteForm(prefix, btn) {
+        var formRow = btn.closest('.form-row');
+        var totalForms = $('#id_' + prefix + '-TOTAL_FORMS').val();
+
+        // Correctly get the stockId and stockName from the form row
+        var stockId = formRow.find('input[name*="stock"]').val();
+        var stockPrice = formRow.find('.price').val();
+        // Get stockName from the original input, not the display span
+        var stockName = formRow.find('input[name*="stock"]').closest('.form-group').find('.stockName').text();
+
+        formRow.remove();
+
+        totalForms--;
+        $('#id_' + prefix + '-TOTAL_FORMS').val(totalForms);
+
+        $('#stockitem .form-row').each(function(index, row) {
+            $(row).find('.form-control-plaintext').first().text(index + 1);
+            updateElementIndex(row, prefix, index);
+        });
+
+        total--;
+
+        // Append the correct stockId and stockName to the dropdown
+        $('#stock_dropdown').append(`<option value="${stockId}" data-price="${stockPrice}">${stockName}</option>`);
+
+        updateTotals();
+        if ($('#gstToggle').is(':checked')) {
+            calculateGST();
+        }
+        updateFinalAmount();
+    }
+
+    $(document).on('click', '.remove-form-row', function(e) {
+        e.preventDefault();
+
+        deleteForm('form', $(this));
+
+        if ($('#stockitem .form-row').length === 0) {
+            $('#fieldset-container').hide();
+        }
+        updateGSTValues(); // Update GST values after deletion
+    });
+
+
+    function updateElementIndex(el, prefix, ndx) {
+        var id_regex = new RegExp('(' + prefix + '-\\d+-)');
+        var replacement = prefix + '-' + ndx + '-';
+        $(el).find(':input').each(function() {
+            if (this.id) this.id = this.id.replace(id_regex, replacement);
+            if (this.name) this.name = this.name.replace(id_regex, replacement);
+        });
+    }
+
+    // Update total quantity and amount
+    function updateTotals() {
+        var totalQuantity = 0;
+        var totalAmount = 0;
+        $('.form-row').each(function() {
+            var quantity = parseFloat($(this).find('.quantity').val()) || 0;
+            var pricePerItem = parseFloat($(this).find('.price').val()) || 0;
+            var totalPrice = quantity * pricePerItem;
+
+            totalQuantity += quantity;
+            totalAmount += totalPrice;
+
+            $(this).find('.totalprice').val(totalPrice.toFixed(2));
+        });
+
+        $('#total_quantity').val(totalQuantity);
+        $('#total_amount').val(totalAmount.toFixed(2));
+    }
+
+    // Calculate GST amounts
+    function calculateGST() {
+        var totalGstAmount = 0;
+        $('.form-row').each(function() {
+            var quantity = parseFloat($(this).find('.quantity').val()) || 0;
+            var price = parseFloat($(this).find('.price').val()) || 0;
+            var gstPercent = parseFloat($(this).find('.gst').val()) || 0;
+
+            var gstStockPrice = (price * quantity * gstPercent) / 100;
+            $(this).find('.gststockPrice').val(gstStockPrice.toFixed(2));
+
+            totalGstAmount += gstStockPrice;
+        });
+        $('#gst_amount').val(totalGstAmount.toFixed(2));
+    }
+
+    function resetGST() {
+        $('.gststockPrice').val('0.00');
+        $('#gst_amount').val('0.00');
+    }
+
+    function updateFinalAmount() {
+         var totalAmount = parseFloat($('#total_amount').val()) || 0;
+         var gstAmount = parseFloat($('#gst_amount').val()) || 0;
+         var finalAmount = 0; // Initialize finalAmount
+         var adjustment = 0; // Initialize adjustedFinalAmount
+         var roundOffAmount = 0; // Initialize roundOffAmount
+
+        if (!$('#gstToggle').is(':checked')) {
+            finalAmount = totalAmount;
+            calculateGST();
+        } else {
+            finalAmount = totalAmount + gstAmount;
+        }
+
+        // Extract the decimal part
+        var decimalPart = finalAmount - Math.floor(finalAmount);
+
+        if (decimalPart <= 0.50) {
+            // If decimal part <= 0.50, subtract it from the finalAmount (round down)
+            adjustment = -decimalPart;
+            roundOffAmount = Math.floor(finalAmount);
+        } else {
+            // If decimal part > 0.50, add the difference to round up
+            adjustment = 1 - decimalPart;
+            roundOffAmount = Math.ceil(finalAmount);
+        }
+
+        // Update final amount to reflect the rounding adjustment
+        var adjustedFinalAmount = finalAmount + adjustment;
+
+        // Show the adjusted final_amount in the textbox
+<!--        $('#final_amount').val(adjustedFinalAmount.toFixed(2));-->
+        // Update the final_amount textbox with the adjusted value and add ₹ symbol
+        $('#final_amount').val('₹ ' + adjustedFinalAmount.toFixed(2));
+
+        // Show the adjustment value (round off) in the textbox
+        $('#round_off').val(adjustment.toFixed(2));  // Assuming you have an input field with id 'round_off'
+    }
+
+
+    // Listen for quantity or price changes
+    $(document).on('input', '.quantity, .price', function() {
+        updateTotals();
+        if ($('#gstToggle').is(':checked')) {
+            calculateGST();
+
+        }
+        updateFinalAmount();
+        updateGSTValues(); // Update GST values
+
+    });
+
+    // Toggle GST fields
+    function toggleGSTFields() {
+        if ($('#gstToggle').is(':checked')) {
+            $('#label_excl_gst').hide();
+            $('#label_incl_gst').show();
+            $('#gst_value').show();
+            $('#gst_amount').show();
+            $('#final_amount').show();
+            $('#gst_value_label').show();
+            $('#gst_amount_label').show();
+            $('#final_amount_label').show();
+            $('#gst_badge').show();
+            $('#gst_label').show();
+            $('#round_off_label').show();
+            $('#round_off').show();
+
+            $('.quantity-container').removeClass('col-md-2').addClass('col-md-1');
+            $('.gst-container').show();
+
+            updateGSTValues();
+        } else {
+            $('#label_excl_gst').show();
+            $('#label_incl_gst').hide();
+            $('#gst_value').hide();
+            $('#gst_amount').hide();
+            $('#final_amount').show();
+            $('#gst_value_label').hide();
+            $('#gst_amount_label').hide();
+            $('#final_amount_label').show();
+
+            $('#gst_label').hide();
+            $('#round_off_label').show();
+            $('#round_off').show();
+
+            $('.quantity-container').removeClass('col-md-1').addClass('col-md-2');
+            $('.gst-container').hide();
+        }
+    }
+
+    // Toggle labels based on checkbox state
+    $('#gstToggle').on('change', function() {
+        if ($(this).is(':checked')) {
+            $('#label_excl_gst').hide();
+            $('#label_incl_gst').show();
+            $('#gst_value').show();
+            $('#gst_amount').show();
+            $('#final_amount').show();
+            $('#gst_value_lable').show();
+            $('#gst_amount_lable').show();
+            $('#final_amount_lable').show();
+            $('#gst_badge').show();  // Show the GST badge
+            $('#gst_label').show();  // Show the GST label
+            $('#round_off_label').show();
+            $('#round_off').show();
+
+            // Adjust column sizes
+            $('.quantity-container').removeClass('col-md-2').addClass('col-md-1'); // Smaller quantity field
+            $('.gst-container').show();  // Show GST field (col-md-1)
+
+            updateGSTValues();
+        } else {
+            $('#label_excl_gst').show();
+            $('#label_incl_gst').hide();
+            $('#gst_value').hide();
+            $('#gst_amount').hide();
+            $('#final_amount').show();
+            $('#gst_value_lable').hide();
+            $('#gst_amount_lable').hide();
+            $('#final_amount_lable').show();
+            $('#gst_badge').hide();  // Hide the GST badge
+            $('#gst_label').hide();  // Hide the GST label
+            $('#round_off_label').show();  // Hide the GST label
+            $('#round_off').show();  // Hide the GST label
+
+            // Adjust column sizes
+            $('.quantity-container').removeClass('col-md-1').addClass('col-md-2'); // Larger quantity field
+            $('.gst-container').hide();  // Hide GST field (col-md-1)
+        }
+    });
+
+    // Initial state
+    toggleGSTFields();
+    updateTotals();
+    updateFinalAmount();
+    calculateGST()
+
+
+    document.getElementById('purchaseForm').onsubmit = function(event) {
+    // Prevent the form from being submitted immediately
+    event.preventDefault();
+
+    // Show the confirmation dialog
+    var confirmation = confirm("Are you sure you want to store the purchase bill in stock?");
+
+    if (confirmation) {
+        // If the user confirms, submit the form and redirect to the sale-bill page
+        this.submit();  // Submit the form
+    } else {
+        // If the user cancels, do nothing and the form won't submit
+        return false;
+    }
+};
+
+    // Call updateGSTValues on page load if needed
+    updateGSTValues();
+    calculateGST()
+
+});
+</script>
+
+
+<script type="text/javascript">
+$(document).ready(function() {
+    // Function to validate quantity and perprice fields
+    function validateFields() {
+        let isValid = true;
+
+        // Loop through each quantity field
+        $('.quantity').each(function() {
+            let quantityValue = parseInt($(this).val(), 10); // Entered quantity
+            let stockQuantity = parseInt($(this).closest('.form-row').find('.stock-quantity').val(), 10); // Available stock
+
+            if (isNaN(quantityValue) || quantityValue <= 0) {
+                isValid = false;
+                alert("Please enter a valid quantity greater than 0.");
+                $(this).focus();
+                return false; // Exit loop if invalid
+            }
+
+            if (quantityValue > stockQuantity) {
+                isValid = false;
+                alert("Entered quantity exceeds available stock. Please enter a valid quantity.");
+                $(this).focus();
+                return false; // Exit loop if quantity exceeds stock
+            }
+        });
+
+        // Loop through each perprice field
+        $('.price').each(function() {
+            let priceValue = parseFloat($(this).val());
+
+            if (isNaN(priceValue) || priceValue <= 0) {
+                isValid = false;
+                alert("Please enter a valid price greater than 0.");
+                $(this).focus();
+                return false; // Exit loop if invalid
+            }
+        });
+
+        return isValid;
+    }
+
+    // Display the modal only after validation
+    $('#initialSubmitButton').on('click', function() {
+        if (validateFields()) {
+            $('#confirmationModal').modal('show'); // Open the modal only if validation passes
+        }
+    });
+
+    // Handle the modal's submit button
+    $('#modalSubmitButton').on('click', function() {
+        // Retrieve the value from the modal input fields
+        const eway_no = $('#eway_no').val();
+        const bill_date = $('#bill_date').val();
+        const veh_no = $('#veh_no').val();
+        const handby = $('#handby').val();
+        const destination = $('#destination').val();
+        const po_no = $('#po_no').val();
+        const po_date = $('#po_date').val();
+        const total_amount = $('#total_amount').val(); // New input field
+
+        // Check if required fields are filled
+        if (eway_no && bill_date && handby && destination && total_amount) {
+            // Append modal input data to the main form
+            $('#purchaseForm').append($('<input>', {type: 'hidden', name: 'eway_no', value: eway_no}));
+            $('#purchaseForm').append($('<input>', {type: 'hidden', name: 'bill_date', value: bill_date}));
+            $('#purchaseForm').append($('<input>', {type: 'hidden', name: 'veh_no', value: veh_no}));
+            $('#purchaseForm').append($('<input>', {type: 'hidden', name: 'handby', value: handby}));
+            $('#purchaseForm').append($('<input>', {type: 'hidden', name: 'destination', value: destination}));
+            $('#purchaseForm').append($('<input>', {type: 'hidden', name: 'po_no', value: po_no}));
+            $('#purchaseForm').append($('<input>', {type: 'hidden', name: 'po_date', value: po_date}));
+            $('#purchaseForm').append($('<input>', {type: 'hidden', name: 'total_amount', value: total_amount})); // Append new total amount
+
+            // Hide the modal
+            $('#confirmationModal').modal('hide');
+
+            // Submit the form after hiding the modal
+            $('#purchaseForm').submit();
+        } else {
+            alert("Please fill in all required fields in the modal.");
+        }
+    });
+});
+</script>
+
+{% endblock content %}

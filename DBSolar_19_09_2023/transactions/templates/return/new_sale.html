@@ -1,0 +1,749 @@
+{% extends 'partials/base.html' %}
+{% load static %}
+{% block title %} New Purchase {% endblock title %}
+{% block content %}
+   <style>
+        /* Container for toggle labels */
+        .toggle-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%; /* Adjust width as necessary */
+        }
+
+        .toggle-label {
+            width: 100px; /* Width for labels */
+            text-align: center;
+            padding: 10px;
+            border-radius: 5px; /* Rounded corners */
+            background-color: white; /* Default background color */
+            transition: background-color 0.3s, color 0.3s; /* Transition for smooth effect */
+            border: 1px solid #ccc; /* Optional border */
+            cursor: pointer; /* Show pointer cursor on hover */
+            position: relative; /* For the checkmark */
+        }
+
+        /* Styles for active labels */
+        .active {
+            background-color: green; /* Background color when active */
+            color: white; /* Text color for active state */
+        }
+
+        .checkmark {
+            position: absolute;
+            top: 5px;
+            left: 5px;
+            font-size: 20px;
+            display: none; /* Hide by default */
+            color: white; /* White color for checkmark */
+        }
+
+        /* Previous Bill and Previous Date Fields */
+        .form-group {
+            margin-top: 20px; /* Spacing above fields */
+        }
+    </style>
+<br>
+<div style="color:#575757; font-style: bold; font-size: 3rem; border-bottom: 1px solid white;"
+     xmlns="http://www.w3.org/1999/html">New Sales</div>
+<br>
+<fieldset>
+<div class="panel panel-default">
+    <div class="panel-heading panel-heading-text">Consumer Details</div>
+    <div class="panel-body">
+          <div class="form-row">
+
+          <div class="form-group col-md-6">
+            <label for="id_name" class="panel-body-text">Consumer Name:</label>
+            <input type="text" class="form-control textinput text-capitalize" id="id_name" value="{{ supplier.Comp_name }}" disabled>
+        </div>
+         <div class="form-group col-md-6">
+            <label for="id_name" class="panel-body-text">Plant Capacity:</label>
+            <input type="text" class="form-control textinput text-capitalize" id="Capacity" value="{{ supplier.Plant_Capacity }} Kw" disabled>
+        </div>
+          </div>
+        <div class="form-row">
+            <div class="form-group col-md-6">
+                <label for="id_gstin" class="panel-body-text">Address:</label>
+                <input type="gstin" class="form-control textinput text-capitalize" id="Address" value="{{ supplier.Address }}" disabled>
+            </div>
+            <div class="form-group col-md-3">
+                <label for="id_phone" class="panel-body-text">City:</label>
+                <input type="text" class="form-control textinput text-capitalize" id="City" value="{{ supplier.City }}" disabled>
+            </div>
+            <div class="form-group col-md-3">
+                <label for="id_phone" class="panel-body-text">Phone No:</label>
+                <input type="text" class="form-control textinput" id="id_phone" value="{{ supplier.phone }}" disabled>
+            </div>
+        </div>
+    </div>
+</div>
+</fieldset>
+<br>
+
+<form method="post" class="panel panel-default" id="purchaseForm">
+    {% csrf_token %}
+    {{ formset.management_form }}
+    <div class="panel-heading panel-heading-text">Product Details</div>
+<fieldset>
+    <!-- Dropdown list for selecting category -->
+    <div class="form-row">
+        <div class="form-group col-md-6">
+        <label for="category_dropdown" class="panel-body-text">Select Category:</label>
+        <select id="category_dropdown" class="form-control text-capitalize">
+            <option value="">Select Category</option>
+            {% for category in categories %}
+                <option value="{{ category.id }}">{{ category.name }}</option>
+            {% endfor %}
+        </select>
+        </div>
+        <div class="form-group col-md-6">
+        <label id="subcategory_label" for="subcategory_dropdown" class="panel-body-text" style="display: none;">Select Subcategory:</label>
+        <select id="subcategory_dropdown" class="form-control text-capitalize" style="display: none;">
+            <option value="">Select Subcategory</option>
+        </select>
+        </div>
+    </div>
+
+    <div class="row mb-1 align-items-center">
+        <div class="col-md-12 mb-2 item1">
+            <label id="stock_label" for="stock_dropdown" class="panel-body-text" style="display: none;">Select Stock:</label>
+            <select id="stock_dropdown" class="text-capitalize form-control" style="display: none;">
+                <option value="">Select Stock</option>
+            </select>
+        </div>
+    </div>
+</fieldset>
+    <div id="fieldset-container" style="display: none;">
+<fieldset>
+    <!-- Container for dynamically added form rows -->
+    <div id="stockitem">
+        <div class="panel-body">
+        </div>
+    </div>
+           <div style="width: 100%; display: flex; justify-content: flex-end;">
+            <hr style="background-color: black; width: 50%; border: none; height: 1px; margin: 0;">
+          </div><br>
+      <div class="form-group row" id="totals">
+          <div class="col-md-6">
+          </div>
+             <div class="col-md-4">
+                <div class="input-group">
+                    <input type="text" id="total_quantity" class="form-control" style="background-color: white;
+                           text-align: right; padding-right: 43px; font-weight: bold;" readonly>
+                    <div class="input-group-prepend">
+                        <span class="input-group-text">Total Quantity</span>
+                    </div>
+
+                </div>
+            </div>
+
+        </div>
+
+     </div>
+
+</fieldset>
+    </div>
+    <br>
+    <div class="text-center">
+           <button type="button" id="initialSubmitButton" class="btn btn-success" style="width: 200px; margin-right: 10px;">Add to Purchases</button>
+        <a href="{% url 'select_customer' %}" class="btn btn-danger" style="width: 200px; margin-right: 10px;">Go Back</a>
+        <a href="{% url 'sales-list' %}" class="btn btn-secondary" style="width: 200px;">Cancel</a>
+    </div>
+</form>
+
+<!-- Modal Structure -->
+<div class="modal fade" id="confirmationModal" tabindex="-1" aria-labelledby="confirmationModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="confirmationModalLabel">Confirm Details</h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <form id="modalForm">
+          <!-- Checkbox to toggle fields visibility -->
+
+            <div class="toggle-container" style="display: flex; justify-content: center; align-items: center; width: 100%;">
+    <div id="currentBillLabel" class="toggle-label" style="display: flex; flex-direction: column; align-items: center; margin-right: 20px; width: 180px;">
+        <span style="line-height: 1.5;">Current Bill</span>
+        <span class="checkmark" id="checkCurrent" style="margin-left: 30px; line-height: 1.5;">✔</span>
+    </div>
+    <div id="previousBillLabel" class="toggle-label" style="display: flex; flex-direction: column; align-items: center; width: 180px;">
+        <span style="line-height: 1.5;">Previous Bill</span>
+        <span class="checkmark" id="checkPrevious" style="margin-left: 30px; line-height: 1.5;">✔</span>
+    </div>
+</div>
+
+
+          <!-- Previous Bill and Previous Date Fields -->
+          <div class="form-group" id="previousBillField">
+            <label for="eway_no">Prev. Delivery Challan No <span style="color: red;">*</span></label>
+            <input type="text" id="eway_no" name="eway_no" class="form-control">
+          </div>
+          <div class="form-group" id="previousDateField">
+            <label for="bill_date">Prev. Bill Date <span style="color: red;">*</span></label>
+            <input type="date" id="bill_date" name="bill_date" class="form-control">
+          </div>
+
+          <div class="form-group">
+            <label for="veh_no">Vehicle No</label>
+            <input type="text" id="veh_no" name="veh_no" class="form-control">
+          </div>
+          <div class="form-group">
+            <label for="arrange">Arrange By <span style="color: red;">*</span></label>
+            <input type="text" id="arrange" name="arrange" class="form-control" required>
+          </div>
+            <div class="form-group">
+            <label for="handby">Handled By <span style="color: red;">*</span></label>
+            <input type="text" id="handby" name="handby" class="form-control" required>
+          </div>
+          <div class="form-group">
+            <label for="destination">Source <span style="color: red;">*</span></label>
+            <select id="destination" name="destination" class="form-control" required>
+              <option value="" disabled selected></option>
+              <option value="Warehouse" {% if billdetails.destination == "Warehouse" %}selected{% endif %}>Warehouse</option>
+              <option value="Office" {% if billdetails.destination == "Office" %}selected{% endif %}>Office</option>
+              <option value="Vendor" {% if billdetails.destination == "Vendor" %}selected{% endif %}>Vendor</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="po_no">PO No</label>
+            <input type="text" id="po_no" name="po_no" class="form-control">
+          </div>
+          <div class="form-group">
+            <label for="po_date">PO Date</label>
+            <input type="date" id="po_date" name="po_date" class="form-control">
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+        <button type="button" id="modalSubmitButton" class="btn btn-primary">Submit</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script type="text/javascript" src="{% static 'js/jquery-3.2.1.slim.min.js' %}"></script>
+<script type="text/javascript" src="{% static 'js/dialogbox.js' %}"></script>
+<style>
+    .success {
+
+        color: #28a745; /* Text color */
+        border: 3px solid #28a745; /* Border color */
+        padding: 5px 8px;
+        border-radius: 5px;
+        font-size: 80%;
+    }
+
+    .danger {
+
+        color: #dc3545; /* Text color */
+        border: 3px solid #dc3545; /* Border color */
+        padding: 5px 8px;
+        border-radius: 5px;
+        font-size: 80%;
+    }
+
+    .custom-flex {
+        display: flex;
+        align-items: center; /* Vertically center input and image */
+    }
+    .custom-flex input {
+        margin-right: 10px; /* Add some space between the input and the image */
+    }
+</style>
+
+<div class="modal fade" id="serialNumberModal" tabindex="-1" role="dialog" aria-labelledby="serialNumberModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="serialNumberModalLabel">Select Serial Numbers</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="serialNumberForm">
+                    <div id="serial-number-container">
+                        <!-- Checkboxes will be dynamically added here -->
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" id="saveSerialNumbers">Save Serial Numbers</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script type="text/javascript">
+$(document).ready(function() {
+    var selectedStockId;
+    var selectedSerialNumbers = {};
+
+    // When clicking on stock name, open modal and load serial numbers
+    $(document).on('click', '.stockName', function(e) {
+        e.preventDefault();
+        selectedStockId = $(this).closest('.form-row').find('input[name*="stock"]').val();
+
+        // Fetch the quantity from the purchase form
+        var quantity = parseInt($(this).closest('.form-row').find('input[name*="quantity"]').val()) || 0;
+
+        // Fetch serial numbers for the selected stock
+        $.ajax({
+            url: '{% url "get_serial_numbers" %}', // Add appropriate URL here
+            data: { 'stock_id': selectedStockId },
+            success: function(data) {
+                var serialNumbers = data.serial_numbers; // Assume the data contains a list of serial numbers
+                $('#serial-number-container').empty();
+
+                // Dynamically add checkboxes for each serial number
+                serialNumbers.forEach(function(serial) {
+                    var isChecked = selectedSerialNumbers[selectedStockId] && selectedSerialNumbers[selectedStockId].includes(serial.serialNo);
+                    var checkbox = `<div class="form-check">
+                        <input class="form-check-input" type="checkbox" value="${serial.serialNo}" id="serialNo-${serial.serialNo}" ${isChecked ? 'checked' : ''}>
+                        <label class="form-check-label" for="serialNo-${serial.serialNo}">${serial.serialNo}</label>
+                    </div>`;
+                    $('#serial-number-container').append(checkbox);
+                });
+
+                // Set the maximum selection based on quantity
+                updateCheckboxState(quantity);
+
+                $('#serialNumberModal').modal('show');
+            }
+        });
+    });
+
+    // Update the checkbox state based on selected quantity
+    function updateCheckboxState(quantity) {
+        $('#serial-number-container input[type="checkbox"]').off('change').on('change', function() {
+            var checkedCount = $('#serial-number-container input[type="checkbox"]:checked').length;
+
+            // Enable/disable checkboxes based on checked count and quantity
+            if (checkedCount >= quantity) {
+                $('#serial-number-container input[type="checkbox"]').not(':checked').prop('disabled', true);
+            } else {
+                $('#serial-number-container input[type="checkbox"]').prop('disabled', false);
+            }
+        });
+    }
+
+    // Save selected serial numbers when the modal is submitted
+    $('#saveSerialNumbers').on('click', function() {
+        var checkedSerials = [];
+        $('#serial-number-container input[type="checkbox"]:checked').each(function() {
+            checkedSerials.push($(this).val());
+        });
+
+        // Store the selected serials for the stock
+        selectedSerialNumbers[selectedStockId] = checkedSerials;
+
+        // Display selected serial numbers below stock name in the table
+        var stockRow = $('input[value="' + selectedStockId + '"]').closest('.form-row');
+        stockRow.find('.stockNameDisplay').html('Selected Serials: ' + checkedSerials.join(', '));
+
+        // Now manually append these serial numbers to hidden fields in the purchase form
+        var hiddenField = $('<input>')
+            .attr('type', 'hidden')
+            .attr('name', 'serials-' + selectedStockId)
+            .val(checkedSerials.join(','));
+
+        // Append the hidden field to the form (purchaseForm)
+        $('#purchaseForm').append(hiddenField);
+
+        $('#serialNumberModal').modal('hide');
+    });
+
+    // Prevent actual form submission at this stage
+    $('#purchaseForm').on('submit', function(e) {
+        e.preventDefault();
+        // You can add more logic here if needed, but we prevent saving to the database
+       // alert('Serial numbers appended to form but not saved in the database.');
+    });
+});
+</script>
+<script type="text/javascript">
+$(document).ready(function() {
+    var $gstToggleContainer = $('#gstToggleContainer');
+    var $gstLabel = $('#gstLabel');
+
+    // Handle category dropdown change
+    $('#category_dropdown').on('change', function() {
+        var categoryId = $(this).val();
+        var $subcategoryDropdown = $('#subcategory_dropdown');
+        var $subcategoryLabel = $('#subcategory_label');
+        var $stockDropdown = $('#stock_dropdown');
+        var $stockLabel = $('#stock_label');
+
+        if (categoryId) {
+            $.ajax({
+                url: '{% url "get_subcategories" %}',
+                data: { 'category_id': categoryId },
+                success: function(data) {
+                    $subcategoryDropdown.empty().append('<option value="">Select Subcategory</option>');
+                    $.each(data.subcategories, function(index, subcategory) {
+                        $subcategoryDropdown.append(`<option value="${subcategory.id}">${subcategory.name}</option>`);
+                    });
+                    $subcategoryDropdown.show();
+                    $subcategoryLabel.show();
+                },
+                error: function(xhr, status, error) {
+                    console.error("Error fetching subcategories: ", error);
+                }
+            });
+        } else {
+            $subcategoryDropdown.empty().append('<option value="">Select Subcategory</option>').hide();
+            $subcategoryLabel.hide();
+            $stockDropdown.empty().append('<option value="">Select Stock</option>').hide();
+            $stockLabel.hide();
+            $gstToggleContainer.hide(); // Hide toggle button when no category selected
+        }
+    });
+
+    // Handle subcategory dropdown change
+    $('#subcategory_dropdown').on('change', function() {
+        var subcategoryId = $(this).val();
+        var $stockDropdown = $('#stock_dropdown');
+        var $stockLabel = $('#stock_label');
+
+        if (subcategoryId) {
+            $.ajax({
+                url: '{% url "get_stocks" %}',
+                data: { 'subcategory_id': subcategoryId },
+                success: function(data) {
+                    $stockDropdown.empty().append('<option value="">Select Stock</option>');
+                    $.each(data.stocks, function(index, stock) {
+                        $stockDropdown.append(`<option value="${stock.id}" data-name="${stock.name}" data-price="${stock.price}">${stock.name}</option>`);
+                    });
+                    $stockDropdown.show();
+                    $stockLabel.show();
+                    $gstToggleContainer.show(); // Show the toggle button when stock dropdown is displayed
+                },
+                error: function(xhr, status, error) {
+                    console.error("Error fetching stocks: ", error);
+                }
+            });
+        } else {
+            $stockDropdown.empty().append('<option value="">Select Stock</option>').hide();
+            $stockLabel.hide();
+            $gstToggleContainer.hide(); // Hide toggle button when no subcategory is selected
+        }
+    });
+
+    // Initialize total as 0
+    var total = 0;
+
+    $(document).on('change', '#stock_dropdown', function() {
+        var selectedStock = $(this).find(':selected');
+        var stockName = selectedStock.text();
+        var stockId = selectedStock.val();
+        var stockPrice = selectedStock.data('price');
+
+        $.ajax({
+            url: '{% url "get_stock_quantity" %}',
+            data: {
+                'stock_id': stockId
+            },
+            success: function(data) {
+                var stockQuantity = data.quantity;
+                var purchase = data.purchase;
+                var purchase_id = data.purchase_id;
+                var stockAlert = data.stock_alert;
+                var badgeClass = stockQuantity > stockAlert ? 'success' : 'danger';
+                var stockgst = data.gst;
+
+                if (stockId) {
+                    var serialNo = total + 1;
+
+                    var newRow = `<div class="row form-row">
+                        <input type="hidden" name="form-${total}-DELETE" id="id_form-${total}-DELETE">
+                        <div class="form-group col-md-1 text-center">
+                            ${total === 0 ? '<label class="panel-body-text" style="text-align: center; font-weight: bold;">Sr No</label>' : ''}
+                            <span class="form-control-plaintext">${serialNo}</span>
+                        </div>
+                        <div class="form-group col-md-6 text-center">
+                            ${total === 0 ? '<label class="panel-body-text" style="text-align: center; font-weight: bold;">Stock</label>' : ''}
+                            <div style="display: flex; flex-direction: column; align-items: center;">
+                                <a href="#" class="stockName text-capitalize form-control-plaintext">${stockName}</a>
+                                <input type="hidden" name="form-${total}-stock" value="${stockId}">
+                                  <small class="custom-small">
+                                    <span class="stockNameDisplay" style="margin: 0; padding: 0;"></span>
+                                </small>
+                            </div>
+                        </div>
+                        <div class="form-group col-md-2 text-center">
+                            ${total === 0 ? '<label class="panel-body-text" style="text-align: center; font-weight: bold;">Avb.Qunt.</label>' : ''}
+                            <div class="d-flex justify-content-center align-items-center mt-1">
+                                <input type="hidden" class="form-control stock-quantity" value="${stockQuantity}" readonly>
+                                <span class="badge ${badgeClass}">${stockQuantity} <small>${purchase}</small></span>
+                            </div>
+                        </div>
+                        <div class="form-group col-md-3 text-center">
+                            ${total === 0 ? '<label class="panel-body-text" style="text-align: center; font-weight: bold;">Quantity</label>' : ''}
+                            <div class="input-group">
+                                 <input type="number" class="form-control quantity" style="text-align: center;" name="form-${total}-quantity" value="1">
+                                <div class="input-group-append">
+                                    <span class="input-group-text me-2">${purchase}</span>
+                                </div>
+                                <img src="{% static 'images/letter-x (1).png' %}" class="remove-form-row" alt="Remove" style="cursor: pointer; width: 15px; height: 15px;">
+                            </div>
+                            <input type="hidden" class="form-control stock-purchase" name="purchase" value="${purchase}" readonly>
+                            <input type="hidden" class="form-control stock-purchase" name="purchase_id" value="${purchase_id}" readonly>
+                            <div class="warning-message" style="color: red; display: none;">Quantity exceeds available stock!</div>
+                        </div>
+                        <div class="form-group col-md-2 text-center" hidden="hidden">
+                            ${total === 0 ? '<label class="panel-body-text" style="text-align: center; font-weight: bold;">Action</label>' : ''}
+                            <div class="custom-flex">
+                                <img src="{% static 'images/letter-x (1).png' %}" class="remove-form-row" alt="Remove" style="cursor: pointer; width: 15px; height: 15px;">
+                            </div>
+                        </div>
+                    </div>`;
+
+                    $('#stockitem .panel-body').append(newRow);
+                    total++;
+                    $('#id_form-TOTAL_FORMS').val(total);
+                    selectedStock.remove();
+
+                    // Attach the quantity change listener for this row
+                    attachQuantityChangeListener(total - 1, stockQuantity);
+                }
+                updateTotals();
+            }
+        });
+        $('#fieldset-container').show();
+    });
+
+    // Function to attach change listener to the quantity input
+    function attachQuantityChangeListener(rowIndex, stockQuantity) {
+        $(`input[name="form-${rowIndex}-quantity"]`).on('input', function() {
+            var enteredQuantity = parseInt($(this).val(), 10);
+            var warningMessage = $(this).closest('.form-row').find('.warning-message');
+
+            if (enteredQuantity > stockQuantity) {
+                warningMessage.show();  // Show warning if quantity exceeds stock
+            } else if (enteredQuantity <= stockQuantity && enteredQuantity >= 1) {
+                    // When the quantity is valid, hide the warning
+                    warningMessage.hide();
+                }
+            });
+        }
+    function deleteForm(prefix, btn) {
+        var formRow = btn.closest('.form-row');
+        var totalForms = $('#id_' + prefix + '-TOTAL_FORMS').val();
+
+        // Correctly get the stockId and stockName from the form row
+        var stockId = formRow.find('input[name*="stock"]').val();
+        var stockPrice = formRow.find('.price').val();
+        // Get stockName from the original input, not the display span
+        var stockName = formRow.find('input[name*="stock"]').closest('.form-group').find('.stockName').text();
+
+        formRow.remove();
+
+        totalForms--;
+        $('#id_' + prefix + '-TOTAL_FORMS').val(totalForms);
+
+        $('#stockitem .form-row').each(function(index, row) {
+            $(row).find('.form-control-plaintext').first().text(index + 1);
+            updateElementIndex(row, prefix, index);
+        });
+
+        total--;
+
+        // Append the correct stockId and stockName to the dropdown
+        $('#stock_dropdown').append(`<option value="${stockId}" data-price="${stockPrice}">${stockName}</option>`);
+
+        updateTotals();
+    }
+
+    $(document).on('click', '.remove-form-row', function(e) {
+        e.preventDefault();
+
+        deleteForm('form', $(this));
+
+        if ($('#stockitem .form-row').length === 0) {
+            $('#fieldset-container').hide();
+        }
+        updateGSTValues(); // Update GST values after deletion
+    });
+
+    function updateElementIndex(el, prefix, ndx) {
+        var id_regex = new RegExp('(' + prefix + '-\\d+-)');
+        var replacement = prefix + '-' + ndx + '-';
+        $(el).find(':input').each(function() {
+            if (this.id) this.id = this.id.replace(id_regex, replacement);
+            if (this.name) this.name = this.name.replace(id_regex, replacement);
+        });
+    }
+
+    // Update total quantity and amount
+    function updateTotals() {
+        var totalQuantity = 0;
+        $('.form-row').each(function() {
+            var quantity = parseFloat($(this).find('.quantity').val()) || 0;
+
+            totalQuantity += quantity;
+        });
+
+        $('#total_quantity').val(totalQuantity);
+    }
+
+    document.getElementById('purchaseForm').onsubmit = function(event) {
+    // Prevent the form from being submitted immediately
+    event.preventDefault();
+
+    // Show the confirmation dialog
+    var confirmation = confirm("Are you sure you want to store the purchase bill in stock?");
+
+    if (confirmation) {
+        // If the user confirms, submit the form and redirect to the sale-bill page
+        this.submit();  // Submit the form
+    } else {
+        // If the user cancels, do nothing and the form won't submit
+        return false;
+    }
+};
+
+});
+</script>
+
+
+
+<script type="text/javascript">
+$(document).ready(function() {
+    // Initialize the previous bill fields to show by default
+    $('#previousBillLabel').addClass('active');
+    $('#checkPrevious').show(); // Show checkmark for Previous Bill
+    $('#previousBillField').show(); // Ensure the fields are shown initially
+    $('#previousDateField').show();
+
+    // Function to validate quantity and perprice fields
+    function validateFields() {
+        let isValid = true;
+
+        // Loop through each quantity field
+        $('.quantity').each(function() {
+            let quantityValue = parseInt($(this).val(), 10); // Entered quantity
+            let stockQuantity = parseInt($(this).closest('.form-row').find('.stock-quantity').val(), 10); // Available stock
+
+            if (isNaN(quantityValue) || quantityValue <= 0) {
+                isValid = false;
+                alert("Please enter a valid quantity greater than 0.");
+                $(this).focus();
+                return false; // Exit loop if invalid
+            }
+
+            if (quantityValue > stockQuantity) {
+                isValid = false;
+                alert("Entered quantity exceeds available stock. Please enter a valid quantity.");
+                $(this).focus();
+                return false; // Exit loop if quantity exceeds stock
+            }
+        });
+
+        return isValid;
+    }
+
+    // Display the modal only after validation
+    $('#initialSubmitButton').on('click', function() {
+        if (validateFields()) {
+            $('#confirmationModal').modal('show'); // Open the modal only if validation passes
+        }
+    });
+
+    // Click event for Current Bill label
+    $('#currentBillLabel').on('click', function() {
+        // Set this label as active and remove active state from the other
+        $(this).addClass('active');
+        $('#previousBillLabel').removeClass('active');
+        $('#checkCurrent').show(); // Show checkmark for Current Bill
+        $('#checkPrevious').hide(); // Hide checkmark for Previous Bill
+
+        // Hide previous bill fields
+        $('#previousBillField').hide();
+        $('#eway_no').val(''); // Clear input
+        $('#previousDateField').hide();
+        $('#bill_date').val(''); // Clear input
+    });
+
+    // Click event for Previous Bill label
+    $('#previousBillLabel').on('click', function() {
+        // Set this label as active and remove active state from the other
+        $(this).addClass('active');
+        $('#currentBillLabel').removeClass('active');
+        $('#checkPrevious').show(); // Show checkmark for Previous Bill
+        $('#checkCurrent').hide(); // Hide checkmark for Current Bill
+
+        // Show previous bill fields
+        $('#previousBillField').show();
+        $('#previousDateField').show();
+    });
+
+    // Handle the modal's submit button
+    $('#modalSubmitButton').on('click', function() {
+        // Retrieve the value from the modal input fields
+        const eway_no = $('#eway_no').val();
+        const bill_date = $('#bill_date').val();
+        const veh_no = $('#veh_no').val();
+        const arrange = $('#arrange').val();
+        const handby = $('#handby').val();
+        const destination = $('#destination').val();
+        const po_no = $('#po_no').val();
+        const po_date = $('#po_date').val();
+
+        // Check if required fields are filled based on selected bill type
+        const isCurrentBill = $('#currentBillLabel').hasClass('active');
+        const isPreviousBill = $('#previousBillLabel').hasClass('active');
+
+        // Validate fields based on the selected bill type
+        if (isCurrentBill) {
+            // For Current Bill, only check handby and destination
+            if (arrange && handby && destination) {
+                // Append modal input data to the main form
+                $('#purchaseForm').append($('<input>', {type: 'hidden', name: 'veh_no', value: veh_no}));
+                $('#purchaseForm').append($('<input>', {type: 'hidden', name: 'arrange', value: arrange}));
+                $('#purchaseForm').append($('<input>', {type: 'hidden', name: 'handby', value: handby}));
+                $('#purchaseForm').append($('<input>', {type: 'hidden', name: 'destination', value: destination}));
+                $('#purchaseForm').append($('<input>', {type: 'hidden', name: 'po_no', value: po_no}));
+                $('#purchaseForm').append($('<input>', {type: 'hidden', name: 'po_date', value: po_date}));
+
+                // Hide the modal
+                $('#confirmationModal').modal('hide');
+
+                // Submit the form after hiding the modal
+                $('#purchaseForm').submit();
+            } else {
+                alert("Please fill in all required fields in the modal (Handby and Destination).");
+            }
+        } else if (isPreviousBill) {
+            // For Previous Bill, check that eway_no, bill_date, handby, and destination are filled
+            if (arrange && eway_no && bill_date && handby && destination) {
+                // Append modal input data to the main form
+                $('#purchaseForm').append($('<input>', {type: 'hidden', name: 'eway_no', value: eway_no}));
+                $('#purchaseForm').append($('<input>', {type: 'hidden', name: 'bill_date', value: bill_date}));
+                $('#purchaseForm').append($('<input>', {type: 'hidden', name: 'veh_no', value: veh_no}));
+                $('#purchaseForm').append($('<input>', {type: 'hidden', name: 'arrange', value: arrange}));
+                $('#purchaseForm').append($('<input>', {type: 'hidden', name: 'handby', value: handby}));
+                $('#purchaseForm').append($('<input>', {type: 'hidden', name: 'destination', value: destination}));
+                $('#purchaseForm').append($('<input>', {type: 'hidden', name: 'po_no', value: po_no}));
+                $('#purchaseForm').append($('<input>', {type: 'hidden', name: 'po_date', value: po_date}));
+
+                // Hide the modal
+                $('#confirmationModal').modal('hide');
+
+                // Submit the form after hiding the modal
+                $('#purchaseForm').submit();
+            } else {
+                alert("Please fill in all required fields in the modal (Eway No, Bill Date, Handby, and Destination).");
+            }
+        }
+    });
+});
+</script>
+
+{% endblock content %}

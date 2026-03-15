@@ -1,0 +1,450 @@
+{% extends 'partials/base.html' %}
+
+{% block title %}Order Page{% endblock %}
+{% block content %}
+
+<form method="post" action="{% url 'product_add_category' %}">
+    {% csrf_token %}
+    <h3>Manage Inventory</h3>
+    <div class="tabs">
+        <ul class="tab-links">
+            <li><a href="#" data-tab="categories">Categories</a></li>
+            <li><a href="#" data-tab="subcategories">SubCategories</a></li>
+            <li><a href="#" data-tab="products">Products</a></li>
+            <li><a href="#" data-tab="brands">Brands</a></li>
+            <li><a href="#" data-tab="units">Units</a></li>
+            <li><a href="#" data-tab="suppliers">Suppliers</a></li>
+        </ul>
+        <div class="tab-content">
+            <!-- Categories Tab -->
+            <div id="categories" class="tab-content">
+                <button type="button" data-toggle="modal" data-target="#categoryModal">Add Category</button>
+                <div class="list-group">
+                    {% for category in categories %}
+                    <div class="list-group-item">
+                        {{ category.name }}
+                        <button type="button" data-toggle="modal" data-target="#editCategoryModal" data-id="{{ category.id }}">Edit</button>
+                        <button type="button" data-toggle="modal" data-target="#deleteCategoryModal" data-id="{{ category.id }}">Delete</button>
+                        <form method="post" action="{% url 'product_add_category' %}">
+                    {% csrf_token %}
+                    <input type="hidden" name="category_id" value="{{ category.id }}">
+                    <button type="submit" name="delete_category" onclick="return confirm('Are you sure you want to delete this category?');">Delete</button>
+                </form>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- SubCategories Tab -->
+            <div id="subcategories" class="tab-content">
+                <button type="button" data-toggle="modal" data-target="#subcategoryModal">Add SubCategory</button>
+                <div class="list-group">
+                    {% for subcategory in subcategories %}
+                    <div class="list-group-item">
+                        {{ subcategory.name }}
+                        <button type="button" data-toggle="modal" data-target="#editSubCategoryModal" data-id="{{ subcategory.id }}">Edit</button>
+                        <button type="button" data-toggle="modal" data-target="#deleteSubCategoryModal" data-id="{{ subcategory.id }}">Delete</button>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Products Tab -->
+            <div id="products" class="tab-content">
+                <button type="button" data-toggle="modal" data-target="#productModal">Add Product</button>
+                <div class="list-group">
+                    {% for product in products %}
+                    <div class="list-group-item">
+                        {{ product.name }}
+                        <button type="button" data-toggle="modal" data-target="#editProductModal" data-id="{{ product.id }}">Edit</button>
+                        <button type="button" data-toggle="modal" data-target="#deleteProductModal" data-id="{{ product.id }}">Delete</button>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Brands Tab -->
+            <div id="brands" class="tab-content">
+                <button type="button" data-toggle="modal" data-target="#brandModal">Add Brand</button>
+                <div class="list-group">
+                    {% for brand in brands %}
+                    <div class="list-group-item">
+                        {{ brand.name }}
+                        <button type="button" data-toggle="modal" data-target="#editBrandModal" data-id="{{ brand.id }}">Edit</button>
+                        <button type="button" data-toggle="modal" data-target="#deleteBrandModal" data-id="{{ brand.id }}">Delete</button>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Units Tab -->
+            <div id="units" class="tab-content">
+                <button type="button" data-toggle="modal" data-target="#unitModal">Add Unit</button>
+                <div class="list-group">
+                    {% for unit in units %}
+                    <div class="list-group-item">
+                        {{ unit.name }}
+                        <button type="button" data-toggle="modal" data-target="#editUnitModal" data-id="{{ unit.id }}">Edit</button>
+                        <button type="button" data-toggle="modal" data-target="#deleteUnitModal" data-id="{{ unit.id }}">Delete</button>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Suppliers Tab -->
+            <div id="suppliers" class="tab-content">
+                <button type="button" data-toggle="modal" data-target="#supplierModal">Add Supplier</button>
+                <div class="list-group">
+                    {% for supplier in suppliers %}
+                    <div class="list-group-item">
+                        {{ supplier.supplier_name }}
+                        <button type="button" data-toggle="modal" data-target="#editSupplierModal" data-id="{{ supplier.id }}">Edit</button>
+                        <button type="button" data-toggle="modal" data-target="#deleteSupplierModal" data-id="{{ supplier.id }}">Delete</button>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Category Modals -->
+    <!-- Add Category Modal -->
+    <div class="modal" id="categoryModal">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <form method="post" action="{% url 'product_add_category' %}">
+                    {% csrf_token %}
+                    {{ category_form.as_p }}
+                    <button type="submit" name="add_category">Add Category</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Similarly add modals for SubCategories, Products, Brands, Units, Suppliers -->
+    <!-- SubCategories Modals -->
+    <!-- Add SubCategory Modal -->
+    <div class="modal" id="subcategoryModal">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <form method="post" action="{% url 'product_add_category' %}">
+                    {% csrf_token %}
+                    {{ subcategory_form.as_p }}
+                    <button type="submit" name="add_subcategory">Add SubCategory</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Products Modals -->
+    <!-- Add Product Modal -->
+    <div class="modal" id="productModal">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <form method="post" action="{% url 'product_add_category' %}">
+                    {% csrf_token %}
+                    {{ product_form.as_p }}
+                    <button type="submit" name="add_product">Add Product</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+
+
+    <!-- Brands Modals -->
+    <!-- Add Brand Modal -->
+    <div class="modal" id="brandModal">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <form method="post" action="{% url 'product_add_category' %}">
+                    {% csrf_token %}
+                    {{ brand_form.as_p }}
+                    <button type="submit" name="add_brand">Add Brand</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+
+
+            <!-- Edit Category Modal -->
+        <div class="modal" id="editCategoryModal">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <form method="post" action="{% url 'product_add_category' %}">
+                        {% csrf_token %}
+                        <input type="hidden" name="category_id" id="edit_category_id">
+                        {{ category_form.as_p }}
+                        <button type="submit" name="edit_category">Edit Category</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Edit SubCategory Modal -->
+        <div class="modal" id="editSubCategoryModal">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <form method="post" action="{% url 'product_add_category' %}">
+                        {% csrf_token %}
+                        <input type="hidden" name="subcategory_id" id="edit_subcategory_id">
+                        {{ subcategory_form.as_p }}
+                        <button type="submit" name="edit_subcategory">Edit SubCategory</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Edit Product Modal -->
+        <div class="modal" id="editProductModal">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <form method="post" action="{% url 'product_add_category' %}">
+                        {% csrf_token %}
+                        <input type="hidden" name="product_id" id="edit_product_id">
+                        {{ product_form.as_p }}
+                        <button type="submit" name="edit_product">Edit Product</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Edit Brand Modal -->
+        <div class="modal" id="editBrandModal">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <form method="post" action="{% url 'product_add_category' %}">
+                        {% csrf_token %}
+                        <input type="hidden" name="brand_id" id="edit_brand_id">
+                        {{ brand_form.as_p }}
+                        <button type="submit" name="edit_brand">Edit Brand</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Edit Unit Modal -->
+        <div class="modal" id="editUnitModal">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <form method="post" action="{% url 'product_add_category' %}">
+                        {% csrf_token %}
+                        <input type="hidden" name="unit_id" id="edit_unit_id">
+                        {{ unit_form.as_p }}
+                        <button type="submit" name="edit_unit">Edit Unit</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Edit Supplier Modal -->
+        <div class="modal" id="editSupplierModal">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <form method="post" action="{% url 'product_add_category' %}">
+                        {% csrf_token %}
+                        <input type="hidden" name="supplier_id" id="edit_supplier_id">
+                        {{ supplier_form.as_p }}
+                        <button type="submit" name="edit_supplier">Edit Supplier</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+</form>
+
+<!--<script>-->
+<!--    document.addEventListener('DOMContentLoaded', function () {-->
+<!--    // Tab switching-->
+<!--    const tabLinks = document.querySelectorAll('.tab-links a');-->
+<!--    const tabContents = document.querySelectorAll('.list-content');-->
+
+<!--    tabLinks.forEach(link => {-->
+<!--        link.addEventListener('click', function (e) {-->
+<!--            e.preventDefault();-->
+<!--            const targetTab = this.getAttribute('data-tab');-->
+
+<!--            tabContents.forEach(content => {-->
+<!--                if (content.id === targetTab + 'List') {-->
+<!--                    content.style.display = 'block';-->
+<!--                } else {-->
+<!--                    content.style.display = 'none';-->
+<!--                }-->
+<!--            });-->
+<!--        });-->
+<!--    });-->
+<!--});-->
+
+<!--</script>-->
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+    // Tab switching
+    const tabLinks = document.querySelectorAll('.tab-links a');
+    const tabContents = document.querySelectorAll('.list-content');
+
+    // Retrieve the last active tab from localStorage
+    const activeTab = localStorage.getItem('activeTab') || 'categories';
+
+    // Display the active tab
+    tabContents.forEach(content => {
+        if (content.id === activeTab + 'List') {
+            content.style.display = 'block';
+        } else {
+            content.style.display = 'none';
+        }
+    });
+
+    tabLinks.forEach(link => {
+        link.addEventListener('click', function (e) {
+            e.preventDefault();
+            const targetTab = this.getAttribute('data-tab');
+
+            // Save the active tab to localStorage
+            localStorage.setItem('activeTab', targetTab);
+
+            tabContents.forEach(content => {
+                if (content.id === targetTab + 'List') {
+                    content.style.display = 'block';
+                } else {
+                    content.style.display = 'none';
+                }
+            });
+        });
+    });
+});
+</script>
+ <script>
+                    document.getElementById('category').addEventListener('change', function() {
+                        var categoryId = this.value;
+                        var subcategoryDropdown = document.getElementById('subcategory');
+                        subcategoryDropdown.innerHTML = '<option value=""></option>';
+
+                        if (categoryId) {
+                            fetch(`/product/get-subcategories/${categoryId}/`)
+                                .then(response => response.json())
+                                .then(data => {
+                                    data.subcategories.forEach(function(subcategory) {
+                                        var option = document.createElement('option');
+                                        option.value = subcategory.id;
+                                        option.textContent = subcategory.name;
+                                        subcategoryDropdown.appendChild(option);
+                                    });
+                                });
+                        }
+                    });
+                </script>
+<script>
+    $(document).ready(function () {
+        // Handle form submission via AJAX
+        $('form').on('submit', function (e) {
+            e.preventDefault(); // Prevent default form submission
+
+            var $form = $(this);
+            var formData = $form.serialize(); // Serialize form data
+
+            $.ajax({
+                type: $form.attr('method'),
+                url: $form.attr('action'),
+                data: formData,
+                success: function (response) {
+                    // On success, close the modal
+                    $form.closest('.modal').modal('hide');
+
+                    // Optionally, update the current tab's content here
+                    // e.g., reload the list content via AJAX or update the DOM
+                },
+                error: function (xhr, status, error) {
+                    console.error('Form submission failed:', status, error);
+                }
+            });
+        });
+    });
+</script>
+
+
+<!--&lt;!&ndash; Bootstrap CSS &ndash;&gt;-->
+<!--<link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">-->
+
+<!--&lt;!&ndash; jQuery &ndash;&gt;-->
+<!--<script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>-->
+
+<!--&lt;!&ndash; Bootstrap JS &ndash;&gt;-->
+<!--<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>-->
+<style>
+    .tabs {
+        width: 100%;
+        display: inline-block;
+    }
+
+    .tab-links:after {
+        display: block;
+        clear: both;
+        content: '';
+    }
+
+    .tab-links li {
+        margin: 0 5px;
+        float: left;
+        list-style: none;
+    }
+
+    .tab-links a {
+        padding: 9px 15px;
+        display: inline-block;
+        border-radius: 3px 3px 0 0;
+        background: #7FB5DA;
+        font-size: 16px;
+        font-weight: 600;
+        color: #fff;
+        transition: all linear 0.15s;
+    }
+
+    .tab-links a:hover {
+        background: #a7cce5;
+        text-decoration: none;
+    }
+
+    .tab-links .active a {
+        background: #fff;
+        color: #4c4c4c;
+    }
+
+    .tab-content {
+        padding: 15px;
+        border-radius: 3px;
+        box-shadow: 0px 1px 1px rgba(0, 0, 0, 0.15);
+        background: #fff;
+    }
+
+    .tab {
+        display: none;
+    }
+
+    .tab.active {
+        display: block;
+    }
+</style>
+<script>
+
+    document.addEventListener('DOMContentLoaded', function() {
+        // Edit Category
+        document.querySelectorAll('[data-target="#editCategoryModal"]').forEach(button => {
+            button.addEventListener('click', function() {
+                const id = this.getAttribute('data-id');
+                document.getElementById('edit_category_id').value = id;
+                fetch(`/product/get_category/${id}/`)
+                    .then(response => response.json())
+                    .then(data => {
+                        // Populate the form fields with data
+                        document.querySelector('#editCategoryModal [name="name"]').value = data.name;
+                        document.querySelector('#editCategoryModal [name="short_name"]').value = data.short_name;
+                    });
+            });
+        });
+
+        // Similar scripts for SubCategory, Product, Brand, Unit, Supplier
+    });
+</script>
+
+{% endblock %}

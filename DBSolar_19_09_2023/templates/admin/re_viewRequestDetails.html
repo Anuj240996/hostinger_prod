@@ -1,0 +1,397 @@
+{% extends 'partials/base.html' %}
+{% load static %}
+{% load tz %}
+{% block content %}
+<style>
+    /* Custom CSS for positioning the company symbol on top of the image */
+    .image-container {
+        position: relative;
+        display: inline-block; /* Ensures inline display */
+    }
+
+    .company-symbol-overlap {
+        position: absolute;
+        bottom: 0;
+        right: 3px;
+        max-width: 30%; /* Make the symbol resizable while maintaining aspect ratio */
+        height: 35%;
+        z-index: 1; /* Ensure the symbol is above the image */
+    }
+</style>
+
+<section class="content">
+    <div class="content-header">
+        <div class="container-fluid">
+            <div class="row mb-2">
+                <div class="col-sm-6">
+                    <h1 class="m-0">Re-Assign Task</h1>
+                </div>
+                <div class="col-sm-6">
+                    <ol class="breadcrumb float-sm-right">
+                        <li class="breadcrumb-item"><a href="{% url 'firereport-dashboard' %}">Home</a></li>
+                        <li class="breadcrumb-item active">Request Details</li>
+                    </ol>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container-fluid">
+        <div class="row">
+            <!-- left column -->
+            <div class="col-md-12">
+                <!-- general form elements -->
+                <div class="card card-primary">
+                    <div class="card-header">
+                        <h3 class="card-title">View Complaint Details</h3>
+                    </div>
+
+                    <div class="card-body" style="background-color: #98a8aa">
+                        <div class="row">
+                            <div class="col-12">
+                                <table id="example1" class="table table-bordered table-striped table-framebordered" style="background-color: white;">
+                                    <tr>
+                                        <th style="text-align: left; color: blue;" colspan="2"><h5>&nbsp;&nbsp;Consumer Information (Reported by) </h5>
+                                        </th>
+                                    </tr>
+                                    <tr>
+                                        <th style="width: 45px;"> &nbsp;&nbsp;Complaint No.</th>
+                                        <td style="width: 155px;"> {{firereport.id}}</td>
+                                    </tr>
+                                    <tr>
+                                        <th style="width: 45px;"> &nbsp;&nbsp;Full Name</th>
+                                        <td style="width: 155px;"> {{firereport.FullName}}</td>
+                                    </tr>
+                                    <tr>
+                                        <th style="width: 45px;"> &nbsp;&nbsp;Contact Number</th>
+                                        <td style="width: 155px;"> {{firereport.MobileNumber}}</td>
+                                    </tr>
+                                    <tr>
+                                        <th style="width: 45px;"> &nbsp;&nbsp;Location</th>
+                                        <td style="width: 155px;"> {{firereport.Location}}</td>
+                                    </tr>
+                                    <tr>
+                                        <th style="width: 45px;"> &nbsp;&nbsp;Message</th>
+                                        <td style="width: 155px;"> {{firereport.Message}}</td>
+                                    </tr>
+                                    <tr>
+                                        <th style="width: 45px;"> &nbsp;&nbsp;Reporting Time</th>
+                                        <td style="width: 155px;"> {{ firereport.Postingdate|localtime|date:"d-m-Y H:i" }}</td>
+                                    </tr>
+                                </table>
+                            </div>
+                        </div>
+
+                        <hr>
+
+                            {% if firereport.AssignTo == null %}
+                            <h3 align="center" style="text-align: center; color: red;"> Not ReAssigned Yet </h3>
+                            {% else %}
+                        <div class="row">
+                            <div class="col-12">
+                                <table id="example1" class="table table-bordered table-striped" style="background-color: white">
+                                    <tr>
+                                        <th style="text-align: left; color: red;" colspan="3"><h5>&nbsp;&nbsp;Engineers Assigned Details</h5></th>
+                                    </tr>
+                                    <tr>
+                                        <th style="text-align: center; width: 250px" rowspan="5">
+                                         <div class="image-container" style="align: center;">
+                                           <img class="img-thumbnail ml-2" height="150px" width="200px" src="{{ firereport.AssignTo.profile.image.url }}" class="card-img-top"  alt="profile-image">
+                                           <img src="{% static '/images/dblogosmall.png' %}" alt="Company Symbol" class="company-symbol-overlap">
+                                         </div>
+                                        </th>
+                                    </tr>
+
+                                    <tr>
+                                        <th style="width: 300px">&nbsp;&nbsp; Engineers Name</th>
+                                        <td>{{firereport.AssignTo.first_name}} {{firereport.AssignTo.last_name}}</td>
+                                    </tr>
+                                    <tr>
+                                        <th style="width: 300px">&nbsp;&nbsp; Employee ID & Designation</th>
+                                        <td> DB / {{firereport.AssignTo.id}} - {{firereport.AssignTo.profile.designation}}</td>
+                                    </tr>
+                                    <tr>
+                                        <th style="width: 300px"> &nbsp;&nbsp; Contact No.</th>
+                                        <td>{{firereport.AssignTo.profile.phone}}</td>
+                                    </tr>
+                                    <tr>
+                                        <th style="width: 300px">&nbsp;&nbsp; Engineers Address</th>
+                                        <td>{{firereport.AssignTo.profile.address}}</td>
+                                    </tr>
+                                    <tr>
+                                        <th></th>
+                                        <th style="width: 300px">&nbsp;&nbsp; Assigned Time</th>
+                                        <td>{{firereport.AssignedTime}}</td>
+                                    </tr>
+                                </table>
+                            </div>
+                            {% endif %}
+
+                            {% if firereport.AssignTo != null %}
+
+<!--                            <h3 align="center" style="text-align: center; color: red;"> Not Re-Assigned Yet </h3>-->
+                             <div class="form-group">
+                                 <br><br>
+                            <button type="button" class="btn btn-primary btn-sm d-block" data-toggle="modal" data-target="#myModal">
+                                Re-Assign To
+                            </button>
+
+                        </div>
+                            {% else %}
+                        <div class="row">
+                            <div class="col-12">
+                                <table id="example1" class="table table-bordered table-striped" style="background-color: white">
+                                    <tr>
+                                        <th style="text-align: left; color: red;" colspan="3"><h5>&nbsp;&nbsp;Engineers Assigned Details</h5></th>
+                                    </tr>
+                                    <tr>
+                                        <th style="text-align: center; width: 250px" rowspan="5">
+                                         <div class="image-container" style="align: center;">
+                                           <img class="img-thumbnail ml-2" height="150px" width="200px" src="{{ firereport.AssignTo.profile.image.url }}" class="card-img-top"  alt="profile-image">
+                                           <img src="{% static '/images/dblogosmall.png' %}" alt="Company Symbol" class="company-symbol-overlap">
+                                         </div>
+                                        </th>
+                                    </tr>
+
+                                    <tr>
+                                        <th style="width: 300px">&nbsp;&nbsp; Engineers Name</th>
+                                        <td>{{firereport.AssignTo.first_name}} {{firereport.AssignTo.last_name}}</td>
+                                    </tr>
+                                    <tr>
+                                        <th style="width: 300px">&nbsp;&nbsp; Employee ID & Designation</th>
+                                        <td> DB / {{firereport.AssignTo.id}} - {{firereport.AssignTo.profile.designation}}</td>
+                                    </tr>
+                                    <tr>
+                                        <th style="width: 300px"> &nbsp;&nbsp; Contact No.</th>
+                                        <td>{{firereport.AssignTo.profile.phone}}</td>
+                                    </tr>
+                                    <tr>
+                                        <th style="width: 300px">&nbsp;&nbsp; Engineers Address</th>
+                                        <td>{{firereport.AssignTo.profile.address}}</td>
+                                    </tr>
+                                    <tr>
+                                        <th></th>
+                                        <th style="width: 300px">&nbsp;&nbsp; Assigned Time</th>
+                                        <td>{{firereport.AssignedTime}}</td>
+                                    </tr>
+                                </table>
+                            </div>
+                            {% endif %}
+
+
+                        </div>
+
+
+                        <hr>
+                        {% if reportcount != 0 %}
+                        <table id="example1" class="table table-bordered table-striped" style="background-color: white">
+                            <tr align="left" style="color: red;">
+                                <th colspan="4"><h5>&nbsp;&nbsp;&nbsp;Request Track History </h5></th>
+                            </tr>
+                            <tr style="background-color: #b3bebe;">
+                                <th class="text-center">#</th>
+                                <th>Action Taken</th>
+                                <th>Status</th>
+                                <th>Remark Date</th>
+                            </tr>
+
+                            {% for i in report1 %}
+                            <tr>
+                                <td class="text-center">{{forloop.counter}}</td>
+                                <td>{{i.remark}}</td>
+                                <td>{{i.status}}</td>
+                                <td>{{ i.postingDate|localtime|date:"d-m-Y H:i" }}</td>
+                            </tr>
+                            {% endfor %}
+                        </table>
+                        {% endif %}
+
+                        {% if reportcount == 0 %}
+<!--                        <h4 align="center" style="color:red"> No Tracking history found </h4>-->
+                        {% endif %}
+                        <br>
+
+<!--                        {% if not firereport.AssignTo %}-->
+<!--                        <div class="form-group">-->
+<!--                            <button type="button" class="btn btn-primary btn-sm" data-toggle="modal"-->
+<!--                                    data-target="#myModal">Assign To-->
+<!--                            </button>-->
+<!--                        </div>-->
+<!--                        {% elif firereport.Status != 'Request Completed' %}-->
+<!--                        <button type="button" class="btn btn-primary btn-sm" data-toggle="modal"-->
+<!--                                data-target="#takeaction">Take Action-->
+<!--                        </button>-->
+<!--                        {% endif %}-->
+
+                            <div class="modal fade" id="myModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+                                <div class="modal-dialog" role="document">
+                                    <div class="modal-content">
+                                        <div class="modal-header">
+                                            <h5 class="modal-title" id="exampleModalLabel">Re-Assign To</h5>
+                                            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                                <span aria-hidden="true">&times;</span>
+                                            </button>
+                                        </div>
+                                        <div class="modal-body">
+                                            <form method="post">
+                                                {% csrf_token %}
+                                                <table width="100%">
+                                                    <tr>
+                                                        <th>Department:</th>
+                                                        <td>
+                                                            <select id="department" name="department" class="form-control" required>
+                                                                <option value="">Select Department</option>
+                                                                {% for department in unique_departments %}
+                                                                    <option value="{{ department }}">{{ department }}</option>
+                                                                {% endfor %}
+                                                            </select>
+                                                        </td>
+                                                    </tr>
+                                                    <tr>
+                                                        <th>Re-Assign To:</th>
+                                                        <td>
+                                                            <select id="first_name" name="AssignTo" class="form-control" required disabled>
+                                                                <option value="">-- Select Name --</option>
+                                                            </select>
+                                                        </td>
+                                                    </tr>
+                                                </table>
+                                                <div class="modal-footer">
+                                                    <button type="submit" name="submit" class="btn btn-primary">Submit</button>
+                                                </div>
+                                            </form>
+                                        </div>
+                                    </div>
+                                    {% if error == "no" %}
+                                    <script>
+                                        alert('Re-Assigned successfully');
+                                        window.location=('{% url 'firereport-viewRequestDetails' firereport.id %}');
+                                    </script>
+                                    {% endif %}
+
+                                    {% if error == "yes" %}
+                                    <script>
+                                        alert('Something Went Wrong. Please try again');
+                                    </script>
+                                    {% endif %}
+                                </div>
+                            </div>
+
+                        <div class="modal fade" id="takeaction" tabindex="-1" role="dialog"
+                             aria-labelledby="exampleModalLabel" aria-hidden="true">
+                            <div class="modal-dialog" role="document">
+                                <div class="modal-content">
+                                    <div class="modal-header">
+                                        <h5 class="modal-title" id="exampleModalLabel">Take Action</h5>
+                                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                            <span aria-hidden="true">&times;</span>
+                                        </button>
+                                    </div>
+                                    <div class="modal-body">
+                                        <form method="post">
+                                            {% csrf_token %}
+                                            <table width="100%">
+                                                <tr>
+                                                    <th>Status :</th>
+                                                    <td>
+                                                        <select name="status" class="form-control" required>
+                                                        <option value="">Select Action</option>
+                                                            {% if firereport.Status == 'Assigned' %}
+                                                            <option value="Team On the Way">Team On the Way</option>
+                                                            <option value="Work in Progress">Work in Progress</option>
+                                                            <option value="Request Completed">Request Completed</option>
+
+                                                            {% elif firereport.Status == 'Team On the Way' %}
+                                                            <option value="Work in Progress">Work in Progress</option>
+                                                            <option value="Request Completed">Request Completed</option>
+
+                                                            {% elif firereport.Status == 'Work in Progress' %}
+                                                            <option value="Request Completed">Request Completed</option>
+                                                            {% endif %}
+                                                        </select>
+                                                    </td>
+                                                </tr>
+
+                                                <tr>
+                                                    <th>Action Taken :</th>
+                                                    <td><textarea name="remark" class="form-control" maxlength="500" rows="5" required></textarea></td>
+                                                </tr>
+                                            </table>
+                                            <div class="modal-footer">
+                                                <button type="submit" name="submit" class="btn btn-primary">Submit
+                                                </button>
+                                            </div>
+                                        </form>
+                                    </div>
+                                </div>
+
+                                {% if error1 == "no" %}
+                                <script>
+                                    alert('Request has been updated');
+                                    window.location=('{% url 'firereport-allRequest' %}');
+                                </script>
+                                {% endif %}
+
+                                {% if error1 == "yes" %}
+                                <script>
+                                    alert('Something Went Wrong. Please try again');
+                                </script>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    </div>
+</section>
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+$(document).ready(function() {
+    var allUsers = [
+        {% for user in all_users %}
+            {
+                id: {{ user.id }},
+                firstName: "{{ user.first_name }}",
+                lastName: "{{ user.last_name }}",
+                department: "{{ user.profile.department }}"
+            },
+        {% endfor %}
+    ];
+
+    $('#department').change(function() {
+        var selectedDepartment = $(this).val();
+        var filteredUsers = allUsers.filter(function(user) {
+            return user.department === selectedDepartment;
+        });
+
+        var firstNamesDropdown = $('#first_name');
+        firstNamesDropdown.empty();
+        firstNamesDropdown.append($('<option>', {
+            value: '',
+            text: '-- Select Name --'
+        }));
+        filteredUsers.forEach(function(user) {
+            var fullName = user.firstName + ' ' + user.lastName;
+            firstNamesDropdown.append($('<option>', {
+                value: user.id,
+                text: fullName
+            }));
+        });
+
+         // Enable or disable the first_name dropdown based on the selected department
+        if (selectedDepartment) {
+            firstNamesDropdown.prop('disabled', false);
+        } else {
+            firstNamesDropdown.prop('disabled', true);
+        }
+    });
+
+    // Trigger the change event initially to populate the dropdown based on the default selected department
+    $('#department').change();
+});
+</script>
+
+{% endblock %}

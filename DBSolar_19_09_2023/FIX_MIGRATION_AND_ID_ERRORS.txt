@@ -1,0 +1,58 @@
+================================================================================
+FIX MIGRATION HISTORY ERROR FIRST, THEN FIX ID COLUMNS
+================================================================================
+
+You have TWO issues:
+1. Migration history is inconsistent (0046 applied before 0045)
+2. Database id columns need DEFAULT values
+
+================================================================================
+STEP 1: Fix Migration History
+================================================================================
+
+Run this command on your server:
+
+cd /home/anujdeshmukh24/DBSolar_19_09_2023/DBSolar_19_09_2023 && source /home/anujdeshmukh24/env/bin/activate && python fix_migration_history.py
+
+This will mark migration 0045 as applied in the database.
+
+================================================================================
+STEP 2: Apply Migrations
+================================================================================
+
+After fixing the history, run:
+
+python manage.py migrate
+
+This should now work without the InconsistentMigrationHistory error.
+
+================================================================================
+STEP 3: Fix ID Columns (if migration 0032 doesn't exist)
+================================================================================
+
+If migration 0032_fix_all_id_columns doesn't exist or wasn't applied, run:
+
+python FIX_DATABASE_NOW.py
+
+This will fix all id columns directly.
+
+================================================================================
+ALTERNATIVE: Fake Apply Migration 0045
+================================================================================
+
+If the script above doesn't work, you can fake-apply migration 0045:
+
+python manage.py migrate customer 0045 --fake
+
+Then run:
+python manage.py migrate
+
+================================================================================
+AFTER ALL FIXES
+================================================================================
+
+1. Restart your Django server
+2. Test creating entries - errors should be gone!
+
+================================================================================
+

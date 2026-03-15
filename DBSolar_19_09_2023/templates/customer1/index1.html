@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+{% extends 'partials/base.html' %}
+{% block title %}Order Page{% endblock %}
+{% block content %}
+<div class="content container-fluid">
+<div class="page-header">
+   <div class="row">
+      <div class="col-sm-12">
+         <h3 class="page-title text-capitalize">Welcome {{ user.first_name }}</h3>
+
+          <div class="page-header">
+                 <div class="row align-items-center">
+                    <div class="col">
+
+                       <ul class="breadcrumb">
+                          <li class="breadcrumb-item"><a href="{% url 'dashboard-index' %}"><i class="fa fa-home" aria-hidden="true"></i> Home</a></li>
+                          <li class="breadcrumb-item active">Consumer Dashboard</li>
+                       </ul>
+                    </div>
+                 </div>
+              </div>
+
+
+
+      </div>
+   </div>
+</div>
+
+<div class="row">
+   <div class="col-xl-3 col-sm-6 col-12 d-flex">
+
+      <div class="card bg-five w-100 my-card shadow">
+          <a class="text-decoration-none text-dark" href="{% url 'customer-view_all' %}?Cust_type=Residential">
+         <div class="card-body">
+            <div class="db-widgets d-flex justify-content-between align-items-center">
+               <div class="db-icon">
+                  <i class="fas fa-house-user"></i>
+               </div>
+               <div class="db-info text-right">
+                  <h3>{{ totalIndividual }}</h3>
+                  <h6>&nbsp;&nbsp;&nbsp;&nbsp;Residential Cust</h6>
+               </div>
+            </div>
+         </div>
+        </a>
+      </div>
+   </div>
+   <div class="col-xl-3 col-sm-6 col-12 d-flex">
+
+      <div class="card bg-six w-100 my-card shadow">
+          <a class="text-decoration-none text-dark" href="{% url 'customer-view_all' %}?Cust_type=Industrial">
+         <div class="card-body">
+            <div class="db-widgets d-flex justify-content-between align-items-center">
+               <div class="db-icon">
+                 <i class="fas fa-industry"></i>
+               </div>
+               <div class="db-info text-right">
+                  <h3>{{ totalCompany }}</h3>
+                  <h6>&nbsp;&nbsp;&nbsp;&nbsp;Industrial Cust</h6>
+               </div>
+            </div>
+         </div>
+        </a>
+      </div>
+   </div>
+   <div class="col-xl-3 col-sm-6 col-12 d-flex">
+
+       <div class="card bg-seven w-100 my-card shadow">
+          <a class="text-decoration-none text-dark" href="{% url 'customer-view_all' %}?Cust_type=Commersial">
+         <div class="card-body">
+            <div class="db-widgets d-flex justify-content-between align-items-center">
+               <div class="db-icon">
+                  <i class="fas fa-city"></i>
+               </div>
+               <div class="db-info text-right">
+                  <h3>{{ totalComersial }}</h3>
+                  <h6>Commersial Cust</h6>
+               </div>
+            </div>
+         </div>
+         </a>
+      </div>
+   </div>
+   <div class="col-xl-3 col-sm-6 col-12 d-flex">
+       <div class="card bg-eight w-100 my-card shadow">
+         <a class="text-decoration-none text-dark" href="{% url 'customer-view_all' %}?Cust_type=Goverment">
+         <div class="card-body">
+            <div class="db-widgets d-flex justify-content-between align-items-center">
+               <div class="db-icon">
+                  <i class="fas fa-clock"></i>
+               </div>
+               <div class="db-info text-right">
+                  <h3>{{ totalGoverment }}</h3>
+                  <h6>Goverment Cust</h6>
+<!--                  <h3>{{ totalGoverment }}</h3>-->
+<!--                  <h6>&nbsp;&nbsp;Goverment Cust</h6>-->
+               </div>
+            </div>
+         </div>
+         </a>
+      </div>
+   </div>
+</div>
+</div>
+
+
+<div class="content container-fluid">
+                              {% if customers %}
+                                    {% if customer_type is None %}
+                                      {% with customer_type='All' %}
+                                         <h4 align="center">Result against " <span style="color: red">{{ customer_type }}</span> " Consumer </h4><br>
+                                      {% endwith %}
+                                    {% else %}
+                                       <h4 align="center">Result against " <span style="color: red">{{ customer_type }}</span> " Consumer </h4><br>
+                                     {% endif %}
+
+
+                           <div class="table-responsive">
+
+                              <table class="table table-hover table-center table.dataTable.table-sm mb-0  table.sm">
+                                 <thead class="table-success">
+                                    <tr>
+                                       <th scope="col">Sr No.</th>
+                                       <th scope="col">Cust id</th>
+                                       <th scope="col">Consumer / Farm Name</th>
+                                       <th scope="col">Capacity</th>
+<!--                                       <th scope="col">UPS Soft</th>-->
+                                       <th scope="col">Consumer Type</th>
+                                       <th scope="col">Mobile</th>
+                                       <th scope="col">City</th>
+                                       <th scope="col">PO Date</th>
+                                       <th class="text-center">Action</th>
+                                    </tr>
+                                 </thead>
+                                 {% for Cust in customers %}
+                                 <tbody>
+                                    <tr>
+                                       <td>{{forloop.counter }}</td>
+                                       <td>{{Cust.Cust_id}}</td>
+                                       {% if Cust.Comp_name %}
+                                        <td class="text-capitalize">
+                                          <a href="{% url 'customer-customer-updatepage' Cust.Cust_id %}" class="text-capitalize">{{Cust.Comp_name}}</a>
+                                        </td>
+                                       {% else %}
+                                        <td class="text-capitalize">
+                                          <a href="{% url 'customer-customer-updatepage' Cust.Cust_id %}" class="text-capitalize">{{Cust.first_name}} {{Cust.last_name}}</a>
+                                        </td>
+                                        {% endif %}
+                                       <td>{{Cust.Plant_Capacity}} Kwp</td>
+<!--                                       <td class="text-capitalize">{{Cust.Ups_Soft}}</td>-->
+                                       <td class="text-capitalize">{{Cust.Cust_type}}</td>
+                                       <td>{{Cust.phone}}</td>
+                                       <td class="text-capitalize">{{Cust.City}}</td>
+                                       <td>{{ Cust.po_date|date:'d-m-Y' }}</td>
+                                       <td class="text-right">
+                                          <div class="actions">
+<!--                                             <a href="{% url 'customer-customer-update' Cust.Cust_id %}" class="btn btn-sm bg-success-light mr-2">-->
+                                                  <a href="{% url 'customer-customer-updatepage' Cust.Cust_id %}" class="btn btn-sm bg-success-light mr-2">
+                                             <i class="fa fa-eye" aria-hidden="true"></i>
+                                             </a>
+
+
+                                          </div>
+                                       </td>
+                                    </tr>
+                                 </tbody>
+                                  {% endfor %}
+                              </table>
+                           </div>
+                              {% endif %}
+                           </div>
+{% endblock %}

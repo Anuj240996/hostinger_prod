@@ -1,0 +1,77 @@
+{% extends 'partials/base.html' %}
+{% load static %}
+{% block content %}
+
+<div class="col-md-12">
+    <div class="card card-primary">
+        <div class="card-header">
+            <h3>Upload Serial Number</h3>
+        </div>
+        <form method="post" action="{% url 'customer-search_results' %}">
+            {% csrf_token %}
+            <label for="barcode_value">Enter Serial No:</label>
+            <input type="text" name="barcode_value" required><br><br>
+            <input type="submit" value="Search">
+        </form>
+    </div>
+</div>
+
+<div class="col-md-12">
+    <div class="card card-primary">
+        <div class="card-header">
+            <h3>Uploaded Serial No. Information</h3>
+        </div>
+        <div class="card-header">
+            <table>
+                   {% if meters or generation_meter %}
+                        <tr>
+                            <th colspan="2"><h3>Serial No. Details:</h3></th>
+                        </tr>
+                        {% if meters %}
+                            {% if matched_field == 'serial_no' %}
+                                <!-- Meters Table - Serial No. Matched -->
+                                <tr><th><b>Serial No. :</b> </th><td>{{ meters.serial_no }}</td></tr>
+                                <tr><th><b>Capacity :</b> </th><td class="text-capitalize">{{ meters.capacity }}</td></tr>
+                                <tr><th><b>Meters Company :</b> </th><td class="text-capitalize">{{ meters.make }}</td></tr>
+                                <tr><th><b>Meter Type :</b> </th><td class="text-capitalize">{{ meters.meter_type }}</td></tr>
+                            {% elif matched_field == 'transformer_serial_number' %}
+                                <!-- Meters Table - Transformer Serial Number Matched -->
+                                <tr><th><b>Transformer Serial No. :</b> </th><td>{{ meters.transformer_serial_number }}</td></tr>
+                                <tr><th><b>Transformer Capacity :</b> </th><td class="text-capitalize">{{ meters.transformer_capacity }}</td></tr>
+                                <tr><th><b>Transformer Company :</b> </th><td class="text-capitalize">{{ meters.transformer_make }}</td></tr>
+                                <tr><th><b>Transformer Type :</b> </th><td class="text-capitalize">{{ meters.transformer_type }}</td></tr>
+                            {% endif %}
+                        {% elif generation_meter %}
+                            {% if matched_field == 'serial_no' %}
+                                <!-- Generation Meter Table - Serial No. Matched -->
+                                <tr><th><b>Generation Meter Serial No. :</b></th><td>{{ generation_meter.serial_no }}</td></tr>
+                                <tr><th><b>Generation Meter Capacity :</b></th><td class="text-capitalize">{{ generation_meter.capacity }}</td></tr>
+                                <tr><th><b>Generation Meter Company :</b></th><td class="text-capitalize">{{ generation_meter.make }}</td></tr>
+                            {% elif matched_field == 'CT_serial_no' %}
+                                <!-- Generation Meter Table - CT Serial No. Matched -->
+                                <tr><th><b>Generation CT Serial No. :</b></th><td>{{ generation_meter.CT_serial_no }}</td></tr>
+                                <tr><th><b>Generation CT Capacity :</b></th><td class="text-capitalize">{{ generation_meter.CT_capacity }}</td></tr>
+                                <tr><th><b>Generation CT Meter Company :</b></th><td class="text-capitalize">{{ generation_meter.CT_make }}</td></tr>
+                            {% endif %}
+                        {% endif %}
+
+                    <tr><th colspan="2"><h3>Consumer Details:</h3></th></tr>
+                    <tr><th><b>Company Name :</b></th><td class="text-capitalize">{{ customer.Comp_name }}</td></tr>
+                    <tr><th><b>Address :</b></th><td class="text-capitalize">{{ customer.Address }}</td></tr>
+                    <tr><th><b>Plant Capacity :</b></th><td class="text-capitalize">{{ customer.Plant_Capacity }} Kw</td></tr>
+                    <tr><th><b>Customer Type :</b></th><td class="text-capitalize">{{ customer.Cust_type }}</td></tr>
+                    <tr><th><b>City :</b></th><td class="text-capitalize">{{ customer.City }}</td></tr>
+                    <tr><th><b>Email :</b></th><td>{{ customer.email }}</td></tr>
+                    <tr><th><b>Contact No. :</b></th><td class="text-capitalize">{{ customer.phone }}</td></tr>
+                    <tr><th><b>State :</b></th><td class="text-capitalize">{{ customer.state }}</td></tr>
+                {% else %}
+                    {% if request.method == 'POST' %}
+                        <tr><th colspan="2"><p>No results found for the given serial number.</p></th></tr>
+                    {% endif %}
+                {% endif %}
+            </table>
+        </div>
+    </div>
+</div>
+
+{% endblock content %}

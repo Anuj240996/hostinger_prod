@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Scan Barcode</title>
+</head>
+<body>
+    <h1>Scan Barcode Image</h1>
+    <p>Click the "Scan" button to enable the camera for barcode scanning:</p>
+    <div id="camera-container">
+        <video id="camera" autoplay playsinline></video>
+        <canvas id="overlay" class="drawingBuffer" width="640" height="480"></canvas>
+    </div>
+    <button id="scanButton">Scan</button>
+
+    <h2>Barcode Information</h2>
+    <label for="companySelect">Select Company:</label>
+    <select id="companySelect">
+        <option value="Company1">Company 1</option>
+        <option value="Company2">Company 2</option>
+        <!-- Add more options dynamically from your Customer model -->
+    </select>
+
+    <label for="companyName">Company Name:</label>
+    <input type="text" id="companyName" name="companyName">
+
+    <label for="wattage">Wattage:</label>
+    <input type="text" id="wattage" name="wattage">
+
+    <button id="submitButton">Submit</button>
+
+    <h2>Scanned Barcodes</h2>
+    <table id="barcodeTable">
+        <thead>
+            <tr>
+                <th>Barcode Data</th>
+                <th>Barcode Type</th>
+                <th>Company</th>
+                <th>Wattage</th>
+            </tr>
+        </thead>
+        <tbody>
+            <!-- Display scanned barcodes here -->
+        </tbody>
+    </table>
+
+    <script src="https://cdn.jsdelivr.net/npm/quagga"></script>
+
+    <script>
+        const cameraContainer = document.getElementById("camera-container");
+        const camera = document.getElementById("camera");
+        const overlay = document.getElementById("overlay");
+        const scanButton = document.getElementById("scanButton");
+        const companySelect = document.getElementById("companySelect");
+        const companyNameInput = document.getElementById("companyName");
+        const wattageInput = document.getElementById("wattage");
+        const submitButton = document.getElementById("submitButton");
+        const barcodeTable = document.getElementById("barcodeTable").getElementsByTagName('tbody')[0];
+
+        let cameraStream;
+
+        scanButton.addEventListener("click", () => {
+            if (!cameraStream) {
+                navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
+                    .then((stream) => {
+                        cameraStream = stream;
+                        camera.srcObject = cameraStream;
+                        cameraContainer.style.display = "block";
+
+                        Quagga.init({
+                            inputStream: {
+                                name: "Live",
+                                type: "LiveStream",
+                                target: camera,
+                                constraints: {
+                                    width: 640,
+                                    height: 480,
+                                },
+                            },
+                            decoder: {
+                                readers: ["ean_reader", "code_128_reader"],
+                            },
+                            locate: true,
+                        });
+
+                        Quagga.onDetected((result) => {
+                            const barcodeData = result.codeResult.code;
+                            const barcodeType = result.codeResult.format;
+                            const company = companySelect.value;
+                            const companyName = companyNameInput.value;
+                            const wattage = wattageInput.value;
+
+                            const row = barcodeTable.insertRow(0);
+                            const cell1 = row.insertCell(0);
+                            const cell2 = row.insertCell(1);
+                            const cell3 = row.insertCell(2);
+                            const cell4 = row.insertCell(3);
+                            cell1.innerHTML = barcodeData;
+                            cell2.innerHTML = barcodeType;
+                            cell3.innerHTML = company;
+                            cell4.innerHTML = wattage;
+
+                            companyNameInput.value = "";
+                            wattageInput.value = "";
+                        });
+
+                        Quagga.onProcessed(() => {
+                            const drawingCtx = Quagga.canvas.ctx.overlay;
+                            const drawingCanvas = Quagga.canvas.dom.overlay;
+                            drawingCtx.clearRect(0, 0, parseInt(drawingCanvas.getAttribute("width")), parseInt(drawingCanvas.getAttribute("height")));
+                        });
+
+                        Quagga.start();
+                    })
+                    .catch((error) => {
+                        console.error("Camera access error:", error);
+                    });
+            }
+        });
+
+        submitButton.addEventListener("click", () => {
+            if (cameraStream) {
+                cameraStream.getTracks().forEach(track => track.stop());
+                cameraStream = null;
+                cameraContainer.style.display = "none";
+            }
+            // Handle saving data to the server.
+        });
+    </script>
+</body>
+</html>

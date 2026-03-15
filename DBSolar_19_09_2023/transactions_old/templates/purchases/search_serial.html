@@ -1,0 +1,249 @@
+{% extends 'partials/base.html' %}
+{% load static %}
+{% block title %} New Purchase {% endblock title %}
+{% block content %}
+  <style>
+        /* Quick inline CSS for better alignment */
+        .search-form {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .search-form input[type="text"] {
+            padding: 8px;
+            font-size: 16px;
+        }
+
+        .search-form button {
+            padding: 8px 16px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+    </style>
+<h1>Search Serial Number</h1>
+ <form method="get" class="search-form">
+        {{ form.serial_no }}
+        <button type="submit"> <i class="fas fa-search"></i> &nbsp; Search</button>
+
+    </form>
+
+
+{% if results %}
+    <h3>Search Results:</h3>
+    {% for item in results %}
+<!--        <table border="1" cellpadding="8" cellspacing="0" style="margin-bottom:30px; width: 60%;" align="center">-->
+<!--            <tr><th colspan="2" style="text-align:center;"><h3>Stock Details</h3></h3></th></tr>-->
+<!--            <tr><td><strong>Stock Name</strong></td><td>{{ item.stock.name }}</td></tr>-->
+<!--            <tr><td><strong>Serial No</strong></td><td>{{ item.serialNo }}</td></tr>-->
+<!--            <tr><td><strong>Purchase Bill No</strong></td><td>{{ item.billno.billno }}</td></tr>-->
+<!--            <tr><td><strong>Sale Bill No</strong></td>-->
+<!--                <td>-->
+<!--                    {% if item.sales_billno %}-->
+<!--                        {{ item.sales_billno.billno }}-->
+<!--                    {% else %}-->
+<!--                        N/A-->
+<!--                    {% endif %}-->
+<!--                </td>-->
+<!--            </tr>-->
+<!--            <tr><td><strong>Final Sale Bill</strong></td>-->
+<!--                <td>-->
+<!--                    {% if item.final_salebill %}-->
+<!--                        {{ item.final_salebill.billno }}-->
+<!--                    {% else %}-->
+<!--                        N/A-->
+<!--                    {% endif %}-->
+<!--                </td>-->
+<!--            </tr>-->
+<!--            <tr><td><strong>Return Bill</strong></td>-->
+<!--                <td>-->
+<!--                    {% if item.return_bill %}-->
+<!--                        {{ item.return_bill.billno }}-->
+<!--                    {% else %}-->
+<!--                        N/A-->
+<!--                    {% endif %}-->
+<!--                </td>-->
+<!--            </tr>-->
+<!--        </table>-->
+<!--<table border="1" align="center">-->
+  <fieldset style="width: 80%; margin: 0 auto;">
+    <table border="1" cellpadding="8" cellspacing="0" style="margin-bottom:30px; width: 98%;" align="center">
+            <tr align="center" style="background-color: #083d45; color: white;">
+                <th>Category</th>
+                <th>Sub Category</th>
+                <th>Stock Name</th>
+                <th>Serial No</th>
+                <th>Purchase Bill No</th>
+                <th>Sale Bill No</th>
+                <th>Final Sale Bill</th>
+                <th>Return Bill</th>
+            </tr>
+
+            <tr align="center">
+                <td>{{ item.stock.category }}</td>
+                <td>{{ item.stock.subcategory }}</td>
+                <td>{{ item.stock.name }}</td>
+                <td>{{ item.serialNo }}</td>
+                <td>{{ item.billno.billno }} &nbsp;
+                        <a href="{% url 'purchase-bill' item.billno.billno %}" style="color: blue; font-size: 16px; padding-right: 10px;">
+                            <i class="fas fa-eye"></i>
+                        </a>
+                </td>
+                 <td>
+                    {% if item.sales_billno %}
+                        {{ item.sales_billno.billno }} &nbsp;
+                         <a href="{% url 'sale-bill' item.sales_billno.billno %}" style="color: blue; font-size: 16px; padding-right: 10px;">
+                            <i class="fas fa-eye"></i>
+                        </a>
+                    {% else %}
+                        N/A
+                    {% endif %}
+                </td>
+
+                <td>
+                    {% if item.final_salebill %}
+                        {{ item.final_salebill.billno }} &nbsp;
+
+                         <a href="{% url 'generate-final-bill' item.final_salebill.billno %}" style="color: blue; font-size: 16px; padding-right: 10px;">
+                            <i class="fas fa-eye"></i>
+                        </a>
+                    {% else %}
+                        N/A
+                    {% endif %}
+
+
+                </td>
+
+                <td>
+                    {% if item.return_bill %}
+                        {{ item.return_bill.billno }} &nbsp;
+                         <a href="{% url 'return-bill' item.return_bill.billno %}" style="color: blue; font-size: 16px; padding-right: 10px;">
+                            <i class="fas fa-eye"></i>
+                        </a>
+                    {% else %}
+                        N/A
+                    {% endif %}
+                </td>
+
+
+
+            </tr>
+
+        </table>
+     <br>
+       {% if item.billno %}
+        <table border="1" cellpadding="8" cellspacing="0" style="margin-bottom:30px; width: 60%;" align="center">
+            <tr><th colspan="2" style="text-align:center; background-color: lightgray;"><h3><i class="nav-icon fas fa-shopping-basket"></i> &nbsp;Purchase Information</h3></th></tr>
+            <tr><td><strong>Purchase Bill No</strong></td><td>{{ item.billno.billno }} &nbsp;
+                    <a href="{% url 'purchase-bill' item.billno.billno %}" style="color: blue; font-size: 16px; padding-right: 10px;">
+                            <i class="fas fa-eye"></i>
+                    </a>
+                </td>
+            </tr>
+            <tr><td><strong>Supplier Company Name</strong></td><td>{{ item.billno.supplier }}</td></tr>
+            <tr><td><strong>Stock Name</strong></td><td>{{ item.stock.name }}</td></tr>
+            <tr><td><strong>Serial No</strong></td><td>{{ item.serialNo }}</td></tr>
+            <tr><td><strong>Purchase Bill Date</strong></td><td>{{ item.billno.time|date:"d-m-Y"  }}</td></tr>
+            <tr><td><strong>Destination</strong></td>
+                <td>
+                    {% if item.purchase_bill_details %}
+                        {{ item.purchase_bill_details.destination }}
+                    {% else %}
+                        N/A
+                    {% endif %}
+                </td>
+            </tr>
+
+        </table>
+        {% endif %}
+        {% if item.sales_billno %}
+        <table border="1" cellpadding="8" cellspacing="0" style="margin-bottom:30px; width: 60%;" align="center">
+            <tr><th colspan="2" style="text-align:center; background-color: lightgray;"><h3><i class="fas fa-solid fa-truck"></i> &nbsp;Provisional Sale Bill Information</h3></th></tr>
+            <tr><td><strong>Sale Bill No</strong></td><td>{{ item.sales_billno.billno }}&nbsp;
+                    <a href="{% url 'sale-bill' item.sales_billno.billno %}" style="color: blue; font-size: 16px; padding-right: 10px;">
+                            <i class="fas fa-eye"></i>
+                    </a>
+                </td>
+            </tr>
+            <tr><td><strong>Consumer Farm Name</strong></td><td>{{ item.sales_billno.Cust_id.Comp_name }}</td></tr>
+            <tr><td><strong>Plant Capacity</strong></td><td>{{ item.sales_billno.Cust_id.Plant_Capacity }} Kw</td></tr>
+            <tr><td><strong>Address</strong></td><td>{{ item.sales_billno.Cust_id.Address }}</td></tr>
+            <tr><td><strong>Stock Name</strong></td><td>{{ item.stock.name }}</td></tr>
+            <tr><td><strong>Serial No</strong></td><td>{{ item.serialNo }}</td></tr>
+            <tr><td><strong>Sale Bill Date</strong></td><td>{{ item.sales_billno.time|date:"d-m-Y"  }}</td></tr>
+            <tr><td><strong>Source</strong></td>
+                <td>
+                     {% if item.sale_bill_details %}
+                        {{ item.sale_bill_details.destination }}
+                    {% else %}
+                        N/A
+                    {% endif %}
+                </td>
+            </tr>
+        </table>
+        {% endif %}
+        {% if item.return_bill %}
+        <table border="1" cellpadding="8" cellspacing="0" style="margin-bottom:30px; width: 60%;" align="center">
+            <tr><th colspan="2" style="text-align:center; background-color: lightgray;"><h3><i class="nav-icon fas fa-undo-alt"></i> &nbsp;  Return Bill Information</h3></th></tr>
+            <tr><td><strong>Return Bill No</strong></td><td>{{ item.return_bill.billno }} &nbsp;
+                    <a href="{% url 'return-bill' item.return_bill.billno %}" style="color: blue; font-size: 16px; padding-right: 10px;">
+                            <i class="fas fa-eye"></i>
+                    </a>
+                </td>
+            </tr>
+            <tr><td><strong>Consumer Farm Name</strong></td><td>{{ item.return_bill.customer.Comp_name }}</td></tr>
+            <tr><td><strong>Plant Capacity</strong></td><td>{{ item.return_bill.customer.Plant_Capacity }} Kw</td></tr>
+            <tr><td><strong>Address</strong></td><td>{{ item.return_bill.customer.Address }}</td></tr>
+            <tr><td><strong>Stock Name</strong></td><td>{{ item.stock.name }}</td></tr>
+            <tr><td><strong>Serial No</strong></td><td>{{ item.serialNo }}</td></tr>
+            <tr><td><strong>Return Bill Date</strong></td><td>{{ item.return_bill.time|date:"d-m-Y"  }}</td></tr>
+            <tr><td><strong>Destination</strong></td>
+                <td>
+                    {% if item.return_sale_bill_details %}
+                        {{ item.return_sale_bill_details.destination }}
+                    {% else %}
+                        N/A
+                    {% endif %}
+                </td>
+            </tr>
+        </table>
+        {% endif %}
+        {% if item.final_salebill %}
+        <table border="1" cellpadding="8" cellspacing="0" style="margin-bottom:30px; width: 60%;" align="center">
+            <tr><th colspan="2" style="text-align:center; background-color: lightgray;"><h3><i class="nav-icon fas fa-file-contract"></i> &nbsp; Final Sale Bill Information</h3></th></tr>
+            <tr><td width="25%"><strong>Final Sale Bill No</strong></td><td>{{ item.final_salebill.billno }} &nbsp;
+                 <a href="{% url 'generate-final-bill' item.final_salebill.billno %}" style="color: blue; font-size: 16px; padding-right: 10px;">
+                            <i class="fas fa-eye"></i>
+                 </a>
+                </td>
+            </tr>
+            <tr><td><strong>Consumer Farm Name</strong></td><td>{{ item.final_salebill.customer.Comp_name }}</td></tr>
+            <tr><td><strong>Plant Capacity</strong></td><td>{{ item.final_salebill.customer.Plant_Capacity }} Kw</td></tr>
+            <tr><td><strong>Address</strong></td><td>{{ item.final_salebill.customer.Address }}</td></tr>
+            <tr><td><strong>Stock Name</strong></td><td>{{ item.stock.name }}</td></tr>
+            <tr><td><strong>Serial No</strong></td><td>{{ item.serialNo }}</td></tr>
+            <tr><td><strong>Final Sale Bill Date</strong></td><td>{{ item.final_salebill.time|date:"d-m-Y"  }}</td></tr>
+            <tr><td><strong>Source</strong></td>
+                <td>
+                     {% if item.sale_bill_details %}
+                        {{ item.sale_bill_details.destination }}
+                    {% else %}
+                        N/A
+                    {% endif %}
+                </td>
+            </tr>
+        </table>
+        {% endif %}
+       </fieldset>
+        <hr style="background-color: black;">
+    {% endfor %}
+
+{% elif results is not None %}
+<br>
+  <fieldset style="width: 80%; margin: 0 auto; background-color: #dcfaff;">
+      <h3>Oops! , &nbsp; No matching serial number found.</h3>
+  </fieldset>
+{% endif %}
+
+{% endblock content %}

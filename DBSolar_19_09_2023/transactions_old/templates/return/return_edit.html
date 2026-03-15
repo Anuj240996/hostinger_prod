@@ -1,0 +1,1450 @@
+{% extends 'partials/base.html' %}
+{% load static %}
+{% block title %} New Purchase {% endblock title %}
+{% block content %}
+
+<script type="text/javascript" src="{% static 'js/jquery-3.2.1.slim.min.js' %}"></script>
+<script type="text/javascript" src="{% static 'js/dialogbox.js' %}"></script>
+<!-- Existing HTML -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@mdi/font/css/materialdesignicons.min.css">
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<!--<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>-->
+
+<br><h1>{{ sale_bill.customer.Comp_name }} Return Bill</h1>
+<form method="post" id="billForm">
+    <h1 align="center" class="text-capitalize">Provisional Bill No - {{ sale_bill.final_bill.billno }}</h1>
+    {% csrf_token %}
+    <!-- Sale Bill Details -->
+    <h3>Return DC Information</h3>
+    <p><strong>DC No:</strong> {{ sale_bill.billno }}</p>
+    <p><strong>Customer Name:</strong> {{ sale_bill.customer.Comp_name }}</p>
+    <p><strong>Phone:</strong> {{ sale_bill.customer.phone }}</p>
+    <p><strong>Address:</strong> {{ sale_bill.customer.Address }}</p>
+    <p><strong>Email:</strong> {{ sale_bill.customer.email }}</p>
+    <p><strong>GSTIN:</strong> {{ sale_bill.customer.gstin }}</p>
+
+    <!-- Bill Table -->
+    <fieldset>
+        <div class="table-responsive">
+            <table id="billTable" class="table table-hover table-center table-sm" style="width: 100%;">
+                <thead class="thead-dark align-middle" align="center">
+                    <tr>
+                        <th>Sr No</th>
+                        <th>Category</th>
+                        <th>SubCategory</th>
+                        <th>Stock Name</th>
+                        <th>Available Quantity</th>
+                        <th>Quantity</th>
+						<th>Return Quantity</th>
+                        <th>Total Quantity</th>
+<!--                        <th>Actions</th>-->
+                    </tr>
+                </thead>
+                <tbody align="center">
+                    {% for item in sale_items %}
+                    <tr data-id="{{ item.id }}">
+                        <td class="sr-no">{{ forloop.counter }}</td>
+                        <td>{{ item.stock.category.name }}</td>
+                        <td>{{ item.stock.subcategory.name }}</td>
+<!--                        <td align="left">{{ item.stock.name }}</td>-->
+
+                        <td>
+                            &nbsp;<a href="#" class="stockName text-capitalize form-control-plaintext">{{ item.stock.name }}<br></a>
+                            <a href="{% url 'get_serial_numbers' %}?stock_id={{ item.stock.id }}"></a>
+
+                            {% if item.serials.exists %}
+                                &nbsp;&nbsp;<small class="custom-small" style="color: black">Sr No:
+                                    {% for serial in item.serials %}
+                                        {{ serial.serialNo }}{% if not forloop.last %}, {% endif %}
+                                    {% endfor %}
+<!--                                    <span class="stockNameDisplay" style="margin: 0; padding: 0;"></span>-->
+                                  </small>
+                            {% endif %}
+                            <small class="custom-small">
+                                <span class="stockNameDisplay" style="margin: 0; padding: 0;"></span>
+                            </small>
+                        </td>
+                        <td>
+                            <div class="d-flex justify-content-center align-items-center mt-1">
+                                <input type="hidden" class="form-control stock-quantity" value="{{ item.stock.quantity }}" readonly>
+                                {% if item.stock.quantity > item.stock.stock_alert %}
+                                    <span class="badge success">
+                                        {{ item.stock.quantity }} <small>{{ item.stock.purchase.short_name }}</small>
+                                    </span>
+                                {% else %}
+                                    <span class="badge danger">
+                                        {{ item.stock.quantity }} <small>{{ item.stock.purchase.short_name }}</small>
+                                    </span>
+                                {% endif %}
+                            </div>
+                        </td>
+                        <td>
+                            <div class="input-group">
+                                        <input type="number" min="1" class="form-control quantity" style="text-align: center;" name="quantity_{{ item.pk }}" value="{{ item.total_quantity }}" readonly />
+                                        <div class="input-group-append">
+                                            <span class="input-group-text me-2">{{item.stock.purchase.short_name}}</span>
+                                        </div>
+
+                                        <div class="warning-message" style="color: red; display: none;">Quantity exceeds available stock!</div>
+                                    </div>
+                        </td>
+                        <td>
+                            <input type="number" min="0" class="form-control return-quantity" style="text-align: center;"
+                                name="return_quantity_{{ item.pk }}" value="{{ item.r_quantity }}" />
+                        </td>
+                        <td>
+                            <input type="number" class="form-control total-quantity" style="text-align: center;"
+                                name="current_quantity_{{ item.pk }}" value="{{ item.final_quantity }}" readonly />
+                        </td>
+
+<!--						<td><button type="button" class="removeRow">Remove</button></td>-->
+                        <input type="hidden" name="existing_ids[]" value="{{ item.pk }}" />
+                        <input type="hidden" name="existing_stock_ids[]" value="{{ item.stock.id }}" />
+
+
+                    </tr>
+                    {% endfor %}
+                </tbody>
+                    <input type="hidden" name="final_bill" value="{{ sale_bill.final_bill.billno }}">
+            </table>
+        </div>
+    </fieldset>
+
+
+    <!-- Save Changes Button -->
+    <br>
+    <div align="center">
+<!--        <button type="button" id="initialSubmitButton" class="btn btn-success" style="width: 200px; margin-right: 10px;">Save Changes</button>-->
+        <button type="submit" id="calculateTotalQuantity">Save Changes</button>
+    </div>
+</form>
+<!--<script>-->
+<!--    $(document).ready(function () {-->
+<!--        // Update Total Quantity dynamically-->
+<!--        $(document).on('input', '.return-quantity', function () {-->
+<!--            const row = $(this).closest('tr');-->
+<!--            const availableQuantity = parseFloat(row.find('.stock-quantity').val()) || 0;-->
+<!--            const returnQuantity = parseFloat($(this).val()) || 0;-->
+<!--    -->
+<!--            if (returnQuantity > availableQuantity) {-->
+<!--                alert("Return quantity cannot exceed available quantity!");-->
+<!--                $(this).val(availableQuantity);-->
+<!--                row.find('.total-quantity').val(0);-->
+<!--                return;-->
+<!--            }-->
+<!--    -->
+<!--            // Calculate the Total Quantity-->
+<!--            const totalQuantity = availableQuantity - returnQuantity;-->
+<!--            row.find('.total-quantity').val(totalQuantity);-->
+<!--        });-->
+<!--    -->
+<!--        // Remove Row Logic-->
+<!--        $(document).on('click', '.removeRow', function () {-->
+<!--            $(this).closest('tr').remove();-->
+<!--            updateSerialNumbers();-->
+<!--        });-->
+<!--    -->
+<!--        // Update serial numbers dynamically-->
+<!--        function updateSerialNumbers() {-->
+<!--            $('#billTable tbody tr').each(function (index) {-->
+<!--                $(this).find('.sr-no').text(index + 1);-->
+<!--            });-->
+<!--        }-->
+<!--    });-->
+
+<!--</script>-->
+<script>
+    $(document).ready(function () {
+        // Update Total Quantity on Return Quantity change
+        $(document).on('input', '.return-quantity', function () {
+            const row = $(this).closest('tr');
+            const quantity = parseFloat(row.find('.quantity').val()) || 0;
+            const returnQuantity = parseFloat($(this).val()) || 0;
+
+            if (returnQuantity > quantity) {
+                alert("Return quantity cannot exceed available quantity!");
+                $(this).val(quantity);
+                row.find('.total-quantity').val(0);
+                return;
+            }
+
+            // Calculate total quantity and update the field
+            const totalQuantity = quantity - returnQuantity;
+            row.find('.total-quantity').val(totalQuantity);
+        });
+
+        // Initialize Total Quantity with Quantity value
+        $('.final_quantity').each(function () {
+            const row = $(this).closest('tr');
+            const quantity = parseFloat($(this).val()) || 0;
+
+            row.find('.total-quantity').val(quantity);
+        });
+
+        // Handle submit button click
+        $('#calculateTotalQuantity').on('click', function (event) {
+            event.preventDefault(); // Prevent form submission immediately
+<!--            if (validateQuantities()) {-->
+                $('#confirmationModal').modal('show'); // Show confirmation modal if validation passes
+<!--            } else {-->
+<!--                alert('Please ensure all quantities are within available stock limits.');-->
+<!--            }-->
+        });
+
+        // Handle confirmation modal submit
+        $('#modalSubmitButton').on('click', function() {
+            // After confirmation, submit the form
+            const form = document.getElementById('billForm');
+            form.submit();
+            $('#confirmationModal').modal('hide'); // Hide the confirmation modal
+            alert("**Bill No: " + "{{ sale_bill.billno }}" + "** Records Updated Successfully!"); // Show success message
+        });
+
+    });
+
+</script>
+<!-- Modal for Serial Numbers -->
+<div class="modal fade" id="serialNumberModal" tabindex="-1" role="dialog" aria-labelledby="serialNumberModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="serialNumberModalLabel">Select Serial Numbers</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="serialNumberForm">
+                    <div id="serial-number-container">
+                        <!-- Checkboxes will be dynamically added here -->
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" id="saveSerialNumbers">Save Serial Numbers</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    $(document).ready(function () {
+        var selectedStockId;
+        var selectedSerialNumbers = {};
+
+        $(document).on('click', '.stockName', function (e) {
+            e.preventDefault();
+
+            var stockRow = $(this).closest('tr');
+            selectedStockId = stockRow.find('input[name*="stock"]').val();
+            var quantity = parseInt(stockRow.find('input[name*="total_quantity"]').val()) || 0;
+
+            // Fetch serial numbers for selected stock
+            $.ajax({
+                url: '{% url "final_get_serial_numbers_edit" %}',
+                data: {
+                    stock_id: selectedStockId,
+                    sales_billno: '{{ sale_bill.final_bill }}',
+                },
+                success: function (data) {
+                    var serialNumbers = data.serial_numbers;
+                    $('#serial-number-container').empty();
+
+                    serialNumbers.forEach(function (serial) {
+                        var isChecked = serial.checked ? 'checked' : '';
+                        var checkbox = `
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" value="${serial.serialNo}" id="serialNo-${serial.serialNo}" ${isChecked}>
+                                <label class="form-check-label" for="serialNo-${serial.serialNo}">${serial.serialNo}</label>
+                            </div>`;
+                        $('#serial-number-container').append(checkbox);
+                    });
+
+                    initialValidation(quantity);
+                    $('#serialNumberModal').modal('show');
+                },
+                error: function () {
+                    alert("Failed to fetch serial numbers. Please try again.");
+                }
+            });
+        });
+
+        function initialValidation(quantity) {
+            var checkedCount = $('#serial-number-container input[type="checkbox"]:checked').length;
+
+            if (checkedCount > quantity) {
+                alert("Checked count exceeds the allowed quantity. Adjusting checkboxes.");
+                disableUncheckedCheckboxes();
+            } else if (checkedCount === quantity) {
+                disableUncheckedCheckboxes();
+            }
+
+            updateCheckboxState(quantity);
+        }
+
+        function enableUncheckedCheckboxes() {
+            $('#serial-number-container input[type="checkbox"]').prop('disabled', false);
+        }
+
+        function disableUncheckedCheckboxes() {
+            $('#serial-number-container input[type="checkbox"]').each(function () {
+                if (!$(this).is(':checked')) {
+                    $(this).prop('disabled', true);
+                }
+            });
+        }
+
+        function updateCheckboxState(quantity) {
+            $('#serial-number-container input[type="checkbox"]').off('change').on('change', function () {
+                var checkedCount = $('#serial-number-container input[type="checkbox"]:checked').length;
+
+                if (checkedCount > quantity) {
+                    alert("Checked count exceeds the allowed quantity.");
+                    disableUncheckedCheckboxes();
+                } else if (checkedCount === quantity) {
+                    disableUncheckedCheckboxes();
+                } else {
+                    enableUncheckedCheckboxes();
+                }
+            });
+        }
+
+        $('#saveSerialNumbers').on('click', function () {
+            var checkedSerials = $('#serial-number-container input[type="checkbox"]:checked').map(function () {
+                return $(this).val();
+            }).get();
+
+            var stockRow = $('input[value="' + selectedStockId + '"]').closest('tr');
+            var quantity = parseInt(stockRow.find('input[name*="total_quantity_"]').val()) || 0;
+
+            // Final validation
+            // if (checkedSerials.length > quantity) {
+               //  alert("Checked count exceeds the allowed quantity. Please adjust your selection.");
+               //  return;
+            // }
+
+             // Final validation: Check if the selected checkboxes match the total quantity
+            if (checkedSerials.length !== quantity) {
+                alert("The number of selected serial numbers must match the total quantity. Please adjust your selection.");
+                return;
+            }
+
+            // Temporarily store the selected serial numbers
+            selectedSerialNumbers[selectedStockId] = checkedSerials;
+
+            // Update the table row with selected serials
+            // stockRow.find('.stockNameDisplay').text(`Selected Serials: ${checkedSerials.join(', ')}`);
+
+             // Update the table row with selected serials in green color
+            stockRow.find('.stockNameDisplay').addClass('green-text').text(`Selected Serials: ${checkedSerials.join(', ')}`);
+
+            // Add or update hidden input for serials in the form
+            const hiddenFieldName = `serials-${selectedStockId}`;
+            let hiddenField = $(`input[name="${hiddenFieldName}"]`);
+
+            if (hiddenField.length > 0) {
+                hiddenField.val(checkedSerials.join(','));
+            } else {
+                hiddenField = $('<input>')
+                    .attr('type', 'hidden')
+                    .attr('name', hiddenFieldName)
+                    .val(checkedSerials.join(','));
+                $('#billForm').append(hiddenField);
+            }
+
+            $('#serialNumberModal').modal('hide');
+            alert('Serial numbers updated successfully.');
+        });
+    });
+
+</script>
+
+<!-- Modal Structure -->
+<div class="modal fade" id="confirmationModal" tabindex="-1" aria-labelledby="confirmationModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="confirmationModalLabel">Confirm Details</h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <form id="modalForm">
+
+            <div class="toggle-container" style="display: flex; justify-content: center; align-items: center; width: 100%;">
+                <div id="currentBillLabel" class="toggle-label" style="display: flex; flex-direction: column; align-items: center; margin-right: 20px; width: 180px;">
+                    <span style="line-height: 1.5;">Current Bill</span>
+                    <span class="checkmark" id="checkCurrent" style="margin-left: 30px; line-height: 1.5;">✔</span>
+                </div>
+                <div id="previousBillLabel" class="toggle-label" style="display: flex; flex-direction: column; align-items: center; width: 180px;">
+                    <span style="line-height: 1.5;">Previous Bill</span>
+                    <span class="checkmark" id="checkPrevious" style="margin-left: 30px; line-height: 1.5;">✔</span>
+                </div>
+            </div>
+
+          <!-- Previous Bill and Previous Date Fields -->
+          <div class="form-group" id="previousBillField">
+            <label for="eway_no">Prev. Delivery Challan No <span style="color: red;">*</span></label>
+            <input type="text" id="eway_no" name="eway_no" class="form-control" value="{{ sale_bill_details.eway }}">
+          </div>
+          <div class="form-group" id="previousDateField">
+            <label for="bill_date">Prev. Bill Date <span style="color: red;">*</span></label>
+            <input type="date" id="bill_date" name="bill_date" class="form-control" value="{{ sale_bill_details.tcs }}">
+          </div>
+
+          <div class="form-group">
+            <label for="veh_no">Vehicle No</label>
+            <input type="text" id="veh_no" name="veh_no" class="form-control" value="{{ sale_bill_details.veh }}">
+          </div>
+          <div class="form-group">
+            <label for="arrange">Arrange By <span style="color: red;">*</span></label>
+            <input type="text" id="arrange" name="arrange" class="form-control" value="{{ sale_bill_details.sgst }}" required>
+          </div>
+            <div class="form-group">
+            <label for="handby">Handled By <span style="color: red;">*</span></label>
+            <input type="text" id="handby" name="handby" class="form-control" value="{{ sale_bill_details.igst }}" required>
+          </div>
+            <div class="form-group">
+              <label for="destination">Destination <span style="color: red;">*</span></label>
+              <select id="destination" name="destination" class="form-control" required>
+                <option value="" disabled {% if not sale_bill_details.destination %}selected{% endif %}></option>
+                <option value="Warehouse" {% if sale_bill_details.destination == "Warehouse" %}selected{% endif %}>Warehouse</option>
+                <option value="Office" {% if sale_bill_details.destination == "Office" %}selected{% endif %}>Office</option>
+                <option value="Vendor" {% if sale_bill_details.destination == "Vendor" %}selected{% endif %}>Vendor</option>
+              </select>
+            </div>
+
+          <div class="form-group">
+            <label for="po_no">PO No</label>
+            <input type="text" id="po_no" name="po_no" class="form-control" value="{{ sale_bill_details.po }}" required>
+          </div>
+          <div class="form-group">
+            <label for="po_date">PO Date</label>
+            <input type="date" id="po_date" name="po_date" class="form-control" value="{{ sale_bill_details.cgst }}" required>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+        <button type="button" id="modalSubmitButton" class="btn btn-primary">Submit</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!--<script>-->
+<!--    document.addEventListener('DOMContentLoaded', function () {-->
+<!--        const categorySelect = document.getElementById('categorySelect');-->
+<!--        const subcategorySelect = document.getElementById('subcategorySelect');-->
+<!--        const stockSelect = document.getElementById('stockSelect');-->
+<!--        const stockQuantity = document.getElementById('stockQuantity');-->
+<!--        const availableQuantitySpan = document.getElementById('availableQuantitySpan');-->
+<!--        const addRow = document.getElementById('addRow');-->
+<!--        const tableBody = document.getElementById('billTable').querySelector('tbody');-->
+
+<!--        // Populate subcategories based on category-->
+<!--        categorySelect.addEventListener('change', function () {-->
+<!--            const categoryId = this.value;-->
+<!--            subcategorySelect.innerHTML = '<option value="">Select SubCategory</option>';-->
+<!--            stockSelect.innerHTML = '<option value="">Select Stock</option>';-->
+<!--            availableQuantitySpan.innerText = '';-->
+<!--            stockQuantity.value = '';-->
+<!--            stockSelect.disabled = true;-->
+<!--            stockQuantity.disabled = true;-->
+<!--            addRow.disabled = true;-->
+
+<!--            if (categoryId) {-->
+<!--                fetch(`/inventory/get_subcategories_edit/?category_id=${categoryId}`)-->
+<!--                    .then(response => response.json())-->
+<!--                    .then(data => {-->
+<!--                        data.subcategories.forEach(subcategory => {-->
+<!--                            const option = document.createElement('option');-->
+<!--                            option.value = subcategory.id;-->
+<!--                            option.textContent = subcategory.name;-->
+<!--                            subcategorySelect.appendChild(option);-->
+<!--                        });-->
+<!--                        subcategorySelect.disabled = false;-->
+<!--                    });-->
+<!--            } else {-->
+<!--                subcategorySelect.disabled = true;-->
+<!--            }-->
+<!--        });-->
+
+<!--        // Populate stocks based on subcategory-->
+<!--        subcategorySelect.addEventListener('change', function () {-->
+<!--            const subcategoryId = this.value;-->
+<!--            stockSelect.innerHTML = '<option value="">Select Stock</option>';-->
+<!--            availableQuantitySpan.innerText = '';-->
+<!--            stockQuantity.value = '';-->
+<!--            stockQuantity.disabled = true;-->
+<!--            addRow.disabled = true;-->
+
+<!--            if (subcategoryId) {-->
+<!--                fetch(`/inventory/get_stocks_edit/?subcategory_id=${subcategoryId}`)-->
+<!--                    .then(response => response.json())-->
+<!--                    .then(data => {-->
+
+<!--                        const existingStockIds = Array.from(tableBody.querySelectorAll('input[name="existing_stock_ids[]"]')).map(input => input.value);-->
+
+<!--                        data.stocks.forEach(stock => {-->
+<!--                            if (!existingStockIds.includes(stock.id.toString())) {-->
+<!--                                const option = document.createElement('option');-->
+<!--                                option.value = stock.id;-->
+<!--                                option.textContent = stock.name;-->
+<!--                                stockSelect.appendChild(option);-->
+<!--                            }-->
+<!--                        });-->
+<!--                        stockSelect.disabled = false;-->
+<!--                    });-->
+<!--            } else {-->
+<!--                stockSelect.disabled = true;-->
+<!--            }-->
+<!--        });-->
+
+<!--        // Update available quantity when stock is selected-->
+<!--        stockSelect.addEventListener('change', function () {-->
+<!--            const stockId = this.value;-->
+<!--            stockQuantity.disabled = !stockId;-->
+<!--            addRow.disabled = !stockId;-->
+
+<!--            if (stockId) {-->
+<!--                // Fetch available stock quantity from the server-->
+<!--                fetch(`/inventory/get_stock_quantity/?stock_id=${stockId}`)-->
+<!--                    .then(response => response.json())-->
+<!--                    .then(data => {-->
+<!--                        availableQuantitySpan.innerText = `Available Quantity: ${data.quantity}`;-->
+
+<!--                        // Store fetched data for later use-->
+<!--                        stockSelect.setAttribute('data-quantity', data.quantity);-->
+<!--                        stockSelect.setAttribute('data-stock-alert', data.stock_alert);-->
+<!--                        stockSelect.setAttribute('data-purchase', data.purchase);-->
+<!--                    });-->
+<!--            } else {-->
+<!--                availableQuantitySpan.innerText = '';-->
+<!--                stockSelect.removeAttribute('data-quantity');-->
+<!--                stockSelect.removeAttribute('data-stock-alert');-->
+<!--                stockSelect.removeAttribute('data-purchase');-->
+<!--            }-->
+<!--        });-->
+<!--    });-->
+<!--</script>-->
+
+<!--<script>-->
+<!--    document.addEventListener('DOMContentLoaded', function () {-->
+<!--        const tableBody = document.getElementById('billTable').querySelector('tbody');-->
+
+<!--        // Function to validate quantities for both existing and new rows-->
+<!--          function validateQuantities() {-->
+<!--            let isValid = true;-->
+
+<!--            // Validate each row-->
+<!--            tableBody.querySelectorAll('tr').forEach(row => {-->
+<!--                const quantityInput = row.querySelector('input[name^="quantity"]'); // Quantity input-->
+<!--                const availableQuantityCell = row.querySelector('td:nth-child(5)'); // Available Quantity cell-->
+
+<!--                if (!quantityInput || !availableQuantityCell) {-->
+<!--                    return; // Skip rows with missing inputs or data-->
+<!--                }-->
+
+<!--                const availableQuantity = parseInt(availableQuantityCell.textContent || "0", 10); // Available Quantity-->
+<!--                const existingValue = parseInt(quantityInput.defaultValue || "0", 10); // Existing value before edit-->
+<!--                const newValue = parseInt(quantityInput.value || "0", 10); // New Quantity entered by the user-->
+<!--                const additionalQuantity = newValue - existingValue; // Calculate additional quantity-->
+
+<!--                if (isNaN(newValue) || newValue <= 0) {-->
+<!--                    isValid = false;-->
+<!--                    quantityInput.classList.add('is-invalid');-->
+<!--                    quantityInput.setCustomValidity('Quantity must be greater than 0.');-->
+<!--                } else if (additionalQuantity > availableQuantity) {-->
+<!--                    isValid = false;-->
+<!--                    quantityInput.classList.add('is-invalid');-->
+<!--                    quantityInput.setCustomValidity(`Additional quantity cannot exceed ${availableQuantity}`);-->
+<!--                } else {-->
+<!--                    quantityInput.classList.remove('is-invalid');-->
+<!--                    quantityInput.setCustomValidity('');-->
+<!--                }-->
+
+<!--                 // Show the validity message-->
+<!--                quantityInput.reportValidity();-->
+<!--            });-->
+
+<!--            return isValid;-->
+<!--        }-->
+
+<!--        // Trigger validation on quantity field input-->
+<!--        tableBody.addEventListener('input', function (e) {-->
+<!--            if (e.target && e.target.matches('input[name^="quantity"]')) {-->
+<!--                validateQuantities();-->
+<!--            }-->
+<!--        });-->
+
+<!--        // Validate quantities when the form is submitted-->
+<!--        const form = document.getElementById('billForm');-->
+<!--        form.addEventListener('submit', function (e) {-->
+<!--            if (!validateQuantities()) {-->
+<!--                e.preventDefault(); // Prevent form submission if validation fails-->
+<!--                alert('Please ensure all quantities are within available stock limits.');-->
+<!--            }-->
+<!--        });-->
+
+<!--        // Add new rows dynamically with validation-->
+<!--        const addRow = document.getElementById('addRow');-->
+<!--        const stockSelect = document.getElementById('stockSelect');-->
+<!--        const stockQuantity = document.getElementById('stockQuantity');-->
+
+<!--        addRow.addEventListener('click', function () {-->
+<!--            const stockId = stockSelect.value;-->
+<!--            const stockName = stockSelect.options[stockSelect.selectedIndex].text;-->
+<!--            // const availableQuantity = stockSelect.selectedOptions[0].getAttribute('data-quantity'); // Retrieve available quantity-->
+<!--            const stockAlert = parseInt(stockSelect.getAttribute('data-stock-alert') || "0", 10);-->
+<!--            const purchase = stockSelect.getAttribute('data-purchase') || "N/A";-->
+<!--            const categoryText = categorySelect.options[categorySelect.selectedIndex].text;-->
+<!--            const subcategoryText = subcategorySelect.options[subcategorySelect.selectedIndex].text;-->
+<!--            const quantity = stockQuantity.value;-->
+
+<!--			const availableQuantitySpan = document.getElementById('availableQuantitySpan').textContent;-->
+<!--            const availableQuantity = parseInt(availableQuantitySpan.replace('Available Quantity: ', '') || "0", 10);-->
+
+<!--            // const quantity = parseInt(stockQuantity.value || "0", 10);-->
+
+<!--            // if (!stockId || !quantity) return;-->
+<!--            if (!stockId || quantity <= 0) {-->
+<!--                alert('Please enter a valid quantity greater than 0.');-->
+
+<!--                return;-->
+<!--            }-->
+
+<!--            if (quantity > availableQuantity) {-->
+<!--                alert(`Quantity cannot exceed available stock (${availableQuantity}).`);-->
+<!--                return;-->
+<!--            }-->
+
+<!--            const row = document.createElement('tr');-->
+<!--            row.innerHTML = `-->
+<!--                <td class="sr-no">${tableBody.children.length + 1}</td>-->
+<!--                <td>${categoryText}</td>-->
+<!--                <td>${subcategoryText}</td>-->
+<!--                <td>-->
+<!--                   &nbsp;<a href="#" class="stockName text-capitalize form-control-plaintext">${stockName}</a>-->
+<!--                         <a href="{% url 'get_serial_numbers' %}?stock_id={{ item.stock.id }}"></a>-->
+<!--                            <small class="custom-small">-->
+<!--                                   <span class="stockNameDisplay" style="margin: 0; padding: 0;"></span>-->
+<!--                            </small>-->
+<!--                </td>-->
+<!--                 <td>-->
+<!--                    <div class="d-flex justify-content-center align-items-center mt-1">-->
+<!--                        <input type="hidden" class="form-control stock-quantity" value="${availableQuantity}" readonly>-->
+<!--                        <span class="badge ${availableQuantity > stockAlert ? 'success' : 'danger'}">-->
+<!--                            ${availableQuantity} <small>${purchase}</small>-->
+<!--                        </span>-->
+<!--                    </div>-->
+<!--                </td>-->
+
+<!--                <td>-->
+<!--                      <div class="input-group">-->
+<!--                          <input type="number" name="quantities[]" class="form-control quantity-input" value="${quantity}" min="1" readonly />-->
+<!--                          <div class="input-group-append">-->
+<!--                             <span class="input-group-text me-2">${purchase}</span>-->
+<!--                          </div>-->
+<!--                      </div>-->
+<!--                </td>-->
+<!--                <td><button type="button" class="removeRow">Remove</button></td>-->
+<!--                <input type="hidden" name="stock_ids[]" value="${stockId}" />-->
+<!--            `;-->
+<!--              tableBody.appendChild(row);-->
+<!--                    updateSrNo();-->
+<!--                    stockSelect.querySelector(`option[value="${stockId}"]`).remove();-->
+<!--                    stockQuantity.value = '';-->
+<!--                    stockQuantity.disabled = true;-->
+<!--        });-->
+
+<!--        // Update serial numbers-->
+<!--        function updateSrNo() {-->
+<!--            const rows = tableBody.querySelectorAll('tr');-->
+<!--            rows.forEach((row, index) => {-->
+<!--                row.querySelector('.sr-no').textContent = index + 1;-->
+<!--            });-->
+<!--        }-->
+
+<!--		function updateSrNo() {-->
+<!--            document.querySelectorAll('#billTable tbody .sr-no').forEach((cell, index) => {-->
+<!--                cell.innerText = index + 1;-->
+<!--            });-->
+<!--        }-->
+
+<!--        // Remove row-->
+<!--        tableBody.addEventListener('click', function (e) {-->
+<!--            if (e.target && e.target.classList.contains('removeRow')) {-->
+<!--                e.target.closest('tr').remove();-->
+<!--                updateSrNo();-->
+<!--                validateQuantities(); // Revalidate rows-->
+<!--            }-->
+<!--        });-->
+
+<!--        tableBody.addEventListener('click', function (e) {-->
+<!--            if (e.target && e.target.classList.contains('removeRow')) {-->
+<!--                e.target.closest('tr').remove();-->
+<!--                updateSrNo();-->
+<!--                validateQuantities(); // Revalidate rows-->
+<!--            }-->
+<!--        });-->
+
+<!--        // Handle submit button click-->
+<!--        $('#submitBtn').on('click', function (event) {-->
+<!--            event.preventDefault(); // Prevent form submission immediately-->
+<!--            if (validateQuantities()) {-->
+<!--                $('#confirmationModal').modal('show'); // Show confirmation modal if validation passes-->
+<!--            } else {-->
+<!--                alert('Please ensure all quantities are within available stock limits.');-->
+<!--            }-->
+<!--        });-->
+
+<!--        // Handle confirmation modal submit-->
+<!--        $('#modalSubmitButton').on('click', function() {-->
+<!--            // After confirmation, submit the form-->
+<!--            const form = document.getElementById('billForm');-->
+<!--            form.submit();-->
+<!--            $('#confirmationModal').modal('hide'); // Hide the confirmation modal-->
+<!--            alert("**Bill No: " + "{{ sale_bill.billno }}" + "** Records Updated Successfully!"); // Show success message-->
+<!--        });-->
+<!--    });-->
+<!--</script>-->
+
+
+<!--<script>-->
+<!--    $(document).ready(function () {-->
+<!--        // Update Total Quantity on Return Quantity change-->
+<!--        $(document).on('input', '.return-quantity', function () {-->
+<!--            const row = $(this).closest('tr');-->
+<!--            const quantity = parseFloat(row.find('.quantity').val()) || 0;-->
+<!--            const returnQuantity = parseFloat($(this).val()) || 0;-->
+
+<!--            if (returnQuantity > quantity) {-->
+<!--                alert("Return quantity cannot exceed available quantity!");-->
+<!--                $(this).val(quantity);-->
+<!--                row.find('.total-quantity').val(0);-->
+<!--                return;-->
+<!--            }-->
+
+
+<!--            // Calculate total quantity and update the field-->
+<!--            const totalQuantity = quantity - returnQuantity;-->
+<!--            row.find('.total-quantity').val(totalQuantity);-->
+<!--        });-->
+
+<!--        // Initialize Total Quantity with Quantity value-->
+<!--        $('.quantity').each(function () {-->
+<!--            const row = $(this).closest('tr');-->
+<!--            const quantity = parseFloat($(this).val()) || 0;-->
+
+<!--            row.find('.total-quantity').val(quantity);-->
+<!--        });-->
+<!--    });-->
+
+<!--</script>-->
+<script type="text/javascript">
+$(document).ready(function() {
+    // Initialize the previous bill fields to show by default
+    $('#previousBillLabel').addClass('active');
+    $('#checkPrevious').show(); // Show checkmark for Previous Bill
+    $('#previousBillField').show(); // Ensure the fields are shown initially
+    $('#previousDateField').show();
+
+    // Click event for Current Bill label
+    $('#currentBillLabel').on('click', function() {
+        // Set this label as active and remove active state from the other
+        $(this).addClass('active');
+        $('#previousBillLabel').removeClass('active');
+        $('#checkCurrent').show(); // Show checkmark for Current Bill
+        $('#checkPrevious').hide(); // Hide checkmark for Previous Bill
+
+        // Hide previous bill fields
+        $('#previousBillField').hide();
+        $('#eway_no').val(''); // Clear input
+        $('#previousDateField').hide();
+        $('#bill_date').val(''); // Clear input
+    });
+
+    // Click event for Previous Bill label
+    $('#previousBillLabel').on('click', function() {
+        // Set this label as active and remove active state from the other
+        $(this).addClass('active');
+        $('#currentBillLabel').removeClass('active');
+        $('#checkPrevious').show(); // Show checkmark for Previous Bill
+        $('#checkCurrent').hide(); // Hide checkmark for Current Bill
+
+        // Show previous bill fields
+        $('#previousBillField').show();
+        $('#previousDateField').show();
+    });
+
+    // Handle the modal's submit button
+    $('#modalSubmitButton').on('click', function() {
+        // Retrieve the value from the modal input fields
+        const eway_no = $('#eway_no').val();
+        const bill_date = $('#bill_date').val();
+        const veh_no = $('#veh_no').val();
+        const arrange = $('#arrange').val();
+        const handby = $('#handby').val();
+        const destination = $('#destination').val();
+        const po_no = $('#po_no').val();
+        const po_date = $('#po_date').val();
+
+        // Check if required fields are filled based on selected bill type
+        const isCurrentBill = $('#currentBillLabel').hasClass('active');
+        const isPreviousBill = $('#previousBillLabel').hasClass('active');
+
+        // Validate fields based on the selected bill type
+        if (isCurrentBill) {
+            // For Current Bill, only check handby and destination
+            if (arrange && handby && destination) {
+                // Append modal input data to the main form
+                $('#billForm').append($('<input>', {type: 'hidden', name: 'veh_no', value: veh_no}));
+                $('#billForm').append($('<input>', {type: 'hidden', name: 'arrange', value: arrange}));
+                $('#billForm').append($('<input>', {type: 'hidden', name: 'handby', value: handby}));
+                $('#billForm').append($('<input>', {type: 'hidden', name: 'destination', value: destination}));
+                $('#billForm').append($('<input>', {type: 'hidden', name: 'po_no', value: po_no}));
+                $('#billForm').append($('<input>', {type: 'hidden', name: 'po_date', value: po_date}));
+
+                // Hide the modal
+                $('#confirmationModal').modal('hide');
+
+                // Submit the form after hiding the modal
+                $('#billForm').submit();
+            } else {
+                alert("Please fill in all required fields in the modal (Handby and Destination).");
+            }
+        } else if (isPreviousBill) {
+            // For Previous Bill, check that eway_no, bill_date, handby, and destination are filled
+            if (arrange && eway_no && bill_date && handby && destination) {
+                // Append modal input data to the main form
+                $('#billForm').append($('<input>', {type: 'hidden', name: 'eway_no', value: eway_no}));
+                $('#billForm').append($('<input>', {type: 'hidden', name: 'bill_date', value: bill_date}));
+                $('#billForm').append($('<input>', {type: 'hidden', name: 'veh_no', value: veh_no}));
+                $('#billForm').append($('<input>', {type: 'hidden', name: 'arrange', value: arrange}));
+                $('#billForm').append($('<input>', {type: 'hidden', name: 'handby', value: handby}));
+                $('#billForm').append($('<input>', {type: 'hidden', name: 'destination', value: destination}));
+                $('#billForm').append($('<input>', {type: 'hidden', name: 'po_no', value: po_no}));
+                $('#billForm').append($('<input>', {type: 'hidden', name: 'po_date', value: po_date}));
+
+                // Hide the modal
+                $('#confirmationModal').modal('hide');
+
+                // Submit the form after hiding the modal
+                $('#billForm').submit();
+            } else {
+                alert("Please fill in all required fields in the modal (Eway No, Bill Date, Handby, and Destination).");
+            }
+        }
+    });
+});
+</script>
+
+<!--<style>-->
+<!--    .success {-->
+
+<!--        color: #28a745; /* Text color */-->
+<!--        border: 3px solid #28a745; /* Border color */-->
+<!--        padding: 5px 8px;-->
+<!--        border-radius: 5px;-->
+<!--        font-size: 80%;-->
+<!--    }-->
+
+<!--    .danger {-->
+
+<!--        color: #dc3545; /* Text color */-->
+<!--        border: 3px solid #dc3545; /* Border color */-->
+<!--        padding: 5px 8px;-->
+<!--        border-radius: 5px;-->
+<!--        font-size: 80%;-->
+<!--    }-->
+
+<!--    .custom-flex {-->
+<!--        display: flex;-->
+<!--        align-items: center; /* Vertically center input and image */-->
+<!--    }-->
+<!--    .custom-flex input {-->
+<!--        margin-right: 10px; /* Add some space between the input and the image */-->
+<!--    }-->
+<!--</style>-->
+<!--<style>-->
+<!--    .success {-->
+
+<!--        color: #28a745; /* Text color */-->
+<!--        border: 3px solid #28a745; /* Border color */-->
+<!--        padding: 5px 8px;-->
+<!--        border-radius: 5px;-->
+<!--        font-size: 80%;-->
+<!--    }-->
+
+<!--    .danger {-->
+
+<!--        color: #dc3545; /* Text color */-->
+<!--        border: 3px solid #dc3545; /* Border color */-->
+<!--        padding: 5px 8px;-->
+<!--        border-radius: 5px;-->
+<!--        font-size: 80%;-->
+<!--    }-->
+
+<!--    .custom-flex {-->
+<!--        display: flex;-->
+<!--        align-items: center; /* Vertically center input and image */-->
+<!--    }-->
+<!--    .custom-flex input {-->
+<!--        margin-right: 10px; /* Add some space between the input and the image */-->
+<!--    }-->
+<!--</style>-->
+<!--<style>-->
+<!--        /* Container for toggle labels */-->
+<!--        .toggle-container {-->
+<!--            display: flex;-->
+<!--            align-items: center;-->
+<!--            justify-content: center;-->
+<!--            width: 100%; /* Adjust width as necessary */-->
+<!--        }-->
+
+<!--        .toggle-label {-->
+<!--            width: 100px; /* Width for labels */-->
+<!--            text-align: center;-->
+<!--            padding: 10px;-->
+<!--            border-radius: 5px; /* Rounded corners */-->
+<!--            background-color: white; /* Default background color */-->
+<!--            transition: background-color 0.3s, color 0.3s; /* Transition for smooth effect */-->
+<!--            border: 1px solid #ccc; /* Optional border */-->
+<!--            cursor: pointer; /* Show pointer cursor on hover */-->
+<!--            position: relative; /* For the checkmark */-->
+<!--        }-->
+
+<!--        /* Styles for active labels */-->
+<!--        .active {-->
+<!--            background-color: green; /* Background color when active */-->
+<!--            color: white; /* Text color for active state */-->
+<!--        }-->
+
+<!--        .checkmark {-->
+<!--            position: absolute;-->
+<!--            top: 5px;-->
+<!--            left: 5px;-->
+<!--            font-size: 20px;-->
+<!--            display: none; /* Hide by default */-->
+<!--            color: white; /* White color for checkmark */-->
+<!--        }-->
+
+<!--        /* Previous Bill and Previous Date Fields */-->
+<!--        .form-group {-->
+<!--            margin-top: 20px; /* Spacing above fields */-->
+<!--        }-->
+
+<!--        .green-text {-->
+<!--            color: green;-->
+<!--&lt;!&ndash;            font-weight: bold;&ndash;&gt;-->
+<!--        }-->
+
+<!--    </style>-->
+
+
+<!--<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>-->
+<!--    <style>-->
+<!--        table {-->
+<!--            width: 100%;-->
+<!--            border-collapse: collapse;-->
+<!--        }-->
+
+<!--        table, th, td {-->
+<!--            border: 1px solid black;-->
+<!--        }-->
+
+<!--        th, td {-->
+<!--            padding: 10px;-->
+<!--            text-align: left;-->
+<!--        }-->
+<!--    </style>-->
+<!--</head>-->
+<!--<body>-->
+<!--    <h1>Select Customer</h1>-->
+<!--    <form id="customer-form">-->
+<!--        <label for="customer-dropdown">Customer:</label>-->
+<!--        <select id="customer-dropdown" name="customer">-->
+<!--            <option value="">&#45;&#45; Select Customer &#45;&#45;</option>-->
+<!--            {% for customer in customers %}-->
+<!--                <option value="{{ customer.Cust_id }}">{{ customer.Cust_id__Comp_name }}</option>-->
+<!--            {% endfor %}-->
+<!--        </select>-->
+<!--    </form>-->
+
+<!--    <h3>Bills</h3>-->
+<!--    <table id="bills-table" style="display: none;">-->
+<!--        <thead>-->
+<!--            <tr>-->
+<!--                <th>Select</th>-->
+<!--                <th>Bill No</th>-->
+<!--                <th>Total Amount</th>-->
+<!--                <th>Final Amount</th>-->
+<!--                <th>Time</th>-->
+<!--            </tr>-->
+<!--        </thead>-->
+<!--        <tbody id="bills-table-body">-->
+<!--            &lt;!&ndash; Bill rows will be dynamically added here &ndash;&gt;-->
+<!--        </tbody>-->
+<!--    </table>-->
+<!--    <button id="generate-button" style="display: none;">Generate</button>-->
+<!--    <script>-->
+<!--      $(document).ready(function () {-->
+<!--        $('#customer-dropdown').on('change', function (event) {-->
+<!--            event.preventDefault(); // Prevent form submission-->
+
+<!--            const customerId = $(this).val();-->
+
+<!--            if (customerId) {-->
+<!--                // AJAX request to fetch bills-->
+<!--                $.ajax({-->
+<!--                    url: '/transactions/get-customer-bills/',-->
+<!--                    method: 'GET',-->
+<!--                    data: { customer_id: customerId },-->
+<!--                    success: function (response) {-->
+<!--                        const bills = response.bills;-->
+<!--                        const $tableBody = $('#bills-table-body');-->
+
+<!--                        // Clear any existing rows-->
+<!--                        $tableBody.empty();-->
+
+<!--                        // Add rows to the table-->
+<!--                        bills.forEach(bill => {-->
+<!--                            $tableBody.append(`-->
+<!--                                <tr>-->
+<!--                                    <td><input type="checkbox" value="${bill.billno}" /></td>-->
+<!--                                    <td>${bill.billno}</td>-->
+<!--                                    <td>${bill.total_amount}</td>-->
+<!--                                    <td>${bill.final_amount}</td>-->
+<!--                                    <td>${bill.time}</td>-->
+<!--                                </tr>-->
+<!--                            `);-->
+<!--                        });-->
+
+<!--                        // Show the table and button-->
+<!--                        $('#bills-table').show();-->
+<!--                        $('#generate-button').show();-->
+<!--                    },-->
+<!--                    error: function () {-->
+<!--                        alert('Error fetching bills for the selected customer.');-->
+<!--                    }-->
+<!--                });-->
+<!--            } else {-->
+<!--                // Hide the table and button if no customer is selected-->
+<!--                $('#bills-table').hide();-->
+<!--                $('#generate-button').hide();-->
+<!--            }-->
+<!--        });-->
+<!--    });-->
+
+<!--    </script>-->
+
+
+<!-- <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>-->
+<!--    <h1>Merge Sales Bills</h1>-->
+
+<!--    &lt;!&ndash; Dropdown for Customer Names &ndash;&gt;-->
+<!--    <label for="customer">Select Customer:</label>-->
+<!--    <select id="customer" name="customer">-->
+<!--        <option value="">&#45;&#45; Select Customer &#45;&#45;</option>-->
+<!--        {% for customer in customers %}-->
+<!--                <option value="{{ customer.Cust_id }}">{{ customer.Cust_id__Comp_name }}</option>-->
+<!--            {% endfor %}-->
+<!--    </select>-->
+
+<!--    &lt;!&ndash; Table to Display Bills &ndash;&gt;-->
+<!--    <div id="bills-container" style="margin-top: 20px; display: none;">-->
+<!--        <h3>Bills for Selected Customer</h3>-->
+<!--        <table border="1">-->
+<!--            <thead>-->
+<!--                <tr>-->
+<!--                    <th>Select</th>-->
+<!--                    <th>Bill No</th>-->
+<!--                    <th>Time</th>-->
+<!--                    <th>Total Price</th>-->
+<!--                </tr>-->
+<!--            </thead>-->
+<!--            <tbody id="bills-table-body">-->
+<!--                &lt;!&ndash; Rows dynamically populated &ndash;&gt;-->
+<!--            </tbody>-->
+<!--        </table>-->
+<!--        <button id="generate-final-bill">Generate Final Bill</button>-->
+<!--    </div>-->
+
+<!--    <script>-->
+<!--        $(document).ready(function () {-->
+<!--            $('#customer').change(function () {-->
+<!--                let customerId = $(this).val();-->
+<!--                if (customerId) {-->
+<!--                    // Fetch bills via AJAX-->
+<!--                    $.ajax({-->
+<!--                        url: "{% url 'get_customer_bills' %}",-->
+<!--                        method: "GET",-->
+<!--                        data: { customer_id: customerId },-->
+<!--                        success: function (response) {-->
+<!--                            let tableBody = $("#bills-table-body");-->
+<!--                            tableBody.empty(); // Clear previous rows-->
+<!--                            if (response.bills.length > 0) {-->
+<!--                                $('#bills-container').show();-->
+<!--                                response.bills.forEach(function (bill) {-->
+<!--                                    tableBody.append(`-->
+<!--                                        <tr>-->
+<!--                                            <td><input type="checkbox" class="bill-checkbox" value="${bill.billno}"></td>-->
+<!--                                            <td>${bill.billno}</td>-->
+<!--                                            <td>${bill.time}</td>-->
+<!--                                            <td>${bill.total_price}</td>-->
+<!--                                        </tr>-->
+<!--                                    `);-->
+<!--                                });-->
+<!--                            } else {-->
+<!--                                $('#bills-container').hide();-->
+<!--                            }-->
+<!--                        },-->
+<!--                        error: function () {-->
+<!--                            alert("Error fetching bills.");-->
+<!--                        }-->
+<!--                    });-->
+<!--                } else {-->
+<!--                    $('#bills-container').hide();-->
+<!--                }-->
+<!--            });-->
+
+<!--            $('#generate-final-bill').click(function () {-->
+<!--                let selectedBills = [];-->
+<!--                $(".bill-checkbox:checked").each(function () {-->
+<!--                    selectedBills.push($(this).val());-->
+<!--                });-->
+
+<!--                if (selectedBills.length > 0) {-->
+<!--                    $.ajax({-->
+<!--                        url: "{% url 'generate_final_bill' %}",-->
+<!--                        method: "POST",-->
+<!--                        headers: { "X-CSRFToken": "{{ csrf_token }}" },-->
+<!--                        data: { bills: JSON.stringify(selectedBills) },-->
+<!--                        success: function (response) {-->
+<!--                            alert("Final bill created successfully with ID: " + response.final_bill_id);-->
+<!--                        },-->
+<!--                        error: function () {-->
+<!--                            alert("Error creating final bill.");-->
+<!--                        }-->
+<!--                    });-->
+<!--                } else {-->
+<!--                    alert("No bills selected.");-->
+<!--                }-->
+<!--            });-->
+<!--        });-->
+<!--    </script>-->
+<!--<br>-->
+<!--<div class="row" style="color: #4e4e4e; font-style: bold; font-size: 3rem;">-->
+<!--      <div  style="margin-left: 50px;"><h1>Customer Final Bills</h1></div>-->
+<!--       &lt;!&ndash; Add these buttons inside the col-auto div &ndash;&gt;-->
+<!--                <div class="col-auto text-right float-right ml-auto" style="margin-right: 40px;">-->
+<!--                    <div class="dt-buttons btn-group flex-wrap">-->
+
+<!--                        <a href="{% url 'finalsales-list' %}" class="btn btn-primary" title="Create New Final DC"><i class="fas fa-reply"></i></a>-->
+<!--&lt;!&ndash;                               <button class="btn btn-outline-primary mr-2" id="generate-pdf" href="{% url 'finalsales-list' %}"></i> Generate PDF</button>&ndash;&gt;-->
+<!--&lt;!&ndash;                              <button class="btn btn-outline-primary mr-2" id="generate-pdf" onclick="window.location.href='{% url 'finalsales-list' %}';">Generate PDF</button>&ndash;&gt;-->
+<!--<a class="btn btn-outline-primary mr-2" id="generate-pdf" href="{% url 'finalsales-list' %}">-->
+<!--    Final DC List-->
+<!--</a>-->
+
+<!--&lt;!&ndash;                               <button class="btn btn-outline-primary" id="generate-excel"><i class="fas fa-file-excel"></i> Generate Excel</button>&ndash;&gt;-->
+<!--                    </div>-->
+<!--                </div>-->
+<!--    </div>-->
+
+<!--<div class="container mt-4">-->
+
+<!--    &lt;!&ndash; Dropdown to select customer &ndash;&gt;-->
+<!--    <div class="form-group">-->
+<!--        <label for="customerSelect">Select Customer</label>-->
+<!--        <select id="customerSelect" class="form-control text-capitalize">-->
+<!--            <option value="" selected>Select a customer</option>-->
+<!--            {% for customer in customers %}-->
+<!--            <option value="{{ customer.Cust_id }}">{{ customer.Cust_id__Comp_name }}</option>&ndash;&gt;-->
+<!--            {% endfor %}-->
+<!--        </select>-->
+<!--    </div>-->
+
+<!--    &lt;!&ndash; Table to display bills &ndash;&gt;-->
+<!--    <div id="billsContainer" class="mt-4" style="display: none;">-->
+<!--        <h4>Bills</h4>-->
+<!--        <table class="table table-bordered">-->
+<!--            <thead>-->
+<!--                <tr>-->
+<!--                    <th>Select</th>-->
+<!--                    <th>Bill No</th>-->
+<!--                    <th>Time</th>-->
+<!--                    <th>Total Stock</th>-->
+<!--                </tr>-->
+<!--            </thead>-->
+<!--            <tbody id="billTableBody">-->
+<!--                &lt;!&ndash; Rows will be dynamically populated &ndash;&gt;-->
+<!--            </tbody>-->
+<!--        </table>-->
+<!--        <button id="generateFinalBill" class="btn btn-primary" disabled>Generate Final Bill</button>-->
+<!--    </div>-->
+<!--</div>-->
+
+<!--&lt;!&ndash;<div class="container mt-4">&ndash;&gt;-->
+<!--    &lt;!&ndash; Existing content &ndash;&gt;-->
+
+<!--&lt;!&ndash;    &lt;!&ndash; Final Bill Table &ndash;&gt;&ndash;&gt;-->
+<!--&lt;!&ndash;    <div id="finalBillContainer" class="mt-5" style="display: none;">&ndash;&gt;-->
+<!--&lt;!&ndash;        <h4>Generated Final Bill</h4>&ndash;&gt;-->
+<!--&lt;!&ndash;        <table class="table table-bordered">&ndash;&gt;-->
+<!--&lt;!&ndash;            <thead>&ndash;&gt;-->
+<!--&lt;!&ndash;                <tr>&ndash;&gt;-->
+<!--&lt;!&ndash;                    <th>Final Bill No</th>&ndash;&gt;-->
+<!--&lt;!&ndash;                    <th>Customer</th>&ndash;&gt;-->
+<!--&lt;!&ndash;                    <th>Total Amount</th>&ndash;&gt;-->
+<!--&lt;!&ndash;                    <th>Time</th>&ndash;&gt;-->
+<!--&lt;!&ndash;                </tr>&ndash;&gt;-->
+<!--&lt;!&ndash;            </thead>&ndash;&gt;-->
+<!--&lt;!&ndash;            <tbody id="finalBillTableBody">&ndash;&gt;-->
+<!--&lt;!&ndash;                &lt;!&ndash; Final bill details will be added here dynamically &ndash;&gt;&ndash;&gt;-->
+<!--&lt;!&ndash;            </tbody>&ndash;&gt;-->
+<!--&lt;!&ndash;        </table>&ndash;&gt;-->
+<!--&lt;!&ndash;    </div>&ndash;&gt;-->
+<!--&lt;!&ndash;</div>&ndash;&gt;-->
+<!--    <div class="container mt-4">-->
+<!--        &lt;!&ndash; Final Bill Table &ndash;&gt;-->
+<!--        <div id="finalBillContainer" class="mt-5" style="display: none;">-->
+<!--            <h4>Generated Final Bill</h4>-->
+<!--            <table class="table table-bordered">-->
+<!--                <thead>-->
+<!--                    <tr>-->
+<!--                        <th>Final Bill No</th>-->
+<!--                        <th>Customer</th>-->
+<!--                        <th>Stock</th>-->
+<!--                        <th>Quantity</th>-->
+<!--                        <th>Total Quantity</th>-->
+<!--&lt;!&ndash;                        <th>Total Amount</th>&ndash;&gt;-->
+<!--                        <th>Time</th>-->
+<!--                    </tr>-->
+<!--                </thead>-->
+<!--                <tbody id="finalBillTableBody">-->
+<!--                    &lt;!&ndash; Final bill details will be dynamically added here &ndash;&gt;-->
+<!--                </tbody>-->
+<!--                &lt;!&ndash; Return Button &ndash;&gt;-->
+<!--            </table>-->
+<!--            <button id="returnButton" style="display: none;">Done</button>-->
+<!--        </div>-->
+<!--    </div>-->
+
+<!--<script>-->
+<!--    document.getElementById("customerSelect").addEventListener("change", function () {-->
+<!--        const customerId = this.value;-->
+<!--        if (customerId) {-->
+<!--            fetch(`/transactions/get-customer-bills/?customer_id=${customerId}`)-->
+<!--                .then(response => response.json())-->
+<!--                .then(data => {-->
+<!--                    const billTableBody = document.getElementById("billTableBody");-->
+<!--                    billTableBody.innerHTML = ""; // Clear existing rows-->
+<!--                    data.bills.forEach(bill => {-->
+<!--                        const row = `<tr>-->
+<!--                            <td><input type="checkbox" class="billCheckbox" data-bill-id="${bill.billno}" /></td>-->
+<!--                            <td>${bill.billno}</td>-->
+<!--                            <td>${bill.time}</td>-->
+<!--                            <td>${bill.total}</td>-->
+<!--                        </tr>`;-->
+<!--                        billTableBody.innerHTML += row;-->
+<!--                    });-->
+<!--                    document.getElementById("billsContainer").style.display = "block";-->
+<!--                });-->
+<!--        } else {-->
+<!--            document.getElementById("billsContainer").style.display = "none";-->
+<!--        }-->
+<!--    });-->
+
+<!--    document.getElementById("generateFinalBill").addEventListener("click", function () {-->
+<!--        const selectedBillIds = Array.from(document.querySelectorAll(".billCheckbox:checked")).map(checkbox => checkbox.dataset.billId);-->
+<!--        if (selectedBillIds.length > 0) {-->
+<!--            fetch(`/transactions/generate-final-bill/`, {-->
+<!--                method: "POST",-->
+<!--                headers: {-->
+<!--                    "Content-Type": "application/json",-->
+<!--                    "X-CSRFToken": "{{ csrf_token }}"-->
+<!--                },-->
+<!--                body: JSON.stringify({ bill_ids: selectedBillIds })-->
+<!--            })-->
+<!--            .then(response => response.json())-->
+<!--            .then(data => {-->
+<!--                if (data.success) {-->
+<!--                    // Show the final bill table-->
+<!--                    const finalBillContainer = document.getElementById("finalBillContainer");-->
+<!--                    finalBillContainer.style.display = "block";-->
+
+<!--                    // Add the new final bill to the table-->
+<!--                    const finalBillTableBody = document.getElementById("finalBillTableBody");-->
+<!--                    finalBillTableBody.innerHTML = ""; // Clear previous data-->
+
+<!--                    const stockDetails = data.final_bill.stock_details;-->
+<!--                    let firstRow = `-->
+<!--                        <tr>-->
+<!--                            <td rowspan="${stockDetails.length}">${data.final_bill.billno}</td>-->
+<!--                            <td rowspan="${stockDetails.length}" class="text-capitalize">${data.final_bill.customer_name}</td>-->
+<!--                    `;-->
+<!--                    stockDetails.forEach((stock, index) => {-->
+<!--                        if (index === 0) {-->
+<!--                            // Add stock and quantity in the same row as the main data-->
+<!--                            firstRow += `-->
+<!--                                <td>${index + 1}. ${stock.name}</td>-->
+<!--                                <td>${stock.quantity}</td>-->
+<!--                                <td rowspan="${stockDetails.length}">${data.final_bill.total_quantity}</td>-->
+<!--&lt;!&ndash;                                <td rowspan="${stockDetails.length}">${data.final_bill.total_amount}</td>&ndash;&gt;-->
+<!--                                <td rowspan="${stockDetails.length}">${data.final_bill.time}</td>-->
+<!--                            </tr>-->
+<!--                            `;-->
+<!--                            finalBillTableBody.innerHTML += firstRow;-->
+
+<!--                            // Show the return button-->
+<!--                            const returnButton = document.getElementById("returnButton");-->
+<!--                            returnButton.style.display = "block";-->
+<!--                            returnButton.addEventListener("click", function () {-->
+<!--                                window.location.href = "/transactions/finalsales/"; // Replace with your final sales list URL-->
+<!--                            });-->
+<!--                        } else {-->
+<!--                            // Add additional rows for the remaining stock and quantity-->
+<!--                            finalBillTableBody.innerHTML += `-->
+<!--                                <tr>-->
+<!--                                    <td>${index + 1}. ${stock.name}</td>-->
+<!--                                    <td>${stock.quantity}</td>-->
+<!--                                </tr>-->
+<!--                            `;-->
+<!--                        }-->
+<!--                    });-->
+
+<!--                    // Display success message-->
+<!--                    alert("Final Bill Created Successfully!");-->
+<!--                } else {-->
+<!--                    alert("Failed to create the final bill. Try again.");-->
+<!--                }-->
+<!--            });-->
+<!--        } else {-->
+<!--            alert("Please select at least one bill.");-->
+<!--        }-->
+<!--    });-->
+
+
+<!--&lt;!&ndash;    document.getElementById("generateFinalBill").addEventListener("click", function () {&ndash;&gt;-->
+<!--&lt;!&ndash;        const selectedBillIds = Array.from(document.querySelectorAll(".billCheckbox:checked")).map(checkbox => checkbox.dataset.billId);&ndash;&gt;-->
+<!--&lt;!&ndash;        if (selectedBillIds.length > 0) {&ndash;&gt;-->
+<!--&lt;!&ndash;            fetch(`/transactions/generate-final-bill/`, {&ndash;&gt;-->
+<!--&lt;!&ndash;                method: "POST",&ndash;&gt;-->
+<!--&lt;!&ndash;                headers: {&ndash;&gt;-->
+<!--&lt;!&ndash;                    "Content-Type": "application/json",&ndash;&gt;-->
+<!--&lt;!&ndash;                    "X-CSRFToken": "{{ csrf_token }}"&ndash;&gt;-->
+<!--&lt;!&ndash;                },&ndash;&gt;-->
+<!--&lt;!&ndash;                body: JSON.stringify({ bill_ids: selectedBillIds })&ndash;&gt;-->
+<!--&lt;!&ndash;            })&ndash;&gt;-->
+<!--&lt;!&ndash;            .then(response => response.json())&ndash;&gt;-->
+<!--&lt;!&ndash;            .then(data => {&ndash;&gt;-->
+<!--&lt;!&ndash;                if (data.success) {&ndash;&gt;-->
+<!--&lt;!&ndash;                    // Show the final bill table&ndash;&gt;-->
+<!--&lt;!&ndash;                    const finalBillContainer = document.getElementById("finalBillContainer");&ndash;&gt;-->
+<!--&lt;!&ndash;                    finalBillContainer.style.display = "block";&ndash;&gt;-->
+
+<!--&lt;!&ndash;                    // Add the new final bill to the table&ndash;&gt;-->
+<!--&lt;!&ndash;                    const finalBillTableBody = document.getElementById("finalBillTableBody");&ndash;&gt;-->
+<!--&lt;!&ndash;                    let stockDetails = "";&ndash;&gt;-->
+<!--&lt;!&ndash;                    data.final_bill.stock_details.forEach(stock => {&ndash;&gt;-->
+<!--&lt;!&ndash;                        stockDetails += `<div>${stock.name}: ${stock.quantity}</div>`;&ndash;&gt;-->
+<!--&lt;!&ndash;                    });&ndash;&gt;-->
+
+<!--&lt;!&ndash;                    const newRow = `<tr>&ndash;&gt;-->
+<!--&lt;!&ndash;                        <td>${data.final_bill.billno}</td>&ndash;&gt;-->
+<!--&lt;!&ndash;                        <td>${data.final_bill.customer_name}</td>&ndash;&gt;-->
+<!--&lt;!&ndash;                        <td>${stockDetails}</td>&ndash;&gt;-->
+<!--&lt;!&ndash;                        <td>${data.final_bill.total_quantity}</td>&ndash;&gt;-->
+<!--&lt;!&ndash;                        <td>${data.final_bill.total_amount}</td>&ndash;&gt;-->
+<!--&lt;!&ndash;                        <td>${data.final_bill.time}</td>&ndash;&gt;-->
+<!--&lt;!&ndash;                    </tr>`;&ndash;&gt;-->
+<!--&lt;!&ndash;                    finalBillTableBody.innerHTML += newRow;&ndash;&gt;-->
+
+<!--&lt;!&ndash;                    // Display success message&ndash;&gt;-->
+<!--&lt;!&ndash;                    alert("Final Bill Created Successfully!");&ndash;&gt;-->
+<!--&lt;!&ndash;                } else {&ndash;&gt;-->
+<!--&lt;!&ndash;                    alert("Failed to create the final bill. Try again.");&ndash;&gt;-->
+<!--&lt;!&ndash;                }&ndash;&gt;-->
+<!--&lt;!&ndash;            });&ndash;&gt;-->
+<!--&lt;!&ndash;        } else {&ndash;&gt;-->
+<!--&lt;!&ndash;            alert("Please select at least one bill.");&ndash;&gt;-->
+<!--&lt;!&ndash;        }&ndash;&gt;-->
+<!--&lt;!&ndash;    });&ndash;&gt;-->
+
+
+<!--&lt;!&ndash;    document.getElementById("generateFinalBill").addEventListener("click", function () {&ndash;&gt;-->
+<!--&lt;!&ndash;        const selectedBillIds = Array.from(document.querySelectorAll(".billCheckbox:checked")).map(checkbox => checkbox.dataset.billId);&ndash;&gt;-->
+<!--&lt;!&ndash;        if (selectedBillIds.length > 0) {&ndash;&gt;-->
+<!--&lt;!&ndash;            fetch(`/transactions/generate-final-bill/`, {&ndash;&gt;-->
+<!--&lt;!&ndash;                method: "POST",&ndash;&gt;-->
+<!--&lt;!&ndash;                headers: {&ndash;&gt;-->
+<!--&lt;!&ndash;                    "Content-Type": "application/json",&ndash;&gt;-->
+<!--&lt;!&ndash;                    "X-CSRFToken": "{{ csrf_token }}"&ndash;&gt;-->
+<!--&lt;!&ndash;                },&ndash;&gt;-->
+<!--&lt;!&ndash;                body: JSON.stringify({ bill_ids: selectedBillIds })&ndash;&gt;-->
+<!--&lt;!&ndash;            })&ndash;&gt;-->
+<!--&lt;!&ndash;            .then(response => response.json())&ndash;&gt;-->
+<!--&lt;!&ndash;            .then(data => {&ndash;&gt;-->
+<!--&lt;!&ndash;                if (data.success) {&ndash;&gt;-->
+<!--&lt;!&ndash;                    // Show the final bill table&ndash;&gt;-->
+<!--&lt;!&ndash;                    const finalBillContainer = document.getElementById("finalBillContainer");&ndash;&gt;-->
+<!--&lt;!&ndash;                    finalBillContainer.style.display = "block";&ndash;&gt;-->
+
+<!--&lt;!&ndash;                    // Add the new final bill to the table&ndash;&gt;-->
+<!--&lt;!&ndash;                    const finalBillTableBody = document.getElementById("finalBillTableBody");&ndash;&gt;-->
+<!--&lt;!&ndash;                    const newRow = `<tr>&ndash;&gt;-->
+<!--&lt;!&ndash;                        <td>${data.final_bill.billno}</td>&ndash;&gt;-->
+<!--&lt;!&ndash;                        <td>${data.final_bill.customer_name}</td>&ndash;&gt;-->
+<!--&lt;!&ndash;                        <td>${data.final_bill.total_amount}</td>&ndash;&gt;-->
+<!--&lt;!&ndash;                        <td>${data.final_bill.time}</td>&ndash;&gt;-->
+<!--&lt;!&ndash;                    </tr>`;&ndash;&gt;-->
+<!--&lt;!&ndash;                    finalBillTableBody.innerHTML += newRow;&ndash;&gt;-->
+
+<!--&lt;!&ndash;                    // Display success message&ndash;&gt;-->
+<!--&lt;!&ndash;                    alert("Ok  Bill Created Successfully!");&ndash;&gt;-->
+<!--&lt;!&ndash;                } else {&ndash;&gt;-->
+<!--&lt;!&ndash;                    alert("Ok to create the final bill. Try again.");&ndash;&gt;-->
+<!--&lt;!&ndash;                }&ndash;&gt;-->
+<!--&lt;!&ndash;            });&ndash;&gt;-->
+<!--&lt;!&ndash;        } else {&ndash;&gt;-->
+<!--&lt;!&ndash;            alert("Please select at least one bill.");&ndash;&gt;-->
+<!--&lt;!&ndash;        }&ndash;&gt;-->
+<!--&lt;!&ndash;    });&ndash;&gt;-->
+
+
+<!--&lt;!&ndash;    document.getElementById("generateFinalBill").addEventListener("click", function () {&ndash;&gt;-->
+<!--&lt;!&ndash;        const selectedBillIds = Array.from(document.querySelectorAll(".billCheckbox:checked")).map(checkbox => checkbox.dataset.billId);&ndash;&gt;-->
+<!--&lt;!&ndash;        if (selectedBillIds.length > 0) {&ndash;&gt;-->
+<!--&lt;!&ndash;            fetch(`/transactions/generate-final-bill/`, {&ndash;&gt;-->
+<!--&lt;!&ndash;                method: "POST",&ndash;&gt;-->
+<!--&lt;!&ndash;                headers: {&ndash;&gt;-->
+<!--&lt;!&ndash;                    "Content-Type": "application/json",&ndash;&gt;-->
+<!--&lt;!&ndash;                    "X-CSRFToken": "{{ csrf_token }}"&ndash;&gt;-->
+<!--&lt;!&ndash;                },&ndash;&gt;-->
+<!--&lt;!&ndash;                body: JSON.stringify({ bill_ids: selectedBillIds })&ndash;&gt;-->
+<!--&lt;!&ndash;            }).then(response => response.json())&ndash;&gt;-->
+<!--&lt;!&ndash;              .then(data => {&ndash;&gt;-->
+<!--&lt;!&ndash;                  if (data.success) {&ndash;&gt;-->
+<!--&lt;!&ndash;                      alert("Final Bill Created Successfully!");&ndash;&gt;-->
+<!--&lt;!&ndash;                      location.reload();&ndash;&gt;-->
+<!--&lt;!&ndash;                  } else {&ndash;&gt;-->
+<!--&lt;!&ndash;                      alert("Failed to create the final bill. Try again.");&ndash;&gt;-->
+<!--&lt;!&ndash;                  }&ndash;&gt;-->
+<!--&lt;!&ndash;              });&ndash;&gt;-->
+<!--&lt;!&ndash;        } else {&ndash;&gt;-->
+<!--&lt;!&ndash;            alert("Please select at least one bill.");&ndash;&gt;-->
+<!--&lt;!&ndash;        }&ndash;&gt;-->
+<!--&lt;!&ndash;    });&ndash;&gt;-->
+
+<!--    document.getElementById("billTableBody").addEventListener("change", function () {-->
+<!--        const checkboxes = document.querySelectorAll(".billCheckbox:checked");-->
+<!--        document.getElementById("generateFinalBill").disabled = checkboxes.length === 0;-->
+<!--    });-->
+
+<!--</script>-->
+{% endblock %}
+

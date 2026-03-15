@@ -1,0 +1,1583 @@
+<!doctype html>
+{% load static %}
+{% load active_link_tags %}
+{% load group_filters %}
+{% load permission_filters %}
+{% load static %}
+<html lang="en">
+   <head>
+      <!-- Required meta tags -->
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=0">
+      <!-- Bootstrap CSS -->
+      <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.0/dist/css/bootstrap.min.css"
+         integrity="sha384-B0vP5xmATw1+K9KRQjQERJvTumQW0nPEzvF6L/Z6nronJ3oUOFUFpCjEUQouq2+l" crossorigin="anonymous">
+      <link rel="stylesheet" type="text/css" href="{% static 'css/bill1.css' %}">
+      <!--Chartjs CDN-->
+      <script src="https://cdn.jsdelivr.net/npm/chart.js@2.9.4/dist/Chart.min.js"></script>
+
+      <!--Custome CSS-->
+      <link rel="icon" href="{% static 'images/dblogo200.png' %}">
+      <link rel="stylesheet" href="{% static 'style.css' %}">
+      <title>{% block title %}{% endblock %}</title>
+      <!-- Google Font: Source Sans Pro -->
+      <link rel="stylesheet"
+         href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700&display=fallback">
+      <!-- Font Awesome -->
+      <link rel="stylesheet" href="{% static 'plugins/fontawesome-free/css/all.min.css' %}">
+      <!-- Ionicons -->
+      <link rel="stylesheet" href="https://code.ionicframework.com/ionicons/2.0.1/css/ionicons.min.css">
+      <!-- Tempusdominus Bootstrap 4 -->
+      <link rel="stylesheet" href="{% static 'plugins/tempusdominus-bootstrap-4/css/tempusdominus-bootstrap-4.min.css' %}">
+      <!-- iCheck -->
+      <link rel="stylesheet" href="{% static 'plugins/icheck-bootstrap/icheck-bootstrap.min.css' %}">
+      <!-- JQVMap -->
+      <link rel="stylesheet" href="{% static 'plugins/jqvmap/jqvmap.min.css' %}">
+      <!-- Theme style not run -->
+<!--      <link rel="stylesheet" href="{% static 'dist1/css/adminlte.min.css' %}">-->
+      <!-- overlayScrollbars -->
+      <link rel="stylesheet" href="{% static 'plugins/overlayScrollbars/css/OverlayScrollbars.min.css' %}">
+      <!-- Daterange picker -->
+      <link rel="stylesheet" href="{% static 'plugins/daterangepicker/daterangepicker.css' %}">
+      <!-- summernote -->
+      <link rel="stylesheet" href="{% static 'plugins/summernote/summernote-bs4.min.css' %}">
+      <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" />
+      <!-- new  -->
+      <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,500;0,600;0,700;1,400&amp;display=swap">
+      <link rel="stylesheet" href="{% static 'assets/plugins/bootstrap/css/bootstrap.min.css' %}">
+      <link rel="stylesheet" href="{% static 'assets/plugins/fontawesome/css/fontawesome.min.css' %}">
+      <link rel="stylesheet" href="{% static 'assets/plugins/fontawesome/css/all.min.css' %}">
+      <link rel="stylesheet" href="{% static 'assets/css/style.css' %}">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=0">
+      <link rel="shortcut icon" href="assets/img/favicon.png">
+      <link rel="stylesheet" href="{% static 'assets/plugins/datatables/datatables.min.css' %}">
+      <!-- customer table -->
+      <link rel="stylesheet" href="/static/css/main.css" />
+      <link rel="stylesheet" href="/static/css/onchange.css" />
+      <link rel="stylesheet" href="/static/css/checkbox.css" />
+      <link rel="stylesheet" href="{% static 'css/checkbox.css' %}" />
+      <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+      <script src="https://unpkg.com/htmx.org@1.6.0"></script>
+      <script type="text/javascript">
+         function txt_onchange(obj) { obj.style.backgroundColor = "#E9F0FC";obj.style.color = "black"; }
+         function txt_onfocus(obj){ obj.style.backgroundColor = "#fff"; }
+      </script>
+      <script>
+         /* Default styles for all screen sizes */
+         .some-element {
+         width: 100%; /* Example of fluid layout */
+         }
+
+         /* Styles for screens with width up to 1360px */
+         @media (max-width: 1360px) {
+         .some-element {
+         width: 80%; /* Example of fluid layout adjustment */
+         }
+         }
+
+         /* Styles for screens with width up to 768px */
+         @media (max-width: 768px) {
+         .some-element {
+         width: 50%; /* Example of fluid layout adjustment */
+         }
+         }
+
+      </script>
+   </head>
+   <!--        <div class="wrapper slide-nav">-->
+   <body class="hold-transition sidebar-mini layout-fixed">
+      <div class="main-wrapper">
+        {% if user.is_authenticated and user.is_staff and user.is_superuser %}
+         <!-- Navbar -->
+         {% include 'partials/nav.html' %}
+         <!-- /.navbar -->
+         <div class="sidebar" id="sidebar">
+            <div class="sidebar-inner slimscroll">
+               <div id="sidebar-menu" class="sidebar-menu">
+                  <ul>
+                     <li class="{% active_link 'dashboard-index' 'active' %}">
+                        <a href="/index"><i class="fa fa-home" style="font-size:20px" aria-hidden="true"></i><span style="font-size:20px;"><b>  Admin Portal</b></span> </a>
+                        <!--                           <a href="{% url 'dashboard-index' %}"><i class="fa fa-home" aria-hidden="true"></i> <span> Admin Portal</span> </a>-->
+                        <!--                         <a href="/index"><i class="fa fa-user-secret" style="font-size:28px" aria-hidden="true"></i><span> <h4> &nbsp;Admin Portal</h4></span> </a>-->
+                     </li>
+                     {% if user.is_superuser %}
+                     <li class="{% active_link 'user:control_panel' 'active' %}">
+                        <a href="{% url 'user:control_panel_login' %}"><i class="fas fa-shield-alt" style="font-size:20px" aria-hidden="true"></i><span style="font-size:20px;"><b>  Control Panel</b></span> </a>
+                     </li>
+                     {% endif %}
+                     <!--                     <li class="{% active_link 'dashboard-index' 'active' %}">-->
+                     <!--                        <a href="{% url 'dashboard-index' %}"><i class="fa fa-home" aria-hidden="true"></i> <span> Home</span> </a>-->
+                     <!--                     </li>-->
+                     {% if user|has_module_permission:"dashboard" or user.is_superuser %}
+                     <li class="submenu {% active_link 'dashboard-index1' 'active' %} {% active_link 'customer-view_all' 'active' %} {% active_link 'firereport-dashboard' 'active' %}">
+                        <a href="{% url 'dashboard-index' %}"><i class="nav-icon fas fa-tachometer-alt" aria-hidden="true"></i> <span> Dashboard</span> <span class="menu-arrow"></span></a>
+                        <ul>
+                           <li><a href="{% url 'dashboard-index1' %}"><i class="nav-icon fa fa-users"></i> Staff Dashboard</a></li>
+                           <li><a href="{% url 'customer-view_all' %}"><i class="nav-icon far fa-user"></i> Consumer Dashboard</a></li>
+                           <li><a href="{% url 'firereport-dashboard' %}"><i class="nav-icon fas fa-exclamation-circle"></i> Complaint Dashboard</a></li>
+                            <li><a href = "{% url 'home' %}"><i class="nav-icon fas fa-exclamation-circle"></i> Stock Dashboard</a></li>;
+
+                        </ul>
+                     </li>
+                     {% endif %}
+                     <li class="submenu {% active_link 'user' 'active' %} {% active_link 'user-profile' 'active' %} {% active_link 'user-edit_profile' 'active' %}">
+                        <a href="#"><i class="nav-icon fa fa-user-circle" aria-hidden="true"></i> <span> My Profile </span> <span class="menu-arrow"></span></a>
+                        <ul>
+                           <li><a href="{% url 'user-profile' %}"><i class="nav-icon fa fa-eye" aria-hidden="true"></i> View Profile </a></li>
+                           <li><a href="{% url 'user-edit_profile' %}"><i class="nav-icon fa fa-pencil-alt" aria-hidden="true"></i> Update Profile</a></li>
+                        </ul>
+                     </li>
+                     {% if user|has_module_permission:"employee" or user.is_superuser %}
+                     <li class="submenu {% active_link 'dashboard-customers' 'active' %} {% active_link 'user-add' 'active' %} {% active_link 'dashboard-customers' 'active' %}">
+                        <a href="#"><i class="fa fa-users" aria-hidden="true"></i> <span> Employee </span> <span class="menu-arrow"></span></a>
+                        <ul>
+                           {% if user|has_module_operation:"employee:add" or user.is_superuser %}
+                           <li><a href="{% url 'user-add' %}"><i class="nav-icon fa fa-plus" aria-hidden="true"></i> Add Employee </a></li>
+                           {% endif %}
+                           {% if user|has_module_operation:"employee:view" or user.is_superuser %}
+                           <li><a href="{% url 'dashboard-customers' %}"><i class="nav-icon fa fa-list-ul" aria-hidden="true"></i> Employee List</a></li>
+                           {% endif %}
+                        </ul>
+                     </li>
+                     {% endif %}
+                     {% if user|has_url_permission:"quotation:create_quotation" or user|has_url_permission:"quotation:quotation_list" or user.is_superuser %}
+                     <li class="submenu {% active_link 'quotation:create_quotation' 'active' %} {% active_link 'quotation:quotation_list' 'active' %}">
+                        <a href="#"><i class="nav-icon fa fa-tasks" aria-hidden="true"></i> <span> Quotation</span> <span class="menu-arrow"></span></a>
+                        <ul>
+                           {% if user|has_url_permission:"quotation:create_quotation" or user.is_superuser %}
+                           <li>
+                              <a href="#" data-toggle="modal" data-target="#quotationModal">
+                                 <i class="nav-icon fa fa-plus" aria-hidden="true"></i> Add Quotation
+                              </a>
+                           </li>
+                           {% endif %}
+                           {% if user|has_url_permission:"quotation:quotation_list" or user.is_superuser %}
+                           <li><a href="{% url 'quotation:quotation_list' %}"><i class="nav-icon fa fa-list-ul" aria-hidden="true"></i> Quotation List</a></li>
+                           {% endif %}
+                        </ul>
+                     </li>
+                     {% endif %}
+
+                     {% if user|has_module_permission:"customer" or user.is_superuser %}
+                     <li class="submenu {% active_link 'customer-view_all_cust' 'active' %} {% active_link 'customer-Comm_Cust' 'active' %} {% active_link 'customer-cust' 'active' %} {% active_link 'customer-Govt_Cust' 'active' %}">
+                        <a href="{% url 'customer-cust' %}"><i class="nav-icon fa fa-user" aria-hidden="true"></i> <span> Consumer</span> <span class="menu-arrow"></span></a>
+                        <ul>
+                           {% if user|has_module_operation:"customer:add" or user.is_superuser %}
+                           <li><a href="#"  id="#myModal" data-toggle="modal" data-target="#myModal"><i class="fa fa-plus" aria-hidden="true"></i> Add Consumer </a></li>
+                           {% endif %}
+                           <!--                            <li><a href="{% url 'customer-cust' %}" data-toggle="#mymodal" data-target="#myModal"><i class="nav-icon fa fa-plus" aria-hidden="true"></i> Add Consumer</a></li>-->
+                           <!--                            <li><a href="{% url 'customer-Site_Technical_Details' %}" ><i class="nav-icon fa fa-plus" aria-hidden="true"></i> Site Technical Details</a></li>-->
+                           <!--                            <li><a href="{% url 'customer-add_meter' %}" ><i class="nav-icon fa fa-plus" aria-hidden="true"></i> Add Meter</a></li>-->
+                           <!--                            <li><a href="{% url 'customer-meters' %}" ><i class="nav-icon fa fa-plus" aria-hidden="true"></i> ADD Meters Details</a></li>-->
+                           <!--                            <li><a href="{% url 'customer-display_meters' %}" ><i class="nav-icon fa fa-plus" aria-hidden="true"></i> Display Meters Details</a></li>-->
+                           <!--                            <li><a href="{% url 'customer-edit_meters' %}" ><i class="nav-icon fa fa-plus" aria-hidden="true"></i> Delete Meters</a></li>-->
+                           {% if user|has_module_operation:"customer:view" or user.is_superuser %}
+                           <li><a href="{% url 'customer-view_all_cust' %}"><i class="nav-icon fa fa-list-ul" aria-hidden="true"></i> Consumer List</a></li>
+                           {% endif %}
+                           {% if user|has_module_operation:"customer:edit" or user.is_superuser %}
+                           <li><a href="{% url 'customer-update_company_name' %}"><i class="nav-icon fa fa-list-ul" aria-hidden="true"></i> Update Consumer Name</a></li>
+                           <li><a href="{% url 'customer-change_staff' %}"><i class="nav-icon fas fa-people-carry" aria-hidden="true"></i> Re-Assign Employee</a></li>
+                           {% endif %}
+                           {% if user|has_module_operation:"customer:view" or user.is_superuser %}
+                           <li><a href="{% url 'customer-search_by_staff' %}"><i class="nav-icon fa fa-list-ul" aria-hidden="true"></i> Cons. Searchby Staff</a></li>
+                           {% endif %}
+                           <!--                            <li><a href="{% url 'customer-MSEB' %}"><i class="nav-icon fa fa-list-ul" aria-hidden="true"></i> MSEB Details</a></li>-->
+                           <!--                           <li><a href="{% url 'customer-Comm_Cust' %}">Consumer View</a></li>-->
+                           <!--                           <li><a href="{% url 'customer-Govt_Cust' %}">Consumer Edit</a></li>-->
+                        </ul>
+                     </li>
+                     {% endif %}
+
+<!-- Add the new Project Details dropdown -->
+                    {% if user|has_module_permission:"barcode" or user.is_superuser %}
+                    <li class="menu {% active_link 'project-details' 'active' %}">
+                        <a href="#"><i class="nav-icon fas fa-project-diagram"></i> <span> Project Details</span> <span class="menu-arrow"></span></a>
+                        <ul>
+                           <!-- Barcode -->
+                           <li class="submenu {% active_link 'promote_page' 'active' %} {% active_link 'detect_barcodes-detect_barcodes' 'active' %} {% active_link 'detect_barcodes-detect_inverter' 'active' %} {% active_link 'generate_barcodes-generate_barcodes' 'active' %}">
+                              <a href="{% url 'dashboard-index' %}"><i class="nav-icon fas fa-barcode"></i> <span> Barcode</span> <span class="menu-arrow"></span></a>
+                              <ul>
+                                 <li><a href="{% url 'promote_page' %}" class="{% active_link 'promote_page' 'active' %}" class="{% active_link 'promote_page' 'active' %}"><i class="fas nav-icon fas fa-barcode"></i> Promote Barcode</a></li>
+                                 <li><a href="#" data-toggle="modal" data-target="#solarPanelModal" class="{% active_link 'detect_barcodes-detect_barcodes' 'active' %}"><i class="fas fa-solar-panel"></i> Solar Module Panel</a></li>
+                                 <li><a href="#" data-toggle="modal" data-target="#InverterModal" class="{% active_link 'detect_barcodes-detect_inverter' 'active' %}"><i class="fas fa-microchip"></i> Inverter</a></li>
+                                 <li><a href="{% url 'detect_barcodes-search_results' %}" class="{% active_link 'detect_barcodes-search_results' 'active' %}"><i class="fas fa-search"></i> Search</a></li>
+                                 {% if user.is_authenticated and user|user_in_group:"Cust_user" %}
+                                    <li><a href="{% url 'generate_barcodes-generate_barcodes' %}" class="{% active_link 'generate_barcodes-generate_barcodes' 'active' %}"><i class="fas fa-qrcode"></i> Generate Barcode</a></li>
+                                    <li><a href="{% url 'detect_barcodes-edit_barcode' %}" class="{% active_link 'detect_barcodes-edit_barcode' 'active' %}"><i class="fas fa-edit"></i> Edit Barcode</a></li>
+                                 {% endif %}
+                                  {% if user.is_authenticated and user|user_in_group:"SuperAdmin" %}
+                                    <li>
+                                       <a href="{% url 'detect_barcodes-delete_barcode' %}">
+                                       <img src="{% static 'images/download.png' %}" alt="Barcode Icon" width="18" height="20">
+                                       <span> Delete Barcode</span>
+                                       </a>
+                                    </li>
+                                  {% endif %}
+                              </ul>
+                           </li>
+                            <!-- Vendor -->
+                           <li class="submenu {% active_link 'solar_pump_entry' 'active' %} {% active_link 'vendor-list' 'active' %}">
+                              <a href="#"><i class="nav-icon fas fa-box-open"></i> <span> Solar Pump</span> <span class="menu-arrow"></span></a>
+                              <ul>
+                                 <li><a href="{% url 'solar_pump_entry' %}" class="{% active_link 'new-vendor' 'active' %}"><i class="fas fa-user-plus"></i> Add New Solar Pump</a></li>
+                                 <li><a href="{% url 'controller_entry' %}" class="{% active_link 'new-vendor' 'active' %}"><i class="fas fa-user-plus"></i> Add Controller</a></li>
+                                 <!--<li><a href="{% url 'vendor-list' %}" class="{% active_link 'vendor-list' 'active' %}"><i class="fas fa-list-alt"></i> Solar Pump List</a></li>-->
+                              </ul>
+                           </li>
+                           <!-- Net Meters Details -->
+                           <li class="submenu {% active_link 'customer-meters' 'active' %} {% active_link 'customer-search_results' 'active' %} {% active_link 'customer-display_meters' 'active' %} {% active_link 'customer-edit_meters' 'active' %}">
+                              <a href="#"><i class="nav-icon fas fa-tachometer-alt"></i> <span> Net Meters Details</span> <span class="menu-arrow"></span></a>
+                              <ul>
+                                 <li><a href="{% url 'customer-meters' %}" class="{% active_link 'customer-meters' 'active' %}"><i class="fas fa-plus-circle"></i> ADD Meters Details</a></li>
+                                 <li><a href="{% url 'customer-display_meters' %}" class="{% active_link 'customer-display_meters' 'active' %}"><i class="fas fa-list-alt"></i> Display Meters Details</a></li>
+                                 <li><a href="{% url 'customer-search_results' %}" class="{% active_link 'customer-search_results' 'active' %}"><i class="fas fa-search"></i> Search</a></li>
+                                 {% if user.is_authenticated and user|user_in_group:"Cust_user" %}
+                                 <li><a href="{% url 'customer-edit_meters' %}" class="{% active_link 'customer-edit_meters' 'active' %}"><i class="fas fa-trash-alt"></i> Delete Meters</a></li>
+                                 {% endif %}
+                              </ul>
+                           </li>
+                           <!-- MSEB Records Details -->
+                           <li class="submenu {% active_link 'customer-MSEB' 'active' %} {% active_link 'customer-complete_MSEB' 'active' %} {% active_link 'customer-Update_MSEB' 'active' %}">
+                              <a href="#"><i class="nav-icon fas fa-bolt"></i> <span> MSEB Records Details</span> <span class="menu-arrow"></span></a>
+                              <ul>
+                                 <li><a href="{% url 'customer-MSEB' %}" class="{% active_link 'customer-MSEB' 'active' %}"><i class="fas fa-file-invoice"></i> MSEB Electricity Meter</a></li>
+                                 <li><a href="{% url 'customer-complete_MSEB' %}" class="{% active_link 'customer-complete_MSEB' 'active' %}"><i class="fas fa-file-archive"></i> Complete MSEB Details</a></li>
+                                 {% if user.is_authenticated and user|user_in_group:"Cust_user" %}
+                                 <li><a href="{% url 'customer-Update_MSEB' %}" class="{% active_link 'customer-Update_MSEB' 'active' %}"><i class="fas fa-edit"></i> Update MSEB Details</a></li>
+                                 {% endif %}
+                              </ul>
+                           </li>
+                           <!-- Site Inspection Report -->
+                           <li class="submenu {% active_link 'customer-Site_Inspection_Details' 'active' %} {% active_link 'customer-display_Site_Inspection' 'active' %}">
+                              <a href="#"><i class="nav-icon fas fa-clipboard-check"></i> <span> Site Inspection Report</span> <span class="menu-arrow"></span></a>
+                              <ul>
+                                 <li><a href="{% url 'customer-Site_Inspection_Details' %}" class="{% active_link 'customer-Site_Inspection_Details' 'active' %}"><i class="fas fa-plus-circle"></i> Enter Inspection Report</a></li>
+                                 <li><a href="{% url 'customer-display_Site_Inspection' %}" class="{% active_link 'customer-display_Site_Inspection' 'active' %}"><i class="fas fa-list-alt"></i> Display Inspection Reports</a></li>
+                              </ul>
+                           </li>
+                        </ul>
+                     </li>
+                    {% endif %}
+
+
+
+                     {% if user|has_module_permission:"transactions" or user|has_module_permission:"inventory" or user.is_superuser %}
+
+ <!-- Add the new Store Keeping dropdown -->
+                     <li class="submenu {% active_link 'store-keeping' 'active' %}">
+                        <a href="#"><i class="nav-icon fas fa-warehouse"></i> <span> Store Keeping</span> <span class="menu-arrow"></span></a>
+                        <ul>
+                           <!-- Supplier -->
+                           <li class="submenu {% active_link 'product_add_category' 'active' %} {% active_link 'new-supplier' 'active' %} {% active_link 'suppliers-list' 'active' %}">
+                              <a href="#"><i class="nav-icon fas fa-truck"></i> <span> Supplier</span> <span class="menu-arrow"></span></a>
+                              <ul>
+                                 {% if user|has_module_operation:"product:add" or user.is_superuser %}
+                                 <li><a href="{% url 'product_add_category' %}" class="{% active_link 'product_add_category' 'active' %}"><i class="fas fa-plus"></i> Add Field</a></li>
+                                 {% endif %}
+                                 {% if user|has_module_operation:"transactions:add" or user.is_superuser %}
+                                 <li><a href="{% url 'new-supplier' %}" class="{% active_link 'new-supplier' 'active' %}"><i class="fas fa-user-tie"></i> Add New Supplier</a></li>
+                                 {% endif %}
+                                 {% if user|has_module_operation:"transactions:view" or user.is_superuser %}
+                                 <li><a href="{% url 'suppliers-list' %}" class="{% active_link 'suppliers-list' 'active' %}"><i class="fas fa-clipboard-list"></i> Suppliers List</a></li>
+                                 {% endif %}
+                              </ul>
+                           </li>
+                           <!-- Vendor -->
+                           <li class="submenu {% active_link 'new-vendor' 'active' %} {% active_link 'vendor-list' 'active' %}">
+                              <a href="#"><i class="nav-icon fas fa-box-open"></i> <span> Vendor</span> <span class="menu-arrow"></span></a>
+                              <ul>
+                                 {% if user|has_module_operation:"transactions:add" or user.is_superuser %}
+                                 <li><a href="{% url 'new-vendor' %}" class="{% active_link 'new-vendor' 'active' %}"><i class="fas fa-user-plus"></i> Add New Vendor</a></li>
+                                 {% endif %}
+                                 {% if user|has_module_operation:"transactions:view" or user.is_superuser %}
+                                 <li><a href="{% url 'vendor-list' %}" class="{% active_link 'vendor-list' 'active' %}"><i class="fas fa-list-alt"></i> Vendors List</a></li>
+                                 {% endif %}
+                              </ul>
+                           </li>
+                           <!-- Favorite -->
+                           <li class="submenu {% active_link 'favorite' 'active' %} {% active_link 'favorite_list_view' 'active' %}">
+                              <a href="#"><i class="nav-icon fas fa-heart"></i> <span> Favorite</span> <span class="menu-arrow"></span></a>
+                              <ul>
+                                 <li><a href="{% url 'favorite' %}" class="{% active_link 'favorite' 'active' %}"><i class="fas fa-plus"></i> Create Favorite</a></li>
+                                 <li><a href="{% url 'favorite_list_view' %}" class="{% active_link 'favorite_list_view' 'active' %}"><i class="fas fa-list"></i> Favorite List</a></li>
+                              </ul>
+                           </li>
+                           <!-- Inventory -->
+                           <li class="submenu {% active_link 'inventory' 'active' %}">
+                              <a href="#"><i class="nav-icon fas fa-pallet"></i> <span> Inventory</span> <span class="menu-arrow"></span></a>
+                              <ul>
+                                 {% if user|has_module_operation:"inventory:add" or user.is_superuser %}
+                                 <li><a href="{% url 'select-supplier' %}" class="{% active_link 'select-supplier' 'active' %}"><i class="fas fa-plus"></i> Add New</a></li>
+                                 {% endif %}
+                                 {% if user|has_module_operation:"inventory:view" or user.is_superuser %}
+                                 <li><a href="{% url 'inventory' %}" class="{% active_link 'inventory' 'active' %}"><i class="fas fa-boxes"></i> Inventory List</a></li>
+                                 {% endif %}
+                              </ul>
+                           </li>
+                           <!-- Purchase -->
+                           <li class="submenu {% active_link 'select-supplier' 'active' %} {% active_link 'purchases-list' 'active' %}">
+                              <a href="#"><i class="nav-icon fas fa-shopping-basket"></i> <span> Purchase</span> <span class="menu-arrow"></span></a>
+                              <ul>
+                                 {% if user|has_module_operation:"transactions:add" or user.is_superuser %}
+                                 <li><a href="{% url 'select-supplier' %}" class="{% active_link 'select-supplier' 'active' %}"><i class="fas fa-cart-plus"></i> New Incoming Stock</a></li>
+                                 {% endif %}
+                                 {% if user|has_module_operation:"transactions:view" or user.is_superuser %}
+                                 <li><a href="{% url 'purchases-list' %}" class="{% active_link 'purchases-list' 'active' %}"><i class="fas fa-receipt"></i> Purchases List</a></li>
+                                 {% endif %}
+                              </ul>
+                           </li>
+                           <!-- Sale -->
+                           <li class="submenu {% active_link 'select_customer' 'active' %} {% active_link 'sales-list' 'active' %}">
+                              <a href="#"><i class="nav-icon fas fa-hand-holding-usd"></i> <span> Sale</span> <span class="menu-arrow"></span></a>
+                              <ul>
+                                 {% if user|has_module_operation:"transactions:add" or user.is_superuser %}
+                                 <li><a href="{% url 'select_customer' %}" class="{% active_link 'select_customer' 'active' %}"><i class="fas fa-cart-arrow-down"></i> New Outgoing Stock</a></li>
+                                 {% endif %}
+                                 {% if user|has_module_operation:"transactions:view" or user.is_superuser %}
+                                 <li><a href="{% url 'sales-list' %}" class="{% active_link 'sales-list' 'active' %}"><i class="fas fa-file-invoice-dollar"></i> Sales Orders List</a></li>
+                                 {% endif %}
+                              </ul>
+                           </li>
+                           <!-- Final Sales DC -->
+                           <li class="submenu {% active_link 'merge_sales_bill' 'active' %} {% active_link 'finalsales-list' 'active' %}">
+                              <a href="#"><i class="nav-icon fas fa-file-contract"></i> <span> Final Sales DC</span> <span class="menu-arrow"></span></a>
+                              <ul>
+                                 <li><a href="{% url 'merge_sales_bill' %}" class="{% active_link 'merge_sales_bill' 'active' %}"><i class="fas fa-file-signature"></i> Generate Final Sale DC</a></li>
+                                 <li><a href="{% url 'finalsales-list' %}" class="{% active_link 'finalsales-list' 'active' %}"><i class="fas fa-file-alt"></i> Final Sale List</a></li>
+                              </ul>
+                           </li>
+                           <!-- Return Sale DC -->
+                           <li class="submenu {% active_link 'return_select_customer' 'active' %} {% active_link 'returnsales-list' 'active' %}">
+                              <a href="#"><i class="nav-icon fas fa-undo-alt"></i> <span> Return Sale DC</span> <span class="menu-arrow"></span></a>
+                              <ul>
+                                 <li><a href="{% url 'return_select_customer' %}" class="{% active_link 'return_select_customer' 'active' %}"><i class="fas fa-exchange-alt"></i> Generate Return Sale DC</a></li>
+                                 <li><a href="{% url 'returnsales-list' %}" class="{% active_link 'returnsales-list' 'active' %}"><i class="fas fa-file-excel"></i> Return Sale List</a></li>
+                              </ul>
+                           </li>
+                           <li class="{% active_link 'firereport-task' 'active' %}">
+                            <a href="{% url 'search_serial' %}"><i class="nav-icon fa fa-search" aria-hidden="true"></i><span> Search Serial No.</span></a>
+                            </li>
+                        </ul>
+                     </li>
+
+                     {% endif %}
+                     {% if user|has_module_permission:"firereport" or user.is_superuser %}
+                     <li class="submenu {% active_link 'firereport-newRequest' 'active' %} {% active_link 'firereport-assignRequest' 'active' %} {% active_link 'firereport-teamontheway' 'active' %} {% active_link 'firereport-workinprogress' 'active' %} {% active_link 'firereport-completeRequest' 'active' %} {% active_link 'firereport-allRequest' 'active' %} {% active_link 'firereport-dateReport' 'active' %} {% active_link 'firereport-search' 'active' %}">
+                        <a href="{% url 'customer-Comm_Cust' %}"><i class="nav-icon fa fa-exclamation-circle" aria-hidden="true"></i> <span> Complaint</span> <span class="menu-arrow"></span></a>
+                        <ul>
+                           <li><a href="{% url 'firereport-newRequest' %}"><i class="nav-icon fa fa-envelope-square" aria-hidden="true"></i> New Request</a></li>
+                           <li><a href="{% url 'firereport-assignRequest' %}"><i class="nav-icon fa fa-arrow-circle-right" aria-hidden="true"></i> Assigned Request</a></li>
+                           <li><a href="{% url 'firereport-teamontheway' %}"><i class="nav-icon fa fa-spinner" aria-hidden="true"></i> In Progress</a></li>
+                           <li><a href="{% url 'firereport-workinprogress' %}"><i class="nav-icon fa fa-tasks" aria-hidden="true"></i> Work in Progress</a></li>
+                           <li><a href="{% url 'firereport-completeRequest' %}"><i class="nav-icon fa fa-check" aria-hidden="true"></i> Completed Request</a></li>
+                           <li><a href="{% url 'firereport-allRequest' %}"><i class="nav-icon fa fa-list" aria-hidden="true"></i> All Requests</a></li>
+                           <li><a href="{% url 'firereport-reassignRequest' %}"><i class="nav-icon fas fa-sync-alt" aria-hidden="true"></i> Re-Assign Request</a></li>
+                           <li><a href="{% url 'firereport-dateReport' %}"> <i class="nav-icon fas fa-calendar-alt"></i> All Report
+                              </a>
+                           </li>
+                           <li><a href="{% url 'firereport-search' %}"> <i class="nav-icon fas fa-search"></i>
+                              Search</a>
+                           </li>
+                        </ul>
+                     </li>
+                     <li class="{% active_link 'firereport-task' 'active' %}">
+                        <a href="{% url 'firereport-task' %}"><i class="nav-icon fa fa-tasks" aria-hidden="true"></i><span> New Task</span></a>
+                     </li>
+                     {% endif %}
+                     <!--                      <li class="{% active_link 'firereport-task' 'active' %}">-->
+                     <!--                          <a href="{% url 'detect_barcodes-search' %}"><i class="nav-icon fa fa-tasks" aria-hidden="true"></i><span> Report</span></a>-->
+                     <!--                      </li>-->
+                     <!--                      <li class="{% active_link 'firereport-task' 'active' %}">-->
+                     <!--                          <a href="{% url 'customer-consumer_list' %}"><i class="nav-icon fa fa-tasks" aria-hidden="true"></i><span> Consumer List</span></a>-->
+                     <!--                      </li>-->
+                     <li class="submenu {% active_link 'dashboard-customers' 'active' %} {% active_link 'user-add' 'active' %} {% active_link 'dashboard-customers' 'active' %}">
+                        <a href="#"><i class="nav-icon fa fa-list-ul" aria-hidden="true"></i> <span> Report </span> <span class="menu-arrow"></span></a>
+                        <ul>
+                           <li><a href="{% url 'detect_barcodes-search' %}"><i class="nav-icon fas fa-barcode" aria-hidden="true"></i> Barcode Print</a></li>
+                           {% if user.is_authenticated and user|user_in_group:"Cust_user" %}
+                           <li><a href="{% url 'edit_pdf' %}"><i class="fa fa-users"></i> <span> Employee List</span> </a></li>
+                           <li><a href="{% url 'customer-consumer_list' %}"><i class="nav-icon fa fa-user" aria-hidden="true"></i> Consumer List </a></li>
+                           {% endif %}
+                        </ul>
+                     </li>
+                     <li class="submenu {% active_link 'dashboard-notification' 'active' %} {% active_link 'dashboard-staff_Send_Notification' 'active' %} {% active_link 'dashboard-consumer_Send_Notification' 'active' %}">
+                        <a href="{% url 'customer-Comm_Cust' %}"><i class="nav-icon fas fa-bell" aria-hidden="true"></i> <span> Notification</span> <span class="menu-arrow"></span></a>
+                        <ul>
+                           <a href="{% url 'dashboard-notification' %}"><i class="nav-icon fas fa-bell"></i> <span> View Notification</span> </a>
+                           {% if user.is_authenticated and user|user_in_group:"Cust_user" %}
+                           <a href="{% url 'dashboard-staff_Send_Notification' %}"><i class="nav-icon fa fa-envelope" aria-hidden="true"></i> <span> Send Staff Notification</span> </a>
+                           <a href="{% url 'dashboard-consumer_Send_Notification' %}"><i class="nav-icon fa fa-envelope" aria-hidden="true"></i> <span> Send Consumer Notification</span> </a>
+                           {% endif %}
+                        </ul>
+                     </li>
+                     <li class="{% active_link 'firereport-changePassword' 'active' %}">
+                        <a href="{% url 'firereport-changePassword' %}"><i class="nav-icon fa fa-unlock-alt" aria-hidden="true"></i> <span> Change Password</span> </a>
+                     </li>
+                     <li class="{% active_link 'user-logout' 'active' %}">
+                        <a href="{% url 'user-logout' %}"><i class='nav-icon fas fa-sign-out-alt' aria-hidden="true"></i><span> Logout </span></a>
+                     </li>
+                     <li><a></a></li>
+                     <li><a></a></li>
+                  </ul>
+               </div>
+            </div>
+         </div>
+        {% elif user.is_authenticated and user.vendor_account and user|has_portal_access:"vendor" %}
+         <!-- Navbar -->
+         {% include 'partials/nav.html' %}
+         <div class="sidebar" id="sidebar">
+            <div class="sidebar-inner slimscroll">
+               <div id="sidebar-menu" class="sidebar-menu">
+                  <ul>
+                     <li class="{% active_link 'user:vendor-dashboard' 'active' %}">
+                        <a href="{% url 'user:vendor-dashboard' %}">
+                           <i class="fa fa-home" style="font-size:20px" aria-hidden="true"></i>
+                           <span style="font-size:20px;"><b>  Vendor Portal</b></span>
+                        </a>
+                     </li>
+                     <li class="submenu">
+                        <a href="#"><i class="fa fa-user-circle" aria-hidden="true"></i> <span> My Profile </span> <span class="menu-arrow"></span></a>
+                        <ul>
+                           <li><a href="{% url 'user-profile' %}"><i class="fa fa-eye" aria-hidden="true"></i> View Profile </a></li>
+                           <li><a href="{% url 'user-edit_profile' %}"><i class="fa fa-pencil-alt" aria-hidden="true"></i> Update Profile</a></li>
+                        </ul>
+                     </li>
+                     {% if user|has_module_permission:"transactions" %}
+                     <li class="submenu {% active_link 'suppliers-list' 'active' %} {% active_link 'vendor-list' 'active' %} {% active_link 'purchases-list' 'active' %} {% active_link 'sales-list' 'active' %}">
+                        <a href="#"><i class="nav-icon fas fa-warehouse" aria-hidden="true"></i> <span> Transactions</span> <span class="menu-arrow"></span></a>
+                        <ul>
+                           {% if user|has_module_operation:"transactions:view" %}
+                           <li><a href="{% url 'suppliers-list' %}"><i class="fas fa-clipboard-list"></i> Suppliers</a></li>
+                           <li><a href="{% url 'vendor-list' %}"><i class="fas fa-list-alt"></i> Vendors</a></li>
+                           <li><a href="{% url 'purchases-list' %}"><i class="fas fa-receipt"></i> Purchases</a></li>
+                           <li><a href="{% url 'sales-list' %}"><i class="fas fa-file-invoice-dollar"></i> Sales</a></li>
+                           {% endif %}
+                        </ul>
+                     </li>
+                     {% endif %}
+                     <li class="{% active_link 'user-logout' 'active' %}">
+                        <a href="{% url 'user-logout' %}"><i class='nav-icon fas fa-sign-out-alt' aria-hidden="true"></i><span> Logout </span></a>
+                     </li>
+                  </ul>
+               </div>
+            </div>
+         </div>
+
+        {% elif user.is_authenticated and user.is_staff and user.profile.department == 'Stockist' and user|has_portal_access:"staff" %}
+         <!-- Navbar -->
+         {% include 'partials/nav.html' %}
+         <div class="sidebar" id="sidebar">
+            <div class="sidebar-inner slimscroll">
+               <div id="sidebar-menu" class="sidebar-menu">
+                  <ul>
+                     <li class="{% active_link 'dashboard-index' 'active' %}">
+                        <a href="{% url 'dashboard-index' %}"><i class="fa fa-home" style="font-size:20px" aria-hidden="true"></i><span style="font-size:20px;"><b>  Staff Portal</b></span> </a>
+                     </li>
+                     <li class="submenu {% active_link 'dashboard-customers' %} {% active_link 'user-profile' 'active' %} {% active_link 'user-add' 'active' %} {% active_link 'user-edit_profile' 'active' %}">
+                        <a href="#"><i class="fa fa-user-circle" aria-hidden="true"></i> <span> My Profile </span> <span class="menu-arrow"></span></a>
+                        <ul>
+                           {% if user|has_url_permission:"user-profile" or user.is_superuser %}
+                           <li><a href="{% url 'user-profile' %}"><i class="fa fa-eye" aria-hidden="true"></i> View Profile </a></li>
+                           {% endif %}
+                           {% if user|has_url_permission:"user-edit_profile" or user.is_superuser %}
+                           <li><a href="{% url 'user-edit_profile' %}"><i class="fa fa-pencil-alt" aria-hidden="true"></i> Update Profile</a></li>
+                           {% endif %}
+                        </ul>
+                     </li>
+<!--                     <li class="{% active_link 'customer-view_all_cust' %}">-->
+<!--                        <a href="{% url 'customer-view_all_cust' %}"><i class="nav-icon fa fa-list-ul" aria-hidden="true"></i> Consumer List</a>-->
+<!--                     </li>-->
+
+
+                     <li class="submenu {% active_link 'favorite' 'active' %} {% active_link 'favorite_list_view' 'active' %}">
+                        <a href="#"><i class="nav-icon fas fa-dolly-flatbed" aria-hidden="true"></i> <span> Favorite</span> <span class="menu-arrow"></span></a>
+                        <ul>
+                           <li><a href="{% url 'favorite' %}"><i class="fas fa-dot-circle" aria-hidden="true"></i> Create Favorite</a></li>
+                           <li><a href="{% url 'favorite_list_view' %}"><i class="fas fa-dot-circle" aria-hidden="true"></i> Favorite List</a></li>
+                        </ul>
+                     </li>
+                     <li class="submenu {% active_link 'new-supplier' 'active' %} {% active_link 'suppliers-list' 'active' %}">
+                        <a href="#"><i class="nav-icon fas fa-dolly-flatbed" aria-hidden="true"></i> <span> Suppliers</span> <span class="menu-arrow"></span></a>
+                        <ul>
+                           <li><a href="{% url 'product_add_category' %}"><i class="fas fa-dot-circle" aria-hidden="true"></i> Add Field</a></li>
+                           <li><a href="{% url 'new-supplier' %}"><i class="fas fa-dot-circle" aria-hidden="true"></i> Add New Supplier</a></li>
+                           <li><a href="{% url 'suppliers-list' %}" ><i class="fas fa-dot-circle" aria-hidden="true"></i> Suppliers List</a></li>
+                        </ul>
+                     </li>
+                     <li class="submenu {% active_link 'new-vendor' 'active' %} {% active_link 'vendor-list' 'active' %}">
+                        <a href="#"><i class="nav-icon fa fa-mail-reply" aria-hidden="true"></i> <span> Vendors</span> <span class="menu-arrow"></span></a>
+                        <ul>
+<!--                           <li><a href="{% url 'product_add_category' %}"><i class="fas fa-dot-circle" aria-hidden="true"></i> Add Field</a></li>-->
+                           <li><a href="{% url 'new-vendor' %}"><i class="fas fa-dot-circle" aria-hidden="true"></i> Add New Vendor</a></li>
+                           <li><a href="{% url 'vendor-list' %}" ><i class="fas fa-dot-circle" aria-hidden="true"></i> Vendors List</a></li>
+                        </ul>
+                     </li>
+                     <li class="submenu {% active_link 'select-supplier' 'active' %} {% active_link 'inventory' 'active' %}">
+                        <a href="#"><i class="nav-icon fas fa-boxes" aria-hidden="true"></i> <span> Inventory</span> <span class="menu-arrow"></span></a>
+                        <ul>
+                           <li><a href="{% url 'select-supplier' %}"><i class="fas fa-dot-circle" aria-hidden="true"></i> Add New</a></li>
+                           <!--                            <li><a href="{% url 'new-stock' %}"><i class="fas fa-dot-circle" aria-hidden="true"></i> Add New</a></li>-->
+                           <li><a href="{% url 'inventory' %}" ><i class="fas fa-dot-circle" aria-hidden="true"></i> Inventory List</a></li>
+                        </ul>
+                     </li>
+                     <li class="submenu {% active_link 'select-supplier' 'active' %} {% active_link 'purchases-list' 'active' %}">
+                        <a href="#"><i class="nav-icon fas fa-cash-register" aria-hidden="true"></i> <span> Purchases</span> <span class="menu-arrow"></span></a>
+                        <ul>
+                           <li><a href="{% url 'select-supplier' %}"><i class="fas fa-dot-circle" aria-hidden="true"></i> New Incoming Stock</a></li>
+                           <li><a href="{% url 'purchases-list' %}" ><i class="fas fa-dot-circle" aria-hidden="true"></i> Purchases List</a></li>
+                        </ul>
+                     </li>
+                     <li class="submenu {% active_link 'select_customer' 'active' %} {% active_link 'sales-list' 'active' %}">
+                        <a href="#"><i class="nav-icon fas fa-rupee-sign" aria-hidden="true"></i> <span> Sales</span> <span class="menu-arrow"></span></a>
+                        <ul>
+                           <li><a href="{% url 'select_customer' %}"><i class="fas fa-dot-circle" aria-hidden="true"></i> New Outgoing Stock</a></li>
+                           <li><a href="{% url 'sales-list' %}" ><i class="fas fa-dot-circle" aria-hidden="true"></i> Sales Orders List</a></li>
+                        </ul>
+                     </li>
+                     <li class="submenu {% active_link 'merge_sales_bill' 'active' %} {% active_link 'finalsales-list' 'active' %}">
+                        <a href="#"><i class="nav-icon fas fa-rupee-sign" aria-hidden="true"></i> <span> Final Sales DC</span> <span class="menu-arrow"></span></a>
+                        <ul>
+                           <li><a href="{% url 'merge_sales_bill' %}"><i class="fas fa-dot-circle" aria-hidden="true"></i> Gen. Final Sale DC</a></li>
+                           <li><a href="{% url 'finalsales-list' %}" ><i class="fas fa-dot-circle" aria-hidden="true"></i> Final Sale List</a></li>
+                        </ul>
+                     </li>
+                     <li class="submenu {% active_link 'return_select_customer' 'active' %} {% active_link 'returnsales-list' 'active' %}">
+                        <a href="#"><i class="nav-icon fas fa-rupee-sign" aria-hidden="true"></i> <span> Return Sales DC</span> <span class="menu-arrow"></span></a>
+                        <ul>
+                           <li><a href="{% url 'return_select_customer' %}"><i class="fas fa-dot-circle" aria-hidden="true"></i> Gen. Return Sale DC</a></li>
+                           <li><a href="{% url 'returnsales-list' %}" ><i class="fas fa-dot-circle" aria-hidden="true"></i> Return Sale List</a></li>
+                        </ul>
+                     </li>
+                     <li class="{% active_link 'firereport-task' 'active' %}">
+                            <a href="{% url 'search_serial' %}"><i class="nav-icon fa fa-search" aria-hidden="true"></i><span> Search Serial No.</span></a>
+                     </li>
+
+
+                     <li class="submenu {% active_link 'firereport-newRequest' %} {% active_link 'firereport-assignRequest' 'active' %} {% active_link 'firereport-teamontheway' 'active' %} {% active_link 'firereport-workinprogress' 'active' %} {% active_link 'firereport-completeRequest' 'active' %} {% active_link 'firereport-allRequest' 'active' %} {% active_link 'firereport-dateReport' 'active' %} {% active_link 'firereport-search' 'active' %}">
+                        <a href="{% url 'customer-Comm_Cust' %}"><i class="fa fa-exclamation-circle" aria-hidden="true"></i> <span> Consumer Complaint</span> <span class="menu-arrow"></span></a>
+                        <ul>
+                           <li><a href="{% url 'firereport-assignRequest' %}"> <i class="fa fa-arrow-circle-right" aria-hidden="true"></i> Assigned Request</a></li>
+                           <li><a href="{% url 'firereport-teamontheway' %}"> <i class="fa fa-spinner" aria-hidden="true"></i> In Progress</a></li>
+                           <li><a href="{% url 'firereport-workinprogress' %}"> <i class="fa fa-tasks" aria-hidden="true"></i></i> Work in Progress</a></li>
+                           <li><a href="{% url 'firereport-completeRequest' %}"> <i class="fa fa-check" aria-hidden="true"></i> Completed Request</a></li>
+                           <li><a href="{% url 'firereport-allRequest' %}"> <i class="fa fa-list" aria-hidden="true"></i> All Requests</a></li>
+                           <li><a href="{% url 'firereport-dateReport' %}"> <i class="nav-icon fas fa-calendar-alt"></i> All Report</a></li>
+                           <li><a href="{% url 'firereport-search' %}"> <i class="nav-icon fas fa-search"></i> Search</a></li>
+                        </ul>
+                     </li>
+                     <li class="{% active_link 'dashboard-notification' %}">
+                        <a href="{% url 'dashboard-notification' %}"><i class="fas fa-bell"></i> <span> View Notification</span> </a>
+                     </li>
+                     <li class="{% active_link 'firereport-changePassword' %}">
+                        <a href="{% url 'firereport-changePassword' %}"><i class="fa fa-unlock-alt" aria-hidden="true"></i> <span> Change Password</span> </a>
+                     </li>
+                     <li class="{% active_link 'user-logout' %}">
+                        <a href="{% url 'user-logout' %}"><i class='nav-icon fas fa-sign-out-alt' aria-hidden="true"></i> <span> Logout </span></a>
+                     </li>
+                  </ul>
+               </div>
+            </div>
+         </div>
+        {% elif user.is_authenticated and user.is_staff and user|has_portal_access:"staff"  %}
+         <!-- Navbar -->
+         {% include 'partials/nav.html' %}
+         <div class="sidebar" id="sidebar">
+            <div class="sidebar-inner slimscroll">
+               <div id="sidebar-menu" class="sidebar-menu">
+                  <ul>
+                     <li class="{% active_link 'dashboard-index1' 'active' %}">
+                        <a href="{% url 'dashboard-index1' %}"><i class="fa fa-home" style="font-size:20px" aria-hidden="true"></i><span style="font-size:20px;"><b>  Staff Portal</b></span> </a>
+                     </li>
+                     {% if user|has_url_permission:"dashboard-index1" or user.is_superuser %}
+                     <li class="submenu {% active_link 'dashboard-index1' 'active' %} {% active_link 'customer-view_all' 'active' %} {% active_link 'firereport-dashboard' 'active' %} {% active_link 'home' 'active' %}">
+                        <a href="#"><i class="nav-icon fas fa-tachometer-alt" aria-hidden="true"></i> <span> Dashboard</span> <span class="menu-arrow"></span></a>
+                        <ul>
+                           {% if user|has_url_permission:"dashboard-index1" or user.is_superuser %}
+                           <li><a href="{% url 'dashboard-index1' %}"><i class="nav-icon fa fa-users"></i> Staff Dashboard</a></li>
+                           {% endif %}
+                           {% if user|has_url_permission:"customer-view_all" or user.is_superuser %}
+                           <li><a href="{% url 'customer-view_all' %}"><i class="nav-icon far fa-user"></i> Consumer Dashboard</a></li>
+                           {% endif %}
+                           {% if user|has_url_permission:"firereport-dashboard" or user.is_superuser %}
+                           <li><a href="{% url 'firereport-dashboard' %}"><i class="nav-icon fas fa-exclamation-circle"></i> Complaint Dashboard</a></li>
+                           {% endif %}
+                           {% if user|has_url_permission:"home" or user.is_superuser %}
+                           <li><a href="{% url 'home' %}"><i class="nav-icon fas fa-boxes"></i> Stock Dashboard</a></li>
+                           {% endif %}
+                        </ul>
+                     </li>
+                     {% endif %}
+                     <!--                     <li class="{% active_link 'dashboard-index' 'active' %}">-->
+                     <!--&lt;!&ndash;                     <li class="{% active_link 'firereport-dashboard_staff' 'active' %}">&ndash;&gt;-->
+                     <!--                        <a href="{% url 'dashboard-index' %}"><i class="fas fa-home" aria-hidden="true"></i> <span> Home </span> </a>-->
+                     <!--                     </li>-->
+                     {% if user|has_url_permission:"user-profile" or user|has_url_permission:"user-edit_profile" or user.is_superuser %}
+                     <li class="submenu {% active_link 'dashboard-customers' %} {% active_link 'user-profile' 'active' %} {% active_link 'user-add' 'active' %} {% active_link 'user-edit_profile' 'active' %}">
+                        <a href="#"><i class="fa fa-user-circle" aria-hidden="true"></i> <span> My Profile </span> <span class="menu-arrow"></span></a>
+                        <ul>
+                           {% if user|has_url_permission:"user-profile" or user.is_superuser %}
+                           <li><a href="{% url 'user-profile' %}"><i class="fa fa-eye" aria-hidden="true"></i> View Profile </a></li>
+                           {% endif %}
+                           {% if user|has_url_permission:"user-edit_profile" or user.is_superuser %}
+                           <li><a href="{% url 'user-edit_profile' %}"><i class="fa fa-pencil-alt" aria-hidden="true"></i> Update Profile</a></li>
+                           {% endif %}
+                        </ul>
+                     </li>
+                     {% endif %}
+                     {% if user|has_url_permission:"dashboard-customers" or user|has_url_permission:"user-add" or user.is_superuser %}
+                     <li class="submenu {% active_link 'dashboard-customers' 'active' %} {% active_link 'user-add' 'active' %}">
+                        <a href="#"><i class="fa fa-users" aria-hidden="true"></i> <span> Employee </span> <span class="menu-arrow"></span></a>
+                        <ul>
+                           {% if user|has_url_permission:"user-add" or user.is_superuser %}
+                           <li><a href="{% url 'user-add' %}"><i class="nav-icon fa fa-plus" aria-hidden="true"></i> Add Employee </a></li>
+                           {% endif %}
+                           {% if user|has_url_permission:"dashboard-customers" or user.is_superuser %}
+                           <li><a href="{% url 'dashboard-customers' %}"><i class="nav-icon fa fa-list-ul" aria-hidden="true"></i> Employee List</a></li>
+                           {% endif %}
+                        </ul>
+                     </li>
+                     {% endif %}
+
+                     {% if user|has_url_permission:"quotation:create_quotation" or user|has_url_permission:"quotation:quotation_list" or user.is_superuser %}
+                     <li class="submenu {% active_link 'quotation:create_quotation' 'active' %} {% active_link 'quotation:quotation_list' 'active' %}">
+                        <a href="#"><i class="nav-icon fa fa-tasks" aria-hidden="true"></i> <span> Quotation</span> <span class="menu-arrow"></span></a>
+                        <ul>
+                           {% if user|has_url_permission:"quotation:create_quotation" or user.is_superuser %}
+                           <li>
+                              <a href="#" data-toggle="modal" data-target="#quotationModal">
+                                 <i class="nav-icon fa fa-plus" aria-hidden="true"></i> Add Quotation
+                              </a>
+                           </li>
+                           {% endif %}
+                           {% if user|has_url_permission:"quotation:quotation_list" or user.is_superuser %}
+                           <li><a href="{% url 'quotation:quotation_list' %}"><i class="nav-icon fa fa-list-ul" aria-hidden="true"></i> Quotation List</a></li>
+                           {% endif %}
+                        </ul>
+                     </li>
+                     {% endif %}
+
+                     {% if user|has_url_permission:"customer-view_all_cust" or user|has_url_permission:"customer-cust" or user.is_superuser %}
+                     <li class="submenu {% active_link 'customer-view_all_cust' 'active' %} {% active_link 'customer-Comm_Cust' 'active' %} {% active_link 'customer-cust' 'active' %} {% active_link 'customer-Govt_Cust' 'active' %}">
+                        <a href="{% url 'customer-cust' %}"><i class="nav-icon fa fa-user" aria-hidden="true"></i> <span> Consumer</span> <span class="menu-arrow"></span></a>
+                        <ul>
+                           {% if user|has_url_permission:"customer-cust" or user.is_superuser %}
+                           <li><a href="#" data-toggle="modal" data-target="#myModal"><i class="fa fa-plus" aria-hidden="true"></i> Add Consumer </a></li>
+                           {% endif %}
+                           {% if user|has_url_permission:"customer-view_all_cust" or user.is_superuser %}
+                           <li><a href="{% url 'customer-view_all_cust' %}"><i class="nav-icon fa fa-list-ul" aria-hidden="true"></i> Consumer List</a></li>
+                           {% endif %}
+                           {% if user|has_url_permission:"customer-update_company_name" or user.is_superuser %}
+                           <li><a href="{% url 'customer-update_company_name' %}"><i class="nav-icon fa fa-list-ul" aria-hidden="true"></i> Update Consumer Name</a></li>
+                           {% endif %}
+                           {% if user|has_url_permission:"customer-change_staff" or user.is_superuser %}
+                           <li><a href="{% url 'customer-change_staff' %}"><i class="nav-icon fas fa-people-carry" aria-hidden="true"></i> Re-Assign Employee</a></li>
+                           {% endif %}
+                           {% if user|has_url_permission:"customer-search_by_staff" or user.is_superuser %}
+                           <li><a href="{% url 'customer-search_by_staff' %}"><i class="nav-icon fa fa-list-ul" aria-hidden="true"></i> Cons. Searchby Staff</a></li>
+                           {% endif %}
+                        </ul>
+                     </li>
+                     {% endif %}
+                     {% if user|has_url_permission:"home" or user.is_superuser %}
+                     <li>
+                          <a href="{% url 'home' %}">
+                               <i class="nav-icon fas fa-boxes"></i>
+                                  Stock Dashboard
+                          </a>
+                     </li>
+                     {% endif %}
+                     {% if user|has_url_permission:"promote_page" or user|has_url_permission:"detect_barcodes-detect_barcodes" or user|has_url_permission:"detect_barcodes-detect_inverter" or user|has_url_permission:"detect_barcodes-search_results" or user|has_url_permission:"generate_barcodes-generate_barcodes" or user|has_url_permission:"detect_barcodes-delete_barcode" or user|has_url_permission:"solar_pump_entry" or user|has_url_permission:"controller_entry" or user|has_url_permission:"customer-meters" or user|has_url_permission:"customer-display_meters" or user|has_url_permission:"customer-search_results" or user|has_url_permission:"customer-edit_meters" or user|has_url_permission:"customer-MSEB" or user|has_url_permission:"customer-complete_MSEB" or user|has_url_permission:"customer-Update_MSEB" or user|has_url_permission:"customer-Site_Inspection_Details" or user|has_url_permission:"customer-display_Site_Inspection" or user.is_superuser %}
+                     <li class="submenu {% active_link 'promote_page' 'active' %} {% active_link 'detect_barcodes-detect_barcodes' %} {% active_link 'detect_barcodes-detect_inverter' 'active' %} {% active_link 'detect_barcodes-search_results' 'active' %} {% active_link 'generate_barcodes-generate_barcodes' 'active' %} {% active_link 'customer-meters' 'active' %} {% active_link 'customer-display_meters' 'active' %} {% active_link 'customer-MSEB' 'active' %} {% active_link 'customer-Site_Inspection_Details' 'active' %}">
+                        <a href="#"><i class="nav-icon fas fa-project-diagram" aria-hidden="true"></i> <span> Project Details</span> <span class="menu-arrow"></span></a>
+                        <ul>
+                           <!-- Barcode -->
+                           {% if user|has_url_permission:"promote_page" or user|has_url_permission:"detect_barcodes-detect_barcodes" or user|has_url_permission:"detect_barcodes-detect_inverter" or user|has_url_permission:"detect_barcodes-search_results" or user|has_url_permission:"generate_barcodes-generate_barcodes" or user|has_url_permission:"detect_barcodes-delete_barcode" or user.is_superuser %}
+                           <li class="submenu">
+                              <a href="#"><i class="nav-icon fas fa-barcode"></i> <span> Barcode</span> <span class="menu-arrow"></span></a>
+                              <ul>
+                                 {% if user|has_url_permission:"promote_page" or user.is_superuser %}
+                                 <li><a href="{% url 'promote_page' %}"><i class="nav-icon fas fa-arrow-up"></i> Promote Barcode</a></li>
+                                 {% endif %}
+                                 {% if user|has_url_permission:"detect_barcodes-detect_barcodes" or user.is_superuser %}
+                                 <li><a href="#" data-toggle="modal" data-target="#solarPanelModal"><i class="nav-icon fas fa-solar-panel"></i> Solar Module Panel</a></li>
+                                 {% endif %}
+                                 {% if user|has_url_permission:"detect_barcodes-detect_inverter" or user.is_superuser %}
+                                 <li><a href="#" data-toggle="modal" data-target="#InverterModal"><i><img src="{% static 'images/1.png' %}" alt="Barcode Icon" width="18" height="18"></i> Inverter</a></li>
+                                 {% endif %}
+                                 {% if user|has_url_permission:"detect_barcodes-search_results" or user.is_superuser %}
+                                 <li><a href="{% url 'detect_barcodes-search_results' %}"><i class="nav-icon fas fa-search"></i> Search</a></li>
+                                 {% endif %}
+                                 {% if user|has_url_permission:"generate_barcodes-generate_barcodes" or user.is_superuser %}
+                                 <li><a href="{% url 'generate_barcodes-generate_barcodes' %}"><i class="nav-icon fas fa-barcode"></i> Generate Barcode</a></li>
+                                 {% endif %}
+                                 {% if user|has_url_permission:"detect_barcodes-delete_barcode" or user.is_superuser %}
+                                 <li><a href="{% url 'detect_barcodes-delete_barcode' %}"><i class="nav-icon fas fa-trash"></i> Delete Barcode</a></li>
+                                 {% endif %}
+                              </ul>
+                           </li>
+                           {% endif %}
+
+                           <!-- Solar Pump -->
+                           {% if user|has_url_permission:"solar_pump_entry" or user|has_url_permission:"controller_entry" or user.is_superuser %}
+                           <li class="submenu">
+                              <a href="#"><i class="nav-icon fas fa-water"></i> <span> Solar Pump</span> <span class="menu-arrow"></span></a>
+                              <ul>
+                                 {% if user|has_url_permission:"solar_pump_entry" or user.is_superuser %}
+                                 <li><a href="{% url 'solar_pump_entry' %}"><i class="nav-icon fas fa-water"></i> Solar Pump</a></li>
+                                 {% endif %}
+                                 {% if user|has_url_permission:"controller_entry" or user.is_superuser %}
+                                 <li><a href="{% url 'controller_entry' %}"><i class="nav-icon fas fa-microchip"></i> Controller</a></li>
+                                 {% endif %}
+                              </ul>
+                           </li>
+                           {% endif %}
+
+                           <!-- Net Meters Details -->
+                           {% if user|has_url_permission:"customer-meters" or user|has_url_permission:"customer-display_meters" or user|has_url_permission:"customer-search_results" or user|has_url_permission:"customer-edit_meters" or user.is_superuser %}
+                           <li class="submenu">
+                              <a href="#"><i class="nav-icon fas fa-tachometer-alt"></i> <span> Net Meters Details</span> <span class="menu-arrow"></span></a>
+                              <ul>
+                                 {% if user|has_url_permission:"customer-meters" or user.is_superuser %}
+                                 <li><a href="{% url 'customer-meters' %}"><i class="nav-icon fa fa-plus" aria-hidden="true"></i> Add Meters Details</a></li>
+                                 {% endif %}
+                                 {% if user|has_url_permission:"customer-display_meters" or user.is_superuser %}
+                                 <li><a href="{% url 'customer-display_meters' %}"><i class="nav-icon fa fa-list-ul" aria-hidden="true"></i> Display Meters Details</a></li>
+                                 {% endif %}
+                                 {% if user|has_url_permission:"customer-search_results" or user.is_superuser %}
+                                 <li><a href="{% url 'customer-search_results' %}"><i class="nav-icon fas fa-search" aria-hidden="true"></i> Search</a></li>
+                                 {% endif %}
+                                 {% if user|has_url_permission:"customer-edit_meters" or user.is_superuser %}
+                                 <li><a href="{% url 'customer-edit_meters' %}"><i class="nav-icon fas fa-trash" aria-hidden="true"></i> Delete Meters</a></li>
+                                 {% endif %}
+                              </ul>
+                           </li>
+                           {% endif %}
+
+                           <!-- MSEB Records -->
+                           {% if user|has_url_permission:"customer-MSEB" or user|has_url_permission:"customer-complete_MSEB" or user|has_url_permission:"customer-Update_MSEB" or user.is_superuser %}
+                           <li class="submenu">
+                              <a href="#"><i class="nav-icon fas fa-bolt"></i> <span> MSEB Records</span> <span class="menu-arrow"></span></a>
+                              <ul>
+                                 {% if user|has_url_permission:"customer-MSEB" or user.is_superuser %}
+                                 <li><a href="{% url 'customer-MSEB' %}"><i class="nav-icon fas fa-bolt" aria-hidden="true"></i> MSEB Electricity Meters</a></li>
+                                 {% endif %}
+                                 {% if user|has_url_permission:"customer-complete_MSEB" or user.is_superuser %}
+                                 <li><a href="{% url 'customer-complete_MSEB' %}"><i class="nav-icon fas fa-clipboard-check" aria-hidden="true"></i> Complete MSEB Details</a></li>
+                                 {% endif %}
+                                 {% if user|has_url_permission:"customer-Update_MSEB" or user.is_superuser %}
+                                 <li><a href="{% url 'customer-Update_MSEB' %}"><i class="nav-icon fas fa-edit" aria-hidden="true"></i> Update MSEB Details</a></li>
+                                 {% endif %}
+                              </ul>
+                           </li>
+                           {% endif %}
+
+                           <!-- Site Inspection Report -->
+                           {% if user|has_url_permission:"customer-Site_Inspection_Details" or user|has_url_permission:"customer-display_Site_Inspection" or user.is_superuser %}
+                           <li class="submenu">
+                              <a href="#"><i class="nav-icon fas fa-clipboard-list"></i> <span> Site Inspection Report</span> <span class="menu-arrow"></span></a>
+                              <ul>
+                                 {% if user|has_url_permission:"customer-Site_Inspection_Details" or user.is_superuser %}
+                                 <li class="{% active_link 'customer-Site_Inspection_Details' 'active' %}">
+                                    <a href="{% url 'customer-Site_Inspection_Details' %}"><i class="nav-icon fa fa-list-ul" aria-hidden="true"></i> Enter Inspection Report</a>
+                                 </li>
+                                 {% endif %}
+                                 {% if user|has_url_permission:"customer-display_Site_Inspection" or user.is_superuser %}
+                                 <li><a href="{% url 'customer-display_Site_Inspection' %}"><i class="nav-icon fa fa-plus" aria-hidden="true"></i> Display Inspection Reports</a></li>
+                                 {% endif %}
+                              </ul>
+                           </li>
+                           {% endif %}
+                        </ul>
+                     </li>
+                     {% endif %}
+                     {% if user|has_url_permission:"suppliers-list" or user|has_url_permission:"vendor-list" or user|has_url_permission:"inventory" or user|has_url_permission:"purchases-list" or user|has_url_permission:"sales-list" or user|has_url_permission:"finalsales-list" or user|has_url_permission:"returnsales-list" or user.is_superuser %}
+                     <li class="submenu {% active_link 'store-keeping' 'active' %}">
+                        <a href="#"><i class="nav-icon fas fa-warehouse"></i> <span> Store Keeping</span> <span class="menu-arrow"></span></a>
+<!--                      <a href="#"><i class="nav-icon fas fa-dolly"></i> <span> Store Keeping</span> <span class="menu-arrow"></span></a>-->
+
+                        <ul>
+                           <!-- Supplier -->
+                           {% if user|has_url_permission:"product_add_category" or user|has_url_permission:"new-supplier" or user|has_url_permission:"suppliers-list" or user.is_superuser %}
+                           <li class="submenu {% active_link 'product_add_category' 'active' %} {% active_link 'new-supplier' 'active' %} {% active_link 'suppliers-list' 'active' %}">
+                              <a href="#"><i class="nav-icon fas fa-truck"></i> <span> Supplier</span> <span class="menu-arrow"></span></a>
+                              <ul>
+                                 {% if user|has_url_permission:"product_add_category" or user.is_superuser %}
+                                 <li><a href="{% url 'product_add_category' %}" class="{% active_link 'product_add_category' 'active' %}">&nbsp;&nbsp;&nbsp;<i class="fas fa-plus"></i> Add Field</a></li>
+                                 {% endif %}
+                                 {% if user|has_url_permission:"new-supplier" or user.is_superuser %}
+                                 <li><a href="{% url 'new-supplier' %}" class="{% active_link 'new-supplier' 'active' %}">&nbsp;&nbsp;&nbsp;<i class="fas fa-user-tie"></i> Add New Supplier</a></li>
+                                 {% endif %}
+                                 {% if user|has_url_permission:"suppliers-list" or user.is_superuser %}
+                                 <li><a href="{% url 'suppliers-list' %}" class="{% active_link 'suppliers-list' 'active' %}">&nbsp;&nbsp;&nbsp;<i class="fas fa-clipboard-list"></i> Suppliers List</a></li>
+                                 {% endif %}
+                              </ul>
+                           </li>
+                           {% endif %}
+                           <!-- Vendor -->
+                           {% if user|has_url_permission:"new-vendor" or user|has_url_permission:"vendor-list" or user.is_superuser %}
+                           <li class="submenu {% active_link 'new-vendor' 'active' %} {% active_link 'vendor-list' 'active' %}">
+                              <a href="#"><i class="nav-icon fas fa-box-open"></i> <span> Vendor</span> <span class="menu-arrow"></span></a>
+                              <ul>
+                                 {% if user|has_url_permission:"new-vendor" or user.is_superuser %}
+                                 <li><a href="{% url 'new-vendor' %}" class="{% active_link 'new-vendor' 'active' %}"><i class="fas fa-user-plus"></i> Add New Vendor</a></li>
+                                 {% endif %}
+                                 {% if user|has_url_permission:"vendor-list" or user.is_superuser %}
+                                 <li><a href="{% url 'vendor-list' %}" class="{% active_link 'vendor-list' 'active' %}"><i class="fas fa-list-alt"></i> Vendors List</a></li>
+                                 {% endif %}
+                              </ul>
+                           </li>
+                           {% endif %}
+                           <!-- Inventory -->
+                           {% if user|has_url_permission:"inventory" or user.is_superuser %}
+                           <li class="submenu {% active_link 'inventory' 'active' %}">
+                              <a href="#"><i class="nav-icon fas fa-pallet"></i> <span> Inventory</span> <span class="menu-arrow"></span></a>
+                              <ul>
+                                 {% if user|has_url_permission:"select-supplier" or user.is_superuser %}
+                                 <li><a href="{% url 'select-supplier' %}" class="{% active_link 'select-supplier' 'active' %}"><i class="fas fa-plus"></i> Add New</a></li>
+                                 {% endif %}
+                                 {% if user|has_url_permission:"inventory" or user.is_superuser %}
+                                 <li><a href="{% url 'inventory' %}" class="{% active_link 'inventory' 'active' %}"><i class="fas fa-boxes"></i> Inventory List</a></li>
+                                 {% endif %}
+                              </ul>
+                           </li>
+                           {% endif %}
+                           <!-- Purchase -->
+                           {% if user|has_url_permission:"purchases-list" or user|has_url_permission:"select-supplier" or user.is_superuser %}
+                           <li class="submenu {% active_link 'select-supplier' 'active' %} {% active_link 'purchases-list' 'active' %}">
+                              <a href="#"><i class="nav-icon fas fa-shopping-basket"></i> <span> Purchase</span> <span class="menu-arrow"></span></a>
+                              <ul>
+                                 {% if user|has_url_permission:"select-supplier" or user.is_superuser %}
+                                 <li><a href="{% url 'select-supplier' %}" class="{% active_link 'select-supplier' 'active' %}"><i class="fas fa-cart-plus"></i> New Incoming Stock</a></li>
+                                 {% endif %}
+                                 {% if user|has_url_permission:"purchases-list" or user.is_superuser %}
+                                 <li><a href="{% url 'purchases-list' %}" class="{% active_link 'purchases-list' 'active' %}"><i class="fas fa-receipt"></i> Purchases List</a></li>
+                                 {% endif %}
+                              </ul>
+                           </li>
+                           <!-- Sale -->
+                           {% if user|has_url_permission:"select_customer" or user|has_url_permission:"sales-list" or user.is_superuser %}
+                           <li class="submenu {% active_link 'select_customer' 'active' %} {% active_link 'sales-list' 'active' %}">
+                              <a href="#"><i class="nav-icon fas fa-hand-holding-usd"></i> <span> Sale</span> <span class="menu-arrow"></span></a>
+                              <ul>
+                                 {% if user|has_url_permission:"select_customer" or user.is_superuser %}
+                                 <li><a href="{% url 'select_customer' %}" class="{% active_link 'select_customer' 'active' %}"><i class="fas fa-cart-arrow-down"></i> New Outgoing Stock</a></li>
+                                 {% endif %}
+                                 {% if user|has_url_permission:"sales-list" or user.is_superuser %}
+                                 <li><a href="{% url 'sales-list' %}" class="{% active_link 'sales-list' 'active' %}"><i class="fas fa-file-invoice-dollar"></i> Sales Orders List</a></li>
+                                 {% endif %}
+                              </ul>
+                           </li>
+                           {% endif %}
+                           <!-- Final Sales DC -->
+                           {% if user|has_url_permission:"merge_sales_bill" or user|has_url_permission:"finalsales-list" or user.is_superuser %}
+                           <li class="submenu {% active_link 'merge_sales_bill' 'active' %} {% active_link 'finalsales-list' 'active' %}">
+                              <a href="#"><i class="nav-icon fas fa-file-contract"></i> <span> Final Sales DC</span> <span class="menu-arrow"></span></a>
+                              <ul>
+                                 {% if user|has_url_permission:"merge_sales_bill" or user.is_superuser %}
+                                 <li><a href="{% url 'merge_sales_bill' %}" class="{% active_link 'merge_sales_bill' 'active' %}"><i class="fas fa-file-signature"></i> Generate Final Sale DC</a></li>
+                                 {% endif %}
+                                 {% if user|has_url_permission:"finalsales-list" or user.is_superuser %}
+                                 <li><a href="{% url 'finalsales-list' %}" class="{% active_link 'finalsales-list' 'active' %}"><i class="fas fa-file-alt"></i> Final Sale List</a></li>
+                                 {% endif %}
+                              </ul>
+                           </li>
+                           {% endif %}
+                           <!-- Return Sale DC -->
+                           {% if user|has_url_permission:"return_select_customer" or user|has_url_permission:"returnsales-list" or user.is_superuser %}
+                           <li class="submenu {% active_link 'return_select_customer' 'active' %} {% active_link 'returnsales-list' 'active' %}">
+                              <a href="#"><i class="nav-icon fas fa-undo-alt"></i> <span> Return Sale DC</span> <span class="menu-arrow"></span></a>
+                              <ul>
+                                 {% if user|has_url_permission:"return_select_customer" or user.is_superuser %}
+                                 <li><a href="{% url 'return_select_customer' %}" class="{% active_link 'return_select_customer' 'active' %}"><i class="fas fa-exchange-alt"></i> Generate Return Sale DC</a></li>
+                                 {% endif %}
+                                 {% if user|has_url_permission:"returnsales-list" or user.is_superuser %}
+                                 <li><a href="{% url 'returnsales-list' %}" class="{% active_link 'returnsales-list' 'active' %}"><i class="fas fa-file-excel"></i> Return Sale List</a></li>
+                                 {% endif %}
+                              </ul>
+                           </li>
+                           {% endif %}
+                           {% endif %}
+                        </ul>
+                     </li>
+                     {% endif %}
+                     {% if user|has_url_permission:"firereport-newRequest" or user|has_url_permission:"firereport-assignRequest" or user.is_superuser %}
+                     <li class="submenu {% active_link 'firereport-newRequest' %} {% active_link 'firereport-assignRequest' 'active' %} {% active_link 'firereport-teamontheway' 'active' %} {% active_link 'firereport-workinprogress' 'active' %} {% active_link 'firereport-completeRequest' 'active' %} {% active_link 'firereport-allRequest' 'active' %} {% active_link 'firereport-dateReport' 'active' %} {% active_link 'firereport-search' 'active' %}">
+                        <a href="{% url 'customer-Comm_Cust' %}"><i class="fa fa-exclamation-circle" aria-hidden="true"></i> <span> Consumer Complaint</span> <span class="menu-arrow"></span></a>
+                        <ul>
+                           {% if user|has_url_permission:"firereport-newRequest" or user.is_superuser %}
+                           <li><a href="{% url 'firereport-newRequest' %}"> <i class="nav-icon fa fa-envelope-square" aria-hidden="true"></i> New Request</a></li>
+                           {% endif %}
+                           {% if user|has_url_permission:"firereport-assignRequest" or user.is_superuser %}
+                           <li><a href="{% url 'firereport-assignRequest' %}"> <i class="fa fa-arrow-circle-right" aria-hidden="true"></i> Assigned Request</a></li>
+                           {% endif %}
+                           {% if user|has_url_permission:"firereport-teamontheway" or user.is_superuser %}
+                           <li><a href="{% url 'firereport-teamontheway' %}"> <i class="fa fa-spinner" aria-hidden="true"></i> In Progress</a></li>
+                           {% endif %}
+                           {% if user|has_url_permission:"firereport-workinprogress" or user.is_superuser %}
+                           <li><a href="{% url 'firereport-workinprogress' %}"> <i class="fa fa-tasks" aria-hidden="true"></i> Work in Progress</a></li>
+                           {% endif %}
+                           {% if user|has_url_permission:"firereport-completeRequest" or user.is_superuser %}
+                           <li><a href="{% url 'firereport-completeRequest' %}"> <i class="fa fa-check" aria-hidden="true"></i> Completed Request</a></li>
+                           {% endif %}
+                           {% if user|has_url_permission:"firereport-allRequest" or user.is_superuser %}
+                           <li><a href="{% url 'firereport-allRequest' %}"> <i class="fa fa-list" aria-hidden="true"></i> All Requests</a></li>
+                           {% endif %}
+                           {% if user|has_url_permission:"firereport-reassignRequest" or user.is_superuser %}
+                           <li><a href="{% url 'firereport-reassignRequest' %}"> <i class="nav-icon fas fa-sync-alt"></i> Re-Assign Request</a></li>
+                           {% endif %}
+                           {% if user|has_url_permission:"firereport-dateReport" or user.is_superuser %}
+                           <li><a href="{% url 'firereport-dateReport' %}"> <i class="nav-icon fas fa-calendar-alt"></i> All Report</a></li>
+                           {% endif %}
+                           {% if user|has_url_permission:"firereport-search" or user.is_superuser %}
+                           <li><a href="{% url 'firereport-search' %}"> <i class="nav-icon fas fa-search"></i> Search</a></li>
+                           {% endif %}
+                        </ul>
+                     </li>
+                     {% endif %}
+                     {% if user|has_url_permission:"dashboard-notification" or user.is_superuser %}
+                     <li class="{% active_link 'dashboard-notification' %}">
+                        <a href="{% url 'dashboard-notification' %}"><i class="fas fa-bell"></i> <span> View Notification</span> </a>
+                     </li>
+                     {% endif %}
+                     {% if user|has_url_permission:"firereport-changePassword" or user.is_superuser %}
+                     <li class="{% active_link 'firereport-changePassword' %}">
+                        <a href="{% url 'firereport-changePassword' %}"><i class="fa fa-unlock-alt" aria-hidden="true"></i> <span> Change Password</span> </a>
+                     </li>
+                     {% endif %}
+                     {% if user|has_url_permission:"user-logout" or user.is_superuser %}
+                     <li class="{% active_link 'user-logout' %}">
+                        <a href="{% url 'user-logout' %}"><i class='nav-icon fas fa-sign-out-alt' aria-hidden="true"></i> <span> Logout </span></a>
+                     </li>
+                     {% endif %}
+                  </ul>
+               </div>
+            </div>
+         </div>
+
+        {% else %}
+         <!-- Navbar -->
+         {% if firereport.AssignTo != Null %}
+         <!--            {% include 'partials/nav2.html' %}-->
+         {% include 'partials/nav.html' %}
+         <div class="sidebar" id="sidebar">
+            <div class="sidebar-inner slimscroll">
+               <div id="sidebar-menu" class="sidebar-menu">
+                  <ul>
+                     <li class="submenu {% active_link 'firereport-dashboard_staff' 'active' %}">
+                        <!--                         <a href="#"><i class="fa fa-home" aria-hidden="true"></i><span> <h4>Staff Portal</h4></span> </a>-->
+                        <a href="{% url 'firereport-dashboard_staff' %}"><i class="fa fa-home" style="font-size:20px" aria-hidden="true"></i><span style="font-size:20px;"><b>  Staff Portal</b></span> </a>
+                     </li>
+                     <!--                     <li class="submenu active">-->
+                     <!--                        <a href="{% url 'firereport-dashboard_staff' %}"><i class="nav-icon fas fa-tachometer-alt" aria-hidden="true"></i> <span> Dashboard </span> </a>-->
+                     <!--                     </li>-->
+                     <li class="submenu {% active_link 'dashboard-customers' 'active' %} {% active_link 'user-profile' 'active' %} {% active_link 'user-add' 'active' %} {% active_link 'user-edit_profile' 'active' %}">
+                        <a href="#"><i class="fa fa-user-circle" aria-hidden="true"></i> <span> My Profile </span> <span class="menu-arrow"></span></a>
+                        <ul>
+                           <li><a href="{% url 'user-profile' %}"><i class="fa fa-eye" aria-hidden="true"></i> View Profile </a></li>
+                           <li><a href="{% url 'user-edit_profile' %}"><i class="fa fa-pencil-alt" aria-hidden="true"></i> Update Profile</a></li>
+                        </ul>
+                     </li>
+                     <li class="{% active_link 'customer-view_all_cust' %}">
+                        <a href="{% url 'customer-view_all_cust' %}"><i class="nav-icon fa fa-list-ul" aria-hidden="true"></i> Consumer List</a>
+                     </li>
+                     <li class="submenu {% active_link 'detect_barcodes-display_product' 'active' %}">
+                        <a href="{% url 'detect_barcodes-display_product' %}"><i><img src="{% static 'images/images (5).png' %}" alt="Barcode Icon" width="22" height="22"></i>
+                        <span> Project Details</span> </a>
+                        <!--                        <a href="{% url 'edit_pdf' %}"><i class="nav-icon fas fa-barcode"></i> <span> Edit Barcode</span> </a>-->
+                     </li>
+                     <li class="submenu {% active_link 'firereport-reporting' 'active' %} {% active_link 'firereport-viewStatus' 'active' %} {% active_link 'firereport-dateReport' 'active' %}">
+                        <a href="#"><i class="fa fa-exclamation-circle" aria-hidden="true"></i> <span> Complaint Dashboard</span> <span class="menu-arrow"></span></a>
+                        <ul>
+                           <li><a href="{% url 'firereport-reporting' %}"><i class="fa fa-plus" aria-hidden="true"></i>  Add Complaint</a></li>
+                           <li><a href="{% url 'firereport-viewStatus' %}"><i class="fa fa-eye" aria-hidden="true"></i>  View Status</a></li>
+                           <li><a href="{% url 'firereport-dateReport' %}"> <i class="nav-icon fas fa-calendar-alt"></i> All Report</a></li>
+                        </ul>
+                     </li>
+                     <li class="submenu {% active_link 'dashboard-notification' 'active' %}">
+                        <a href="{% url 'dashboard-notification' %}"><i class="fas fa-bell"></i> <span> View Notification</span> </a>
+                     </li>
+                     <li>
+                        <a href="{% url 'firereport-changePassword' %}"><i class="fa fa-unlock" aria-hidden="true"></i> <span> Change Password</span> </a>
+                     </li>
+                     <li>
+                        <a href="{% url 'user-logout' %}"><i class="nav-icon fas fa-sign-out-alt" aria-hidden="true"></i> <span> Logout </span></a>
+                     </li>
+                  </ul>
+               </div>
+            </div>
+         </div>
+         {% else %}
+         {% include 'partials/nav.html' %}
+         {% if user.is_authenticated and user|has_portal_access:"customer" %}
+         <div class="sidebar" id="sidebar">
+            <div class="sidebar-inner slimscroll">
+               <div id="sidebar-menu" class="sidebar-menu">
+                  <ul>
+                     <li class="{% active_link 'dashboard-index' 'active' %}">
+                        <!--                         <a href="#"><i class="fa fa-home" aria-hidden="true"></i><span> <h4>Consumer Portal</h4></span> </a>-->
+                        <a href="{% url 'dashboard-index' %}"><i class="fa fa-home" style="font-size:20px" aria-hidden="true"></i><span style="font-size:20px;"><b>  Consumer Portal</b></span> </a>
+                     </li>
+                     <!--                      <li class="{% active_link 'dashboard-index' 'active' %}">-->
+                     <!--                        <a href="{% url 'dashboard-index' %}"><i class="fa fa-home" aria-hidden="true"></i> <span> Home</span> </a>-->
+                     <!--                     </li>-->
+                     <li class="submenu {% active_link 'dashboard-customers' 'active' %} {% active_link 'user-profile' 'active' %} {% active_link 'user-add' 'active' %} {% active_link 'user-edit_profile' 'active' %}">
+                        <a href="#"><i class="fa fa-user-circle" aria-hidden="true"></i> <span> My Profile </span> <span class="menu-arrow"></span></a>
+                        <ul>
+                           <li><a href="{% url 'user-profile' %}"><i class="fa fa-eye" aria-hidden="true"></i> View Profile </a></li>
+                           <li><a href="{% url 'user-edit_profile' %}"><i class="fa fa-pencil-alt" aria-hidden="true"></i> Update Profile</a></li>
+                        </ul>
+                     </li>
+                     <li class="submenu {% active_link 'detect_barcodes-display_product' 'active' %}">
+                        <a href="#"><i><img src="{% static 'images/images (5).png' %}" alt="Barcode Icon" width="22" height="22"></i>
+                        <span> Project Details</span> <span class="menu-arrow"></span></a>
+                        <ul>
+                           <li>
+                              <a href="{% url 'detect_barcodes-display_product' %}">
+                                 <i class="nav-icon fa fa-list-ul" aria-hidden="true"></i> Project Details
+                              </a>
+                           </li>
+                        </ul>
+                     </li>
+                     <li class="submenu {% active_link 'firereport-reporting' 'active' %} {% active_link 'firereport-viewStatus' 'active' %} {% active_link 'firereport-dateReport' 'active' %}">
+                        <a href="#"><i class="fa fa-exclamation-circle" aria-hidden="true"></i> <span> Complaint Dashboard</span> <span class="menu-arrow"></span></a>
+                        <ul>
+                           <li><a href="{% url 'firereport-reporting' %}"><i class="fa fa-plus" aria-hidden="true"></i>  Add Complaint</a></li>
+                           <li><a href="{% url 'firereport-viewStatus' %}"><i class="fa fa-eye" aria-hidden="true"></i>  View Status</a></li>
+                           <li><a href="{% url 'firereport-dateReport' %}"> <i class="nav-icon fas fa-calendar-alt"></i> All Report</a></li>
+                        </ul>
+                     </li>
+                     <li class="{% active_link 'dashboard-notification' 'active' %}">
+                        <a href="{% url 'dashboard-notification' %}"><i class="fas fa-bell"></i> <span> View Notification</span> </a>
+                     </li>
+                     <li class="{% active_link 'firereport-changePassword' 'active' %}">
+                        <a href="{% url 'firereport-changePassword' %}"><i class="fa fa-unlock-alt" aria-hidden="true"></i> <span> Change Password</span> </a>
+                     </li>
+                     <li class="{% active_link 'user-logout' 'active' %}">
+                        <a href="{% url 'user-logout' %}"><i class="nav-icon fas fa-sign-out-alt" aria-hidden="true"></i> <span> Logout </span></a>
+                     </li>
+                  </ul>
+               </div>
+            </div>
+         </div>
+         {% else %}
+         <div class="sidebar" id="sidebar">
+            <div class="sidebar-inner slimscroll">
+               <div id="sidebar-menu" class="sidebar-menu">
+                  <ul>
+                     <li class="submenu">
+                        <a href="#"><i class="fa fa-user-circle" aria-hidden="true"></i> <span> My Profile </span> <span class="menu-arrow"></span></a>
+                        <ul>
+                           <li><a href="{% url 'user-profile' %}"><i class="fa fa-eye" aria-hidden="true"></i> View Profile </a></li>
+                           <li><a href="{% url 'user-edit_profile' %}"><i class="fa fa-pencil-alt" aria-hidden="true"></i> Update Profile</a></li>
+                        </ul>
+                     </li>
+                     <li class="{% active_link 'user-logout' 'active' %}">
+                        <a href="{% url 'user-logout' %}"><i class="nav-icon fas fa-sign-out-alt" aria-hidden="true"></i> <span> Logout </span></a>
+                     </li>
+                  </ul>
+               </div>
+            </div>
+         </div>
+         {% endif %}
+         {% endif %}
+        {% endif %}
+         <div class="page-wrapper">
+            {% block content %}
+            {% endblock %}
+            <footer>
+               <p align="center">Copyright © 2023 DBSOLAR.</p>
+            </footer>
+         </div>
+      </div>
+      <!-- Page content -->
+      <main role="main" class="col-md-9 ml-sm-auto col-lg-10 px-md-4">
+         <div class="modal fade" id="solarPanelModal" tabindex="-1" role="dialog" aria-labelledby="solarPanelModalLabel" aria-hidden="true">
+            <div class="modal-dialog" role="document">
+               <div class="modal-content">
+                  <div class="modal-header">
+                     <h5 class="modal-title" id="solarPanelModalLabel"><i class="nav-icon fas fa-solar-panel"></i> Upload Solar Panel</h5>
+                     <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                     <span aria-hidden="true">&times;</span>
+                     </button>
+                  </div>
+                  <div class="modal-body text-center">
+                     <legend style="color: black;">Select upload option:</legend>
+                     <div class="row">
+                        <div class="col-md-4">
+                           <!--            <fieldset title="Click to upload by Barcode">-->
+                           <fieldset data-toggle="tooltip" data-placement="bottom" title="Click to upload Barcode Image">
+                              <button type="button" class="btn btn-primary" onclick="openBarcodePage()" style="background-image: url('{% static 'images/barcode (1).gif' %}'); background-size: cover; background-position: center; width: 120px; height: 120px; border: none; margin-bottom: 5px; position: relative;">
+                                 <div style="position: absolute; bottom: -30px; width: 80%; text-align: center; color: black;"><b>Upload Barcode Image</b></div>
+                              </button>
+                           </fieldset>
+                        </div>
+                        <div class="col-md-4">
+                           <fieldset data-toggle="tooltip" data-placement="bottom" title="Click to upload Serial No. Image">
+                              <button type="button" class="btn btn-primary" onclick="openSerialNoPage()" style="background-image: url('{% static 'images/barcode (2).gif' %}'); background-size: cover; background-position: center; width: 120px; height: 120px; border: none; margin-bottom: 5px; position: relative;">
+                                 <div style="position: absolute; bottom: -30px; width: 80%; text-align: center; color: black;"><b>Upload Serial No Image</b></div>
+                              </button>
+                           </fieldset>
+                        </div>
+                        <div class="col-md-4">
+                           <fieldset data-toggle="tooltip" data-placement="bottom" title="Click to upload Manual Serial No.">
+                              <button type="button" class="btn btn-primary" onclick="openmanualSerialNoPage()" style="background-image: url('{% static 'images/barcode (2).gif' %}'); background-size: cover; background-position: center; width: 120px; height: 120px; border: none; margin-bottom: 5px; position: relative;">
+                                 <div style="position: absolute; bottom: -30px; width: 100%; text-align: center; color: black;"><b>Upload Manually Serial No.</b></div>
+                              </button>
+                           </fieldset>
+                        </div>
+                     </div>
+                  </div>
+               </div>
+            </div>
+         </div>
+         </div>
+         <!-- Content goes here -->
+      </main>
+      <!-- Page content -->
+      <main role="main" class="col-md-9 ml-sm-auto col-lg-10 px-md-4">
+         <div class="modal fade" id="InverterModal" tabindex="-1" role="dialog" aria-labelledby="solarPanelModalLabel" aria-hidden="true">
+            <div class="modal-dialog" role="document">
+               <div class="modal-content">
+                  <div class="modal-header">
+                     <h5 class="modal-title" id="solarPanelModalLabel"><i><img src="{% static 'images/1.png' %}" alt="Barcode Icon" width="22" height="22"></i> Upload Inverter</h5>
+                     <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                     <span aria-hidden="true">&times;</span>
+                     </button>
+                  </div>
+                  <div class="modal-body text-center">
+                     <legend style="color: black;">Select upload option:</legend>
+                     <div class="row">
+                        <div class="col-md-4">
+                           <!--            <fieldset title="Click to upload by Barcode">-->
+                           <fieldset data-toggle="tooltip" data-placement="bottom" title="Click to upload Barcode Image">
+                              <button type="button" class="btn btn-primary" onclick="openInverterPage()" style="background-image: url('{% static 'images/barcode (1).gif' %}'); background-size: cover; background-position: center; width: 120px; height: 120px; border: none; margin-bottom: 5px; position: relative;">
+                                 <div style="position: absolute; bottom: -30px; width: 80%; text-align: center; color: black;"><b>Upload Barcode Image</b></div>
+                              </button>
+                           </fieldset>
+                        </div>
+                        <div class="col-md-4">
+                           <fieldset data-toggle="tooltip" data-placement="bottom" title="Click to upload Serial No.Image">
+                              <button type="button" class="btn btn-primary" onclick="openInverterNoPage()" style="background-image: url('{% static 'images/barcode (2).gif' %}'); background-size: cover; background-position: center; width: 120px; height: 120px; border: none; margin-bottom: 5px; position: relative;">
+                                 <div style="position: absolute; bottom: -30px; width: 80%; text-align: center; color: black;"><b>Upload Serial No Image</b></div>
+                              </button>
+                           </fieldset>
+                        </div>
+                        <div class="col-md-4">
+                           <fieldset data-toggle="tooltip" data-placement="bottom" title="Click to upload Manual Serial No.">
+                              <button type="button" class="btn btn-primary" onclick="openmanualInverterNoPage()" style="background-image: url('{% static 'images/barcode (2).gif' %}'); background-size: cover; background-position: center; width: 120px; height: 120px; border: none; margin-bottom: 5px; position: relative;">
+                                 <div style="position: absolute; bottom: -30px; width: 100%; text-align: center; color: black;"><b>Upload Manual Serial No</b></div>
+                              </button>
+                           </fieldset>
+                        </div>
+                     </div>
+                  </div>
+               </div>
+            </div>
+         </div>
+         </div>
+         <!-- Content goes here -->
+      </main>
+
+      <!-- Quotation Modal -->
+      <!--  <main role="main" class="col-md-9 ml-sm-auto col-lg-10 px-md-4">-->
+      <!--      <div class="modal fade" id="quotationModal" tabindex="-1" aria-labelledby="quotationModalLabel" aria-hidden="true">-->
+      <!--          <div class="modal-dialog">-->
+      <!--              <div class="modal-content">-->
+      <!--                  <div class="modal-header">-->
+      <!--                      <h5 class="modal-title" id="quotationModalLabel">Generate Quotation</h5>-->
+      <!--                      <button type="button" class="close" data-dismiss="modal" aria-label="Close">-->
+      <!--                          <span aria-hidden="true">&times;</span>-->
+      <!--                      </button>-->
+      <!--                  </div>-->
+      <!--                  <div class="modal-body">-->
+      <!--                      <form id="quotationForm" method="post">-->
+      <!--                          {% csrf_token %}-->
+      <!--                          <div class="form-group">-->
+      <!--                              <label for="consumer_type">Consumer Type</label>-->
+      <!--                              <select class="form-control" id="consumer_type" name="consumer_type" required>-->
+      <!--                                  <option value="">--- Select Consumer Type ---</option>-->
+      <!--                                  <option value="Residential">Residential</option>-->
+      <!--                                  <option value="Commercial">Commercial</option>-->
+      <!--                                  <option value="Industrial">Industrial</option>-->
+      <!--                                  <option value="Government">Government</option>-->
+      <!--                              </select>-->
+      <!--                          </div>-->
+      <!--                          <div class="form-group">-->
+      <!--                              <label for="consumer_no">Consumer No</label>-->
+      <!--                              <input type="text" class="form-control" id="consumer_no" name="consumer_no" required>-->
+      <!--                          </div>-->
+      <!--                          <div id="messageArea" style="display: none;"></div>-->
+      <!--                      </form>-->
+      <!--                  </div>-->
+      <!--                  <div class="modal-footer">-->
+      <!--                      <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>-->
+      <!--                      <button type="button" class="btn btn-primary" id="submitQuotation">Submit</button>-->
+      <!--                  </div>-->
+      <!--              </div>-->
+      <!--          </div>-->
+      <!--      </div>-->
+      <!--  </main>-->
+      <!--  <script>-->
+      <!--  <script>-->
+      <!--  $(document).ready(function() {-->
+      <!--      $('#submitQuotation').click(function() {-->
+      <!--          var consumerType = $('#consumer_type').val();-->
+      <!--          var consumerNo = $('#consumer_no').val();-->
+      <!--          var csrfToken = $('[name=csrfmiddlewaretoken]').val();-->
+
+      <!--          if (!consumerType || !consumerNo) {-->
+      <!--              alert('Please select consumer type and enter consumer number');-->
+      <!--              return;-->
+      <!--          }-->
+
+                // Check if consumer no already exists
+      <!--          $.ajax({-->
+      <!--              url: '{% url "quotation:check_consumer" %}',-->
+      <!--              type: 'POST',-->
+      <!--              data: {-->
+      <!--                  'consumer_type': consumerType,-->
+      <!--                  'consumer_no': consumerNo,-->
+      <!--                  'csrfmiddlewaretoken': csrfToken-->
+      <!--              },-->
+                    // In your base.html modal JavaScript, update the success function:
+      <!--              success: function(response) {-->
+      <!--                  if (response.exists) {-->
+      <!--                      if (response.multiple) {-->
+                                // Show all existing quotations for different consumer types
+      <!--                          var html = '<div class="alert alert-warning">';-->
+      <!--                          html += '<strong>Consumer Exists with Different Types!</strong><br>';-->
+      <!--                          html += '<ul>';-->
+      <!--                          response.quotations.forEach(function(quot) {-->
+      <!--                              html += '<li>';-->
+      <!--                              html += 'Type: ' + quot.consumer_type + ' | ';-->
+      <!--                              html += 'Quotation: ' + quot.quotation_no + ' | ';-->
+      <!--                              html += 'Amount: <b>' + quot.final_amount + '</b> | ';-->
+      <!--                              html += 'Date: ' + quot.date;-->
+      <!--                              html += '</li>';-->
+      <!--                          });-->
+      <!--                          html += '</ul></div>';-->
+      <!--                          $('#messageArea').html(html).show();-->
+      <!--                      } else {-->
+                                // Show existing quotation message
+      <!--                          $('#messageArea').html(-->
+      <!--                              '<div class="alert alert-warning">' +-->
+      <!--                              '<strong>Consumer Already Exists!</strong><br>' +-->
+      <!--                              'Consumer: ' + response.consumer_name + '<br>' +-->
+      <!--                              'Quotation No: ' + response.quotation_no + '<br>' +-->
+      <!--                              'Quotation Amount: <b>' + response.final_amount + '</b><br>' +-->
+      <!--                              'Date: ' + response.date +-->
+      <!--                              '</div>'-->
+      <!--                          ).show();-->
+      <!--                      }-->
+      <!--                  } else {-->
+                            // Redirect based on consumer type
+      <!--                      var redirectUrl = '';-->
+      <!--                      switch(consumerType) {-->
+      <!--                          case 'Residential':-->
+      <!--                              redirectUrl = '{% url "quotation:create_quotation" %}?consumer_type=Residential&consumer_no=' + consumerNo;-->
+      <!--                              break;-->
+      <!--                          case 'Commercial':-->
+      <!--                              redirectUrl = '{% url "quotation:create_quotation" %}?consumer_type=Commercial&consumer_no=' + consumerNo;-->
+      <!--                              break;-->
+      <!--                          case 'Industrial':-->
+      <!--                              redirectUrl = '{% url "quotation:create_quotation" %}?consumer_type=Industrial&consumer_no=' + consumerNo;-->
+      <!--                              break;-->
+      <!--                          case 'Government':-->
+      <!--                              redirectUrl = '{% url "quotation:create_quotation" %}?consumer_type=Government&consumer_no=' + consumerNo;-->
+      <!--                              break;-->
+      <!--                      }-->
+      <!--                      window.location.href = redirectUrl;-->
+      <!--                  }-->
+      <!--              },-->
+      <!--              error: function() {-->
+      <!--                  alert('Error checking consumer number');-->
+      <!--              }-->
+      <!--          });-->
+      <!--      });-->
+
+            // Reset modal when closed
+      <!--      $('#quotationModal').on('hidden.bs.modal', function() {-->
+      <!--          $('#consumer_type').val('');-->
+      <!--          $('#consumer_no').val('');-->
+      <!--          $('#messageArea').hide().html('');-->
+      <!--      });-->
+      <!--  });-->
+      <!--  </script>-->
+
+      <!-- Quotation Modal -->
+        <main role="main" class="col-md-9 ml-sm-auto col-lg-10 px-md-4">
+            <div class="modal fade" id="quotationModal" tabindex="-1" aria-labelledby="quotationModalLabel" aria-hidden="true">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="quotationModalLabel">Generate Quotation</h5>
+                            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                <span aria-hidden="true">&times;</span>
+                            </button>
+                        </div>
+                        <div class="modal-body">
+                            <form id="quotationForm" method="post">
+                                {% csrf_token %}
+                                <div class="form-group">
+                                    <label for="consumer_type">Consumer Type</label>
+                                    <select class="form-control" id="consumer_type" name="consumer_type" required>
+                                        <option value="">--- Select Consumer Type ---</option>
+                                        <option value="Residential">Residential</option>
+                                        <option value="Commercial">Commercial</option>
+                                        <option value="Industrial">Industrial</option>
+                                        <option value="Government">Government</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="consumer_no">Consumer No</label>
+                                    <input type="text" class="form-control" id="consumer_no" name="consumer_no" required>
+                                </div>
+                                <div id="messageArea" style="display: none;"></div>
+                            </form>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                            <button type="button" class="btn btn-primary" id="submitQuotation">Submit</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+      <main role="main" class="col-md-9 ml-sm-auto col-lg-10 px-md-4">
+         <div class="modal fade" id="myModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+            <div class="modal-dialog">
+               <div class="modal-content">
+                  <div class="modal-header">
+                     <h5 class="modal-title" id="exampleModalLabel">Select Consumer Type</h5>
+                     <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                  </div>
+                  <div class="modal-body">
+                     <form method="post">
+                        {% csrf_token %}
+                        <div class="form-group">
+                           <label for="department">Select Consumer Type</label>
+                           <select class="form-control" id="department" name="department" onchange="openPage(this.value)">
+                              <option value="">--- Select Consmer --- </option>
+                              <option value="{% url 'customer-Cust_emp' %}">Residential</option>
+                              <option value="{% url 'customer-Comm_Cust' %}">Commercial </option>
+                              <option value="{% url 'customer-Comp_Cust' %}">Industrial</option>
+                              <option value="{% url 'customer-Govt_Cust' %}">Government</option>
+                           </select>
+                        </div>
+                        <div class="modal-footer">
+                           <button type="submit" id="submitButton" class="btn btn-primary">Save</button>
+                        </div>
+                     </form>
+                  </div>
+                  <!-- jQuery -->
+                  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+                  <!-- Bootstrap JavaScript -->
+                  <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+                  <script>
+                     // Get the modal element
+                     var modal = document.getElementById("myModal");
+
+                     // Get the <span> element that closes the modal
+                     var closeBtn = document.getElementsByClassName("close")[0];
+
+                     // Get the select element
+                     var departmentSelect = document.getElementById("department");
+
+                     // Function to open the modal
+                     function openModal() {
+                       modal.style.display = "block";
+                     }
+
+                     // Function to close the modal
+                     function closeModal() {
+                       modal.style.display = "none";
+                     }
+
+
+
+                     // Event listener for close button click
+                     closeBtn.addEventListener("click", closeModal);
+
+                          // Event listener for select element change
+                           //  departmentSelect.addEventListener("change", function() {
+                           //  var selectedOption = departmentSelect.options[departmentSelect.selectedIndex];
+                           // var url = selectedOption.value;
+                           // window.open(url, "_self");
+                           // });
+
+                     // Event listener for submit button click
+                     var submitButton = document.getElementById("submitButton");
+                     submitButton.addEventListener("click", function(event) {
+                       event.preventDefault();
+                       var selectedOption = departmentSelect.options[departmentSelect.selectedIndex];
+                       var url = selectedOption.value;
+                       window.open(url, "_self");
+                     });
+                  </script>
+               </div>
+            </div>
+         </div>
+      </main>
+      </div>
+      </div>
+      <!-- Add Bootstrap JS and Popper.js scripts here -->
+      <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+      <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.2/dist/umd/popper.min.js"></script>
+      <!--<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>-->
+      <script>
+         function openBarcodePage() {
+             // Redirect to detect_barcode/detect_barcode.html
+             window.location.href = '/detect_barcodes/detect_barcodes/';
+         }
+
+         function openSerialNoPage() {
+             // Redirect to detect_barcode/serial_barcode.html
+             window.location.href = '/detect_barcodes/serial_barcode/';
+         }
+
+         function openmanualSerialNoPage() {
+             // Redirect to detect_barcode/manual_serial_barcode.html
+             window.location.href = '/detect_barcodes/manual_serial_barcode/';
+         }
+      </script>
+      <script>
+         function openInverterPage() {
+             // Redirect to detect_barcode/detect_barcode.html
+             window.location.href = '/detect_barcodes/detect_inverter/';
+         }
+
+         function openInverterNoPage() {
+             // Redirect to detect_barcode/serial_barcode.html
+             window.location.href = '/detect_barcodes/serial_barcode_inverter/';
+         }
+         function openmanualInverterNoPage() {
+             // Redirect to detect_barcode/manual_serial_barcode.html
+             window.location.href = '/detect_barcodes/manual_inverter_barcode/';
+         }
+      </script>
+      <script src="{% static 'assets/js/jquery-3.6.0.min.js' %}"></script>
+      <script src="{% static 'assets/js/popper.min.js' %}"></script>
+      <script src="{% static 'assets/plugins/bootstrap/js/bootstrap.min.js' %}"></script>
+      <script src="{% static 'assets/plugins/slimscroll/jquery.slimscroll.min.js' %}"></script>
+      <script src="{% static 'assets/plugins/apexchart/apexcharts.min.js' %}"></script>
+      <script src="{% static 'assets/plugins/apexchart/chart-data.js' %}"></script>
+      <script src="{% static 'assets/plugins/datatables/datatables.min.js' %}"></script>
+      <!--      <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>-->
+      <!--        <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>-->
+      <!--<script src="https://cdn.datatables.net/v/bs5/jq-3.7.0/jszip-3.10.1/dt-1.13.8/b-2.4.2/b-colvis-2.4.2/b-html5-2.4.2/b-print-2.4.2/datatables.min.js"></script>-->
+      <script src="{% static 'assets/js/script.js' %}"></script>
+      
+      <!-- Quotation Modal Script - Must be after jQuery loads -->
+      <script>
+      (function($) {
+          'use strict';
+          
+          // Use document ready to ensure DOM is loaded
+          $(document).ready(function() {
+              // Use event delegation to handle dynamically added modals
+              $(document).on('click', '#submitQuotation', function(e) {
+                  e.preventDefault();
+                  
+                  var consumerType = $('#consumer_type').val();
+                  var consumerNo = $('#consumer_no').val();
+                  var csrfToken = $('[name=csrfmiddlewaretoken]').val();
+
+                  if (!consumerType || !consumerNo) {
+                      alert('Please select consumer type and enter consumer number');
+                      return false;
+                  }
+
+                  // Disable button to prevent double submission
+                  var $submitBtn = $(this);
+                  $submitBtn.prop('disabled', true).text('Processing...');
+
+                  // Check if consumer no already exists
+                  $.ajax({
+                      url: '{% url "quotation:check_consumer" %}',
+                      type: 'POST',
+                      data: {
+                          'consumer_type': consumerType,
+                          'consumer_no': consumerNo,
+                          'csrfmiddlewaretoken': csrfToken
+                      },
+                      success: function(response) {
+                          // Re-enable button
+                          $submitBtn.prop('disabled', false).text('Submit');
+                          
+                          if (response.exists) {
+                              if (response.multiple) {
+                                  // Show all existing quotations for different consumer types
+                                  var html = '<div class="alert alert-warning">';
+                                  html += '<strong>Consumer Exists with Different Types!</strong><br>';
+                                  html += '<ul>';
+                                  response.quotations.forEach(function(quot) {
+                                      html += '<li>';
+                                      html += '<strong>Consumer Name:</strong> ' + quot.consumer_name + ' | ';
+                                      html += 'Type: ' + quot.consumer_type + ' | ';
+                                      html += 'Quotation: ' + quot.quotation_no + ' | ';
+                                      html += 'Amount: <b>' + quot.final_amount + '</b> | ';
+                                      html += 'Date: ' + quot.date;
+                                      html += '</li>';
+                                  });
+                                  html += '</ul></div>';
+                                  $('#messageArea').html(html).show();
+                              } else {
+                                  // Show existing quotation message
+                                  $('#messageArea').html(
+                                      '<div class="alert alert-warning">' +
+                                      '<strong>Consumer Already Exists!</strong><br>' +
+                                      'Consumer: ' + response.consumer_name + '<br>' +
+                                      'Quotation No: ' + response.quotation_no + '<br>' +
+                                      'Quotation Amount: <b>' + response.final_amount + '</b><br>' +
+                                      'Date: ' + response.date +
+                                      '</div>'
+                                  ).show();
+                              }
+                          } else {
+                              // Redirect based on consumer type
+                              var redirectUrl = '';
+                              switch(consumerType) {
+                                  case 'Residential':
+                                      redirectUrl = '{% url "quotation:create_quotation" %}?consumer_type=Residential&consumer_no=' + encodeURIComponent(consumerNo);
+                                      break;
+                                  case 'Commercial':
+                                      redirectUrl = '{% url "quotation:create_quotation" %}?consumer_type=Commercial&consumer_no=' + encodeURIComponent(consumerNo);
+                                      break;
+                                  case 'Industrial':
+                                      redirectUrl = '{% url "quotation:create_quotation" %}?consumer_type=Industrial&consumer_no=' + encodeURIComponent(consumerNo);
+                                      break;
+                                  case 'Government':
+                                      redirectUrl = '{% url "quotation:create_quotation" %}?consumer_type=Government&consumer_no=' + encodeURIComponent(consumerNo);
+                                      break;
+                              }
+                              if (redirectUrl) {
+                                  window.location.href = redirectUrl;
+                              }
+                          }
+                      },
+                      error: function(xhr, status, error) {
+                          // Re-enable button
+                          $submitBtn.prop('disabled', false).text('Submit');
+                          
+                          console.error('Error checking consumer number:', error);
+                          alert('Error checking consumer number. Please try again.');
+                      }
+                  });
+                  
+                  return false;
+              });
+
+              // Reset modal when closed
+              $(document).on('hidden.bs.modal', '#quotationModal', function() {
+                  $('#consumer_type').val('');
+                  $('#consumer_no').val('');
+                  $('#messageArea').hide().html('');
+                  $('#submitQuotation').prop('disabled', false).text('Submit');
+              });
+          });
+      })(jQuery || window.jQuery || $);
+      </script>
+   </body>
+</html>

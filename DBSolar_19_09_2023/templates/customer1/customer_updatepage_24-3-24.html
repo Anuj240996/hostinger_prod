@@ -1,0 +1,193 @@
+{% extends 'partials/base.html' %}
+{% block title %}Customer Page{% endblock %}
+{% load static %}
+{% block content %}
+<!--<div>-->
+<!--   <div class="card-body">-->
+      <div class="page-header">
+         <div class="row">
+            <div class="col-sm-12">
+               <h3 class="page-title text-capitalize">{{ customer.first_name }} {{ customer.last_name }} View Details</h3>
+               <ul class="breadcrumb" style="border-bottom : 2px solid orange">
+                  <li class="breadcrumb-item"><a href="customer/index.html">Dashboard</a></li>
+                  <li class="breadcrumb-item active">View  Details</li>
+               </ul>
+            </div>
+         </div>
+      </div>
+      {% if messages %}
+      {% for message in messages %}
+      <div class="alert alert-{{ message.tags }}">
+         {{ message }}
+      </div>
+      {% endfor %}
+      {% endif %}
+      <form method="post" enctype="multipart/form-data" action="/customer/view_all_cust/">
+         {% csrf_token %}
+         <table class="table table-bordered"  border="2" style="width: 100%">
+
+            <tr>
+               <th colspan="2">
+                  <h5 class="p-1 text-danger" style="border-bottom : 2px solid orange">Consumer Project Details</h5>
+               </th>
+            </tr>
+
+            <tr bgcolor="lightgray">
+              <th style="width: 35%; text-align: left; padding-left: 15px;">Customer Type</th>
+
+               <td class="text-capitalize" style="width: 50%; text-align: left; padding-left: 15px;"> {{ customer.Cust_type }} Consumer</td>
+            </tr>
+
+            <tr>
+               <th style="text-align: left; padding-left: 15px;"> Customer ID</th>
+               <td style="text-align: left; padding-left: 15px;">DB_Cust_{{ customer.Cust_id }}</td>
+            </tr>
+
+            {% if customer.first_name %}
+            <tr>
+               <th style="text-align: left; padding-left: 15px;"> Full Name</th>
+               <td class="text-capitalize" style="text-align: left; padding-left: 15px; color: blue;">{{ customer.first_name }} {{ customer.last_name }}</td>
+            </tr>
+
+            {% endif %}
+
+            <!-- <tr>-->
+            <!--   <th>&nbsp;&nbsp; Staff Name</th>-->
+               <!--<td class="text-capitalize">{{ user.first_name }} {{ user.last_name }}</td>-->
+
+            <!--</tr>-->
+
+            {% if customer.Comp_name %}
+            <tr>
+               <th style="text-align: left; padding-left: 15px;"> Consumer / Farm Name</th>
+               <td class="text-capitalize" style="text-align: left; padding-left: 15px; color: blue;"> {{ customer.Comp_name }}</td>
+            </tr>
+            {% endif %}
+
+            {% if customer.Gender %}
+            <tr>
+               <th style="text-align: left; padding-left: 15px;"> Gender</th>
+               <td class="text-capitalize" style="text-align: left; padding-left: 15px;">{{ customer.Gender }}</td>
+            </tr>
+            {% endif %}
+
+            <tr>
+               <th style="text-align: left; padding-left: 15px;"> PO Order No.</th>
+               <td class="text-capitalize" style="text-align: left; padding-left: 15px;">{{ customer.po_order }}</td>
+            </tr>
+
+            <tr>
+               <th style="text-align: left; padding-left: 15px;"> PO Date</th>
+               <td style="text-align: left; padding-left: 15px;">{{ customer.po_date | date:'d/m/Y' }}</td>
+            </tr>
+
+            <tr>
+               <th style="text-align: left; padding-left: 15px;"> Plant Capacity</th>
+               <td class="text-capitalize" style="text-align: left; padding-left: 15px;">{{ customer.Plant_Capacity }} Kw</td>
+            </tr>
+
+            <tr>
+               <th style="text-align: left; padding-left: 15px;"> Solar Panel Company Name</th>
+               <td class="text-capitalize" style="text-align: left; padding-left: 15px;">{{ customer.solar_comp }}</td>
+            </tr>
+
+            <tr>
+               <th style="text-align: left; padding-left: 15px;"> Inverter Comapny Name</th>
+               <td class="text-capitalize" style="text-align: left; padding-left: 15px;">{{ customer.UPSC }}</td>
+            </tr>
+
+            <tr>
+               <th style="text-align: left; padding-left: 15px;"> Total No.Of Solar Panel</th>
+               <td class="text-capitalize" style="text-align: left; padding-left: 15px;">{{ customer.qunt_solar }}</td>
+            </tr>
+
+            <tr>
+               <th style="text-align: left; padding-left: 15px;"> Total No.Of Inverter</th>
+               <td class="text-capitalize" style="text-align: left; padding-left: 15px;">{{ customer.qunt_inv }}</td>
+            </tr>
+            <tr>
+               <th style="text-align: left; padding-left: 15px;"> Inverter Software Company</th>
+               <td class="text-capitalize" style="text-align: left; padding-left: 15px;">{{ customer.Ups_Soft }}</td>
+            </tr>
+            <tr>
+               <th colspan="2">
+                  <h5 class="p-1 text-danger" style="border-bottom : 2px solid orange">Consumer Contact Details</h5>
+               </th>
+            </tr>
+            <tr>
+               <th style="text-align: left; padding-left: 15px;"> Consumer Phone No.</th>
+               <td style="text-align: left; padding-left: 15px;">{{ customer.phone }}</td>
+            </tr>
+            <tr>
+               <th style="text-align: left; padding-left: 15px;"> Consumer Email</th>
+               <td style="text-align: left; padding-left: 15px;">{{ customer.email }}</td>
+            </tr>
+            <tr>
+               <th style="text-align: left; padding-left: 15px;"> Address</th>
+               <td class="text-capitalize" style="text-align: left; padding-left: 15px;">{{ customer.Address }}</td>
+            </tr>
+            <tr>
+               <th style="text-align: left; padding-left: 15px;"> City</th>
+               <td class="text-capitalize" style="text-align: left; padding-left: 15px;">{{ customer.City }}</td>
+            </tr>
+            <tr>
+               <th style="text-align: left; padding-left: 15px;"> State</th>
+               <td class="text-capitalize" style="text-align: left; padding-left: 15px;">{{ customer.state }}</td>
+            </tr>
+            <tr>
+               <th style="text-align: left; padding-left: 15px;"> PinCode</th>
+               <td style="text-align: left; padding-left: 15px;">{{ customer.Pincode }}</td>
+            </tr>
+            <tr>
+               <th colspan="2">
+                  <h5 class="p-1 text-danger" style="border-bottom : 2px solid orange">Consumer Basic Information</h5>
+               </th>
+            </tr>
+            <tr>
+               <th style="text-align: left; padding-left: 15px;"> Biling Consumer No</th>
+               <td style="text-align: left; padding-left: 15px;">{{ customer.Consumer }}</td>
+            </tr>
+            <tr>
+               <th style="text-align: left; padding-left: 15px;"> Previous Load Sanction</th>
+               <td style="text-align: left; padding-left: 15px;">{{ customer.current_load }} Kw</td>
+            </tr>
+            <tr>
+               <th style="text-align: left; padding-left: 15px;"> Final Load Sanction</th>
+               <td style="text-align: left; padding-left: 15px;">{{ customer.loadsancution }} Kw</td>
+            </tr>
+            <tr>
+               <th colspan="2">
+                  <h5 class="p-1 text-danger" style="border-bottom : 2px solid orange"> Assigned Engineer Details</h5>
+               </th>
+            </tr>
+            <tr>
+               <th style="text-align: left; padding-left: 15px;"> Engineers ID</th>
+               <td style="text-align: left; padding-left: 15px;">DB_{{ customer.Engg_Assign.id }}</td>
+            </tr>
+            <tr>
+               <th style="text-align: left; padding-left: 15px;"> Engineers Name</th>
+               <td style="text-align: left; padding-left: 15px;">{{ customer.Engg_Assign.first_name }} {{ customer.Engg_Assign.last_name }}</td>
+            </tr>
+            <tr>
+               <th style="text-align: left; padding-left: 15px;"> Engineers Contact No.</th>
+               <td style="text-align: left; padding-left: 15px;">{{ customer.Engg_Assign.profile.workphone }}</td>
+            </tr>
+            <tr>
+               <th colspan="2">
+                  <h5 class="p-1 text-danger" style="border-bottom : 2px solid orange"> Consumer Record Filled By</h5>
+               </th>
+            </tr>
+            <tr>
+               <th style="text-align: left; padding-left: 15px;"> Employee Name</th>
+               <td class="text-capitalize" style="text-align: left; padding-left: 15px;">{{ customer.Emp_id.first_name }} {{ customer.Emp_id.last_name }}</td>
+            </tr>
+            <tr>
+               <th style="text-align: left; padding-left: 15px;"> Employee ID</th>
+               <td class="text-capitalize" style="text-align: left; padding-left: 15px;"> DB_{{ customer.Emp_id.id }}</td>
+            </tr>
+         </table>
+         <input type="submit" value="OK" class="btn btn-primary" data-href-template="customer/view_all_cust.html">
+      </form>
+   </div>
+</div>
+{% endblock %}

@@ -1,0 +1,207 @@
+{% extends 'partials/base.html' %}
+{% load static %}
+{% block content %}
+<style>
+    /* CSS for the zoomed image */
+    .zoom-image-container.zoomed-out {
+        display: none;
+    }
+
+    .zoom-image-container {
+        position: fixed;
+        z-index: 9999;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        max-width: 90%;
+        max-height: 90%;
+        background-color: #fff;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+        overflow: auto;
+        text-align: center;
+    }
+
+    .zoom-image {
+        max-width: 100%;
+        max-height: 100%;
+        margin: 0 auto;
+    }
+</style>
+<!--<div class="container-fluid">-->
+<!--    <div class="card-body">-->
+        <!-- left column -->
+        <div class="col-md-12">
+            <!-- general form elements -->
+            <div class="card card-primary">
+                <div class="card-header">
+                    <h3>Genrate Barcode Image</h3>
+                </div>
+
+
+        <form method="POST">
+            {% csrf_token %}
+            <div class="form-group row">
+                <div class="col-sm-9">
+                    <label for="company">Select a Consumer</label>
+                    <select class="form-control" id="company" name="company">
+                        <option value="">--Select Consumer--</option>
+                        {% for company in companies %}
+                        <option value="{{ company }}">{{ company }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-sm-3">
+                    <label for="btnGenerate">Click to generate</label>
+                    <button type="submit" id="btnGenerate" class="form-control btn btn-primary">Generate Barcode</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+ <div class="card-body">
+{% if selected_company %}
+<div class="row mt-5">
+    <h4>Generated Barcodes for Consumer: {{ selected_company }}</h4>
+    <div class="col-md-12 mx-auto">
+        <div class="table-responsive">
+<!--        <table class="table">-->
+<table id="yourDataTable" class="table table-bordered table-striped datatable table.sm" style="background-color: white">
+    <thead>
+        <tr align="center">
+            <th style="width: 100px;">Sr. No.</th>
+            <th>Barcode Data</th>
+            <th>Barcode Type</th>
+            <th>Original Barcode Image</th>
+            <th>New Barcode Image</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for barcode_data, barcode_type, barcode_image, barcode_path in barcodes %}
+        <tr align="center">
+            <td style="width: 100px;">{{ forloop.counter }}</td>
+            <td>{{ barcode_data }}</td>
+            <td>{{ barcode_type }}</td>
+            <td>
+                {% if barcode_image %}
+                    <img src="{{ barcode_image }}" alt="Barcode" class="zoomable-image" style="width: 150px; height: auto; cursor: zoom-in;">
+                {% else %}
+                    <span>No Image</span>
+                {% endif %}
+            </td>
+            <td>
+                {% if barcode_type %}
+                    {% if barcode_path %}
+                        <img src="{{ barcode_path }}" alt="Barcode" class="zoomable-image" style="width: 150px; height: auto; cursor: zoom-in;">
+                    {% else %}
+                        <span>No Image</span>
+                    {% endif %}
+                {% else %}
+                    {% if not barcode_image %}
+                        <span>No Barcode Image</span>
+                    {% else %}
+                        <img src="{{ barcode_image }}" alt="Barcode" class="zoomable-image" style="width: 150px; height: auto; cursor: zoom-in;">
+                    {% endif %}
+                {% endif %}
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+        </div>
+    </div>
+</div>
+        </div>
+    </div>
+<!--</div>-->
+
+{% endif %}
+
+<!-- Zoomed Image Container -->
+<div class="zoom-image-container zoomed-out">
+    <span class="close-zoom-image">&times;</span>
+    <img class="zoom-image">
+</div>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js" integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=" crossorigin="anonymous"></script>
+
+<script>
+    // Zoom-in and Zoom-out functionality
+    document.addEventListener("DOMContentLoaded", function () {
+        var zoomableImages = document.querySelectorAll(".zoomable-image");
+        var zoomImageContainer = document.querySelector(".zoom-image-container");
+        var zoomImage = document.querySelector(".zoom-image");
+        var closeZoomImage = document.querySelector(".close-zoom-image");
+
+        function showZoomedImage(src) {
+            zoomImage.src = src;
+            zoomImageContainer.classList.remove("zoomed-out");
+        }
+
+        function hideZoomedImage() {
+            zoomImageContainer.classList.add("zoomed-out");
+        }
+
+        function handleKeyDown(event) {
+            if (event.key === "Escape") {
+                hideZoomedImage();
+            }
+        }
+
+        zoomableImages.forEach(function (img) {
+            img.addEventListener("click", function () {
+                showZoomedImage(this.src);
+            });
+        });
+
+        zoomImageContainer.addEventListener("click", hideZoomedImage);
+        zoomImage.addEventListener("click", function (event) {
+            event.stopPropagation();
+        });
+        closeZoomImage.addEventListener("click", hideZoomedImage);
+        document.addEventListener("keydown", handleKeyDown);
+    });
+</script>
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    let dataTable = $('#yourDataTable').DataTable();
+    //let dataTable = $('#yourDataTable').DataTable({
+    //    scrollX: true,
+    //    fixedHeader: true,
+    //    columnDefs: [
+    //        { targets: 0, orderable: false } // '0' represents the index of the 'Sr No.' column (zero-based)
+    //    ]
+    //});
+
+    // Check if the DataTable is already initialized
+    if ($.fn.dataTable.isDataTable('#yourDataTable')) {
+        dataTable.destroy(); // If initialized, destroy the DataTable
+    }
+
+    dataTable = $('#yourDataTable').DataTable({
+        //scrollX: true, // Enable horizontal scrolling
+        //scrollY: '50vh', // Adjust the height as needed
+        scrollCollapse: true,
+        fixedHeader: {
+            header: true,
+            footer: false // Do not fix the footer to prevent it from moving
+        },
+        columnDefs: [
+           { targets: 0, orderable: false } // Disable sorting for the Sr No. column (zero-based)
+        ]
+
+    });
+
+     $('#yourDataTable tbody tr').each(function(index) {
+        $(this).find('td:first').text(index + 1);
+    });
+
+      dataTable.on('order.dt search.dt', function() {
+        dataTable.column(0, { search: 'applied', order: 'applied' }).nodes().each(function(cell, i) {
+            cell.innerHTML = i + 1;
+        });
+    }).draw();
+});
+</script>
+
+{% endblock %}

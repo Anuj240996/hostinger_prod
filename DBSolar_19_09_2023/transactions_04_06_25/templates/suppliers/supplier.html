@@ -1,0 +1,209 @@
+{% extends 'partials/base.html' %}
+{% load indian_filters %}
+{% block title %}
+  {{ supplier.name }}'s profile
+{% endblock %}
+{% block content %}
+<div class="content-section">
+    <div class="media">
+        <div class="media-body">
+            <br>
+            <h3 style="color:blue;" class="account-heading">&nbsp;{{ supplier.name }}</h3>
+            <a href="{% url 'edit-supplier' supplier.pk %}" class="btn btn-info" style="float: right;">Edit Details</a>
+            <div class="row">
+                <div class="col-md-6">
+                    <p class="fal">
+                        <b>Contact &nbsp; &nbsp;&nbsp; :</b> {{ supplier.phone }} <br>
+                        <b>Email Id &nbsp;&nbsp;&nbsp;&nbsp; :</b> {{ supplier.email }} <br>
+                        <b>GSTIN No &nbsp; :</b> {{ supplier.gstin }} <br>
+                    </p>
+                </div>
+                <div class="col-md-6">
+                    <p class="fal">
+                        <b>Address:</b> <br> {{ supplier.address|linebreaks }}
+                    </p>
+                </div>
+
+            </div>
+        </div>
+        &nbsp;&nbsp;
+         <fieldset style="background: lightblue;">
+                    <div class="mt-3">
+                        <label for="totalPurchasePrice"><b>Total Purchase Price</b></label>
+                        <div id="totalPurchasePrice" class="form-control font-weight-bold" style="font-size: 18px; background-color: lightblue; border: none;">₹ 0</div>
+                    </div>
+                </fieldset>
+        &nbsp;&nbsp;
+    </div>
+</div>
+<br>
+<!--<form method="GET">-->
+<!--     <div class="row mb-1 align-items-center">-->
+<!--                <div class="col-md-4 item1">-->
+<!--    <label for="start_date"><b>Start Date:</b></label>-->
+<!--    <input type="date" id="start_date" name="start_date" value="{{ start_date|date:'Y-m-d' }}">-->
+<!--                </div>-->
+<!--          <div class="col-md-4 item1">-->
+
+<!--    <label for="end_date"><b>End Date:</b></label>-->
+<!--    <input type="date" id="end_date" name="end_date" value="{{ end_date|date:'Y-m-d' }}">-->
+<!--          </div>-->
+<!--     <div class="col-md-4 d-flex align-items-center item1">-->
+<!--            <button type="submit" class="btn btn-primary mr-2">Filter</button>-->
+<!--            <a href="{% url 'supplier' supplier.name %}" class="btn btn-secondary ml-2">Clear Filter</a>-->
+<!--        </div>-->
+<!--     </div>-->
+<!--</form>-->
+<form method="GET">
+    <div class="row mb-1 align-items-end">
+        <div class="col-md-4">
+            <label for="start_date"><b>Start Date:</b></label>
+            <input type="date" id="start_date" name="start_date" class="form-control" value="{{ start_date|date:'Y-m-d' }}">
+        </div>
+
+        <div class="col-md-4">
+            <label for="end_date"><b>End Date:</b></label>
+            <input type="date" id="end_date" name="end_date" class="form-control" value="{{ end_date|date:'Y-m-d' }}">
+        </div>
+
+        <div class="col-md-4 d-flex align-items-end">
+            <button type="submit" class="btn btn-primary w-100 mr-2">Filter</button>
+            <a href="{% url 'supplier' supplier.name %}" class="btn btn-secondary w-100">Clear Filter</a>
+        </div>
+
+    </div>
+</form>
+
+<br>
+
+<!--&lt;!&ndash; Display the total purchase price dynamically &ndash;&gt;-->
+<!--<fieldset style="background: lightblue;">-->
+<!--    <div class="mt-3">-->
+<!--        <label for="totalPurchasePrice"><b>Total Purchase Price</b></label>-->
+<!--        <div id="totalPurchasePrice" class="form-control font-weight-bold"-->
+<!--             style="font-size: 18px; background-color: lightblue; border: none;">-->
+<!--            <b>₹ {{ total_purchase_price|indian_format_with_decimals }}</b>-->
+<!--        </div>-->
+<!--    </div>-->
+<!--</fieldset>-->
+
+<form>
+    <h1 align="center" style="color: blue;"> ** Purchase Bills Details **</h1>
+
+<!--&lt;!&ndash; Total Purchase Price Section &ndash;&gt;-->
+<!--<div class="mt-3">-->
+<!--    <label for="totalPurchasePrice"><b>Total Purchase Price:</b></label>-->
+<!--    <input type="text" id="totalPurchasePrice" class="form-control" readonly>-->
+<!--</div>-->
+    <table class="table table-css table-hover table-bordered">
+        <thead class="thead-dark align-middle">
+            <tr align="center">
+                <th width="10%">Sr No.</th>
+                <th width="10%">Bill No.</th>
+                <th width="30%">Stocks</th>
+                <th width="10%">Quantity</th>
+                <th width="20%">Total Purchased Price</th>
+                <th width="10%">Purchased Date</th>
+                <th width="10%">Actions</th>
+            </tr>
+        </thead>
+
+        <tbody>
+            {% for purchase in bills %}
+            <tr>
+                <td class="align-middle" align="center"> {{ forloop.counter }} </td>
+                <td class="align-middle" align="center"> <b>{{ purchase.billno }}</b> </td>
+                <td class="align-middle text-capitalize" style="white-space: nowrap;">
+                  {% for item in purchase.get_items_list %}
+                    {{ forloop.counter }}.<span style="padding-left: 10px;">{{ item.stock.name }}</span>{% if not forloop.last %} ,<br> {% endif %}
+                  {% endfor %}
+                </td>
+
+                <td class="align-middle" align="center">
+                    {% for item in purchase.get_items_list %}
+                        {{ item.quantity|indian_format }}
+                        <small style="color: #909494">{{ item.purchase.short_name }}</small>
+                        <br>
+                    {% endfor %}
+                </td>
+                <td class="align-middle total-price" align="center">
+                    <b><i class="fas fa-rupee-sign"></i> &nbsp;{{ purchase.get_final_amount|indian_format_with_decimals }}</b>
+                </td>
+                <td class="align-middle" align="center">{{ purchase.time.date }}</td>
+                <td class="align-middle" align="center">
+                    <div class="align-middle">
+                        <a href="{% url 'purchase-bill' purchase.billno %}" style="color: #FFBC53; font-size: 16px;">
+                            <i class="fas fa-eye"></i>
+                        </a>&nbsp;&nbsp;
+                        <a href="{% url 'delete-purchase' purchase.pk %}" style="color: red; font-size: 16px;">
+                            <i class="fas fa-trash"></i>
+                        </a>
+                    </div>
+                </td>
+            </tr>
+            {% endfor %}
+<!--            <tr>-->
+<!--              <td colspan="4" align="right">-->
+<!--                <b>Total Purchase Price:</b>-->
+<!--              </td>-->
+<!--              <td colspan="3">-->
+<!--                 <div id="totalPurchasePrice" class="form-control font-weight-bold" style="font-size: 18px; background-color: #f8f9fa; border: none;">₹ 0</div>-->
+<!--              </td>-->
+
+<!--            </tr>-->
+        </tbody>
+    </table>
+
+</form>
+
+
+<!-- Pagination -->
+<div class="align-middle">
+    {% if bills.has_other_pages %}
+        {% if bills.has_previous %}
+            <a class="btn btn-outline-info mb-4" href="?page=1">First</a>
+            <a class="btn btn-outline-info mb-4" href="?page={{ bills.previous_page_number }}">Previous</a>
+        {% endif %}
+
+        {% for num in bills.paginator.page_range %}
+            {% if bills.number == num %}
+                <a class="btn btn-info mb-4" href="?page={{ num }}">{{ num }}</a>
+            {% elif num > bills.number|add:'-3' and num < bills.number|add:'3' %}
+                <a class="btn btn-outline-info mb-4" href="?page={{ num }}">{{ num }}</a>
+            {% endif %}
+        {% endfor %}
+
+        {% if bills.has_next %}
+            <a class="btn btn-outline-info mb-4" href="?page={{ bills.next_page_number }}">Next</a>
+            <a class="btn btn-outline-info mb-4" href="?page={{ bills.paginator.num_pages }}">Last</a>
+        {% endif %}
+    {% endif %}
+</div>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        let total = 0;
+        document.querySelectorAll(".total-price b").forEach(function (element) {
+            let value = element.innerText.replace(/[^0-9.]/g, ""); // Remove currency symbols and commas
+            total += parseFloat(value) || 0;
+        });
+
+        document.getElementById("totalPurchasePrice").innerHTML = `<b>₹ ${formatIndianNumber(total.toFixed(2))}</b>`;
+    });
+
+    // Function to format numbers as per the Indian numbering system
+    function formatIndianNumber(amount) {
+        let parts = amount.toString().split(".");
+        let num = parts[0];
+        let decimal = parts.length > 1 ? "." + parts[1] : "";
+
+        let lastThree = num.substring(num.length - 3);
+        let otherNumbers = num.substring(0, num.length - 3);
+        if (otherNumbers !== "") {
+            lastThree = "," + lastThree;
+        }
+        let formattedNumber = otherNumbers.replace(/\B(?=(\d{2})+(?!\d))/g, ",") + lastThree;
+
+        return formattedNumber + decimal;
+    }
+</script>
+{% endblock content %}

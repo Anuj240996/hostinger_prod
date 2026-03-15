@@ -1,0 +1,518 @@
+{% extends 'partials/base.html' %}
+{% block title %}Consumer Page{% endblock %}
+{% load static %}
+{% load crispy_forms_tags %}
+{% block content %}
+<style>
+    /* Custom CSS for positioning the company symbol on top of the image */
+    .image-container {
+        position: relative;
+        display: inline-block; /* Ensures inline display */
+    }
+
+    .company-symbol-overlap {
+        position: absolute;
+        bottom: 0;
+        right: 3px;
+        max-width: 30%; /* Make the symbol resizable while maintaining aspect ratio */
+        height: 35%;
+        z-index: 1; /* Ensure the symbol is above the image */
+    }
+</style>
+
+<div class="card shadow m-1">
+   <div class="card-body">
+      <div class="page-header">
+         <div class="row">
+            <div class="col-sm-12">
+               <h3 class="page-title">Employee Details</h3>
+               <ul class="breadcrumb" style="border-bottom : 2px solid orange">
+                  <li class="breadcrumb-item"><a href="students.html">Dashboard</a></li>
+                  <li class="breadcrumb-item active">Employee Details</li>
+               </ul>
+            </div>
+         </div>
+      </div>
+      {% if messages %}
+       {% for message in messages %}
+        <div class="alert alert-{{ message.tags }}">
+                  {{ message }}
+        </div> {% endfor %}
+      {% endif %}
+      <form method="post" enctype="multipart/form-data">
+         {% csrf_token %}
+         <h5 class="p-2 text-danger" style="border-bottom : 2px solid orange">Company Details </h5>
+               <div class="card-body">
+                  <div class="row">
+                     <div class="col-md-12">
+                        <div class="about-info">
+                           <h4>About Me</h4>
+                           <div class="media mt-1">
+                              <ul>
+                                <li>
+                                    <!-- Add Company Symbol Overlapping the Image -->
+                                    <div class="image-container">
+                                        <img class="img-thumbnail ml-2" height="550px" src="{{ employee.image.url }}" class="card-img-top" height="200px" alt="profile-image">
+                                        <img src="{% static '/images/dblogosmall.png' %}" alt="Company Symbol" class="company-symbol-overlap">
+                                    </div>
+                                    <!-- End Company Symbol -->
+                                </li>
+                                <li>
+                                    <small class="text-muted">Currently:  <a href="{{ employee.image.url }}">{{ employee.image }}</a></small>
+                                </li>
+
+
+                                 <li>
+                                    <span>
+                                    Change:<input type="file" name="image" accept="image/*" class="clearablefileinput form-control-file" id="id_image">
+                                    </span>
+                                 </li>
+                              </ul>
+                              <div class="media-body ml-7">
+<!--                              <ul class="ml-5">-->
+                                  <ul>
+                                 <li>
+                                    </b><span class="title-span"><b>Employee ID</b></span>
+                                    <span> : </span>
+                                    <span class="info-span ml-3">  DB/{{ user1.id }}</span>
+                                 </li>
+                                 <li>
+                                    <span class="title-span"><b>Username </b> </span>
+                                    <span> : </span>
+                                    <span class="info-span ml-3">{{ user1.username }}</span>
+                                 </li>
+                                 <li>
+                                    <span class="title-span"><b>Full Name </b> </span>
+                                    <span> : </span>
+                                    <span class="info-span ml-3 text-capitalize">{{ user1.first_name }} {{ user1.last_name }}</span>
+                                 </li>
+                                 <li>
+                                    <span class="title-span"><b>Mobile</b></span>
+                                    <span> : </span>
+                                    {% if employee.workphone %}
+                                        <span class="info-span ml-3">{{ employee.workphone }}</span>
+                                    {% else %}
+                                        <span class="info-span ml-3"></span>
+                                    {% endif %}
+                                </li>
+
+                                 <li>
+                                    <span class="title-span"><b>Email</b>  </span>
+                                    <span> : </span>
+                                    <span class="info-span ml-3">{{ user1.email }}</span>
+                                 </li>
+
+                                 <li>
+                                    <span class="title-span"><b>Designation</b></span>
+                                    <span> : </span>
+                                    {% if employee.designation %}
+                                        <span class="info-span ml-3 text-capitalize">{{ employee.designation }} - {{ employee.department|default:"None" }}</span>
+                                    {% else %}
+                                        <span class="info-span ml-3 text-capitalize"></span>
+                                    {% endif %}
+                                </li>
+
+
+                                 <li>
+                                    <span class="title-span"><b>Date Of Birth</b> </span>
+                                    <span> : </span>
+                                    <span class="info-span ml-3">{{ employee.DOB|date:"j F Y" }}</span>
+                                 </li>
+                                 <li>
+                                    <span class="title-span"><b>Date Of Joining</b> </span>
+                                    <span> : </span>
+                                    <span class="info-span ml-3">{{ user1.date_joined|date:"j F Y" }}</span>
+                                 </li>
+                              </ul>
+                              </div>
+                           </div>
+                        </div>
+                     </div>
+                  </div>
+
+                  <h5 class="p-2 text-danger" style="border-bottom : 2px solid orange">Work Information </h5>
+
+                 {% comment %}
+                  {% endcomment %}
+                  <div class="form-row">
+
+                     <div class="col-md-3">
+
+                           <label><b> Current Department :</b></label>
+                           <input type="text" name="dept1" disabled class="form-control text-capitalize" placeholder="Enter Department" value="{% if employee.department %}{{ employee.department }}{% else %}{{ placeholder }}{% endif %}">
+                     </div>
+                     <div class="col-md-3">
+
+                           <label><b> Change Department :</b></label><br>
+                           <select id="dept" name="dept" style="width: 210px; height: 40px; font-size: 16px;">
+                              <option value="" selected disabled class="text-center">-- Select Department --</option>
+                            {% for department in departments %}
+                                <option value="{{ department.0 }}">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{{ department.1 }}</option>
+                            {% endfor %}
+                           </select>
+
+
+                     </div>
+                     <div class="col-md-3">
+
+                           <label> <b>Current Designation :</b></label>
+                           <input type="text" name="desig1" disabled class="form-control text-capitalize" placeholder="Enter Designation" value="{% if employee.designation %}{{ employee.designation }}{% else %}{{ placeholder }}{% endif %}">
+
+                     </div>
+                     <div class="col-md-3">
+
+                           <label><b> Change Designation :</b></label><br>
+                           <select id="desig" name="desig" style="width: 210px; height: 40px; font-size: 16px;">
+                              <option value="" selected disabled class="text-center">--Select Designation--</option>
+                            {% for designation in designations %}
+                                <option value="{{ designation.0 }}">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{{ designation.1 }}</option>
+                            {% endfor %}
+                           </select>
+
+
+
+                    </div>
+                     <div class="col-sm-6">
+                        <div class="form-group">
+                           <label> <b>Date Of Joining : </b>   [{{ user1.date_joined|date:'d/m/Y' }}]</label>
+                           <input type="date" name="jod" class="form-control" placeholder="enter Date of Joining" value="{{ user1.date_joined }}">
+                        </div>
+                     </div>
+                     <div class="col-sm-6">
+                        <div class="form-group">
+                           <label> <b>Work Email :</b></label>
+<!--                           <input type="email" name="email" class="form-control" value="{{ user1.email }}">-->
+                            <input id="email" type="email" name="email" class="form-control" placeholder="Email" onfocus="txt_onfocus(this)" onchange="txt_onchange(this)" onblur="validateEmail(this)" data-error-id="email-error-employee" value="{{ user1.email }}"  required/>
+<!--                            <div class="error-message" id="email-error"></div>-->
+                            <div class="error-message" id="email-error-employee"></div>
+                        </div>
+                     </div>
+                     <div class="col-sm-6">
+                        <div class="form-group">
+                           <label><b> Phone No :</b></label>
+<!--                           <input type="text" name="ph" class="form-control" placeholder="Enter Phone No" value="{{ employee.workphone }}">-->
+                              <!-- Add a data attribute to each phone input to store the corresponding error message ID -->
+                                <input id="phone-employee" type="tel" name="ph" class="text-capitalize form-control" minlength="10" maxlength="10" placeholder="Enter Phone No" onfocus="txt_onfocus(this)" onchange="txt_onchange(this)" onblur="validatePhone(this)" data-error-id="phone-error-employee" value="{% if employee.workphone %}{{ employee.workphone }}{% else %}{{ placeholder }}{% endif %}" required/>
+                                <div class="error-message" id="phone-error-employee"></div>
+                        </div>
+                     </div>
+
+                     <div class="col-sm-12">
+                        <h5 class="p-2 text-danger" style="border-bottom : 2px solid orange">Personal Details </h5>
+                     </div>
+
+                     <div class="col-sm-6">
+                        <div class="form-group">
+                           <label> <b> First Name : </b></label>
+                           <input type="text" name="firstname" class="form-control text-capitalize" onfocus="txt_onfocus(this)" onchange="txt_onchange(this)" onblur="validateName(this)" data-error-id="firstname-error" minlength="2" maxlength="20" value="{% if user1.first_name %}{{ user1.first_name }}{% else %}{{ placeholder }}{% endif %}">
+                             <div class="error-message" id="firstname-error"></div>
+                        </div>
+                     </div>
+                     <div class="col-sm-6">
+                        <div class="form-group">
+                           <label> <b>Last Name :</b></label>
+                           <input type="text" name="lastname" class="form-control text-capitalize" onchange="validateName(this)"  onfocus="txt_onfocus(this)" onchange="txt_onchange(this)" onblur="validateName(this)" data-error-id="lastname-error" minlength="2" maxlength="20" value="{% if user1.last_name %}{{ user1.last_name }}{% else %}{{ placeholder }}{% endif %}">
+                             <div class="error-message" id="lastname-error"></div>
+                        </div>
+                     </div>
+
+
+
+                     <div class="col-sm-3">
+                        <div class="form-group">
+                           <label><b> Current Blood Group:</b></label>
+                           <input type="text" disabled name="bg1" class="form-control" placeholder="Enter Blood Group" value="{% if employee.bg %}{{ employee.bg }}{% else %}{{ placeholder }}{% endif %}">
+                        </div>
+
+                     </div>
+                     <div class="col-sm-3">
+                        <div class="form-group">
+                           <label><b> Change Blood Group :</b></label><br>
+                           <select id="bg" name="bg" style="width: 210px; height: 40px; font-size: 16px;">
+                              <option value="" selected disabled class="text-center">--- Select Blood Group ---</option>
+                            {% for bg in bgs %}
+                                <option value="{{ bg.0 }}" >&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{{ bg.1 }}</option>
+                            {% endfor %}
+                           </select>
+                        </div>
+
+                     </div>
+                     <div class="col-sm-6">
+                        <div class="form-group">
+                           <label> <b>Date Of Birth : </b>   [{{ employee.DOB|date:'d/m/Y' }}]</label>
+                           <input type="date" name="DOB" class="form-control text-capitalize" pattern="\d{2}/\d{2}/\d{4}"  placeholder="enter Date of Birth" value="{{ employee.DOB }}">
+<!--                           <input type="date" name="DOB" class="form-control text-capitalize" placeholder="Enter Date of Birth" value="{{ employee.DOB }}" oninput="validateDate(this)">-->
+
+
+                        </div>
+                     </div>
+
+                     <div class="col-sm-6">
+                        <div class="form-group">
+                           <label> <b>Address :</b></label>
+                           <input type="text" name="address" class="form-control text-capitalize" placeholder="Enter Address" value="{% if employee.address %}{{ employee.address }}{% else %}{{ placeholder }}{% endif %}">
+                        </div>
+                     </div>
+                     <div class="col-sm-6">
+                        <div class="form-group">
+                           <label> <b>City :</b></label>
+                           <input type="text" name="city" class="form-control text-capitalize"  onfocus="txt_onfocus(this)" onchange="txt_onchange(this)" onblur="validateName(this)" data-error-id="city-error"  minlength="2" maxlength="25" placeholder="Enter City" value="{% if employee.city %}{{ employee.city }}{% else %}{{ placeholder }}{% endif %}">
+                           <div class="error-message" id="city-error"></div>
+
+                        </div>
+                     </div>
+                     <div class="col-sm-6">
+                        <div class="form-group">
+                           <label> <b>Taluka :</b></label>
+                           <input type="text" name="taluka" class="form-control text-capitalize"  onfocus="txt_onfocus(this)" onchange="txt_onchange(this)" onblur="validateName(this)" data-error-id="taluka-error"  minlength="2" maxlength="20" placeholder="Enter Taluka" value="{% if employee.taluka %}{{ employee.taluka }}{% else %}{{ placeholder }}{% endif %}">
+                            <div class="error-message" id="taluka-error"></div>
+                        </div>
+                     </div>
+                     <div class="col-sm-6">
+                        <div class="form-group">
+                           <label> <b>District :</b></label>
+                           <input type="text" name="district" class="form-control text-capitalize"  onfocus="txt_onfocus(this)" onchange="txt_onchange(this)" onblur="validateName(this)" data-error-id="district-error"  minlength="2" maxlength="25" placeholder="Enter District" value="{% if employee.district %}{{ employee.district }}{% else %}{{ placeholder }}{% endif %}">
+                           <div class="error-message" id="district-error"></div>
+                        </div>
+                     </div>
+
+                     <div class="col-sm-12">
+                        <h5 class="p-2 text-danger" style="border-bottom : 2px solid orange">Educational Details </h5>
+                     </div>
+                     <div class="col-sm-6">
+                        <div class="form-group">
+                           <label><b> PG Education Name :</b></label>
+                           <input type="text" name="pg" minlength="2" maxlength="20" class="form-control"  onfocus="txt_onfocus(this)" onchange="txt_onchange(this)" onblur="validateName(this)" data-error-id="pg-error"  placeholder="Enter PG Education Name" value="{% if employee.pg %}{{ employee.pg }}{% else %}{{ placeholder }}{% endif %}">
+                           <div class="error-message" id="pg-error"></div>
+                        </div>
+                     </div>
+                     <div class="col-sm-6">
+                        <div class="form-group">
+                           <label> <b>Institution : </b> </label>
+                           <input type="text" name="institution" class="form-control" minlength="2" maxlength="25"  onfocus="txt_onfocus(this)" onchange="txt_onchange(this)" onblur="validateName(this)" data-error-id="institution-error"  placeholder="Enter Institution" value="{% if employee.institution %}{{ employee.institution }}{% else %}{{ placeholder }}{% endif %}">
+                           <div class="error-message" id="institution-error"></div>
+                        </div>
+                     </div>
+                     <div class="col-sm-6">
+                        <div class="form-group">
+                           <label> <b>Year Of Passing : </b>   [{{ employee.yop|date:'d/m/Y' }}]</label>
+                           <input type="date" name="yop" class="form-control text-capitalize" placeholder="Enter Year Of Passing" value="{{ employee.yop }}">
+                        </div>
+                     </div>
+                     <div class="col-sm-6">
+                        <div class="form-group">
+                           <label> <b>Specialization :</b></label>
+                           <input type="text" name="specili" class="form-control text-capitalize" minlength="2" maxlength="25"  onfocus="txt_onfocus(this)" onchange="txt_onchange(this)" onblur="validateName(this)" data-error-id="specili-error"  placeholder="Enter Specilization" value="{% if employee.specili %}{{ employee.specili }}{% else %}{{ placeholder }}{% endif %}">
+                           <div class="error-message" id="specili-error"></div>
+                        </div>
+                     </div>
+
+                     <div class="col-sm-12">
+                        <h5 class="p-2 text-danger" style="border-bottom : 2px solid orange">Emergency Contact Details </h5>
+                     </div>
+                     <div class="col-sm-6">
+                        <div class="form-group">
+                           <label><b> Full Name :</b></label>
+                           <input type="text" name="name" minlength="2" maxlength="35"  onfocus="txt_onfocus(this)" onchange="txt_onchange(this)" onblur="validateName(this)" data-error-id="name-error"  class="form-control" placeholder="Enter Full Name" value="{% if employee.name %}{{ employee.name }}{% else %}{{ placeholder }}{% endif %}">
+                            <div class="error-message" id="name-error"></div>
+                        </div>
+                     </div>
+                     <div class="col-sm-6">
+                        <div class="form-group">
+                           <label> <b>Mobile No </b></label>
+<!--                           <input type="tel" name="phone" id="phone" class="form-control" placeholder="Enter Mobile No" value="{{ employee.phone }}" minlength="10" maxlength="10" placeholder="Enter Phone No" onfocus="txt_onfocus(this)" onchange="txt_onchange(this)" onblur="validatePhone(this)" required/>-->
+                          <input id="phone-emergency" type="tel" name="phone" class="text-capitalize form-control" minlength="10" maxlength="10" placeholder="Enter Phone No" onfocus="txt_onfocus(this)" onchange="txt_onchange(this)" onblur="validatePhone(this)" data-error-id="phone-error-emergency" value="{% if employee.phone %}{{ employee.phone }}{% else %}{{ placeholder }}{% endif %}" required/>
+                            <div class="error-message" id="phone-error-emergency"></div>
+                        </div>
+                     </div>
+                     <div class="col-sm-6">
+                        <div class="form-group">
+                           <label> <b>Email :</b></label>
+<!--                           <input type="email" name="emremail" class="form-control" placeholder="enter Email" value="{{ employee.email }}">-->
+                            <input id="email" type="email" name="emremail" class="form-control" placeholder="Enter Email" onfocus="txt_onfocus(this)" onchange="txt_onchange(this)" onblur="validateEmail(this)" data-error-id="email-error-emergency" value="{% if employee.email %}{{ employee.email }}{% else %}{{ placeholder }}{% endif %}" required/>
+<!--                <div class="error-message" id="email-error"></div>-->
+                            <div class="error-message" id="email-error-emergency"></div>
+                        </div>
+                     </div>
+                     <div class="col-sm-6">
+                        <div class="form-group">
+                           <label> <b>Address :</b></label>
+                           <input type="text" name="emraddress" class="form-control text-capitalize" placeholder="enter Address" value="{% if employee.emraddress %}{{ employee.emraddress }}{% else %}{{ placeholder }}{% endif %}">
+                        </div>
+                     </div>
+
+
+
+                  </div>
+            <input type="submit" value="SUBMIT" class="btn btn-primary">
+         </div>
+      </form>
+   </div>
+</div>
+
+{% if error == "no" %}
+<script>
+   alert(' {{user1.first_name }} {{user1.last_name }} Profile Update Successful');
+   window.location = ('{% url 'user-profile-updatepage' user1.id %}')
+</script>
+{% endif %}
+{% if error == "yes" %}
+<script>
+   alert('Something went wrong , Try Again...');
+</script>
+{% endif %}
+
+<style>
+    .error-message {
+        color: red; /* Set error text color to red */
+    }
+
+    .error-border {
+        border: 1px solid red !important; /* Set border color to red for input fields with errors */
+    }
+</style>
+<script>
+
+ function validateName(input) {
+    const name = input.value.trim();
+    const errorId = input.getAttribute('data-error-id');
+    const nameError = document.getElementById(errorId);
+
+      if (!/^[a-zA-Z\s().]{2,20}$/.test(name)) {
+        nameError.textContent = 'Please enter only alphabets between 2 and 20 characters.';
+        input.classList.add('error-border');
+        input.focus();
+    } else {
+        nameError.textContent = '';
+        input.classList.remove('error-border');
+    }
+  }
+
+  function validatePincode(input) {
+    const pincode = input.value;
+    const pincodeError = document.getElementById('pincode-error');
+
+    if (pincode.length !== 6 || isNaN(pincode)) {
+        if (!/^\d{0,6}$/.test(pincode)) {
+            // Check if input contains non-numeric characters
+            pincodeError.textContent = 'Please enter a 6-digit numeric pincode.';
+            input.classList.add('error-border'); // Add error border class
+            input.focus();
+            input.value = pincode.replace(/[^0-9]/g, '').slice(0, 6); // Remove non-numeric characters
+        } else {
+            pincodeError.textContent = 'Please enter a 6-digit numeric pincode.';
+            input.classList.add('error-border'); // Add error border class
+            input.focus();
+        }
+    } else {
+        pincodeError.textContent = ''; // Clear error message
+        input.classList.remove('error-border'); // Remove error border class
+    }
+}
+
+//function validatePhone(input) {
+  //  const phone = input.value;
+  //  const phoneError = document.getElementById('phone-error');
+//
+//    if (phone.length !== 10 || isNaN(phone)) {
+//        if (!/^\d{0,10}$/.test(phone)) {
+//            // Check if input contains non-numeric characters
+//            phoneError.textContent = 'Please enter a 10-digit numeric phone number.';
+//            input.classList.add('error-border'); // Add error border class
+//            input.focus();
+//            input.value = phone.replace(/[^0-9]/g, '').slice(0, 10); // Remove non-numeric characters
+//        } else {
+//            phoneError.textContent = 'Please enter a 10-digit numeric phone number.';
+//            input.classList.add('error-border'); // Add error border class
+//            input.focus();
+//        }
+//    } else {
+//        phoneError.textContent = ''; // Clear error message
+//        input.classList.remove('error-border'); // Remove error border class
+//    }
+//}
+
+function validatePhone(input) {
+    const phone = input.value;
+    const errorId = input.getAttribute('data-error-id');
+    const phoneError = document.getElementById(errorId);
+
+    if (phone.length !== 10 || isNaN(phone)) {
+        if (!/^\d{0,10}$/.test(phone)) {
+            // Check if input contains non-numeric characters
+            phoneError.textContent = 'Please enter a 10-digit numeric phone number.';
+            input.classList.add('error-border'); // Add error border class
+            input.focus();
+            input.value = phone.replace(/[^0-9]/g, '').slice(0, 10); // Remove non-numeric characters
+        } else {
+            phoneError.textContent = 'Please enter a 10-digit numeric phone number.';
+            input.classList.add('error-border'); // Add error border class
+            input.focus();
+        }
+    } else {
+        phoneError.textContent = ''; // Clear error message
+        input.classList.remove('error-border'); // Remove error border class
+    }
+}
+
+function validateEmail(input) {
+        const email = input.value;
+        const errorId = input.getAttribute('data-error-id');
+        const emailError = document.getElementById(errorId);
+
+        // Simple email validation using a regular expression
+        const emailPattern = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$/;
+
+        if (!emailPattern.test(email)) {
+            emailError.textContent = 'Please enter a valid email address.';
+            input.classList.add('error-border');
+            input.focus();
+        } else {
+            emailError.textContent = '';
+            input.classList.remove('error-border');
+        }
+    }
+
+
+function validateYearLength(input) {
+    // Extract the entered year
+    var enteredYear = input.value.substring(0, 4);
+
+    // Check if the entered year is not a 4-digit number
+    if (isNaN(enteredYear) || enteredYear.length !== 4) {
+        if (input.value.length >= 5) {
+            alert("Please enter a valid 4-digit year.");
+           // input.value = enteredYear; // Set the input field to the valid 4-digit year
+        }
+    }
+}
+
+</script>
+
+<script>
+    function validateForm() {
+    const pincodeInput = document.getElementById('Pincode');
+    const phoneInput = document.getElementById('phone');
+
+
+    // Run pincode and phone validation
+    validatePincode(pincodeInput);
+    validatePhone(phoneInput);
+
+    // Check if there are any error messages
+    const pincodeError = document.getElementById('pincode-error');
+    const phoneError = document.getElementById('phone-error');
+
+    if (pincodeError.textContent || phoneError.textContent) {
+        // Return false to prevent form submission if there are errors
+        return false;
+    }
+
+
+    // Form is valid, allow submission
+    return true;
+}
+
+</script>
+
+{% endblock %}

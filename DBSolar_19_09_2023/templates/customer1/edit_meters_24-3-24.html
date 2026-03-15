@@ -1,0 +1,233 @@
+{% extends 'partials/base.html' %}
+{% block title %}Order Page{% endblock %}
+{% load static %}
+{% block content %}
+<!--<form method="POST">-->
+<!--    {% csrf_token %}-->
+<!--    <label for="comp_name">Select Company Name:</label>-->
+<!--    <select name="comp_name" id="comp_name">-->
+<!--        <option value="">Select</option>-->
+<!--        {% for comp_name in comp_names %}-->
+<!--            <option value="{{ comp_name }}">{{ comp_name }}</option>-->
+<!--        {% endfor %}-->
+<!--    </select>-->
+<!--    <button type="submit">Fetch Data</button>-->
+<!--    <br><br>-->
+
+<!--    {% if selected_comp_name %}-->
+<!--        <h3>Meters</h3>-->
+<!--        <table>-->
+<!--            <thead>-->
+<!--                <tr>-->
+<!--                    <th>Serial No</th>-->
+<!--                    <th>ID</th>-->
+<!--                    <th>Make</th>-->
+<!--                    <th>Capacity</th>-->
+<!--                    <th>Serial Number</th>-->
+<!--                    <th>Delete</th>-->
+<!--                </tr>-->
+<!--            </thead>-->
+<!--            <tbody>-->
+<!--                {% for record in meters_records %}-->
+<!--                    <tr>-->
+<!--                        <td>{{ forloop.counter }}</td>-->
+<!--                        <td>{{ record.id }}</td>-->
+<!--                        <td>{{ record.make }}</td>-->
+<!--                        <td>{{ record.capacity }}</td>-->
+<!--                        <td>{{ record.serial_no }}</td>-->
+<!--                        <td><input type="checkbox" name="meters_to_delete" value="{{ record.id }}"></td>-->
+<!--                    </tr>-->
+<!--                {% endfor %}-->
+<!--            </tbody>-->
+<!--        </table>-->
+
+<!--         <button type="submit" name="action" value="delete">Delete Selected Records</button>-->
+<!--    {% endif %}-->
+<!--</form>-->
+
+<!--    <div class="form-group">-->
+<!--        <label for="comp_name">Select Company Name:</label>-->
+<!--        <select name="comp_name" id="comp_name">-->
+<!--            <option value="">Select</option>-->
+<!--            {% for comp_name in comp_names %}-->
+<!--                <option value="{{ comp_name }}" {% if comp_name == selected_comp_name %} selected {% endif %}>{{ comp_name }}</option>-->
+<!--            {% endfor %}-->
+<!--        </select>-->
+<!--    </div>-->
+<!--    <div class="form-group">-->
+<!--        <button type="submit">Fetch Data</button>-->
+<!--    </div>-->
+
+{% if messages %}
+    <ul class="messages">
+        {% for message in messages %}
+            {% if message.tags %} <script> alert("{{ message }}") </script> {% endif %}>{% endfor %}
+    </ul>
+{% endif %}
+
+<form method="POST">
+    {% csrf_token %}
+    <div class="form-group row">
+        <div class="col-sm-10">
+            <label for="comp_name">Select Company Name:</label>
+            <select class="form-control" name="comp_name" id="comp_name">
+                <option value=""></option>
+                {% for comp_name in comp_names %}
+                    <option value="{{ comp_name }}" {% if comp_name == selected_comp_name %} selected {% endif %}>{{ comp_name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-sm-2">
+            <br>
+            <button type="submit"><i class="nav-icon fa fa-eye" aria-hidden="true"></i>   Preview</button>
+        </div>
+    </div>
+
+    {% if selected_comp_name %}
+        {% if meters_records %}
+            <fieldset>
+                <legend>Meters</legend>
+                <table id="meters-table" class="highlight-on-check">
+                    <!-- Meter Table Header -->
+                    <thead>
+                        <tr>
+                            <th style="width: 200px; text-align: center">Serial No</th>
+                            <th style="width: 400px; text-align: center">Make</th>
+                            <th style="width: 300px; text-align: center">Capacity</th>
+                            <th style="width: 400px; text-align: center">Serial Number</th>
+                            <th style="width: 200px; text-align: center">Delete</th>
+                        </tr>
+                    </thead>
+                    <!-- Meter Table Body -->
+                    <tbody>
+                        {% for record in meters_records %}
+                            <tr>
+                                <td style="text-align: center">{{ forloop.counter }}</td>
+                                <td>{{ record.make }}</td>
+                                <td style="text-align: center">{{ record.capacity }}</td>
+                                <td>{{ record.serial_no }}</td>
+                                <td style="text-align: center"><input type="checkbox" class="checkbox-input" name="meters_to_delete" value="{{ record.id }}"></td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </fieldset>
+        {% endif %}
+
+        {% if generation_meter_records %}
+            <fieldset>
+                <legend>Generation Meters</legend>
+                <table class="highlight-on-check">
+                    <!-- Generation Meter Table Header -->
+                    <thead>
+                        <tr>
+                            <th style="width: 200px; text-align: center">Serial No</th>
+                            <th style="width: 400px; text-align: center">Make</th>
+                            <th style="width: 300px; text-align: center">Capacity</th>
+                            <th style="width: 400px; text-align: center">Serial Number</th>
+                            <th style="width: 200px; text-align: center">Delete</th>
+                        </tr>
+                    </thead>
+                    <!-- Generation Meter Table Body -->
+                    <tbody>
+                        {% for record in generation_meter_records %}
+                            <tr>
+                                <td style="text-align: center">{{ forloop.counter }}</td>
+                                <td>{{ record.make }}</td>
+                                <td>{{ record.capacity }}</td>
+                                <td>{{ record.serial_no }}</td>
+                                <td style="text-align: center"><input type="checkbox" name="generation_meters_to_delete" class="checkbox-input" value="{{ record.id }}"></td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </fieldset>
+        {% endif %}
+
+        {% if generation_ct_records %}
+            <fieldset>
+                <legend>Generation Ct</legend>
+                <table class="highlight-on-check">
+                    <!-- Generation Ct Table Header -->
+                    <thead>
+                        <tr>
+                            <th style="width: 200px; text-align: center">Serial No</th>
+                            <th style="width: 400px; text-align: center">Make</th>
+                            <th style="width: 300px; text-align: center">Capacity</th>
+                            <th style="width: 400px; text-align: center">Serial Number</th>
+                            <th style="width: 200px; text-align: center">Delete</th>
+                        </tr>
+                    </thead>
+                    <!-- Generation Ct Table Body -->
+                    <tbody>
+                        {% for record in generation_ct_records %}
+                            <tr>
+                                <td style="text-align: center">{{ forloop.counter }}</td>
+                                <td>{{ record.make }}</td>
+                                <td>{{ record.capacity }}</td>
+                                <td>{{ record.serial_no }}</td>
+                                <td style="text-align: center"><input type="checkbox" name="generation_cts_to_delete" class="checkbox-input" value="{{ record.id }}"></td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </fieldset>
+        {% endif %}
+
+        <!-- Delete Selected Records Button -->
+        <div class="form-group" align="center">
+            <button type="submit" name="action" value="delete" style="width: 200px;">Delete Selected Records</button>
+        </div>
+    {% endif %}
+</form>
+
+<style>
+.form-group {
+    margin-bottom: 10px;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+th, td {
+    border: 1px solid #dddddd;
+    text-align: center;
+    padding: 8px;
+}
+
+th {
+    background-color: lightgray;
+}
+
+/* Highlight rows when checkbox is checked */
+.highlighted-row {
+    background-color: #cb6843; /* Change to your preferred color */
+}
+
+.checkbox-input {
+    margin: 0 auto;
+    display: block;
+}
+
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const checkboxes = document.querySelectorAll('.checkbox-input');
+
+    checkboxes.forEach(function(checkbox) {
+        checkbox.addEventListener('change', function() {
+            const row = this.parentNode.parentNode;
+            if (this.checked) {
+                row.classList.add('highlighted-row');
+            } else {
+                row.classList.remove('highlighted-row');
+            }
+        });
+    });
+});
+</script>
+
+{% endblock %}

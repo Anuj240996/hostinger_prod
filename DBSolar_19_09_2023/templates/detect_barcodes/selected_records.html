@@ -1,0 +1,61 @@
+{% extends 'partials/base.html' %}
+{% block title %}Selected Records{% endblock %}
+{% block content %}
+<div class="container-fluid">
+   <div class="card-body">
+      <!-- Display selected records here -->
+      <h3>Delete Selected Records</h3>
+      <form method="POST" action="{% url 'detect_barcodes-selected_records' %}" id="barcode-form">
+          {% csrf_token %}
+          <input type="hidden" name="company" value="{{ selected_company }}">
+          <input type="hidden" name="product" value="{{ selected_product }}">
+          <!-- Add hidden input field for selected item IDs -->
+          {% for item in selected_items %}
+          <input type="hidden" name="selected_item_ids" value="{{ item.pk }}">
+          {% endfor %}
+          <table class="table">
+              <thead>
+                  <tr style="background-color: lightgray;">
+                      <th>Serial No</th>
+                      <th>Company Name</th>
+                      <th>Wattage</th>
+                      <th>Barcode Sr No.</th>
+                  </tr>
+              </thead>
+              <tbody>
+                  {% for item in selected_items %}
+                  <tr>
+                      <td>{{ forloop.counter }}</td>
+                      <td>{{ item.company_name }}</td>
+                      <td>{{ item.wattage }}</td>
+                      <td>{{ item.barcode_data }}</td>
+                  </tr>
+                  {% endfor %}
+              </tbody>
+          </table>
+
+          <!-- ... other form elements ... -->
+<!--          <div class="col-sm-2">-->
+          <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+
+          <div class="btn-block">
+              <br>
+              <button type="submit" id="preview"><i class="nav-icon fa fa-arrow-circle-left" aria-hidden="true"></i> Back Page</button>
+<!--              <button type="submit" name="confirm_delete" value="true" id="confirm-delete"><i class="nav-icon fas fa trash-o" aria-hidden="true"></i>-->
+              <button type="submit" name="confirm_delete" value="true" id="confirm-delete"><i class="nav-icon fas fa-trash-alt" aria-hidden="true"></i>
+<!--              <button type="submit" name="confirm_delete" value="true" id="confirm-delete"><i class="nav-icon fa-solid fa-trash-can-list"></i></i>-->
+
+                  Confirm Delete
+              </button>
+          </div>
+      </form>
+   </div>
+</div>
+<script>
+    document.getElementById('confirm-delete').addEventListener('click', function (event) {
+        if (!confirm('Are you sure you want to delete the selected records?')) {
+            event.preventDefault(); // Prevent the form submission if Cancel is clicked
+        }
+    });
+</script>
+{% endblock %}

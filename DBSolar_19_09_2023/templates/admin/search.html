@@ -1,0 +1,373 @@
+{% extends 'partials/base.html' %}
+{% load static %}
+{% block content %}
+<section class="content">
+   <div class="content-header">
+      <div class="container-fluid">
+         <div class="row mb-2">
+            <div class="col-sm-6">
+               <h1 class="m-0">Search</h1>
+            </div>
+            <div class="col-sm-6">
+               <ol class="breadcrumb float-sm-right">
+                  <li class="breadcrumb-item"><a href="{% url 'firereport-dashboard' %}">Home</a></li>
+                  <li class="breadcrumb-item active">Search</li>
+               </ol>
+            </div>
+         </div>
+      </div>
+   </div>
+   <div class="container-fluid">
+      <div class="row">
+         <!-- left column -->
+         <div class="col-md-12">
+            <!-- general form elements -->
+            <div class="card card-primary">
+               <div class="card-header">
+                  <h3 class="card-title">Search</h3>
+               </div>
+               <!-- form start -->
+               <!--                    <form method="post">-->
+               <!--                        {% csrf_token %}-->
+               <!--                        <div class="card-body">-->
+               <!--                            <div class="form-group">-->
+               <!--                                <label>Search Report by Consumer Name/Mobile No/Location</label>-->
+               <!--                                <input type="text" name="searchdata" class="form-control"-->
+               <!--                                       placeholder="Enter Consumer Name/Mobile No./Location" required>-->
+               <!--                            </div>-->
+               <!--                        </div>-->
+               <!--                        <div class="card-footer">-->
+               <!--                            <button type="submit" class="btn btn-primary">Search</button>-->
+               <!--                        </div>-->
+               <!--                    </form>-->
+               <!-- search_form.html -->
+               <form method="post" id="searchForm">
+                  {% csrf_token %}
+                  <div class="row mb-1">
+                     <div class="col-md-12">
+<!--                        <div class="question">-->
+<!--                           {% if user.is_superuser %}-->
+<!--                           <label>Search Staff / Consumer</label><br>-->
+<!--                           {% ifequal search_by 'staff' %}-->
+<!--                           <input type="radio" name="search_by" value="staff" id="radio_1" checked>-->
+<!--                           {% else %}-->
+<!--                           <input type="radio" name="search_by" value="staff" id="radio_1">-->
+<!--                           {% endifequal %}-->
+<!--                           <label for="radio_1" class="radio"><span><b>Search by Staff</b></span></label>-->
+<!--                           {% endif %}-->
+<!--                           {% ifequal search_by 'consumer' %}-->
+<!--                           <input type="radio" name="search_by" value="consumer" id="radio_2" checked>-->
+<!--                           {% else %}-->
+<!--                           <input type="radio" name="search_by" value="consumer" id="radio_2">-->
+<!--                           {% endifequal %}-->
+<!--                           <label for="radio_2" class="radio"><span><b>Search by Consumer</b></span></label>-->
+<!--                        </div>-->
+                        <!--                        <div class="question">-->
+                          <div class="checkbox-column">
+                           {% if user.is_superuser %}
+                           <label>Search Staff / Consumer</label><br>
+                           {% ifequal search_by 'staff' %}
+                              <label class="checkbox-label"><input type="radio" class="checkbox-input" name="search_by" value="staff" id="radio_1" checked><b>Search by Staff</b></label>
+                           {% else %}
+                               <label class="checkbox-label"><input type="radio" class="checkbox-input" name="search_by" value="staff" id="radio_1"><b>Search by Staff</b></label>
+                           {% endifequal %}
+<!--                           <label for="radio_1"><span><b>Search by Staff</b></span></label>-->
+                           {% endif %}
+                           {% ifequal search_by 'consumer' %}
+                               <label class="checkbox-label"><input type="radio" class="checkbox-input" name="search_by" value="consumer" id="radio_2" checked><b>Search by Consumer</b></label>
+                           {% else %}
+                               <label class="checkbox-label"><input type="radio" class="checkbox-input" name="search_by" value="consumer" id="radio_2"><b>Search by Consumer</b></label>
+                           {% endifequal %}
+<!--                           <label for="radio_2"><span><b>Search by Consumer</b></span></label>-->
+<!--                          </div>-->
+                          </div>
+                     </div>
+                  </div>
+                  <div class="card-footer">
+                  {% if user.is_superuser %}
+                  {% if search_by == "staff" %}
+                   <div class="form-group row">
+                      <label for="staff_assignee" class="col-sm-2 col-form-label"><b>Select Staff to Search:</b></label>
+                    <div class="col-sm-10">
+                        <select name="staff_assignee" id="staff_assignee" class="form-control" style="width: 100%;">
+                           <option value="" {% if not staff_assignee %}selected{% endif %}>All</option>
+                           {% for staff in staff_list %}
+                           <option value="{{ staff.id }}" {% if staff_assignee and staff_assignee.id == staff.id %}selected{% endif %}>{{ staff.get_full_name }}</option>
+                           {% endfor %}
+                        </select>
+                     </div>
+                  </div>
+
+                        <div class="form-group row">
+                           <label class="col-md-2 col-form-label"><b>Filter By Days:</b></label><br>
+                           <div class="col-md-4">
+                              <select name="report_filter" class="form-control">
+                                 <option value="all" {% if report_filter == 'all' %}selected{% endif %}> All </option>
+                                 <option value="week" {% if report_filter == 'week' %}selected{% endif %}>Weekly</option>
+                                 <option value="month" {% if report_filter == 'month' %}selected{% endif %}>Monthly</option>
+                              </select>
+                           </div>
+
+
+
+                           <label class="col-md-2 col-form-label"><b>Filter by Status:</b></label><br>
+                         <div class="col-md-4">
+                             <select name="status_filter" class="form-control">
+                                 <option value="" {% if status_filter == "" %}selected{% endif %}>All</option>
+                                 <option value="New Request" {% if status_filter == "New Request" %}selected{% endif %}>New Request</option>
+                                 <option value="Assigned" {% if status_filter == "Assigned" %}selected{% endif %}>Assigned</option>
+                                 <option value="In Progress" {% if status_filter == "In Progress" %}selected{% endif %}>In Progress</option>
+                                 <option value="Work in Progress" {% if status_filter == "Work in Progress" %}selected{% endif %}>Work in Progress</option>
+                                 <option value="Request Completed" {% if status_filter == "Request Completed" %}selected{% endif %}>Request Completed</option>
+                             </select>
+                         </div>
+                        </div>
+
+                  {% elif search_by == "consumer" %}
+                  <div class="form-group row">
+                     <label><b>Search Consumer by Name/Mobile No/Location:</b></label>
+                      <div class="col-sm-8">
+                     <input type="text" name="consumer_search_data" placeholder="Enter Consumer Name/Mobile No./Location" class="form-control">
+                  </div>
+                  </div>
+                  {% endif %}
+                  {% else %}
+                  {% if search_by == "consumer" %}
+                  <div class="form-group row">
+                     <label><b>Search Consumer by Name/Mobile No/Location:</b></label>
+                     <div class="col-sm-10">
+                     <input type="text" name="consumer_search_data" placeholder="Enter Consumer Name/Mobile No./Location" class="form-control">
+                     </div>
+                  </div>
+                  {% endif %}
+                  {% endif %}
+                  <div>
+                     <button type="submit" style="width: 100%;">Search</button>
+                  </div>
+                  </div>
+               </form>
+
+            </div>
+               {% if firereport %}
+               <div class="card-body">
+                  {% if search_by == "staff" %}
+                  <h4 align="center">Result against Staff Name "<span style="color: red">{{ staff_assignee.get_full_name }}</span>" keyword</h4>
+                  {% elif search_by == "consumer" %}
+                  <h4 align="center">Result against Consumer Name "<span style="color: red">{{consumer_search_data}}</span>" keyword </h4>
+                  {% endif %}
+                  <hr/>
+                  <div class="table-responsive">
+                     <table id="example1" class="table table-bordered table-striped">
+                        <thead>
+                           <tr>
+                              <th>Sr No</th>
+                              <th>Complaint No.</th>
+                              <th>Consumar Name</th>
+                              <th>Mobile Number</th>
+                              <th>Location</th>
+                              <th>Reporting Time</th>
+                              <th>Assign To</th>
+                              <th>Current Status</th>
+                              <!--                                <th>Action</th>-->
+                           </tr>
+                        </thead>
+                        <tbody>
+                           {% if user.is_authenticated and user.is_staff and user.is_superuser %}
+                           {% for i in firereport %}
+                           <tr>
+                              <td>{{forloop.counter}}</td>
+                              <td>{{i.id}}</td>
+                              <td>{{i.FullName}}</td>
+                              <td>{{i.MobileNumber}}</td>
+                              <td>{{i.Location}}</td>
+                              <td>{{i.Postingdate}}</td>
+                              <td>{{i.AssignTo.first_name}} {{i.AssignTo.last_name}}</td>
+                              <!--                                {% if i.Status == 'Request Completed' %}-->
+                              <!--                                     <td class="text-center"><a class="btn btn-success btn-center" href="{% url 'firereport-viewRequestDetails' i.id %}"><i class="fa fa-eye"></i> &nbsp;Completed</a></td>-->
+                              <!--                                    {% elif i.Status == 'Assigned' %}-->
+                              <!--                                        <td class="text-center"><a class="btn btn-info" href="{% url 'firereport-viewRequestDetails' i.id %}"> <i class="fa fa-eye"></i> &nbsp;&nbsp;Assigned&nbsp;&nbsp; </a></td>-->
+                              <!--                                    {% elif i.Status == 'Work in Progress' %}-->
+                              <!--                                        <td class="text-center"><a class="btn btn-warning" href="{% url 'firereport-viewRequestDetails' i.id %}"><i class="fa fa-eye"></i> Work Progress </a></td>-->
+                              <!--                                    {% elif i.Status == 'Team On the Way' %}-->
+                              <!--                                        <td class="text-center"><a class="btn btn-primary" href="{% url 'firereport-viewRequestDetails' i.id %}"> <i class="fa fa-eye"></i> On the Way </a></td>-->
+                              <!--                                    {% else %}-->
+                              <!--                                        <td class="text-center"><a class="btn btn-danger" href="{% url 'firereport-viewRequestDetails' i.id %}"> <i class="fa fa-eye"></i> &nbsp;Not Assign </a></td>-->
+                              <!--                                    {% endif %}-->
+                              <!--                                <td><a class="btn btn-primary" href="{% url 'firereport-viewRequestDetails' i.id %}"><i-->
+                              <!--                                        class="fa fa-eye"></i></a></td>-->
+                              {% if i.Status == 'Request Completed' %}
+                              <td class="text-center"><a class="badge success badge-center" href="{% url 'firereport-viewRequestDetails' i.id %}"><i class="fa fa-eye"></i> &nbsp;Completed</a></td>
+                              {% elif i.Status == 'Assigned' %}
+                              <td class="text-center"><a class="badge info" href="{% url 'firereport-viewRequestDetails' i.id %}"> <i class="fa fa-eye"></i> &nbsp;&nbsp;Assigned&nbsp;&nbsp; </a></td>
+                              {% elif i.Status == 'Work in Progress' %}
+                              <td class="text-center"><a class="badge warning" href="{% url 'firereport-viewRequestDetails' i.id %}"><i class="fa fa-eye"></i> Work Initiated </a></td>
+                              {% elif i.Status == 'In Progress' %}
+                              <td class="text-center"><a class="badge default" href="{% url 'firereport-viewRequestDetails' i.id %}"> <i class="fa fa-eye"></i> In Progress </a></td>
+                              {% else %}
+                              <td class="text-center"><a class="badge danger" href="{% url 'firereport-viewRequestDetails' i.id %}"> <i class="fa fa-eye"></i> &nbsp;New Request </a></td>
+                              {% endif %}
+                           </tr>
+                           {% endfor %}
+                           {% else %}
+                           {% for i in firereport %}
+                           {% if i.AssignTo == user %}
+                           <tr>
+                              <td>{{forloop.counter}}</td>
+                              <td>{{i.id}}</td>
+                              <td>{{i.FullName}}</td>
+                              <td>{{i.MobileNumber}}</td>
+                              <td>{{i.Location}}</td>
+                              <td>{{i.Postingdate}}</td>
+                              <td>{{i.AssignTo.first_name}} {{i.AssignTo.last_name}}</td>
+                              <!--                                {% if i.Status == 'Request Completed' %}-->
+                              <!--                                     <td class="text-center"><a class="btn btn-success btn-center" href="{% url 'firereport-viewRequestDetails' i.id %}"><i class="fa fa-eye"></i> &nbsp;Completed</a></td>-->
+                              <!--                                    {% elif i.Status == 'Assigned' %}-->
+                              <!--                                        <td class="text-center"><a class="btn btn-info" href="{% url 'firereport-viewRequestDetails' i.id %}"> <i class="fa fa-eye"></i> &nbsp;&nbsp;Assigned&nbsp;&nbsp; </a></td>-->
+                              <!--                                    {% elif i.Status == 'Work in Progress' %}-->
+                              <!--                                        <td class="text-center"><a class="btn btn-warning" href="{% url 'firereport-viewRequestDetails' i.id %}"><i class="fa fa-eye"></i> Work Progress </a></td>-->
+                              <!--                                    {% elif i.Status == 'Team On the Way' %}-->
+                              <!--                                        <td class="text-center"><a class="btn btn-primary" href="{% url 'firereport-viewRequestDetails' i.id %}"> <i class="fa fa-eye"></i> On the Way </a></td>-->
+                              <!--                                    {% else %}-->
+                              <!--                                        <td class="text-center"><a class="btn btn-danger" href="{% url 'firereport-viewRequestDetails' i.id %}"> <i class="fa fa-eye"></i> &nbsp;Not Assign </a></td>-->
+                              <!--                                    {% endif %}-->
+                              <!--                                <td><a class="btn btn-primary" href="{% url 'firereport-viewRequestDetails' i.id %}"><i-->
+                              <!--                                        class="fa fa-eye"></i></a></td>-->
+                              {% if i.Status == 'Request Completed' %}
+                              <td class="text-center"><a class="badge success badge-center" href="{% url 'firereport-viewRequestDetails' i.id %}"><i class="fa fa-eye"></i> &nbsp;Completed</a></td>
+                              {% elif i.Status == 'Assigned' %}
+                              <td class="text-center"><a class="badge info" href="{% url 'firereport-viewRequestDetails' i.id %}"> <i class="fa fa-eye"></i> &nbsp;&nbsp;Assigned&nbsp;&nbsp; </a></td>
+                              {% elif i.Status == 'Work in Progress' %}
+                              <td class="text-center"><a class="badge warning" href="{% url 'firereport-viewRequestDetails' i.id %}"><i class="fa fa-eye"></i> Work Initiated </a></td>
+                              {% elif i.Status == 'In Progress' %}
+                              <td class="text-center"><a class="badge default" href="{% url 'firereport-viewRequestDetails' i.id %}"> <i class="fa fa-eye"></i> In Progress </a></td>
+                              {% else %}
+                              <td class="text-center"><a class="badge danger" href="{% url 'firereport-viewRequestDetails' i.id %}"> <i class="fa fa-eye"></i> &nbsp;New Request </a></td>
+                              {% endif %}
+                           </tr>
+                           {% endif %}
+                           {% endfor %}
+                           {% endif%}
+                        </tbody>
+                     </table>
+                  </div>
+               </div>
+               {% else %}
+                  <h4 align="center" style="color: red;">Searching Data Not Found</h4>
+               {% endif %}
+            </div>
+         </div>
+      </div>
+
+   </div>
+</section>
+<script>
+   // JavaScript to automatically submit the form when radio button is changed
+   const searchForm = document.getElementById('searchForm');
+   const radioInputs = document.querySelectorAll('input[type="radio"][name="search_by"]');
+   radioInputs.forEach((radio) => {
+       radio.addEventListener('change', () => {
+           searchForm.submit();
+       });
+   });
+</script>
+
+<script>
+   const searchByRadios = document.querySelectorAll('input[name="search_by"]');
+   const staffDropdown = document.getElementById('staffDropdown');
+   const reportFilterDropdown = document.getElementById('reportFilterDropdown');
+   const statusFilterDropdown = document.getElementById('statusFilterDropdown');
+
+   searchByRadios.forEach((radio) => {
+      radio.addEventListener('change', () => {
+         const selectedValue = radio.value;
+         if (selectedValue === 'staff') {
+            staffDropdown.style.display = 'block';
+            reportFilterDropdown.style.display = 'block';
+            statusFilterDropdown.style.display = 'block';
+         } else {
+            staffDropdown.style.display = 'none';
+            reportFilterDropdown.style.display = 'none';
+            statusFilterDropdown.style.display = 'none';
+         }
+      });
+   });
+</script>
+
+<style>
+   .badge {
+   border: 2px solid black ;
+   background-color: white;
+   color: black;
+   padding: 10px 20px 10px 20px;
+   font-size: 14px;
+   cursor: pointer;
+   float: center;
+   border-radius: 50px
+   }
+   .badge1 {
+   border: 2px solid black ;
+   background-color: white;
+   color: black;
+   padding: 5.5px 12px 20px 11px;
+   font-size: 14px;
+   cursor: pointer;
+   float: right;
+   border-radius: 30px
+   }
+   /* Green */
+   .success:hover {
+   border-color: green;
+   background-color: white;
+   color: green;
+   }
+   .success {
+   background-color: green;
+   border-color: green;
+   color: white;
+   }
+   /* Blue */
+   .info:hover {
+   border-color: #2196F3;
+   background: white;
+   color: dodgerblue;
+   }
+   .info {
+   background: #2196F3;
+   border-color: #2196F3;
+   color: white;
+   }
+   /* Orange */
+   .warning:hover {
+   border-color: #ff9800;
+   background: white;
+   color: orange;
+   }
+   .warning {
+   background: #ff9800;
+   border-color: #ff9800;
+   color: white;
+   }
+   /* Red */
+   .danger:hover {
+   border-color: #f44336;
+   background: white;
+   color: red;
+   }
+   .danger {
+   background: #f44336;
+   border-color: #f44336;
+   color: white;
+   }
+   /* Gray #e7e7e7 */
+   .default:hover {
+   border-color: yellow;
+   background: white;
+   color: yellow;
+   }
+   .default {
+   background: yellow;
+   border-color: yellow;
+   color: black;
+   }
+</style>
+{% endblock %}

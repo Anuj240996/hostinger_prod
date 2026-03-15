@@ -1,0 +1,1292 @@
+{% extends 'partials/base.html' %}
+{% load static %}
+{% load widget_tweaks %}
+{% block title %}Order Page{% endblock %}
+{% block content %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@mdi/font/css/materialdesignicons.min.css">
+<script type="text/javascript" src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+
+<bR>
+<h3> Create Favorite List:</h3>
+<form id="favoriteForm">
+  <div class="form-row">
+    <!-- Create Favorite List Button -->
+    <button type="button" id="createFavoriteListBtn" class="btn btn-primary" style="width: 200px;">Create Favorite List</button>
+
+    <!-- Favorite List Name Input (Hidden by default) -->
+    <div id="favoriteListControls" style="display: none; padding-left: 20px;">
+      <input type="text" id="favoriteListName" placeholder="Enter favorite list name" class="form-control text-capitalize" style="display: inline-block; width: 400px;">&nbsp;&nbsp;&nbsp;
+      <button type="button" id="submitFavoriteListBtn" class="btn btn-success">Submit List</button>
+    </div>
+  </div>
+
+  <!-- Category and Subcategory Filters -->
+  <div class="form-row mt-3">
+    <div class="col">
+      <select id="categoryDropdown" class="form-control">
+        <option value="all">All Categories</option>
+        {% for category in categories %}
+          <option value="{{ category.id }}">{{ category.name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col">
+      <select id="subcategoryDropdown" class="form-control" disabled>
+        <option value="all">All Subcategories</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="stock-table mt-4">
+    <h4 id="stock-heading" align="center" style="color: blue;"></h4>
+    <div class="table-responsive">
+      <table id="yourDataTable" class="table table-hover table-center table-sm">
+
+        <thead class="thead-dark align-middle">
+          <tr class="text-center">
+            <th>Sr No</th>
+            <th>
+              <input type="checkbox" id="selectAllCheckbox"> Select All
+            </th>
+            <th>Stock Name</th>
+            <th>Category Name</th>
+            <th>SubCategory Name</th>
+<!--            <th>Current Stock</th>-->
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody id="stock-list">
+          <!-- Stock rows will be inserted here -->
+        </tbody>
+      </table>
+    </div>
+  </div>
+<br><br>
+<!--  &lt;!&ndash; Selected Stocks Display Area &ndash;&gt;-->
+  <div id="selectedStocksList" style="display: none;">
+    <h5>Selected Stocks for Favorite List:</h5>
+<!--    <ul id="favoriteStockList"></ul>-->
+<!--  </div>-->
+  <!-- Favorite List Table -->
+ <!-- Favorite List Table -->
+<!--<div id="selectedStocksList" style="display: none;">-->
+  <div class="table-responsive">
+      <table id="favoriteStockList" class="table table-hover table-center table-sm">
+        <thead class="thead-dark align-middle" align="center">
+<!--    <table id="favoriteStockList" border="1">-->
+<!--    <thead>-->
+      <tr>
+        <th>Serial No</th>
+        <th>Stock Name</th>
+        <th>Category</th>
+        <th>Subcategory</th>
+                <th class="text-left">Action</th>
+
+      </tr>
+    </thead>
+    <tbody>
+      <!-- Rows will be dynamically added here -->
+    </tbody>
+  </table>
+</div>
+  </div>
+
+
+<!--<script>-->
+<!--  let selectedStocks = [];  // Array to hold selected stock details-->
+
+<!--  // Load subcategories based on selected category-->
+<!--  function loadSubcategories(categoryId) {-->
+<!--    $('#subcategoryDropdown').prop('disabled', true).html('<option value="all">All Subcategories</option>');-->
+
+<!--    if (categoryId !== 'all') {-->
+<!--      fetch(`/inventory/get-subcategories/?category_id=${categoryId}`)-->
+<!--        .then(response => response.json())-->
+<!--        .then(data => {-->
+<!--          data.forEach(subcategory => {-->
+<!--            $('#subcategoryDropdown').append(new Option(subcategory.name, subcategory.id));-->
+<!--          });-->
+<!--          $('#subcategoryDropdown').prop('disabled', false);-->
+<!--        });-->
+<!--    }-->
+<!--  }-->
+
+<!--  // Load stocks based on category and subcategory filters-->
+<!--  function loadStocks(categoryId = 'all', subcategoryId = 'all') {-->
+<!--    const stockList = document.getElementById('stock-list');-->
+<!--    stockList.innerHTML = '';  // Clear stock list-->
+
+<!--    fetch(`/inventory/get-stocks-all/?category_id=${categoryId}&subcategory_id=${subcategoryId}`)-->
+<!--      .then(response => response.json())-->
+<!--      .then(data => {-->
+<!--        data.forEach((stock, index) => {-->
+<!--          const row = `-->
+<!--            <tr>-->
+<!--              <td class="text-center">${index + 1}</td>-->
+<!--              <td class="text-center">-->
+<!--                <input type="checkbox" data-stock-id="${stock.id}" data-stock-name="${stock.name}" data-stock-category="${stock.category}" data-stock-subcategory="${stock.subcategory}" onclick="toggleStockSelection(${stock.id}, '${stock.name}', '${stock.category}', '${stock.subcategory}')">-->
+<!--              </td>-->
+<!--              <td class="text-center">${stock.category}</td>-->
+<!--              <td class="text-center">${stock.subcategory}</td>-->
+<!--              <td>${stock.name}</td>-->
+<!--&lt;!&ndash;              <td class="text-center">${stock.quantity}</td>&ndash;&gt;-->
+<!--              <td class="text-center">${stock.status ? 'Active' : 'Inactive'}</td>-->
+<!--            </tr>-->
+<!--          `;-->
+<!--          stockList.innerHTML += row;-->
+<!--        });-->
+<!--      });-->
+<!--  }-->
+
+<!--  // Event listeners for dropdown changes-->
+<!--  $('#categoryDropdown').on('change', function() {-->
+<!--    const categoryId = $(this).val();-->
+<!--    loadSubcategories(categoryId);-->
+<!--    loadStocks(categoryId, 'all');  // Load stocks for the selected category-->
+<!--  });-->
+
+<!--  $('#subcategoryDropdown').on('change', function() {-->
+<!--    const categoryId = $('#categoryDropdown').val();-->
+<!--    const subcategoryId = $(this).val();-->
+<!--    loadStocks(categoryId, subcategoryId);  // Load stocks for the selected subcategory-->
+<!--  });-->
+
+<!--  document.addEventListener('DOMContentLoaded', function() {-->
+<!--    // Handle Select All checkbox-->
+<!--    const selectAllCheckbox = document.getElementById('selectAllCheckbox');-->
+<!--    selectAllCheckbox.addEventListener('change', function() {-->
+<!--      const isChecked = selectAllCheckbox.checked;-->
+<!--      document.querySelectorAll('#stock-list input[type="checkbox"]').forEach(checkbox => {-->
+<!--        const stockId = parseInt(checkbox.dataset.stockId);-->
+<!--        const stockName = checkbox.dataset.stockName;-->
+<!--        const stockCategory = checkbox.dataset.stockCategory;-->
+<!--        const stockSubcategory = checkbox.dataset.stockSubcategory;-->
+<!--        toggleStockSelection(stockId, stockName, stockCategory, stockSubcategory, isChecked);-->
+<!--      });-->
+<!--    });-->
+<!--  });-->
+
+<!--  // Update the function to highlight and disable selected rows in the stock table-->
+<!--  function toggleStockSelection(stockId, stockName, stockCategory, stockSubcategory, isChecked = null) {-->
+<!--      const checkbox = document.querySelector(`#stock-list input[data-stock-id="${stockId}"]`);-->
+<!--      const row = checkbox.closest('tr');-->
+
+<!--      // Set checkbox status based on isChecked parameter or its current state-->
+<!--      if (isChecked !== null) {-->
+<!--          checkbox.checked = isChecked;-->
+<!--      } else {-->
+<!--          isChecked = checkbox.checked;-->
+<!--      }-->
+
+<!--      // Add or remove stock from selectedStocks array based on checked status-->
+<!--      if (isChecked) {-->
+<!--          if (!selectedStocks.some(stock => stock.id === stockId)) {-->
+<!--              selectedStocks.push({ id: stockId, name: stockName, category: stockCategory, subcategory: stockSubcategory });-->
+<!--          }-->
+
+<!--          // Disable the checkbox and change row background color-->
+<!--          checkbox.disabled = false;-->
+<!--          row.style.backgroundColor = "#e0f7fa";  // Light blue color for selected rows-->
+<!--      } else {-->
+<!--          selectedStocks = selectedStocks.filter(stock => stock.id !== stockId);-->
+
+<!--          // Re-enable the checkbox and reset row background color-->
+<!--          checkbox.disabled = false;-->
+<!--          row.style.backgroundColor = "";-->
+<!--      }-->
+
+<!--      displaySelectedStocks();-->
+<!--  }-->
+
+<!--  // Display selected stocks in the favorite stock list table-->
+<!--  function displaySelectedStocks() {-->
+<!--      const favoriteListTableBody = document.querySelector('#favoriteStockList tbody');-->
+<!--      favoriteListTableBody.innerHTML = '';  // Clear the table body-->
+
+<!--      selectedStocks.forEach((stock, index) => {-->
+<!--          const row = document.createElement('tr');-->
+<!--          row.innerHTML = `-->
+<!--              <td class="text-center">${index + 1}</td>-->
+<!--              <td>${stock.name}</td>-->
+<!--              <td class="text-center">${stock.category}</td>-->
+<!--              <td class="text-center">${stock.subcategory}</td>-->
+<!--              <td>-->
+<!--                  <img src="{% static 'images/letter-x (1).png' %}" class="remove-form-row" alt="Remove" style="cursor: pointer; width: 15px; height: 15px;" onclick="removeStock(${stock.id})">-->
+<!--              </td>-->
+<!--          `;-->
+<!--          favoriteListTableBody.appendChild(row);-->
+<!--      });-->
+
+<!--      document.getElementById('selectedStocksList').style.display = selectedStocks.length > 0 ? 'block' : 'none';-->
+<!--  }-->
+
+<!--  // Remove a stock from the favorite list by stock ID and unselect it in the stock table-->
+<!--  function removeStock(stockId) {-->
+<!--      selectedStocks = selectedStocks.filter(stock => stock.id !== stockId);-->
+
+<!--      // Uncheck and re-enable the checkbox in the stock table-->
+<!--      const stockCheckbox = document.querySelector(`#stock-list input[data-stock-id="${stockId}"]`);-->
+<!--      if (stockCheckbox) {-->
+<!--          stockCheckbox.checked = false;-->
+<!--          stockCheckbox.disabled = false;-->
+<!--          stockCheckbox.closest('tr').style.backgroundColor = "";  // Reset row color-->
+<!--      }-->
+
+<!--      displaySelectedStocks();  // Refresh the table display-->
+<!--  }-->
+
+<!--  // Show favorite list controls when "Create Favorite List" is clicked-->
+<!--  document.getElementById('createFavoriteListBtn').addEventListener('click', function() {-->
+<!--    document.getElementById('favoriteListControls').style.display = 'block';-->
+<!--  });-->
+
+<!--  // Submit favorite list-->
+<!--  document.getElementById('submitFavoriteListBtn').addEventListener('click', function() {-->
+<!--    const favoriteListName = document.getElementById('favoriteListName').value;-->
+<!--    if (!favoriteListName || selectedStocks.length === 0) {-->
+<!--      alert('Please provide a list name and select at least one stock.');-->
+<!--      return;-->
+<!--    }-->
+
+<!--    fetch('/inventory/create-favorite-list/', {-->
+<!--      method: 'POST',-->
+<!--      headers: {-->
+<!--        'Content-Type': 'application/json',-->
+<!--        'X-CSRFToken': '{{ csrf_token }}'-->
+<!--      },-->
+<!--      body: JSON.stringify({-->
+<!--        name: favoriteListName,-->
+<!--        stocks: selectedStocks-->
+<!--      })-->
+<!--    })-->
+<!--    .then(response => response.json())-->
+<!--    .then(data => {-->
+<!--        if (data.message && data.message.includes('already exists')) {-->
+<!--            // Show alert if the list name already exists-->
+<!--            alert(data.message);-->
+<!--            document.getElementById('favoriteListName').value = '';  // Clear the textbox-->
+<!--            document.getElementById('favoriteListName').focus();  // Focus the textbox-->
+<!--        } else {-->
+<!--            alert(data.message || 'Favorite list created successfully');-->
+<!--            selectedStocks = [];-->
+<!--            displaySelectedStocks();-->
+<!--            loadStocks();-->
+<!--        }-->
+<!--    });-->
+<!--  });-->
+
+<!--  // Initial load of all stocks-->
+<!--  $(document).ready(function() {-->
+<!--    loadStocks();-->
+<!--  });-->
+<!--</script>-->
+
+
+
+<!--  <script>-->
+<!--  let selectedStocks = [];  // Array to hold selected stock details-->
+
+<!--  // Function to apply background color to selected rows-->
+<!--  function applyBackgroundToSelectedRows() {-->
+<!--    document.querySelectorAll('#stock-list tr').forEach(row => {-->
+<!--      const checkbox = row.querySelector('input[type="checkbox"]');-->
+<!--      if (checkbox && selectedStocks.some(stock => stock.id == checkbox.dataset.stockId)) {-->
+<!--        row.style.backgroundColor = '#d3f4ff';  // Set your preferred color here-->
+<!--        checkbox.checked = true;  // Disable the checkbox for selected stocks-->
+<!--      } else {-->
+<!--        row.style.backgroundColor = '';  // Reset color for unselected stocks-->
+<!--        checkbox.disabled = false;  // Enable the checkbox for unselected stocks-->
+<!--      }-->
+<!--    });-->
+<!--  }-->
+
+<!--  // Load subcategories based on selected category-->
+<!--  function loadSubcategories(categoryId) {-->
+<!--    $('#subcategoryDropdown').prop('disabled', true).html('<option value="all">All Subcategories</option>');-->
+
+<!--    if (categoryId !== 'all') {-->
+<!--      fetch(`/inventory/get-subcategories/?category_id=${categoryId}`)-->
+<!--        .then(response => response.json())-->
+<!--        .then(data => {-->
+<!--          data.forEach(subcategory => {-->
+<!--            $('#subcategoryDropdown').append(new Option(subcategory.name, subcategory.id));-->
+<!--          });-->
+<!--          $('#subcategoryDropdown').prop('disabled', false);-->
+<!--        });-->
+<!--    }-->
+<!--  }-->
+
+<!--  // Load stocks based on category and subcategory filters-->
+<!--  function loadStocks(categoryId = 'all', subcategoryId = 'all') {-->
+<!--    const stockList = document.getElementById('stock-list');-->
+<!--    stockList.innerHTML = '';  // Clear stock list-->
+
+<!--    fetch(`/inventory/get-stocks-all/?category_id=${categoryId}&subcategory_id=${subcategoryId}`)-->
+<!--      .then(response => response.json())-->
+<!--      .then(data => {-->
+<!--        data.forEach((stock, index) => {-->
+<!--          const row = `-->
+<!--            <tr>-->
+<!--              <td class="text-center">${index + 1}</td>-->
+<!--              <td class="text-center">-->
+<!--                <input type="checkbox" class="Checkbox" data-stock-id="${stock.id}" data-stock-name="${stock.name}" data-stock-category="${stock.category}" data-stock-subcategory="${stock.subcategory}" onclick="toggleStockSelection(${stock.id}, '${stock.name}', '${stock.category}', '${stock.subcategory}')">-->
+<!--              </td>-->
+<!--              <td>${stock.name}</td>-->
+<!--              <td class="text-center">${stock.category}</td>-->
+<!--              <td class="text-center">${stock.subcategory}</td>-->
+<!--              <td class="text-center">${stock.status ? 'Active' : 'Inactive'}</td>-->
+<!--            </tr>-->
+<!--          `;-->
+<!--          stockList.innerHTML += row;-->
+<!--        });-->
+
+<!--        applyBackgroundToSelectedRows();  // Apply background color to selected rows after loading stocks-->
+<!--      });-->
+<!--  }-->
+
+<!--  // Event listeners for dropdown changes-->
+<!--  $('#categoryDropdown').on('change', function() {-->
+<!--    const categoryId = $(this).val();-->
+<!--    loadSubcategories(categoryId);-->
+<!--    loadStocks(categoryId, 'all');  // Load stocks for the selected category-->
+<!--  });-->
+
+<!--  $('#subcategoryDropdown').on('change', function() {-->
+<!--    const categoryId = $('#categoryDropdown').val();-->
+<!--    const subcategoryId = $(this).val();-->
+<!--    loadStocks(categoryId, subcategoryId);  // Load stocks for the selected subcategory-->
+<!--  });-->
+
+<!--  document.addEventListener('DOMContentLoaded', function() {-->
+<!--    // Handle Select All checkbox-->
+<!--    const selectAllCheckbox = document.getElementById('selectAllCheckbox');-->
+<!--    selectAllCheckbox.addEventListener('change', function() {-->
+<!--      const isChecked = selectAllCheckbox.checked;-->
+<!--      document.querySelectorAll('#stock-list input[type="checkbox"]').forEach(checkbox => {-->
+<!--        const stockId = parseInt(checkbox.dataset.stockId);-->
+<!--        const stockName = checkbox.dataset.stockName;-->
+<!--        const stockCategory = checkbox.dataset.stockCategory;-->
+<!--        const stockSubcategory = checkbox.dataset.stockSubcategory;-->
+<!--        toggleStockSelection(stockId, stockName, stockCategory, stockSubcategory, isChecked);-->
+<!--      });-->
+<!--    });-->
+<!--  });-->
+
+<!--  // Toggle individual stock selection and handle Select All-->
+<!--  function toggleStockSelection(stockId, stockName, stockCategory, stockSubcategory, isChecked = null) {-->
+<!--    const checkbox = document.querySelector(`#stock-list input[data-stock-id="${stockId}"]`);-->
+<!--	const row = checkbox.closest('tr');-->
+
+<!--    // Set checkbox status based on isChecked parameter or its current state-->
+<!--    if (isChecked !== null) {-->
+<!--      checkbox.checked = isChecked;-->
+<!--    } else {-->
+<!--      isChecked = checkbox.checked;-->
+<!--    }-->
+
+<!--    // Add or remove stock from selectedStocks array based on checked status-->
+<!--    if (isChecked) {-->
+<!--      if (!selectedStocks.some(stock => stock.id === stockId)) {-->
+<!--        selectedStocks.push({ id: stockId, name: stockName, category: stockCategory, subcategory: stockSubcategory });-->
+
+<!--      }-->
+<!--    } else {-->
+<!--      selectedStocks = selectedStocks.filter(stock => stock.id !== stockId);-->
+<!--    }-->
+
+<!--    displaySelectedStocks();-->
+<!--    applyBackgroundToSelectedRows();  // Re-apply background color to reflect the change-->
+<!--  }-->
+
+<!--  // Display selected stocks in the favorite stock list table-->
+<!--  function displaySelectedStocks() {-->
+<!--    const favoriteListTableBody = document.querySelector('#favoriteStockList tbody');-->
+<!--    favoriteListTableBody.innerHTML = '';  // Clear the table body-->
+
+<!--    selectedStocks.forEach((stock, index) => {-->
+<!--      const row = document.createElement('tr');-->
+<!--      row.innerHTML = `-->
+<!--        <td class="text-center">${index + 1}</td>-->
+<!--        <td>${stock.name}</td>-->
+<!--        <td class="text-center">${stock.category}</td>-->
+<!--        <td class="text-center">${stock.subcategory}</td>-->
+<!--        <td>-->
+<!--          <img src="{% static 'images/letter-x (1).png' %}" class="remove-form-row" alt="Remove" style="cursor: pointer; width: 15px; height: 15px;" onclick="removeStock(${stock.id})">-->
+<!--        </td>-->
+<!--      `;-->
+<!--      favoriteListTableBody.appendChild(row);-->
+<!--    });-->
+
+<!--    document.getElementById('selectedStocksList').style.display = selectedStocks.length > 0 ? 'block' : 'none';-->
+<!--  }-->
+
+<!--// Remove a stock from the favorite list by stock ID and unselect it in the stock table-->
+<!--  function removeStock(stockId) {-->
+<!--      selectedStocks = selectedStocks.filter(stock => stock.id !== stockId);-->
+
+<!--      // Uncheck and re-enable the checkbox in the stock table-->
+<!--      const stockCheckbox = document.querySelector(`#stock-list input[data-stock-id="${stockId}"]`);-->
+<!--      if (stockCheckbox) {-->
+<!--          stockCheckbox.checked = false;-->
+<!--          stockCheckbox.disabled = false;-->
+<!--          stockCheckbox.closest('tr').style.backgroundColor = "";  // Reset row color-->
+<!--      }-->
+
+<!--      displaySelectedStocks();  // Refresh the table display-->
+<!--  }-->
+
+<!--  // Show favorite list controls when "Create Favorite List" is clicked-->
+<!--  document.getElementById('createFavoriteListBtn').addEventListener('click', function() {-->
+<!--    document.getElementById('favoriteListControls').style.display = 'block';-->
+<!--  });-->
+
+<!--  // Submit favorite list-->
+<!--  document.getElementById('submitFavoriteListBtn').addEventListener('click', function() {-->
+<!--    const favoriteListName = document.getElementById('favoriteListName').value;-->
+<!--    if (!favoriteListName || selectedStocks.length === 0) {-->
+<!--      alert('Please provide a list name and select at least one stock.');-->
+<!--      return;-->
+<!--    }-->
+
+<!--    fetch('/inventory/create-favorite-list/', {-->
+<!--      method: 'POST',-->
+<!--      headers: {-->
+<!--        'Content-Type': 'application/json',-->
+<!--        'X-CSRFToken': '{{ csrf_token }}'-->
+<!--      },-->
+<!--      body: JSON.stringify({-->
+<!--        name: favoriteListName,-->
+<!--        stocks: selectedStocks-->
+<!--      })-->
+<!--    })-->
+<!--    .then(response => response.json())-->
+<!--    .then(data => {-->
+<!--        if (data.message && data.message.includes('already exists')) {-->
+<!--            // Show alert if the list name already exists-->
+<!--            alert(data.message);-->
+<!--            document.getElementById('favoriteListName').value = '';  // Clear the textbox-->
+<!--            document.getElementById('favoriteListName').focus();  // Focus the textbox-->
+<!--        } else {-->
+<!--            alert(data.message || 'Favorite list created successfully');-->
+<!--            selectedStocks = [];-->
+<!--            displaySelectedStocks();-->
+<!--            loadStocks();-->
+<!--        }-->
+<!--    });-->
+<!--  });-->
+
+<!--  // Initial load of all stocks-->
+<!--  $(document).ready(function() {-->
+<!--    loadStocks();-->
+<!--  });-->
+<!--</script>-->
+<!--<script>-->
+<!--  let selectedStocks = [];  // Array to hold selected stock details-->
+
+<!--  // Function to apply background color to selected rows-->
+<!--  function applyBackgroundToSelectedRows() {-->
+<!--    document.querySelectorAll('#stock-list tr').forEach(row => {-->
+<!--      const checkbox = row.querySelector('input[type="checkbox"]');-->
+<!--      if (checkbox && selectedStocks.some(stock => stock.id == checkbox.dataset.stockId)) {-->
+<!--        row.style.backgroundColor = '#d3f4ff';  // Set your preferred color here-->
+<!--        checkbox.checked = true;  // Keep the checkbox checked for selected stocks-->
+<!--        checkbox.disabled = true;  // Disable the checkbox for selected stocks-->
+<!--      } else {-->
+<!--        row.style.backgroundColor = '';  // Reset color for unselected stocks-->
+<!--        checkbox.checked = false;-->
+<!--        checkbox.disabled = false;-->
+<!--      }-->
+<!--    });-->
+<!--  }-->
+
+<!--  // Load subcategories based on selected category-->
+<!--  function loadSubcategories(categoryId) {-->
+<!--    $('#subcategoryDropdown').prop('disabled', true).html('<option value="all">All Subcategories</option>');-->
+
+<!--    if (categoryId !== 'all') {-->
+<!--      fetch(`/inventory/get-subcategories/?category_id=${categoryId}`)-->
+<!--        .then(response => response.json())-->
+<!--        .then(data => {-->
+<!--          data.forEach(subcategory => {-->
+<!--            $('#subcategoryDropdown').append(new Option(subcategory.name, subcategory.id));-->
+<!--          });-->
+<!--          $('#subcategoryDropdown').prop('disabled', false);-->
+<!--        });-->
+<!--    }-->
+<!--  }-->
+
+<!--  // Load stocks based on category and subcategory filters-->
+<!--  function loadStocks(categoryId = 'all', subcategoryId = 'all') {-->
+<!--    const stockList = document.getElementById('stock-list');-->
+<!--    stockList.innerHTML = '';  // Clear stock list-->
+
+<!--    fetch(`/inventory/get-stocks-all/?category_id=${categoryId}&subcategory_id=${subcategoryId}`)-->
+<!--      .then(response => response.json())-->
+<!--      .then(data => {-->
+<!--        data.forEach((stock, index) => {-->
+<!--          const row = `-->
+<!--            <tr>-->
+<!--              <td class="text-center">${index + 1}</td>-->
+<!--              <td class="text-center">-->
+<!--                <input type="checkbox" data-stock-id="${stock.id}" data-stock-name="${stock.name}" data-stock-category="${stock.category}" data-stock-subcategory="${stock.subcategory}" onclick="toggleStockSelection(${stock.id}, '${stock.name}', '${stock.category}', '${stock.subcategory}')">-->
+<!--              </td>-->
+<!--              <td class="text-center">${stock.category}</td>-->
+<!--              <td class="text-center">${stock.subcategory}</td>-->
+<!--              <td>${stock.name}</td>-->
+<!--              <td class="text-center">${stock.status ? 'Active' : 'Inactive'}</td>-->
+<!--            </tr>-->
+<!--          `;-->
+<!--          stockList.innerHTML += row;-->
+<!--        });-->
+
+<!--        applyBackgroundToSelectedRows();  // Apply background color to selected rows after loading stocks-->
+<!--        updateSelectAllCheckbox();  // Update the Select All checkbox state-->
+<!--      });-->
+<!--  }-->
+
+<!--  // Update the Select All checkbox based on selected items-->
+<!--  function updateSelectAllCheckbox() {-->
+<!--    const allCheckboxes = document.querySelectorAll('#stock-list input[type="checkbox"]');-->
+<!--    const checkedCheckboxes = Array.from(allCheckboxes).filter(checkbox => checkbox.checked && !checkbox.disabled);-->
+<!--    const selectAllCheckbox = document.getElementById('selectAllCheckbox');-->
+
+<!--    selectAllCheckbox.checked = (allCheckboxes.length > 0 && checkedCheckboxes.length === allCheckboxes.length);-->
+<!--  }-->
+
+<!--  // Toggle Select All functionality-->
+<!--  function toggleSelectAll(checkbox) {-->
+<!--    const allCheckboxes = document.querySelectorAll('#stock-list input[type="checkbox"]');-->
+<!--    allCheckboxes.forEach(stockCheckbox => {-->
+<!--      const stockId = stockCheckbox.dataset.stockId;-->
+<!--      const stockName = stockCheckbox.dataset.stockName;-->
+<!--      const stockCategory = stockCheckbox.dataset.stockCategory;-->
+<!--      const stockSubcategory = stockCheckbox.dataset.stockSubcategory;-->
+
+<!--      stockCheckbox.checked = checkbox.checked;-->
+
+<!--      if (checkbox.checked) {-->
+<!--        toggleStockSelection(stockId, stockName, stockCategory, stockSubcategory, true);-->
+<!--      } else {-->
+<!--        toggleStockSelection(stockId, stockName, stockCategory, stockSubcategory, false);-->
+<!--      }-->
+<!--    });-->
+<!--  }-->
+
+<!--  // Toggle individual stock selection-->
+<!--  function toggleStockSelection(stockId, stockName, stockCategory, stockSubcategory, isChecked = null) {-->
+<!--    const checkbox = document.querySelector(`#stock-list input[data-stock-id="${stockId}"]`);-->
+
+<!--    // Set checkbox status based on isChecked parameter or its current state-->
+<!--    if (isChecked !== null) {-->
+<!--      checkbox.checked = isChecked;-->
+<!--    } else {-->
+<!--      isChecked = checkbox.checked;-->
+<!--    }-->
+
+<!--    // Add or remove stock from selectedStocks array based on checked status-->
+<!--    if (isChecked) {-->
+<!--      if (!selectedStocks.some(stock => stock.id === stockId)) {-->
+<!--        selectedStocks.push({ id: stockId, name: stockName, category: stockCategory, subcategory: stockSubcategory });-->
+<!--      }-->
+<!--    } else {-->
+<!--      selectedStocks = selectedStocks.filter(stock => stock.id !== stockId);-->
+<!--    }-->
+
+<!--    displaySelectedStocks();-->
+<!--    applyBackgroundToSelectedRows();  // Re-apply background color to reflect the change-->
+<!--    updateSelectAllCheckbox();  // Update the Select All checkbox state-->
+<!--  }-->
+
+<!--  // Display selected stocks in the favorite stock list table-->
+<!--  function displaySelectedStocks() {-->
+<!--    const favoriteListTableBody = document.querySelector('#favoriteStockList tbody');-->
+<!--    favoriteListTableBody.innerHTML = '';  // Clear the table body-->
+
+<!--    selectedStocks.forEach((stock, index) => {-->
+<!--      const row = document.createElement('tr');-->
+<!--      row.innerHTML = `-->
+<!--        <td class="text-center">${index + 1}</td>-->
+<!--        <td>${stock.name}</td>-->
+<!--        <td class="text-center">${stock.category}</td>-->
+<!--        <td class="text-center">${stock.subcategory}</td>-->
+<!--        <td>-->
+<!--          <img src="{% static 'images/letter-x (1).png' %}" class="remove-form-row" alt="Remove" style="cursor: pointer; width: 15px; height: 15px;" onclick="removeStock(${stock.id})">-->
+<!--        </td>-->
+<!--      `;-->
+<!--      favoriteListTableBody.appendChild(row);-->
+<!--    });-->
+
+<!--    document.getElementById('selectedStocksList').style.display = selectedStocks.length > 0 ? 'block' : 'none';-->
+<!--  }-->
+
+<!--  // Reset Select All checkbox and reload stocks when dropdown changes-->
+<!--  $('#categoryDropdown').on('change', function() {-->
+<!--    const categoryId = $(this).val();-->
+<!--    loadSubcategories(categoryId);-->
+<!--    loadStocks(categoryId, 'all');-->
+<!--    document.getElementById('selectAllCheckbox').checked = false;  // Reset Select All checkbox-->
+<!--  });-->
+
+<!--  $('#subcategoryDropdown').on('change', function() {-->
+<!--    const categoryId = $('#categoryDropdown').val();-->
+<!--    const subcategoryId = $(this).val();-->
+<!--    loadStocks(categoryId, subcategoryId);-->
+<!--    document.getElementById('selectAllCheckbox').checked = false;  // Reset Select All checkbox-->
+<!--  });-->
+
+<!--  // Initial load of all stocks-->
+<!--  $(document).ready(function() {-->
+<!--    loadStocks();-->
+<!--  });-->
+<!--</script>-->
+
+
+
+    <script>
+  let selectedStocks = [];  // Array to hold selected stock details
+
+  // Function to apply background color to selected rows
+  function applyBackgroundToSelectedRows() {
+    document.querySelectorAll('#stock-list tr').forEach(row => {
+      const checkbox = row.querySelector('input[type="checkbox"]');
+      if (checkbox && selectedStocks.some(stock => stock.id == checkbox.dataset.stockId)) {
+        row.style.backgroundColor = '#d3f4ff';  // Set your preferred color here
+
+        checkbox.checked = true;  // Disable the checkbox for selected stocks
+      } else {
+        row.style.backgroundColor = '';  // Reset color for unselected stocks
+        checkbox.disabled = false;  // Enable the checkbox for unselected stocks
+
+      }
+    });
+  }
+
+  // Load subcategories based on selected category
+  function loadSubcategories(categoryId) {
+    $('#subcategoryDropdown').prop('disabled', true).html('<option value="all">All Subcategories</option>');
+
+    if (categoryId !== 'all') {
+      fetch(`/inventory/get-subcategories1/?category_id=${categoryId}`)
+        .then(response => response.json())
+        .then(data => {
+          data.forEach(subcategory => {
+            $('#subcategoryDropdown').append(new Option(subcategory.name, subcategory.id));
+          });
+          $('#subcategoryDropdown').prop('disabled', false);
+        });
+    }
+  }
+
+  // Load stocks based on category and subcategory filters
+  function loadStocks(categoryId = 'all', subcategoryId = 'all') {
+    const stockList = document.getElementById('stock-list');
+    stockList.innerHTML = '';  // Clear stock list
+
+    fetch(`/inventory/get-stocks-all/?category_id=${categoryId}&subcategory_id=${subcategoryId}`)
+      .then(response => response.json())
+      .then(data => {
+
+        stockList.innerHTML = ''; // Ensure it's cleared again just in case
+
+        data.forEach((stock, index) => {
+          const row = `
+            <tr>
+              <td class="text-center">${index + 1}</td>
+              <td align="center">
+                <input type="checkbox" class="checkbox-input" data-stock-id="${stock.id}" data-stock-name="${stock.name}" data-stock-category="${stock.category}" data-stock-subcategory="${stock.subcategory}" onclick='toggleStockSelection(${stock.id}, ${JSON.stringify(stock.name)}, ${JSON.stringify(stock.category)}, ${JSON.stringify(stock.subcategory)})'>
+              </td>
+              <td class="text-capitalize">${stock.name}</td>
+              <td class="text-center">${stock.category}</td>
+              <td class="text-center">${stock.subcategory}</td>
+
+              <td class="text-center">${stock.status ? 'Active' : 'Inactive'}</td>
+            </tr>
+          `;
+          stockList.innerHTML += row;
+        });
+
+        applyBackgroundToSelectedRows();  // Apply background color to selected rows after loading stocks
+		updateSelectAllCheckbox();
+      });
+  }
+
+
+  // Update the Select All checkbox based on selected items
+  function updateSelectAllCheckbox() {
+    const allCheckboxes = document.querySelectorAll('#stock-list input[type="checkbox"]');
+    const checkedCheckboxes = Array.from(allCheckboxes).filter(checkbox => checkbox.checked && !checkbox.disabled);
+    const selectAllCheckbox = document.getElementById('selectAllCheckbox');
+
+    selectAllCheckbox.checked = (allCheckboxes.length > 0 && checkedCheckboxes.length === allCheckboxes.length);
+  }
+
+
+  // Event listeners for dropdown changes
+  $('#categoryDropdown').on('change', function() {
+    const categoryId = $(this).val();
+    loadSubcategories(categoryId);
+    loadStocks(categoryId, 'all');  // Load stocks for the selected category
+  });
+
+  $('#subcategoryDropdown').on('change', function() {
+    const categoryId = $('#categoryDropdown').val();
+    const subcategoryId = $(this).val();
+    loadStocks(categoryId, subcategoryId);  // Load stocks for the selected subcategory
+  });
+
+  document.addEventListener('DOMContentLoaded', function() {
+    // Handle Select All checkbox
+    const selectAllCheckbox = document.getElementById('selectAllCheckbox');
+    selectAllCheckbox.addEventListener('change', function() {
+      const isChecked = selectAllCheckbox.checked;
+      document.querySelectorAll('#stock-list input[type="checkbox"]').forEach(checkbox => {
+        const stockId = parseInt(checkbox.dataset.stockId);
+        const stockName = checkbox.dataset.stockName;
+        const stockCategory = checkbox.dataset.stockCategory;
+        const stockSubcategory = checkbox.dataset.stockSubcategory;
+        toggleStockSelection(stockId, stockName, stockCategory, stockSubcategory, isChecked);
+      });
+    });
+  });
+
+  // Toggle individual stock selection and handle Select All
+  function toggleStockSelection(stockId, stockName, stockCategory, stockSubcategory, isChecked = null) {
+    const checkbox = document.querySelector(`#stock-list input[data-stock-id="${stockId}"]`);
+	const row = checkbox.closest('tr');
+
+    // Set checkbox status based on isChecked parameter or its current state
+    if (isChecked !== null) {
+      checkbox.checked = isChecked;
+    } else {
+      isChecked = checkbox.checked;
+    }
+
+    // Add or remove stock from selectedStocks array based on checked status
+    if (isChecked) {
+      if (!selectedStocks.some(stock => stock.id === stockId)) {
+        selectedStocks.push({ id: stockId, name: stockName, category: stockCategory, subcategory: stockSubcategory });
+
+      }
+    } else {
+      selectedStocks = selectedStocks.filter(stock => stock.id !== stockId);
+    }
+
+    displaySelectedStocks();
+    applyBackgroundToSelectedRows();  // Re-apply background color to reflect the change
+
+  }
+
+  // Display selected stocks in the favorite stock list table
+  function displaySelectedStocks() {
+    const favoriteListTableBody = document.querySelector('#favoriteStockList tbody');
+    favoriteListTableBody.innerHTML = '';  // Clear the table body
+
+    selectedStocks.forEach((stock, index) => {
+      const row = document.createElement('tr');
+      row.innerHTML = `
+        <td class="text-center">${index + 1}</td>
+        <td class="text-capitalize">${stock.name}</td>
+        <td class="text-center">${stock.category}</td>
+        <td class="text-center">${stock.subcategory}</td>
+        <td>
+          <img src="{% static 'images/letter-x (1).png' %}" class="remove-form-row" alt="Remove" style="cursor: pointer; width: 15px; height: 15px;" onclick="removeStock(${stock.id})">
+        </td>
+      `;
+      favoriteListTableBody.appendChild(row);
+    });
+
+    document.getElementById('selectedStocksList').style.display = selectedStocks.length > 0 ? 'block' : 'none';
+  }
+
+// Remove a stock from the favorite list by stock ID and unselect it in the stock table
+  function removeStock(stockId) {
+      selectedStocks = selectedStocks.filter(stock => stock.id !== stockId);
+
+      // Uncheck and re-enable the checkbox in the stock table
+      const stockCheckbox = document.querySelector(`#stock-list input[data-stock-id="${stockId}"]`);
+      if (stockCheckbox) {
+          stockCheckbox.checked = false;
+          stockCheckbox.disabled = false;
+          stockCheckbox.closest('tr').style.backgroundColor = "";  // Reset row color
+      }
+
+      displaySelectedStocks();  // Refresh the table display
+  }
+
+  // Show favorite list controls when "Create Favorite List" is clicked
+  document.getElementById('createFavoriteListBtn').addEventListener('click', function() {
+    document.getElementById('favoriteListControls').style.display = 'block';
+  });
+
+  // Submit favorite list
+  document.getElementById('submitFavoriteListBtn').addEventListener('click', function() {
+    const favoriteListName = document.getElementById('favoriteListName').value;
+    if (!favoriteListName || selectedStocks.length === 0) {
+      alert('Please provide a list name and select at least one stock.');
+      return;
+    }
+
+    fetch('/inventory/create-favorite-list/', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRFToken': '{{ csrf_token }}'
+      },
+      body: JSON.stringify({
+        name: favoriteListName,
+        stocks: selectedStocks
+      })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.message && data.message.includes('already exists')) {
+            // Show alert if the list name already exists
+            alert(data.message);
+            document.getElementById('favoriteListName').value = '';  // Clear the textbox
+            document.getElementById('favoriteListName').focus();  // Focus the textbox
+        } else {
+            alert(data.message || 'Favorite list created successfully');
+            selectedStocks = [];
+            displaySelectedStocks();
+            loadStocks();
+        }
+    });
+  });
+
+  // Initial load of all stocks
+  $(document).ready(function() {
+    loadStocks();
+  });
+</script>
+
+</form>
+
+<!--<script>-->
+<!--  let selectedStocks = [];  // Array to hold selected stock IDs-->
+
+<!--  // Load subcategories based on selected category-->
+<!--  function loadSubcategories(categoryId) {-->
+<!--    $('#subcategoryDropdown').prop('disabled', true).html('<option value="all">All Subcategories</option>');-->
+
+<!--    if (categoryId !== 'all') {-->
+<!--      fetch(`/inventory/get-subcategories/?category_id=${categoryId}`)-->
+<!--        .then(response => response.json())-->
+<!--        .then(data => {-->
+<!--          data.forEach(subcategory => {-->
+<!--            $('#subcategoryDropdown').append(new Option(subcategory.name, subcategory.id));-->
+<!--          });-->
+<!--          $('#subcategoryDropdown').prop('disabled', false);-->
+<!--        });-->
+<!--    }-->
+<!--  }-->
+
+<!--  // Load stocks based on category and subcategory filters-->
+<!--  function loadStocks(categoryId = 'all', subcategoryId = 'all') {-->
+<!--    const stockList = document.getElementById('stock-list');-->
+<!--    stockList.innerHTML = '';  // Clear stock list-->
+
+<!--    fetch(`/inventory/get-stocks-all/?category_id=${categoryId}&subcategory_id=${subcategoryId}`)-->
+<!--      .then(response => response.json())-->
+<!--      .then(data => {-->
+<!--        data.forEach((stock, index) => {-->
+<!--          const row = `-->
+<!--            <tr>-->
+<!--              <td class="text-center">${index + 1}</td>-->
+<!--              <td class="text-center">-->
+<!--                <input type="checkbox" onclick="toggleStockSelection(${stock.id}, '${stock.name}')">-->
+<!--              </td>-->
+<!--              <td class="text-center">${stock.category}</td>-->
+<!--              <td class="text-center">${stock.subcategory}</td>-->
+<!--              <td>${stock.name}</td>-->
+<!--              <td class="text-center">${stock.quantity}</td>-->
+<!--              <td class="text-center">${stock.status ? 'Active' : 'Inactive'}</td>-->
+<!--            </tr>-->
+<!--          `;-->
+<!--          stockList.innerHTML += row;-->
+<!--        });-->
+<!--      });-->
+<!--  }-->
+
+<!--  // Event listeners for dropdown changes-->
+<!--    $('#categoryDropdown').on('change', function() {-->
+<!--      const categoryId = $(this).val();-->
+<!--      loadSubcategories(categoryId);-->
+<!--      loadStocks(categoryId, 'all');  // Load stocks for the selected category-->
+<!--    });-->
+
+<!--    $('#subcategoryDropdown').on('change', function() {-->
+<!--      const categoryId = $('#categoryDropdown').val();-->
+<!--      const subcategoryId = $(this).val();-->
+<!--      loadStocks(categoryId, subcategoryId);  // Load stocks for the selected subcategory-->
+<!--    });-->
+
+<!--    document.addEventListener('DOMContentLoaded', function() {-->
+<!--    // Handle Select All checkbox-->
+<!--    const selectAllCheckbox = document.getElementById('selectAllCheckbox');-->
+<!--    selectAllCheckbox.addEventListener('change', function() {-->
+<!--      const isChecked = selectAllCheckbox.checked;-->
+<!--      document.querySelectorAll('#stock-list input[type="checkbox"]').forEach(checkbox => {-->
+<!--        checkbox.checked = isChecked;-->
+<!--        toggleStockSelection(parseInt(checkbox.dataset.stockId), checkbox.dataset.stockName, isChecked);-->
+<!--      });-->
+<!--    });-->
+<!--  });-->
+
+<!--  // Update toggleStockSelection to handle the checkbox status from "Select All"-->
+<!--  function toggleStockSelection(stockId, stockName, isChecked = null) {-->
+<!--    const checkbox = document.querySelector(`#stock-list input[data-stock-id="${stockId}"]`);-->
+<!--    if (isChecked === null) {-->
+<!--      isChecked = checkbox.checked;-->
+<!--    } else {-->
+<!--      checkbox.checked = isChecked;-->
+<!--    }-->
+
+<!--    if (isChecked) {-->
+<!--      if (!selectedStocks.some(stock => stock.id === stockId)) {-->
+<!--        selectedStocks.push({ id: stockId, name: stockName });-->
+<!--      }-->
+<!--    } else {-->
+<!--      selectedStocks = selectedStocks.filter(stock => stock.id !== stockId);-->
+<!--    }-->
+<!--    displaySelectedStocks();-->
+<!--  }-->
+
+<!--  document.getElementById('createFavoriteListBtn').addEventListener('click', function() {-->
+<!--    document.getElementById('favoriteListControls').style.display = 'block';-->
+<!--  });-->
+
+<!--  function toggleStockSelection(stockId, stockName) {-->
+<!--    if (selectedStocks.some(stock => stock.id === stockId)) {-->
+<!--      selectedStocks = selectedStocks.filter(stock => stock.id !== stockId);-->
+<!--    } else {-->
+<!--      selectedStocks.push({ id: stockId, name: stockName });-->
+<!--    }-->
+<!--    displaySelectedStocks();-->
+<!--  }-->
+
+<!--  function displaySelectedStocks() {-->
+<!--    const favoriteList = document.getElementById('favoriteStockList');-->
+<!--    favoriteList.innerHTML = '';-->
+<!--    selectedStocks.forEach(stock => {-->
+<!--      const listItem = document.createElement('li');-->
+<!--      listItem.textContent = stock.name;-->
+<!--      favoriteList.appendChild(listItem);-->
+<!--    });-->
+<!--    document.getElementById('selectedStocksList').style.display = selectedStocks.length > 0 ? 'block' : 'none';-->
+<!--  }-->
+
+<!--  document.getElementById('submitFavoriteListBtn').addEventListener('click', function() {-->
+<!--    const favoriteListName = document.getElementById('favoriteListName').value;-->
+<!--    if (!favoriteListName || selectedStocks.length === 0) {-->
+<!--      alert('Please provide a list name and select at least one stock.');-->
+<!--      return;-->
+<!--    }-->
+
+<!--    fetch('/inventory/create-favorite-list/', {-->
+<!--      method: 'POST',-->
+<!--      headers: {-->
+<!--        'Content-Type': 'application/json',-->
+<!--        'X-CSRFToken': '{{ csrf_token }}'-->
+<!--      },-->
+<!--      body: JSON.stringify({-->
+<!--        name: favoriteListName,-->
+<!--        stocks: selectedStocks-->
+<!--      })-->
+<!--    })-->
+<!--    .then(response => response.json())-->
+<!--    .then(data => {-->
+<!--      alert(data.message || 'Favorite list created successfully');-->
+<!--      selectedStocks = [];-->
+<!--      displaySelectedStocks();-->
+<!--      loadStocks();-->
+<!--    });-->
+<!--  });-->
+
+<!--  $(document).ready(function() {-->
+<!--    loadStocks();-->
+<!--  });-->
+
+<!--  // loadStocks();  // Initial load of all stocks-->
+<!--</script>-->
+
+
+<!--<script>-->
+<!--  let selectedStocks = [];  // Array to hold selected stock IDs and names-->
+
+<!--  // Load subcategories based on selected category-->
+<!--  function loadSubcategories(categoryId) {-->
+<!--    $('#subcategoryDropdown').prop('disabled', true).html('<option value="all">All Subcategories</option>');-->
+
+<!--    if (categoryId !== 'all') {-->
+<!--      fetch(`/inventory/get-subcategories/?category_id=${categoryId}`)-->
+<!--        .then(response => response.json())-->
+<!--        .then(data => {-->
+<!--          data.forEach(subcategory => {-->
+<!--            $('#subcategoryDropdown').append(new Option(subcategory.name, subcategory.id));-->
+<!--          });-->
+<!--          $('#subcategoryDropdown').prop('disabled', false);-->
+<!--        });-->
+<!--    }-->
+<!--  }-->
+
+<!--  // Load stocks based on category and subcategory filters-->
+<!--  function loadStocks(categoryId = 'all', subcategoryId = 'all') {-->
+<!--    const stockList = document.getElementById('stock-list');-->
+<!--    stockList.innerHTML = '';  // Clear stock list-->
+
+<!--    fetch(`/inventory/get-stocks-all/?category_id=${categoryId}&subcategory_id=${subcategoryId}`)-->
+<!--      .then(response => response.json())-->
+<!--      .then(data => {-->
+<!--        data.forEach((stock, index) => {-->
+<!--          const row = `-->
+<!--            <tr>-->
+<!--              <td class="text-center">${index + 1}</td>-->
+<!--              <td class="text-center">-->
+<!--                <input type="checkbox" data-stock-id="${stock.id}" data-stock-name="${stock.name}" onclick="toggleStockSelection(${stock.id}, '${stock.name}')">-->
+<!--              </td>-->
+<!--              <td class="text-center">${stock.category}</td>-->
+<!--              <td class="text-center">${stock.subcategory}</td>-->
+<!--              <td>${stock.name}</td>-->
+<!--              <td class="text-center">${stock.quantity}</td>-->
+<!--              <td class="text-center">${stock.status ? 'Active' : 'Inactive'}</td>-->
+<!--            </tr>-->
+<!--          `;-->
+<!--          stockList.innerHTML += row;-->
+<!--        });-->
+<!--      });-->
+<!--  }-->
+
+<!--  // Event listeners for dropdown changes-->
+<!--  $('#categoryDropdown').on('change', function() {-->
+<!--    const categoryId = $(this).val();-->
+<!--    loadSubcategories(categoryId);-->
+<!--    loadStocks(categoryId, 'all');  // Load stocks for the selected category-->
+<!--  });-->
+
+<!--  $('#subcategoryDropdown').on('change', function() {-->
+<!--    const categoryId = $('#categoryDropdown').val();-->
+<!--    const subcategoryId = $(this).val();-->
+<!--    loadStocks(categoryId, subcategoryId);  // Load stocks for the selected subcategory-->
+<!--  });-->
+
+<!--  document.addEventListener('DOMContentLoaded', function() {-->
+<!--    // Handle Select All checkbox-->
+<!--    const selectAllCheckbox = document.getElementById('selectAllCheckbox');-->
+<!--    selectAllCheckbox.addEventListener('change', function() {-->
+<!--      const isChecked = selectAllCheckbox.checked;-->
+<!--      document.querySelectorAll('#stock-list input[type="checkbox"]').forEach(checkbox => {-->
+<!--        const stockId = parseInt(checkbox.dataset.stockId);-->
+<!--        const stockName = checkbox.dataset.stockName;-->
+<!--        toggleStockSelection(stockId, stockName, isChecked);-->
+<!--      });-->
+<!--    });-->
+<!--  });-->
+
+<!--  // Toggle individual stock selection and handle Select All-->
+<!--  function toggleStockSelection(stockId, stockName, isChecked = null) {-->
+<!--    const checkbox = document.querySelector(`#stock-list input[data-stock-id="${stockId}"]`);-->
+
+<!--    // Set checkbox status based on isChecked parameter or its current state-->
+<!--    if (isChecked !== null) {-->
+<!--      checkbox.checked = isChecked;-->
+<!--    } else {-->
+<!--      isChecked = checkbox.checked;-->
+<!--    }-->
+
+<!--    // Add or remove stock from selectedStocks array based on checked status-->
+<!--    if (isChecked) {-->
+<!--      if (!selectedStocks.some(stock => stock.id === stockId)) {-->
+<!--        selectedStocks.push({ id: stockId, name: stockName });-->
+<!--      }-->
+<!--    } else {-->
+<!--      selectedStocks = selectedStocks.filter(stock => stock.id !== stockId);-->
+<!--    }-->
+
+<!--    displaySelectedStocks();-->
+<!--  }-->
+
+<!--  // Display selected stocks in the favorite stock list-->
+<!--  function displaySelectedStocks() {-->
+<!--    const favoriteList = document.getElementById('favoriteStockList');-->
+<!--    favoriteList.innerHTML = '';-->
+<!--    selectedStocks.forEach((stock, index) => {-->
+<!--      const listItem = document.createElement('li');-->
+<!--      listItem.textContent = `${index + 1}. ${stock.name} - Category: ${stock.category}, Subcategory: ${stock.subcategory}`;-->
+<!--      favoriteList.appendChild(listItem);-->
+<!--    });-->
+<!--    document.getElementById('selectedStocksList').style.display = selectedStocks.length > 0 ? 'block' : 'none';-->
+<!--  }-->
+
+<!--  // Show favorite list controls when "Create Favorite List" is clicked-->
+<!--  document.getElementById('createFavoriteListBtn').addEventListener('click', function() {-->
+<!--    document.getElementById('favoriteListControls').style.display = 'block';-->
+<!--  });-->
+
+<!--  // Submit favorite list-->
+<!--  document.getElementById('submitFavoriteListBtn').addEventListener('click', function() {-->
+<!--    const favoriteListName = document.getElementById('favoriteListName').value;-->
+<!--    if (!favoriteListName || selectedStocks.length === 0) {-->
+<!--      alert('Please provide a list name and select at least one stock.');-->
+<!--      return;-->
+<!--    }-->
+
+<!--    fetch('/inventory/create-favorite-list/', {-->
+<!--      method: 'POST',-->
+<!--      headers: {-->
+<!--        'Content-Type': 'application/json',-->
+<!--        'X-CSRFToken': '{{ csrf_token }}'-->
+<!--      },-->
+<!--      body: JSON.stringify({-->
+<!--        name: favoriteListName,-->
+<!--        stocks: selectedStocks-->
+<!--      })-->
+<!--    })-->
+<!--    .then(response => response.json())-->
+<!--    .then(data => {-->
+<!--      alert(data.message || 'Favorite list created successfully');-->
+<!--      selectedStocks = [];-->
+<!--      displaySelectedStocks();-->
+<!--      loadStocks();-->
+<!--    });-->
+<!--  });-->
+
+<!--  // Initial load of all stocks-->
+<!--  $(document).ready(function() {-->
+<!--    loadStocks();-->
+<!--  });-->
+<!--</script>-->
+
+{% endblock content %}
+
+<!--<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@mdi/font/css/materialdesignicons.min.css">-->
+<!--<script type="text/javascript" src="https://code.jquery.com/jquery-3.5.1.min.js"></script>-->
+
+<!--<form id="favoriteForm">-->
+<!--  <div class="form-row">-->
+<!--    &lt;!&ndash; Create Favorite List Button &ndash;&gt;-->
+<!--    <button type="button" id="createFavoriteListBtn" class="btn btn-primary">Create Favorite List</button>-->
+
+<!--    &lt;!&ndash; Favorite List Name Input (Hidden by default) &ndash;&gt;-->
+<!--    <div id="favoriteListControls" style="display: none;">-->
+<!--      <input type="text" id="favoriteListName" placeholder="Enter favorite list name" class="form-control" style="display: inline-block; width: auto;">-->
+<!--      <button type="button" id="submitFavoriteListBtn" class="btn btn-success">Submit List</button>-->
+<!--    </div>-->
+<!--  </div>-->
+
+<!--  <div class="stock-table">-->
+<!--    <h4 id="stock-heading" align="center" style="color: blue;"></h4>-->
+<!--    <div class="table-responsive">-->
+<!--      <table id="yourDataTable" class="table table-hover table-center table-sm">-->
+<!--        <thead class="thead-dark align-middle">-->
+<!--          <tr class="text-center">-->
+<!--            <th>Sr No</th>-->
+<!--            <th>Select</th>-->
+<!--            <th>Category Name</th>-->
+<!--            <th>Stock Name</th>-->
+<!--            <th>Current Stock</th>-->
+<!--            <th>Status</th>-->
+<!--          </tr>-->
+<!--        </thead>-->
+<!--        <tbody id="stock-list">-->
+<!--          &lt;!&ndash; Stock rows will be inserted here &ndash;&gt;-->
+<!--        </tbody>-->
+<!--      </table>-->
+<!--    </div>-->
+<!--  </div>-->
+
+<!--  &lt;!&ndash; Selected Stocks Display Area &ndash;&gt;-->
+<!--  <div id="selectedStocksList" style="display: none;">-->
+<!--    <h5>Selected Stocks for Favorite List:</h5>-->
+<!--    <ul id="favoriteStockList"></ul>-->
+<!--  </div>-->
+<!--</form>-->
+
+<!--<script>-->
+<!--  let selectedStocks = [];  // Array to hold selected stock IDs-->
+
+<!--  // Event listener for Create Favorite List button-->
+<!--  document.getElementById('createFavoriteListBtn').addEventListener('click', function() {-->
+<!--    document.getElementById('favoriteListControls').style.display = 'block';-->
+<!--  });-->
+
+<!--  // Event listener for checkbox selection-->
+<!--  function toggleStockSelection(stockId, stockName) {-->
+<!--    if (selectedStocks.some(stock => stock.id === stockId)) {-->
+<!--      selectedStocks = selectedStocks.filter(stock => stock.id !== stockId);-->
+<!--    } else {-->
+<!--      selectedStocks.push({ id: stockId, name: stockName });-->
+<!--    }-->
+<!--    displaySelectedStocks();-->
+<!--  }-->
+
+<!--  // Function to display selected stocks in a list-->
+<!--  function displaySelectedStocks() {-->
+<!--    const favoriteList = document.getElementById('favoriteStockList');-->
+<!--    favoriteList.innerHTML = '';  // Clear existing list-->
+<!--    selectedStocks.forEach(stock => {-->
+<!--      const listItem = document.createElement('li');-->
+<!--      listItem.textContent = stock.name;-->
+<!--      favoriteList.appendChild(listItem);-->
+<!--    });-->
+<!--    document.getElementById('selectedStocksList').style.display = selectedStocks.length > 0 ? 'block' : 'none';-->
+<!--  }-->
+
+<!--  // Load stocks with checkboxes-->
+<!--  function loadStocks() {-->
+<!--    const stockList = document.getElementById('stock-list');-->
+<!--    stockList.innerHTML = '';  // Clear stock list-->
+
+<!--    fetch('/inventory/get-stocks-all/')-->
+<!--      .then(response => response.json())-->
+<!--      .then(data => {-->
+<!--        data.forEach((stock, index) => {-->
+<!--          const row = `-->
+<!--            <tr>-->
+<!--              <td class="text-center">${index + 1}</td>-->
+<!--              <td class="text-center">-->
+<!--                <input type="checkbox" onclick="toggleStockSelection(${stock.id}, '${stock.name}')">-->
+<!--              </td>-->
+<!--              <td class="text-center">${stock.category__short_name}</td>-->
+<!--              <td>${stock.name}</td>-->
+<!--              <td class="text-center">${stock.quantity}</td>-->
+<!--              <td class="text-center">${stock.status ? 'Active' : 'Inactive'}</td>-->
+<!--            </tr>-->
+<!--          `;-->
+<!--          stockList.innerHTML += row;-->
+<!--        });-->
+<!--      });-->
+<!--  }-->
+
+<!--  // Submit favorite list-->
+<!--  document.getElementById('submitFavoriteListBtn').addEventListener('click', function() {-->
+<!--    const favoriteListName = document.getElementById('favoriteListName').value;-->
+<!--    if (!favoriteListName || selectedStocks.length === 0) {-->
+<!--      alert('Please provide a list name and select at least one stock.');-->
+<!--      return;-->
+<!--    }-->
+
+<!--    fetch('/inventory/create-favorite-list/', {-->
+<!--      method: 'POST',-->
+<!--      headers: {-->
+<!--        'Content-Type': 'application/json',-->
+<!--        'X-CSRFToken': '{{ csrf_token }}'-->
+<!--      },-->
+<!--      body: JSON.stringify({-->
+<!--        name: favoriteListName,-->
+<!--        stocks: selectedStocks-->
+<!--      })-->
+<!--    })-->
+<!--    .then(response => response.json())-->
+<!--    .then(data => {-->
+<!--      alert(data.message || 'Favorite list created successfully');-->
+<!--      selectedStocks = [];-->
+<!--      displaySelectedStocks();-->
+<!--      loadStocks();-->
+<!--    });-->
+<!--  });-->
+
+<!--  loadStocks();  // Initial load-->
+<!--</script>-->

@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+{% load static %}
+<html>
+<head>
+    <title>Generated PDF</title>
+    <style>
+        @page {
+            size: landscape;
+            margin: 20mm;
+        }
+        body {
+            font-family: Arial, sans-serif;
+            font-size: 15px;
+        }
+        table {
+            width: 50%;
+        }
+        th, td {
+            text-align: left; /* Center text horizontally */
+            vertical-align: middle; /* Center text vertically */
+           padding:0%; /* Remove padding */
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+
+        /* Add custom CSS to allow columns to adjust */
+        td {
+            word-wrap: break-word;
+            max-width: 200px; /* Adjust the max-width as needed */
+        }
+    </style>
+</head>
+<body>
+<div class="container-fluid">
+    <div class="card-body">
+        <div class="row mt-1">
+            <img src="/static/images/dblogo2001.png" style="width: 450px; height: 40px;">
+            <!--<img src="{% static logo_path %}" alt="Logo">-->
+
+        </div>
+    </div>
+</div>
+
+<table>
+    <thead>
+    <tr>
+        <th>Sr No</th> <!-- Add a new column for serial numbers -->
+        <th>Emp ID</th>
+        {% for field in selected_user_fields %}
+            {% if field == 'full_name' %}
+                <th>Full Name</th>
+            {% else %}
+                <th>{{ field }}</th>
+            {% endif %}
+        {% endfor %}
+        {% for field in selected_profile_fields %}
+            <th>{{ field }}</th>
+        {% endfor %}
+    </tr>
+    </thead>
+    <tbody>
+    {% for user_data in data %}
+        <tr>
+            <td style="width: 5%; line-height: 2.5; vertical-align: middle;">{{ forloop.counter }}</td> <!-- Display the serial number -->
+            <td style="width: 5%; line-height: 2.5; vertical-align: middle;">{{ user_data.empid }}</td>
+            {% for field, value in user_data.user_fields.items %}
+                <td style="width: auto; line-height: 2.5; vertical-align: middle;">{% if value %}{{ value }}{% endif %}</td>
+            {% endfor %}
+            {% if 'full_name' in selected_user_fields %}
+                <td style="width: auto; line-height: 2.5; vertical-align: middle; margin-left: 10px;">{% if user_data.full_name %}{{ user_data.full_name }}{% endif %}</td>
+            {% endif %}
+            {% for field, value in user_data.profile_fields.items %}
+                <td style="width: auto; line-height: 2.5; vertical-align: middle;">{% if value %}{{ value }}{% endif %}</td>
+            {% endfor %}
+        </tr>
+    {% endfor %}
+    </tbody>
+</table>
+</body>
+</html>

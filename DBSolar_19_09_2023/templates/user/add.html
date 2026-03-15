@@ -1,0 +1,40 @@
+{% extends 'partials/base.html' %}
+{% block title %}Register Page{% endblock %}
+{% load crispy_forms_tags %}
+
+{% block content %}
+<div class="row my-4">
+    <div class="col-md-6 offset-md-3">
+        <div class="border p-3 bg-white">
+            <h4>Employee Registration</h4>
+            <hr>
+            <form method="POST">
+                {% csrf_token %}
+                {{ form.username|as_crispy_field }}
+                {{ form.first_name|as_crispy_field }}
+                {{ form.last_name|as_crispy_field }}
+                {{ form.email|as_crispy_field }}
+
+                <!-- Password field (Readonly) -->
+                <div class="form-group">
+                    <label>Password (By Default)</label>
+                    <input type="text" class="form-control" name="password1" value="admin@123" readonly>
+                    <input type="hidden" name="password2" value="admin@123">
+                </div>
+
+                {{ form.is_staff|as_crispy_field }}
+                {{ form.is_superuser|as_crispy_field }}
+
+                <a href="{% url 'user-profile-update' user.id %}"> <input class="btn btn-success" type="submit" value="Register"> </a>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Custom CSS to change the color of readonly input field -->
+<style>
+    input[readonly] {
+        background-color: #f1f1f1; /* Change this to the desired color */
+    }
+</style>
+{% endblock %}

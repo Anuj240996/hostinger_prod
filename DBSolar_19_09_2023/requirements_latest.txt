@@ -1,0 +1,9 @@
+nano==0.10.0
+optional-django==0.1.0
+packaging==23.2
+#PyAudio==0.2.14
+pydub==0.25.1
+PyMuPDF==1.23.6
+PyMuPDFb==1.23.6
+pytesseract==0.3.10
+tesseract==0.1.3

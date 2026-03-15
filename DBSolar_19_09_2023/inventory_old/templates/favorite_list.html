@@ -1,0 +1,171 @@
+{% extends 'partials/base.html' %}
+{% load static %}
+{% block title %}Favorite Lists{% endblock %}
+{% block content %}
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@mdi/font/css/materialdesignicons.min.css">
+<script type="text/javascript" src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+<br>
+<div class="container">
+
+<div class="row" style="color: #575757; font-style: bold; font-size: 3rem;">
+        <div class="col-md-8"><h3>Favorite Lists</h3></div>
+        <div class="col-md-4">       <!-- Log on to codeastro.com for more projects -->
+<!--            <div style="float:right;"> <a class="btn btn-success" href="{% url 'favorite' %}">Add Favorite List</a> </div>-->
+            <div style="float:right; padding-right: 20px;"> <a href="{% url 'favorite' %}"><button type="button">Add Favorite List </button></a></div>
+
+        </div>
+    </div>
+    <br>
+    <!-- Favorite List Table -->
+    <table class="table table-bordered">
+        <thead class="thead-dark align-middle">
+            <tr align="center">
+                <th>Sr No</th>
+                <th>Favorite List Name</th>
+                <th>Stock Count</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for favorite_list in object_list %}
+            <tr align="center">
+                <td>{{ forloop.counter }}</td>
+                <td>{{ favorite_list.name }}</td>
+                <td>{{ favorite_list.stocks.count }}</td>
+<!--                <td>-->
+<!--                    &lt;!&ndash; View Button &ndash;&gt;-->
+<!--                    <button class="btn btn-info" onclick="viewFavoriteList({{ favorite_list.id }})">View</button>-->
+<!--                    &lt;!&ndash; Edit Button &ndash;&gt;-->
+<!--&lt;!&ndash;                    <button class="btn btn-warning" onclick="editFavoriteList({{ favorite_list.id }})">Edit</button>&ndash;&gt;-->
+<!--                    <button class="btn btn-warning" onclick="window.location.href='/inventory/edit-favorite/{{ favorite_list.id }}/'">Edit</button>-->
+
+<!--                    &lt;!&ndash; Delete Button &ndash;&gt;-->
+<!--                    <button class="btn btn-danger" onclick="deleteFavoriteList({{ favorite_list.id }})">Delete</button>-->
+<!--                </td>-->
+                <td class="align-middle">
+                    <div class="align-middle">
+                    <!-- View Icon -->
+                    <a href="javascript:void(0)" onclick="viewFavoriteList({{ favorite_list.id }})" style="color: #FFBC53; font-size: 17px;">
+                        <i class="fas fa-eye" title="View" style="padding-right: 20px;"></i>
+                    </a>
+
+                    <!-- Edit Icon -->
+                    <a href="/inventory/edit-favorite/{{ favorite_list.id }}/" style="font-size: 17px;">
+                        <i class="fas fa-pen" title="Edit" style="padding-right: 20px;"></i>
+                    </a>
+
+                    <!-- Delete Icon -->
+                    <a href="javascript:void(0)" onclick="deleteFavoriteList({{ favorite_list.id }})" style="color: red; font-size: 17px;">
+                        <i class="fas fa-trash" title="Delete"></i>
+                    </a>
+                    </div>
+                </td>
+
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="4">No favorite lists available.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <!-- Modal for viewing/editing favorite list -->
+    <div id="favoriteListModal" class="modal fade" tabindex="-1" role="dialog" aria-labelledby="favoriteListModalLabel" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="favoriteListModalLabel">Favorite List Details</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <h4>List Name:</h4><h4 id="favoriteListName"></h4>
+                    <h5>Stock List:</h5>
+                    <ul id="favoriteStockList">
+                        <!-- Stock items will be listed here -->
+                    </ul>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+<!--                    <button type="button" class="btn btn-primary" onclick="saveFavoriteList()">Save Changes</button>-->
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+        // Function to view the favorite list and its stocks
+        function viewFavoriteList(favoriteListId) {
+            fetch(`/inventory/favorite-list-details/${favoriteListId}/`)
+                .then(response => response.json())
+                .then(data => {
+                    const { name, stocks } = data;
+                    document.getElementById('favoriteListName').textContent = name;
+                    const stockList = document.getElementById('favoriteStockList');
+                    stockList.innerHTML = ''; // Clear the list before adding new items
+                    stocks.forEach((stock, index) => {
+                        const listItem = document.createElement('li');
+                        listItem.textContent = `${index + 1}. ${stock.name}`; // Add Sr. No.
+                        stockList.appendChild(listItem);
+                    });
+                    $('#favoriteListModal').modal('show');
+                });
+        }
+
+<!--    // Function to edit the favorite list (You can expand this with a form for editing)-->
+<!--    function editFavoriteList(favoriteListId) {-->
+<!--        // Implement your logic for editing here-->
+<!--        alert('Edit functionality is not implemented yet');-->
+<!--    }-->
+
+<!--    function editFavoriteList(favoriteListId) {-->
+<!--      fetch(`/inventory/get-favorite-list/?favorite_list_id=${favoriteListId}`)-->
+
+<!--        .then(response => response.json())-->
+<!--        .then(data => {-->
+<!--          // Populate selectedStocks array with the stocks from the favorite list-->
+<!--          selectedStocks = data.stocks.map(stock => ({-->
+<!--            id: stock.id,-->
+<!--            name: stock.name,-->
+<!--            category: stock.category,-->
+<!--            subcategory: stock.subcategory-->
+<!--          }));-->
+
+<!--          // Set the favorite list name in the input field and show the controls-->
+<!--          document.getElementById('favoriteListName').value = data.name;-->
+<!--          document.getElementById('favoriteListControls').style.display = 'block';-->
+
+<!--          // Display selected stocks in the favoriteStockList table-->
+<!--          displaySelectedStocks();-->
+<!--        })-->
+<!--        .catch(error => console.error('Error fetching favorite list:', error));-->
+<!--    }-->
+
+
+    // Function to delete the favorite list
+    function deleteFavoriteList(favoriteListId) {
+        if (confirm('Are you sure you want to delete this favorite list?')) {
+            fetch(`/inventory/delete-favorite-list/${favoriteListId}/`, {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token }}'
+                },
+            })
+            .then(response => {
+                if (response.ok) {
+                    alert('Favorite list deleted successfully');
+                    location.reload();
+                } else {
+                    alert('Error deleting favorite list');
+                }
+            });
+        }
+    }
+</script>
+
+{% endblock %}

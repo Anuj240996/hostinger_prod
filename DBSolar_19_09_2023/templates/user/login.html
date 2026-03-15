@@ -1,0 +1,682 @@
+<!DOCTYPE html>
+{% load static %}
+{% load crispy_forms_tags %}
+
+<html lang="en">
+   <head>
+      <meta charset="UTF-8">
+      <meta http-equiv="X-UA-Compatible" content="IE=edge">
+<!--      <meta name="viewport" content="width=device-width, initial-scale=1.0">-->
+<!--	  <meta name="viewport" content="width=device-width, initial-scale=1">-->
+       <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+      <meta http-equiv="cache-control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="pragma" content="no-cache">
+    <meta http-equiv="expires" content="0">
+
+      <title>Login and Registration</title>
+
+      <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
+   </head>
+   <body>
+      <div class="wrapper">
+      <span class="bg-animate"></span>
+      <span class="bg-animate2"></span>
+
+		<div class="form-box login">
+<!--		  <img  class="animation" style="&#45;&#45;i:0; &#45;&#45;j:21" src="{% static 'images/logo2.gif' %}">-->
+		  <img  class="animation" style="--i:0; --j:21" src="{% static 'images/dblogosmall.png' %}">
+
+			<h2 class="animation" style="--i:1; --j:22;">Login</h2>
+             <style>
+        @keyframes blink {
+            0% { opacity: 1; }
+            50% { opacity: 0; }
+            100% { opacity: 1; }
+        }
+
+        .blink {
+            animation: blink 1s infinite;
+        }
+    </style>
+
+            <form action="" method="post" class="box" scroll="yes" autocomplete="off">
+                {% csrf_token %}
+                {% if form.non_field_errors %}
+                    {% for error in form.non_field_errors %}
+                            <p class="er blink" style="color: red;">{{ error }}</p>
+                    {% endfor %}
+                {% endif %}
+			<div class="input-box animation" style="--i:1; --j:22;">
+<!--				<input type="text" required>-->
+                 {{ form.username }}
+				<label> Username</label>
+
+				<i class='bx bxs-user'></i>
+			 </div>
+			 <div class="input-box animation" style="--i:2; --j:23;">
+<!--				<input type="password" required>-->
+                  {{ form.password }}
+				<label> Password</label>
+				<i class='bx bxs-lock-alt'></i>
+			 </div>
+
+                 <div class="form-group">
+                                  <button type="submit" class="btn animation" style="--i:3; --j:24;"> Login</button>
+                                 </div>
+
+            <div class="logreg-link animation" style="--i:4; --j:25;">
+                <div class="text-center forgotpass"><p><a href="{% url 'password_reset_form' %}">Forgot Password ?</a></p></div>
+<!--				<p>Don't have an Account ?<a href="#" class="register-link"> Sign Up</a></p>-->
+			</div>
+
+			<div class="logreg-link animation" style="--i:5; --j:26;">
+				<p>Don't have an Account ?<a href="#" class="register-link"> Sign Up</a></p>
+			</div>
+
+           </form>
+      </div>
+      <div class="info-text login">
+         <h2 class="animation" style="--i:0; --j:26;"> Welcome Back!</h2>
+<!--		 <img  class="animation" style="&#45;&#45;i:1; &#45;&#45;j:27" src="{% static 'images/logo1.gif' %}">-->
+		 <img  class="animation" style="--i:1; --j:27" src="{% static 'images/dblogo200.png' %}">
+         <p class="animation" style="--i:2; --j:28;"> Care For Future</P>
+      </div>
+      <div class="form-box register">
+<!--	    <img  class="animation" style="&#45;&#45;i:18; &#45;&#45;j:1" src="{% static 'images/logo2.gif' %}">-->
+	    <img  class="animation" style="--i:18; --j:1" src="{% static 'images/dblogosmall.png' %}">
+         <h2 class="animation" style="--i:17; --j:0;">Sign Up</h2>
+           {% for message in messages %}
+<!--               {% if message %}-->
+               <div class="alert alert-{{ message.tags }}">
+                    <p class="er blink" style="color: {% if message.tags == 'error' %}red{% else %}green{% endif %};">{{ message }}</p>
+                </div>
+<!--               {% endif %}-->
+               {% endfor %}
+
+
+         <form action="{% url 'user-register' %}" method="post" scroll="auto" class="box">
+
+             {% csrf_token %}
+            <div class="input-box animation" style="--i:18; --j:1;">
+               <input type="text"  name="username" required>
+<!--                {{ form.username }}-->
+               <label> Username</label>
+               <i class='bx bxs-user'></i>
+            </div>
+<!--             {{ form.first_name }}-->
+            <div class="input-box animation" style="--i:19; --j:2;">
+               <input type="text" name="first_name" required>
+<!--              {{ form.first_name }}-->
+               <label> First Name</label>
+
+               <i class='bx bxs-user-check'></i>
+            </div>
+            <div class="input-box animation" style="--i:20; --j:3;">
+               <input type="text" name="last_name" required>
+<!--                {{ form.last_name }}-->
+               <label> Last Name</label>
+               <i class='bx bxs-user-check'></i>
+            </div>
+            <div class="input-box animation"  style="--i:21; --j:4;">
+               <input type="text" name="email" required>
+<!--                {{ form.email }}-->
+               <label> Email</label>
+               <i class='bx bxs-envelope'></i>
+            </div>
+            <div class="input-box animation"  style="--i:22; --j:5;">
+               <input type="password" name="password1" required>
+<!--               {{ form.password1 }}-->
+                <label> Password</label>
+               <i class='bx bxs-lock-alt'></i>
+            </div>
+            <div class="input-box animation"  style="--i:23; --j:6;">
+               <input type="text" name="password2" required>
+<!--               {{ form.password2 }}-->
+                <label> Confirm Password</label>
+               <i class='bx bxs-check-circle'></i>
+            </div>
+
+
+            <button type="submit" class="btn animation" style="--i:24; --j:7;"> Sign Up</button>
+            <div class="logreg-link animation" style="--i:25; --j:8;">
+               <p> Alredy have an Account ? <a href="#" class="login-link"> Login</a></p>
+			</div>
+         </form>
+         </div>
+         <div class="info-text register">
+            <h2 class="animation" style="--i:17; --j:0;"> Welcome Back!</h2>
+<!--			<img  class="animation" style="&#45;&#45;i:18; &#45;&#45;j:1" src="{% static 'images/logo1.gif' %}">-->
+			<img  class="animation" style="--i:18; --j:1" src="{% static 'images/dblogo200.png' %}">
+            <p class="animation" style="--i:19; --j:2"> Care For Future.</P>
+         </div>
+      </div>
+   </body>
+
+<style>
+   @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800;900&display=swap');
+
+* {
+	margin: 0;
+	padding: 0;
+	box-sizing: border-box;
+	font-family: 'Poppins', sans-serif;
+}
+
+body {
+	display: flex;
+	justify-content: center;
+    align-items: center;
+	min-height: 100vh;
+	background: #081b29;
+}
+
+.wrapper {
+	position: relative;
+	width: 750px;
+	height: 450px;
+	background: transparent;
+	border: 2px solid #0ef;
+	box-shadow: 0 0 25px #0ef;
+	overflow: hidden;
+}
+
+.wrapper .form-box {
+	position: absolute;
+	top: 0;
+	width: 50%;
+	height: 100%;
+	/*background: pink;*/
+	display: flex;
+	flex-direction: column;
+	justify-content: center;
+}
+
+.wrapper .form-box.login {
+	left: 0;
+	top: 30px;
+	padding: 0 60px 0 40px;
+	max-height: 100px; /* Adjust the maximum height according to your design */
+
+	/*display: none;*/
+}
+.wrapper .input-box input {
+    /* Other styles */
+    background: transparent; /* Set the background color to transparent */
+}
+
+
+.wrapper .form-box.login .animation {
+	transform: translateX(0);
+	opacity: 1;
+	filter: blur(0);
+	transition: .7s ease;
+	transition-delay: calc(.1s * var(--j));
+
+}
+
+.wrapper.active .form-box.login .animation {
+	transform: translateX(-120%);
+	opacity: 0;
+	filter: blur(10px);
+	transition-delay: calc(.1s * var(--i));
+}
+
+.wrapper .form-box.register {
+	right: 0;
+	top: 0;
+	width: 55%;
+	padding: 0 40px 0 80px;
+	pointer-events: none;
+/*	overflow-y: auto; /* Enable vertical scrolling */
+
+	/*display: none;*/
+	overflow-y: hidden;
+	overflow-x: hidden;
+    scrollbar-width: thin;
+    scrollbar-color: #0ef #081b29; /* Adjust colors as needed */
+	max-height: auto; /* Adjust the maximum height according to your design */
+    transition: 1.5s; /* Delay for 0.5 seconds before showing the scrollbar */
+
+    &::-webkit-scrollbar {
+        width: 10px; /* Adjust the width of the scrollbar */
+    }
+
+    &::-webkit-scrollbar-track {
+        background: #081b29; /* Track color */
+
+    }
+
+    &::-webkit-scrollbar-thumb {
+        background-color: #0ef; /* Thumb color */
+        border-radius: 20px; /* Adjust border-radius as needed */
+        border: 3px solid #081b29; /* Thumb border color */
+    }
+
+}
+
+.wrapper.active .form-box.register {
+	pointer-events: auto;
+    max-height: auto; /* Set the same maximum height as non-active state */
+    overflow-y: auto; /* Ensure scroll is available in the active state */
+}
+
+.wrapper .form-box.register .animation {
+	transform: translateX(120%);
+	opacity: 0;
+	filter: blur(10px);
+	transition: .7s ease;
+	transition-delay: calc(.1s * var(--j));
+}
+
+.wrapper.active .form-box.register .animation {
+	transform: translateX(0);
+	opacity: 1;
+	filter: blur(0);
+	transition-delay: calc(.1s * var(--i));
+
+}
+
+.form-box h2 {
+	font-size: 32px;
+	color: #fff;
+	text-align: center;
+}
+
+.form-box .input-box {
+	position: relative;
+	width: 100%;
+	height: 50px;
+	margin: 25px 0;
+}
+
+.input-box input {
+	width: 100%;
+	height: 100%;
+	background: transparent;
+	border: none;
+	outline: none;
+	border-bottom: 2px solid #fff;
+	padding-right: 23px;
+	font-size: 16px;
+	color: #fff;
+	font-weight: 500;
+	transition: .5s;
+}
+
+.input-box input:focus,
+.input-box input:valid {
+    border-bottom-color: #0ef;
+}
+
+.input-box label {
+	position: absolute;
+	top: 50%;
+	left: 0;
+	transform: translateY(-50%);
+	font-size: 16px;
+	color: #fff;
+	pointer-events: none;
+	transition: .5s;
+}
+
+.input-box input:focus~label,
+.input-box input:valid~label {
+	top: -5px;
+	color: #0ef;
+}
+
+.input-box i {
+	position: absolute;
+	top: 50%;
+	right: 0;
+	transform: translateY(-50%);
+	font-size: 18px;
+	color: #fff;
+	transition: .5s;
+}
+
+.input-box input:focus~i,
+.input-box input:valid~i {
+    color: #0ef;
+}
+
+
+.btn {
+	position: relative;
+	width: 100%;
+	height: 45px;
+	background: transparent;
+	border: 2px solid #0ef;
+	outline: none;
+	border-radius: 40px;
+	cursor: pointer;
+	font-size: 16px;
+	color: #fff;
+	font-weight: 600;
+	z-index: 1;
+	overflow: hidden;
+}
+
+.btn::before {
+	content: '';
+	position: absolute;
+	top: -100%;
+	left: 0;
+	width: 100%;
+	height: 300%;
+	background: linear-gradient(#081b29, #0ef, #081b29, #0ef);
+	z-index: -1;
+	transition: .5s;
+}
+
+.btn:hover::before {
+	top: 0;
+}
+
+.form-box .logreg-link {
+	font-size: 14.5px;
+	color: #fff;
+	text-align: center;
+	margin: 20px 0 10px;
+}
+
+.logreg-link p a {
+	color: #0ef;
+	text-decoration: none;
+	font-weight: 600;
+}
+
+.logreg-link p a:hover {
+	text-decoration: underline;
+}
+
+.wrapper .info-text {
+	position: absolute;
+	top: 0;
+	width: 50%;
+	height: 100%;
+	/*background: red;*/
+	display: flex;
+	flex-direction: column;
+	justify-content: center;
+}
+
+.wrapper .info-text.login {
+	right: 0;
+	text-align: right;
+	padding: 0 40px 60px 150px;
+	/*display: none;*/
+}
+
+.wrapper .info-text.login .animation {
+	transform: translateX(0);
+	opacity: 1;
+	filter: blur(0);
+	transition: .7s ease;
+	transition-delay: calc(.1s * var(--j));
+}
+
+.wrapper.active .info-text.login .animation {
+	transform: translateX(120%);
+	opacity: 0;
+	filter: blur(10px);
+	transition-delay: calc(.1s * var(--i));
+}
+
+.wrapper .info-text.register {
+	left: 0;
+	text-align: left;
+	padding: 0 150px 60px 40px;
+	pointer-events: none;
+
+
+	/*display: none;*/
+}
+
+.wrapper.active .info-text.register {
+	pointer-events: auto;
+}
+
+
+.wrapper .info-text.register .animation {
+	transform: translateX(-120%);
+	opacity: 0;
+	filter: blur(10px);
+	transition: .7s ease;
+	transition-delay: calc(.1s * var(--j));
+}
+
+.wrapper.active .info-text.register .animation {
+	transform: translateX(0);
+	opacity: 1;
+	filter: blur(0);
+	transition-delay: calc(.1s * var(--i));
+
+}
+
+
+.info-text h2 {
+	font-size: 36px;
+	color: #fff;
+	line-height: 1.3;
+	text-transform: uppercase;
+}
+
+.wrapper .bg-animate {
+	position: absolute;
+	top: -4px;
+	right: 0;
+	width: 850px;
+	height: 600px;
+	background: linear-gradient(45deg, #081b29, #0ef);
+	border-bottom: 3px solid #0ef;
+	transform: rotate(10deg) skewY(40deg);
+	/*transform: rotate(0) skewY(0);*/
+	transform-origin: bottom right;
+	transition: 1.5s ease;
+	transition-delay: 1.6s;
+}
+
+.wrapper.active .bg-animate {
+    transform: rotate(0) skewY(0);
+    transition-delay: .5s;
+}
+
+.wrapper .bg-animate2 {
+	position: absolute;
+	top: 100%;
+	left: 250px;
+	width: 850px;
+	height: 700px;
+	background: #081b29;
+	border-top: 3px solid #0ef;
+	/* transform: rotate(10deg) skewY(40deg);
+	transform: rotate(-11deg) skewY(-41deg);*/
+	transform: rotate(0) skewY(0);
+	transform-origin: bottom left;
+	transition: 1.5s ease;
+	transition-delay: .5s;
+}
+
+.wrapper.active .bg-animate2 {
+	transform: rotate(-11deg) skewY(-43deg);
+	transition-delay: 1.2s;
+}
+
+
+/* Mobile Styles */
+/*@media (max-width: 870px) {
+    body {
+        display: block;
+        justify-content: normal;
+        align-items: normal;
+        min-height: auto;
+
+		 flex-direction: row;
+    justify-content: space-around;
+    align-items: center;
+    padding: 2.5rem 8%;
+    grid-column: 1 / 2;
+  }
+*/
+
+/* ... (previous CSS styles) ... */
+
+/* Mobile Styles */
+@media (max-width: 570px) {
+    body {
+        justify-content: normal;
+        align-items: center;
+        min-height: auto;
+        flex-direction: row;
+        justify-content: space-around;
+        align-items: center;
+        display: block;
+        grid-column: 1 / 2;
+    }
+
+    .wrapper,
+    .wrapper .info-text,
+    .wrapper .form-box,
+    .bg-animate,
+    .bg-animate2 {
+        position: static;
+        width: auto;
+        height: auto;
+        transform: none;
+        border: none;
+		display: block;
+    }
+
+    .wrapper .form-box,
+    .wrapper .info-text {
+        text-align: center;
+        padding: 20px;
+    }
+
+    .input-box {
+        margin: 15px 0;
+    }
+
+
+
+    .wrapper .form-box.login {
+        position: absolute;
+        top: 0;
+        right: 0;
+        width: auto;
+        height: 100%;
+		align-items: center;
+        pointer-events: none;
+        transition: all 0.5s ease;
+
+    }
+
+	.wrapper .form-box.login {
+        pointer-events: auto;
+
+    }
+
+
+
+
+    .wrapper .form-box.register {
+
+
+        position: absolute;
+        top: 0;
+        right: 0;
+        width: 100%;
+        height: 100%;
+        pointer-events: none;
+        transition: all 0.5s ease;
+
+		scrollbar-width: auto; /* Show the scrollbar if the content overflows */
+        scrollbar-color: transparent; /* Show the scrollbar if the content overflows */
+
+        &::-webkit-scrollbar {
+            width: auto; /* Show the scrollbar if the content overflows */
+        }
+
+        &::-webkit-scrollbar-track {
+            background: transparent; /* Show the scrollbar if the content overflows */
+        }
+
+        &::-webkit-scrollbar-thumb {
+            background-color: transparent; /* Show the scrollbar if the content overflows */
+            border: none; /* Hide the thumb border */
+        }
+
+    }
+
+    .wrapper.active .form-box.register {
+        pointer-events: auto;
+    }
+
+    .wrapper .image {
+
+	}
+
+	.wrapper .info-text.login {
+		display: none;
+	}
+
+	.wrapper .info-text.register {
+		display: none;
+	}
+
+	.wrapper .bg-animate,
+    .wrapper .bg-animate2 {
+       padding: 20px; /* Adjust padding as needed */
+	   height: 950px;
+
+    }
+}
+
+/* Style for autofilled inputs */
+.input-box input:-webkit-autofill {
+    -webkit-text-fill-color: #fff; /* Text color for autofill */
+    transition: background-color 5000s ease-in-out 0s; /* Transition to maintain styles */
+}
+
+/* Set the background color and border for autofilled inputs */
+.input-box input:-webkit-autofill {
+    background-color: #081b29 !important; /* Background color for autofill */
+    border-bottom-color: #0ef; /* Border color for autofill */
+}
+/* Add this CSS to prevent scrolling or dragging on mobile devices */
+body, html {
+    overflow: hidden;
+    touch-action: none;
+    overscroll-behavior-y: contain;
+}
+
+.input-box input:focus~label,
+.input-box input:valid~label,
+.input-box input:-webkit-autofill~label {
+    top: -5px;
+    color: #0ef;
+}
+.input-box input:focus~i,
+.input-box input:valid~i,
+.input-box input:-webkit-autofill~label~i {
+    color: #0ef;
+}
+
+</style>
+<script>
+   const wrapper = document.querySelector('.wrapper');
+const registerLink = document.querySelector('.register-link');
+const loginLink = document.querySelector('.login-link');
+
+registerLink.onclick = () => {
+	wrapper.classList.add('active');
+}
+
+loginLink.onclick = () => {
+	wrapper.classList.remove('active');
+}
+</script>
+
+</html>

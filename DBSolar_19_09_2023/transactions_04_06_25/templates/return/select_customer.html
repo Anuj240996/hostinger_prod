@@ -1,0 +1,359 @@
+{% extends 'partials/base.html' %}
+{% load static %}
+{% block title %}Select Customer/Vendor{% endblock title %}
+{% block content %}
+<style>
+  /* Hide the native radio input */
+  .btn-group label input[type="radio"] {
+      display: none;
+  }
+
+  .btn-group label.active::before {
+    color: transparent;
+  }
+
+  /* Style the label as an inline-flex container to align icon and text */
+  .btn-group label {
+      display: inline-flex;
+      align-items: center;
+      /* Optional: add some padding if needed */
+      padding: 0.5rem 1rem;
+  }
+  /* Insert a check mark before the label text */
+  .btn-group label::before {
+      content: "\2713";  /* Unicode check mark */
+      display: inline-block;
+      margin-right: 0.5rem;
+      font-size: 1.2rem;
+      color: transparent; /* hidden when not active */
+      transition: color 0.2s;
+  }
+  /* When the label is active, show the check mark in green */
+  .btn-group label.active::before {
+      color: white;  /* Bootstrap success green */
+  }
+</style>
+
+<div class="container mt-5">
+    <!--<h1>Select Customer or Vendor</h1>-->
+    <h1>Select Return DC Consumer or Vendor</h1>
+    <form id="returnForm">
+        {% csrf_token %}
+
+        <!-- New Radio Button Syntax -->
+        <label class="d-block text-center"><b>Select Entity</b></label>
+        <div class="d-flex justify-content-center">
+            <div class="btn-group" data-toggle="buttons">
+                <label class="btn btn-outline-success active" id="customerLabel">
+                    <input type="radio" name="filter_type" value="customer" id="filterCustomer" checked autocomplete="off">
+                    <b> Consumer</b>
+                </label>
+                <label class="btn btn-outline-success" id="vendorLabel">
+                    <input type="radio" name="filter_type" value="vendor" id="filterVendor" autocomplete="off">
+                    <b> Vendor</b>
+                </label>
+            </div>
+        </div>
+
+        <!-- Customer Type Dropdown (Shown for Customer filter) -->
+        <div class="form-group" id="customerTypeContainer">
+            <label for="customerTypeDropdown"><b>Select Consumer Type</b></label>
+            <select id="customerTypeDropdown" class="form-control" name="customer_type">
+                <option value="" selected disabled>-- Select Consumer Type --</option>
+                {% for customer_type in customer_types %}
+                    <option value="{{ customer_type }}">{{ customer_type }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <!-- Customer Dropdown (Shown for Customer filter) -->
+        <div class="form-group" id="customerContainer">
+            <label for="customerDropdown"><b>Select Consumer</b></label>
+            <select id="customerDropdown" class="form-control" name="customer" disabled>
+                <option value="" selected disabled>-- Select Consumer --</option>
+                {% for customer in customers %}
+                    <option value="{{ customer.Cust_id }}">{{ customer.Comp_name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <!-- Vendor Type Dropdown (Shown for Vendor filter) -->
+        <div class="form-group" id="vendorTypeContainer" style="display: none;">
+            <label for="vendorTypeDropdown"><b>Select Vendor Type</b></label>
+            <select id="vendorTypeDropdown" class="form-control" name="vendor_type">
+                <option value="" selected disabled>-- Select Vendor Type --</option>
+                {% for vendor_type in vendor_types %}
+                    <option value="{{ vendor_type }}">{{ vendor_type }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <!-- Vendor Dropdown (Shown for Vendor filter) -->
+        <div class="form-group" id="vendorDropdownContainer" style="display: none;">
+            <label for="vendorDropdown"><b>Select Vendor</b></label>
+            <select id="vendorDropdown" class="form-control" name="vendor" disabled>
+                <option value="" selected disabled>-- Select Vendor --</option>
+                {% for vendor in vendors %}
+                    <option value="{{ vendor.id }}">{{ vendor.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <!-- Bill Number Dropdown (Common for both filters) -->
+        <div class="form-group mt-3">
+            <label for="billDropdown"><b>Select Bill Number</B></label>
+            <select id="billDropdown" class="form-control" name="billno" disabled>
+                <option class="text-capitalize" value="" selected disabled>-- Select Bill Number --</option>
+            </select>
+        </div>
+
+        <!-- Categories with Checkboxes (Initially Hidden) -->
+        <div class="form-group mt-3" id="categoryGroup" style="display: none;">
+            <label id="category"><b>Select Categories</b></label>
+            <div class="checkbox-group" id="categoryDropdown">
+                <!-- Categories will be dynamically added here -->
+            </div>
+        </div>
+
+        <!-- Next Button -->
+        <button type="submit" id="Next" class="btn btn-primary mt-4">Next</button>
+    </form>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        // Get references to the fields
+        const filterRadios = document.getElementsByName('filter_type');
+        const customerTypeContainer = document.getElementById('customerTypeContainer');
+        const customerTypeDropdown = document.getElementById('customerTypeDropdown');
+        const customerContainer = document.getElementById('customerContainer');
+        const customerDropdown = document.getElementById('customerDropdown');
+        const vendorDropdownContainer = document.getElementById('vendorDropdownContainer');
+        const vendorTypeContainer = document.getElementById('vendorTypeContainer');
+        const vendorTypeDropdown = document.getElementById('vendorTypeDropdown');
+        const vendorDropdown = document.getElementById('vendorDropdown');
+        const billDropdown = document.getElementById('billDropdown');
+        const categoryDropdown = document.getElementById('categoryDropdown');
+        const categoryGroup = document.getElementById('categoryGroup');
+        const returnForm = document.getElementById('returnForm');
+
+        // Function to reset the bill dropdown and categories
+        function resetBillAndCategories() {
+            billDropdown.innerHTML = '';
+            const defaultOption = document.createElement('option');
+            defaultOption.value = '';
+            defaultOption.textContent = '-- Select Bill Number --';
+            billDropdown.appendChild(defaultOption);
+            billDropdown.disabled = true;
+            categoryDropdown.innerHTML = '';
+            categoryGroup.style.display = 'none';
+        }
+
+        // Function to update the dropdown visibility based on the selected entity
+        function updateEntityDisplay() {
+            const selectedType = document.querySelector('input[name="filter_type"]:checked').value;
+            if (selectedType === 'customer') {
+                customerTypeContainer.style.display = 'block';
+                customerContainer.style.display = 'block';
+                vendorDropdownContainer.style.display = 'none';
+                vendorTypeContainer.style.display = 'none';
+                // Reset selections
+                vendorDropdown.value = "";
+                customerTypeDropdown.value = "";
+                customerDropdown.value = "";
+                customerDropdown.disabled = true;
+            } else if (selectedType === 'vendor') {
+                customerTypeContainer.style.display = 'none';
+                customerContainer.style.display = 'none';
+                vendorDropdownContainer.style.display = 'block';
+                vendorTypeContainer.style.display = 'block';
+                // Reset selections
+                customerTypeDropdown.value = "";
+                customerDropdown.value = "";
+                customerDropdown.disabled = true;
+                vendorDropdown.value = "";
+                vendorDropdown.disabled = true;
+            }
+            resetBillAndCategories();
+        }
+
+        // Attach event listeners to radio inputs for both 'change' and 'click'
+        filterRadios.forEach(radio => {
+            radio.addEventListener('change', updateEntityDisplay);
+            radio.addEventListener('click', updateEntityDisplay);
+        });
+
+        // Customer filter: Update customers list when a customer type is selected
+        customerTypeDropdown.addEventListener('change', function () {
+            const customerType = this.value;
+            // Clear existing customer options
+            customerDropdown.innerHTML = '';
+            const defaultOption = document.createElement('option');
+            defaultOption.value = '';
+            defaultOption.textContent = '-- Select Customer --';
+            customerDropdown.appendChild(defaultOption);
+
+            if (customerType) {
+                customerDropdown.disabled = false;
+
+                fetch(`/transactions/get_customers_by_type/${customerType}/`)
+                    .then(response => response.json())
+                    .then(data => {
+                        const customers = data.customers;
+                        if (customers.length > 0) {
+                            customers.forEach(customer => {
+                                const option = document.createElement('option');
+                                option.value = customer.Cust_id;
+                                option.textContent = customer.Comp_name;
+                                customerDropdown.appendChild(option);
+                            });
+                        }
+                    })
+                    .catch(error => console.error('Error fetching customers:', error));
+            }
+            resetBillAndCategories();
+        });
+
+        // Customer filter: Update bill list when a customer is selected
+        customerDropdown.addEventListener('change', function () {
+            const customerId = this.value;
+            resetBillAndCategories();
+
+            if (customerId) {
+                fetch(`/transactions/get_billnos/${customerId}/`)
+                    .then(response => response.json())
+                    .then(data => {
+                        const bills = data.bills;
+                        if (bills.length > 0) {
+                            billDropdown.disabled = false;
+                            bills.forEach(bill => {
+                                const option = document.createElement('option');
+                                option.value = bill.billno;
+                                option.textContent = bill.billno;
+                                billDropdown.appendChild(option);
+                            });
+                        } else {
+                            billDropdown.innerHTML = '<option value="" selected disabled>No bills available</option>';
+                        }
+                    })
+                    .catch(error => console.error('Error fetching bill numbers:', error));
+            } else {
+                billDropdown.disabled = true;
+            }
+        });
+
+        // Vendor filter: Update vendors list when a vendor type is selected
+        vendorTypeDropdown.addEventListener('change', function () {
+            const vendorType = this.value;
+            // Clear existing vendor options
+            vendorDropdown.innerHTML = '';
+            const defaultOption = document.createElement('option');
+            defaultOption.value = '';
+            defaultOption.textContent = '-- Select Vendor --';
+            vendorDropdown.appendChild(defaultOption);
+
+            if (vendorType) {
+                vendorDropdown.disabled = false;
+
+                fetch(`/transactions/get_vendor_by_type/${vendorType}/`)
+                    .then(response => response.json())
+                    .then(data => {
+                        const vendors = data.vendor;
+                        if (vendors.length > 0) {
+                            vendors.forEach(vendor => {
+                                const option = document.createElement('option');
+                                option.value = vendor.id;
+                                option.textContent = vendor.name;
+                                vendorDropdown.appendChild(option);
+                            });
+                        }
+                    })
+                    .catch(error => console.error('Error fetching vendors:', error));
+            }
+            resetBillAndCategories();
+        });
+
+        // Vendor filter: Update bill list when a vendor is selected
+        vendorDropdown.addEventListener('change', function () {
+            const vendorId = this.value;
+            resetBillAndCategories();
+
+            if (vendorId) {
+                // Use a dedicated endpoint to fetch bills by vendor
+                fetch(`/transactions/get_vendor_billnos/${vendorId}/`)
+                    .then(response => response.json())
+                    .then(data => {
+                        const bills = data.bills;
+                        if (bills.length > 0) {
+                            billDropdown.disabled = false;
+                            bills.forEach(bill => {
+                                const option = document.createElement('option');
+                                option.value = bill.billno;
+                                option.textContent = bill.billno;
+                                billDropdown.appendChild(option);
+                            });
+                        } else {
+                            billDropdown.innerHTML = '<option value="" selected disabled>No bills available</option>';
+                        }
+                    })
+                    .catch(error => console.error('Error fetching bill numbers for vendor:', error));
+            } else {
+                billDropdown.disabled = true;
+            }
+        });
+
+        // Update categories when a bill number is selected (works for both filters)
+        billDropdown.addEventListener('change', function () {
+            const billno = this.value;
+
+            // Show a temporary loading message
+            categoryDropdown.innerHTML = '<div class="form-check"><input class="form-check-input" type="checkbox" disabled><label class="form-check-label">-- Loading Categories --</label></div>';
+
+            if (billno) {
+                fetch(`/transactions/get_categories_by_billno/${billno}/`)
+                    .then(response => response.json())
+                    .then(data => {
+                        const categories = data.categories;
+                        if (categories.length > 0) {
+                            categoryDropdown.innerHTML = ''; // Clear loading message
+                            categories.forEach(category => {
+                                const categoryCheckbox = document.createElement('div');
+                                categoryCheckbox.classList.add('form-check');
+                                categoryCheckbox.innerHTML = `
+                                    <input class="form-check-input" type="checkbox" name="categories" value="${category.id}" id="category${category.id}">
+                                    <label class="form-check-label" for="category${category.id}">${category.name}</label>
+                                `;
+                                categoryDropdown.appendChild(categoryCheckbox);
+                            });
+                            categoryGroup.style.display = 'block';
+                        } else {
+                            categoryDropdown.innerHTML = '<div class="form-check"><input class="form-check-input" type="checkbox" disabled><label class="form-check-label">No categories found for this bill</label></div>';
+                            categoryGroup.style.display = 'block';
+                        }
+                    })
+                    .catch(error => console.error('Error fetching categories:', error));
+            }
+        });
+
+        // Handle form submission: build the URL with parameters based on the selected filter type
+        returnForm.addEventListener('submit', function(event) {
+            event.preventDefault();
+            const filterType = document.querySelector('input[name="filter_type"]:checked').value;
+            let params = '';
+            if (filterType === 'customer') {
+                const customerType = customerTypeDropdown.value;
+                const customer = customerDropdown.value;
+                params = `customer_type=${customerType}&customer=${customer}`;
+            } else if (filterType === 'vendor') {
+                const vendor = vendorDropdown.value;
+                params = `vendor=${vendor}`;
+            }
+            const billno = billDropdown.value;
+            const categories = Array.from(categoryDropdown.querySelectorAll('input[type="checkbox"]:checked'))
+                                      .map(checkbox => checkbox.value);
+            params += `&categories=${categories.join(',')}`;
+            window.location.href = `/transactions/return/finalsales_return/${billno}/?${params}`;
+        });
+    });
+</script>
+{% endblock content %}

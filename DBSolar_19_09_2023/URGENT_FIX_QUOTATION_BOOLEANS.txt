@@ -1,0 +1,89 @@
+================================================================================
+URGENT: FIX QUOTATION BOOLEAN FIELDS - DATABASE MUST BE FIXED
+================================================================================
+
+The error you're seeing is because the database columns `is_active` and 
+`has_yellow_background` in the `quotation_termsandcondition` table are 
+`bit varying` type instead of `boolean` type.
+
+This MUST be fixed in the database. Code workarounds will not fully resolve this.
+
+================================================================================
+OPTION 1: Run Python Script (Recommended)
+================================================================================
+
+On your server, run:
+
+    cd /home/anujdeshmukh24/DBSolar_19_09_2023/DBSolar_19_09_2023
+    source ../env/bin/activate  # or activate your virtual environment
+    python fix_quotation_booleans_direct.py
+
+================================================================================
+OPTION 2: Run SQL Directly
+================================================================================
+
+Connect to your PostgreSQL database and run:
+
+    -- Connect to database
+    psql -U your_username -d your_database_name
+
+    -- Then run:
+    ALTER TABLE quotation_termsandcondition 
+    ALTER COLUMN is_active TYPE boolean 
+    USING CASE 
+        WHEN is_active::text IN ('1', 't', 'true', 'True', 'TRUE', 'y', 'yes', 'Y', 'YES') THEN true 
+        WHEN is_active::text IN ('0', 'f', 'false', 'False', 'FALSE', 'n', 'no', 'N', 'NO', '') THEN false 
+        ELSE false
+    END;
+
+    ALTER TABLE quotation_termsandcondition 
+    ALTER COLUMN has_yellow_background TYPE boolean 
+    USING CASE 
+        WHEN has_yellow_background::text IN ('1', 't', 'true', 'True', 'TRUE', 'y', 'yes', 'Y', 'YES') THEN true 
+        WHEN has_yellow_background::text IN ('0', 'f', 'false', 'False', 'FALSE', 'n', 'no', 'N', 'NO', '') THEN false 
+        ELSE false
+    END;
+
+    -- Verify the change
+    SELECT column_name, data_type 
+    FROM information_schema.columns 
+    WHERE table_name = 'quotation_termsandcondition' 
+    AND column_name IN ('is_active', 'has_yellow_background');
+
+    -- You should see: boolean for both columns
+
+================================================================================
+AFTER FIXING THE DATABASE
+================================================================================
+
+1. Restart your Django server:
+   sudo systemctl restart your-django-service
+   # OR if running manually: Ctrl+C and restart
+
+2. The error should be completely resolved.
+
+3. All code workarounds can be removed later (optional).
+
+================================================================================
+WHY THIS IS HAPPENING
+================================================================================
+
+PostgreSQL is strict about data types. When Django tries to use `is_active` 
+in a WHERE clause with a boolean comparison, PostgreSQL sees that the column 
+is `bit varying` (not boolean) and throws an error:
+
+    "argument of WHERE must be type boolean, not type bit varying"
+
+This happens because the database was likely migrated from SQLite (which is 
+more lenient) or the columns were created incorrectly.
+
+================================================================================
+FILES CREATED FOR YOU
+================================================================================
+
+1. fix_quotation_booleans_direct.py - Python script to fix the database
+2. fix_quotation_booleans.sql - SQL script you can run directly
+
+Both files are in your project root directory.
+
+================================================================================

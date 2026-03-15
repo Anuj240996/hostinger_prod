@@ -1,0 +1,56 @@
+===============================================
+IMMEDIATE FIX FOR CONTROLLER ID ERROR
+===============================================
+
+The error occurs because the database column doesn't have a DEFAULT value.
+You MUST run one of these fixes on your server.
+
+OPTION 1: Run Python Script (RECOMMENDED)
+-------------------------------------------
+On your server, run these commands:
+
+cd /home/anujdeshmukh24/DBSolar_19_09_2023/DBSolar_19_09_2023
+source /home/anujdeshmukh24/env/bin/activate
+python fix_controller_id_now.py
+
+Then RESTART your Django server.
+
+
+OPTION 2: Run Django Management Command
+-----------------------------------------
+On your server, run these commands:
+
+cd /home/anujdeshmukh24/DBSolar_19_09_2023/DBSolar_19_09_2023
+source /home/anujdeshmukh24/env/bin/activate
+python manage.py fix_controller_id_force
+
+Then RESTART your Django server.
+
+
+OPTION 3: Run SQL Directly (if you have database access)
+----------------------------------------------------------
+Connect to your PostgreSQL database and run the SQL from:
+fix_controller_id_IMMEDIATE.sql
+
+Then RESTART your Django server.
+
+
+AFTER RUNNING THE FIX:
+======================
+1. Stop your Django server (Ctrl+C)
+2. Restart it:
+   python manage.py runserver 0.0.0.0:8000
+   (or however you normally start it)
+
+3. Try creating a controller entry again - the error should be gone!
+
+
+WHAT THE FIX DOES:
+==================
+- Creates a sequence for auto-incrementing IDs
+- Sets DEFAULT nextval('customer_controller_id_seq') on the id column
+- Fixes any existing NULL values
+- Ensures the column is NOT NULL
+
+Without this DEFAULT, PostgreSQL rejects inserts when id is NULL.
+

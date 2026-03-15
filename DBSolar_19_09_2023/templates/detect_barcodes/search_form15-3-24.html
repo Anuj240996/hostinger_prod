@@ -1,0 +1,417 @@
+{% extends 'partials/base.html' %}
+{% load static %}
+{% block content %}
+ <!-- Other meta tags and stylesheets -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+<style>
+   /* CSS for the zoomed image */
+   .zoom-image-container.zoomed-out {
+   display: none;
+   }
+   .zoom-image-container {
+   position: fixed;
+   z-index: 9999;
+   top: 50%;
+   left: 50%;
+   transform: translate(-50%, -50%);
+   max-width: 90%;
+   max-height: 90%;
+   background-color: #fff;
+   box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+   overflow: auto;
+   text-align: center;
+   }
+   .zoom-image {
+   max-width: 100%;
+   max-height: 100%;
+   margin: 0 auto;
+   }
+</style>
+<div class="container-fluid">
+   <div class="card-body">
+      <!-- left column -->
+      <div class="col-md-12">
+         <!-- general form elements -->
+         <div class="card card-primary">
+            <div class="card-header">
+               <h3>Product Barcode List</h3>
+            </div>
+            <form method="POST" action="{% url 'detect_barcodes-search' %}" id="barcode-form">
+               {% csrf_token %}
+               <div class="form-group row">
+                  <div class="col-sm-5">
+                     <label for="company">Company Name:</label>
+                     <select class="form-control" name="company" id="company">
+                        <option value=""></option>
+                        {% for company in companies %}
+                        <option value="{{ company }}">{{ company }}</option>
+                        {% endfor %}
+                     </select>
+                  </div>
+                  <div class="col-sm-5">
+                     <label for="product">Item Type:</label>
+                     <select class="form-control" name="product" id="product">
+                        <option value=""></option>
+                        <option value="All">All</option>
+                        {% for product in product_names %}
+                        <option value="{{ product }}">{{ product }}</option>
+                        {% endfor %}
+                     </select>
+                  </div>
+                  <div class="col-sm-2">
+                     <br>
+                     <!-- Hidden input to store selected company value -->
+                     <!--                      <input type="hidden" name="selected_company" id="selected_company">-->
+                     <button type="submit" id="preview"><i class="nav-icon fa fa-eye" aria-hidden="true"></i>   Preview</button>
+                  </div>
+                  <!-- Add a button for generating PDF -->
+               </div>
+            </form>
+         </div>
+      </div>
+      <br>
+
+      {% if solar_items %}
+         <button type="button" class="btn btn-primary" id="generate-pdf1" style="float: right; margin-right: 45px; padding: 5px 0px; font-size: 17px;"><i class="fa-solid fa-file-pdf fa-2x"></i>  Generate PDF</button>
+         <h4>Generated Barcodes for Consumer: {{ solar_items.0.company }}</h4>
+      {% elif inverter_items %}
+          <button type="button" class="btn btn-primary" id="generate-pdf1" style="float: right; margin-right: 45px; padding: 5px 0px; font-size: 17px;"><i class="fa-solid fa-file-pdf fa-2x"></i>  Generate PDF</button>
+
+         <h4>Generated Barcodes for Consumer: {{ inverter_items.0.company }}</h4>
+      {% endif %}
+
+      {% if solar_items %}
+
+      <div class="col-md-12 mx-auto">
+         <div class="table-responsive">
+               <caption>
+                  <h3>Solar Panel Items</h3>
+               </caption>
+               <table class="table">
+                  <thead>
+                     <tr border="1">
+                        <th colspan="3">
+                           <b>Make :</b> {{ solar_items.0.company_name }} <br>
+                           <b>Wattage :</b>  {{ unique_wattages|join:"," }}
+                        </th>
+                        <th colspan="1">
+                           <b>Total Quantity :</b> {{ solar_panel_total_quantity }}
+                           <br>
+                           <!--        <b1> Total Quantity:  {% for wattage in solar_panel_quantity_by_wattage %}{{ total_quantity|default:wattage }} {% endfor %}</b1><br>-->
+                           {% for item in solar_panel_quantity_by_wattage %}
+                           <b>Quantity for Model Type {{ item.wattage }} :</b> {{ item.total_quantity }}
+                           <br>
+                           {% endfor %}
+                        </th>
+                     </tr>
+                     <tr>
+                        <th>Serial No</th>
+                        <th>Wattage </th>
+                        <th>Barcode No</th>
+                        <th>Panel Barcode</th>
+                     </tr>
+                  </thead>
+                  <tbody>
+                     {% for item in solar_items %}
+                     <tr>
+                        <td>{{ forloop.counter }}</td>
+                        <td>{{ item.wattage}}</td>
+                        <td>{{ item.barcode_data }}</td>
+                        <td>
+                           {% if item.barcode_type == 'CODE39' %}
+                           <img src="{{ item.image.url }}" alt="Barcode Image" class="zoomable-image" style="width: 150px; height: auto; cursor: zoom-in;">
+                           {% else %}
+                           <img src="{{ item.barcode_path.url }}" alt="Barcode Image" class="zoomable-image" style="width: 150px; height: auto; cursor: zoom-in;">
+                           {% endif %}
+                        </td>
+                     </tr>
+                     {% endfor %}
+                  </tbody>
+               </table>
+            </div>
+         </div>
+
+
+      {% endif %}
+
+      <br>
+      {% if inverter_items %}
+      <div class="col-md-12 mx-auto">
+         <div class="table-responsive">
+            <caption>
+               <h3>Inverter Items</h3>
+            </caption>
+            <table class="table">
+               <thead>
+                  <tr>
+                     <th colspan="3">
+                        <b>Make : </b>{{ inverter_items.0.company_name }} <br>
+                        <b>Wattage :</b> {{ inverter_wattages|join:"," }}
+                     </th>
+                     <th colspan="1">
+                        <b>Total Quantity : </b>{{ inverter_panel_total_quantity }}
+                        <br>
+                        <!--        <b1> Total Quantity:  {% for wattage in solar_panel_quantity_by_wattage %}{{ total_quantity|default:wattage }} {% endfor %}</b1><br>-->
+                        {% for item in inverter_panel_quantity_by_wattage %}
+                        <b>Quantity for Model Type {{ item.wattage }} :</b> {{ item.total_quantity }}
+                        <br>
+                        {% endfor %}
+                     </th>
+                  </tr>
+                  <tr>
+                     <th>Serial No</th>
+                     <th>Capacity (KW)</th>
+                     <th>Inverter No</th>
+                     <th>Inverter Barcode</th>
+                  </tr>
+               </thead>
+               <tbody>
+                  {% for item in inverter_items %}
+                  <tr>
+                     <td>{{ forloop.counter }}</td>
+                     <td>{{ item.wattage}} kw</td>
+                     <td>{{ item.barcode_data }}</td>
+                     <td>
+                        {% if item.barcode_type == 'CODE39' %}
+                        <img src="{{ item.image.url }}" alt="Barcode Image" class="zoomable-image" style="width: 150px; height: auto; cursor: zoom-in;">
+                        {% else %}
+                        <img src="{{ item.barcode_path.url }}" alt="Barcode Image" class="zoomable-image" style="width: 150px; height: auto; cursor: zoom-in;">
+                        {% endif %}
+                     </td>
+                  </tr>
+                  {% endfor %}
+               </tbody>
+            </table>
+         </div>
+      </div>
+   </div>
+   {% endif %}
+   <!-- Modal for PDF Generation -->
+   <div class="modal fade" id="pdfModal" tabindex="-1" role="dialog" aria-labelledby="pdfModalLabel" aria-hidden="true">
+      <div class="modal-dialog" role="document">
+         <div class="modal-content">
+            <div class="modal-header">
+               <h5 class="modal-title" id="pdfModalLabel">Generate PDF</h5>
+               <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+               <span aria-hidden="true">&times;</span>
+               </button>
+            </div>
+            <form id="pdfForm" method="POST" action="{% url 'detect_barcodes-generate_pdf' %}">
+               {% csrf_token %}
+               <div class="modal-body">
+                  <p>Selected Company : <b><span id="selectedCompanySpan"></span></b></p>
+                  <p>Selected Product : <b><span id="selectedProductSpan"></span></b></p>
+                  <input type="hidden" name="selected_company" id="selected_company">
+                  <input type="hidden" name="selected_product" id="selected_product">
+                  <label for="invoiceNumber">Invoice Number:</label>
+                  <input type="text" class="form-control" id="invoiceNumber" name="invoice_number"  required>
+<!--                  <label>Serial No</label>-->
+                  <br>
+                  <label for="radio_serial" style="margin-left: 20px;"><input type="radio" value="serial" id="radio_serial" name="no" checked /><span>Serial No</span>  </label>
+
+   <!--               <label>Barcode No</label>-->
+
+                  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                  <label for="radio_barcode" style="margin-right: 200px;"><input type="radio" value="barcode" id="radio_barcode" name="no" /><span>Barcode No</span> </label>
+
+               </div>
+               <div class="modal-footer">
+                  <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                  <button type="submit" class="btn btn-primary" id="generate-pdf">Generate PDF</button>
+                  <input type="hidden" name="selected_no" id="selected_no">
+               </div>
+            </form>
+         </div>
+      </div>
+   </div>
+</div>
+<!-- Zoomed Image Container -->
+<div class="zoom-image-container zoomed-out">
+   <span class="close-zoom-image">&times;</span>
+   <img class="zoom-image">
+</div>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js" integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=" crossorigin="anonymous"></script>
+<!-- Add this JavaScript code within your HTML page or in a separate script file -->
+<style>
+    #preview {
+        display: none; /* Initially hide the button */
+    }
+</style>
+
+<script>
+
+    const companyDropdown = document.getElementById('company');
+    const productDropdown = document.getElementById('product');
+    const generatepreview = document.getElementById('preview');
+
+
+    // Update button visibility based on input values
+    function updateButtonVisibility() {
+        const isCompanySelected = companyDropdown.value !== '';
+        const isProductSelected = productDropdown.value !== '';
+
+        generatepreview.style.display = (isCompanySelected && isProductSelected) ? 'block' : 'none';
+
+    }
+
+    // Listen for changes in the dropdowns
+    companyDropdown.addEventListener('change', updateButtonVisibility);
+    productDropdown.addEventListener('change', updateButtonVisibility);
+
+    // Store selected values when the form is submitted
+   document.getElementById('barcode-form').addEventListener('submit', function(event) {
+       localStorage.setItem('selectedCompany', document.getElementById('company').value);
+       localStorage.setItem('selectedProduct', document.getElementById('product').value);
+   });
+
+   // Set stored values to the dropdowns when Generate PDF button is clicked
+   document.getElementById('generate-pdf1').addEventListener('click', function() {
+       var selectedCompany = localStorage.getItem('selectedCompany');
+       var selectedProduct = localStorage.getItem('selectedProduct');
+
+       if (selectedCompany) {
+           document.getElementById('company').value = selectedCompany;
+       }
+
+        if (selectedProduct) {
+            productDropdown.value = selectedProduct;
+        }
+    });
+
+    // Initial button visibility
+    updateButtonVisibility();
+</script>
+<script>
+        // JavaScript code to capture and send selected company value and radio button choice when the "Generate PDF" button is clicked
+      document.getElementById('generate-pdf1').addEventListener('click', function() {
+          var selectedCompany = document.getElementById('company').value;
+          var selectedProduct = document.getElementById('product').value;
+          //var selectedNo = document.querySelector('input[name="no"]:checked').value; // Get the selected radio button value
+
+          // Populate the modal
+          document.getElementById('selectedCompanySpan').textContent = selectedCompany;
+          document.getElementById('selectedProductSpan').textContent = selectedProduct;
+
+          // Set the values in hidden input fields within the modal form
+          document.getElementById('selected_company').value = selectedCompany;
+          document.getElementById('selected_product').value = selectedProduct;
+          //document.getElementById('selected_no').value = selectedNo; // Store the selected radio button choice
+
+            // Add an event listener to the radio buttons
+          $('input[name="no"]').on('change', function () {
+              // Update the selectedNo hidden input field when the radio button selection changes
+              selectedNo = $('input[name="no"]:checked').val();
+              document.getElementById('selected_no').value = selectedNo;
+          });
+
+          // Open the modal
+          $('#pdfModal').modal('show');
+      });
+
+
+
+       // JavaScript code for form submission within the modal
+    document.getElementById('pdfForm').addEventListener('submit', function(event) {
+      event.preventDefault(); // Prevent the form from submitting
+
+      // Get the form data
+      var formData = new FormData(this);
+
+
+      // Send the form data to the server for PDF generation
+      fetch('{% url "detect_barcodes-generate_pdf" %}', {
+          method: 'POST',
+          body: formData
+      })
+      .then(response => response.blob())
+      .then(blob => {
+          // Create a blob URL for the PDF and open it in a new tab
+          var pdfUrl = URL.createObjectURL(blob);
+          window.open(pdfUrl, '_blank');
+      })
+      .catch(error => console.error('Error:', error));
+
+      // Close the modal
+      $('#pdfModal').modal('hide');
+   });
+          // document.getElementById('generate-pdf').addEventListener('click', function() {
+            //  var selectedCompany = document.getElementById('company').value;
+             // var selectedProduct = document.getElementById('product').value;  // Add this line
+
+
+              // Get the CSRF token
+              // var csrfToken = document.getElementsByName('csrfmiddlewaretoken')[0].value;
+
+              // Assuming the PDF generation URL is 'detect_barcodes/generate_pdf/'
+             // var pdfGenerateUrl = '{% url 'detect_barcodes-generate_pdf' %}';
+
+              // Create a form dynamically and submit it
+              // var form = document.createElement('form');
+              // form.method = 'POST';
+              // form.action = pdfGenerateUrl;
+
+              // Add the CSRF token to the form data
+              // var csrfInput = document.createElement('input');
+              // csrfInput.type = 'hidden';
+              // csrfInput.name = 'csrfmiddlewaretoken';
+              // csrfInput.value = csrfToken;
+              // form.appendChild(csrfInput);
+
+              // var hiddenInput = document.createElement('input');
+              // hiddenInput.type = 'hidden';
+              // hiddenInput.name = 'selected_company';
+              // hiddenInput.value = selectedCompany;
+
+              // form.appendChild(hiddenInput);
+
+              // var hiddenProductInput = document.createElement('input');  // Add this block
+              // hiddenProductInput.type = 'hidden';
+              // hiddenProductInput.name = 'selected_product';
+              // hiddenProductInput.value = selectedProduct;
+              // form.appendChild(hiddenProductInput);
+
+
+              // document.body.appendChild(form);
+              // form.submit();
+          // });
+
+</script>
+<script>
+   // Zoom-in and Zoom-out functionality
+   document.addEventListener("DOMContentLoaded", function () {
+       var zoomableImages = document.querySelectorAll(".zoomable-image");
+       var zoomImageContainer = document.querySelector(".zoom-image-container");
+       var zoomImage = document.querySelector(".zoom-image");
+       var closeZoomImage = document.querySelector(".close-zoom-image");
+
+       function showZoomedImage(src) {
+           zoomImage.src = src;
+           zoomImageContainer.classList.remove("zoomed-out");
+       }
+
+       function hideZoomedImage() {
+           zoomImageContainer.classList.add("zoomed-out");
+       }
+
+       function handleKeyDown(event) {
+           if (event.key === "Escape") {
+               hideZoomedImage();
+           }
+       }
+
+       zoomableImages.forEach(function (img) {
+           img.addEventListener("click", function () {
+               showZoomedImage(this.src);
+           });
+       });
+
+       zoomImageContainer.addEventListener("click", hideZoomedImage);
+       zoomImage.addEventListener("click", function (event) {
+           event.stopPropagation();
+       });
+       closeZoomImage.addEventListener("click", hideZoomedImage);
+       document.addEventListener("keydown", handleKeyDown);
+   });
+</script>
+<!-- Add the Inverter table here using similar code structure -->
+{% endblock %}

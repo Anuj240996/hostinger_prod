@@ -1,0 +1,1352 @@
+{% extends 'partials/base.html' %}
+{% block title %}Order Page{% endblock %}
+{% load static %}
+{% block content %}
+<!--   <div class="card-body">-->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@mdi/font/css/materialdesignicons.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.4.0/jspdf.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/exceljs/dist/exceljs.min.js"></script>
+
+<script src="https://rawgit.com/eKoopmans/html2pdf/master/dist/html2pdf.bundle.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/exceljs/dist/exceljs.min.js"></script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.9.2/html2pdf.bundle.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/exceljs/dist/exceljs.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/clipboard@2.0.8/dist/clipboard.min.js"></script>
+
+<style xmlns="http://www.w3.org/1999/html" xmlns="http://www.w3.org/1999/html">
+    .hidden {
+        display: none;
+    }
+    table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+    th, td {
+        border: none;
+        padding: 12px;
+        text-align: center;
+    }
+    th {
+        background-color: #f2f2f2;
+    }
+    tr > td {
+        vertical-align: middle;
+    }
+
+    .checkmark {
+        width: 30px;
+        height: 30px;
+        text-align: center;
+        vertical-align: middle;
+        font-size: 25px;
+        color: green;
+        font-weight: bold;
+    }
+
+    .checkmark1 {
+        width: 30px;
+        height: 30px;
+        text-align: center;
+        vertical-align: middle;
+        font-size: 25px;
+        color: red;
+        font-weight: bold;
+    }
+    /* Centering the checkbox in the table cell */
+    td {
+        text-align: center;
+    }
+
+</style>
+      <div class="page-header">
+         <div class="row">
+            <div class="col-sm-12">
+               <h3 class="page-title text-capitalize">Show Meters Details of Company</h3>
+               <ul class="breadcrumb" style="border-bottom : 2px solid orange">
+                  <li class="breadcrumb-item"><a href="#">Dashboard</a></li>
+                  <li class="breadcrumb-item active">View  Details</li>
+               </ul>
+            </div>
+
+                                         <!-- Add these buttons inside the col-auto div -->
+            <div class="col-auto text-right float-right ml-auto">
+                <div class="dt-buttons btn-group flex-wrap">
+            <!--       <a href="#" class="btn btn-outline-primary mr-2" name="download" id="download-pdf"><i class="fas fa-download"></i>Download</a>-->
+            <!--       <a id="generate-pdf-all" href="#" class="btn btn-primary" type="button" title="PDF"><i class="fas fa-file-pdf fs-4" style="font-size: 1.1rem;"></i></a>-->
+                    <a id="generate-excel-all" href="#" class="btn btn-primary" title="Excel"><i class="mdi mdi-microsoft-excel" style="font-size: 18px;"></i></a>
+                    <a id="copy-table" href="#" class="btn btn-primary" title="Copy"><i class="fas fa-solid fa-copy"></i></a>
+                    <a id="generate-print-all" href="#" class="btn btn-primary" title="Print"><i class="fas fa-solid fa-print"></i></a>
+                    <a id="generate-pdf-all" href="#" class="btn btn-primary" title="PDF"><i class="fas fa-file-pdf fs-4" style="font-size: 1.1rem;"></i></a>
+                </div>
+            </div>
+
+         </div>
+      </div>
+
+<form method="POST">
+    {% csrf_token %}
+    <div class="form-group row">
+        <div class="col-sm-10">
+            <label for="comp_name"><h6>Select Company Name :</h6></label>
+<!--            <select class="form-control text-capitalize" name="comp_name" id="comp_name">-->
+            <select class="form-control text-capitalize" name="comp_name" id="comp_name" onchange="updateCustomerId()">
+                <option value=""></option>
+                {% for comp_name, customer_id in comp_names %}
+<!--                    <option value="{{ comp_name }}" {% if comp_name == selected_comp_name %} selected {% endif %}>{{ comp_name }}</option>-->
+                   <option value="{{ comp_name }}" data-customer-id="{{ customer_id }}" {% if comp_name == selected_comp_name %} selected {% endif %}>
+                        {{ comp_name }} &nbsp;&nbsp;&nbsp;({{ customer_id }})
+                    </option>
+                {% endfor %}
+            </select>
+             <input type="hidden" name="customer_id" id="customer_id">
+        </div>
+        <div class="col-sm-2">
+            <br>
+            <button type="submit"><i class="nav-icon fa fa-eye" aria-hidden="true"></i>   Preview</button>
+        </div>
+    </div>
+     <script>
+        function updateCustomerId() {
+            const compNameSelect = document.getElementById('comp_name');
+            const selectedOption = compNameSelect.options[compNameSelect.selectedIndex];
+            const customerIdInput = document.getElementById('customer_id');
+            customerIdInput.value = selectedOption.getAttribute('data-customer-id');
+        }
+        updateCustomerId();
+    </script>
+
+
+    {% if selected_comp_name %}
+        {% if meters_records %}
+ <br>
+
+<!--            <fieldset>-->
+    <!--</fieldset>-->
+          <!--<legend style="color: blue;">-->
+
+                    <!--</legend>-->
+         <h3 align="center" class="text-capitalize">Inspection Reports for {% if meters_records.0.company_name %}
+                            {{ meters_records.0.company_name }} Details
+                        {% endif %}</span></h3>
+
+           <fieldset>
+        <legend style="color: blue;">
+            Consumer Details
+        </legend>
+         {% for record in meters_records %}
+        <table>
+        <tr>
+            <td rowspan="3" class="text-capitalize"> <b>{{ record.customer.Comp_name }}</b> <br>
+                 {{ record.customer.Address }},{{ record.customer.City }} <br>
+                State - {{ record.customer.state }}, {{ record.customer.Pincode }} <br>
+                Phone - {{ record.customer.phone }} <br>
+            </td>
+            <th>Plant Capacity</th>
+            <td>{{ record.customer.Plant_Capacity }} Kw</td>
+
+        </tr>
+       <tr>
+           <th>PO No.</th>
+           <td>{{ record.customer.po_order }}</td>
+
+
+
+       </tr>
+       <tr>
+                       <th>PO Date</th>
+            <td>{{ record.customer.po_date }}</td>
+
+       </tr>
+         </table>
+        {% endfor %}
+    </fieldset>
+
+
+
+        <fieldset>
+            <div class="table-responsive">
+        <table width="100%">
+            <tr>
+                <th><h6><b>Section</b></h6></th>
+                <th><h6><b>Company</b></h6></th>
+                <th><h6><b>Wattage</b></h6></th>
+                <th><h6><b>Quantity</b></h6></th>
+                <th><h6><b>Status</b></h6></th>
+                <th><h6><b>Remark</b></h6></th>
+            </tr>
+             {% for record in meters_records %}
+            <tr align="center">
+                <td><b>Solar Module Details</b></td>
+                <td>{% for solar in unique_solar_panel_details %}
+                                {{ solar.company_name }}<br>
+                            {% endfor %}
+				<td>
+                           {% for solar in unique_solar_panel_details %}
+                                {{ solar.wattage }}<br>
+                            {% endfor %}
+                        </td>
+				<td>{{ solar_panel_count }}</td>
+
+                {% if record.solar_Module_Completed == True %}
+                <td>Completed</td>
+                <td> <span id="acPanelCablingCheckmark" class="checkmark">✓</span></td>
+                {% elif record.solar_Module_Completed == False and record.solar_Module_Reason == 'Other' %}
+                <td>{{ record.solar_Module_Reason_other }}</td>
+                <td> <span id="acPanelCablingCheckmark" class="checkmark1">X</span></td>
+                {% else %}
+                <td> {{ record.solar_Module_Reason }}</td>
+                <td> <span id="acPanelCablingCheckmark" class="checkmark1">X</span></td>
+                {% endif %}
+
+
+
+            </tr>
+            <tr>
+                <td><b>Inverter Details</b></td>
+
+                 <td>{% for inv in unique_inverter_details %}
+                     {{ inv.company_name }}<br>
+                 {% endfor %}</td>
+				<td>{% for inv in unique_inverter_details %}
+                    {{ inv.wattage }} <br>
+                {% endfor %}</td>
+
+				<td>{{ inverter_count }}</td>
+
+                {% if record.inverter_Completed == True %}
+                <td>Completed</td>
+                <td> <span id="acPanelCablingCheckmark" class="checkmark">✓</span></td>
+                {% elif record.inverter_Completed == False and record.inverter_Reason == 'Other' %}
+                <td> {{ record.inverter_Reason_other }}</td>
+                <td> <span id="acPanelCablingCheckmark" class="checkmark1">X</span></td>
+                {% else %}
+                <td>  {{ record.solar_Module_Reason }}</td>
+                <td> <span id="acPanelCablingCheckmark" class="checkmark1">X</span></td>
+                {% endif %}
+
+
+            </tr>
+            <tr>
+                {% for meter in unique_meter_details %}
+                <td><b>
+                                {{ meter.meter_type }}
+                             Details</b></td>
+                <td> {{ meter.make }}</td>
+				<td> {{ meter.capacity }}</td>
+				<td>{{ meter_count }}</span></td>
+
+                    {% if record.net_Meter_Completed == True %}
+                    <td>Completed</td>
+                    <td> <span id="acPanelCablingCheckmark" class="checkmark">✓</span></td>
+                    {% elif record.net_Meter_Completed == False and record.net_Meter_Reason == 'Other' %}
+                    <td>{{ record.net_Meter_Reason_other }}</td>
+                    <td> <span id="acPanelCablingCheckmark" class="checkmark1">X</span></td>
+                    {% else %}
+                    <td>{{ record.net_Meter_Reason }}</td>
+                    <td> <span id="acPanelCablingCheckmark" class="checkmark1">X</span></td>
+                    {% endif %}
+
+
+            </tr>
+            {% if meter.transformer_type == 'Cubical' or meter.transformer_type == 'CT' %}
+            <tr id="transformerRow">
+                <td><b>{{ meter.transformer_type }} Details</b></td>
+                <td>{{ meter.transformer_make }}</td>
+				<td>{{ meter.transformer_capacity }}</td>
+				<td>{{ meter_count }}</span></td>
+
+
+                    {% if record.ct_Completed == True %}
+                    <td>Completed</td>
+                    <td> <span id="acPanelCablingCheckmark" class="checkmark">✓</span></td>
+                    {% elif record.ct_Completed == False and record.ct_Reason == 'Other' %}
+                    <td>{{ record.ct_Checkmark_other }}</td>
+                    <td> <span id="acPanelCablingCheckmark" class="checkmark1">X</span></td>
+                    {% else %}
+                    <td>{{ record.ct_Reason }}</td>
+                    <td> <span id="acPanelCablingCheckmark" class="checkmark1">X</span></td>
+                    {% endif %}
+
+            </tr>
+            {% endif %}
+           {% endfor %}
+            <tr>
+                <td><b>Generation Meters Details</b></td>
+                 <td>{% for geninv in unique_generation_details %}
+                     {{ geninv.make }}<br>
+                 {% endfor %}</td>
+				<td>{% for geninv in unique_generation_details %}
+                    {{ geninv.capacity }} <br>
+                {% endfor %}</td>
+
+				<td>{{ gen_meter_count }}</td>
+
+
+                    {% if record.generation_Meters_Completed == True %}
+                <td>        Completed</td>
+                <td> <span id="acPanelCablingCheckmark" class="checkmark">✓</span></td>
+                    {% elif record.generation_Meters_Completed == False and record.generation_Meters_Reason == 'Other' %}
+                <td>        {{ record.generation_Meters_Reason_other }}</td>
+                <td> <span id="acPanelCablingCheckmark" class="checkmark1">X</span></td>
+                    {% else %}
+                <td>        {{ record.generation_Meters_Reason }}</td>
+                <td> <span id="acPanelCablingCheckmark" class="checkmark1">X</span></td>
+                    {% endif %}
+
+            </tr>
+<!--            {% if unique_generation_details.CT_make %}-->
+<!--            <tr id="CT_Row">-->
+<!--                <td><b>Gen. CT Meters Details</b></td>-->
+<!--                 <td>{% for geninv in unique_generation_details %}-->
+<!--                     {{ geninv.CT_make }}<br>-->
+<!--                 {% endfor %}</td>-->
+<!--				<td>{% for geninv in unique_generation_details %}-->
+<!--                    {{ geninv.CT_capacity }} <br>-->
+<!--                {% endfor %}</td>-->
+<!--				<td>{{ gen_meter_count }}</td>-->
+<!--                {% if record.gen_CT_Meters_Completed == True %}-->
+<!--                <td>    Completed</td>-->
+<!--                <td> <span id="acPanelCablingCheckmark" class="hidden checkmark">✓</span></td>-->
+<!--                {% elif record.gen_CT_Meters_Completed == False and record.gen_CT_Meters_Reason == 'Other' %}-->
+<!--                <td>        {{ record.gen_CT_Meters_Reason_other }}</td>-->
+<!--                <td> <span id="acPanelCablingCheckmark" class="hidden checkmark">X</span></td>-->
+<!--                {% else %}-->
+<!--                <td>        {{ record.gen_CT_Meters_Reason }}</td>-->
+<!--                <td> <span id="acPanelCablingCheckmark" class="hidden checkmark">X</span></td>-->
+<!--                {% endif %}-->
+
+
+<!--            </tr>-->
+<!--            {% endif %}-->
+
+                  {% if has_ct_make %}
+                    <tr id="CT_Row">
+                        <td><b>Gen. CT Meters Details</b></td>
+                        <td>
+                            {% for geninv in unique_generation_details %}
+                                {{ geninv.CT_make }}<br>
+                            {% endfor %}
+                        </td>
+                        <td>
+                            {% for geninv in unique_generation_details %}
+                                {{ geninv.CT_capacity }} <br>
+                            {% endfor %}
+                        </td>
+                        <td>{{ gen_meter_count }}</td>
+                        {% if record.gen_CT_Meters_Completed %}
+                            <td>Completed</td>
+                            <td><span id="acPanelCablingCheckmark" class="checkmark">✓</span></td>
+                        {% elif not record.gen_CT_Meters_Completed and record.gen_CT_Meters_Reason == 'Other' %}
+                            <td>{{ record.gen_CT_Meters_Reason_other }}</td>
+                            <td><span id="acPanelCablingCheckmark" class="checkmark1">X</span></td>
+                        {% else %}
+                            <td>{{ record.gen_CT_Meters_Reason }}</td>
+                            <td><span id="acPanelCablingCheckmark" class="checkmark1">X</span></td>
+                        {% endif %}
+                    </tr>
+                    {% endif %}
+            {% endfor %}
+        </table>
+            </div>
+        </fieldset>
+<!--         <br>-->
+        <fieldset>
+            <div class="table-responsive">
+        <table width="100%">
+            <tr>
+                <th><h6><b>Detail</b></h6></th>
+                <th><h6><b>Status</b></h6></th>
+                <th><h6><b>Remark</b></h6></th>
+            </tr>
+            {% for record in meters_records %}
+            <tr>
+                <td><b>AC Panel Cabling Proper</b></td>
+                {% if record.ac_Panel_Cabling_Completed == True %}
+                <td>    Completed</td>
+                <td> <span id="acPanelCablingCheckmark" class="checkmark">✓</span></td>
+                {% elif record.ac_Panel_Cabling_Completed == False and record.ac_Panel_Cabling_Reason == 'Other' %}
+                <td>        {{ record.ac_Panel_Cabling_Reason_other }}</td>
+                <td> <span id="acPanelCablingCheckmark" class="checkmark1">X</span></td>
+                {% else %}
+                <td>        {{ record.ac_Panel_Cabling_Reason }}</td>
+                <td> <span id="acPanelCablingCheckmark" class="checkmark1">X</span></td>
+                {% endif %}
+
+            </tr>
+            <tr>
+                <td><b>DC Panel Cabling Proper</b></td>
+                {% if record.dc_Panel_Cabling_Completed == True %}
+                <td>    Completed</td>
+                <td> <span id="acPanelCablingCheckmark" class="checkmark">✓</span></td>
+                {% elif record.dc_Panel_Cabling_Completed == False and record.dc_Panel_Cabling_Reason == 'Other' %}
+                <td>        {{ record.dc_Panel_Cabling_Reason_other }}</td>
+                <td> <span id="acPanelCablingCheckmark" class="checkmark1">X</span></td>
+                {% else %}
+                <td>        {{ record.dc_Panel_Cabling_Reason }}</td>
+                <td> <span id="acPanelCablingCheckmark" class="checkmark1">X</span></td>
+                {% endif %}
+
+
+            </tr>
+            <tr>
+                <td><b>Fabrication Proper Installed</b></td>
+                {% if record.fabrication_Completed == True %}
+                <td>    Completed</td>
+                <td> <span id="acPanelCablingCheckmark" class="checkmark">✓</span></td>
+                {% elif record.fabrication_Completed == False and record.fabrication_Reason == 'Other' %}
+                <td>        {{ record.fabrication_Reason_other }}</td>
+                <td> <span id="acPanelCablingCheckmark" class="checkmark1">X</span></td>
+                {% else %}
+                <td>        {{ record.fabrication_Reason }}</td>
+                <td> <span id="acPanelCablingCheckmark" class="checkmark1">X</span></td>
+                {% endif %}
+
+            </tr>
+            <tr>
+                <td><b>Walkway Proper Installed</b></td>
+                {% if record.walkway_Completed == True %}
+                <td>    Completed</td>
+                <td> <span id="acPanelCablingCheckmark" class="checkmark">✓</span></td>
+                {% elif record.walkway_Completed == False and record.walkway_Reason == 'Other' %}
+                <td>        {{ record.walkway_Reason_other }}</td>
+                <td> <span id="acPanelCablingCheckmark" class="checkmark1">X</span></td>
+                {% else %}
+                <td>        {{ record.walkway_Reason }}</td>
+                <td> <span id="acPanelCablingCheckmark" class="checkmark1">X</span></td>
+                {% endif %}
+            </tr>
+            <tr>
+                <td><b>Pipeline Installed Proper fitting</b></td>
+                {% if record.pipeline_Completed == True %}
+                <td>    Completed</td>
+                <td> <span id="acPanelCablingCheckmark" class="checkmark">✓</span></td>
+                {% elif record.pipeline_Completed == False and record.pipeline_Reason == 'Other' %}
+                <td>        {{ record.pipeline_Reason_other }}</td>
+                <td> <span id="acPanelCablingCheckmark" class="checkmark1">X</span></td>
+                {% else %}
+                <td>        {{ record.pipeline_Reason }}</td>
+                <td> <span id="acPanelCablingCheckmark" class="checkmark1">X</span></td>
+                {% endif %}
+
+
+            </tr>
+            <tr>
+                <td><b>Ropeway Proper Installed</b></td>
+                {% if record.ropeway_Completed == True %}
+                <td>    Completed</td>
+                <td> <span id="acPanelCablingCheckmark" class="checkmark">✓</span></td>
+                {% elif record.ropeway_Completed == False and record.ropeway_Reason == 'Other' %}
+                <td>        {{ record.ropeway_Reason_other }}</td>
+                <td> <span id="acPanelCablingCheckmark" class="checkmark1">X</span></td>
+                {% else %}
+                <td>        {{ record.ropeway_Reason }}</td>
+                <td> <span id="acPanelCablingCheckmark" class="checkmark1">X</span></td>
+                {% endif %}
+
+
+            </tr>
+            <tr>
+                <td><b>Rolling Proper Installed</b></td>
+                {% if record.rolling_Completed == True %}
+                <td>    Completed</td>
+                <td> <span id="acPanelCablingCheckmark" class="checkmark">✓</span></td>
+                {% elif record.rolling_Completed == False and record.rolling_Reason == 'Other' %}
+                <td>        {{ record.rolling_Reason_other }}</td>
+                <td> <span id="acPanelCablingCheckmark" class="checkmark1">X</span></td>
+                {% else %}
+                <td>        {{ record.rolling_Reason }}</td>
+                <td> <span id="acPanelCablingCheckmark" class="checkmark1">X</span></td>
+                {% endif %}
+
+            </tr>
+        </table>
+            </div>
+
+        <br>
+        <div>
+            <label for="overallDetails"><b>Check Overall Details</b></label>
+            <textarea id="overallDetails" name="overall_Details" cols="3" rows="3" readonly>{{ record.overall_Details }}</textarea>
+        </div>
+
+
+        {% endfor %}
+    </fieldset>
+    <fieldset>
+        <legend style="color: blue;">
+            Information Fillup Details
+        </legend>
+         {% for record in meters_records %}
+        <table>
+        <tr>
+            <th>Emp ID.</th>
+            <th>Engineer Name</th>
+            <th>Report Submission Time</th>
+
+        </tr>
+       <tr>
+        <td>DB/{{ record.AssignBy.id }}</td>
+        <td>{{ record.AssignBy.first_name}}  {{ record.AssignBy.last_name}}</td>
+        <td>{{ record.created_at }}</td>
+       </tr>
+         </table>
+        {% endfor %}
+    </fieldset>
+        {% endif %}
+    {% endif %}
+</form>
+
+<style>
+.form-group {
+    margin-bottom: 10px;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+th, td {
+    border: 1px solid #dddddd;
+    text-align: center;
+    padding: 8px;
+}
+
+th {
+    background-color: lightgray;
+}
+
+/* Highlight rows when checkbox is checked */
+.highlighted-row {
+    background-color: #cb6843; /* Change to your preferred color */
+}
+
+.checkbox-input {
+    margin: 0 auto;
+    display: block;
+}
+
+</style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.4.0/jspdf.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/exceljs/dist/exceljs.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/clipboard@2.0.8/dist/clipboard.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+<script src="https://rawgit.com/eKoopmans/html2pdf/master/dist/html2pdf.bundle.js"></script>
+
+<!--<script>-->
+<!--// Function to generate PDF-->
+<!--document.getElementById("generate-pdf-all").addEventListener("click", function() {-->
+<!--    // Select the form content-->
+<!--    var formContent = document.querySelector('form').cloneNode(true);-->
+
+<!--    // Remove the submit button from the cloned form-->
+<!--    var submitButton = formContent.querySelector('[type="submit"]');-->
+<!--    if (submitButton) {-->
+<!--        submitButton.parentNode.removeChild(submitButton);-->
+<!--    }-->
+
+<!-- // Remove the "Select Company Name" label-->
+<!--    var selectLabel = formContent.querySelector('label[for="comp_name"]');-->
+<!--    if (selectLabel) {-->
+<!--        selectLabel.parentNode.removeChild(selectLabel);-->
+<!--    }-->
+
+<!--   // Retrieve the selected company name from the dropdown list-->
+<!--    var selectedCompanyName = document.getElementById("comp_name").value;-->
+
+<!--    var companyNameHeading = document.createElement('h3');-->
+<!--    companyNameHeading.textContent = "DB SOLAR Pvt Ltd.";-->
+
+<!--    // Insert the new heading element into the form content-->
+<!--    formContent.insertBefore(companyNameHeading, formContent.firstChild);-->
+
+
+<!--    // Adjust the font size of text values in form fields-->
+<!--    var formFields = formContent.querySelectorAll('input[type="text"], input[type="email"], input[type="password"], select, textarea');-->
+<!--    formFields.forEach(function(field) {-->
+<!--        field.style.fontSize = '20px'; // Adjust as needed-->
+<!--    });-->
+
+<!--    // Adjust the font size of span elements-->
+<!--    var spanElements = formContent.querySelectorAll('span');-->
+<!--    spanElements.forEach(function(span) {-->
+<!--        span.style.fontSize = '14px'; // Adjust as needed-->
+<!--        span.style.marginBottom = '-10px'; // Adjust spacing between rows-->
+<!--    });-->
+
+<!--     // Adjust the margins of div elements-->
+<!--    var divElements = formContent.querySelectorAll('div');-->
+<!--    divElements.forEach(function(div) {-->
+<!--        div.style.marginBottom = '-15px'; // Adjust spacing between div elements-->
+<!--    });-->
+
+<!--    // Adjust the spacing between <tr>, <th>, and <td> elements-->
+<!--    var tableElements = formContent.querySelectorAll('table');-->
+<!--    tableElements.forEach(function(table) {-->
+<!--        table.style.borderCollapse = 'collapse'; // Collapse table borders-->
+<!--        table.style.borderSpacing = '0'; // Remove spacing between cells-->
+<!--        var trElements = table.querySelectorAll('tr');-->
+<!--        trElements.forEach(function(tr) {-->
+<!--            tr.style.margin = '0'; // Remove margin-->
+<!--            tr.style.padding = '0'; // Remove padding-->
+<!--        });-->
+<!--        var thTdElements = table.querySelectorAll('th, td');-->
+<!--        thTdElements.forEach(function(element) {-->
+<!--            element.style.padding = '4px'; // Adjust cell padding as needed-->
+<!--            //element.style.fontSize = '12px'; // Adjust as needed-->
+<!--        });-->
+<!--    });-->
+
+
+<!--    // Adjust the font size and spacing of h5 elements-->
+<!--    var h5Elements = formContent.querySelectorAll('h5');-->
+<!--    h5Elements.forEach(function(h5) {-->
+<!--        h5.style.fontSize = '15px'; // Adjust font size as needed-->
+<!--        h5.style.marginBottom = '5px'; // Adjust spacing between h5 elements-->
+<!--    });-->
+
+<!--    // Remove any hidden elements from the cloned form-->
+<!--    var formElements = formContent.querySelectorAll('input[type="hidden"], select, textarea');-->
+<!--    formElements.forEach(function(element) {-->
+<!--        if (element.offsetParent === null) {-->
+<!--            element.parentNode.removeChild(element);-->
+<!--        }-->
+<!--    });-->
+
+<!--    // Convert the cloned form to PDF-->
+<!--    html2pdf()-->
+<!--        .from(formContent)-->
+<!--        .set({-->
+<!--            margin: 10,-->
+<!--            filename: 'Form_Content.pdf',-->
+<!--            image: { type: 'jpeg', quality: 0.98 },-->
+<!--            html2canvas: { dpi: 192, letterRendering: true },-->
+<!--            jsPDF: { unit: 'pt', format: 'a4', orientation: 'portrait' },-->
+<!--        })-->
+<!--        .toPdf()-->
+<!--        .save();-->
+<!--});-->
+<!--</script>-->
+<!--<script>-->
+<!--// Function to generate PDF-->
+<!--document.getElementById("generate-pdf-all").addEventListener("click", function() {-->
+<!--    // Select the form content-->
+<!--    var formContent = document.querySelector('form').cloneNode(true);-->
+
+<!--    // Remove the submit button from the cloned form-->
+<!--    var submitButton = formContent.querySelector('[type="submit"]');-->
+<!--    if (submitButton) {-->
+<!--        submitButton.parentNode.removeChild(submitButton);-->
+<!--    }-->
+
+<!--    // Remove company symbol-->
+<!--    var companySymbol = formContent.querySelector('.company-symbol-overlap');-->
+<!--    if (companySymbol) {-->
+<!--        companySymbol.parentNode.removeChild(companySymbol);-->
+<!--    }-->
+
+<!--    // Remove <legend> elements-->
+<!--    var legends = formContent.querySelectorAll('legend');-->
+<!--    legends.forEach(function(legend) {-->
+<!--        legend.parentNode.removeChild(legend);-->
+<!--    });-->
+
+
+<!--    // Remove <h3> elements-->
+<!--    var headings = formContent.querySelectorAll('h3');-->
+<!--    headings.forEach(function(heading) {-->
+<!--        heading.parentNode.removeChild(heading);-->
+<!--    });-->
+
+<!--    // Hide content within <small> elements with class 'text-muted'-->
+<!--    var smallElements = formContent.querySelectorAll('small.text-muted');-->
+<!--    smallElements.forEach(function(small) {-->
+<!--        small.style.display = 'none'; // Hide the content-->
+<!--    });-->
+
+<!--    // Remove bullet symbols from unordered lists and adjust spacing-->
+<!--    var unorderedLists = formContent.querySelectorAll('ul');-->
+<!--    unorderedLists.forEach(function(ul) {-->
+<!--        ul.style.listStyleType = 'none'; // Remove bullet symbols-->
+<!--        ul.style.paddingInlineStart = '20px'; // Add left padding for spacing between list items-->
+<!--        ul.style.marginBlockStart = '0'; // Remove any top margin-->
+<!--        ul.style.marginBlockEnd = '0'; // Remove any bottom margin-->
+<!--    });-->
+
+<!--    // Resize images and move to the left side-->
+<!--    var images = formContent.querySelectorAll('img');-->
+<!--    images.forEach(function(img) {-->
+<!--        img.style.maxWidth = '200px'; // Adjust the maximum width of the image-->
+<!--        img.style.height = '200px';-->
+<!--        img.style.float = 'left'; // Float the image to the left-->
+<!--        img.style.marginRight = '20px'; // Add margin for spacing between image and text-->
+<!--    });-->
+
+<!--    // Adjust spacing for each list item-->
+<!--    var listItems = formContent.querySelectorAll('li');-->
+<!--    listItems.forEach(function(li) {-->
+<!--        li.style.marginBottom = '7px'; // Add margin bottom to create space between rows-->
+<!--    });-->
+
+<!--    // Adjust spacing for small elements-->
+<!--    var allSmallElements = formContent.querySelectorAll('small');-->
+<!--    allSmallElements.forEach(function(small) {-->
+<!--        small.style.margin = '0'; // Remove any margin-->
+<!--        small.style.padding = '0'; // Remove any padding-->
+<!--    });-->
+
+<!--    var thTdElements = formContent.querySelectorAll('table, td');-->
+<!--    thTdElements.forEach(function(element) {-->
+<!--        element.style.border = 'none'; // Remove table header border-->
+<!--        element.style.padding = '4px'; // Adjust table cell padding as needed-->
+<!--        element.style.textAlign = 'left'; // Align table content to the left-->
+<!--    });-->
+
+<!--   var tableRows = formContent.querySelectorAll('table tr');-->
+<!--    tableRows.forEach(function(row) {-->
+<!--        var cells = row.querySelectorAll('td, th');-->
+<!--        cells.forEach(function(cell, index) {-->
+<!--            if (index === 0) {-->
+<!--                cell.style.paddingLeft = '4px'; // Add left padding to the first column-->
+<!--                cell.style.textAlign = 'left'; // Align text to the left in the first column-->
+<!--            } else {-->
+<!--                cell.style.textAlign = 'center'; // Center align text in the remaining columns-->
+<!--            }-->
+<!--        });-->
+<!--    });-->
+
+
+<!--    // Adjust the font size and spacing of h5 elements-->
+<!--    var h5Elements = formContent.querySelectorAll('h5');-->
+<!--    h5Elements.forEach(function(h5) {-->
+<!--        h5.style.fontSize = '15px'; // Adjust font size as needed-->
+<!--        h5.style.marginBottom = '10px'; // Adjust spacing between h5 elements-->
+<!--    });-->
+
+<!--    // Remove the company selection and its related label-->
+<!--    var companyLabel = formContent.querySelector('label[for="comp_name"]');-->
+<!--    if (companyLabel) {-->
+<!--        companyLabel.parentNode.removeChild(companyLabel);-->
+<!--    }-->
+
+<!--    // Remove the company selection and its dropdown list-->
+<!--    var companySelection = formContent.querySelector('[name="comp_name"]');-->
+<!--    if (companySelection) {-->
+<!--        companySelection.parentNode.removeChild(companySelection);-->
+<!--    }-->
+
+<!--    // Retrieve the selected value of the comp_name dropdown list-->
+<!--    var selectedCompanyName = document.querySelector('select[name="comp_name"]').selectedOptions[0].textContent;-->
+
+<!--    // Insert the new heading element into the form content-->
+<!--    var companyNameHeading = document.createElement('h3');-->
+<!--    companyNameHeading.textContent = "DB SOLAR Pvt Ltd.";-->
+<!--    companyNameHeading.style.textAlign = 'center'; // Center align the heading-->
+<!--    formContent.insertBefore(companyNameHeading, formContent.firstChild);-->
+
+<!--    var selectedCompanyNameHeading = document.createElement('h5');-->
+<!--    selectedCompanyNameHeading.textContent = "Inspection Report For - " + selectedCompanyName;-->
+<!--    selectedCompanyNameHeading.style.textAlign = 'center'; // Center align the heading-->
+<!--    formContent.insertBefore(selectedCompanyNameHeading, formContent.firstChild.nextSibling);-->
+
+<!--    // Convert textarea values to text and replace the textareas with divs-->
+<!--    // var textareas = formContent.querySelectorAll('textarea');-->
+<!--    // textareas.forEach(function(textarea) {-->
+<!--      //  var div = document.createElement('div');-->
+<!--      //  div.style.whiteSpace = 'pre-wrap'; // Preserve formatting-->
+<!--      //  div.style.fontSize = '14px'; // Adjust as needed-->
+<!--      //  div.textContent = textarea.value; // Copy the value of the textarea-->
+<!--      //  textarea.parentNode.replaceChild(div, textarea); // Replace textarea with div-->
+<!--    // });-->
+
+
+<!--    // Convert textarea values to text and replace the textareas with divs-->
+<!--    var textareas = formContent.querySelectorAll('textarea');-->
+<!--    textareas.forEach(function(textarea) {-->
+<!--        var div = document.createElement('div');-->
+<!--        div.style.whiteSpace = 'pre-wrap'; // Preserve formatting-->
+<!--        div.style.fontSize = '14px'; // Adjust as needed-->
+<!--        div.style.display = 'flex'; // Use flexbox to align label and value-->
+<!--        div.style.justifyContent = 'space-between'; // Space between label and value-->
+<!--        div.style.alignItems = 'center'; // Align items in the center vertically-->
+
+<!--        var label = textarea.previousElementSibling; // Assuming the label is the previous sibling-->
+<!--        if (label && label.tagName.toLowerCase() === 'label') {-->
+<!--            var labelText = document.createElement('span');-->
+<!--            labelText.textContent = label.textContent;-->
+<!--            labelText.style.flex = '1'; // Take up the necessary space-->
+<!--            labelText.style.display = bold; // Take up the necessary space-->
+<!--            div.appendChild(labelText); // Add label text to the div-->
+<!--        }-->
+
+<!--        var valueText = document.createElement('span');-->
+<!--        valueText.innerHTML = textarea.value.replace(/\n/g); // Copy the value of the textarea and replace newlines with <br>-->
+<!--        valueText.style.flex = '2'; // Take up the remaining space-->
+<!--        div.appendChild(valueText); // Add value text to the div-->
+
+<!--        textarea.parentNode.replaceChild(div, textarea); // Replace textarea with div-->
+<!--    });-->
+
+
+<!--    // Adjust the font size of text values in form fields-->
+<!--    var formFields = formContent.querySelectorAll('input[type="text"], input[type="email"], input[type="password"], select');-->
+<!--    formFields.forEach(function(field) {-->
+<!--        field.style.fontSize = '20px'; // Adjust as needed-->
+<!--    });-->
+
+<!--    // Adjust the font size of span elements-->
+<!--    var spanElements = formContent.querySelectorAll('span');-->
+<!--    spanElements.forEach(function(span) {-->
+<!--        span.style.fontSize = '14px'; // Adjust as needed-->
+<!--        span.style.marginBottom = '-10px'; // Adjust spacing between rows-->
+<!--    });-->
+
+<!--    // Adjust the margins of div elements-->
+<!--    var divElements = formContent.querySelectorAll('div');-->
+<!--    divElements.forEach(function(div) {-->
+<!--        div.style.marginBottom = '-15px'; // Adjust spacing between div elements-->
+<!--    });-->
+
+<!--    // Remove any hidden elements from the cloned form-->
+<!--    var formElements = formContent.querySelectorAll('input[type="hidden"], select');-->
+<!--    formElements.forEach(function(element) {-->
+<!--        if (element.offsetParent === null) {-->
+<!--            element.parentNode.removeChild(element);-->
+<!--        }-->
+<!--    });-->
+
+<!--    // Convert the cloned form to PDF-->
+<!--    html2pdf()-->
+<!--        .from(formContent)-->
+<!--        .set({-->
+<!--            margin: 10,-->
+<!--            filename: 'Form_Content.pdf',-->
+<!--            image: { type: 'jpeg', quality: 0.98 },-->
+<!--            html2canvas: { dpi: 192, letterRendering: true },-->
+<!--            jsPDF: { unit: 'pt', format: 'a4', orientation: 'portrait' },-->
+<!--        })-->
+<!--        .toPdf()-->
+<!--        .save();-->
+<!--});-->
+
+<!--</script>-->
+<script>
+// Function to generate PDF
+document.getElementById("generate-pdf-all").addEventListener("click", function() {
+    // Select the form content
+    var formContent = document.querySelector('form').cloneNode(true);
+
+    // Remove the submit button from the cloned form
+    var submitButton = formContent.querySelector('[type="submit"]');
+    if (submitButton) {
+        submitButton.parentNode.removeChild(submitButton);
+    }
+
+    // Remove company symbol
+    var companySymbol = formContent.querySelector('.company-symbol-overlap');
+    if (companySymbol) {
+        companySymbol.parentNode.removeChild(companySymbol);
+    }
+
+    // Remove <legend> elements
+    var legends = formContent.querySelectorAll('legend');
+    legends.forEach(function(legend) {
+        legend.parentNode.removeChild(legend);
+    });
+
+    // Remove <h3> elements
+    var headings = formContent.querySelectorAll('h3');
+    headings.forEach(function(heading) {
+        heading.parentNode.removeChild(heading);
+    });
+
+    // Hide content within <small> elements with class 'text-muted'
+    var smallElements = formContent.querySelectorAll('small.text-muted');
+    smallElements.forEach(function(small) {
+        small.style.display = 'none'; // Hide the content
+    });
+
+    // Remove bullet symbols from unordered lists and adjust spacing
+    var unorderedLists = formContent.querySelectorAll('ul');
+    unorderedLists.forEach(function(ul) {
+        ul.style.listStyleType = 'none'; // Remove bullet symbols
+        ul.style.paddingInlineStart = '20px'; // Add left padding for spacing between list items
+        ul.style.marginBlockStart = '0'; // Remove any top margin
+        ul.style.marginBlockEnd = '0'; // Remove any bottom margin
+    });
+
+    // Resize images and move to the left side
+    var images = formContent.querySelectorAll('img');
+    images.forEach(function(img) {
+        img.style.maxWidth = '200px'; // Adjust the maximum width of the image
+        img.style.height = '200px';
+        img.style.float = 'left'; // Float the image to the left
+        img.style.marginRight = '20px'; // Add margin for spacing between image and text
+    });
+
+    // Adjust spacing for each list item
+    var listItems = formContent.querySelectorAll('li');
+    listItems.forEach(function(li) {
+        li.style.marginBottom = '7px'; // Add margin bottom to create space between rows
+    });
+
+    // Adjust spacing for small elements
+    var allSmallElements = formContent.querySelectorAll('small');
+    allSmallElements.forEach(function(small) {
+        small.style.margin = '0'; // Remove any margin
+        small.style.padding = '0'; // Remove any padding
+    });
+
+    var thTdElements = formContent.querySelectorAll('table, td');
+    thTdElements.forEach(function(element) {
+        element.style.border = 'none'; // Remove table header border
+        element.style.padding = '4px'; // Adjust table cell padding as needed
+        element.style.textAlign = 'left'; // Align table content to the left
+    });
+
+    var tableRows = formContent.querySelectorAll('table tr');
+    tableRows.forEach(function(row) {
+        var cells = row.querySelectorAll('td, th');
+        cells.forEach(function(cell, index) {
+            if (index === 0) {
+                cell.style.paddingLeft = '4px'; // Add left padding to the first column
+                cell.style.textAlign = 'left'; // Align text to the left in the first column
+            } else {
+                cell.style.textAlign = 'center'; // Center align text in the remaining columns
+            }
+        });
+    });
+
+    // Adjust the font size and spacing of h5 elements
+    var h5Elements = formContent.querySelectorAll('h5');
+    h5Elements.forEach(function(h5) {
+        h5.style.fontSize = '15px'; // Adjust font size as needed
+        h5.style.marginBottom = '10px'; // Adjust spacing between h5 elements
+    });
+
+    // Remove the company selection and its related label
+    var companyLabel = formContent.querySelector('label[for="comp_name"]');
+    if (companyLabel) {
+        companyLabel.parentNode.removeChild(companyLabel);
+    }
+
+    // Remove the company selection and its dropdown list
+    var companySelection = formContent.querySelector('[name="comp_name"]');
+    if (companySelection) {
+        companySelection.parentNode.removeChild(companySelection);
+    }
+
+    // Retrieve the selected value of the comp_name dropdown list
+    var selectedCompanyName = document.querySelector('select[name="comp_name"]').selectedOptions[0].textContent;
+
+    // Insert the new heading element into the form content
+    var companyNameHeading = document.createElement('h3');
+    companyNameHeading.textContent = "DB SOLAR Pvt Ltd.";
+    companyNameHeading.style.textAlign = 'center'; // Center align the heading
+    formContent.insertBefore(companyNameHeading, formContent.firstChild);
+
+    var selectedCompanyNameHeading = document.createElement('h5');
+    selectedCompanyNameHeading.textContent = "Inspection Report For - " + selectedCompanyName;
+    selectedCompanyNameHeading.style.textAlign = 'center'; // Center align the heading
+    formContent.insertBefore(selectedCompanyNameHeading, formContent.firstChild.nextSibling);
+
+    // Remove <br> tags
+    // var brElements = formContent.querySelectorAll('br');
+    // brElements.forEach(function(br) {
+    //    br.parentNode.removeChild(br);
+    // });
+
+    // Convert textarea values to text and replace the textareas with divs
+    var textareas = formContent.querySelectorAll('textarea');
+    textareas.forEach(function(textarea) {
+        var div = document.createElement('div');
+        div.style.whiteSpace = 'pre-wrap'; // Preserve formatting
+        div.style.fontSize = '14px'; // Adjust as needed
+        div.style.display = 'flex'; // Use flexbox to align label and value
+        div.style.alignItems = 'center'; // Align items in the center vertically
+
+        var table = document.createElement('table');
+        table.style.width = '100%'; // Make table full width
+
+        var row = document.createElement('tr');
+        var label = textarea.previousElementSibling; // Assuming the label is the previous sibling
+        if (label && label.tagName.toLowerCase() === 'label') {
+            var th = document.createElement('td');
+            th.textContent = label.textContent;
+            th.style.fontWeight = 'bold'; // Make the label bold
+            th.style.border = 'none'; // Remove the border
+            th.style.textAlign = 'left'; // Align text to the left in the first column
+            row.appendChild(th); // Add label text to the row
+            label.parentNode.removeChild(label); // Remove the label from its original place
+        }
+
+        var td = document.createElement('td');
+        td.innerHTML = textarea.value.replace(/\n/g, '<br>'); // Copy the value of the textarea and replace newlines with <br>
+        td.style.border = 'none'; // Remove the border
+        row.appendChild(td); // Add value text to the row
+
+        table.appendChild(row);
+        div.appendChild(table);
+
+        textarea.parentNode.replaceChild(div, textarea); // Replace textarea with div
+    });
+
+    // Adjust the font size of text values in form fields
+    var formFields = formContent.querySelectorAll('input[type="text"], input[type="email"], input[type="password"], select');
+    formFields.forEach(function(field) {
+        field.style.fontSize = '20px'; // Adjust as needed
+    });
+
+    // Adjust the font size of span elements
+    var spanElements = formContent.querySelectorAll('span');
+    spanElements.forEach(function(span) {
+        span.style.fontSize = '14px'; // Adjust as needed
+        span.style.marginBottom = '-10px'; // Adjust spacing between rows
+    });
+
+    // Adjust the margins of div elements
+    var divElements = formContent.querySelectorAll('div');
+    divElements.forEach(function(div) {
+        div.style.marginBottom = '-15px'; // Adjust spacing between div elements
+    });
+
+    // Remove any hidden elements from the cloned form
+    var formElements = formContent.querySelectorAll('input[type="hidden"], select');
+    formElements.forEach(function(element) {
+        if (element.offsetParent === null) {
+            element.parentNode.removeChild(element);
+        }
+    });
+
+    // Define footer content
+    var footerTextLeft = "Report Generated : " + new Date().toLocaleDateString();
+    var footerTextRight = "WORKSPERE LABS";
+
+    // Convert the cloned form to PDF
+    html2pdf()
+        .from(formContent)
+        .set({
+            margin: 10,
+            filename: 'Form_Content.pdf',
+            image: { type: 'jpeg', quality: 0.98 },
+            html2canvas: { dpi: 192, letterRendering: true },
+            jsPDF: {
+                unit: 'pt',
+                format: 'a4',
+                orientation: 'portrait',
+                compressPDF: true,
+                putOnlyUsedFonts: true,
+                floatPrecision: 16,
+                footer: function (currentPage, pageCount) {
+                    return {
+                        margin: 10,
+                        columns: [
+                            { text: footerTextLeft, alignment: 'left' },
+                            { text: footerTextRight, alignment: 'right' }
+                        ]
+                    };
+                }
+            }
+        })
+        .toPdf()
+        .get('pdf')
+        .then(function (pdf) {
+            const pageCount = pdf.internal.getNumberOfPages();
+            pdf.setFontSize(10); // Set font size for footer
+            for (let i = 1; i <= pageCount; i++) {
+                pdf.setPage(i);
+                pdf.text(footerTextLeft, 5, pdf.internal.pageSize.height - 10);
+                pdf.text(footerTextRight, pdf.internal.pageSize.width - 100, pdf.internal.pageSize.height - 10);
+            }
+            pdf.save();
+        });
+});
+
+</script>
+
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.3.0/exceljs.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+
+<script>
+document.getElementById("generate-excel-all").addEventListener("click", function() {
+    var workbook = new ExcelJS.Workbook();
+
+    // Add Meters_Details worksheet
+    var metersWorksheet = workbook.addWorksheet('Meters_Details');
+    addTableToWorksheet('#meters-table', metersWorksheet);
+
+    // Add Generation_Meters worksheet
+    var generationMetersWorksheet = workbook.addWorksheet('Generation_Meters');
+    addTableToWorksheet('#generation-meters-table', generationMetersWorksheet);
+
+    // Add Generation_CT worksheet
+    var generationCtWorksheet = workbook.addWorksheet('Generation_CT');
+    addTableToWorksheet('#generation-ct-table', generationCtWorksheet);
+
+    // Generate Excel file
+    workbook.xlsx.writeBuffer().then(function(data) {
+        var blob = new Blob([data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+        saveAs(blob, 'Company_Meters_Details.xlsx');
+    });
+});
+
+function addTableToWorksheet(tableId, worksheet) {
+    // Add headers
+    var headers = [];
+    var headerCells = document.querySelectorAll(tableId + ' thead th');
+    headerCells.forEach(function(cell) {
+        headers.push(cell.innerText);
+    });
+    worksheet.addRow(headers);
+
+    // Add table data
+    var rows = document.querySelectorAll(tableId + ' tbody tr');
+    rows.forEach(function(row) {
+        var rowData = [];
+        var cells = row.querySelectorAll('td');
+        cells.forEach(function(cell) {
+            rowData.push(cell.innerText);
+        });
+        worksheet.addRow(rowData);
+    });
+}
+</script>
+
+
+
+<script>
+// Function to copy content within the form
+document.getElementById("copy-table").addEventListener("click", function() {
+    var formContent = document.querySelector('form').innerText; // Extract text content of the form
+    navigator.clipboard.writeText(formContent).then(function() {
+        alert('Form content copied to clipboard');
+    }, function(err) {
+        console.error('Failed to copy: ', err);
+    });
+});
+
+
+
+document.getElementById("generate-print-all").addEventListener("click", function() {
+    var companyName = 'DB Solar Pvt Ltd';
+    var formContent = document.querySelector('form').cloneNode(true);
+    var submitButton = formContent.querySelector('[type="submit"]');
+    submitButton.parentNode.removeChild(submitButton);
+
+    // Remove company symbol
+    var companySymbol = formContent.querySelector('.company-symbol-overlap');
+    if (companySymbol) {
+        companySymbol.parentNode.removeChild(companySymbol);
+    }
+
+    // Remove <legend> elements
+    var legends = formContent.querySelectorAll('legend');
+    legends.forEach(function(legend) {
+        legend.parentNode.removeChild(legend);
+    });
+
+    // Remove <h3> elements
+    var headings = formContent.querySelectorAll('h3');
+    headings.forEach(function(heading) {
+        heading.parentNode.removeChild(heading);
+    });
+
+    // Hide content within <small> elements with class 'text-muted'
+    var smallElements = formContent.querySelectorAll('small.text-muted');
+    smallElements.forEach(function(small) {
+        small.style.display = 'none'; // Hide the content
+    });
+
+    // Remove bullet symbols from unordered lists and adjust spacing
+    var unorderedLists = formContent.querySelectorAll('ul');
+    unorderedLists.forEach(function(ul) {
+        ul.style.listStyleType = 'none'; // Remove bullet symbols
+        ul.style.paddingInlineStart = '20px'; // Add left padding for spacing between list items
+        ul.style.marginBlockStart = '0'; // Remove any top margin
+        ul.style.marginBlockEnd = '0'; // Remove any bottom margin
+    });
+
+    // Resize images and move to the left side
+    var images = formContent.querySelectorAll('img');
+    images.forEach(function(img) {
+        img.style.maxWidth = '200px'; // Adjust the maximum width of the image
+        img.style.height = '200px';
+        img.style.float = 'left'; // Float the image to the left
+        img.style.marginRight = '20px'; // Add margin for spacing between image and text
+    });
+
+    // Adjust spacing for each list item
+    var listItems = formContent.querySelectorAll('li');
+    listItems.forEach(function(li) {
+        li.style.marginBottom = '7px'; // Add margin bottom to create space between rows
+    });
+
+    // Adjust spacing for small elements
+    smallElements = formContent.querySelectorAll('small');
+    smallElements.forEach(function(small) {
+        small.style.margin = '0'; // Remove any margin
+        small.style.padding = '0'; // Remove any padding
+    });
+
+    var thTdElements = formContent.querySelectorAll('table, th, td');
+    thTdElements.forEach(function(element) {
+        element.style.border = 'none'; // Remove table header border
+        element.style.padding = '4px'; // Remove table data border
+    });
+
+    // Adjust the font size and spacing of h5 elements
+    var h5Elements = formContent.querySelectorAll('h5');
+    h5Elements.forEach(function(h5) {
+        h5.style.fontSize = '15px'; // Adjust font size as needed
+        h5.style.marginBottom = '10px'; // Adjust spacing between h5 elements
+    });
+
+    // Remove the company selection and its related label
+    var companyLabel = formContent.querySelector('label[for="comp_name"]');
+    if (companyLabel) {
+        companyLabel.parentNode.removeChild(companyLabel);
+    }
+
+    // Remove the company selection and its dropdown list
+    var companySelection = formContent.querySelector('[name="comp_name"]');
+    if (companySelection) {
+        companySelection.parentNode.removeChild(companySelection);
+    }
+
+    // Retrieve the selected value of the comp_name dropdown list
+    var selectedCompanyName = document.querySelector('select[name="comp_name"]').selectedOptions[0].textContent;
+
+    // Adjust table headers for proper alignment
+    var tableHeaders = formContent.querySelectorAll('table, th, td');
+    tableHeaders.forEach(function(element) {
+        element.style.textAlign = 'center'; // Align table headers to the center
+        element.style.border = '1'; // Remove table header border
+    });
+
+    // Construct print content with header and form content
+    var printContent = '<html><head><title>Print</title>';
+    printContent += '<style>@media print { img { display: inline !important; } }</style>'; // Show images inline in print
+    printContent += '<style>@media print { textarea { width: 100%; height: auto; } }</style>'; // Set textarea width to 100% and height to auto in print
+    printContent += '<style>body { font-family: Arial, sans-serif; }</style>'; // Set font-family
+    printContent += '</head><body>';
+    printContent += '<h1 style="text-align: center;">' + companyName + '</h1>';
+    printContent += '<h3 style="text-align: center;">Inspection Report For - ' + selectedCompanyName + '</h3>'; // Display the selected company name
+    printContent += formContent.outerHTML; // Use outerHTML to include the form element itself
+    printContent += '</body></html>';
+
+    // Open print window and print
+    var printWindow = window.open('', '_blank');
+    printWindow.document.write(printContent);
+    printWindow.document.close();
+    printWindow.print();
+});
+
+</script>
+<script>
+        function fetchData() {
+            var companyName = document.getElementById("companySelect").value;
+
+            // Clear previous data
+            document.getElementById("meters").value = '';
+            document.getElementById("solar_company").innerText = '';
+            document.getElementById("sol_wattage").innerText = '';
+            document.getElementById("solarPanelCount").innerText = '';
+            document.getElementById("inverter_company").innerText = '';
+            document.getElementById("inv_wattage").innerText = '';
+            document.getElementById("inverterCount").innerText = '';
+
+            document.getElementById("meter_type").innerText = '';
+            document.getElementById("meter_make").innerText = '';
+            document.getElementById("meter_capacity").innerText = '';
+            document.getElementById("meter_serial_no").innerText = '';
+            document.getElementById("transformer_type").innerText = '';
+            document.getElementById("transformer_make").innerText = '';
+            document.getElementById("transformer_capacity").innerText = '';
+            document.getElementById("transformer_serial_no").innerText = '';
+
+            document.getElementById("gen_make").innerText = '';
+            document.getElementById("gen_capacity").innerText = '';
+            //document.getElementById("gen_serial_no").innerText = '';
+            document.getElementById("gen_count").innerText = '';
+            document.getElementById("ct_make").innerText = '';
+            document.getElementById("ct_capacity").innerText = '';
+            //document.getElementById("ct_serial_no").innerText = '';
+            document.getElementById("ct_count").innerText = '';
+
+            fetch('/customer/get-company-data/?company_name=' + companyName)
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById("meters").value = data.meters;
+                    document.getElementById("solarPanelCount").innerText = data.solarPanelCount;
+                    document.getElementById("inverterCount").innerText = data.inverterCount;
+                    document.getElementById("gen_count").innerText = data.gen_count;
+                    document.getElementById("ct_count").innerText = data.gen_count;
+                    document.getElementById("meter_serial_no").innerText = data.meter_count;
+                    document.getElementById("transformer_serial_no").innerText = data.meter_count;
+                    document.getElementById("selected_company_name").innerText = data.selected_company_name;
+
+
+                    if (data.solarPanelData.length > 0) {
+                        document.getElementById("solar_company").innerText = data.solarPanelData[0][0];
+                        document.getElementById("sol_wattage").innerText = data.solarPanelData[0][1];
+                    }
+
+                    if (data.inverterData.length > 0) {
+                        document.getElementById("inverter_company").innerText = data.inverterData[0][0];
+                        document.getElementById("inv_wattage").innerText = data.inverterData[0][1];
+                    }
+
+                    if (data.meter_names.length > 0) {
+                        document.getElementById("meter_type").innerText = data.meter_names[0][0];
+                        document.getElementById("meter_make").innerText = data.meter_names[0][1];
+                        document.getElementById("meter_capacity").innerText = data.meter_names[0][2];
+                        //document.getElementById("meter_serial_no").innerText = data.meter_names[0][3];
+                    }
+
+                    if (data.transformer_names.length > 0) {
+                        document.getElementById("transformer_type").innerText = data.transformer_names[0][0];
+                        document.getElementById("transformer_make").innerText = data.transformer_names[0][1];
+                        document.getElementById("transformer_capacity").innerText = data.transformer_names[0][2];
+                        //document.getElementById("transformer_serial_no").innerText = data.transformer_names[0][3];
+                    }
+
+
+                    if (data.transformer_names[0][1]) {
+                        document.getElementById("transformerRow").style.display = ""; // Show the row
+                        document.getElementById("transformer_type").innerText = data.transformer_names[0][0];
+                        document.getElementById("transformer_make").innerText = data.transformer_names[0][1];
+                        document.getElementById("transformer_capacity").innerText = data.transformer_names[0][2];
+                    } else {
+                        document.getElementById("transformerRow").style.display = "none"; // Hide the row
+                    }
+
+
+                    if (data.generationnames.length > 0) {
+                        document.getElementById("gen_make").innerText = data.generationnames[0][0];
+                        document.getElementById("gen_capacity").innerText = data.generationnames[0][1];
+                        //document.getElementById("gen_serial_no").innerText = data.generationnames[0][2];
+                    }
+
+                    if (data.gen_names.length > 0) {
+                        document.getElementById("ct_make").innerText = data.gen_names[0][0];
+                        document.getElementById("ct_capacity").innerText = data.gen_names[0][1];
+                        //document.getElementById("ct_serial_no").innerText = data.gen_names[0][2];
+                    }
+
+                    if (data.gen_names[0][0]) {
+                        document.getElementById("CT_Row").style.display = ""; // Show the row
+                        document.getElementById("ct_make").innerText = data.gen_names[0][0];
+                        document.getElementById("ct_capacity").innerText = data.gen_names[0][1];
+                        document.getElementById("ct_serial_no").innerText = data.gen_names[0][2];
+                    } else {
+                        document.getElementById("CT_Row").style.display = "none"; // Hide the row
+                    }
+
+
+                });
+        }
+    </script>
+
+
+{% endblock %}

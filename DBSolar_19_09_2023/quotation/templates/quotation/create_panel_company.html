@@ -1,0 +1,14 @@
+{% extends 'partials/base.html' %}
+{% load static %}
+{% load indian_filters %}
+{% block title %} Sale Bill No : {{ bill.billno }}{% endblock title %}
+{% block content %}
+<h3>Add Solar Panel Company</h3>
+<form method="post">
+  {% csrf_token %}
+  <label>Company Name:</label>
+  <input type="text" name="name" required>
+  <button type="submit">Save</button>
+</form>
+{% endblock %}
+

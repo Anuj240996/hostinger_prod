@@ -1,0 +1,119 @@
+{% extends 'partials/base.html' %}
+{% block title %}Customer Detail Page{% endblock %}
+{% load static %}
+
+{% block content %}
+    {% include 'partials/topside.html' %}
+    <div class="row my-4">
+        <div class="col-md-4"></div>
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header bg-info text-white">Employee Details</div>
+                <div class="row p-3">
+                    <div class="col-md-8">
+                        <table class="table table-borderless">
+                            <thead>
+                                <span class="h4">Profile Information</span>
+                                <hr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <th>Status</th>
+<!--                                    <td>{{ customers.first_name }} {{ customers.last_name }}</td>-->
+                                    <td>
+                                    {% if customers %}
+                                        {% if customers.is_active %}
+                                            <button class="btn btn-success" type="button"><i class="fe fe-check-verified"></i> Active</button>
+                                        {% else %}
+                                            <button class="btn btn-danger" type="button"><i class="fe fe-check-verified"></i> Deactivated</button>
+                                        {% endif %}
+                                    {% else %}
+                                        <!-- Handle case where user1 is not defined -->
+                                        <span>User not found</span>
+                                    {% endif %}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <th>Name</th>
+                                    <td>{{ customers.first_name }} {{ customers.last_name }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Employee ID</th>
+                                    <td>DB_{{ customers.id }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Department-Designation</th>
+                                    <td>{{ customers.profile.department }} - {{ customers.profile.designation }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Email</th>
+                                    <td>{{ customers.email }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Phone</th>
+                                    <td>{{ customers.profile.phone }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Address</th>
+                                    <td>{{ customers.profile.address }}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="image-container">
+<!--                        <img class="img-thumbnail ml-1" src="{{ customers.profile.image.url }}" class="card-img-top" alt="profile-image" style="max-height:350px; max-width:200px;">-->
+<!--                        <img src="{% static '/images/dblogosmall.png' %}" alt="Company Symbol" class="company-symbol-overlap">-->
+
+                            {% if customers %}
+                                {% if customers.is_active %}
+                                      <img class="img-thumbnail ml-1" src="{{ customers.profile.image.url }}" class="card-img-top" alt="profile-image" style="max-height:350px; max-width:200px;">
+                                      <img src="{% static '/images/dblogosmall.png' %}" alt="Company Symbol" class="company-symbol-overlap" style="max-width: 50%; height: 20%; right: 0; bottom: 45%;">
+                                {% else %}
+                                    <img class="img-thumbnail ml-1" src="{{ customers.profile.image.url }}" class="card-img-top" alt="profile-image" style="max-height:350px; max-width:200px;">
+                                    <img src="{% static '/images/inactive2.png' %}" alt="Inactive Symbol" class="company-symbol-overlap" style="max-width: 80%; height: 30%; right: -8%; bottom: 45%;">
+                                {% endif %}
+                            {% else %}
+                                <!-- Handle case where user1 is not defined -->
+                                <span>User not found</span>
+                            {% endif %}
+
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <style>
+        /* Custom CSS for positioning the company symbol */
+        .image-container {
+            position: relative;
+            display: inline-block;
+            overflow: hidden;
+        }
+
+        .company-symbol-overlap {
+            position: absolute;
+            max-width: 30%;
+            height: auto;
+            z-index: 1;
+        }
+
+        /* For desktops */
+        @media screen and (min-width: 768px) {
+            .company-symbol-overlap {
+                position: absolute;
+                bottom: 200px;
+                right: 5px;
+            }
+        }
+
+        /* For mobile devices */
+        @media screen and (max-width: 767px) {
+            .company-symbol-overlap {
+                position: absolute;
+                bottom: 0;
+                right: 0;
+            }
+        }
+    </style>
+{% endblock %}
+

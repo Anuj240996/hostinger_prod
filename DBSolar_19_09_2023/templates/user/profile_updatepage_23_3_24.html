@@ -1,0 +1,287 @@
+{% extends 'partials/base.html' %}
+{% block title %}Consumer Page{% endblock %}
+{% load static %}
+
+{% block content %}
+<style>
+    /* Custom CSS for positioning the company symbol on top of the image */
+    .image-container {
+        position: relative;
+        display: inline-block; /* Ensures inline display */
+    }
+
+    .company-symbol-overlap {
+        position: absolute;
+        bottom: 0;
+        right: 3px;
+        max-width: 30%; /* Make the symbol resizable while maintaining aspect ratio */
+        height: 35%;
+        z-index: 1; /* Ensure the symbol is above the image */
+    }
+
+     /* New CSS for mobile responsiveness */
+    @media screen and (max-width: 767px) {
+        .info-wrapper {
+            display: block; /* Display email value in a new line on smaller screens */
+            margin-top: 5px; /* Add some space between items */
+        }
+    }
+</style>
+
+<!--<div class="card  m-1">-->
+<!--<div class="card-body">-->
+<div class="page-header">
+   <div class="row">
+      <div class="col-sm-12">
+         <h3 class="page-title text-capitalize">{{ user1.first_name }} {{ user1.last_name }} Details</h3>
+         <ul class="breadcrumb" style="border-bottom : 2px solid orange">
+            <li class="breadcrumb-item"><a href="customer/index.html">Dashboard</a></li>
+            <li class="breadcrumb-item active">View  Details</li>
+         </ul>
+      </div>
+   </div>
+</div>
+{% if messages %}
+{% for message in messages %}
+<div class="alert alert-{{ message.tags }}">
+   {{ message }}
+</div>
+{% endfor %}
+{% endif %}
+<form method="post" enctype="multipart/form-data" action="/customers/">
+   {% csrf_token %}
+   <h5 class="p-2 text-danger" style="border-bottom : 2px solid orange">Employee Details</h5>
+  <div class="card-body">
+   <div class="row">
+      <div class="col-md-12">
+         <div class="about-info">
+            <!--<h4>About Me</h4>-->
+            <div class="media mt-1">
+<!--               <ul>-->
+<!--                  <li>-->
+<!--                     <span>-->
+<!--                     <img class="img-thumbnail ml-2"  height="550px" src="{{ employee.image.url }}" class="card-img-top" height="200px" alt="profile-image">-->
+<!--                     </span>-->
+<!--                  </li>-->
+<!--                  <li>-->
+<!--                     <small class="text-muted">Currently:  <a href="{{ employee.image.url }}">{{ employee.image }}</a></small>-->
+<!--                  </li>-->
+<!--               </ul>-->
+
+               <ul>
+                    <li>
+                        <!-- Add Company Symbol Overlapping the Image -->
+                        <!--<div class="image-container">-->
+                        <!--    <img class="img-thumbnail ml-1" src="{{ employee.image.url }}" class="card-img-top" alt="profile-image" style="max-height:500px; max-width:500px;">-->
+                        <!--    <img src="{% static '/images/dblogosmall.png' %}" alt="Company Symbol" class="company-symbol-overlap">-->
+                        <!--</div>-->
+                        <div class="image-container">
+                            <img class="img-thumbnail ml-1" src="{{ employee.image.url }}" class="card-img-top" alt="profile-image" style="max-height:350px; max-width:200px;">
+                            <img src="{% static '/images/dblogosmall.png' %}" alt="Company Symbol" class="company-symbol-overlap">
+                        </div>
+
+                        <!-- End Company Symbol -->
+                    </li>
+                    <li>
+                        <small class="text-muted">Currently:  <a href="{{ employee.image.url }}">{{ employee.image }}</a></small>
+                    </li>
+                </ul>
+
+
+               <div class="media-body ml-7">
+                  <!--<ul class="ml-5">-->
+                  <ul>
+                     <li>
+                        <span class="title-span"><b>Employee ID</b></span>
+                        <span> : </span>
+                        <span class="info-span ml-3">  DB/{{ user1.id }}</span>
+                     </li>
+                     <li>
+                        <span class="title-span"><b>Username </b> </span>
+                        <span> : </span>
+                        <span class="info-span ml-3">{{ user1.username }}</span>
+                     </li>
+                     <li>
+                        <span class="title-span"><b>Full Name </b> </span>
+                        <span> : </span>
+                        <span class="info-span ml-3 text-capitalize">{{ user1.first_name }} {{ user1.last_name }}</span>
+                     </li>
+                     <li>
+                        <span class="title-span"><b>Phone No.</b>  </span>
+                        <span> : </span>
+                        <span class="info-span ml-3">{{ employee.workphone }}</span>
+                     </li>
+                     <li>
+                        <span class="title-span"><b>Email</b>  </span>
+                        <span> : </span>
+                        <div class="info-wrapper">
+                        <span class="info-span ml-3">{{ user1.email }}</span>
+                        </div>
+                     </li>
+                     <li>
+                        <span class="title-span"><b>Designation</b>  </span>
+                        <span> : </span>
+                        <span class="info-span ml-3 text-capitalize">{{ employee.designation }} - {{ employee.department }}</span>
+                     </li>
+                     <li>
+                        <span class="title-span"><b>Date Of Birth</b> </span>
+                        <span> : </span>
+                        <span class="info-span ml-3">{{ employee.DOB|date:"j F Y" }}</span>
+                     </li>
+                     <li>
+                        <span class="title-span"><b>Date Of Joining</b> </span>
+                        <span> : </span>
+                        <span class="info-span ml-3">{{ user1.date_joined|date:"j F Y" }}</span>
+                     </li>
+                  </ul>
+               </div>
+            </div>
+               <h5 class="p-2 text-danger text-capitalize" style="border-bottom : 2px solid orange">Work Desk Details</h5>
+               <div class="media">
+                     <ul>
+                      <li>
+                        <span class="title-span"><b>Department</b> </span>
+                        <span> : </span>
+
+                        <span class="info-span ml-3 text-capitalize">{{ employee.department }}</span>
+                     </li>
+                     <li>
+                        <span class="title-span"><b>Designation</b> </span>
+                        <span> : </span>
+                        <span class="info-span ml-3 text-capitalize">{{ employee.designation }}</span>
+                     </li>
+                     <li>
+                        <span class="title-span"><b>Date Of Joining</b> </span>
+                        <span> : </span>
+                        <span class="info-span ml-3">{{ user1.date_joined|date:'d/m/Y' }}</span>
+                     </li>
+                     <li>
+                        <span class="title-span"><b>Work Email</b> </span>
+                        <span> : </span>
+                        <span class="info-span ml-3">{{ user1.email }}</span>
+                     </li>
+                     <li>
+                        <span class="title-span"><b>Phone No.</b> </span>
+                        <span> : </span>
+                        <span class="info-span ml-3">{{ employee.workphone }}</span>
+                     </li>
+                     </ul>
+               </div>
+
+<!--                     <div class="col-sm-12">-->
+                        <h5 class="p-2 text-danger text-capitalize" style="border-bottom : 2px solid orange">Personal Details</h5>
+               <div class="media">
+                    <ul>
+                     <li>
+                        <span class="title-span"><b>Full Name</b> </span>
+                        <span> : </span>
+                        <span class="info-span ml-3 text-capitalize">{{ user1.first_name }}  {{ user1.last_name }}</span>
+                     </li>
+                     <li>
+                        <span class="title-span"><b>Blood Group</b> </span>
+                        <span> : </span>
+                        <span class="info-span ml-3 text-capitalize">{{ employee.bg }}</span>
+                     </li>
+                     <li>
+                        <span class="title-span"><b>Date Of Birth</b> </span>
+                        <span> : </span>
+                        <span class="info-span ml-3">{{ employee.DOB|date:'d/m/Y' }}</span>
+                     </li>
+                     <li>
+                        <span class="title-span"><b>Address</b> </span>
+                        <span> : </span>
+                        <span class="info-span ml-3 text-capitalize">{{ employee.address }}</span>
+                     </li>
+                     <li>
+                        <span class="title-span"><b>City</b> </span>
+                        <span> : </span>
+                        <span class="info-span ml-3 text-capitalize">{{ employee.city }}</span>
+                     </li>
+                     <li>
+                        <span class="title-span"><b>Taluka</b> </span>
+                        <span> : </span>
+                        <span class="info-span ml-3 text-capitalize">{{ employee.taluka }}</span>
+                     </li>
+                     <li>
+                        <span class="title-span"><b>District</b> </span>
+                        <span> : </span>
+                        <span class="info-span ml-3 text-capitalize">{{ employee.district }}</span>
+                     </li>
+                    </ul>
+               </div>
+<!--                     <div class="col-sm-12">-->
+                        <h5 class="p-2 text-danger text-capitalize" style="border-bottom : 2px solid orange">Qualification</h5>
+               <div class="media">
+                     <ul>
+                     <li>
+                        <span class="title-span"><b>PG Education</b> </span>
+                        <span> : </span>
+                        <span class="info-span ml-3 text-capitalize">{{ employee.pg }}</span>
+                     </li>
+                     <li>
+                        <span class="title-span"><b>Institution</b> </span>
+                        <span> : </span>
+                        <span class="info-span ml-3 text-capitalize">{{ employee.institution }}</span>
+                     </li>
+                     <li>
+                        <span class="title-span"><b>Year Of Passing</b> </span>
+                        <span> : </span>
+                        <span class="info-span ml-3">{{ employee.yop }}</span>
+                     </li>
+                     <li>
+                        <span class="title-span"><b>Specialization</b> </span>
+                        <span> : </span>
+                        <span class="info-span ml-3 text-capitalize">{{ employee.specili }}</span>
+                     </li>
+
+                     </ul>
+               </div>
+<!--                     <div class="col-sm-12">-->
+                        <h5 class="p-2 text-danger text-capitalize" style="border-bottom : 2px solid orange">Emergency Contact Details</h5>
+               <div class="media">
+                     <ul>
+                     <li>
+                        <span class="title-span"><b>Name</b> </span>
+                        <span> : </span>
+                        <span class="info-span ml-3 text-capitalize">{{ employee.name }}</span>
+                     </li>
+                     <li>
+                        <span class="title-span"><b>Phone No.</b> </span>
+                        <span> : </span>
+                        <span class="info-span ml-3">{{ employee.phone }}</span>
+                     </li>
+                     <li>
+                        <span class="title-span"><b>Email</b> </span>
+                        <span> : </span>
+                        <span class="info-span ml-3">{{ employee.email }}</span>
+                     </li>
+                     <li>
+                        <span class="title-span"><b>Address</b> </span>
+                        <span> : </span>
+                        <span class="info-span ml-3 text-capitalize">{{ employee.emraddress }}</span>
+                     </li>
+                      </ul>
+               </div>
+
+                     <input type="submit" value="OK" class="btn btn-primary" data-href-template="dashboard/customers.html">
+
+         </div>
+      </div>
+   </div>
+  </div>
+</form>
+<!--</div>-->
+<!--</div>-->
+
+{% if error == "no" %}
+<script>
+   alert(' {{user1.first_name }} {{user1.last_name }} Profile Update Successful');
+   window.location = ('{% url 'user-profile-update' user1.id %}')
+</script>
+{% endif %}
+{% if error == "yes" %}
+<script>
+   alert('Something went wrong , Try Again...');
+</script>
+{% endif %}
+{% endblock %}

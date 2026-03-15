@@ -1,0 +1,1025 @@
+{% extends 'partials/base.html' %}
+{% load static %}
+{% load tz %}
+{% block content %}
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@mdi/font/css/materialdesignicons.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.4.0/jspdf.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/exceljs/dist/exceljs.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.9.2/html2pdf.bundle.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/clipboard@2.0.8/dist/clipboard.min.js"></script>
+
+<style>
+    /* Custom CSS for positioning the company symbol on top of the image */
+    .image-container {
+        position: relative;
+        display: inline-block; /* Ensures inline display */
+    }
+
+    .company-symbol-overlap {
+        position: absolute;
+        bottom: 0;
+        right: 3px;
+        max-width: 30%; /* Make the symbol resizable while maintaining aspect ratio */
+        height: 35%;
+        z-index: 1; /* Ensure the symbol is above the image */
+    }
+</style>
+
+<section class="content">
+    <div class="content-header">
+        <div class="container-fluid">
+            <div class="row mb-2">
+                <div class="col-sm-6">
+                    <h1 class="m-0">View Request Details</h1>
+                </div>
+                               <!-- Add these buttons inside the col-auto div -->
+<div class="col-auto text-right float-right ml-auto">
+    <div class="dt-buttons btn-group flex-wrap">
+<!--       <a href="#" class="btn btn-outline-primary mr-2" name="download" id="download-pdf"><i class="fas fa-download"></i>Download</a>-->
+       <a id="generate-pdf-all" href="#" class="btn btn-primary" type="button" title="PDF"><i class="fas fa-file-pdf fs-4" style="font-size: 1.1rem;"></i></a>
+        <a id="generate-excel-all" href="#" class="btn btn-primary" title="Excel"><i class="mdi mdi-microsoft-excel" style="font-size: 18px;"></i></a>
+        <a id="copy-table" href="#" class="btn btn-primary" title="Print"><i class="fas fa-solid fa-copy"></i></a>
+        <a id="generate-print-all" href="#" class="btn btn-primary" title="Print"><i class="fas fa-solid fa-print"></i></a>
+
+<!--         <a href="{% url 'user-add' %}" class="btn btn-primary"  title="New User"><i class="fas fa-plus"></i></a>-->
+<!--       <button class="btn btn-outline-primary mr-2" id="generate-pdf"><i class="fas fa-file-pdf"></i> Generate PDF</button>-->
+<!--       <button class="btn btn-outline-primary" id="generate-excel"><i class="fas fa-file-excel"></i> Generate Excel</button>-->
+    </div>
+</div>
+
+      </div>
+   </div>
+
+            </div>
+
+    <div class="container-fluid">
+        <div class="row">
+            <!-- left column -->
+            <div class="col-md-12">
+                <!-- general form elements -->
+                <div class="card card-primary">
+                    <div class="card-header">
+                        <h3 class="card-title">View Complaint Details</h3>
+                    </div>
+
+                    <div class="card-body" style="background-color: #98a8aa">
+                        <div class="row">
+                            <div class="col-12">
+                                <table id="example1" class="table table-bordered table-striped table-framebordered" style="background-color: white;">
+                                    <tr>
+                                        <th style="text-align: left; color: blue;" colspan="2"><h5>&nbsp;&nbsp;Consumer Information (Reported by) </h5>
+                                        </th>
+                                    </tr>
+                                    <tr>
+                                        <th style="width: 45px;"> &nbsp;&nbsp;Complaint No.</th>
+                                        <td style="width: 155px;"> CMP / {{firereport.id}}</td>
+                                    </tr>
+                                    <tr>
+                                        <th style="width: 45px;"> &nbsp;&nbsp;Full Name</th>
+                                        <td style="width: 155px;"> {{ firereport.FullName | upper }}</td>
+                                    </tr>
+                                    <tr>
+                                        <th style="width: 45px;"> &nbsp;&nbsp;Contact Number</th>
+                                        <td style="width: 155px;"> {{firereport.MobileNumber}}</td>
+                                    </tr>
+                                    <tr>
+                                        <th style="width: 45px;"> &nbsp;&nbsp;Location</th>
+                                        <td style="width: 155px;" class="text-capitalize"> {{firereport.Location}}</td>
+                                    </tr>
+                                    <tr>
+                                        <th style="width: 45px;"> &nbsp;&nbsp;Message</th>
+                                        <td style="width: 155px;" class="text-capitalize"> {{firereport.Message}}</td>
+                                    </tr>
+                                    <tr>
+                                        <th style="width: 45px;"> &nbsp;&nbsp;Reporting Time</th>
+<!--                                        <td style="width: 155px;"> {{ firereport.Postingdate|localtime|date:"d-m-Y H:i" }}</td>-->
+                                         <td>{{ firereport.Postingdate }}</td>
+                                    </tr>
+                                </table>
+                            </div>
+                        </div>
+
+                        <hr>
+
+                            {% if not firereport.AssignTo %}
+                            <h3 align="center" style="text-align: center; color: red;"> Not Assigned Yet </h3>
+                            {% else %}
+                        <div class="row">
+                            <div class="col-12">
+                                <table id="example1" class="table table-bordered table-striped" style="background-color: white">
+                                    <tr>
+                                        <th style="text-align: left; color: red;" colspan="3"><h5>&nbsp;&nbsp;Engineers Assigned Details</h5></th>
+                                    </tr>
+                                    <tr>
+                                        <th style="text-align: center; width: 250px" rowspan="5">
+                                         <div class="image-container" style="align: center;">
+                                           <img class="img-thumbnail ml-2" height="150px" width="200px" src="{{ firereport.AssignTo.profile.image.url }}" class="card-img-top"  alt="profile-image">
+                                           <img src="{% static '/images/dblogosmall.png' %}" alt="Company Symbol" class="company-symbol-overlap">
+                                         </div>
+                                        </th>
+                                    </tr>
+
+                                    <tr>
+                                        <th style="width: 300px">&nbsp;&nbsp; Engineers Name</th>
+                                        <td class="text-capitalize">{{firereport.AssignTo.first_name}} {{firereport.AssignTo.last_name}}</td>
+                                    </tr>
+                                    <tr>
+                                        <th style="width: 300px">&nbsp;&nbsp; Employee ID & Designation</th>
+                                        <td class="text-capitalize"> DB / {{firereport.AssignTo.id}} - {{firereport.AssignTo.profile.designation}}</td>
+                                    </tr>
+                                    <tr>
+                                        <th style="width: 300px"> &nbsp;&nbsp; Contact No.</th>
+                                        <td>{{firereport.AssignTo.profile.workphone}}</td>
+                                    </tr>
+                                    <tr>
+                                        <th style="width: 300px">&nbsp;&nbsp; Engineers Address</th>
+                                        <td class="text-capitalize">{{firereport.AssignTo.profile.address}}</td>
+                                    </tr>
+                                    <tr>
+                                        <th></th>
+                                        <th style="width: 300px">&nbsp;&nbsp; Assigned Time</th>
+                                        <td>{{firereport.AssignedTime}}</td>
+                                    </tr>
+                                </table>
+                            </div>
+                            {% endif %}
+
+
+                        </div>
+
+
+                        <hr>
+                        {% if reportcount != 0 %}
+                        <table id="example1" class="table table-bordered table-striped" style="background-color: white">
+                            <tr align="left" style="color: red;">
+                                <th colspan="4"><h5>&nbsp;&nbsp;&nbsp;Request Track History </h5></th>
+                            </tr>
+                            <tr style="background-color: #b3bebe;">
+                                <th class="text-center">#</th>
+                                <th>Action Taken</th>
+                                <th>Status</th>
+                                <th>Remark Date</th>
+                            </tr>
+
+                            {% for i in report1 %}
+                            <tr>
+                                <td class="text-center">{{forloop.counter}}</td>
+                                <td class="text-capitalize">{{i.remark}}</td>
+                                <td class="text-capitalize">{{i.status}}</td>
+                                <td>{{ i.postingDate }}</td>
+<!--                                <td>{{ i.postingDate|localtime|date:"d-m-Y H:i" }}</td>-->
+                            </tr>
+                            {% endfor %}
+                        </table>
+                        {% endif %}
+
+                        {% if reportcount == 0 %}
+                        <h4 align="center" style="color:red"> No Tracking history found </h4>
+                        {% endif %}
+                        <br>
+
+                        {% if not firereport.AssignTo %}
+                        <div class="form-group">
+                            <button type="button" class="btn btn-primary btn-sm" data-toggle="modal"
+                                    data-target="#myModal">Assign To
+                            </button>
+                        </div>
+                        {% elif firereport.Status != 'Request Completed' %}
+                        <button type="button" class="btn btn-primary btn-sm" data-toggle="modal"
+                                data-target="#takeaction">Take Action
+                        </button>
+                        {% endif %}
+
+                            <div class="modal fade" id="myModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+                                <div class="modal-dialog" role="document">
+                                    <div class="modal-content">
+                                        <div class="modal-header">
+                                            <h5 class="modal-title" id="exampleModalLabel">AssignTo</h5>
+                                            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                                <span aria-hidden="true">&times;</span>
+                                            </button>
+                                        </div>
+                                        <div class="modal-body">
+                                            <form method="post">
+                                                {% csrf_token %}
+                                                <table width="100%">
+                                                    <tr>
+                                                        <th>Department:</th>
+                                                        <td>
+                                                            <select id="department" name="department" class="form-control" required>
+                                                                <option value="">Select Department</option>
+                                                                {% for department in unique_departments %}
+                                                                    <option value="{{ department }}">{{ department }}</option>
+                                                                {% endfor %}
+                                                            </select>
+                                                        </td>
+                                                    </tr>
+                                                    <tr>
+                                                        <th>Assign To:</th>
+                                                        <td>
+                                                            <select id="first_name" name="AssignTo" class="form-control" required disabled>
+                                                                <option value="">-- Select Name --</option>
+                                                            </select>
+                                                        </td>
+                                                    </tr>
+                                                </table>
+                                                <div class="modal-footer">
+                                                    <button type="submit" name="submit" class="btn btn-primary">Submit</button>
+                                                </div>
+                                            </form>
+                                        </div>
+                                    </div>
+                                    {% if error == "no" %}
+                                    <div id="assign-success-message" data-redirect="{% url 'firereport-viewRequestDetails' firereport.id %}" style="display: none;"></div>
+                                    {% endif %}
+
+                                    {% if error == "yes" %}
+                                    <div id="assign-error-message" style="display: none;"></div>
+                                    {% endif %}
+                                </div>
+                            </div>
+
+                        <div class="modal fade" id="takeaction" tabindex="-1" role="dialog"
+                             aria-labelledby="exampleModalLabel" aria-hidden="true">
+                            <div class="modal-dialog" role="document">
+                                <div class="modal-content">
+                                    <div class="modal-header">
+                                        <h5 class="modal-title" id="exampleModalLabel">Take Action</h5>
+                                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                            <span aria-hidden="true">&times;</span>
+                                        </button>
+                                    </div>
+                                    <div class="modal-body">
+                                        <form method="post" id="take-action-form">
+                                            {% csrf_token %}
+                                            <table width="100%">
+                                                <tr>
+                                                    <th>Status :</th>
+                                                    <td>
+                                                        <select name="status" id="action-status" class="form-control" required>
+                                                        <option value="">Select Action</option>
+                                                            {% if firereport.Status == 'Assigned' %}
+                                                            <option value="In Progress">In Progress</option>
+                                                            <option value="Work in Progress">Work in Progress</option>
+                                                            <option value="Request Completed">Request Completed</option>
+
+                                                            {% elif firereport.Status == 'In Progress' %}
+                                                            <option value="Work in Progress">Work in Progress</option>
+                                                            <option value="Request Completed">Request Completed</option>
+
+                                                            {% elif firereport.Status == 'Work in Progress' %}
+                                                            <option value="Request Completed">Request Completed</option>
+                                                            {% endif %}
+                                                        </select>
+                                                    </td>
+                                                </tr>
+
+                                                <tr>
+                                                    <th>Action Taken :</th>
+                                                    <td><textarea name="remark" id="action-remark" class="form-control" maxlength="500" rows="5" required></textarea></td>
+                                                </tr>
+                                            </table>
+                                            <div class="modal-footer">
+                                                <button type="submit" name="submit" class="btn btn-primary">Submit
+                                                </button>
+                                            </div>
+                                        </form>
+                                    </div>
+                                </div>
+
+                                {% if error1 == "no" %}
+                                <script>
+                                    alert('Request has been updated');
+                                    window.location=('{% url 'firereport-allRequest' %}');
+                                </script>
+                                {% endif %}
+
+                                {% if error1 == "yes" %}
+                                <script>
+                                    alert('Something Went Wrong. Please try again');
+                                </script>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+$(document).ready(function() {
+    console.log('=== DEPARTMENT DROPDOWN INITIALIZATION ===');
+    
+    // Add form submission error detection
+    var takeActionForm = document.getElementById('take-action-form');
+    if (takeActionForm) {
+        takeActionForm.addEventListener('submit', function(e) {
+            console.log('=== FORM SUBMISSION STARTED ===');
+            var status = document.getElementById('action-status');
+            var remark = document.getElementById('action-remark');
+            var errorDisplay = document.getElementById('form-error-display');
+            
+            console.log('Status value:', status ? status.value : 'NOT FOUND');
+            console.log('Remark value:', remark ? remark.value : 'NOT FOUND');
+            
+            if (!status || !status.value) {
+                console.error('Status field is missing or empty');
+                e.preventDefault();
+                if (errorDisplay) {
+                    errorDisplay.style.display = 'block';
+                    errorDisplay.textContent = 'Please select a status';
+                }
+                alert('Please select a status');
+                return false;
+            }
+            
+            if (!remark || !remark.value.trim()) {
+                console.error('Remark field is missing or empty');
+                e.preventDefault();
+                if (errorDisplay) {
+                    errorDisplay.style.display = 'block';
+                    errorDisplay.textContent = 'Please enter a remark';
+                }
+                alert('Please enter a remark');
+                return false;
+            }
+            
+            console.log('Form validation passed, submitting...');
+        });
+    } else {
+        console.warn('Take action form not found');
+    }
+    
+    try {
+        var allUsers = [
+        {% for user in all_users %}
+            {
+                id: {{ user.id|default:0 }},
+                firstName: "{{ user.first_name|default:""|escapejs }}",
+                lastName: "{{ user.last_name|default:""|escapejs }}",
+                department: "{% if user.profile.department %}{{ user.profile.department|escapejs }}{% else %}{% endif %}"
+            }{% if not forloop.last %},{% endif %}
+        {% endfor %}
+    ];
+    
+    console.log('All users loaded:', allUsers.length, 'users');
+    console.log('Sample user:', allUsers.length > 0 ? allUsers[0] : 'No users');
+    } catch (e) {
+        console.error('Error loading users array:', e);
+        console.error('Stack:', e.stack);
+        var allUsers = [];
+    }
+
+    try {
+        $('#department').change(function() {
+            var selectedDepartment = $(this).val();
+            console.log('Department selected:', selectedDepartment);
+            
+            var filteredUsers = allUsers.filter(function(user) {
+                return user.department === selectedDepartment;
+            });
+            
+            console.log('Filtered users:', filteredUsers.length);
+
+            var firstNamesDropdown = $('#first_name');
+            if (firstNamesDropdown.length === 0) {
+                console.error('First name dropdown not found!');
+                return;
+            }
+            
+            firstNamesDropdown.empty();
+            firstNamesDropdown.append($('<option>', {
+                value: '',
+                text: '-- Select Name --'
+            }));
+            
+            filteredUsers.forEach(function(user) {
+                try {
+                    var fullName = (user.firstName || '') + ' ' + (user.lastName || '');
+                    firstNamesDropdown.append($('<option>', {
+                        value: user.id,
+                        text: fullName.trim() || 'Unknown'
+                    }));
+                } catch (e) {
+                    console.error('Error adding user to dropdown:', e, user);
+                }
+            });
+
+             // Enable or disable the first_name dropdown based on the selected department
+            if (selectedDepartment) {
+                firstNamesDropdown.prop('disabled', false);
+                console.log('First name dropdown enabled');
+            } else {
+                firstNamesDropdown.prop('disabled', true);
+                console.log('First name dropdown disabled');
+            }
+        });
+        
+        console.log('Department change handler attached');
+
+        // Trigger the change event initially to populate the dropdown based on the default selected department
+        $('#department').change();
+    } catch (e) {
+        console.error('Error setting up department dropdown:', e);
+        console.error('Stack:', e.stack);
+    }
+    
+    console.log('=== DEPARTMENT DROPDOWN INITIALIZATION COMPLETE ===');
+});
+</script>
+<script>
+// Global error handler to catch all JavaScript errors
+window.addEventListener('error', function(e) {
+    console.error('=== JAVASCRIPT ERROR DETECTED ===');
+    console.error('Error Message:', e.message);
+    console.error('Error File:', e.filename);
+    console.error('Error Line:', e.lineno);
+    console.error('Error Column:', e.colno);
+    console.error('Error Stack:', e.error ? e.error.stack : 'No stack trace');
+    console.error('Full Error Object:', e);
+    
+    // Display error in a visible div on the page
+    var errorDiv = document.getElementById('js-error-display');
+    if (!errorDiv) {
+        errorDiv = document.createElement('div');
+        errorDiv.id = 'js-error-display';
+        errorDiv.style.cssText = 'position:fixed;top:10px;right:10px;background:#ff0000;color:#fff;padding:15px;border-radius:5px;z-index:99999;max-width:400px;font-size:12px;';
+        document.body.appendChild(errorDiv);
+    }
+    errorDiv.innerHTML = '<strong>JavaScript Error:</strong><br>' + 
+                         'Message: ' + e.message + '<br>' +
+                         'File: ' + e.filename + '<br>' +
+                         'Line: ' + e.lineno + ':' + e.colno;
+    
+    return false; // Prevent default error handling
+});
+
+// Catch unhandled promise rejections
+window.addEventListener('unhandledrejection', function(e) {
+    console.error('=== UNHANDLED PROMISE REJECTION ===');
+    console.error('Reason:', e.reason);
+    console.error('Promise:', e.promise);
+    
+    var errorDiv = document.getElementById('js-error-display');
+    if (!errorDiv) {
+        errorDiv = document.createElement('div');
+        errorDiv.id = 'js-error-display';
+        errorDiv.style.cssText = 'position:fixed;top:10px;right:10px;background:#ff0000;color:#fff;padding:15px;border-radius:5px;z-index:99999;max-width:400px;font-size:12px;';
+        document.body.appendChild(errorDiv);
+    }
+    errorDiv.innerHTML = '<strong>Promise Rejection:</strong><br>' + String(e.reason);
+});
+
+document.addEventListener("DOMContentLoaded", function() {
+    console.log('=== PAGE LOADED - STARTING ERROR DETECTION ===');
+    
+    // Check for required elements
+    var requiredElements = {
+        'assign-success-message': document.getElementById('assign-success-message'),
+        'assign-error-message': document.getElementById('assign-error-message'),
+        'action-success-message': document.getElementById('action-success-message'),
+        'action-error-message': document.getElementById('action-error-message'),
+        'generate-pdf-all': document.getElementById('generate-pdf-all'),
+        'generate-excel-all': document.getElementById('generate-excel-all'),
+        'copy-table': document.getElementById('copy-table'),
+        'generate-print-all': document.getElementById('generate-print-all'),
+        'department': document.getElementById('department'),
+        'first_name': document.getElementById('first_name')
+    };
+    
+    console.log('=== ELEMENT CHECK ===');
+    for (var key in requiredElements) {
+        if (requiredElements[key]) {
+            console.log('✓ Found:', key);
+        } else {
+            console.warn('✗ Missing:', key);
+        }
+    }
+    
+    // Check for jQuery
+    console.log('=== LIBRARY CHECK ===');
+    if (typeof jQuery !== 'undefined') {
+        console.log('✓ jQuery loaded, version:', jQuery.fn.jquery);
+    } else {
+        console.error('✗ jQuery NOT loaded!');
+    }
+    
+    // Check for required functions
+    console.log('=== FUNCTION CHECK ===');
+    var requiredFunctions = ['generatePDFAll', 'generateExcelAll', 'copyTableToClipboard', 'printTable'];
+    requiredFunctions.forEach(function(funcName) {
+        if (typeof window[funcName] === 'function') {
+            console.log('✓ Function exists:', funcName);
+        } else {
+            console.warn('✗ Function missing:', funcName);
+        }
+    });
+    
+    // Handle success/error messages from Django template
+    console.log('=== MESSAGE HANDLING ===');
+    try {
+        if (document.getElementById('assign-success-message')) {
+            console.log('Found assign-success-message');
+            var redirectUrl = document.getElementById('assign-success-message').getAttribute('data-redirect');
+            console.log('Redirect URL:', redirectUrl);
+            alert('Assigned to Team successfully');
+            if (redirectUrl) {
+                window.location.href = redirectUrl;
+            }
+        }
+        
+        if (document.getElementById('assign-error-message')) {
+            console.log('Found assign-error-message');
+            alert('Something Went Wrong. Please try again');
+        }
+        
+        if (document.getElementById('action-success-message')) {
+            console.log('Found action-success-message');
+            var redirectUrl = document.getElementById('action-success-message').getAttribute('data-redirect');
+            console.log('Redirect URL:', redirectUrl);
+            alert('Request has been updated');
+            if (redirectUrl) {
+                window.location.href = redirectUrl;
+            }
+        }
+        
+        if (document.getElementById('action-error-message')) {
+            console.log('Found action-error-message');
+            alert('Something Went Wrong. Please try again');
+        }
+    } catch (e) {
+        console.error('Error in message handling:', e);
+        console.error('Stack:', e.stack);
+    }
+    
+    // Setup PDF/Excel/Copy/Print buttons (these exist on this page)
+    var generatePdfBtn = document.getElementById('generate-pdf-all');
+    var generateExcelBtn = document.getElementById('generate-excel-all');
+    var copyTableBtn = document.getElementById('copy-table');
+    var printBtn = document.getElementById('generate-print-all');
+    
+    if (generatePdfBtn) {
+        generatePdfBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            // For this page, we don't have a DataTable, so we'll generate PDF from the visible content
+            if (typeof generatePDFAll === 'function') {
+                generatePDFAll();
+            } else {
+                alert('PDF generation not available on this page');
+            }
+        });
+    }
+    
+    if (generateExcelBtn) {
+        generateExcelBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            if (typeof generateExcelAll === 'function') {
+                generateExcelAll();
+            } else {
+                alert('Excel generation not available on this page');
+            }
+        });
+    }
+    
+    if (copyTableBtn) {
+        copyTableBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            if (typeof copyTableToClipboard === 'function') {
+                copyTableToClipboard();
+            } else {
+                // Fallback: copy page content
+                var text = document.body.innerText;
+                navigator.clipboard.writeText(text).then(function() {
+                    alert('Content copied to clipboard!');
+                }).catch(function(err) {
+                    console.error('Failed to copy:', err);
+                });
+            }
+        });
+    }
+    
+    if (printBtn) {
+        printBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            window.print();
+        });
+    }
+    
+    // Only initialize DataTable if the table exists on this page
+    console.log('=== DATATABLE CHECK ===');
+    var dataTableExists = $('#yourDataTable').length > 0;
+    console.log('DataTable #yourDataTable exists:', dataTableExists);
+    
+    if (!dataTableExists) {
+        console.log('DataTable not found on this page, skipping initialization');
+        console.log('=== INITIALIZATION COMPLETE (NO DATATABLE) ===');
+        return;
+    }
+    
+    console.log('Initializing DataTable...');
+    
+    try {
+        let dataTable;
+        if ($.fn.dataTable.isDataTable('#yourDataTable')) {
+            console.log('DataTable already initialized, destroying...');
+            dataTable = $('#yourDataTable').DataTable();
+            dataTable.destroy();
+        }
+
+        console.log('Creating new DataTable...');
+        dataTable = $('#yourDataTable').DataTable({
+        scrollX: true,
+        scrollCollapse: true,
+        fixedHeader: {
+            header: true,
+            footer: false
+        },
+
+        columnDefs: [
+           { targets: 0, orderable: false } // Disable sorting for the Sr No. column (zero-based)
+        ]
+
+
+//        dom: 'Blfrtip',
+//        buttons: [
+//            'copy', 'csv', 'excel', 'pdf',
+ //       ],
+        });
+        console.log('DataTable created successfully');
+    } catch (e) {
+        console.error('Error creating DataTable:', e);
+        console.error('Stack:', e.stack);
+        alert('Error initializing table: ' + e.message);
+        return;
+    }
+
+    try {
+        // Add the buttons to the pagination area
+        console.log('Adding buttons to pagination area...');
+        var paginateArea = $('#yourDataTable_paginate');
+        if (paginateArea.length > 0) {
+            paginateArea.append(`
+                <button class="btn btn-outline-primary mr-2" id="generate-csv-all"><i class="fas fa-file-csv"></i> Generate CSV All</button>
+                <button class="btn btn-outline-primary mr-2" id="generate-excel-all"><i class="fas fa-file-excel"></i> Generate Excel All</button>
+                <button class="btn btn-outline-primary" id="generate-pdf-all"><i class="fas fa-file-pdf"></i> Generate PDF All</button>
+            `);
+            console.log('Buttons added to pagination area');
+        } else {
+            console.warn('Pagination area not found');
+        }
+
+        var csvBtn = document.getElementById('generate-csv-all');
+        var excelBtn = document.getElementById('generate-excel-all');
+        var pdfBtn = document.getElementById('generate-pdf-all');
+        
+        if (csvBtn) {
+            csvBtn.addEventListener('click', function (event) {
+                event.preventDefault();
+                console.log('CSV button clicked');
+                try {
+                    generateCSVAll();
+                } catch (err) {
+                    console.error('Error generating CSV:', err);
+                    alert('Error generating CSV: ' + err.message);
+                }
+            });
+        }
+        
+        if (excelBtn) {
+            excelBtn.addEventListener('click', function (event) {
+                event.preventDefault();
+                console.log('Excel button clicked (from DataTable)');
+                try {
+                    generateExcelAll();
+                } catch (err) {
+                    console.error('Error generating Excel:', err);
+                    alert('Error generating Excel: ' + err.message);
+                }
+            });
+        }
+        
+        if (pdfBtn) {
+            pdfBtn.addEventListener('click', function (event) {
+                event.preventDefault();
+                console.log('PDF button clicked (from DataTable)');
+                try {
+                    generatePDFAll();
+                } catch (err) {
+                    console.error('Error generating PDF:', err);
+                    alert('Error generating PDF: ' + err.message);
+                }
+            });
+        }
+    } catch (e) {
+        console.error('Error setting up DataTable buttons:', e);
+        console.error('Stack:', e.stack);
+    }
+
+       // These event listeners are already set up above for this page
+    // Only set them up here if the DataTable exists
+    try {
+        if ($('#yourDataTable').length > 0) {
+            console.log('Setting up DataTable-specific button listeners...');
+            var printBtnDataTable = document.getElementById('generate-print-all');
+            var copyBtnDataTable = document.getElementById('copy-table');
+            
+            if (printBtnDataTable && !printBtnDataTable.hasAttribute('data-listener-attached')) {
+                printBtnDataTable.setAttribute('data-listener-attached', 'true');
+                printBtnDataTable.addEventListener('click', function (event) {
+                    event.preventDefault();
+                    console.log('Print button clicked (DataTable)');
+                    try {
+                        printTable();
+                    } catch (err) {
+                        console.error('Error printing:', err);
+                        alert('Error printing: ' + err.message);
+                    }
+                });
+                console.log('Print button listener attached (DataTable)');
+            }
+            
+            if (copyBtnDataTable && !copyBtnDataTable.hasAttribute('data-listener-attached')) {
+                copyBtnDataTable.setAttribute('data-listener-attached', 'true');
+                copyBtnDataTable.addEventListener('click', function (event) {
+                    event.preventDefault();
+                    console.log('Copy button clicked (DataTable)');
+                    try {
+                        copyTableToClipboard();
+                    } catch (err) {
+                        console.error('Error copying:', err);
+                        alert('Error copying: ' + err.message);
+                    }
+                });
+                console.log('Copy button listener attached (DataTable)');
+            }
+        }
+    } catch (e) {
+        console.error('Error setting up DataTable button listeners:', e);
+        console.error('Stack:', e.stack);
+    }
+    
+    console.log('=== INITIALIZATION COMPLETE ===');
+});
+
+
+
+function copyTableToClipboard() {
+    if ($('#yourDataTable').length === 0 || !$.fn.dataTable.isDataTable('#yourDataTable')) {
+        console.warn('DataTable #yourDataTable not found');
+        return;
+    }
+    const table = $('#yourDataTable').DataTable();
+
+    // Order the DataTable by the "Sr No." column
+    table.order([0, 'asc']).draw();
+
+    const clipboard = new ClipboardJS('#copy-table', {
+        text: function () {
+            let text = '';
+
+            // Copy table header
+            text += getTableHeaders().join('\t') + '\n';
+
+            // Copy filtered table body with reindexed "Sr No."
+            let serialNumber = 1;
+            table.rows({ search: 'applied' }).data().each(function (row) {
+              if (row[0] !== 'Action') { // Skip the "Action" column
+                row[0] = serialNumber++; // Reassign sequential "Sr No." values
+                row.forEach(function (cell) {
+                    // Extract text content without HTML tags
+                    const cellText = document.createElement('div');
+                    cellText.innerHTML = cell;
+                    text += cellText.textContent.trim() + '\t';
+                });
+                text += '\n';
+              }
+            });
+
+            return text;
+        }
+    });
+
+    clipboard.on('success', function (e) {
+        alert('Filtered table content copied to clipboard!');
+        e.clearSelection();
+    });
+
+    clipboard.on('error', function (e) {
+        console.error('Error copying to clipboard:', e.action);
+    });
+}
+
+function getTableHeaders() {
+    const headerCells = document.querySelectorAll('#yourDataTable thead th');
+    return Array.from(headerCells).map(cell => cell.innerText);
+}
+
+
+
+function generateCSVAll(filename = 'generated_csv_all.csv') {
+    if ($('#yourDataTable').length === 0 || !$.fn.dataTable.isDataTable('#yourDataTable')) {
+        console.warn('DataTable #yourDataTable not found');
+        return;
+    }
+    const dataTable = $('#yourDataTable').DataTable();
+    const csvContent = [];
+    const headerRow = [];
+    $('#yourDataTable thead th').each(function () {
+        headerRow.push($(this).text());
+    });
+    csvContent.push(headerRow.join(','));
+
+    // Add data rows for all pages
+    for (let i = 0; i < dataTable.page.info().pages; i++) {
+        dataTable.page(i).draw('page');
+        const dataRows = [];
+        $('#yourDataTable tbody tr').each(function () {
+            const rowData = [];
+            $(this).find('td').each(function () {
+                if ($(this).hasClass('table-avatar')) {
+                    // Extract text from the <a> elements within the .table-avatar cell
+                    rowData.push($(this).find('a').text().trim());
+                } else {
+                    rowData.push($(this).text());
+                }
+            });
+            dataRows.push(rowData.join(','));
+        });
+        csvContent.push(dataRows.join('\n'));
+    }
+
+    // Save the CSV file
+    const blob = new Blob([csvContent.join('\n')], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = window.URL.createObjectURL(blob);
+    link.download = filename;
+    link.click();
+}
+
+
+function generateExcelAll(filename = 'generated_excel_all.xlsx') {
+    if ($('#yourDataTable').length === 0 || !$.fn.dataTable.isDataTable('#yourDataTable')) {
+        console.warn('DataTable #yourDataTable not found');
+        return;
+    }
+    const dataTable = $('#yourDataTable').DataTable();
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet('Sheet 1');
+
+    // Add header row
+    const headerRow = [];
+    $('#yourDataTable thead th').each(function () {
+        headerRow.push($(this).text());
+    });
+    worksheet.addRow(headerRow);
+
+    // Add data rows for all pages
+    for (let i = 0; i < dataTable.page.info().pages; i++) {
+        dataTable.page(i).draw('page');
+        $('#yourDataTable tbody tr').each(function () {
+            const rowData = [];
+            $(this).find('td').each(function () {
+                if ($(this).hasClass('table-avatar')) {
+                    // Extract text from the <a> elements within the .table-avatar cell
+                    rowData.push($(this).find('a').text().trim());
+                } else {
+                    rowData.push($(this).text());
+                }
+            });
+            worksheet.addRow(rowData);
+        });
+    }
+
+    // Save the Excel file
+    workbook.xlsx.writeBuffer().then(data => {
+        const blob = new Blob([data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+        const link = document.createElement('a');
+        link.href = window.URL.createObjectURL(blob);
+        link.download = filename;
+        link.click();
+    });
+}
+
+
+function printTable() {
+    if ($('#yourDataTable').length === 0 || !$.fn.dataTable.isDataTable('#yourDataTable')) {
+        console.warn('DataTable #yourDataTable not found');
+        return;
+    }
+    const dataTable = $('#yourDataTable').DataTable();
+    // Open a new window and print the table content
+    const printWindow = window.open('', '_blank');
+    printWindow.document.write('<html><head><title>Print</title></head><body>');
+    printWindow.document.write('<style>@media print { table { width: 100%; border-collapse: collapse; } th, td { border: 1px solid black; padding: 5px; } } </style>');
+
+    // Customize the heading for the print view
+    printWindow.document.write('<h1>Consumer Complaint Re-Assign Report</h1>');
+
+    printWindow.document.write('<table>');
+
+    // Add header row
+    printWindow.document.write('<thead><tr>');
+    $('#yourDataTable thead th').each(function () {
+        if ($(this).text() !== 'Re-Assign') {
+            printWindow.document.write('<th>' + $(this).text() + '</th>');
+        }
+    });
+    printWindow.document.write('</tr></thead>');
+
+    // Add data rows for all pages
+    for (let i = 0; i < dataTable.page.info().pages; i++) {
+        dataTable.page(i).draw('page');
+        $('#yourDataTable tbody tr').each(function () {
+            printWindow.document.write('<tr>');
+            $(this).find('td').each(function () {
+
+                if ($(this).hasClass('table-avatar')) {
+                    // Extract text from the <a> elements within the .table-avatar cell
+                    printWindow.document.write('<td>' + $(this).find('a').text().trim() + '</td>');
+                } else {
+                    printWindow.document.write('<td>' + $(this).text() + '</td>');
+                }
+            });
+            printWindow.document.write('</tr>');
+        });
+    }
+
+    printWindow.document.write('</table>');
+    printWindow.document.write('</body></html>');
+    printWindow.document.close();
+    printWindow.print();
+}
+
+
+
+
+function generatePDFAll(filename = 'generated_pdf_all.pdf') {
+    if ($('#yourDataTable').length === 0 || !$.fn.dataTable.isDataTable('#yourDataTable')) {
+        console.warn('DataTable #yourDataTable not found');
+        return;
+    }
+    const dataTable = $('#yourDataTable').DataTable();
+    const pdf = new jsPDF();
+    const pdfContent = [];
+
+    // Add header row
+    const headerRow = [];
+    $('#yourDataTable thead th').each(function () {
+        headerRow.push($(this).text());
+    });
+    pdfContent.push(headerRow);
+
+    // Add data rows for all pages
+    for (let i = 0; i < dataTable.page.info().pages; i++) {
+        dataTable.page(i).draw('page');
+        $('#yourDataTable tbody tr').each(function () {
+            const rowData = [];
+            $(this).find('td').each(function () {
+                if ($(this).hasClass('table-avatar')) {
+                    // Extract text from the <a> elements within the .table-avatar cell
+                    rowData.push($(this).find('a').text().trim());
+                } else {
+                    rowData.push($(this).text());
+                }
+            });
+            pdfContent.push(rowData);
+        });
+    }
+
+    // Generate PDF
+    pdf.autoTable({
+        head: [headerRow],
+        body: pdfContent.slice(1),
+    });
+
+    // Save the PDF file
+    if (filename) {
+        pdf.save(filename);
+    } else {
+        const pdfDataUri = pdf.output('datauristring');
+        const tab = window.open();
+        tab.document.write('<iframe width="100%" height="100%" src="' + pdfDataUri + '" frameborder="0" allowfullscreen></iframe>');
+    }
+}
+
+
+    // Only execute DataTable-specific code if table exists
+    if ($('#yourDataTable').length > 0 && $.fn.dataTable.isDataTable('#yourDataTable')) {
+        var dataTable = $('#yourDataTable').DataTable();
+        $('#yourDataTable tbody tr').each(function(index) {
+            $(this).find('td:first').text(index + 1);
+        });
+
+        dataTable.on('order.dt search.dt', function() {
+            dataTable.column(0, { search: 'applied', order: 'applied' }).nodes().each(function(cell, i) {
+                cell.innerHTML = i + 1;
+            });
+        }).draw();
+    }
+});
+</script>
+
+{% endblock %}

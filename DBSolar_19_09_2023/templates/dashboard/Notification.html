@@ -1,0 +1,238 @@
+{% extends 'partials/base.html' %}
+{% block title %}Order Page{% endblock %}
+{% load static %}
+{% block content %}
+
+<div class="wrapper">
+   <div class="content container-fluid">
+      <div class="page-header">
+         <div class="row align-items-center">
+            <div class="col">
+               <h3 class="page-title">Notoifcation</h3>
+               <ul class="breadcrumb">
+                  <li class="breadcrumb-item"><a href="index.html">Dashboard</a></li>
+                  <li class="breadcrumb-item active">Notification</li>
+               </ul>
+            </div>
+            <div class="col-auto text-right float-right ml-auto">
+            </div>
+         </div>
+      </div>
+      {% if messages %}
+      {% for message in messages %}
+      <div class="alert alert-{{ message.tags }}">
+         {{ message }}
+      </div>
+      {% endfor %}
+      {% endif %}
+      <div class="row">
+         <div class="col-sm-12">
+            <div class="card card-table">
+               <div class="card-body">
+                  <div class="table-responsive">
+
+
+                     <div class="table-responsive">
+                     <table id="yourDataTable" class="table table-hover table-center table.dataTable.table-sm mb-0 datatable table.sm">
+                        <thead class="table-success">
+                           <tr>
+                              <th style="width:1%">Sr No.</th>
+                              <th scope="col" style="text-align: center; width: 10%;">Date & Time</th>
+                              <th scope="col" style="text-align: center; width:57%">Message</th>
+                               <th scope="col" style="text-align: center; width:20%">Sender Name</th>
+
+                            <th scope="col" class="ml-6" style="text-align: center; width: 12%;">Action</th>
+
+
+                           </tr>
+                        </thead>
+                        <tbody>
+                        {% for i in notification %}
+                           <tr>
+
+                               <td style="text-align: center;"></td>
+                               <td style="text-align: center;">{{i.created_at | date:"d/m/Y H:i:s"}}</td>
+                               {% if i.status == 0 %}
+                                 <td>
+                                    <span class="message"></span>
+                                  </td>
+                                {% else %}
+                                  <td>
+                                       <span class="message" style="text-align: center; display: block; margin: 0 auto;">{{ i.message }}</span>
+                                    </td>
+
+                                {% endif %}
+                               <td class="text-capitalize text-center" style="text-align: center; display: block; margin: 0 auto;">{{i.sender.profile.designation}}</td>
+
+                               <td class="text-right">
+                                   <div class="Action">
+                                       {% if i.status == 0 %}
+                                     <a href="{% url 'Staff_Notification_Mark_Done' status=i.id %}" class="btn btn-success" style="width: 90px;">UnRead</a>
+                                        {% else %}
+                                     <button class="btn btn-success" disabled="disabled" style="width: 90px;">Read</button>
+                                       {% endif %}
+                                   </div>
+                                    </td>
+
+                           </tr>
+                        {% endfor %}
+
+                        </tbody>
+
+                     </table>
+                     </div>
+                  </div>
+               </div>
+            </div>
+         </div>
+      </div>
+   </div>
+</div>
+
+
+<!-- Modal -->
+<div class="modal fade" id="exampleModalCenter" tabindex="-1" role="dialog" aria-labelledby="exampleModalCenterTitle" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="exampleModalLongTitle">View All Notification</h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+         <div class="row">
+         <div class="col-sm-12">
+            <div class="card card-table">
+               <div class="card-body">
+                  <div class="table-responsive">
+
+
+
+                     <table class="table table-hover table-center table.dataTable.table-sm mb-0 datatable table.sm">
+                        <thead class="table-success">
+                           <tr>
+
+
+                               <th scope="col" style="width:60%">Message</th>
+                               <th scope="col" style="width:30%" class="text-right">Status</th>
+
+                           </tr>
+                        </thead>
+                        <tbody>
+                        {% for i in see_notification %}
+                           <tr>
+
+                              <td>{{i.message}}</td>
+
+                               {% if i.status == 0 %}
+                               <td><span class="badge badge-danger badge-lg"> UnRead The Message</span></td>
+                               {% else %}
+                                <td><span class="badge badge-success badge-lg"> Read The Message</span></td>
+                               {% endif %}
+
+                           </tr>
+                        {% endfor %}
+
+                        </tbody>
+
+                     </table>
+
+                  </div>
+               </div>
+            </div>
+         </div>
+      </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+<!-- Modal -->
+{% for i in staff %}
+<div class="modal fade" id="sendnotification-{{forloop.counter}}" tabindex="-1" role="dialog" aria-labelledby="exampleModalCenterTitle" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="exampleModalLongTitle1">Send Notification To {{i.first_name}} {{i.last_name}}</h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <form method="post" action="{% url 'dashboard-save_staff_notification' %}">
+            {% csrf_token %}
+            <div class="form-group">
+             <input type="text" class="form-control" name="message" >
+                <input type="text" class="form-control" name="staff_id" value="{{i.id}}" hidden>
+            </div>
+            <button type="submit" class="btn btn-primary">Send Notification</button>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endfor %}
+
+<script>
+$(document).ready(function () {
+    $('.unread-button').click(function (e) {
+        e.preventDefault();
+        var rowId = $(this).data('row-id');
+        var row = $('tr[data-row-id="' + rowId + '"]');
+        var messageCell = row.find('td:first-child');
+
+        // Toggle message visibility
+        messageCell.toggle();
+
+        // Change button from "UnRead" to "Read"
+        $(this).removeClass('btn-primary unread-button').addClass('btn-primary read-button').text('Read');
+    });
+});
+</script>
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    let dataTable = $('#yourDataTable').DataTable();
+    //let dataTable = $('#yourDataTable').DataTable({
+    //    scrollX: true,
+    //    fixedHeader: true,
+    //    columnDefs: [
+    //        { targets: 0, orderable: false } // '0' represents the index of the 'Sr No.' column (zero-based)
+    //    ]
+    //});
+
+    // Check if the DataTable is already initialized
+    if ($.fn.dataTable.isDataTable('#yourDataTable')) {
+        dataTable.destroy(); // If initialized, destroy the DataTable
+    }
+
+    dataTable = $('#yourDataTable').DataTable({
+        scrollX: true, // Enable horizontal scrolling
+        //scrollY: '50vh', // Adjust the height as needed
+        scrollCollapse: true,
+        fixedHeader: {
+            header: true,
+            footer: false // Do not fix the footer to prevent it from moving
+        },
+        columnDefs: [
+           { targets: 0, orderable: false } // Disable sorting for the Sr No. column (zero-based)
+        ]
+
+    });
+
+     $('#yourDataTable tbody tr').each(function(index) {
+        $(this).find('td:first').text(index + 1);
+    });
+
+      dataTable.on('order.dt search.dt', function() {
+        dataTable.column(0, { search: 'applied', order: 'applied' }).nodes().each(function(cell, i) {
+            cell.innerHTML = i + 1;
+        });
+    }).draw();
+});
+</script>
+
+{% endblock %}

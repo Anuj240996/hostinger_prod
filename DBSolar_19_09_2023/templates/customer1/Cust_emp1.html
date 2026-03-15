@@ -1,0 +1,240 @@
+{% extends 'partials/base.html' %}
+{% block title %}Order Page{% endblock %}
+{% block content %}
+    <style>
+    @media (max-width: 767px) {
+        .banner-text {
+            font-size: 24px; /* Adjust the font size as needed */
+        }
+    }
+</style>
+    <div class="testbox">
+
+
+    <form action="/Cust_emp" method="post" name="Cust_Form" onfocus="frm_onfocus(this)"  hx-post="" hx-target="body" >
+        {% csrf_token %}
+         <div class="banner d-flex flex-column align-items-center">
+                <h2 class="banner-text">Residential Consumer Registration</h2>
+            </div><br>
+
+<!--         <div class="colums">-->
+         <div class="row mb-1">
+           <div class="col-md-4">
+           <div class="question">
+              <label>Gender</label><br>
+              <input type="radio" value="M" id="radio_1" name="Gender" checked />
+              <label for="radio_1" class="radio"><span>Male</span></label>
+              <input  type="radio" value="F" id="radio_2" name="Gender"/>
+              <label for="radio_2" class="radio"><span>Female</span></label>
+           </div>
+           </div>
+
+           <div class="col-md-4 item1">
+            <label for="po_date">PO Date<span>*</span></label>
+            <input id="po_date" class="text-capitalize form-control" type="Date" name="po_date" placeholder="PO Date" onfocus="txt_onfocus(this)" onchange="txt_onchange(this)" value="{{ po_date }}" required/>
+          </div>
+
+           <div class="col-md-4 item1">
+               <label for="po_order">PO Order No<span>*</span></label>
+            <input id="po_order" type="text" class="text-capitalize form-control" name="po_order" placeholder="PO Order No" onfocus="txt_onfocus(this)" onchange="txt_onchange(this)" value="{{ po_order }}"  onblur="pink" required/>
+           </div>
+        </div>
+        <div class="row mb-1">
+
+           <div class="col-md-4 item1">
+            <label for="Consumer">Consumer Number(MSEDCL)<span>*</span></label>
+            <input id="Consumer" type="number" name="Consumer" class="text-capitalize form-control" placeholder="Consumer number" onfocus="txt_onfocus(this)" onchange="txt_onchange(this)" value="{{ Consumer }}"  required/>
+           </div>
+
+           <div class="col-md-4 item1">
+            <label for="Bill_unit">Billing Unit(BU)<span>*</span></label>
+            <input id="Bill_unit" type="number" name="Bill_unit" class="text-capitalize form-control" placeholder="Billing unit" onfocus="txt_onfocus(this)" onchange="txt_onchange(this)" value="{{ Bill_unit }}"  required/>
+           </div>
+
+           <div class="col-md-4 item1">
+            <label for="first_name"> First Name<span>*</span></label>
+            <input id="first_name" type="text" name="first_name" class="text-capitalize form-control" placeholder="First Name" onfocus="txt_onfocus(this)" onchange="txt_onchange(this)" value="{{ first_name }}" required/>
+           </div>
+             </div>
+        <div class="row mb-1">
+
+           <div class="col-md-4 item1">
+             <label for="middle_name"> Middle Name<span>*</span></label>
+             <input id="middle_name" type="text" name="middle_name" class="text-capitalize form-control" placeholder="Middle Name" onfocus="txt_onfocus(this)" onchange="txt_onchange(this)" value="{{ middle_name }}" required/>
+           </div>
+
+           <div class="col-md-4 item1">
+             <label for="last_name"> Last Name<span>*</span></label>
+             <input id="last_name" type="text" name="last_name" class="text-capitalize form-control" placeholder="Last Name" onfocus="txt_onfocus(this)" onchange="txt_onchange(this)" value="{{ last_name }}" required/>
+           </div>
+
+           <div class="col-md-4 item1">
+             <label for="Address">Address<span>*</span></label>
+             <input id="Address" type="text" name="Address" class="text-capitalize form-control" placeholder="Address" onfocus="txt_onfocus(this)" onchange="txt_onchange(this)" value="{{ Address }}" required/>
+           </div>
+            </div>
+        <div class="row mb-1">
+           <div class="col-md-4 item1">
+            <label for="City">City<span>*</span></label>
+            <input id="City" type="text" name="City" placeholder="City" class="text-capitalize form-control" onfocus="txt_onfocus(this)" onchange="txt_onchange(this)" value="{{ City }}" required/>
+           </div>
+
+           <div class="col-md-4 item1">
+            <label for="state">State<span>*</span></label>
+            <input id="state" type="text" name="state" placeholder="State" class="text-capitalize form-control" onfocus="txt_onfocus(this)" onchange="txt_onchange(this)" value="{{ state }}" required/>
+           </div>
+
+           <div class="col-md-4 item1">
+             <label for="Pincode">Pincode<span>*</span></label>
+             <input id="Pincode" type="number" name="Pincode" placeholder="Pincode" class="text-capitalize form-control" onfocus="txt_onfocus(this)" onchange="txt_onchange(this)" value="{{ Pincode }}" required/>
+           </div>
+           </div>
+        <div class="row mb-1">
+
+           <div class="col-md-4 item1">
+             <label for="email">Email Address<span>*</span></label>
+             <input id="email" type="email" name="email" placeholder="Email" class="text-capitalize form-control" onfocus="txt_onfocus(this)" onchange="txt_onchange(this)" value="{{ email }}" required/>
+           </div>
+
+           <div class="col-md-4 item1">
+            <label for="phone">Phone<span>*</span></label>
+            <input id="phone" type="tel" name="phone" placeholder="Phone" class="text-capitalize form-control" onfocus="txt_onfocus(this)" onchange="txt_onchange(this)" value="{{ phone }}" required/>
+           </div>
+
+
+<!--           <div class="col-md-4 item1">-->
+<!--            <label for="Cus_Act_Date">Consumer Activation Date<span>*</span></label>-->
+<!--            <input id="Cus_Act_Date" type="Date" name="Cus_Act_Date" class="text-capitalize form-control" placeholder="Activation Date" onfocus="txt_onfocus(this)" onchange="txt_onchange(this)" value="{{ Cus_Act_Date }}" required/>-->
+<!--           </div>-->
+
+           <div class="col-md-4 item1">
+             <label for="Plant_Capacity">Plant Capacity<span>*</span></label>
+             <input id="Plant_Capacity" type="number" name="Plant_Capacity" class="text-capitalize form-control" onfocus="txt_onfocus(this)" onchange="txt_onchange(this)" value="{{ Plant_Capacity }}" required/>
+           </div>
+             </div>
+        <div class="row mb-1">
+           <div class="col-md-4 item1">
+             <label for="Ups_Soft">Inverter Online Software<span>*</span></label>
+             <input id="Ups_Soft" type="text" name="Ups_Soft" class="text-capitalize form-control" placeholder="UPS Software" onfocus="txt_onfocus(this)" onchange="txt_onchange(this)" value="{{ Ups_Soft }}" required/>
+           </div>
+
+
+           <div class="col-md-4 item1">
+             <label for="solar_comp">Solar Panel Make<span>*</span></label>
+             <input id="solar_comp" type="text" name="solar_comp" class="text-capitalize form-control"  placeholder="Solar Plate Company" onfocus="txt_onfocus(this)" onchange="txt_onchange(this)" value="{{ solar_comp }}" required/>
+           </div>
+           <div class="col-md-4 item1">
+             <label for="UPSC">Inverter Make<span>*</span></label>
+             <input id="UPSC" type="text" name="UPSC" placeholder="UPS Company" class="text-capitalize form-control" onfocus="txt_onfocus(this)" onchange="txt_onchange(this)" value="{{ UPSC }}" required="">
+           </div>
+             </div>
+        <div class="row mb-1">
+           <div class="col-md-4 item1">
+            <label for="Ups_Soft">MSEB Load Sanction<span>*</span></label>
+            <input id="loadsancution" type="number" name="loadsancution" class="text-capitalize form-control" placeholder="MSEB Load Sanction" onfocus="txt_onfocus(this)" onchange="txt_onchange(this)" value="{{ loadsancution }}" required/>
+          </div>
+
+
+           <div class="col-md-4 item1">
+              <label for="username">Username</label>
+              <input type="text" class="form-control" id="username" name="username" required>
+            </div>
+
+            <div class="col-md-4 item1">
+              <label for="username">Password</label>
+              <input type="text" class="form-control" id="password1" name="password1" value="admin@123" readonly>
+            </div>
+         </div>
+
+            <div class="form-group">
+              <input type="hidden" class="form-control" id="password2" name="password2" value="admin@123" readonly>
+            </div>
+
+
+
+           <div class="btn-block">
+             <button type="submit" href="/Cust_emp"  value="{{Cust_emp}}">Save & New Record </button>
+             <button type="submit" href="/Cust_emp"  id="saveAndRedirect">Save and Exit</button>
+
+             <button type="Reset" href="/">Reset</button>
+           </div>
+        {% if messages %}
+        <ul class="messages">
+            {% for message in messages %}
+            {% if message.tags %} <script> alert("{{ message }}") </script> {% endif %}>{% endfor %}
+        </ul>{% endif %}
+
+
+<!--          <div class="container">-->
+<!--          <h1>All Employee Details!</h1>-->
+<!--          <hr>-->
+<!--          <div class="table-responsive">-->
+<!--          <table class="table table-dark">-->
+<!--            <thead>-->
+<!--                  <tr>     <th scope="col">Cust id</th>-->
+<!--                           <th scope="col">Full Name</th>-->
+<!--                           <th scope="col">City</th>-->
+<!--                           <th scope="col">Plant Capacity</th>-->
+<!--                           <th scope="col">UPS Soft</th>-->
+<!--                           <th scope="col">Consumer Type</th>-->
+<!--                           <th scope="col">Mobile</th>-->
+<!--                           <th scope="col">Address</th>-->
+<!--                           <th scope="col">Activation Date</th>-->
+<!--                           <th scope="col">Gender</th>-->
+<!--                           <th scope="col">Custoer Type</th>-->
+
+<!--                  </tr>-->
+<!--            </thead>-->
+<!--            {% for Cust in cust %}-->
+<!--            <tbody>-->
+<!--                  <tr>-->
+<!--                           <th scope="row">{{Cust.Cust_id}}</th>-->
+<!--                           <td>{{Cust.first_name}} {{Cust.last_name}}</td>-->
+<!--                           <td>{{Cust.City}}</td>-->
+<!--                           <td>{{Cust.Plant_Capacity}}</td>-->
+<!--                           <td>{{Cust.Ups_Soft}}</td>-->
+<!--                           <td>{{Cust.Cust_type}}</td>-->
+<!--                           <td>{{Cust.phone}}</td>-->
+<!--                           <td>{{Cust.Address}}</td>-->
+<!--                           <td>{{Cust.Cus_Act_Date}}</td>-->
+<!--                           <td>{{Cust.Gender}}</td>-->
+<!--                           <td>{{Cust.Cust_type}}</td>-->
+<!--                  </tr>-->
+<!--            </tbody>-->
+<!--            {% endfor %}-->
+<!--          </table>-->
+<!--          </div>-->
+
+<script>
+    // Get a reference to the "Save and Redirect" button
+    const saveAndRedirectButton = document.getElementById('saveAndRedirect');
+
+    // Add a click event listener to the button
+    saveAndRedirectButton.addEventListener('click', function () {
+        // Trigger the form's submit method
+        document.Cust_Form.submit();
+
+        // Redirect to the specified URL after the form submission
+         alert('Request has been updated');
+        window.location.href = '{% url 'customer-cust' %}';
+    });
+</script>
+
+
+           {% if error1 == "no" %}
+            <script>
+            alert('Request has been updated');
+            window.location=('{% url 'customer-Cust_emp' %}');
+            </script>
+            {% endif %}
+
+           {% if error1 == "yes" %}
+            <script>
+              alert('Something Went Wrong. Please try again');+
+            </script>
+           {% endif %}
+<!--       </div>-->
+    </form>
+    </div>
+
+{% endblock %}

@@ -1,0 +1,1611 @@
+{% extends 'partials/base.html' %}
+{% load static %}
+{% block title %}Order Page{% endblock %}
+{% block content %}
+<!-- DataTables CSS -->
+<!--<link rel="stylesheet" href="https://cdn.datatables.net/1.11.5/css/jquery.dataTables.min.css">-->
+<!--&lt;!&ndash; jQuery (necessary for DataTables) &ndash;&gt;-->
+<!--<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>-->
+<!--&lt;!&ndash; DataTables JS &ndash;&gt;-->
+<!--<script src="https://cdn.datatables.net/1.11.5/js/jquery.dataTables.min.js"></script>-->
+
+<style>
+    /* Styling for the message box */
+    #message-box {
+        position: fixed;
+        top: 60px;
+        right: 20px;
+        z-index: 9999;
+        min-width: 300px;
+        padding: 15px;
+        border-radius: 5px;
+        opacity: 1;
+        transition: transform 1s ease-in-out, opacity 1s ease-in-out;
+    }
+
+    /* Styling for success messages */
+    .alert-success {
+        background-color: #d4edda; /* Light green background for success */
+        border-color: #c3e6cb; /* Success border color */
+    }
+
+    /* Styling for error messages */
+    .alert-error {
+        background-color: #f8d7da; /* Light red background for errors */
+        color: #721c24; /* Dark red text for errors */
+        border-color: #f5c6cb; /* Error border color */
+    }
+
+    /* Styling for the message header */
+    .message-header {
+        font-size: 1.1em;
+        font-weight: bold;
+        color: #155724; /* Dark green color */
+    }
+
+    /* Styling for the message body */
+    .message-body {
+        font-size: 0.95em;
+        color: #6c757d; /* Lighter color for the message */
+        margin-top: 5px;
+    }
+
+    /* Styling for the close button */
+    .close {
+        background: none;
+        border: none;
+        font-size: 1.5em;
+        font-weight: bold;
+        color: #155724;
+        cursor: pointer;
+        float: right;
+    }
+
+    /* Hidden state with transformed position */
+    #message-box.hide-message {
+        transform: translateX(100%); /* Move the box out of the viewport to the right */
+        opacity: 0;
+    }
+</style>
+<script>
+    // Function to hide the message box with a scroll effect
+    function hideMessageBox() {
+        var messageBox = document.getElementById("message-box");
+        if (messageBox) {
+            messageBox.classList.add("hide-message");
+        }
+    }
+
+    // Auto-hide message after 3 seconds
+    window.onload = function() {
+        setTimeout(hideMessageBox, 3000);
+    };
+
+</script>
+
+
+<!-- Success and Error Messages -->
+{% if messages %}
+    {% for message in messages %}
+        <div id="message-box" class="alert {% if message.tags == 'error' %}alert-error{% elif message.tags == 'success' %}alert-success{% endif %}" role="alert">
+            <div class="message-header">
+                <strong>{{ message.tags|title }}</strong>
+                <button type="button" class="close" onclick="hideMessageBox();" style="width: 10px; size: 50px;">&times;</button>
+            </div>
+            <div class="message-body">
+                {{ message }}
+            </div>
+        </div>
+    {% endfor %}
+{% endif %}
+
+
+<form>
+    <h3>Manage Inventory</h3>
+    <div class="tabs">
+        <ul class="tab-links">
+            <li><a href="#" data-tab="categories" style="width: 150px; text-align: center;">Categories</a></li>&nbsp;&nbsp;
+            <li><a href="#" data-tab="subcategories" style="width: 150px; text-align: center;">SubCategories</a></li>&nbsp;&nbsp;
+            <li><a href="#" data-tab="products" style="width: 150px; text-align: center;">Products</a></li>&nbsp;&nbsp;
+            <li><a href="#" data-tab="brands" style="width: 150px; text-align: center;">Brands</a></li>&nbsp;&nbsp;
+            <li><a href="#" data-tab="units" style="width: 150px; text-align: center;">Units</a></li>&nbsp;&nbsp;
+<!--            <li><a href="#" data-tab="suppliers">Suppliers</a></li>-->
+        </ul>
+        <div class="tab-content">
+            <!-- Categories Tab -->
+            <div id="categoriesList" class="list-content">
+                <h3>Categories</h3>
+                <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#categoryModal">Add Category</button>
+                <br><br>
+
+                <table id="yourDataTable" class="table table-hover table-center table.dataTable.table-sm mb-0 datatable table.sm">
+
+                    <thead class="table-success" align="center">
+                        <tr>
+                            <th>Sr No</th>
+                            <th>Category_id</th>
+                            <th>Category Name</th>
+                            <th>Category Short Name</th>
+                            <th>Category Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody align="center">
+                        {% for category in categories %}
+                        <tr>
+                            <td>{{ forloop.counter }}</td>
+                            <td>{{ category.id }}</td>
+                            <td class="text-capitalize">{{ category.name }}</td>
+                            <td>{{ category.short_name }}</td>
+                            <td>{{ category.status|yesno:"Active,Inactive" }}</td>
+                             <td>
+                                 <a href="#" data-toggle="modal" data-target="#editCategoryModal" data-id="{{ category.id }}">
+<!--                                    <img src="path/to/your/image.png" alt="Edit" class="btn btn-warning btn-sm">-->
+                                      <i class="fas fa-pen"></i>
+                                </a>&nbsp;&nbsp;&nbsp;
+                                <a href="#" onclick="if (confirm('Are you sure you want to delete this Category?')) { event.preventDefault(); document.getElementById('delete-category-{{ category.id }}').submit(); }" style="color: red;">
+                                    <i class="fas fa-trash"></i>
+                                </a>
+                                <form id="delete-category-{{ category.id }}" method="post" action="{% url 'delete_category' category.id %}" style="display: none;">
+                                    {% csrf_token %}
+                                </form>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            <!-- SubCategories Tab -->
+            <div id="subcategoriesList" class="list-content" style="display: none;">
+                <h3>SubCategories</h3>
+                <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#subcategoryModal">Add SubCategory</button>
+<!--                <table id="subcategoriesTable" class="table table-hover table-center table.dataTable.table-sm mb-0 datatable table.sm" width="100%">-->
+                <br><br>
+                <table id="subcategoriesTable" class="table table-hover table-center table.dataTable.table-sm mb-0 datatable table.sm">
+                    <thead class="table-success" align="center">
+                        <tr>
+                            <th>Sr No</th>
+                            <th>Sub_Category_id</th>
+                            <th>Sub_Category Name</th>
+                            <th>Category Name</th>
+                            <th>SubCategory Short_Name</th>
+                            <th>Sub_Category Status</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody align="center">
+                        {% for subcategory in subcategories %}
+                        <tr>
+                            <td>{{ forloop.counter }}</td>
+                            <td>{{ subcategory.id }}</td>
+                            <td class="text-capitalize">{{ subcategory.name }}</td>
+                            <td class="text-capitalize">{{ subcategory.category.name }}</td>
+                            <td>{{ subcategory.short_name }}</td>
+                            <td>{{ subcategory.status|yesno:"Active,Inactive" }}</td>
+                            <td>
+                                <a href="#" data-toggle="modal" data-target="#editSubCategoryModal" data-id="{{ subcategory.id }}">
+                                      <i class="fas fa-pen"></i>
+                                </a>&nbsp;&nbsp;&nbsp;
+                                   <!-- SubCategory Delete Link -->
+                                <a href="#" onclick="if (confirm('Are you sure you want to delete this subcategory?')) { event.preventDefault(); document.getElementById('delete-subcategory-{{ subcategory.id }}').submit(); }" style="color: red;">
+                                      <i class="fas fa-trash"></i>
+                                </a>
+                                <form id="delete-subcategory-{{ subcategory.id }}" method="post" action="{% url 'delete_subcategory' subcategory.id %}" style="display: none;">
+                                     {% csrf_token %}
+                                </form>
+                            </td>
+
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            <!-- Products Tab -->
+            <div id="productsList" class="list-content" style="display: none;">
+                <h4>Products</h4>
+                <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#productModal">Add Product</button>
+                <br><br>
+<!--                <table id="productsTable" class="table table-hover table-center table-sm mb-0">-->
+                <table id="productTable" class="table table-hover table-center table.dataTable.table-sm mb-0 datatable table.sm">
+                    <thead class="table-success" align="center">
+                        <tr>
+                            <th>Sr No</th>
+                            <th>Product_id</th>
+                            <th>Product Name</th>
+                            <th>Category Name</th>
+                            <th>Sub_Category Name</th>
+                            <th>Purchase Unit</th>
+                            <th>Sales Unit</th>
+                            <th>Stock Alert</th>
+                            <th>GST</th>
+                            <th>Product Status</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody align="center">
+                        {% for product in products %}
+                        <tr>
+                            <td>{{ forloop.counter }}</td>
+                            <td>{{ product.id }}</td>
+                            <td class="text-capitalize">{{ product.name }}</td>
+                            <td class="text-capitalize">{{ product.category.name }}</td>
+                            <td class="text-capitalize">{{ product.subcategory.name }}</td>
+                            <td class="text-capitalize">{{ product.purchase.name }}</td>
+                            <td class="text-capitalize">{{ product.sales.name }}</td>
+                            <td>{{ product.stock_alert }}</td>
+                            <td>{{ product.gst }}%</td>
+                            <td>{{ product.status|yesno:"Active,Inactive" }}</td>
+                            <td>
+                                <a href="#" data-toggle="modal" data-target="#editProductModal" data-id="{{ product.id }}">
+                                      <i class="fas fa-pen"></i>
+                                </a>&nbsp;&nbsp;&nbsp;
+                                <a href="#" onclick="if (confirm('Are you sure you want to delete this Product?')) { event.preventDefault(); document.getElementById('delete-product-{{ product.id }}').submit(); }" style="color: red;">
+                                    <i class="fas fa-trash"></i>
+                                </a>
+                                <form id="delete-product-{{ product.id }}" method="post" action="{% url 'delete_product' product.id %}" style="display: none;">
+                                    {% csrf_token %}
+                                </form>
+
+
+
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            <!-- Brands Tab -->
+            <div id="brandsList" class="list-content" style="display: none;">
+                <h4>Brands</h4>
+                <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#brandModal">Add Brand</button>
+                <br><br>
+<!--                <table id="brandsTable" class="table table-hover table-center table-sm mb-0">-->
+                <table id="brandsTable" class="table table-hover table-center table.dataTable.table-sm mb-0 datatable table.sm">
+                    <thead class="table-success" align="center">
+                        <tr>
+                            <th>Sr No</th>
+                            <th>Brand_id</th>
+                            <th>Brand Name</th>
+                            <th>Brand Status</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody align="center">
+                        {% for brand in brands %}
+                        <tr>
+                            <td>{{ forloop.counter }}</td>
+                            <td>{{ brand.id }}</td>
+                            <td class="text-capitalize">{{ brand.name }}</td>
+                            <td>{{ brand.status|yesno:"Active,Inactive" }}</td>
+                            <td>
+                                <a href="#" data-toggle="modal" data-target="#editBrandModal" data-id="{{ brand.id }}">
+                                      <i class="fas fa-pen"></i>
+                                </a>&nbsp;&nbsp;&nbsp;
+                                <a href="#" onclick="if (confirm('Are you sure you want to delete this Brand?')) { event.preventDefault(); document.getElementById('delete-brand-{{ brand.id }}').submit(); }" style="color: red;">
+                                    <i class="fas fa-trash"></i>
+                                </a>
+                                <form id="delete-brand-{{ brand.id }}" method="post" action="{% url 'delete_brand' brand.id %}" style="display: none;">
+                                    {% csrf_token %}
+                                </form>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            <!-- Units Tab -->
+            <div id="unitsList" class="list-content" style="display: none;">
+                <h4>Units</h4>
+                <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#unitModal">Add Unit</button>
+                <br><br>
+<!--                <table id="unitsTable" class="table table-hover table-center table-sm mb-0">-->
+                <table id="unitsTable" class="table table-hover table-center table.dataTable.table-sm mb-0 datatable table.sm">
+                    <thead class="table-success" align="center">
+                        <tr>
+                            <th>Sr No</th>
+                            <th>Unit_id</th>
+                            <th>Unit Name</th>
+                            <th>Unit Short Name</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody align="center">
+                        {% for unit in units %}
+                        <tr>
+                            <td>{{ forloop.counter }}</td>
+                            <td>{{ unit.id }}</td>
+                            <td class="text-capitalize">{{ unit.name }}</td>
+                            <td>{{ unit.short_name }}</td>
+                            <td>
+                                <a href="#" data-toggle="modal" data-target="#editUnitModal" data-id="{{ unit.id }}">
+                                      <i class="fas fa-pen"></i>
+                                </a>&nbsp;&nbsp;&nbsp;
+                                <a href="#" onclick="if (confirm('Are you sure you want to delete this Unit?')) { event.preventDefault(); document.getElementById('delete-unit-{{ unit.id }}').submit(); }" style="color: red;">
+                                    <i class="fas fa-trash"></i>
+                                </a>
+                                <form id="delete-unit-{{ unit.id }}" method="post" action="{% url 'delete_unit' unit.id %}" style="display: none;">
+                                    {% csrf_token %}
+                                </form>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            <!-- Suppliers Tab -->
+            <div id="suppliersList" class="list-content" style="display: none;">
+                <h3>Suppliers</h3>
+                <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#supplierModal">Add Supplier</button>
+                <br><br>
+                <ul>
+                    <table id="supplierTable" class="table table-hover table-center table.dataTable.table-sm mb-0 datatable table.sm">
+                    <thead class="table-success" align="center">
+                        <tr>
+                            <th>Supplier_id</th>
+                            <th>Supplier Name</th>
+                            <th>Contact Person</th>
+                            <th>Contact Email</th>
+                            <th>Phone</th>
+<!--                            <th>Category</th>-->
+                            <th>Address</th>
+                            <th>City</th>
+                            <th>State</th>
+                            <th>GST No.</th>
+                            <th>Supplier Status</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody align="center">
+                        {% for supplier in suppliers %}
+                        <tr>
+                            <td>{{ supplier.supplier_id }}</td>
+                            <td class="text-capitalize">{{ supplier.supplier_name }}</td>
+                            <td class="text-capitalize">{{ supplier.contact_person }}</td>
+                            <td>{{ supplier.contact_email }}</td>
+                            <td>{{ supplier.contact_phone }}</td>
+<!--                            <td>{{ supplier.category.name }}</td>-->
+                            <td>{{ supplier.address }}</td>
+                            <td class="text-capitalize">{{ supplier.city }}</td>
+                            <td class="text-capitalize">{{ supplier.state }}</td>
+                            <td>{{ supplier.gst_no }}</td>
+                            <td>{{ supplier.status|yesno:"Active,Inactive" }}</td>
+                             <td>
+                                <a href="#" data-toggle="modal" data-target="#editSupplierModal" data-id="{{ supplier.id }}">
+                                      <i class="fas fa-pen"></i>
+                                </a>&nbsp;&nbsp;&nbsp;
+                                <a href="#" onclick="if (confirm('Are you sure you want to delete this Supplier?')) { event.preventDefault(); document.getElementById('delete-supplier-{{ supplier.id }}').submit(); }" style="color: red;">
+                                    <i class="fas fa-trash"></i>
+                                </a>
+                                <form id="delete-supplier-{{ supplier.id }}" method="post" action="{% url 'delete_supplier' supplier.id %}" style="display: none;">
+                                    {% csrf_token %}
+                                </form>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- Category Modal -->
+    <div id="categoryModal" class="modal fade" tabindex="-1" role="dialog">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h4 class="modal-title">Add Category</h4>
+                    <button type="button" class="close" data-dismiss="modal">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <form method="post">
+                        {% csrf_token %}
+                        {{ category_form.as_p }}
+                        <br>
+                        <button type="submit" name="add_category" class="btn btn-primary">Add Category</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- SubCategory Modal -->
+    <div id="subcategoryModal" class="modal fade" tabindex="-1" role="dialog">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h4 class="modal-title">Add SubCategory</h4>
+                    <button type="button" class="close" data-dismiss="modal">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <form method="post">
+                        {% csrf_token %}
+                        {{ subcategory_form.as_p }}
+                        <br>
+                        <button type="submit" name="add_subcategory" class="btn btn-primary">Add SubCategory</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Product Modal -->
+    <div id="productModal" class="modal fade" tabindex="-1" role="dialog">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h4 class="modal-title">Add Product</h4>
+                    <button type="button" class="close" data-dismiss="modal">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="row mb-1 align-items-center">
+                        <div class="col-md-6 mb-2 item1">
+                        <label for="category">Select Category :</label>
+                        <select id="category" name="category" class="form-control" required>
+                            <option value=""> </option>
+                            {% for category in categories %}
+                            <option value="{{ category.id }}">{{ category.name }}</option>
+                            {% endfor %}
+                        </select>
+                        </div>
+
+                        <div class="col-md-6 mb-2 item1">
+                        <label for="subcategory">Select SubCategory :</label>
+                        <select id="subcategory" name="subcategory" class="form-control" required>
+                            <option value=""> </option>
+                        </select>
+                        </div>
+                        </div>
+                        <div class="row mb-1 align-items-center">
+                        <div class="col-md-6 mb-2 item1">
+                        <label for="purchase_unit">Select Purchase Unit :</label>
+                        <select id="purchase_unit" name="purchase_unit" class="form-control" required>
+                            <option value=""> </option>
+                            {% for unit in units %}
+                            <option value="{{ unit.id }}">{{ unit.name }}</option>
+                            {% endfor %}
+                        </select>
+                        </div>
+                        <div class="col-md-6 mb-2 item1">
+                        <label for="sales_unit">Select Sales Unit :</label>
+                        <select id="sales_unit" name="sales_unit" class="form-control" required>
+                            <option value=""> </option>
+                            {% for unit in units %}
+                            <option value="{{ unit.id }}">{{ unit.name }}</option>
+                            {% endfor %}
+                        </select>
+                        </div>
+                        </div>
+
+                     <div class="row mb-1 align-items-center">
+                        <div class="col-md-12 mb-2 item1">
+                        <label for="name">Product Name :</label>
+                        <input type="text" id="name" name="name" class="form-control" required>
+                     </div>
+                     </div>
+                     <div class="row mb-1 align-items-center">
+                        <div class="col-md-12 mb-2 item1">
+                        <label for="prod_description">Product Description :</label>
+                        <textarea id="prod_description" name="prod_description" class="form-control"></textarea>
+                        </div>
+                     </div>
+                     <div class="row mb-1 align-items-center">
+                        <div class="col-md-6 mb-2 item1">
+                        <label for="stock_alert">Stock Alert :</label>
+                        <input type="number" id="stock_alert" name="stock_alert" class="form-control" required>
+                        </div>
+
+                        <div class="col-md-6 mb-2 item1">
+                        <label for="stock_alert">GST :</label>
+<!--                        <input type="number" id="gst" name="gst" class="form-control" required>-->
+                        <input type="number" id="gst" name="gst" class="form-control" step="0.01" required>
+
+                        </div>
+                     </div>
+                     <div class="row mb-1 align-items-center">
+                        <div class="col-md-12 mb-2 item1">
+<!--                        <label for="status" class="checkbox-label">Status:</label>-->
+<!--                        <input type="checkbox" id="status" name="status" class="checkbox-input">-->
+                         <label class="checkbox-label" for="status"><input type="checkbox" class="checkbox-input" name="status" id="status"> Status </label>
+                        </div>
+                     </div>
+
+                        <button type="submit" name="add_product">Add Product</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Brand Modal -->
+    <div id="brandModal" class="modal fade" tabindex="-1" role="dialog">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h4 class="modal-title">Add Brand</h4>
+                    <button type="button" class="close" data-dismiss="modal">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <form method="post">
+                        {% csrf_token %}
+                        {{ brand_form.as_p }}
+                        <br>
+                        <button type="submit" name="add_brand" class="btn btn-primary">Add Brand</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Unit Modal -->
+    <div id="unitModal" class="modal fade" tabindex="-1" role="dialog">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h4 class="modal-title">Add Unit</h4>
+                    <button type="button" class="close" data-dismiss="modal">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <form method="post">
+                        {% csrf_token %}
+                        {{ unit_form.as_p }}
+                        <button type="submit" name="add_unit" class="btn btn-primary">Add Unit</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Supplier Modal -->
+    <div id="supplierModal" class="modal fade" tabindex="-1" role="dialog">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h4 class="modal-title">Add Supplier</h4>
+                    <button type="button" class="close" data-dismiss="modal">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <form method="post">
+                        {% csrf_token %}
+                        {{ supplier_form.as_p }}
+                        <br>
+                        <button type="submit" name="add_supplier" class="btn btn-primary">Add Supplier</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+            <!-- Edit Category Modal -->
+        <div class="modal" id="editCategoryModal">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                            <h4 class="modal-title">Update Category</h4>
+                            <button type="button" class="close" data-dismiss="modal">&times;</button>
+                        </div>
+                        <div class="modal-body">
+                    <form method="post" action="{% url 'product_add_category' %}">
+                        {% csrf_token %}
+                        <input type="hidden" name="category_id" id="edit_category_id">
+                        <div class="row mb-1 align-items-center">
+                        <div class="col-md-12 mb-2 item1">
+<!--                            <label for="{{ category_form.name.id_for_label }}">{{ category_form.name.label }}</label>-->
+<!--                            {{ category_form.name }}-->
+<!--                            <label for="{{ category_form.short_name.id_for_label }}">{{ category_form.short_name.label }}</label>-->
+<!--                            {{ category_form.short_name }}-->
+<!--                            <div style="margin-left: 50px; width:20px; height:20px;">-->
+<!--                                {{ category_form.status }}  &lt;!&ndash; Checkbox input &ndash;&gt;-->
+<!--                                <label class="form-check-label ml-2" for="{{ category_form.status.id_for_label }}">{{ category_form.status.label }}</label>-->
+<!--                            </div>-->
+                               {{ category_form.as_p }}
+                        </div>
+                    </div>
+                        <button type="submit" name="edit_category">Edit Category</button>
+                    </form>
+                </div>
+                </div>
+            </div>
+        </div>
+
+<!--        &lt;!&ndash; Edit SubCategory Modal &ndash;&gt;-->
+<!--        <div class="modal" id="editSubCategoryModal">-->
+<!--            <div class="modal-dialog">-->
+<!--                <div class="modal-content">-->
+<!--                    <form method="post" action="{% url 'product_add_category' %}">-->
+<!--                        {% csrf_token %}-->
+<!--                        -->
+<!--                        <input type="hidden" name="subcategory_id" id="edit_subcategory_id">-->
+<!--                        {{ subcategory_form.as_p }}-->
+<!--                        <button type="submit" name="edit_subcategory">Edit SubCategory</button>-->
+<!--                    </form>-->
+<!--                </div>-->
+<!--            </div>-->
+<!--        </div>-->
+
+    <!-- Edit SubCategory Modal -->
+            <div id="editSubCategoryModal" class="modal">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h4 class="modal-title">Update SubCategory</h4>
+                            <button type="button" class="close" data-dismiss="modal">&times;</button>
+                        </div>
+                        <div class="modal-body">
+                            <form method="post" action="{% url 'update_subcategory' %}">
+                                {% csrf_token %}
+                                <input type="hidden" id="edit_subcategory_id" name="id">
+
+                                <div class="modal-body">
+                                    <div class="row mb-1 align-items-center">
+                                      <div class="col-md-12 mb-2 item1">
+                                        <label for="subcategory">SubCategory ID:</label>
+                                        <input type="text" id="id" class="form-control" style="text-align: center; background: red; color: white;" readonly>
+
+                                    </div>
+                                    </div>
+
+    <!--                                <div class="form-group">-->
+                                    <div class="row mb-1 align-items-center">
+                                    <div class="col-md-12 mb-2 item1">
+                                        <label for="category_id">Select Category:</label>
+                                        <select name="category_id" id="category_id" class="form-control">
+                                            {% for category in categories %}
+                                                <option value="{{ category.id }}">{{ category.name }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                    </div>
+
+                                  <div class="row mb-1 align-items-center">
+                                    <div class="col-md-6 mb-2 item1">
+                                        <label for="name">SubCategory Name:</label>
+                                        <input type="text" name="name" id="name" class="form-control">
+                                    </div>
+
+
+                                    <div class="col-md-6 mb-2 item1">
+                                        <label for="short_name">Short Name:</label>
+                                        <input type="text" name="short_name" id="short_name" class="form-control">
+                                    </div>
+                                  </div>
+
+                                    <div class="form-group item1">
+    <!--                                    <label for="status">Status:</label>-->
+    <!--                                    <input class="checkbox-label" type="checkbox" name="status" id="status">-->
+                                        <label class="checkbox-label" for="status"><input type="checkbox" class="checkbox-input" name="status" id="status"> Status </label>
+                                    </div>
+                                </div>
+
+                                <div class="modal-footer">
+<!--                                    <button type="button" name="edit_subcategory" class="btn btn-secondary" data-dismiss="modal">Close</button>-->
+                                    <button type="submit" class="btn btn-primary">Save changes</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+
+
+        <!-- Edit Product Modal -->
+        <div class="modal" id="editProductModal">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                            <h4 class="modal-title">Update Product</h4>
+                            <button type="button" class="close" data-dismiss="modal">&times;</button>
+                        </div>
+                        <div class="modal-body">
+                            <form method="post" action="{% url 'update_product' %}">
+                                {% csrf_token %}
+                                <input type="hidden" id="edit_product_id" name="id">
+
+                                <div class="modal-body">
+<!--                                    <div class="form-group">-->
+
+                                    <div class="row mb-1 align-items-center">
+                                      <div class="col-md-12 mb-2 item1">
+                                        <label for="name">Product ID:</label>
+                                        <input type="text" id="id" class="form-control" style="text-align: center; background: red; color: white;" readonly>
+                                    </div>
+                                    </div>
+                                    <div class="row mb-1 align-items-center">
+                                      <div class="col-md-6 mb-2 item1">
+                                        <label for="category_id">Category:</label>
+                                        <select name="category_id" id="category_id" class="form-control">
+                                            {% for category in categories %}
+                                                <option value="{{ category.id }}">{{ category.name }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                      <div class="col-md-6 mb-2 item1">
+                                        <label for="subcategory_id">SubCategory:</label>
+                                        <select name="subcategory_id" id="subcategory_id" class="form-control">
+                                            {% for subcategory in subcategories %}
+                                                <option value="{{ subcategory.id }}">{{ subcategory.name }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                    </div>
+                                    <div class="row mb-1 align-items-center">
+                                      <div class="col-md-12 mb-2 item1">
+                                        <label for="name">Product Name:</label>
+                                        <input type="text" name="name" id="name" class="form-control">
+                                    </div>
+                                    </div>
+
+                                      <div class="row mb-1 align-items-center">
+                                      <div class="col-md-12 mb-2 item1">
+
+<!--                                    <div class="form-group">-->
+                                        <label for="prod_description">Product Description :</label>
+                                        <input type="text" name="prod_description" id="prod_description" class="form-control">
+                                    </div>
+                                      </div>
+                                    <div class="row mb-1 align-items-center">
+                                    <div class="col-md-6 mb-2 item1">
+                                        <label for="stock_alert">Stock Alert:</label>
+                                        <input type="text" name="stock_alert" id="stock_alert" class="form-control">
+                                    </div>
+                                    <div class="col-md-6 mb-2 item1">
+                                        <label for="stock_alert">GST:</label>
+                                        <input type="text" name="gst" id="gst" class="form-control">
+                                    </div>
+                                    </div>
+
+
+                                    <div class="row mb-1 align-items-center">
+                                      <div class="col-md-6 mb-2 item1">
+                                        <label for="purchase_id">Purchase Unit :</label>
+                                        <select name="purchase_id" id="purchase_id" class="form-control">
+                                            {% for unit in units %}
+                                                <option value="{{ unit.id }}">{{ unit.name }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                      <div class="col-md-6 mb-2 item1">
+                                        <label for="sales_id">Sales Unit :</label>
+                                        <select name="sales_id" id="sales_id" class="form-control">
+                                            {% for unit in units %}
+                                                <option value="{{ unit.id }}">{{ unit.name }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                    </div>
+
+                                    <div class="form-group item1">
+<!--                                        <label for="status">Status:</label>-->
+<!--                                        <input type="checkbox" name="status" id="status">-->
+                                        <label class="checkbox-label" for="status"><input type="checkbox" class="checkbox-input" name="status" id="status"> Status </label>
+                                    </div>
+                                </div>
+
+                                <div class="modal-footer">
+<!--                                    <button type="button" name="edit_supplier" class="btn btn-secondary" data-dismiss="modal">Close</button>-->
+                                    <button type="submit" class="btn btn-primary">Save changes</button>
+                                </div>
+                            </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Edit Brand Modal -->
+        <div class="modal" id="editBrandModal">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                     <div class="modal-header">
+                            <h4 class="modal-title">Update Brand</h4>
+                            <button type="button" class="close" data-dismiss="modal">&times;</button>
+                        </div>
+                        <div class="modal-body">
+                    <form method="post" action="{% url 'product_add_category' %}">
+                        {% csrf_token %}
+                        <input type="hidden" name="brand_id" id="edit_brand_id">
+<!--                        {{ brand_form.as_p }}-->
+
+                         <div class="row mb-1 align-items-center">
+                        <div class="col-md-12 mb-2 item1">
+<!--                            <label for="{{ brand_form.name.id_for_label }}">{{ brand_form.name.label }}</label>-->
+<!--                            {{ brand_form.name }}-->
+<!--                            <div class="form-group form-check d-flex align-items-center">-->
+<!--                                {{ brand_form.status }}  &lt;!&ndash; Checkbox input &ndash;&gt;-->
+<!--                                <label class="form-check-label ml-2" for="{{ brand_form.status.id_for_label }}">{{ brand_form.status.label }}</label>-->
+<!--                            </div>-->
+                               {{ brand_form.as_p }}
+                        </div>
+                    </div>
+
+
+                        <button type="submit" name="edit_brand">Edit Brand</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+        </div>
+
+
+        <!-- Edit Unit Modal -->
+        <div class="modal" id="editUnitModal">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                            <h4 class="modal-title">Update Unit</h4>
+                            <button type="button" class="close" data-dismiss="modal">&times;</button>
+                        </div>
+                        <div class="modal-body">
+                    <form method="post" action="{% url 'product_add_category' %}">
+                        {% csrf_token %}
+                        <input type="hidden" name="unit_id" id="edit_unit_id">
+                        <div class="row mb-1 align-items-center">
+                        <div class="col-md-12 mb-2 item1">
+                        {{ unit_form.as_p }}
+                        </div>
+                        </div>
+                        <button type="submit" name="edit_unit">Edit Unit</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+        </div>
+
+        <!-- Edit Supplier Modal -->
+         <div class="modal" id="editSupplierModal">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h4 class="modal-title">Update Supplier</h4>
+                            <button type="button" class="close" data-dismiss="modal">&times;</button>
+                        </div>
+                        <div class="modal-body">
+                            <form method="post" action="{% url 'update_supplier' %}">
+                                {% csrf_token %}
+                                <input type="hidden" id="edit_supplier_id" name="id">
+
+                                <div class="modal-body">
+<!--                                    <div class="form-group">-->
+                                    <div class="row mb-1 align-items-center">
+                                      <div class="col-md-6 mb-2 item1">
+                                        <label for="category_id">Category:</label>
+                                        <select name="category_id" id="category_id" class="form-control">
+                                            {% for category in categories %}
+                                                <option value="{{ category.id }}">{{ category.name }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+
+<!--                                    <div class="form-group">-->
+                                        <div class="col-md-6 mb-2 item1">
+                                        <label for="supplier_name">Supplier Name:</label>
+                                        <input type="text" name="supplier_name" id="supplier_name" class="form-control">
+                                    </div>
+                                    </div>
+
+                                    <div class="row mb-1 align-items-center">
+                                      <div class="col-md-6 mb-2 item1">
+
+<!--                                    <div class="form-group">-->
+                                        <label for="contact_person">Contact Person:</label>
+                                        <input type="text" name="contact_person" id="contact_person" class="form-control">
+                                    </div>
+
+                                    <div class="col-md-6 mb-2 item1">
+                                        <label for="contact_email">Contact Email:</label>
+                                        <input type="text" name="contact_email" id="contact_email" class="form-control">
+                                    </div>
+                                    </div>
+
+                                    <div class="row mb-1 align-items-center">
+                                      <div class="col-md-6 mb-2 item1">
+<!--                                    <div class="form-group">-->
+                                        <label for="contact_phone">Contact Phone:</label>
+                                        <input type="text" name="contact_phone" id="contact_phone" class="form-control">
+                                    </div>
+<!--                                    <div class="form-group">-->
+                                        <div class="col-md-6 mb-2 item1">
+                                        <label for="address">Address:</label>
+                                        <input type="text" name="address" id="address" class="form-control">
+                                    </div>
+                                        </div>
+
+                                    <div class="row mb-1 align-items-center">
+                                      <div class="col-md-6 mb-2 item1">
+<!--                                    <div class="form-group">-->
+                                        <label for="city">City:</label>
+                                        <input type="text" name="city" id="city" class="form-control">
+                                    </div>
+                                    <div class="col-md-6 mb-2 item1">
+                                        <label for="state">State:</label>
+                                        <input type="text" name="state" id="state" class="form-control">
+                                    </div>
+<!--                                    <div class="form-group">-->
+                                    </div>
+
+                                    <div class="row mb-1 align-items-center">
+                                      <div class="col-md-6 mb-2 item1">
+                                        <label for="post_code">Post Code:</label>
+                                        <input type="text" name="post_code" id="post_code" class="form-control">
+                                    </div>
+<!--                                    <div class="form-group">-->
+                                     <div class="col-md-6 mb-2 item1">
+                                        <label for="gst_no">GST No:</label>
+                                        <input type="text" name="gst_no" id="gst_no" class="form-control">
+                                    </div>
+                                    </div>
+
+                                    <div class="form-group item1">
+<!--                                        <label for="status">Status:</label>-->
+<!--                                        <input type="checkbox" name="status" id="status">-->
+                                        <label class="checkbox-label" for="status"><input type="checkbox" class="checkbox-input" name="status" id="status"> Status </label>
+                                    </div>
+                                </div>
+
+                                <div class="modal-footer">
+<!--                                    <button type="button" name="edit_supplier" class="btn btn-secondary" data-dismiss="modal">Close</button>-->
+                                    <button type="submit" class="btn btn-primary">Save changes</button>
+                                </div>
+                            </form>
+                    </div>
+                </div>
+            </div>
+         </div>
+</form>
+<!--<script>-->
+<!--    document.addEventListener('DOMContentLoaded', function () {-->
+<!--    // Tab switching-->
+<!--    const tabLinks = document.querySelectorAll('.tab-links a');-->
+<!--    const tabContents = document.querySelectorAll('.list-content');-->
+
+<!--    tabLinks.forEach(link => {-->
+<!--        link.addEventListener('click', function (e) {-->
+<!--            e.preventDefault();-->
+<!--            const targetTab = this.getAttribute('data-tab');-->
+
+<!--            tabContents.forEach(content => {-->
+<!--                if (content.id === targetTab + 'List') {-->
+<!--                    content.style.display = 'block';-->
+<!--                } else {-->
+<!--                    content.style.display = 'none';-->
+<!--                }-->
+<!--            });-->
+<!--        });-->
+<!--    });-->
+<!--});-->
+
+<!--</script>-->
+
+<!--<script>-->
+<!--    document.addEventListener('DOMContentLoaded', function () {-->
+<!--    // Tab switching-->
+<!--    const tabLinks = document.querySelectorAll('.tab-links a');-->
+<!--    const tabContents = document.querySelectorAll('.list-content');-->
+
+<!--    // Retrieve the last active tab from localStorage-->
+<!--    const activeTab = localStorage.getItem('activeTab') || 'categories';-->
+
+<!--    // Display the active tab-->
+<!--    tabContents.forEach(content => {-->
+<!--        if (content.id === activeTab + 'List') {-->
+<!--            content.style.display = 'block';-->
+<!--        } else {-->
+<!--            content.style.display = 'none';-->
+<!--        }-->
+<!--    });-->
+
+<!--    tabLinks.forEach(link => {-->
+<!--        link.addEventListener('click', function (e) {-->
+<!--            e.preventDefault();-->
+<!--            const targetTab = this.getAttribute('data-tab');-->
+
+<!--            // Save the active tab to localStorage-->
+<!--            localStorage.setItem('activeTab', targetTab);-->
+
+<!--            tabContents.forEach(content => {-->
+<!--                if (content.id === targetTab + 'List') {-->
+<!--                    content.style.display = 'block';-->
+<!--                } else {-->
+<!--                    content.style.display = 'none';-->
+<!--                }-->
+<!--            });-->
+<!--        });-->
+<!--    });-->
+<!--});-->
+<!--</script>-->
+
+<!--<script>-->
+<!--    document.addEventListener('DOMContentLoaded', function () {-->
+<!--        // Tab switching-->
+<!--        const tabLinks = document.querySelectorAll('.tab-links a');-->
+<!--        const tabContents = document.querySelectorAll('.list-content');-->
+
+<!--        // Retrieve the last active tab from localStorage-->
+<!--        const activeTab = localStorage.getItem('activeTab') || 'categories';-->
+
+<!--        // Function to initialize DataTables-->
+<!--        function initializeDataTables() {-->
+<!--            const tableIds = ['yourDataTable', 'subcategoriesTable', 'productTable', 'brandsTable', 'unitsTable', 'supplierTable'];-->
+
+<!--            tableIds.forEach(function(tableId) {-->
+<!--                let tableSelector = `#${tableId}`;-->
+
+<!--                // Check if DataTable is already initialized for this table-->
+<!--                if ($.fn.DataTable.isDataTable(tableSelector)) {-->
+<!--                    $(tableSelector).DataTable().destroy(); // Destroy existing DataTable-->
+<!--                }-->
+
+<!--                // Initialize DataTable-->
+<!--                $(tableSelector).DataTable({-->
+<!--                    scrollX: true, // Enable horizontal scrolling-->
+<!--                    scrollCollapse: true,-->
+<!--                    fixedHeader: {-->
+<!--                        header: true,-->
+<!--                        footer: false // Do not fix the footer to prevent it from moving-->
+<!--                    },-->
+<!--                    columnDefs: [{-->
+<!--                        targets: 0,-->
+<!--                        orderable: false // Disable sorting for the Sr No. column (zero-based)-->
+<!--                    }],-->
+<!--                    autoWidth: false, // Ensure automatic column width adjustment-->
+<!--                    responsive: true // Enable responsive layout-->
+<!--                });-->
+<!--            });-->
+<!--        }-->
+
+<!--        // Function to handle tab clicks-->
+<!--        function handleTabClick(tabId) {-->
+<!--            // Hide all tabs-->
+<!--            tabContents.forEach(content => content.style.display = 'none');-->
+
+<!--            // Show the clicked tab-->
+<!--            document.getElementById(tabId).style.display = 'block';-->
+
+<!--            // Initialize DataTables for the visible tab-->
+<!--            initializeDataTables();-->
+
+<!--            // Adjust and redraw DataTables-->
+<!--            $(document.getElementById(tabId)).find('table').each(function() {-->
+<!--                if ($.fn.DataTable.isDataTable(this)) {-->
+<!--                    $(this).DataTable().columns.adjust().draw(); // Adjust columns and redraw DataTable-->
+<!--                }-->
+<!--            });-->
+<!--        }-->
+
+<!--        // Display the active tab-->
+<!--        handleTabClick(activeTab + 'List');-->
+
+<!--        tabLinks.forEach(link => {-->
+<!--            link.addEventListener('click', function (e) {-->
+<!--                e.preventDefault();-->
+<!--                const targetTab = this.getAttribute('data-tab');-->
+
+<!--                // Save the active tab to localStorage-->
+<!--                localStorage.setItem('activeTab', targetTab);-->
+
+<!--                // Handle tab click-->
+<!--                handleTabClick(targetTab + 'List');-->
+<!--            });-->
+<!--        });-->
+<!--    });-->
+
+
+<!--    $(document).ready(function () {-->
+<!--        $('#productTable').DataTable({-->
+<!--            paging: true,-->
+<!--            searching: true,-->
+<!--            ordering: true,-->
+<!--            info: true-->
+<!--            -->
+<!--        });-->
+<!--    });-->
+<!--</script>-->
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        // Tab switching
+        const tabLinks = document.querySelectorAll('.tab-links a');
+        const tabContents = document.querySelectorAll('.list-content');
+
+        // Retrieve the last active tab from localStorage
+        const activeTab = localStorage.getItem('activeTab') || 'categories';
+
+        // Function to initialize DataTables
+        function initializeDataTables() {
+            const tableIds = ['yourDataTable', 'subcategoriesTable', 'productTable', 'brandsTable', 'unitsTable', 'supplierTable'];
+
+            tableIds.forEach(function(tableId) {
+                let tableSelector = `#${tableId}`;
+
+                // Check if DataTable is already initialized for this table
+                if ($.fn.DataTable.isDataTable(tableSelector)) {
+                    $(tableSelector).DataTable().destroy(); // Destroy existing DataTable
+                }
+
+                // Initialize DataTable
+                $(tableSelector).DataTable({
+                    scrollX: true, // Enable horizontal scrolling
+                    scrollCollapse: true,
+                    fixedHeader: {
+                        header: true,
+                        footer: false // Do not fix the footer to prevent it from moving
+                    },
+                    columnDefs: [{
+                        targets: 0,
+                        orderable: false // Disable sorting for the Sr No. column (zero-based)
+                    }],
+                    autoWidth: false, // Ensure automatic column width adjustment
+                    responsive: true, // Enable responsive layout
+                    order: [[1, 'desc']] // Default ordering by the second column (index 1) in descending order
+                });
+            });
+        }
+
+        // Function to handle tab clicks
+        function handleTabClick(tabId) {
+            // Hide all tabs
+            tabContents.forEach(content => content.style.display = 'none');
+
+            // Show the clicked tab
+            document.getElementById(tabId).style.display = 'block';
+
+            // Initialize DataTables for the visible tab
+            initializeDataTables();
+
+            // Adjust and redraw DataTables
+            $(document.getElementById(tabId)).find('table').each(function() {
+                if ($.fn.DataTable.isDataTable(this)) {
+                    $(this).DataTable().columns.adjust().draw(); // Adjust columns and redraw DataTable
+                }
+            });
+        }
+
+        // Display the active tab
+        handleTabClick(activeTab + 'List');
+
+        tabLinks.forEach(link => {
+            link.addEventListener('click', function (e) {
+                e.preventDefault();
+                const targetTab = this.getAttribute('data-tab');
+
+                // Save the active tab to localStorage
+                localStorage.setItem('activeTab', targetTab);
+
+                // Handle tab click
+                handleTabClick(targetTab + 'List');
+            });
+        });
+    });
+
+    $(document).ready(function () {
+        $('#productTable').DataTable({
+            paging: true,
+            searching: true,
+            ordering: true,
+            info: true,
+            order: [[2, 'desc']] // Default ordering by the second column (index 1) in descending order
+        });
+    });
+</script>
+
+ <script>
+                    document.getElementById('category').addEventListener('change', function() {
+                        var categoryId = this.value;
+                        var subcategoryDropdown = document.getElementById('subcategory');
+                        subcategoryDropdown.innerHTML = '<option value=""></option>';
+
+                        if (categoryId) {
+                            fetch(`/product/get-subcategories/${categoryId}/`)
+                                .then(response => response.json())
+                                .then(data => {
+                                    data.subcategories.forEach(function(subcategory) {
+                                        var option = document.createElement('option');
+                                        option.value = subcategory.id;
+                                        option.textContent = subcategory.name;
+                                        subcategoryDropdown.appendChild(option);
+                                    });
+                                });
+                        }
+                    });
+                </script>
+
+<script>
+    $(document).ready(function () {
+        // Handle form submission via AJAX
+        $('form').on('submit', function (e) {
+            e.preventDefault(); // Prevent default form submission
+
+            var $form = $(this);
+            var formData = $form.serialize(); // Serialize form data
+
+            $.ajax({
+                type: $form.attr('method'),
+                url: $form.attr('action'),
+                data: formData,
+                success: function (response) {
+                    // On success, close the modal
+                    $form.closest('.modal').modal('hide');
+
+                    // Optionally, update the current tab's content here
+                    // e.g., reload the list content via AJAX or update the DOM
+                },
+                error: function (xhr, status, error) {
+                    console.error('Form submission failed:', status, error);
+                }
+            });
+        });
+    });
+</script>
+
+
+<!--&lt;!&ndash; Bootstrap CSS &ndash;&gt;-->
+<!--<link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">-->
+
+<!--&lt;!&ndash; jQuery &ndash;&gt;-->
+<!--<script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>-->
+
+<!--&lt;!&ndash; Bootstrap JS &ndash;&gt;-->
+<!--<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>-->
+<style>
+    .tabs {
+        width: 100%;
+        display: inline-block;
+    }
+
+    .tab-links:after {
+        display: block;
+        clear: both;
+        content: '';
+    }
+
+    .tab-links li {
+        margin: 0 5px;
+        float: left;
+        list-style: none;
+    }
+
+    .tab-links a {
+        padding: 9px 15px;
+        display: inline-block;
+        border-radius: 3px 3px 0 0;
+        background: #7FB5DA;
+        font-size: 16px;
+        font-weight: 600;
+        color: #fff;
+        transition: all linear 0.15s;
+    }
+
+    .tab-links a:hover {
+        background: #a7cce5;
+        text-decoration: none;
+    }
+
+    .tab-links .active a {
+        background: #fff;
+        color: #4c4c4c;
+    }
+
+    .tab-content {
+        padding: 15px;
+        border-radius: 3px;
+        box-shadow: 0px 1px 1px rgba(0, 0, 0, 0.15);
+        background: #fff;
+    }
+
+    .tab {
+        display: none;
+    }
+
+    .tab.active {
+        display: block;
+    }
+</style>
+
+<script>
+
+    document.addEventListener('DOMContentLoaded', function() {
+        // Edit Category
+        document.querySelectorAll('[data-target="#editCategoryModal"]').forEach(button => {
+            button.addEventListener('click', function() {
+                const id = this.getAttribute('data-id');
+                document.getElementById('edit_category_id').value = id;
+                fetch(`/product/get_category/${id}/`)
+                    .then(response => response.json())
+                    .then(data => {
+                        // Populate the form fields with data
+                        document.querySelector('#editCategoryModal [name="name"]').value = data.name;
+                        document.querySelector('#editCategoryModal [name="short_name"]').value = data.short_name;
+                         // Set checkbox state
+                        const statusCheckbox = document.querySelector('#editCategoryModal [name="status"]');
+                        statusCheckbox.checked = data.status; // Assuming `data.status` is a boolean
+                    });
+            });
+        });
+
+        $(document).ready(function () {
+            // Handle edit button clicks for the product table
+            $('#subcategoriesTable').on('click', '[data-target="#editSubCategoryModal"]', function () {
+                const subcategoryId = $(this).data('id'); // Get product ID from data attribute
+
+                // Set the hidden input in the modal
+                $('#edit_subcategory_id').val(subcategoryId);
+
+                // Fetch product details via AJAX
+                $.ajax({
+                    url: `/product/get_subcategory/${subcategoryId}/`, // Adjust URL to your endpoint
+
+                    method: 'GET',
+                    success: function (data) {
+
+                        // Populate the form fields with data
+                        document.querySelector('#editSubCategoryModal [name="category_id"]').value = data.category_id;
+                        document.querySelector('#editSubCategoryModal [name="name"]').value = data.name;
+                        document.querySelector('#editSubCategoryModal [name="short_name"]').value = data.short_name;
+                        document.querySelector('#editSubCategoryModal [id="id"]').value = data.id;
+
+                        // Set checkbox state
+                        const statusCheckbox = document.querySelector('#editSubCategoryModal [name="status"]');
+                        statusCheckbox.checked = data.status; // Assuming `data.status` is a boolean
+                        }
+                    });
+            });
+        });
+
+
+        // Edit Product
+        $(document).ready(function () {
+            // Handle edit button clicks for the product table
+            $('#productTable').on('click', '[data-target="#editProductModal"]', function () {
+                const productId = $(this).data('id'); // Get product ID from data attribute
+
+                // Set the hidden input in the modal
+                $('#edit_product_id').val(productId);
+
+                // Fetch product details via AJAX
+                $.ajax({
+                    url: `/product/get-product/${productId}/`, // Adjust URL to your endpoint
+
+                    method: 'GET',
+                    success: function (data) {
+
+                        // Populate the form fields with data
+                        document.querySelector('#editProductModal [id="id"]').value = data.id;
+                        document.querySelector('#editProductModal [name="name"]').value = data.name;
+                        document.querySelector('#editProductModal [name="prod_description"]').value = data.prod_description;
+                        document.querySelector('#editProductModal [name="stock_alert"]').value = data.stock_alert;
+                        document.querySelector('#editProductModal [name="gst"]').value = data.gst;
+
+                        // Set the selected option in dropdown lists
+                        const categoryDropdown = document.querySelector('#editProductModal [name="category_id"]');
+                        const subcategoryDropdown = document.querySelector('#editProductModal [name="subcategory_id"]');
+                        const purchaseDropdown = document.querySelector('#editProductModal [name="purchase_id"]');
+                        const salesDropdown = document.querySelector('#editProductModal [name="sales_id"]');
+
+                        categoryDropdown.value = data.category_id;
+                        subcategoryDropdown.value = data.subcategory_id;
+                        purchaseDropdown.value = data.purchase_id;
+                        salesDropdown.value = data.sales_id;
+
+                        // Set checkbox state
+                        const statusCheckbox = document.querySelector('#editProductModal [name="status"]');
+                        statusCheckbox.checked = data.status; // Assuming `data.status` is a boolean
+                    },
+                    error: function (xhr, status, error) {
+                        console.error('Error fetching product data:', error);
+                    }
+                });
+            });
+        });
+
+
+        // Edit Brand
+        document.querySelectorAll('[data-target="#editBrandModal"]').forEach(button => {
+            button.addEventListener('click', function() {
+                const id = this.getAttribute('data-id');
+                document.getElementById('edit_brand_id').value = id;
+                fetch(`/product/get_brand/${id}/`)
+                    .then(response => response.json())
+                    .then(data => {
+                        // Populate the form fields with data
+                        document.querySelector('#editBrandModal [name="name"]').value = data.name;
+                         // Set checkbox state
+                        const statusCheckbox = document.querySelector('#editBrandModal [name="status"]');
+                        statusCheckbox.checked = data.status; // Assuming `data.status` is a boolean
+                    });
+            });
+        });
+
+        // Edit Unit
+        document.querySelectorAll('[data-target="#editUnitModal"]').forEach(button => {
+            button.addEventListener('click', function() {
+                const id = this.getAttribute('data-id');
+                document.getElementById('edit_unit_id').value = id;
+                fetch(`/product/get_unit/${id}/`)
+                    .then(response => response.json())
+                    .then(data => {
+                        // Populate the form fields with data
+                        document.querySelector('#editUnitModal [name="name"]').value = data.name;
+                        document.querySelector('#editUnitModal [name="short_name"]').value = data.short_name;
+                    });
+            });
+        });
+
+       // Edit Supplier
+        document.querySelectorAll('[data-target="#editSupplierModal"]').forEach(button => {
+            button.addEventListener('click', function() {
+                const id = this.getAttribute('data-id');
+                document.getElementById('edit_supplier_id').value = id;
+                fetch(`/product/get_supplier/${id}/`)
+                    .then(response => response.json())
+                    .then(data => {
+                        // Populate the form fields with data
+                        document.querySelector('#editSupplierModal [name="supplier_name"]').value = data.supplier_name;
+                        document.querySelector('#editSupplierModal [name="contact_person"]').value = data.contact_person;
+                        document.querySelector('#editSupplierModal [name="contact_email"]').value = data.contact_email;
+                        document.querySelector('#editSupplierModal [name="contact_phone"]').value = data.contact_phone;
+                        document.querySelector('#editSupplierModal [name="address"]').value = data.address;
+                        document.querySelector('#editSupplierModal [name="city"]').value = data.city;
+                        document.querySelector('#editSupplierModal [name="state"]').value = data.state;
+                        document.querySelector('#editSupplierModal [name="post_code"]').value = data.post_code;
+                        document.querySelector('#editSupplierModal [name="gst_no"]').value = data.gst_no;
+                        document.querySelector('#editSupplierModal [name="category_id"]').value = data.category_id;
+
+
+                        // Set checkbox state
+                        const statusCheckbox = document.querySelector('#editSupplierModal [name="status"]');
+                        statusCheckbox.checked = data.status; // Assuming `data.status` is a boolean
+
+                    });
+            });
+        });
+
+
+    });
+</script>
+<style>
+   .checkbox-column {
+   display: inline-block;
+   }
+   /* Style the select element */
+   select#userType {
+   width: 300px; /* Set the width as per your preference */
+   height: 30px;
+   font-size: 16px; /* Set the font size as per your preference */
+   }
+   /* Style the option elements within the select */
+   select#userType option {
+   font-size: 16px; /* Set the font size as per your preference */
+   }
+   /* Style the select label */
+    label[for="userType"] {
+        font-size: 16px; /* Adjust the font size as per your preference */
+        margin-right: 10px; /* Add space to the right of the label */
+        font-weight: bold;
+    }
+</style>
+
+<!--<script>-->
+<!--            document.addEventListener("DOMContentLoaded", function() {-->
+<!--                let dataTable = $('#yourDataTable').DataTable();-->
+<!--                //let dataTable = $('#yourDataTable').DataTable({-->
+<!--                //    scrollX: true,-->
+<!--                //    fixedHeader: true,-->
+<!--                //    columnDefs: [-->
+<!--                //        { targets: 0, orderable: false } // '0' represents the index of the 'Sr No.' column (zero-based)-->
+<!--                //    ]-->
+<!--                //});-->
+
+<!--                // Check if the DataTable is already initialized-->
+<!--                if ($.fn.dataTable.isDataTable('#yourDataTable')) {-->
+<!--                    dataTable.destroy(); // If initialized, destroy the DataTable-->
+<!--                }-->
+
+<!--                dataTable = $('#yourDataTable').DataTable({-->
+<!--                    scrollX: true, // Enable horizontal scrolling-->
+<!--                    //scrollY: '50vh', // Adjust the height as needed-->
+<!--                    scrollCollapse: true,-->
+<!--                    fixedHeader: {-->
+<!--                        header: true,-->
+<!--                        footer: false // Do not fix the footer to prevent it from moving-->
+<!--                    },-->
+<!--                    columnDefs: [{-->
+<!--                            targets: 0,-->
+<!--                            orderable: false-->
+<!--                        } // Disable sorting for the Sr No. column (zero-based)-->
+<!--                    ]-->
+<!--                });-->
+
+<!--                $('#yourDataTable tbody tr').each(function(index) {-->
+<!--                    $(this).find('td:first').text(index + 1);-->
+<!--                });-->
+
+<!--                dataTable.on('order.dt search.dt', function() {-->
+<!--                    dataTable.column(0, {-->
+<!--                        search: 'applied',-->
+<!--                        order: 'applied'-->
+<!--                    }).nodes().each(function(cell, i) {-->
+<!--                        cell.innerHTML = i + 1;-->
+<!--                    });-->
+<!--                }).draw();-->
+<!--            });-->
+<!--        </script>-->
+
+<!--<script>-->
+<!--    document.addEventListener("DOMContentLoaded", function() {-->
+<!--        const tableIds = ['yourDataTable', 'subcategoriesTable', 'productTable', 'brandsTable', 'unitsTable', 'supplierTable'];-->
+
+<!--        tableIds.forEach(function(tableId) {-->
+<!--            let tableSelector = `#${tableId}`;-->
+
+<!--            // Check if DataTable is already initialized for this table-->
+<!--            if ($.fn.DataTable.isDataTable(tableSelector)) {-->
+<!--                $(tableSelector).DataTable().destroy(); // Destroy existing DataTable-->
+<!--            }-->
+
+<!--            // Initialize DataTable-->
+<!--            $(tableSelector).DataTable({-->
+<!--                scrollX: true, // Enable horizontal scrolling-->
+<!--                scrollCollapse: true,-->
+<!--                fixedHeader: {-->
+<!--                    header: true,-->
+<!--                    footer: false // Do not fix the footer to prevent it from moving-->
+<!--                },-->
+<!--                columnDefs: [{-->
+<!--                    targets: 0,-->
+<!--                    orderable: false // Disable sorting for the Sr No. column (zero-based)-->
+<!--                }],-->
+<!--                "autoWidth": false, // Ensure automatic column width adjustment-->
+<!--                "responsive": true // Enable responsive layout-->
+<!--            });-->
+<!--        });-->
+
+<!--        // Function to handle tab clicks-->
+<!--        function handleTabClick(tabId) {-->
+<!--            // Hide all tabs-->
+<!--            document.querySelectorAll('.list-content').forEach(tab => tab.style.display = 'none');-->
+
+<!--            // Show the clicked tab-->
+<!--            document.getElementById(tabId).style.display = 'block';-->
+
+<!--            // Redraw DataTables for the visible tab-->
+<!--            $(document.getElementById(tabId)).find('table').each(function() {-->
+<!--                if ($.fn.DataTable.isDataTable(this)) {-->
+<!--                    $(this).DataTable().columns.adjust().draw(); // Adjust columns and redraw DataTable-->
+<!--                }-->
+<!--            });-->
+<!--        }-->
+
+<!--        // Example: Attach click handlers to tab links-->
+<!--        document.querySelectorAll('.tab-links').forEach(link => {-->
+<!--            link.addEventListener('click', function(event) {-->
+<!--                handleTabClick(this.getAttribute('data-tab-id'));-->
+<!--            });-->
+<!--        });-->
+<!--    });-->
+<!--</script>-->
+<!--<style>-->
+<!--    /* Ensure the table container spans full width */-->
+<!--    .table-container {-->
+<!--        width: 100%;-->
+<!--    }-->
+
+<!--    /* Ensure the table spans full width */-->
+<!--    .table {-->
+<!--        width: 100% !important;-->
+<!--    }-->
+
+<!--    /* Ensure DataTables wrapper spans full width */-->
+<!--    .dataTables_wrapper {-->
+<!--        width: 100% !important;-->
+<!--    }-->
+
+<!--    /* Ensure DataTables scroll area spans full width */-->
+<!--    .dataTables_scroll {-->
+<!--        width: 100% !important;-->
+<!--    }-->
+<!--</style>-->
+
+
+{% endblock %}

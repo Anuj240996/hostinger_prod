@@ -1,0 +1,567 @@
+{% extends 'partials/base.html' %}
+{% block title %}Consumer Page{% endblock %}
+{% load static %}
+
+{% block content %}
+<style>
+    /* Custom CSS for positioning the company symbol on top of the image */
+    .image-container {
+        position: relative;
+        display: inline-block; /* Ensures inline display */
+    }
+
+    .company-symbol-overlap {
+        position: absolute;
+        bottom: 0;
+        right: 3px;
+        max-width: 30%; /* Make the symbol resizable while maintaining aspect ratio */
+        height: 35%;
+        z-index: 1; /* Ensure the symbol is above the image */
+    }
+
+     /* New CSS for mobile responsiveness */
+    @media screen and (max-width: 767px) {
+        .info-wrapper {
+            display: block; /* Display email value in a new line on smaller screens */
+            margin-top: 5px; /* Add some space between items */
+        }
+    }
+</style>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@mdi/font/css/materialdesignicons.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.4.0/jspdf.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/exceljs/dist/exceljs.min.js"></script>
+
+<script src="https://rawgit.com/eKoopmans/html2pdf/master/dist/html2pdf.bundle.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/exceljs/dist/exceljs.min.js"></script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.9.2/html2pdf.bundle.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/exceljs/dist/exceljs.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/clipboard@2.0.8/dist/clipboard.min.js"></script>
+
+<section class="content">
+<!--<div class="card  m-1">-->
+<!--<div class="card-body">-->
+<div class="page-header">
+   <div class="row">
+      <div class="col-sm-12">
+         <h3 class="page-title text-capitalize">{{ user1.first_name }} {{ user1.last_name }} Details</h3>
+         <ul class="breadcrumb" style="border-bottom : 2px solid orange">
+            <li class="breadcrumb-item"><a href="customer/index.html">Dashboard</a></li>
+            <li class="breadcrumb-item active">View  Details</li>
+         </ul>
+      </div>
+
+                             <!-- Add these buttons inside the col-auto div -->
+<div class="col-auto text-right float-right ml-auto">
+    <div class="dt-buttons btn-group flex-wrap">
+        <a id="generate-excel-all" href="#" class="btn btn-primary" title="Excel"><i class="mdi mdi-microsoft-excel" style="font-size: 18px;"></i></a>
+        <a id="copy-table" href="#" class="btn btn-primary" title="Copy"><i class="fas fa-solid fa-copy"></i></a>
+        <a id="generate-print-all" href="#" class="btn btn-primary" title="Print"><i class="fas fa-solid fa-print"></i></a>
+        <a id="generate-pdf-all" href="#" class="btn btn-primary" title="PDF"><i class="fas fa-file-pdf fs-4" style="font-size: 1.1rem;"></i></a>
+    </div>
+</div>
+
+   </div>
+</div>
+{% if messages %}
+{% for message in messages %}
+<div class="alert alert-{{ message.tags }}">
+   {{ message }}
+</div>
+{% endfor %}
+{% endif %}
+<form method="post" enctype="multipart/form-data" action="/customers/">
+   {% csrf_token %}
+   <h5 class="p-2 text-danger" style="border-bottom : 2px solid orange">Employee Details</h5>
+  <div class="card-body">
+   <div class="row">
+      <div class="col-md-12">
+         <div class="about-info">
+            <!--<h4>About Me</h4>-->
+            <div class="media mt-1">
+               <ul>
+                    <li>
+                        <!-- Add Company Symbol Overlapping the Image -->
+                        <!--<div class="image-container">-->
+                        <!--    <img class="img-thumbnail ml-1" src="{{ employee.image.url }}" class="card-img-top" alt="profile-image" style="max-height:500px; max-width:500px;">-->
+                        <!--    <img src="{% static '/images/dblogosmall.png' %}" alt="Company Symbol" class="company-symbol-overlap">-->
+                        <!--</div>-->
+                        {% if user1.is_active %}
+
+                            <div class="image-container">
+                                <img class="img-thumbnail ml-1" src="{{ employee.image.url }}" class="card-img-top" alt="profile-image" style="max-height:350px; max-width:200px;">
+                                <img src="{% static '/images/dblogosmall.png' %}" alt="Company Symbol" class="company-symbol-overlap">
+                            </div>
+
+                        {% else %}
+                           <div class="image-container">
+                                <img class="img-thumbnail ml-1" src="{{ employee.image.url }}" class="card-img-top" alt="profile-image" style="max-height:350px; max-width:200px;">
+                                <img src="{% static '/images/inactive2.png' %}" alt="Inactive Symbol" class="company-symbol-overlap" style="max-width: 80%; height: 50%; right: -10%; bottom: -10%;">
+                            </div>
+                        {% endif %}
+
+                        <!-- End Company Symbol -->
+                    </li>
+                    <li>
+                        <small class="text-muted">Currently:  <a href="{{ employee.image.url }}">{{ employee.image }}</a></small>
+                    </li>
+                </ul>
+
+
+               <div class="media-body ml-7">
+                  <!--<ul class="ml-5">-->
+                  <ul>
+                     <li>
+                        <span class="title-span"><b>Employee Status</b></span>
+                        <span> : </span>
+                        <span class="info-span ml-3">
+                            {% if user1 %}
+                                {% if user1.is_active %}
+                                    <button class="btn btn-success" type="button"><i class="fe fe-check-verified"></i> Active</button>
+                                {% else %}
+                                    <button class="btn btn-danger" type="button"><i class="fe fe-check-verified"></i> Deactivated</button>
+                                {% endif %}
+                            {% else %}
+                                <!-- Handle case where user1 is not defined -->
+                                <span>User not found</span>
+                            {% endif %}
+                        </span>
+
+                     </li>
+                      <li>
+                        <span class="title-span"><b>Employee ID</b></span>
+                        <span> : </span>
+                        <span class="info-span ml-3">  DB/{{ user1.id }}</span>
+                     </li>
+                     <li>
+                        <span class="title-span"><b>Username </b> </span>
+                        <span> : </span>
+                        <span class="info-span ml-3">{{ user1.username }}</span>
+                     </li>
+                     <li>
+                        <span class="title-span"><b>Full Name </b> </span>
+                        <span> : </span>
+                        <span class="info-span ml-3 text-capitalize">{{ user1.first_name }} {{ user1.last_name }}</span>
+                     </li>
+                     <li>
+                        <span class="title-span"><b>Phone No.</b>  </span>
+                        <span> : </span>
+                        <span class="info-span ml-3">{{ employee.workphone }}</span>
+                     </li>
+                     <li>
+                        <span class="title-span"><b>Email</b>  </span>
+                        <span> : </span>
+<!--                        <div class="info-wrapper">-->
+                        <span class="info-span ml-3">{{ user1.email }}</span>
+<!--                        </div>-->
+                     </li>
+                     <li>
+                        <span class="title-span"><b>Designation</b>  </span>
+                        <span> : </span>
+                        <span class="info-span ml-3 text-capitalize">{{ employee.designation }} - {{ employee.department }}</span>
+                     </li>
+                     <li>
+                        <span class="title-span"><b>Date Of Birth</b> </span>
+                        <span> : </span>
+                        <span class="info-span ml-3">{{ employee.DOB|date:"j F Y" }}</span>
+                     </li>
+                     <li>
+                        <span class="title-span"><b>Date Of Joining</b> </span>
+                        <span> : </span>
+                        <span class="info-span ml-3">{{ user1.date_joined|date:"j F Y" }}</span>
+                     </li>
+                  </ul>
+               </div>
+            </div>
+               <h5 class="p-2 text-danger text-capitalize" style="border-bottom : 2px solid orange">Work Desk Details</h5>
+               <div class="media">
+                     <ul>
+                      <li>
+                        <span class="title-span"><b>Department</b> </span>
+                        <span> : </span>
+
+                        <span class="info-span ml-3 text-capitalize">{{ employee.department }}</span>
+                     </li>
+                     <li>
+                        <span class="title-span"><b>Designation</b> </span>
+                        <span> : </span>
+                        <span class="info-span ml-3 text-capitalize">{{ employee.designation }}</span>
+                     </li>
+                     <li>
+                        <span class="title-span"><b>Date Of Joining</b> </span>
+                        <span> : </span>
+                        <span class="info-span ml-3">{{ user1.date_joined|date:'d/m/Y' }}</span>
+                     </li>
+                     <li>
+                        <span class="title-span"><b>Work Email</b> </span>
+                        <span> : </span>
+                        <span class="info-span ml-3">{{ user1.email }}</span>
+                     </li>
+                     <li>
+                        <span class="title-span"><b>Phone No.</b> </span>
+                        <span> : </span>
+                        <span class="info-span ml-3">{{ employee.workphone }}</span>
+                     </li>
+                     </ul>
+               </div>
+
+<!--                     <div class="col-sm-12">-->
+                        <h5 class="p-2 text-danger text-capitalize" style="border-bottom : 2px solid orange">Personal Details</h5>
+               <div class="media">
+                    <ul>
+                     <li>
+                        <span class="title-span"><b>Full Name</b> </span>
+                        <span> : </span>
+                        <span class="info-span ml-3 text-capitalize">{{ user1.first_name }}  {{ user1.last_name }}</span>
+                     </li>
+                     <li>
+                        <span class="title-span"><b>Blood Group</b> </span>
+                        <span> : </span>
+                        <span class="info-span ml-3 text-capitalize">{{ employee.bg }}</span>
+                     </li>
+                     <li>
+                        <span class="title-span"><b>Date Of Birth</b> </span>
+                        <span> : </span>
+                        <span class="info-span ml-3">{{ employee.DOB|date:'d/m/Y' }}</span>
+                     </li>
+                     <li>
+                        <span class="title-span"><b>Address</b> </span>
+                        <span> : </span>
+                        <span class="info-span ml-3 text-capitalize">{{ employee.address }}</span>
+                     </li>
+                     <li>
+                        <span class="title-span"><b>City</b> </span>
+                        <span> : </span>
+                        <span class="info-span ml-3 text-capitalize">{{ employee.city }}</span>
+                     </li>
+                     <li>
+                        <span class="title-span"><b>Taluka</b> </span>
+                        <span> : </span>
+                        <span class="info-span ml-3 text-capitalize">{{ employee.taluka }}</span>
+                     </li>
+                     <li>
+                        <span class="title-span"><b>District</b> </span>
+                        <span> : </span>
+                        <span class="info-span ml-3 text-capitalize">{{ employee.district }}</span>
+                     </li>
+                    </ul>
+               </div>
+<!--                     <div class="col-sm-12">-->
+                        <h5 class="p-2 text-danger text-capitalize" style="border-bottom : 2px solid orange">Qualification</h5>
+               <div class="media">
+                     <ul>
+                     <li>
+                        <span class="title-span"><b>PG Education</b> </span>
+                        <span> : </span>
+                        <span class="info-span ml-3 text-capitalize">{{ employee.pg }}</span>
+                     </li>
+                     <li>
+                        <span class="title-span"><b>Institution</b> </span>
+                        <span> : </span>
+                        <span class="info-span ml-3 text-capitalize">{{ employee.institution }}</span>
+                     </li>
+                     <li>
+                        <span class="title-span"><b>Year Of Passing</b> </span>
+                        <span> : </span>
+                        <span class="info-span ml-3">{{ employee.yop }}</span>
+                     </li>
+                     <li>
+                        <span class="title-span"><b>Specialization</b> </span>
+                        <span> : </span>
+                        <span class="info-span ml-3 text-capitalize">{{ employee.specili }}</span>
+                     </li>
+
+                     </ul>
+               </div>
+<!--                     <div class="col-sm-12">-->
+                        <h5 class="p-2 text-danger text-capitalize" style="border-bottom : 2px solid orange">Emergency Contact Details</h5>
+               <div class="media">
+                     <ul>
+                     <li>
+                        <span class="title-span"><b>Name</b> </span>
+                        <span> : </span>
+                        <span class="info-span ml-3 text-capitalize">{{ employee.name }}</span>
+                     </li>
+                     <li>
+                        <span class="title-span"><b>Phone No.</b> </span>
+                        <span> : </span>
+                        <span class="info-span ml-3">{{ employee.phone }}</span>
+                     </li>
+                     <li>
+                        <span class="title-span"><b>Email</b> </span>
+                        <span> : </span>
+                        <span class="info-span ml-3">{{ employee.email }}</span>
+                     </li>
+                     <li>
+                        <span class="title-span"><b>Address</b> </span>
+                        <span> : </span>
+                        <span class="info-span ml-3 text-capitalize">{{ employee.emraddress }}</span>
+                     </li>
+                      </ul>
+               </div>
+
+                     <input type="submit" value="OK" class="btn btn-primary" data-href-template="dashboard/customers.html">
+
+         </div>
+      </div>
+   </div>
+  </div>
+</form>
+<!--</div>-->
+<!--</div>-->
+
+{% if error == "no" %}
+<script>
+   alert(' {{user1.first_name }} {{user1.last_name }} Profile Update Successful');
+   window.location = ('{% url 'user-profile-update' user1.id %}')
+</script>
+{% endif %}
+{% if error == "yes" %}
+<script>
+   alert('Something went wrong , Try Again...');
+</script>
+{% endif %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.4.0/jspdf.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/exceljs/dist/exceljs.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/clipboard@2.0.8/dist/clipboard.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+<script src="https://rawgit.com/eKoopmans/html2pdf/master/dist/html2pdf.bundle.js"></script>
+
+<script>
+// Function to generate PDF
+document.getElementById("generate-pdf-all").addEventListener("click", function() {
+    // Select the form content
+    var formContent = document.querySelector('form').cloneNode(true);
+
+    // Remove the submit button from the cloned form
+    var submitButton = formContent.querySelector('[type="submit"]');
+    if (submitButton) {
+        submitButton.parentNode.removeChild(submitButton);
+    }
+
+    // Adjust the font size of text values in form fields
+    var formFields = formContent.querySelectorAll('input[type="text"], input[type="email"], input[type="password"], select, textarea');
+    formFields.forEach(function(field) {
+        field.style.fontSize = '20px'; // Adjust as needed
+    });
+
+    // Adjust the font size of span elements
+    var spanElements = formContent.querySelectorAll('span');
+    spanElements.forEach(function(span) {
+        span.style.fontSize = '14px'; // Adjust as needed
+        span.style.marginBottom = '-10px'; // Adjust spacing between rows
+    });
+
+     // Adjust the margins of div elements
+    var divElements = formContent.querySelectorAll('div');
+    divElements.forEach(function(div) {
+        div.style.marginBottom = '-15px'; // Adjust spacing between div elements
+    });
+
+
+    // Remove any hidden elements from the cloned form
+    var formElements = formContent.querySelectorAll('input[type="hidden"], select, textarea');
+    formElements.forEach(function(element) {
+        if (element.offsetParent === null) {
+            element.parentNode.removeChild(element);
+        }
+    });
+
+    // Convert the cloned form to PDF
+    html2pdf()
+        .from(formContent)
+        .set({
+            margin: 10,
+            filename: 'Form_Content.pdf',
+            image: { type: 'jpeg', quality: 0.98 },
+            html2canvas: { dpi: 192, letterRendering: true },
+            jsPDF: { unit: 'pt', format: 'a4', orientation: 'portrait' },
+        })
+        .toPdf()
+        .save();
+});
+</script>
+
+
+<script>
+
+
+// Function to generate Excel
+document.getElementById("generate-excel-all").addEventListener("click", function() {
+    var workbook = new ExcelJS.Workbook();
+    var worksheet = workbook.addWorksheet('Employee Details');
+
+    // Add headers for each section with bold font
+    worksheet.addRow(['Employee Details']).font = { bold: true };
+    worksheet.addRow(['Employee ID', 'Username', 'Full Name', 'Phone No.', 'Email', 'Designation', 'Date Of Birth', 'Date Of Joining']).font = { bold: true };
+
+    // Add data for the first section
+    var row1 = worksheet.addRow([
+        'DB/{{ user1.id }}',
+        '{{ user1.username }}',
+        '{{ user1.first_name }} {{ user1.last_name }}',
+        '{{ employee.workphone }}',
+        '{{ user1.email }}',
+        '{{ employee.designation }} - {{ employee.department }}',
+        '{{ employee.DOB|date:"j F Y" }}',
+        '{{ user1.date_joined|date:"j F Y" }}'
+    ]);
+
+    // Add a blank row between sections
+    worksheet.addRow([]);
+
+    // Add headers for the second section with bold font
+    worksheet.addRow(['Work Desk Details']).font = { bold: true };
+    worksheet.addRow(['Department', 'Designation', 'Date Of Joining', 'Work Email', 'Phone No.']).font = { bold: true };
+
+    // Add data for the second section
+    var row2 = worksheet.addRow([
+        '{{ employee.department }}',
+        '{{ employee.designation }}',
+        '{{ user1.date_joined|date:"d/m/Y" }}',
+        '{{ user1.email }}',
+        '{{ employee.workphone }}'
+    ]);
+
+    // Add a blank row between sections
+    worksheet.addRow([]);
+
+    // Add headers for the third section with bold font
+    worksheet.addRow(['Personal Details']).font = { bold: true };
+    worksheet.addRow(['Full Name', 'Blood Group', 'Date Of Birth', 'Address', 'City', 'Taluka', 'District']).font = { bold: true };
+
+    // Add data for the third section
+    var row3 = worksheet.addRow([
+        '{{ user1.first_name }} {{ user1.last_name }}',
+        '{{ employee.bg }}',
+        '{{ employee.DOB|date:"d/m/Y" }}',
+        '{{ employee.address }}',
+        '{{ employee.city }}',
+        '{{ employee.taluka }}',
+        '{{ employee.district }}'
+    ]);
+
+    // Add a blank row between sections
+    worksheet.addRow([]);
+
+    // Add headers for the fourth section with bold font
+    worksheet.addRow(['Qualification']).font = { bold: true };
+    worksheet.addRow(['PG Education', 'Institution', 'Year Of Passing', 'Specialization']).font = { bold: true };
+
+    // Add data for the fourth section
+    var row4 = worksheet.addRow([
+        '{{ employee.pg }}',
+        '{{ employee.institution }}',
+        '{{ employee.yop }}',
+        '{{ employee.specili }}'
+    ]);
+
+    // Add a blank row between sections
+    worksheet.addRow([]);
+
+    // Add headers for the fifth section with bold font
+    worksheet.addRow(['Emergency Contact Details']).font = { bold: true };
+    worksheet.addRow(['Name', 'Phone No.', 'Email', 'Address']).font = { bold: true };
+
+    // Add data for the fifth section
+    var row5 = worksheet.addRow([
+        '{{ employee.name }}',
+        '{{ employee.phone }}',
+        '{{ employee.email }}',
+        '{{ employee.emraddress }}'
+    ]);
+
+    // Generate Excel file
+    workbook.xlsx.writeBuffer().then(function(data) {
+        var blob = new Blob([data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+        saveAs(blob, 'Employee_Details.xlsx');
+    });
+});
+
+</script>
+
+<script>
+// Function to copy content within the form
+document.getElementById("copy-table").addEventListener("click", function() {
+    var formContent = document.querySelector('form').innerText; // Extract text content of the form
+    navigator.clipboard.writeText(formContent).then(function() {
+        alert('Form content copied to clipboard');
+    }, function(err) {
+        console.error('Failed to copy: ', err);
+    });
+});
+
+
+
+// Function to print the content within the form excluding submit button and company symbol
+document.getElementById("generate-print-all").addEventListener("click", function() {
+    var companyName = 'DB Solar Pvt Ltd';
+    var formContent = document.querySelector('form').cloneNode(true);
+    var submitButton = formContent.querySelector('[type="submit"]');
+    submitButton.parentNode.removeChild(submitButton);
+
+    // Remove company symbol
+    var companySymbol = formContent.querySelector('.company-symbol-overlap');
+    if (companySymbol) {
+        companySymbol.parentNode.removeChild(companySymbol);
+    }
+
+    // Hide content within <small> elements with class 'text-muted'
+    var smallElements = formContent.querySelectorAll('small.text-muted');
+    smallElements.forEach(function(small) {
+        small.style.display = 'none'; // Hide the content
+    });
+
+    // Remove bullet symbols from unordered lists and adjust spacing
+    var unorderedLists = formContent.querySelectorAll('ul');
+    unorderedLists.forEach(function(ul) {
+        ul.style.listStyleType = 'none'; // Remove bullet symbols
+        ul.style.paddingInlineStart = '20px'; // Add left padding for spacing between list items
+        ul.style.marginBlockStart = '0'; // Remove any top margin
+        ul.style.marginBlockEnd = '0'; // Remove any bottom margin
+    });
+
+    // Resize images and move to the left side
+    var images = formContent.querySelectorAll('img');
+    images.forEach(function(img) {
+        img.style.maxWidth = '200px'; // Adjust the maximum width of the image
+        img.style.height = '200px';
+        img.style.float = 'left'; // Float the image to the left
+        img.style.marginRight = '20px'; // Add margin for spacing between image and text
+    });
+
+    // Adjust spacing for each list item
+    var listItems = formContent.querySelectorAll('li');
+    listItems.forEach(function(li) {
+        li.style.marginBottom = '7px'; // Add margin bottom to create space between rows
+    });
+
+    // Adjust spacing for small elements
+    var smallElements = formContent.querySelectorAll('small');
+    smallElements.forEach(function(small) {
+        small.style.margin = '0'; // Remove any margin
+        small.style.padding = '0'; // Remove any padding
+    });
+
+    // Construct print content with header and form content
+    var printContent = '<html><head><title>Print</title>';
+    printContent += '<style>@media print { img { display: inline !important; } }</style>'; // Show images inline in print
+    printContent += '<style>body { font-family: Arial, sans-serif; }</style>'; // Set font-family
+    printContent += '</head><body>';
+    printContent += '<h1 style="text-align: center;">' + companyName + '</h1>';
+    //printContent += '<hr>';
+    printContent += formContent.outerHTML; // Use outerHTML to include the form element itself
+    printContent += '</body></html>';
+
+    // Open print window and print
+    var printWindow = window.open('', '_blank');
+    printWindow.document.write(printContent);
+    printWindow.document.close();
+    printWindow.print();
+});
+
+</script>
+
+
+</section>
+{% endblock %}

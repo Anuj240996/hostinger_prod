@@ -1,0 +1,12 @@
+COPY AND PASTE THIS EXACT COMMAND ON YOUR SERVER:
+==================================================
+
+cd /home/anujdeshmukh24/DBSolar_19_09_2023/DBSolar_19_09_2023 && source /home/anujdeshmukh24/env/bin/activate && python fix_controller_id_now.py
+
+
+THEN RESTART YOUR SERVER:
+=========================
+Stop the server (Ctrl+C) and restart it.
+
+The error will be fixed after you run the command above and restart the server.
+

@@ -1,0 +1,523 @@
+{% extends 'partials/base.html' %}
+{% block title %}Customer Page{% endblock %}
+{% load static %}
+{% block content %}
+<!--<div>-->
+<!--   <div class="card-body">-->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@mdi/font/css/materialdesignicons.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.4.0/jspdf.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/exceljs/dist/exceljs.min.js"></script>
+
+<script src="https://rawgit.com/eKoopmans/html2pdf/master/dist/html2pdf.bundle.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/exceljs/dist/exceljs.min.js"></script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.9.2/html2pdf.bundle.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/exceljs/dist/exceljs.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/clipboard@2.0.8/dist/clipboard.min.js"></script>
+
+      <div class="page-header">
+         <div class="row">
+            <div class="col-sm-12">
+               {% if customer.first_name %}
+               <h3 class="page-title text-capitalize">{{ customer.first_name }} {{ customer.last_name }} View Details</h3>
+               {% else %}
+                <h3 class="page-title text-capitalize">{{ customer.Comp_name }} View Details</h3>
+               {% endif %}
+               <ul class="breadcrumb" style="border-bottom : 2px solid orange">
+                  <li class="breadcrumb-item"><a href="customer/index.html">Dashboard</a></li>
+                  <li class="breadcrumb-item active">View  Details</li>
+               </ul>
+            </div>
+
+                                         <!-- Add these buttons inside the col-auto div -->
+            <div class="col-auto text-right float-right ml-auto">
+                <div class="dt-buttons btn-group flex-wrap">
+            <!--       <a href="#" class="btn btn-outline-primary mr-2" name="download" id="download-pdf"><i class="fas fa-download"></i>Download</a>-->
+            <!--       <a id="generate-pdf-all" href="#" class="btn btn-primary" type="button" title="PDF"><i class="fas fa-file-pdf fs-4" style="font-size: 1.1rem;"></i></a>-->
+                    <a id="generate-excel-all" href="#" class="btn btn-primary" title="Excel"><i class="mdi mdi-microsoft-excel" style="font-size: 18px;"></i></a>
+                    <a id="copy-table" href="#" class="btn btn-primary" title="Copy"><i class="fas fa-solid fa-copy"></i></a>
+                    <a id="generate-print-all" href="#" class="btn btn-primary" title="Print"><i class="fas fa-solid fa-print"></i></a>
+                    <a id="generate-pdf-all" href="#" class="btn btn-primary" title="PDF"><i class="fas fa-file-pdf fs-4" style="font-size: 1.1rem;"></i></a>
+                </div>
+            </div>
+
+         </div>
+      </div>
+      {% if messages %}
+      {% for message in messages %}
+      <div class="alert alert-{{ message.tags }}">
+         {{ message }}
+      </div>
+      {% endfor %}
+      {% endif %}
+      <form method="post" enctype="multipart/form-data" action="/customer/view_all_cust/">
+         {% csrf_token %}
+         <table class="table table-bordered"  border="2" style="width: 100%">
+            <tr align="center">
+               <th colspan="2">
+                  {% if customer.first_name %}
+               <h3 class="page-title text-capitalize">{{ customer.first_name }} {{ customer.last_name }} View Details</h3>
+               {% else %}
+                <h3 class="page-title text-capitalize">{{ customer.Comp_name }} View Details</h3>
+               {% endif %}
+               </th>
+            </tr>
+
+            <tr>
+               <th colspan="2">
+                  <h5 class="p-1 text-danger" style="border-bottom : 2px solid orange">Consumer Details</h5>
+               </th>
+            </tr>
+
+            <tr bgcolor="lightgray">
+              <th style="width: 35%; text-align: left; padding-left: 15px;">Customer Type</th>
+
+               <td class="text-capitalize" style="width: 50%; text-align: left; padding-left: 15px;"> {{ customer.Cust_type }} Consumer</td>
+            </tr>
+
+            <tr>
+               <th style="text-align: left; padding-left: 15px;"> Customer ID</th>
+               <td style="text-align: left; padding-left: 15px;">DB_Cust_{{ customer.Cust_id }}</td>
+            </tr>
+
+            {% if customer.first_name %}
+            <tr>
+               <th style="text-align: left; padding-left: 15px;"> Full Name</th>
+               <td class="text-capitalize" style="text-align: left; padding-left: 15px; color: blue;">{{ customer.first_name }} {{ customer.last_name }}</td>
+            </tr>
+
+            {% endif %}
+
+            <!-- <tr>-->
+            <!--   <th>&nbsp;&nbsp; Staff Name</th>-->
+               <!--<td class="text-capitalize">{{ user.first_name }} {{ user.last_name }}</td>-->
+
+            <!--</tr>-->
+
+            {% if customer.Comp_name %}
+            <tr>
+               <th style="text-align: left; padding-left: 15px;"> Consumer / Farm Name</th>
+               <td class="text-capitalize" style="text-align: left; padding-left: 15px; color: blue;"> {{ customer.Comp_name }}</td>
+            </tr>
+            {% endif %}
+
+            {% if customer.Gender %}
+            <tr>
+               <th style="text-align: left; padding-left: 15px;"> Gender</th>
+               <td class="text-capitalize" style="text-align: left; padding-left: 15px;">{{ customer.Gender }}</td>
+            </tr>
+            {% endif %}
+
+            <tr>
+               <th style="text-align: left; padding-left: 15px;"> PO Order No.</th>
+               <td class="text-capitalize" style="text-align: left; padding-left: 15px;">{{ customer.po_order }}</td>
+            </tr>
+
+            <tr>
+               <th style="text-align: left; padding-left: 15px;"> PO Date</th>
+               <td style="text-align: left; padding-left: 15px;">{{ customer.po_date | date:'d/m/Y' }}</td>
+            </tr>
+
+            <tr>
+               <th style="text-align: left; padding-left: 15px;"> Plant Capacity</th>
+               <td class="text-capitalize" style="text-align: left; padding-left: 15px;">{{ customer.Plant_Capacity }} Kw</td>
+            </tr>
+
+<!--            <tr>-->
+<!--               <th style="text-align: left; padding-left: 15px;"> Solar Panel Company Name</th>-->
+<!--               <td class="text-capitalize" style="text-align: left; padding-left: 15px;">{{ customer.solar_comp }}</td>-->
+<!--            </tr>-->
+
+<!--            <tr>-->
+<!--               <th style="text-align: left; padding-left: 15px;"> Inverter Comapny Name</th>-->
+<!--               <td class="text-capitalize" style="text-align: left; padding-left: 15px;">{{ customer.UPSC }}</td>-->
+<!--            </tr>-->
+
+<!--            <tr>-->
+<!--               <th style="text-align: left; padding-left: 15px;"> Total No.Of Solar Panel</th>-->
+<!--               <td class="text-capitalize" style="text-align: left; padding-left: 15px;">{{ customer.qunt_solar }}</td>-->
+<!--            </tr>-->
+
+<!--            <tr>-->
+<!--               <th style="text-align: left; padding-left: 15px;"> Total No.Of Inverter</th>-->
+<!--               <td class="text-capitalize" style="text-align: left; padding-left: 15px;">{{ customer.qunt_inv }}</td>-->
+<!--            </tr>-->
+<!--            <tr>-->
+<!--               <th style="text-align: left; padding-left: 15px;"> Inverter Software Company</th>-->
+<!--               <td class="text-capitalize" style="text-align: left; padding-left: 15px;">{{ customer.Ups_Soft }}</td>-->
+<!--            </tr>-->
+            <tr>
+               <th colspan="2">
+                  <h5 class="p-1 text-danger" style="border-bottom : 2px solid orange">Consumer Basic Information</h5>
+               </th>
+            </tr>
+            <tr>
+               <th style="text-align: left; padding-left: 15px;"> Biling Consumer No</th>
+               <td style="text-align: left; padding-left: 15px;">{{ customer.Consumer }}</td>
+            </tr>
+            <tr>
+               <th style="text-align: left; padding-left: 15px;"> Previous Load Sanction</th>
+               <td style="text-align: left; padding-left: 15px;">{{ customer.current_load }} Kw</td>
+            </tr>
+            <tr>
+               <th style="text-align: left; padding-left: 15px;"> Final Load Sanction</th>
+               <td style="text-align: left; padding-left: 15px;">{{ customer.loadsancution }} Kw</td>
+            </tr>
+            <tr>
+               <th colspan="2">
+                  <h5 class="p-1 text-danger" style="border-bottom : 2px solid orange">Consumer Contact Details</h5>
+               </th>
+            </tr>
+            <tr>
+               <th style="text-align: left; padding-left: 15px;"> Consumer Phone No.</th>
+               <td style="text-align: left; padding-left: 15px;">{{ customer.phone }}</td>
+            </tr>
+            <tr>
+               <th style="text-align: left; padding-left: 15px;"> Consumer Email</th>
+               <td style="text-align: left; padding-left: 15px;">{{ customer.email }}</td>
+            </tr>
+            <tr>
+               <th style="text-align: left; padding-left: 15px;"> Address</th>
+               <td class="text-capitalize" style="text-align: left; padding-left: 15px;">{{ customer.Address }}</td>
+            </tr>
+            <tr>
+               <th style="text-align: left; padding-left: 15px;"> City</th>
+               <td class="text-capitalize" style="text-align: left; padding-left: 15px;">{{ customer.City }}</td>
+            </tr>
+            <tr>
+               <th style="text-align: left; padding-left: 15px;"> State</th>
+               <td class="text-capitalize" style="text-align: left; padding-left: 15px;">{{ customer.state }}</td>
+            </tr>
+            <tr>
+               <th style="text-align: left; padding-left: 15px;"> PinCode</th>
+               <td style="text-align: left; padding-left: 15px;">{{ customer.Pincode }}</td>
+            </tr>
+
+            <tr>
+               <th colspan="2">
+                  <h5 class="p-1 text-danger" style="border-bottom : 2px solid orange">Project Details</h5>
+               </th>
+            </tr>
+
+            <tr>
+               <th style="text-align: left; padding-left: 15px;"> Solar Panel Company Name</th>
+               <td class="text-capitalize" style="text-align: left; padding-left: 15px;">{{ customer.solar_comp }}</td>
+            </tr>
+
+            <tr>
+               <th style="text-align: left; padding-left: 15px;"> Inverter Comapny Name</th>
+               <td class="text-capitalize" style="text-align: left; padding-left: 15px;">{{ customer.UPSC }}</td>
+            </tr>
+
+            <tr>
+               <th style="text-align: left; padding-left: 15px;"> Total No.Of Solar Panel</th>
+               <td class="text-capitalize" style="text-align: left; padding-left: 15px;">{{ customer.qunt_solar }} Nos.</td>
+            </tr>
+
+            <tr>
+               <th style="text-align: left; padding-left: 15px;"> Total No.Of Inverter</th>
+               <td class="text-capitalize" style="text-align: left; padding-left: 15px;">{{ customer.qunt_inv }} Nos.</td>
+            </tr>
+
+            <tr>
+               <th style="text-align: left; padding-left: 15px;"> Solar Panel Warranty</th>
+               <td class="text-capitalize" style="text-align: left; padding-left: 15px;">{{ customer.sol_warranty }} Years</td>
+            </tr>
+            <tr>
+               <th style="text-align: left; padding-left: 15px;"> Inverter Warranty</th>
+               <td class="text-capitalize" style="text-align: left; padding-left: 15px;">{{ customer.inv_warranty }} Years</td>
+            </tr>
+            <tr>
+               <th style="text-align: left; padding-left: 15px;"> O & M Warranty</th>
+               <td class="text-capitalize" style="text-align: left; padding-left: 15px;">{{ customer.com_warranty }} Year</td>
+            </tr>
+
+            <tr>
+               <th style="text-align: left; padding-left: 15px;"> Inverter Software Company</th>
+               <td class="text-capitalize" style="text-align: left; padding-left: 15px;">{{ customer.Ups_Soft }}</td>
+            </tr>
+
+
+
+            <tr>
+               <th colspan="2">
+                  <h5 class="p-1 text-danger" style="border-bottom : 2px solid orange"> Assigned Engineer Details</h5>
+               </th>
+            </tr>
+            <tr>
+               <th style="text-align: left; padding-left: 15px;"> Engineers ID</th>
+               <td style="text-align: left; padding-left: 15px;">DB_{{ customer.Engg_Assign.id }}</td>
+            </tr>
+            <tr>
+               <th style="text-align: left; padding-left: 15px;"> Engineers Name</th>
+               <td style="text-align: left; padding-left: 15px;">{{ customer.Engg_Assign.first_name }} {{ customer.Engg_Assign.last_name }}</td>
+            </tr>
+            <tr>
+               <th style="text-align: left; padding-left: 15px;"> Engineers Contact No.</th>
+               <td style="text-align: left; padding-left: 15px;">{{ customer.Engg_Assign.profile.workphone }}</td>
+            </tr>
+            <tr>
+               <th colspan="2">
+                  <h5 class="p-1 text-danger" style="border-bottom : 2px solid orange"> Consumer Record Filled By</h5>
+               </th>
+            </tr>
+            <tr>
+               <th style="text-align: left; padding-left: 15px;"> Employee Name</th>
+               <td class="text-capitalize" style="text-align: left; padding-left: 15px;">{{ customer.Emp_id.first_name }} {{ customer.Emp_id.last_name }}</td>
+            </tr>
+            <tr>
+               <th style="text-align: left; padding-left: 15px;"> Employee ID</th>
+               <td class="text-capitalize" style="text-align: left; padding-left: 15px;"> DB_{{ customer.Emp_id.id }}</td>
+            </tr>
+         </table>
+         <input type="submit" value="OK" class="btn btn-primary" data-href-template="customer/view_all_cust.html">
+      </form>
+   </div>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.4.0/jspdf.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/exceljs/dist/exceljs.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/clipboard@2.0.8/dist/clipboard.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+<script src="https://rawgit.com/eKoopmans/html2pdf/master/dist/html2pdf.bundle.js"></script>
+
+<script>
+// Function to generate PDF
+document.getElementById("generate-pdf-all").addEventListener("click", function() {
+    // Select the form content
+    var formContent = document.querySelector('form').cloneNode(true);
+
+    // Remove the submit button from the cloned form
+    var submitButton = formContent.querySelector('[type="submit"]');
+    if (submitButton) {
+        submitButton.parentNode.removeChild(submitButton);
+    }
+
+    // Adjust the font size of text values in form fields
+    var formFields = formContent.querySelectorAll('input[type="text"], input[type="email"], input[type="password"], select, textarea');
+    formFields.forEach(function(field) {
+        field.style.fontSize = '20px'; // Adjust as needed
+    });
+
+    // Adjust the font size of span elements
+    var spanElements = formContent.querySelectorAll('span');
+    spanElements.forEach(function(span) {
+        span.style.fontSize = '14px'; // Adjust as needed
+        span.style.marginBottom = '-10px'; // Adjust spacing between rows
+    });
+
+     // Adjust the margins of div elements
+    var divElements = formContent.querySelectorAll('div');
+    divElements.forEach(function(div) {
+        div.style.marginBottom = '-15px'; // Adjust spacing between div elements
+    });
+
+    // Adjust the spacing between <tr>, <th>, and <td> elements
+    var tableElements = formContent.querySelectorAll('table');
+    tableElements.forEach(function(table) {
+        table.style.borderCollapse = 'collapse'; // Collapse table borders
+        table.style.borderSpacing = '0'; // Remove spacing between cells
+        var trElements = table.querySelectorAll('tr');
+        trElements.forEach(function(tr) {
+            tr.style.margin = '0'; // Remove margin
+            tr.style.padding = '0'; // Remove padding
+        });
+        var thTdElements = table.querySelectorAll('th, td');
+        thTdElements.forEach(function(element) {
+            element.style.padding = '4px'; // Adjust cell padding as needed
+            //element.style.fontSize = '12px'; // Adjust as needed
+        });
+    });
+
+
+    // Adjust the font size and spacing of h5 elements
+    var h5Elements = formContent.querySelectorAll('h5');
+    h5Elements.forEach(function(h5) {
+        h5.style.fontSize = '15px'; // Adjust font size as needed
+        h5.style.marginBottom = '5px'; // Adjust spacing between h5 elements
+    });
+
+    // Remove any hidden elements from the cloned form
+    var formElements = formContent.querySelectorAll('input[type="hidden"], select, textarea');
+    formElements.forEach(function(element) {
+        if (element.offsetParent === null) {
+            element.parentNode.removeChild(element);
+        }
+    });
+
+    // Convert the cloned form to PDF
+    html2pdf()
+        .from(formContent)
+        .set({
+            margin: 10,
+            filename: 'Form_Content.pdf',
+            image: { type: 'jpeg', quality: 0.98 },
+            html2canvas: { dpi: 192, letterRendering: true },
+            jsPDF: { unit: 'pt', format: 'a4', orientation: 'portrait' },
+        })
+        .toPdf()
+        .save();
+});
+</script>
+
+
+<script>
+// Function to generate Excel
+document.getElementById("generate-excel-all").addEventListener("click", function() {
+    var workbook = new ExcelJS.Workbook();
+    var worksheet = workbook.addWorksheet('Customer_Details');
+
+    // Define function to add data to worksheet
+    function addSection(section) {
+        worksheet.addRow([section]).font = { bold: true };
+    }
+
+    function addData(field, value) {
+        worksheet.addRow(['', field, value]);
+    }
+
+    // Add customer details
+    addSection('Consumer Project Details');
+    addData('Customer Type', '{{ customer.Cust_type }} Consumer');
+    addData('Customer ID', 'DB_Cust_{{ customer.Cust_id }}');
+    addData('Full Name', '{{ customer.first_name }} {{ customer.last_name }}');
+    addData('Consumer / Farm Name', '{{ customer.Comp_name }}');
+    addData('Gender', '{{ customer.Gender }}');
+    addData('PO Order No.', '{{ customer.po_order }}');
+    addData('PO Date', '{{ customer.po_date | date:"d/m/Y" }}');
+    addData('Plant Capacity', '{{ customer.Plant_Capacity }} Kw');
+    addData('Solar Panel Company Name', '{{ customer.solar_comp }}');
+    addData('Inverter Company Name', '{{ customer.UPSC }}');
+    addData('Total No. Of Solar Panel', '{{ customer.qunt_solar }}');
+    addData('Total No. Of Inverter', '{{ customer.qunt_inv }}');
+    addData('Inverter Software Company', '{{ customer.Ups_Soft }}');
+
+    addSection('Consumer Contact Details');
+    addData('Consumer Phone No.', '{{ customer.phone }}');
+    addData('Consumer Email', '{{ customer.email }}');
+    addData('Address', '{{ customer.Address }}');
+    addData('City', '{{ customer.City }}');
+    addData('State', '{{ customer.state }}');
+    addData('PinCode', '{{ customer.Pincode }}');
+
+    addSection('Consumer Basic Information');
+    addData('Billing Consumer No', '{{ customer.Consumer }}');
+    addData('Previous Load Sanction', '{{ customer.current_load }} Kw');
+    addData('Final Load Sanction', '{{ customer.loadsancution }} Kw');
+
+    addSection('Assigned Engineer Details');
+    addData('Engineer ID', 'DB_{{ customer.Engg_Assign.id }}');
+    addData('Engineer Name', '{{ customer.Engg_Assign.first_name }} {{ customer.Engg_Assign.last_name }}');
+    addData('Engineer Contact No.', '{{ customer.Engg_Assign.profile.workphone }}');
+
+    addSection('Consumer Record Filled By');
+    addData('Employee Name', '{{ customer.Emp_id.first_name }} {{ customer.Emp_id.last_name }}');
+    addData('Employee ID', 'DB_{{ customer.Emp_id.id }}');
+
+    // Generate Excel file
+    workbook.xlsx.writeBuffer().then(function(data) {
+        var blob = new Blob([data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+        saveAs(blob, 'Customer_Details.xlsx');
+    });
+});
+</script>
+
+<script>
+// Function to copy content within the form
+document.getElementById("copy-table").addEventListener("click", function() {
+    var formContent = document.querySelector('form').innerText; // Extract text content of the form
+    navigator.clipboard.writeText(formContent).then(function() {
+        alert('Form content copied to clipboard');
+    }, function(err) {
+        console.error('Failed to copy: ', err);
+    });
+});
+
+
+
+// Function to print the content within the form excluding submit button and company symbol
+document.getElementById("generate-print-all").addEventListener("click", function() {
+    var companyName = 'DB Solar Pvt Ltd';
+    var formContent = document.querySelector('form').cloneNode(true);
+    var submitButton = formContent.querySelector('[type="submit"]');
+    submitButton.parentNode.removeChild(submitButton);
+
+    // Remove company symbol
+    var companySymbol = formContent.querySelector('.company-symbol-overlap');
+    if (companySymbol) {
+        companySymbol.parentNode.removeChild(companySymbol);
+    }
+
+    // Hide content within <small> elements with class 'text-muted'
+    var smallElements = formContent.querySelectorAll('small.text-muted');
+    smallElements.forEach(function(small) {
+        small.style.display = 'none'; // Hide the content
+    });
+
+    // Remove bullet symbols from unordered lists and adjust spacing
+    var unorderedLists = formContent.querySelectorAll('ul');
+    unorderedLists.forEach(function(ul) {
+        ul.style.listStyleType = 'none'; // Remove bullet symbols
+        ul.style.paddingInlineStart = '20px'; // Add left padding for spacing between list items
+        ul.style.marginBlockStart = '0'; // Remove any top margin
+        ul.style.marginBlockEnd = '0'; // Remove any bottom margin
+    });
+
+    // Resize images and move to the left side
+    var images = formContent.querySelectorAll('img');
+    images.forEach(function(img) {
+        img.style.maxWidth = '200px'; // Adjust the maximum width of the image
+        img.style.height = '200px';
+        img.style.float = 'left'; // Float the image to the left
+        img.style.marginRight = '20px'; // Add margin for spacing between image and text
+    });
+
+    // Adjust spacing for each list item
+    var listItems = formContent.querySelectorAll('li');
+    listItems.forEach(function(li) {
+        li.style.marginBottom = '7px'; // Add margin bottom to create space between rows
+    });
+
+    // Adjust spacing for small elements
+    var smallElements = formContent.querySelectorAll('small');
+    smallElements.forEach(function(small) {
+        small.style.margin = '0'; // Remove any margin
+        small.style.padding = '0'; // Remove any padding
+    });
+
+
+    var thTdElements = formContent.querySelectorAll('table, th, td');
+        thTdElements.forEach(function(element) {
+        element.style.border = 'none'; // Remove table header border
+        element.style.padding = '4px'; // Remove table data border
+    });
+
+
+
+    // Adjust the font size and spacing of h5 elements
+    var h5Elements = formContent.querySelectorAll('h5');
+    h5Elements.forEach(function(h5) {
+        h5.style.fontSize = '15px'; // Adjust font size as needed
+        h5.style.marginBottom = '10px'; // Adjust spacing between h5 elements
+    });
+
+    // Construct print content with header and form content
+    var printContent = '<html><head><title>Print</title>';
+    printContent += '<style>@media print { img { display: inline !important; } }</style>'; // Show images inline in print
+    printContent += '<style>body { font-family: Arial, sans-serif; }</style>'; // Set font-family
+    printContent += '</head><body>';
+    printContent += '<h1 style="text-align: center;">' + companyName + '</h1>';
+    //printContent += '<hr>';
+    printContent += formContent.outerHTML; // Use outerHTML to include the form element itself
+    printContent += '</body></html>';
+
+    // Open print window and print
+    var printWindow = window.open('', '_blank');
+    printWindow.document.write(printContent);
+    printWindow.document.close();
+    printWindow.print();
+});
+
+</script>
+
+
+{% endblock %}

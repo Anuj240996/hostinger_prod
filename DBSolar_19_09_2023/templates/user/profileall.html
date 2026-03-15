@@ -1,0 +1,171 @@
+{% extends 'partials/base.html' %}
+{% block title %}Customer Page{% endblock %}
+{% load static %}
+{% block content %}
+<div class="card shadow m-1">
+   <div class="card-body">
+      <div class="page-header">
+         <div class="row">
+            <div class="col-sm-12">
+               <h3 class="page-title">Employee Details</h3>
+               <ul class="breadcrumb" style="border-bottom : 2px solid orange">
+                  <li class="breadcrumb-item"><a href="students.html">Dashboard</a></li>
+                  <li class="breadcrumb-item active">Employee Details</li>
+               </ul>
+            </div>
+         </div>
+      </div>
+      <form method="post" enctype="multipart/form-data">
+         {% csrf_token %}
+         <h5 class="p-2 text-danger" style="border-bottom : 2px solid orange">Company Details </h5>
+
+
+               <div class="card-body">
+                  <div class="row">
+                     <div class="col-md-12">
+                        <div class="about-info">
+                           <h4>About Me</h4>
+                           <div class="media mt-1">
+                              <ul>
+                                 <li>
+                                    <span>
+                                    <img class="img-thumbnail"  height="550px" src="{{ employee.image.url }}" class="card-img-top" height="200px" alt="profile-image"></span>
+                                 </li>
+                                 <li>
+                                    <small class="text-muted">Currently:  <a href="{{ employee.image.url }}">{{ employee.image }}</a></small>
+                                 </li>
+                                 <li>
+                                    <span>
+                                    Change:<input type="file" name="image" accept="image/*" class="clearablefileinput form-control-file" id="id_image">
+                                    </span>
+                                 </li>
+                              </ul>
+                              <div class="media-body ml-5">
+                              <ul class="ml-5">
+                                 <li>
+                                    </b><span class="title-span"><b>Employee ID</b></span>
+                                    <span> : </span>
+                                    <span class="info-span ml-3">  DB/{{ user.id }}</span>
+                                 </li>
+                                 <li>
+                                    <span class="title-span"><b>Username </b> </span>
+                                    <span> : </span>
+                                    <span class="info-span ml-3">{{ user.username }}</span>
+                                 </li>
+                                 <li>
+                                    <span class="title-span"><b>Full Name </b> </span>
+                                    <span> : </span>
+                                    <span class="info-span ml-3 text-capitalize">{{ user.first_name }} {{ user.last_name }}</span>
+                                 </li>
+                                 <li>
+                                    <span class="title-span"><b>Mobile</b>  </span>
+                                    <span> : </span>
+                                    <span class="info-span ml-3">{{ employee.phone }}</span>
+                                 </li>
+                                 <li>
+                                    <span class="title-span"><b>Email</b>  </span>
+                                    <span> : </span>
+                                    <span class="info-span ml-3">{{ user.email }}</span>
+                                 </li>
+                                 <li>
+                                    <span class="title-span"><b>Designation</b>  </span>
+                                    <span> : </span>
+                                    <span class="info-span ml-3 text-capitalize">{{ employee.department }} - {{ employee.designation }}</span>
+                                 </li>
+                                 <li>
+                                    <span class="title-span"><b>DOB</b> </span>
+                                    <span> : </span>
+                                    <span class="info-span ml-3">{{ employee.DOB }}</span>
+                                 </li>
+                              </ul>
+                              </div>
+                           </div>
+                        </div>
+                     </div>
+                  </div>
+
+
+            <h5 class="p-2 text-danger" style="border-bottom : 2px solid orange">Personal Details </h5>
+            <div class="form-row">
+               <div class="col-sm-6">
+                  <div class="form-group">
+                     <label> <b> First Name </b></label> :
+                     <input type="text" name="firstname" class="form-control text-capitalize" value="{{ user.first_name }}" >
+                  </div>
+               </div>
+               <div class="col-sm-6">
+                  <div class="form-group">
+                     <label> Last Name</label>
+                     <input type="text" name="lastname" class="form-control text-capitalize" value="{{ user.last_name }}" >
+                  </div>
+               </div>
+               <div class="col-sm-6">
+                  <div class="form-group">
+                     <label> Department</label>
+                     <input type="text" name="dept" class="form-control text-capitalize" placeholder="enter name" value="{{ employee.department }}">
+                  </div>
+               </div>
+               <div class="col-sm-6">
+                  <div class="form-group">
+                     <label> Designation</label>
+                     <input type="text" name="desig" class="form-control text-capitalize" placeholder="enter Designation" value="{{ employee.designation }}">
+                  </div>
+               </div>
+               <div class="col-sm-6">
+                  <div class="form-group">
+                     <label> Date Of Joining  [{{ user.date_joined }}]</label>
+                     <input type="date" name="jod" class="form-control" placeholder="enter Date of Joining" value="{{ user.date_joined }}">
+                  </div>
+               </div>
+               <div class="col-sm-6">
+                  <div class="form-group">
+                     <label> Email</label>
+                     <input type="email" name="email" class="form-control" value="{{ user.email }}">
+                  </div>
+               </div>
+               <div class="col-sm-12">
+                  <h5 class="p-2 text-danger" style="border-bottom : 2px solid orange">Personal Details </h5>
+               </div>
+               <div class="col-sm-6">
+                  <div class="form-group">
+                     <label> Phone No.</label>
+                     <input type="text" name="ph" class="form-control" placeholder="enter Phone No" value="{{ employee.phone }}">
+                  </div>
+               </div>
+               <div class="col-sm-6">
+                  <div class="form-group">
+                     <label> Date Of Birth   [{{ employee.DOB }}]</label>
+                     <input type="date" name="DOB" class="form-control" placeholder="ener name" value="{{ employee.DOB }}">
+                  </div>
+               </div>
+               <div class="col-sm-12">
+                  <div class="form-group">
+                     <label> Address</label>
+                     <input type="text" name="address" class="form-control text-capitalize" placeholder="ener name" value="{{ employee.address }}">
+                  </div>
+               </div>
+               <div class="col-sm-6">
+                  <div class="form-group">
+                     <label> Password</label>
+                     <input type="text" name="pwd" class="form-control" value="{{ user.password }}">
+                  </div>
+               </div>
+            </div>
+            <input type="submit" value="submit" class="btn btn-primary">
+         </div>
+      </form>
+   </div>
+</div>
+
+{% if error == "no" %}
+<script>
+   alert('Profile Update Successful');
+   window.location = ('{% url 'user-profile' %}')
+</script>
+{% endif %}
+{% if error == "yes" %}
+<script>
+   alert('Something went wrong , Try Again...');
+</script>
+{% endif %}
+{% endblock %}

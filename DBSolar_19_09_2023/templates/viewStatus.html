@@ -1,0 +1,150 @@
+{% extends 'partials/base.html' %}
+{% load static %}
+{% load tz %}
+{% load firereport_dt %}
+{% block content %}
+
+<div class="container-fluid mt-3 px-2 px-md-3">
+  <div class="d-flex justify-content-between align-items-center mb-2">
+    <div>
+      <h4 class="mb-0">Complaint Status</h4>
+      <small class="text-muted">Track your submitted complaints and their latest status.</small>
+    </div>
+    <a href="{% url 'firereport-reporting' %}" class="btn btn-primary">
+      <i class="fa fa-plus mr-1"></i> Add Complaint
+    </a>
+  </div>
+
+  <!-- Summary -->
+  <div class="row mb-2">
+    <div class="col-md-2 col-6 mb-2">
+      <div class="card border-0 shadow-sm">
+        <div class="card-body p-3">
+          <div class="text-muted small">Total</div>
+          <div class="h5 mb-0">{{ stats.total }}</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-2 col-6 mb-2">
+      <div class="card border-0 shadow-sm">
+        <div class="card-body p-3">
+          <div class="text-muted small">Pending</div>
+          <div class="h5 mb-0">{{ stats.pending }}</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-2 col-6 mb-2">
+      <div class="card border-0 shadow-sm">
+        <div class="card-body p-3">
+          <div class="text-muted small">Assigned</div>
+          <div class="h5 mb-0">{{ stats.assigned }}</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-2 col-6 mb-2">
+      <div class="card border-0 shadow-sm">
+        <div class="card-body p-3">
+          <div class="text-muted small">In Progress</div>
+          <div class="h5 mb-0">{{ stats.in_progress }}</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-2 col-6 mb-2">
+      <div class="card border-0 shadow-sm">
+        <div class="card-body p-3">
+          <div class="text-muted small">Work In Progress</div>
+          <div class="h5 mb-0">{{ stats.work_in_progress }}</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-2 col-6 mb-2">
+      <div class="card border-0 shadow-sm">
+        <div class="card-body p-3">
+          <div class="text-muted small">Completed</div>
+          <div class="h5 mb-0">{{ stats.completed }}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Search + Table -->
+  <div class="card shadow-sm">
+    <div class="card-header bg-white">
+      <form method="post" class="mb-0">
+        {% csrf_token %}
+        <div class="input-group">
+          <div class="input-group-prepend">
+            <span class="input-group-text"><i class="fa fa-search"></i></span>
+          </div>
+          <input type="text"
+                 name="searchdata"
+                 class="form-control"
+                 placeholder="Search by complaint id / name / mobile / location"
+                 value="{{ sd|default:'' }}">
+          <div class="input-group-append">
+            <button class="btn btn-outline-primary" type="submit">Search</button>
+          </div>
+        </div>
+      </form>
+    </div>
+    <div class="card-body">
+      {% if complaints %}
+        <div class="table-responsive">
+          <table id="example1" class="table table-bordered table-hover">
+            <thead class="thead-light">
+              <tr class="text-center">
+                <th style="width: 110px;">ID</th>
+                <th>Title</th>
+                <th style="width: 190px;">Category</th>
+                <th>Message</th>
+                <th style="width: 170px;">Reporting Time</th>
+                <th style="width: 140px;">Status</th>
+                <th style="width: 90px;">Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for c in complaints %}
+                <tr>
+                  <td class="text-center">CMP / {{ c.id }}</td>
+                  <td>
+                    {% if c.title %}<strong>{{ c.title }}</strong>{% else %}<span class="text-muted">-</span>{% endif %}
+                    <div class="text-muted small">{{ c.full_name }} · {{ c.mobile }}</div>
+                    <div class="text-muted small">{{ c.location }}</div>
+                  </td>
+                  <td>{{ c.category|default:"-" }}</td>
+                  <td>{{ c.message|default:"-"|truncatechars:120 }}</td>
+                  <td class="text-center">{{ c.postingdate|indian_dt }}</td>
+                  <td class="text-center">
+                    {% if c.status == 'Request Completed' %}
+                      <span class="badge badge-success">Completed</span>
+                    {% elif c.status == 'Work in Progress' %}
+                      <span class="badge badge-warning">Work In Progress</span>
+                    {% elif c.status == 'In Progress' %}
+                      <span class="badge badge-info">In Progress</span>
+                    {% elif c.status == 'Assigned' %}
+                      <span class="badge badge-primary">Assigned</span>
+                    {% else %}
+                      <span class="badge badge-secondary">Pending</span>
+                    {% endif %}
+                  </td>
+                  <td class="text-center">
+                    <a class="btn btn-sm btn-outline-primary" href="{% url 'firereport-viewStatusDetails' c.id %}">
+                      <i class="fa fa-eye"></i>
+                    </a>
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% else %}
+        <div class="alert alert-light border mb-0">
+          No complaints found{% if sd %} for search “<strong>{{ sd }}</strong>”{% endif %}.
+        </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+{% include 'footer.html' %}
+{% endblock %}

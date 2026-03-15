@@ -1,0 +1,473 @@
+{% extends 'partials/base.html' %}
+{% block title %}Order Page{% endblock %}
+{% load static %}
+{% block content %}
+<style>
+    @media (max-width: 767px) {
+        .banner-text {
+            font-size: 24px; /* Adjust the font size as needed */
+        }
+    }
+
+      /* Style for active fieldsets */
+    .active-fieldset {
+        background-color: #d3dbec; /* Gray background color for active fieldsets */
+         border-color: blue; /* Change the border color to red for active fieldsets */
+         border: 2px solid darkblue;
+    }
+
+    /* Style for deactivated fieldsets */
+    fieldset {
+        background-color: #ffffff; /* White background color for deactivated fieldsets */
+        border-color: blue; /* Change the border color to red for active fieldsets */
+    }
+</style>
+
+    {% if messages %}
+        <ul class="messages">
+            {% for message in messages %}
+            {% if message.tags %} <script> alert("{{ message }}") </script> {% endif %}>{% endfor %}
+        </ul>
+    {% endif %}
+
+    <div class="testbox">
+    <form action="/Govt_Cust" method="post" name="Cust_Form" onfocus="frm_onfocus(this)" hx-post="" hx-target="body" onsubmit="return validateForm()">
+
+        {% csrf_token %}
+<!--         <div class="banner d-flex flex-column align-items-center">-->
+         <div style=" position: relative;
+      height: 100px;
+      background-image:url('{% static 'images/img2.jpg' %}');
+      background-size: cover;
+      display: flex;
+      justify-content: center;
+      align-item1s: center;
+      text-align: center;" alt="Logo">
+                <h2 class="banner-text">Goverment Consumer Registration</h2>
+
+            </div><br>
+
+
+<!--         <div class="colums">-->
+
+
+<!--           <div class="item1">-->
+<!--               <label for="Cust_id">Customer_id-{% for cust in cust %}-->
+<!--                {{cust.Cust_id}}-->
+<!--                {% endfor %}<span>*</span></label>-->
+<!--               <input id="Cust_id" type="text" name="Cust_id"  maxlength="4" onfocus="txt_onfocus(this)" onchange="txt_onchange(this)"   value="{% for cust in cust %}-->
+<!--                {{cust.Cust_id}}{% endfor %}" alt="left" size="10" />-->
+<!--           </div>-->
+
+<!--           <div class="item1">-->
+<!--            <label for="Emp_id">Employee id<span>*</span></label>-->
+<!--            <input id="Emp_id" type="text" name="Emp_id" placeholder="Employee id" onfocus="txt_onfocus(this)" onchange="txt_onchange(this)" value="{{ Emp_id }}"  required/>-->
+<!--           </div>-->
+
+        <fieldset>
+          <legend style="color: darkblue;">Purchase Order Details</legend>
+            <div class="row mb-1 align-items-center">
+                <div class="col-md-4 item1">
+                    <label for="Plant_Capacity">Plant Capacity<span>*</span></label>
+                    <div class="input-group">
+                        <input id="Plant_Capacity" class="text-capitalize form-control" type="number" placeholder="Plant Capacity"name="Plant_Capacity" onfocus="txt_onfocus(this)" onchange="txt_onchange(this)" value="{{ Plant_Capacity }}" required/>
+                        <span class="input-group-text" style="color:black; background: white;border:0;align:left">Kw</span>
+                    </div>
+                </div>
+
+                <div class="col-md-4 mb-3 item1">
+                    <label class="col-form-label" for="po_order">PO Order No<span>*</span></label>
+                    <input id="po_order" type="text" class="text-capitalize form-control" name="po_order" placeholder="PO Order No" onfocus="txt_onfocus(this)" onchange="txt_onchange(this)" value="{{ po_order }}" onblur="pink" required/>
+                </div>
+
+                <div class="col-md-4 mb-3 item1">
+                    <label class="col-form-label" for="po_date">PO Date<span>*</span></label>
+                    <input id="po_date" class="text-capitalize form-control" type="Date" name="po_date" placeholder="PO Date" onfocus="txt_onfocus(this)" onchange="txt_onchange(this)" value="{{ po_date }}" required/>
+                </div>
+            </div>
+         </fieldset>
+        <fieldset>
+            <legend style="color: darkblue;"> Consumer Details</legend>
+            <div class="row mb-1">
+             <div class="col-md-12 item1">
+                <label for="Comp_name">Govt Office Name<span>*</span></label>
+                <input id="Comp_name" type="text" name="Comp_name" class="text-capitalize form-control" placeholder="Goverment Office Name" onfocus="txt_onfocus(this)" onchange="txt_onchange(this)" value="{{ Comp_name }}"  onblur="pink" required/>
+             </div>
+            </div>
+            <div class="row mb-1">
+               <div class="col-md-4 item1">
+                 <label for="Address">Address<span>*</span></label>
+                 <input id="Address" type="text" name="Address" placeholder="Address" class="text-capitalize form-control" onfocus="txt_onfocus(this)" onchange="txt_onchange(this)" value="{{ Address }}" required/>
+               </div>
+<!--               <div class="col-md-4 item1">-->
+<!--                 <label for="City">City<span>*</span></label>-->
+<!--                 <input id="City" type="text" name="City" class="text-capitalize form-control" placeholder="City" onfocus="txt_onfocus(this)" class="text-capitalize" onchange="txt_onchange(this)" value="{{ City }}" required/>-->
+<!--               </div>-->
+                <div class="col-md-4 item1">
+                 <label for="city-select"> City<span>*</span></label>
+                <select name="city_name" id="city-select" onchange="handleCitySelection()" class="form-control">
+                  <option value="" disabled selected>select City</option>
+                   {% for city in cities %}
+                    <option value="{{ city }}">{{ city }}</option>
+                   {% endfor %}
+                   <option value="Other">Other</option>
+                </select>
+                <input type="text" name="new_city_name" id="new-city-textbox" placeholder="Enter a new city" style="display: none;" class="text-capitalize form-control">
+               </div>
+
+               <div class="col-md-4 item1">
+                 <label for="state">State<span>*</span></label>
+                 <input id="state"  type="text" name="state" placeholder="State" class="text-capitalize form-control" onfocus="txt_onfocus(this)" onchange="txt_onchange(this)" value="{{ state }}" required/>
+               </div>
+             </div>
+             <div class="row mb-1">
+               <div class="col-md-4 item1">
+                  <label for="Pincode">Pincode<span>*</span></label>
+                  <input id="Pincode" type="tel" name="Pincode" class="text-capitalize form-control" maxlength="6" placeholder="Pincode" onfocus="txt_onfocus(this)" onchange="txt_onchange(this)" onblur="validatePincode(this)" value="{{ Pincode }}" required/>
+                  <div class="error-message" id="pincode-error"></div>
+               </div>
+
+               <div class="col-md-4 item1">
+                <label for="email">Email Address<span>*</span></label>
+                <input id="email" type="email" name="email" class="form-control" placeholder="Email" onfocus="txt_onfocus(this)" onchange="txt_onchange(this)" onblur="validateEmail(this)" value="{{ email }}" required/>
+                <div class="error-message" id="email-error"></div>
+               </div>
+
+               <div class="col-md-4 item1">
+                 <label for="phone">Phone<span>*</span></label>
+                 <input id="phone" type="tel" name="phone" class="text-capitalize form-control" minlength="10" maxlength="10" placeholder="Phone" onfocus="txt_onfocus(this)" onchange="txt_onchange(this)" onblur="validatePhone(this)" value="{{ phone }}" required/>
+               <div class="error-message" id="phone-error"></div>
+            </div>
+           </div>
+        </fieldset>
+        <fieldset>
+               <legend style="color: darkblue;"> Consumer MSEB Details</legend>
+                <div class="row mb-1">
+               <div class="col-md-4 item1">
+                <label for="Consumer">Consumer Number(MSEDCL)<span>*</span></label>
+                <input id="Consumer" type="number" name="Consumer" class="text-capitalize form-control" placeholder="Consumer number" onfocus="txt_onfocus(this)" onchange="txt_onchange(this)" value="{{ Consumer }}"  required/>
+               </div>
+                <div class="col-md-4 item1">
+                <label for="Bill_unit">Current Load Sanction<span>*</span></label>
+                 <div class="input-group">
+                <input id="Bill_unit" class="text-capitalize form-control" type="number" name="Bill_unit" placeholder="Current Load Sanction" onfocus="txt_onfocus(this)" onchange="txt_onchange(this)" value="{{ Bill_unit }}"  required/>
+                 <span class="input-group-text" style="color:black; background: white;border:0;align:left">Kw</span>
+                </div>
+                 </div>
+               <div class="col-md-4 item1">
+                <label for="Ups_Soft">Final Load Sanction<span>*</span></label>
+                <div class="input-group">
+                <input id="loadsancution" type="number" name="loadsancution" class="text-capitalize form-control" placeholder="Additional Load Sanction" onfocus="txt_onfocus(this)" onchange="txt_onchange(this)" value="{{ loadsancution }}" required/>
+                <span class="input-group-text" style="color:black; background: white;border:0;align:left">Kw</span>
+                </div>
+               </div>
+             </div>
+        </fieldset>
+         <fieldset>
+            <legend style="color: darkblue;"> Consumer Solar Project Details</legend>
+              <div class="row mb-1">
+               <div class="col-md-4 item1">
+                 <label for="solar_comp">Solar Panel Make<span>*</span></label>
+                 <input id="solar_comp" type="text" class="text-capitalize form-control" name="solar_comp" placeholder="Solar Plate Company" onfocus="txt_onfocus(this)" onchange="txt_onchange(this)" value="{{ solar_comp }}" required/>
+               </div>
+               <div class="col-md-4 item1">
+                 <label for="UPSC">Inverter Make<span>*</span></label>
+                 <input id="UPSC" type="text" name="UPSC" class="text-capitalize form-control" placeholder="UPS Company" onfocus="txt_onfocus(this)" onchange="txt_onchange(this)" value="{{ UPSC }}" required="">
+               </div>
+               <div class="col-md-4 item1">
+                 <label for="Ups_Soft">Inverter Online Software<span>*</span></label>
+                 <input id="Ups_Soft" type="text" class="text-capitalize form-control" name="Ups_Soft" class="text-capitalize" placeholder="UPS Software" onfocus="txt_onfocus(this)" onchange="txt_onchange(this)" value="{{ Ups_Soft }}" required/>
+               </div>
+              </div>
+             <div class="row mb-1">
+              <div class="col-md-4 item1">
+                <label for="qunt_solarpanel">Total No.Of Solar Panel<span>*</span></label>
+                <input id="qunt_solarpanel" type="number" name="qunt_solar" class="text-capitalize form-control" placeholder="Total No.of Solar Panel" onfocus="txt_onfocus(this)" onchange="txt_onchange(this)" value="{{ Ups_Soft }}" required/>
+               </div>
+               <div class="col-md-4 item1">
+                <label for="qunt_inverter">Total No.Of Inverter<span>*</span></label>
+                <input id="qunt_inverter" type="number" name="qunt_inv" class="text-capitalize form-control" placeholder="Total No.of Inverter" onfocus="txt_onfocus(this)" onchange="txt_onchange(this)" value="{{ Ups_Soft }}" required/>
+               </div>
+              <div class="col-md-4 item1">
+                <label for="Engineer_Assigned">Engineer Assigned<span>*</span></label>
+                <select id="Engineer_Assigned" name="Engineer_Assigned" class="form-control" required>
+                    <option value="" disabled selected>Select Engineer</option>
+                    {% for engineer in engineers %}
+                        <option value="{{ engineer.id }}">{{ engineer.first_name }} {{ engineer.last_name }}</option>
+                    {% endfor %}
+                    <option value="1">Other</option>
+                </select>
+              </div>
+            </div>
+         </fieldset>
+        <fieldset>
+            <legend style="color: darkblue;">Warranty Details</legend>
+            <div class="row mb-1">
+           <div class="col-md-4 item1">
+            <label for="sol_comp">Solar Panel Warranty<span>*</span></label>
+            <input id="sol_warranty" class="text-capitalize form-control" type="number" class="text-capitalize" name="sol_warranty" placeholder="Solar Panel Warranty" onfocus="txt_onfocus(this)" onchange="txt_onchange(this)" value="{{ sol_warranty }}" required/>
+           </div>
+           <div class="col-md-4 item1">
+            <label for="UPSC">Inverter Warranty<span>*</span></label>
+            <input id="inv_warranty" type="number" name="inv_warranty" class="text-capitalize form-control" placeholder="Inverter Warranty" onfocus="txt_onfocus(this)" onchange="txt_onchange(this)" value="{{ inv_warranty }}" required="">
+          </div>
+           <div class="col-md-4 item1">
+            <label for="Ups_Soft">O & M Warranty<span>*</span></label>
+            <input id="com_warranty" type="number" name="com_warranty" class="text-capitalize form-control" placeholder="O & M Warranty" onfocus="txt_onfocus(this)" onchange="txt_onchange(this)" value="{{ com_warranty }}" required/>
+           </div>
+          </div>
+
+        </fieldset>
+          <fieldset>
+            <legend style="color: darkblue;">Consumer Account Details</legend>
+            <div class="row mb-1">
+            <div class="col-md-6 item1">
+              <label for="username">Username</label>
+              <input type="text" class="form-control" placeholder="Username" id="username" name="username" required>
+            </div>
+            <div class="col-md-6 item1">
+              <label for="username">Password</label>
+              <input type="text" class="form-control" id="password1" name="password1" value="admin@123" readonly>
+            </div>
+            <div class="form-group">
+              <input type="hidden" class="form-control" id="password2" name="password2" value="admin@123" readonly>
+            </div>
+        </div>
+        </fieldset>
+
+
+
+
+
+
+<!--         <div class="row mb-1">-->
+<!--           <div class="col-md-4 item1">-->
+<!--            <label for="Cus_Act_Date">Consumer Activation Date<span>*</span></label>-->
+<!--            <input id="Cus_Act_Date" type="Date" name="Cus_Act_Date" class="text-capitalize form-control" placeholder="Activation Date" onfocus="txt_onfocus(this)" onchange="txt_onchange(this)" value="{{ Cus_Act_Date }}" required/>-->
+<!--          </div>-->
+
+
+<!--          <div class="item1">-->
+<!--            <label for="Cust_type">Consumer Type<span>*</span></label>-->
+<!--           # <input id="Cust_type" type="text" name="Cust_type" placeholder="Consumer Type" onfocus="txt_onfocus(this)" onchange="txt_onchange(this)" value="{{ Cust_Type }}" required/>-->
+<!--          </div>-->
+
+
+
+
+<!--            <div class="form-group">-->
+<!--              <label for="email">Email</label>-->
+<!--              <input type="email" class="form-control" id="email" name="email" required>-->
+<!--            </div>-->
+
+
+<br>
+<div class="row mb-1">
+         <div class="btn-block col-md-4">
+<!--            <button type="submit"  value="{{Comm_Cust}}">Submit </button>-->
+              <button type="submit"  value="{{Comp_Cust}}" style="width: 80%; height: 110%;">Save & New</button>
+         </div>
+    <br><br>
+         <div class="btn-block col-md-4">
+             <button type="submit"  id="saveAndRedirect" style="width: 80%; height: 110%;">Save & Exit</button>
+         </div>
+    <br><br>
+         <div class="btn-block col-md-4">
+            <button type="Reset" href="/" style="width: 80%; height: 110%;">Clear</button>
+         </div>
+</div>
+<br>
+
+
+
+        <!--        window.locaton=('{% url 'customer-Govt_Cust' %}')-->
+
+<!--          <div class="container">-->
+<!--          <h1>All Employee Details!</h1>-->
+<!--          <hr>-->
+<!--          <table class="table table-dark">-->
+<!--            <thead>-->
+<!--                  <tr>-->
+<!--                      <th scope="col">Cust id</th>-->
+<!--                      <th scope="col">Govt Office Name</th>-->
+<!--                      <th scope="col">City</th>-->
+<!--                      <th scope="col">Plant Capacity</th>-->
+<!--                      <th scope="col">UPS Soft</th>-->
+<!--                      <th scope="col">Consumer Type</th>-->
+<!--                      <th scope="col">Mobile</th>-->
+<!--                      <th scope="col">Address</th>-->
+<!--                      <th scope="col">Activation Date</th>-->
+<!--                  </tr>-->
+<!--            </thead>-->
+<!--            {% for Cust in cust %}-->
+<!--            <tbody>-->
+<!--                  <tr>-->
+<!--                       <th scope="row">{{Cust.Cust_id}}</th>-->
+<!--                       <td>{{Cust.Comp_name}}</td>-->
+<!--                       <td>{{Cust.City}}</td>-->
+<!--                       <td>{{Cust.Plant_Capacity}}</td>-->
+<!--                       <td>{{Cust.Ups_Soft}}</td>-->
+<!--                       <td>{{Cust.Cust_type}}</td>-->
+<!--                       <td>{{Cust.phone}}</td>-->
+<!--                       <td>{{Cust.Address}}</td>-->
+<!--                       <td>{{Cust.Cus_Act_Date}}</td>-->
+<!--                  </tr>-->
+<!--            </tbody>-->
+<!--            {% endfor %}-->
+<!--          </table>-->
+<!--       </div>-->
+    </form>
+    </div>
+<style>
+    .error-message {
+        color: red; /* Set error text color to red */
+    }
+
+    .error-border {
+        border: 1px solid red !important; /* Set border color to red for input fields with errors */
+    }
+</style>
+<script>
+  function validatePincode(input) {
+    const pincode = input.value;
+    const pincodeError = document.getElementById('pincode-error');
+
+    if (pincode.length !== 6 || isNaN(pincode)) {
+        if (!/^\d{0,6}$/.test(pincode)) {
+            // Check if input contains non-numeric characters
+            pincodeError.textContent = 'Please enter a 6-digit numeric pincode.';
+            input.classList.add('error-border'); // Add error border class
+            input.focus();
+            input.value = pincode.replace(/[^0-9]/g, '').slice(0, 6); // Remove non-numeric characters
+        } else {
+            pincodeError.textContent = 'Please enter a 6-digit numeric pincode.';
+            input.classList.add('error-border'); // Add error border class
+            input.focus();
+        }
+    } else {
+        pincodeError.textContent = ''; // Clear error message
+        input.classList.remove('error-border'); // Remove error border class
+    }
+}
+
+function validatePhone(input) {
+    const phone = input.value;
+    const phoneError = document.getElementById('phone-error');
+
+    if (phone.length !== 10 || isNaN(phone)) {
+        if (!/^\d{0,10}$/.test(phone)) {
+            // Check if input contains non-numeric characters
+            phoneError.textContent = 'Please enter a 10-digit numeric phone number.';
+            input.classList.add('error-border'); // Add error border class
+            input.focus();
+            input.value = phone.replace(/[^0-9]/g, '').slice(0, 10); // Remove non-numeric characters
+        } else {
+            phoneError.textContent = 'Please enter a 10-digit numeric phone number.';
+            input.classList.add('error-border'); // Add error border class
+            input.focus();
+        }
+    } else {
+        phoneError.textContent = ''; // Clear error message
+        input.classList.remove('error-border'); // Remove error border class
+    }
+}
+
+function validateEmail(input) {
+        const email = input.value;
+        const emailError = document.getElementById('email-error');
+
+        // Simple email validation using a regular expression
+        const emailPattern = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$/;
+
+        if (!emailPattern.test(email)) {
+            emailError.textContent = 'Please enter a valid email address.';
+            input.classList.add('error-border');
+            input.focus();
+        } else {
+            emailError.textContent = '';
+            input.classList.remove('error-border');
+        }
+    }
+
+</script>
+
+<script>
+    function validateForm() {
+    const pincodeInput = document.getElementById('Pincode');
+    const phoneInput = document.getElementById('phone');
+
+    // Run pincode and phone validation
+    validatePincode(pincodeInput);
+    validatePhone(phoneInput);
+
+    // Check if there are any error messages
+    const pincodeError = document.getElementById('pincode-error');
+    const phoneError = document.getElementById('phone-error');
+
+    if (pincodeError.textContent || phoneError.textContent) {
+        // Return false to prevent form submission if there are errors
+        return false;
+    }
+
+
+    // Form is valid, allow submission
+    return true;
+}
+
+</script>
+<script>
+    // Get a reference to the "Save and Redirect" button
+    const saveAndRedirectButton = document.getElementById('saveAndRedirect');
+
+    // Add a click event listener to the button
+    saveAndRedirectButton.addEventListener('click', function () {
+        if (validateForm()) {
+            // Trigger the form's submit method
+            document.Cust_Form.submit();
+
+            // Redirect to the specified URL after the form submission
+             alert('New Customer enrolled Successfully');
+            window.location.href = '{% url 'customer-cust' %}';
+
+              // Reload the page after a short delay (e.g., 1000 milliseconds or 1 second)
+            setTimeout(function () {
+                location.reload();
+            }, 1000); // Adjust the delay as needed
+          }
+    });
+</script>
+<script>
+    // JavaScript function to toggle the "active-fieldset" class
+    function toggleActiveFieldset(fieldset) {
+        // Remove the class from all fieldsets
+        const allFieldsets = document.querySelectorAll('fieldset');
+        allFieldsets.forEach(function (fs) {
+            fs.classList.remove('active-fieldset');
+        });
+
+        // Add the class to the clicked fieldset
+        fieldset.classList.add('active-fieldset');
+    }
+
+    // Add a click event listener to all fieldsets
+    const fieldsets = document.querySelectorAll('fieldset');
+    fieldsets.forEach(function (fieldset) {
+        fieldset.addEventListener('click', function () {
+            toggleActiveFieldset(fieldset);
+        });
+    });
+</script>
+ <script>
+        function handleCitySelection() {
+            var select = document.getElementById("city-select");
+            var textBox = document.getElementById("new-city-textbox");
+
+            if (select.value === "Other") {
+                textBox.style.display = "block";
+            } else {
+                textBox.style.display = "none";
+            }
+        }
+    </script>
+{% endblock %}
+
