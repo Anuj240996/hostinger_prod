@@ -23,7 +23,7 @@ The following environment variables need to be configured in Easypanel:
 
 ### Optional Variables
 
-- **PORT**: Port number for the application (default: 3000)
+- **PORT**: Port number for the application (default: 8080)
   - Easypanel typically sets this automatically
 
 - **NODE_ENV**: Environment mode (default: `production` in Docker)
@@ -54,7 +54,7 @@ In your App service settings, add the following environment variables:
 ```
 JWT_SECRET=your-generated-secret-key-here
 NODE_ENV=production
-PORT=3000
+PORT=8080
 ```
 
 **Note**: `DATABASE_URL` is automatically provided by Easypanel when you link the Postgres service. You don't need to set it manually.
@@ -101,7 +101,7 @@ The application automatically handles SSL for remote databases. If you encounter
 ### Port Issues
 
 - Ensure the `PORT` environment variable matches Easypanel's port configuration
-- The Dockerfile exposes port 3000 by default
+- The Dockerfile exposes port 8080 by default
 
 ## Docker Image Details
 
