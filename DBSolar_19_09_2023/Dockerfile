@@ -36,11 +36,11 @@ RUN pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir -r requirements.txt && \
     pip install --no-cache-dir gunicorn psycopg2-binary
 
-# Copy project
+# Copy project files (including asert/, media/, and static/ directories)
 COPY . /app/
 
-# Create directories for static and media files
-RUN mkdir -p /app/static /app/media
+# Ensure directories exist (in case they're empty, mkdir -p won't overwrite existing content)
+RUN mkdir -p /app/asert /app/static /app/media
 
 # Copy entrypoint script
 COPY entrypoint.sh /app/entrypoint.sh
