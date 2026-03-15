@@ -98,6 +98,7 @@ virtualenv==20.17.1
 weasyprint==59.0
 webencodings==0.5.1
 Werkzeug==2.2.2
+whitenoise==6.6.0
 xhtml2pdf==0.2.11
 xlrd==2.0.1
 zopfli==0.2.2

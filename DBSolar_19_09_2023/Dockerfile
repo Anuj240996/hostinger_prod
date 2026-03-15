@@ -40,7 +40,8 @@ RUN pip install --no-cache-dir --upgrade pip && \
 COPY . /app/
 
 # Ensure directories exist (in case they're empty, mkdir -p won't overwrite existing content)
-RUN mkdir -p /app/asert /app/static /app/media
+# staticfiles is where collectstatic will gather all static files
+RUN mkdir -p /app/asert /app/static /app/staticfiles /app/media
 
 # Copy entrypoint script
 COPY entrypoint.sh /app/entrypoint.sh
