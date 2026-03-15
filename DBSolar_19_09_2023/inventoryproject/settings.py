@@ -22,13 +22,15 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/3.1/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = '@ujr-e&a%8m%6!z(+ka16+(sm6cug(h6noe%#p%=6%d2nz5t+#'
+SECRET_KEY = os.environ.get('SECRET_KEY', '@ujr-e&a%8m%6!z(+ka16+(sm6cug(h6noe%#p%=6%d2nz5t+#')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.environ.get('DEBUG', 'False').lower() == 'true'
 
 #ALLOWED_HOSTS = ['anujdeshmukh24.pythonanywhere.com']
-ALLOWED_HOSTS = ['www.db-solar.co.in','db-solar.co.in','72.60.98.248']
+# Read ALLOWED_HOSTS from environment variable, fallback to default
+ALLOWED_HOSTS_ENV = os.environ.get('ALLOWED_HOSTS', 'www.db-solar.co.in,db-solar.co.in,72.60.98.248')
+ALLOWED_HOSTS = [host.strip() for host in ALLOWED_HOSTS_ENV.split(',') if host.strip()]
 
 # Application definition
 
@@ -135,14 +137,18 @@ WSGI_APPLICATION = 'inventoryproject.wsgi.application'
 #    }
 #}
 
+# Database configuration from environment variables
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'solar_db',
-        'USER': 'heramb',
-        'PASSWORD': 'Heramb2023',
-        'HOST': 'localhost',
-        'PORT': '5432',
+        'NAME': os.environ.get('DB_NAME', 'solar_db'),
+        'USER': os.environ.get('DB_USER', 'heramb'),
+        'PASSWORD': os.environ.get('DB_PASSWORD', 'Heramb2023'),
+        'HOST': os.environ.get('DB_HOST', 'localhost'),
+        'PORT': os.environ.get('DB_PORT', '5432'),
+        'OPTIONS': {
+            'connect_timeout': 10,
+        },
     }
 }
 
@@ -241,12 +247,12 @@ LOGIN_URL = 'user-login'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST = 'smtp.gmail.com'
-EMAIL_PORT = 587
-EMAIL_USE_TLS = True
-EMAIL_HOST_USER = 'deshmukh.ssd24@gmail.com'
-EMAIL_HOST_PASSWORD = 'pesebzcjfrxnuvsg'
-PASSWORD_RESET_TIMEOUT = 240
+EMAIL_HOST = os.environ.get('EMAIL_HOST', 'smtp.gmail.com')
+EMAIL_PORT = int(os.environ.get('EMAIL_PORT', '587'))
+EMAIL_USE_TLS = os.environ.get('EMAIL_USE_TLS', 'True').lower() == 'true'
+EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER', 'deshmukh.ssd24@gmail.com')
+EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD', 'pesebzcjfrxnuvsg')
+PASSWORD_RESET_TIMEOUT = int(os.environ.get('PASSWORD_RESET_TIMEOUT', '240'))
 # SESSION_EXPIRE_AT_BROWSER_CLOSE=False
 CORS_ALLOW_ALL_ORIGINS = True
 

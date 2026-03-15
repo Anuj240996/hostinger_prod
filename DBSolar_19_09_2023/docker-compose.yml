@@ -1,0 +1,35 @@
+version: '3.8'
+
+services:
+  web:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      - DEBUG=False
+      - DB_HOST=db
+      - DB_PORT=5432
+      - DB_NAME=solar_db
+      - DB_USER=heramb
+      - DB_PASSWORD=Heramb2023
+      - SECRET_KEY=@ujr-e&a%8m%6!z(+ka16+(sm6cug(h6noe%#p%=6%d2nz5t+#
+      - ALLOWED_HOSTS=localhost,127.0.0.1
+    volumes:
+      - ./media:/app/media
+      - ./static:/app/static
+    depends_on:
+      - db
+    restart: unless-stopped
+
+  db:
+    image: postgres:15-alpine
+    environment:
+      - POSTGRES_DB=solar_db
+      - POSTGRES_USER=heramb
+      - POSTGRES_PASSWORD=Heramb2023
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
+
+volumes:
+  postgres_data:

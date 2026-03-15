@@ -1,0 +1,102 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Django
+*.log
+local_settings.py
+db.sqlite3
+db.sqlite3-journal
+/media
+/staticfiles
+/static
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Git
+.git/
+.gitignore
+
+# Documentation
+*.md
+!README.md
+
+# Test files
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Environment files (should be set in Easypanel)
+.env
+.env.local
+
+# Temporary files
+*.tmp
+*.bak
+*.old
+
+# Migration files (keep them, but ignore old/backup ones)
+**/migrations/__pycache__/
+**/migrations/*.pyc
+
+# Logs
+*.log
+logs/
+
+# Backup files
+*.zip
+*.sql
+*.sqlite3
+heramb.sqlite3
+
+# Scripts (keep entrypoint, ignore others)
+*.ps1
+*.sh
+!entrypoint.sh
+
+# Data files
+*.json
+!package.json
+data*.json
+users.json
+barcodeimage.json
+
+# Old/unused directories
+*_old/
+customer_old/
+inventory_old/
+transactions_old/
+transactions_04_06_25/
+transactions1/
+customer1/
+Perfect DB/
