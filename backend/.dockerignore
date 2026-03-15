@@ -1,0 +1,61 @@
+# Dependencies
+node_modules
+npm-debug.log
+yarn-error.log
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# Git
+.git
+.gitignore
+.gitattributes
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs
+
+# Test files
+test_*.js
+*.test.js
+*.spec.js
+
+# Documentation
+*.md
+!README.md
+
+# Database scripts (not needed in production container)
+database/*.sql
+database/*.js
+!database/db.js
+
+# Tools (not needed in production)
+tools/
+check_*.js
+update_*.js
+
+# Uploads (will be mounted as volume in production)
+uploads/*
+
+# Build artifacts
+dist
+build
+coverage
+
+# Misc
+*.class
+*.pyc
+.history
