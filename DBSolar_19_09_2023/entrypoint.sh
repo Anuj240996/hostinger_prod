@@ -54,9 +54,11 @@ python manage.py migrate --noinput || {
 
 # Collect static files
 echo "Collecting static files..."
-python manage.py collectstatic --noinput || {
+python manage.py collectstatic --noinput --clear || {
     echo "Warning: Static files collection failed, but continuing..."
 }
+echo "Static files collection completed. Checking staticfiles directory..."
+ls -la /app/staticfiles/ 2>/dev/null || echo "Staticfiles directory not found or empty"
 
 # Execute the command
 echo "Starting application..."

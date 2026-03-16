@@ -1,4 +1,5 @@
 <!-- navbar -->
+{% load static %}
 {% load humanize %}
 <style>
     /* Custom CSS for displaying count1 in mobile mode */
@@ -74,10 +75,10 @@
 <div class="header">
    <div class="header-left">
       <a href="/index" class="logo">
-      <img src="/static/images/DB SOLAR PNG LOGO 3 (6).png" alt="Logo" width="100%">
+      <img src="{% static 'images/DB SOLAR PNG LOGO 3 (6).png' %}" alt="Logo" width="100%">
       </a>
       <a href="#" class="logo logo-small">
-      <img src="/static/images/dblogosmall.png"  alt="Logo" width="30" height="30">
+      <img src="{% static 'images/dblogosmall.png' %}"  alt="Logo" width="30" height="30">
       </a>
    </div>
    <a href="javascript:void(0);" id="toggle_btn">
@@ -215,10 +216,10 @@
 <div class="header">
    <div class="header-left">
       <a href="#" class="logo">
-      <img src="/static/images/dblogo200.png" alt="Logo" > &nbsp;<font size="6" >DB SOLAR</font>
+      <img src="{% static 'images/dblogo200.png' %}" alt="Logo" > &nbsp;<font size="6" >DB SOLAR</font>
       </a>
       <a href="#" class="logo logo-small">
-      <img src="/static/images/dblogosmall.png"  alt="Logo" width="30" height="30">
+      <img src="{% static 'images/dblogosmall.png' %}"  alt="Logo" width="30" height="30">
       </a>
    </div>
    <a href="javascript:void(0);" id="toggle_btn">
