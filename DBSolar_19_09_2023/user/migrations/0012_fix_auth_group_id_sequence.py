@@ -13,6 +13,19 @@ def fix_auth_group_id_sequence(apps, schema_editor):
         return
 
     with schema_editor.connection.cursor() as cursor:
+        # Check if column is an identity column (PostgreSQL 10+)
+        cursor.execute(
+            """
+            SELECT is_identity
+            FROM information_schema.columns
+            WHERE table_name = 'auth_group' AND column_name = 'id'
+            """
+        )
+        row = cursor.fetchone()
+        if row and row[0] == 'YES':
+            # Column is already an identity column, skip migration
+            return
+
         cursor.execute(
             """
             DO $$
@@ -29,9 +42,14 @@ def fix_auth_group_id_sequence(apps, schema_editor):
             $$;
             """
         )
-        cursor.execute(
-            "ALTER TABLE auth_group ALTER COLUMN id SET DEFAULT nextval('auth_group_id_seq');"
-        )
+        try:
+            cursor.execute(
+                "ALTER TABLE auth_group ALTER COLUMN id SET DEFAULT nextval('auth_group_id_seq');"
+            )
+        except Exception as e:
+            if "identity column" in str(e).lower():
+                return
+            raise
         cursor.execute(
             "SELECT setval('auth_group_id_seq', COALESCE((SELECT MAX(id) FROM auth_group), 1), true);"
         )

@@ -15,6 +15,19 @@ def fix_auth_user_id_sequence(apps, schema_editor):
         return
 
     with schema_editor.connection.cursor() as cursor:
+        # Check if column is an identity column (PostgreSQL 10+)
+        cursor.execute(
+            """
+            SELECT is_identity
+            FROM information_schema.columns
+            WHERE table_name = 'auth_user' AND column_name = 'id'
+            """
+        )
+        row = cursor.fetchone()
+        if row and row[0] == 'YES':
+            # Column is already an identity column, skip migration
+            return
+
         # Create sequence if missing
         cursor.execute(
             """
@@ -33,10 +46,15 @@ def fix_auth_user_id_sequence(apps, schema_editor):
             """
         )
 
-        # Ensure column default uses the sequence
-        cursor.execute(
-            "ALTER TABLE auth_user ALTER COLUMN id SET DEFAULT nextval('auth_user_id_seq');"
-        )
+        # Ensure column default uses the sequence (only if not identity column)
+        try:
+            cursor.execute(
+                "ALTER TABLE auth_user ALTER COLUMN id SET DEFAULT nextval('auth_user_id_seq');"
+            )
+        except Exception as e:
+            if "identity column" in str(e).lower():
+                return
+            raise
 
         # Set sequence to max(id)
         cursor.execute(
