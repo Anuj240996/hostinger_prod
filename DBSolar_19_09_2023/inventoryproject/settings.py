@@ -259,9 +259,10 @@ STATIC_ROOT = BASE_DIR / 'staticfiles'
 
 # WhiteNoise configuration
 # WhiteNoise will serve files from STATIC_ROOT (after collectstatic)
-# WHITENOISE_USE_FINDERS allows it to also serve from STATICFILES_DIRS during development
-WHITENOISE_USE_FINDERS = True  # Enable WhiteNoise to find files in STATICFILES_DIRS
-WHITENOISE_AUTOREFRESH = False  # Set to False in production for better performance
+# WHITENOISE_USE_FINDERS allows it to also serve from STATICFILES_DIRS
+# This is important so files in static/ and asert/ are accessible
+WHITENOISE_USE_FINDERS = True  # Enable WhiteNoise to find files in STATICFILES_DIRS (static/ and asert/)
+WHITENOISE_AUTOREFRESH = True  # Set to True to auto-refresh when files change (useful for development)
 WHITENOISE_ROOT = STATIC_ROOT  # Explicitly set the root directory
 
 MEDIA_URL = '/media/'

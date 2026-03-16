@@ -145,9 +145,28 @@ urlpatterns = [
 # In production, WhiteNoise serves from STATIC_ROOT (staticfiles/)
 # In development (DEBUG=True), Django serves from STATICFILES_DIRS
 from django.contrib.staticfiles.urls import staticfiles_urlpatterns
+from django.views.static import serve as static_serve
+from django.urls import re_path
 
 # Serve media files (always needed)
 urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+
+# Explicit static file serving - serves from both static/ and asert/ directories
+# This ensures files are accessible even if collectstatic didn't work properly
+# WhiteNoise will handle these in production, but this is a fallback
+urlpatterns += [
+    # Serve from static/ directory
+    re_path(r'^static/(?P<path>.*)$', static_serve, {
+        'document_root': str(settings.BASE_DIR / 'static'),
+        'show_indexes': False
+    }),
+    # Serve from asert/ directory (files in asert/ should be accessible via /static/ path)
+    # This allows templates using {% static 'images/...' %} to find files in asert/images/
+    re_path(r'^static/(?P<path>.*)$', static_serve, {
+        'document_root': str(settings.BASE_DIR / 'asert'),
+        'show_indexes': False
+    }),
+]
 
 # Add staticfiles_urlpatterns for development only
 # In production, WhiteNoise middleware handles static files
