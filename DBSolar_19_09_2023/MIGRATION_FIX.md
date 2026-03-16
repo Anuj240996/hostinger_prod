@@ -9,6 +9,26 @@ django.db.utils.ProgrammingError: column "id" of relation "firereport_firereport
 
 This happens because PostgreSQL 10+ uses "identity columns" which automatically handle sequences, and the migration is trying to set a DEFAULT which conflicts with identity columns.
 
+## ✅ IMMEDIATE FIX (Run This Now)
+
+Since you're already logged into the container, run these commands:
+
+```bash
+# Fake the problematic migration (mark it as done without running it)
+python manage.py migrate firereport 0004 --fake
+
+# Continue with remaining migrations
+python manage.py migrate
+```
+
+If you get more identity column errors, fake those migrations too:
+```bash
+python manage.py migrate user 0010 --fake
+python manage.py migrate user 0011 --fake
+python manage.py migrate user 0012 --fake
+python manage.py migrate
+```
+
 ## Solution
 
 ### Option 1: Fake the Problematic Migration (Quick Fix)
