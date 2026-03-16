@@ -254,9 +254,9 @@ STATICFILES_DIRS = [
     BASE_DIR / 'asert',  # Include asert directory as a static files source
 ]
 
-# WhiteNoise configuration for serving static files in production
-# Using StaticFilesStorage for reliable static file serving
-STATICFILES_STORAGE = 'whitenoise.storage.StaticFilesStorage'
+# WhiteNoise configuration - don't use STATICFILES_STORAGE, let WhiteNoise serve directly
+# This allows WhiteNoise to serve files from STATICFILES_DIRS if not collected
+# STATICFILES_STORAGE = 'whitenoise.storage.StaticFilesStorage'  # Commented out to let WhiteNoise handle it
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'

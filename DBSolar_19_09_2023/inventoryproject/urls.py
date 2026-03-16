@@ -145,8 +145,17 @@ urlpatterns = [
 urlpatterns += static(settings.MEDIA_URL,
                       document_root=settings.MEDIA_ROOT)
 
-# Serve static files in DEBUG mode
-# Note: WhiteNoise handles static files in production, but this helps in DEBUG mode
+# Serve static files - Multiple fallback approaches to ensure files are accessible
+# WhiteNoise handles production, but add explicit serving as fallback
+from django.contrib.staticfiles.urls import staticfiles_urlpatterns
+
+# Serve from STATIC_ROOT (where collectstatic puts files)
+urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
+
+# Also serve directly from STATICFILES_DIRS as fallback (if collectstatic fails)
+for static_dir in settings.STATICFILES_DIRS:
+    urlpatterns += static(settings.STATIC_URL, document_root=static_dir)
+
+# Add staticfiles_urlpatterns for development (uses STATICFILES_DIRS)
 if settings.DEBUG:
-    from django.contrib.staticfiles.urls import staticfiles_urlpatterns
     urlpatterns += staticfiles_urlpatterns()

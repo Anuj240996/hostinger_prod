@@ -55,17 +55,31 @@ python manage.py migrate --noinput || {
 # Collect static files
 echo "Collecting static files..."
 echo "Checking source directories..."
+echo "=== Static directory ==="
 ls -la /app/static/images/ 2>/dev/null | head -5 || echo "static/images not found"
+echo "=== Asert directory ==="
 ls -la /app/asert/images/ 2>/dev/null | head -5 || echo "asert/images not found"
 
-python manage.py collectstatic --noinput --clear || {
-    echo "Warning: Static files collection failed, but continuing..."
+echo "Running collectstatic..."
+python manage.py collectstatic --noinput --clear --verbosity 2 || {
+    echo "ERROR: Static files collection failed!"
+    echo "Attempting to copy files manually as fallback..."
+    # Fallback: Copy files directly if collectstatic fails
+    mkdir -p /app/staticfiles/images
+    cp -r /app/static/images/* /app/staticfiles/images/ 2>/dev/null || true
+    cp -r /app/asert/images/* /app/staticfiles/images/ 2>/dev/null || true
+    echo "Manual copy completed"
 }
 
-echo "Static files collection completed. Checking staticfiles directory..."
+echo "=== Static files collection completed ==="
+echo "Checking staticfiles/images directory..."
 ls -la /app/staticfiles/images/ 2>/dev/null | head -10 || echo "staticfiles/images directory not found or empty"
 echo "Total files in staticfiles:"
-find /app/staticfiles -type f | wc -l || echo "0"
+find /app/staticfiles -type f 2>/dev/null | wc -l || echo "0"
+echo "Checking for logo files specifically:"
+ls -la /app/staticfiles/images/dblogo*.png 2>/dev/null || echo "Logo files not found in staticfiles/images"
+ls -la /app/static/images/dblogo*.png 2>/dev/null || echo "Logo files not found in static/images"
+ls -la /app/asert/images/dblogo*.png 2>/dev/null || echo "Logo files not found in asert/images"
 
 # Execute the command
 echo "Starting application..."
