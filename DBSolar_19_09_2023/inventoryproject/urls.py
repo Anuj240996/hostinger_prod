@@ -141,21 +141,26 @@ urlpatterns = [
     path('api/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
 
 ]
-# Serve static files - WhiteNoise handles this in production
-# Add fallback serving for development and as backup
+# Serve static files - WhiteNoise handles this in production via middleware
+# WhiteNoise with WHITENOISE_USE_FINDERS=True will serve from STATICFILES_DIRS
+# Add explicit fallback serving for extra reliability
 from django.contrib.staticfiles.urls import staticfiles_urlpatterns
 from django.views.static import serve as static_serve
 from django.urls import re_path
 
-# WhiteNoise will serve static files from STATICFILES_DIRS (static/ and asert/)
-# Add explicit serving as fallback
-urlpatterns += staticfiles_urlpatterns()
-
-# Also serve directly from static/ and asert/ as additional fallback
+# Fallback: Serve directly from static/ directory
 urlpatterns += [
     re_path(r'^static/(?P<path>.*)$', static_serve, {'document_root': str(settings.BASE_DIR / 'static'), 'show_indexes': False}),
+]
+
+# Fallback: Serve directly from asert/ directory  
+urlpatterns += [
     re_path(r'^static/(?P<path>.*)$', static_serve, {'document_root': str(settings.BASE_DIR / 'asert'), 'show_indexes': False}),
 ]
+
+# Also add staticfiles_urlpatterns for development
+if settings.DEBUG:
+    urlpatterns += staticfiles_urlpatterns()
 
 # Serve media files
 urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
