@@ -248,20 +248,21 @@ CRISPY_TEMPLATE_PACK = 'bootstrap4'
 
 STATIC_URL = '/static/'
 
-# Serve static files directly from these directories
+# Directories where Django will collect static files from
 STATICFILES_DIRS = [
     BASE_DIR / 'static',
     BASE_DIR / 'asert',  # Include asert directory as a static files source
 ]
 
-# STATIC_ROOT for collectstatic (but we're using WHITENOISE_USE_FINDERS)
+# Directory where collectstatic will gather all static files
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 
-# WhiteNoise configuration - serve files directly from STATICFILES_DIRS
-# WHITENOISE_USE_FINDERS allows WhiteNoise to use Django's static file finders
-# which will search in STATICFILES_DIRS (static/ and asert/)
+# WhiteNoise configuration
+# WhiteNoise will serve files from STATIC_ROOT (after collectstatic)
+# WHITENOISE_USE_FINDERS allows it to also serve from STATICFILES_DIRS during development
 WHITENOISE_USE_FINDERS = True  # Enable WhiteNoise to find files in STATICFILES_DIRS
-WHITENOISE_AUTOREFRESH = True  # Auto-refresh when files change
+WHITENOISE_AUTOREFRESH = False  # Set to False in production for better performance
+WHITENOISE_ROOT = STATIC_ROOT  # Explicitly set the root directory
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'

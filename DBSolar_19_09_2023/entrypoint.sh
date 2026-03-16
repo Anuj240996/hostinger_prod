@@ -57,19 +57,25 @@ python manage.py migrate --noinput || {
     python manage.py migrate --fake --noinput || echo "Fake migration also failed, continuing anyway"
 }
 
+# Collect static files (gathers from static/ and asert/ into staticfiles/)
+echo "Collecting static files..."
+python manage.py collectstatic --noinput --clear || {
+    echo "Warning: collectstatic failed, but continuing..."
+}
+
 # Verify static file directories exist and contain files
 echo "=== Verifying static file directories ==="
 echo "Checking /app/static/images/:"
 ls -la /app/static/images/dblogo*.png 2>/dev/null | head -5 || echo "No logo files in static/images"
 echo "Checking /app/asert/images/:"
 ls -la /app/asert/images/dblogo*.png 2>/dev/null | head -5 || echo "No logo files in asert/images"
+echo "Checking /app/staticfiles/ (collected files):"
+ls -la /app/staticfiles/ 2>/dev/null | head -5 || echo "Staticfiles directory empty"
 echo "Checking /app/media/:"
 ls -la /app/media/ 2>/dev/null | head -5 || echo "Media directory empty or not found"
 echo ""
 echo "=== Static file serving configuration ==="
-echo "WhiteNoise will serve files from:"
-echo "  - /app/static/"
-echo "  - /app/asert/"
+echo "WhiteNoise will serve files from STATIC_ROOT (staticfiles/) and STATICFILES_DIRS (static/, asert/)"
 echo "Files accessible at: /static/images/dblogo200.png, etc."
 
 # Execute the command
