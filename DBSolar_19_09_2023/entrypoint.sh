@@ -57,12 +57,17 @@ python manage.py migrate --noinput || {
 # Verify static file directories exist and contain files
 echo "=== Verifying static file directories ==="
 echo "Checking /app/static/images/:"
-ls -la /app/static/images/dblogo*.png 2>/dev/null | head -3 || echo "No logo files in static/images"
+ls -la /app/static/images/dblogo*.png 2>/dev/null | head -5 || echo "No logo files in static/images"
 echo "Checking /app/asert/images/:"
-ls -la /app/asert/images/dblogo*.png 2>/dev/null | head -3 || echo "No logo files in asert/images"
+ls -la /app/asert/images/dblogo*.png 2>/dev/null | head -5 || echo "No logo files in asert/images"
 echo "Checking /app/media/:"
-ls -la /app/media/ 2>/dev/null | head -3 || echo "Media directory empty or not found"
-echo "Static files will be served directly from source directories (no collectstatic needed)"
+ls -la /app/media/ 2>/dev/null | head -5 || echo "Media directory empty or not found"
+echo ""
+echo "=== Static file serving configuration ==="
+echo "WhiteNoise will serve files from:"
+echo "  - /app/static/"
+echo "  - /app/asert/"
+echo "Files accessible at: /static/images/dblogo200.png, etc."
 
 # Execute the command
 echo "Starting application..."

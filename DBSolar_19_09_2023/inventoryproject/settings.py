@@ -87,6 +87,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',  # Must be after SecurityMiddleware, before other middleware
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -250,8 +251,14 @@ STATICFILES_DIRS = [
     BASE_DIR / 'asert',  # Include asert directory as a static files source
 ]
 
-# Not using STATIC_ROOT since we're serving directly from source directories
-STATIC_ROOT = BASE_DIR / 'staticfiles'  # Keep for compatibility
+# STATIC_ROOT for collectstatic (but we're using WHITENOISE_USE_FINDERS)
+STATIC_ROOT = BASE_DIR / 'staticfiles'
+
+# WhiteNoise configuration - serve files directly from STATICFILES_DIRS
+# WHITENOISE_USE_FINDERS allows WhiteNoise to use Django's static file finders
+# which will search in STATICFILES_DIRS (static/ and asert/)
+WHITENOISE_USE_FINDERS = True  # Enable WhiteNoise to find files in STATICFILES_DIRS
+WHITENOISE_AUTOREFRESH = True  # Auto-refresh when files change
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'

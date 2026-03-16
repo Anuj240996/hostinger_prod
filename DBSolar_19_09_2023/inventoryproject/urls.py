@@ -141,36 +141,20 @@ urlpatterns = [
     path('api/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
 
 ]
-# Serve static files directly from source directories - SIMPLEST APPROACH
-# Custom view that checks static/, asert/, and media/ folders in order
+# Serve static files - WhiteNoise handles this in production
+# Add fallback serving for development and as backup
+from django.contrib.staticfiles.urls import staticfiles_urlpatterns
 from django.views.static import serve as static_serve
 from django.urls import re_path
-from django.http import Http404
-import os
 
-def serve_static(request, path):
-    """Serve static files from static/, asert/, or media/ directories"""
-    # Try static/ first
-    static_path = settings.BASE_DIR / 'static' / path
-    if os.path.exists(static_path):
-        return static_serve(request, path, document_root=str(settings.BASE_DIR / 'static'), show_indexes=False)
-    
-    # Try asert/ second
-    asert_path = settings.BASE_DIR / 'asert' / path
-    if os.path.exists(asert_path):
-        return static_serve(request, path, document_root=str(settings.BASE_DIR / 'asert'), show_indexes=False)
-    
-    # Try media/ third
-    media_path = settings.MEDIA_ROOT / path
-    if os.path.exists(media_path):
-        return static_serve(request, path, document_root=str(settings.MEDIA_ROOT), show_indexes=False)
-    
-    # File not found
-    raise Http404("Static file not found")
+# WhiteNoise will serve static files from STATICFILES_DIRS (static/ and asert/)
+# Add explicit serving as fallback
+urlpatterns += staticfiles_urlpatterns()
 
-# Serve static files using custom view
+# Also serve directly from static/ and asert/ as additional fallback
 urlpatterns += [
-    re_path(r'^static/(?P<path>.*)$', serve_static),
+    re_path(r'^static/(?P<path>.*)$', static_serve, {'document_root': str(settings.BASE_DIR / 'static'), 'show_indexes': False}),
+    re_path(r'^static/(?P<path>.*)$', static_serve, {'document_root': str(settings.BASE_DIR / 'asert'), 'show_indexes': False}),
 ]
 
 # Serve media files
