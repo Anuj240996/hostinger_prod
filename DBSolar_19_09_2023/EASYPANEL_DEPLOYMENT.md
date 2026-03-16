@@ -34,13 +34,22 @@ Set the following environment variables in Easypanel:
 **Required:**
 ```
 DB_HOST=<your-postgres-host>
-DB_PORT=5432
-DB_NAME=solar_db
+DB_PORT=2700
+DB_NAME=db_solar
 DB_USER=<your-db-user>
 DB_PASSWORD=<your-db-password>
 SECRET_KEY=<generate-a-secure-secret-key>
 ALLOWED_HOSTS=your-domain.com,www.your-domain.com
 DEBUG=False
+```
+
+**Note:** If using Easypanel's PostgreSQL service, you can also use:
+```
+POSTGRES_HOST=<service-name>
+POSTGRES_PORT=2700
+POSTGRES_DB=db_solar
+POSTGRES_USER=<your-db-user>
+POSTGRES_PASSWORD=<your-db-password>
 ```
 
 **Optional (for email functionality):**

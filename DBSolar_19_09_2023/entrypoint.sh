@@ -16,11 +16,11 @@ import os
 
 try:
     conn = psycopg2.connect(
-        host=os.environ.get('DB_HOST', 'localhost'),
-        port=os.environ.get('DB_PORT', '5432'),
-        user=os.environ.get('DB_USER', 'postgres'),
-        password=os.environ.get('DB_PASSWORD', ''),
-        dbname=os.environ.get('DB_NAME', 'postgres'),
+        host=os.environ.get('DB_HOST') or os.environ.get('POSTGRES_HOST', 'localhost'),
+        port=os.environ.get('DB_PORT') or os.environ.get('POSTGRES_PORT', '2700'),
+        user=os.environ.get('DB_USER') or os.environ.get('POSTGRES_USER', 'postgres'),
+        password=os.environ.get('DB_PASSWORD') or os.environ.get('POSTGRES_PASSWORD', ''),
+        dbname=os.environ.get('DB_NAME') or os.environ.get('POSTGRES_DB', 'db_solar'),
         connect_timeout=5
     )
     conn.close()
@@ -46,10 +46,12 @@ except Exception as e:
   fi
 done
 
-# Run migrations
+# Run migrations (for existing database, this will only apply new migrations)
 echo "Running database migrations..."
+echo "Note: If using existing db_solar database, migrations will only apply new changes"
 python manage.py migrate --noinput || {
     echo "Warning: Migrations failed, but continuing..."
+    echo "This is normal if database schema already matches Django models"
 }
 
 # Verify static file directories exist and contain files

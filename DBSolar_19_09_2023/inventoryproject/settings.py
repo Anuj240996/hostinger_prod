@@ -165,14 +165,15 @@ if DATABASE_URL:
     }
 else:
     # Use individual environment variables (supports both DB_* and POSTGRES_* naming)
+    # Default values match your existing db_solar database on port 2700
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.postgresql',
-            'NAME': os.environ.get('POSTGRES_DB') or os.environ.get('DB_NAME', 'solar_db'),
+            'NAME': os.environ.get('POSTGRES_DB') or os.environ.get('DB_NAME', 'db_solar'),
             'USER': os.environ.get('POSTGRES_USER') or os.environ.get('DB_USER', 'heramb'),
             'PASSWORD': os.environ.get('POSTGRES_PASSWORD') or os.environ.get('DB_PASSWORD', 'Heramb2023'),
             'HOST': os.environ.get('POSTGRES_HOST') or os.environ.get('DB_HOST', 'localhost'),
-            'PORT': os.environ.get('POSTGRES_PORT') or os.environ.get('DB_PORT', '5432'),
+            'PORT': os.environ.get('POSTGRES_PORT') or os.environ.get('DB_PORT', '2700'),
             'OPTIONS': {
                 'connect_timeout': 10,
             },
