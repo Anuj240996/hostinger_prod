@@ -147,8 +147,11 @@ WSGI_APPLICATION = 'inventoryproject.wsgi.application'
 DATABASE_URL = os.environ.get('DATABASE_URL')
 
 if DATABASE_URL:
-    # Parse DATABASE_URL (format: postgres://user:password@host:port/dbname)
+    # Parse DATABASE_URL (format: postgresql://user:password@host:port/dbname or postgres://...)
     import urllib.parse
+    # Handle both postgres:// and postgresql:// formats
+    if DATABASE_URL.startswith('postgres://'):
+        DATABASE_URL = DATABASE_URL.replace('postgres://', 'postgresql://', 1)
     result = urllib.parse.urlparse(DATABASE_URL)
     
     DATABASES = {
