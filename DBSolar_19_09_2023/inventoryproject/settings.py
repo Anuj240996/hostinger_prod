@@ -255,9 +255,8 @@ STATICFILES_DIRS = [
 ]
 
 # WhiteNoise configuration for serving static files in production
-# Using CompressedStaticFilesStorage instead of Manifest to avoid manifest issues
-# This will serve files directly without requiring a manifest.json file
-STATICFILES_STORAGE = 'whitenoise.storage.CompressedStaticFilesStorage'
+# Using StaticFilesStorage for reliable static file serving
+STATICFILES_STORAGE = 'whitenoise.storage.StaticFilesStorage'
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
