@@ -147,25 +147,43 @@ urlpatterns = [
 from django.contrib.staticfiles.urls import staticfiles_urlpatterns
 from django.views.static import serve as static_serve
 from django.urls import re_path
+from django.http import Http404
+from pathlib import Path
+
+def serve_static_fallback(request, path):
+    """
+    Custom view to serve static files from multiple directories.
+    Checks in order: staticfiles/ (collected), static/, asert/
+    This is a fallback if WhiteNoise doesn't serve the file.
+    """
+    base_dir = settings.BASE_DIR
+    
+    # Try staticfiles/ first (collected files)
+    staticfiles_path = Path(settings.STATIC_ROOT) / path
+    if staticfiles_path.exists() and staticfiles_path.is_file():
+        return static_serve(request, path, document_root=str(settings.STATIC_ROOT), show_indexes=False)
+    
+    # Try static/ second
+    static_path = base_dir / 'static' / path
+    if static_path.exists() and static_path.is_file():
+        return static_serve(request, path, document_root=str(base_dir / 'static'), show_indexes=False)
+    
+    # Try asert/ third
+    asert_path = base_dir / 'asert' / path
+    if asert_path.exists() and asert_path.is_file():
+        return static_serve(request, path, document_root=str(base_dir / 'asert'), show_indexes=False)
+    
+    # File not found
+    raise Http404(f"Static file '{path}' not found in staticfiles/, static/, or asert/")
 
 # Serve media files (always needed)
 urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 
-# Explicit static file serving - serves from both static/ and asert/ directories
-# This ensures files are accessible even if collectstatic didn't work properly
-# WhiteNoise will handle these in production, but this is a fallback
+# Add explicit static file serving as fallback
+# This runs AFTER WhiteNoise middleware, so it only serves files WhiteNoise couldn't find
+# WhiteNoise should handle most files, but this ensures files in static/ and asert/ are accessible
 urlpatterns += [
-    # Serve from static/ directory
-    re_path(r'^static/(?P<path>.*)$', static_serve, {
-        'document_root': str(settings.BASE_DIR / 'static'),
-        'show_indexes': False
-    }),
-    # Serve from asert/ directory (files in asert/ should be accessible via /static/ path)
-    # This allows templates using {% static 'images/...' %} to find files in asert/images/
-    re_path(r'^static/(?P<path>.*)$', static_serve, {
-        'document_root': str(settings.BASE_DIR / 'asert'),
-        'show_indexes': False
-    }),
+    re_path(r'^static/(?P<path>.*)$', serve_static_fallback),
 ]
 
 # Add staticfiles_urlpatterns for development only
