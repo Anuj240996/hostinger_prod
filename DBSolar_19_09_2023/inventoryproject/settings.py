@@ -87,7 +87,6 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
-    'whitenoise.middleware.WhiteNoiseMiddleware',  # Must be after SecurityMiddleware
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -244,19 +243,14 @@ CRISPY_TEMPLATE_PACK = 'bootstrap4'
 
 STATIC_URL = '/static/'
 
-# STATIC_ROOT is where collectstatic will gather all static files
-STATIC_ROOT = BASE_DIR / 'staticfiles'
-
-# STATICFILES_DIRS tells Django where to find static files during development
-# and what to include when running collectstatic
+# Serve static files directly from these directories
 STATICFILES_DIRS = [
     BASE_DIR / 'static',
     BASE_DIR / 'asert',  # Include asert directory as a static files source
 ]
 
-# WhiteNoise configuration - don't use STATICFILES_STORAGE, let WhiteNoise serve directly
-# This allows WhiteNoise to serve files from STATICFILES_DIRS if not collected
-# STATICFILES_STORAGE = 'whitenoise.storage.StaticFilesStorage'  # Commented out to let WhiteNoise handle it
+# Not using STATIC_ROOT since we're serving directly from source directories
+STATIC_ROOT = BASE_DIR / 'staticfiles'  # Keep for compatibility
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'

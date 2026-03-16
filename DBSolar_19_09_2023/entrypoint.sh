@@ -52,34 +52,15 @@ python manage.py migrate --noinput || {
     echo "Warning: Migrations failed, but continuing..."
 }
 
-# Collect static files
-echo "Collecting static files..."
-echo "Checking source directories..."
-echo "=== Static directory ==="
-ls -la /app/static/images/ 2>/dev/null | head -5 || echo "static/images not found"
-echo "=== Asert directory ==="
-ls -la /app/asert/images/ 2>/dev/null | head -5 || echo "asert/images not found"
-
-echo "Running collectstatic..."
-python manage.py collectstatic --noinput --clear --verbosity 2 || {
-    echo "ERROR: Static files collection failed!"
-    echo "Attempting to copy files manually as fallback..."
-    # Fallback: Copy files directly if collectstatic fails
-    mkdir -p /app/staticfiles/images
-    cp -r /app/static/images/* /app/staticfiles/images/ 2>/dev/null || true
-    cp -r /app/asert/images/* /app/staticfiles/images/ 2>/dev/null || true
-    echo "Manual copy completed"
-}
-
-echo "=== Static files collection completed ==="
-echo "Checking staticfiles/images directory..."
-ls -la /app/staticfiles/images/ 2>/dev/null | head -10 || echo "staticfiles/images directory not found or empty"
-echo "Total files in staticfiles:"
-find /app/staticfiles -type f 2>/dev/null | wc -l || echo "0"
-echo "Checking for logo files specifically:"
-ls -la /app/staticfiles/images/dblogo*.png 2>/dev/null || echo "Logo files not found in staticfiles/images"
-ls -la /app/static/images/dblogo*.png 2>/dev/null || echo "Logo files not found in static/images"
-ls -la /app/asert/images/dblogo*.png 2>/dev/null || echo "Logo files not found in asert/images"
+# Verify static file directories exist and contain files
+echo "=== Verifying static file directories ==="
+echo "Checking /app/static/images/:"
+ls -la /app/static/images/dblogo*.png 2>/dev/null | head -3 || echo "No logo files in static/images"
+echo "Checking /app/asert/images/:"
+ls -la /app/asert/images/dblogo*.png 2>/dev/null | head -3 || echo "No logo files in asert/images"
+echo "Checking /app/media/:"
+ls -la /app/media/ 2>/dev/null | head -3 || echo "Media directory empty or not found"
+echo "Static files will be served directly from source directories (no collectstatic needed)"
 
 # Execute the command
 echo "Starting application..."

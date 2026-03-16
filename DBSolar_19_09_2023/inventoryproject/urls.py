@@ -141,21 +141,37 @@ urlpatterns = [
     path('api/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
 
 ]
-# Serve media files in both DEBUG and production
-urlpatterns += static(settings.MEDIA_URL,
-                      document_root=settings.MEDIA_ROOT)
+# Serve static files directly from source directories - SIMPLEST APPROACH
+# Custom view that checks static/, asert/, and media/ folders in order
+from django.views.static import serve as static_serve
+from django.urls import re_path
+from django.http import Http404
+import os
 
-# Serve static files - Multiple fallback approaches to ensure files are accessible
-# WhiteNoise handles production, but add explicit serving as fallback
-from django.contrib.staticfiles.urls import staticfiles_urlpatterns
+def serve_static(request, path):
+    """Serve static files from static/, asert/, or media/ directories"""
+    # Try static/ first
+    static_path = settings.BASE_DIR / 'static' / path
+    if os.path.exists(static_path):
+        return static_serve(request, path, document_root=str(settings.BASE_DIR / 'static'), show_indexes=False)
+    
+    # Try asert/ second
+    asert_path = settings.BASE_DIR / 'asert' / path
+    if os.path.exists(asert_path):
+        return static_serve(request, path, document_root=str(settings.BASE_DIR / 'asert'), show_indexes=False)
+    
+    # Try media/ third
+    media_path = settings.MEDIA_ROOT / path
+    if os.path.exists(media_path):
+        return static_serve(request, path, document_root=str(settings.MEDIA_ROOT), show_indexes=False)
+    
+    # File not found
+    raise Http404("Static file not found")
 
-# Serve from STATIC_ROOT (where collectstatic puts files)
-urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
+# Serve static files using custom view
+urlpatterns += [
+    re_path(r'^static/(?P<path>.*)$', serve_static),
+]
 
-# Also serve directly from STATICFILES_DIRS as fallback (if collectstatic fails)
-for static_dir in settings.STATICFILES_DIRS:
-    urlpatterns += static(settings.STATIC_URL, document_root=static_dir)
-
-# Add staticfiles_urlpatterns for development (uses STATICFILES_DIRS)
-if settings.DEBUG:
-    urlpatterns += staticfiles_urlpatterns()
+# Serve media files
+urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
