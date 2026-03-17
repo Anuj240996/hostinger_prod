@@ -148,6 +148,7 @@ from django.views.static import serve as static_serve
 from django.urls import re_path
 from django.http import Http404
 from pathlib import Path
+from urllib.parse import unquote
 import logging
 
 logger = logging.getLogger(__name__)
@@ -159,24 +160,30 @@ def serve_static_fallback(request, path):
     This ensures files are accessible regardless of collectstatic status.
     """
     base_dir = settings.BASE_DIR
-    
+
+    # Normalise the requested path:
+    # - Decode URL-encoded characters
+    # - Strip any leading slashes to avoid creating absolute paths,
+    #   which can happen if templates incorrectly use {% static '/images/...' %}
+    rel_path = unquote(path).lstrip('/')
+
     # Try static/ first (most common location)
-    static_path = base_dir / 'static' / path
+    static_path = base_dir / 'static' / rel_path
     if static_path.exists() and static_path.is_file():
         logger.debug(f"Serving {path} from static/")
-        return static_serve(request, path, document_root=str(base_dir / 'static'), show_indexes=False)
+        return static_serve(request, rel_path, document_root=str(base_dir / 'static'), show_indexes=False)
     
     # Try asert/ second (alternative location)
-    asert_path = base_dir / 'asert' / path
+    asert_path = base_dir / 'asert' / rel_path
     if asert_path.exists() and asert_path.is_file():
         logger.debug(f"Serving {path} from asert/")
-        return static_serve(request, path, document_root=str(base_dir / 'asert'), show_indexes=False)
+        return static_serve(request, rel_path, document_root=str(base_dir / 'asert'), show_indexes=False)
     
     # Try staticfiles/ third (collected files)
-    staticfiles_path = Path(settings.STATIC_ROOT) / path
+    staticfiles_path = Path(settings.STATIC_ROOT) / rel_path
     if staticfiles_path.exists() and staticfiles_path.is_file():
         logger.debug(f"Serving {path} from staticfiles/")
-        return static_serve(request, path, document_root=str(settings.STATIC_ROOT), show_indexes=False)
+        return static_serve(request, rel_path, document_root=str(settings.STATIC_ROOT), show_indexes=False)
     
     # File not found - log for debugging
     logger.warning(f"Static file '{path}' not found in static/, asert/, or staticfiles/")
