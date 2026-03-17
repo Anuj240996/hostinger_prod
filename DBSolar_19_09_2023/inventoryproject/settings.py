@@ -87,8 +87,8 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
-    'whitenoise.middleware.WhiteNoiseMiddleware',  # Must be after SecurityMiddleware, before other middleware
-    # WhiteNoise will try to serve static files first, if it can't find them, request continues to URL patterns
+    # Temporarily disabled WhiteNoise - using direct file serving via URL patterns instead
+    # 'whitenoise.middleware.WhiteNoiseMiddleware',  # Disabled - files served directly via URL patterns
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',

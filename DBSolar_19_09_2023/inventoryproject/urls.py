@@ -141,52 +141,57 @@ urlpatterns = [
     path('api/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
 
 ]
-# Serve static files - WhiteNoise handles this in production via middleware
-# In production, WhiteNoise serves from STATIC_ROOT (staticfiles/)
-# In development (DEBUG=True), Django serves from STATICFILES_DIRS
+# Serve static files directly from directories
+# Since WhiteNoise is disabled, we serve files directly from static/, asert/, and staticfiles/
 from django.contrib.staticfiles.urls import staticfiles_urlpatterns
 from django.views.static import serve as static_serve
 from django.urls import re_path
 from django.http import Http404
 from pathlib import Path
+import logging
+
+logger = logging.getLogger(__name__)
 
 def serve_static_fallback(request, path):
     """
     Custom view to serve static files from multiple directories.
-    Checks in order: staticfiles/ (collected), static/, asert/
-    This is a fallback if WhiteNoise doesn't serve the file.
+    Checks in order: static/, asert/, staticfiles/ (collected)
+    This ensures files are accessible regardless of collectstatic status.
     """
     base_dir = settings.BASE_DIR
     
-    # Try staticfiles/ first (collected files)
-    staticfiles_path = Path(settings.STATIC_ROOT) / path
-    if staticfiles_path.exists() and staticfiles_path.is_file():
-        return static_serve(request, path, document_root=str(settings.STATIC_ROOT), show_indexes=False)
-    
-    # Try static/ second
+    # Try static/ first (most common location)
     static_path = base_dir / 'static' / path
     if static_path.exists() and static_path.is_file():
+        logger.debug(f"Serving {path} from static/")
         return static_serve(request, path, document_root=str(base_dir / 'static'), show_indexes=False)
     
-    # Try asert/ third
+    # Try asert/ second (alternative location)
     asert_path = base_dir / 'asert' / path
     if asert_path.exists() and asert_path.is_file():
+        logger.debug(f"Serving {path} from asert/")
         return static_serve(request, path, document_root=str(base_dir / 'asert'), show_indexes=False)
     
-    # File not found
-    raise Http404(f"Static file '{path}' not found in staticfiles/, static/, or asert/")
+    # Try staticfiles/ third (collected files)
+    staticfiles_path = Path(settings.STATIC_ROOT) / path
+    if staticfiles_path.exists() and staticfiles_path.is_file():
+        logger.debug(f"Serving {path} from staticfiles/")
+        return static_serve(request, path, document_root=str(settings.STATIC_ROOT), show_indexes=False)
+    
+    # File not found - log for debugging
+    logger.warning(f"Static file '{path}' not found in static/, asert/, or staticfiles/")
+    raise Http404(f"Static file '{path}' not found")
 
 # Serve media files (always needed)
 urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 
-# Add explicit static file serving as fallback
-# This runs AFTER WhiteNoise middleware, so it only serves files WhiteNoise couldn't find
-# WhiteNoise should handle most files, but this ensures files in static/ and asert/ are accessible
+# Add explicit static file serving - this is the PRIMARY method now (WhiteNoise disabled)
+# This ensures files in static/ and asert/ are always accessible
 urlpatterns += [
     re_path(r'^static/(?P<path>.*)$', serve_static_fallback),
 ]
 
-# Add staticfiles_urlpatterns for development only
-# In production, WhiteNoise middleware handles static files
+# Add staticfiles_urlpatterns for development
+# This helps Django's static file finder locate files
 if settings.DEBUG:
     urlpatterns += staticfiles_urlpatterns()
