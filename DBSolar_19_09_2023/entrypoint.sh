@@ -15,14 +15,18 @@ import psycopg2
 import os
 
 try:
+    # conn = psycopg2.connect(
+    #     host=os.environ.get('DB_HOST') or os.environ.get('POSTGRES_HOST', 'localhost'),
+    #     port=os.environ.get('DB_PORT') or os.environ.get('POSTGRES_PORT', '2700'),
+    #     user=os.environ.get('DB_USER') or os.environ.get('POSTGRES_USER', 'postgres'),
+    #     password=os.environ.get('DB_PASSWORD') or os.environ.get('POSTGRES_PASSWORD', ''),
+    #     dbname=os.environ.get('DB_NAME') or os.environ.get('POSTGRES_DB', 'db_solar'),
+    #     connect_timeout=5
+    # )
     conn = psycopg2.connect(
-        host=os.environ.get('DB_HOST') or os.environ.get('POSTGRES_HOST', 'localhost'),
-        port=os.environ.get('DB_PORT') or os.environ.get('POSTGRES_PORT', '2700'),
-        user=os.environ.get('DB_USER') or os.environ.get('POSTGRES_USER', 'postgres'),
-        password=os.environ.get('DB_PASSWORD') or os.environ.get('POSTGRES_PASSWORD', ''),
-        dbname=os.environ.get('DB_NAME') or os.environ.get('POSTGRES_DB', 'db_solar'),
-        connect_timeout=5
-    )
+    dsn=os.environ.get('DATABASE_URL'),
+    connect_timeout=5
+	  )
     conn.close()
     print('Database connection successful!')
     sys.exit(0)
