@@ -29,7 +29,7 @@ DEBUG = os.environ.get('DEBUG', 'False').lower() == 'true'
 
 #ALLOWED_HOSTS = ['anujdeshmukh24.pythonanywhere.com']
 # Read ALLOWED_HOSTS from environment variable, fallback to default
-ALLOWED_HOSTS_ENV = os.environ.get('ALLOWED_HOSTS', 'www.db-solar.co.in,db-solar.co.in,72.60.98.248')
+ALLOWED_HOSTS_ENV = os.environ.get('ALLOWED_HOSTS', 'www.db-solar.co.in,db-solar.co.in,72.60.98.248,app.db-solar.co.in,api.db-solar.co.in')
 ALLOWED_HOSTS = [host.strip() for host in ALLOWED_HOSTS_ENV.split(',') if host.strip()]
 
 # Application definition
