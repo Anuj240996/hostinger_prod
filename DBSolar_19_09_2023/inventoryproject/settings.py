@@ -120,87 +120,15 @@ TEMPLATES = [
 WSGI_APPLICATION = 'inventoryproject.wsgi.application'
 
 
-#DATABASES = {
-#    'default': {
-#        'ENGINE': 'django.db.backends.sqlite3',
-#       #'NAME': '/home/anujdeshmukh24/DBSolar_19_09_2023/DBSolar_19_09_2023/db.sqlite3',
-#        'NAME': BASE_DIR / "db.sqlite3",
-#    }
-#}
+import os
+import dj_database_url
 
-#DATABASES = {
-#    'default': {
-#        'ENGINE': 'django.db.backends.postgresql',
-#        'NAME': 'db_solar',
-#        'USER': 'db_user',
-#        'PASSWORD': 'root',
-#        'HOST': '',   # or your VPS private IP
-#        'PORT': '5432',
-#    }
-#}
-
-# Database configuration from environment variables
-# Supports EasyPanel PostgreSQL service and standard PostgreSQL connections
-# EasyPanel typically provides: POSTGRES_HOST, POSTGRES_PORT, POSTGRES_DB, POSTGRES_USER, POSTGRES_PASSWORD
-# Or a DATABASE_URL connection string
-
-# Check if DATABASE_URL is provided (common in EasyPanel and other platforms)
-DATABASE_URL = os.environ.get('DATABASE_URL')
-
-if DATABASE_URL:
-    # Parse DATABASE_URL (format: postgresql://user:password@host:port/dbname or postgres://...)
-    import urllib.parse
-    # Handle both postgres:// and postgresql:// formats
-    if DATABASE_URL.startswith('postgres://'):
-        DATABASE_URL = DATABASE_URL.replace('postgres://', 'postgresql://', 1)
-    result = urllib.parse.urlparse(DATABASE_URL)
-    
-    DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.postgresql',
-            'NAME': result.path[1:],  # Remove leading '/'
-            'USER': result.username,
-            'PASSWORD': result.password,
-            'HOST': result.hostname,
-            'PORT': result.port or '5432',
-            'OPTIONS': {
-                'connect_timeout': 10,
-            },
-        }
-    }
-else:
-    # Use individual environment variables (supports both DB_* and POSTGRES_* naming)
-    # Default values match your existing db_solar database on port 2700
-    DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.postgresql',
-            'NAME': os.environ.get('POSTGRES_DB') or os.environ.get('DB_NAME', 'db_solar'),
-            'USER': os.environ.get('POSTGRES_USER') or os.environ.get('DB_USER', 'heramb'),
-            'PASSWORD': os.environ.get('POSTGRES_PASSWORD') or os.environ.get('DB_PASSWORD', 'Heramb2023'),
-            'HOST': os.environ.get('POSTGRES_HOST') or os.environ.get('DB_HOST', 'localhost'),
-            'PORT': os.environ.get('POSTGRES_PORT') or os.environ.get('DB_PORT', '2700'),
-            'OPTIONS': {
-                'connect_timeout': 10,
-            },
-        }
-    }
-
-
-# DATABASES = {
-#     'default': {
-#         'ENGINE': 'django.db.backends.mysql',
-#         'NAME': 'anujdeshmukh24$db',
-#         'USER': 'anujdeshmukh24',
-#         'PASSWORD': 'Db@275194',
-#         'HOST': 'anujdeshmukh24.mysql.pythonanywhere-services.com',
-#         'PORT': '3306',
-#         'OPTIONS': {
-#             'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
-#         },
-#     }
-# }
-
-
+DATABASES = {
+    'default': dj_database_url.parse(
+        os.environ.get('DATABASE_URL'),
+        conn_max_age=600
+    )
+}
 
 
 
