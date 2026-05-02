@@ -1,0 +1,311 @@
+{% extends 'partials/base.html' %}
+{% load static %}
+{% block title %}Quotations — DB SOLAR (Original Full Backup){% endblock %}
+
+{% block content %}
+<meta name="csrf-token" content="{{ csrf_token }}">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+<link rel="stylesheet" href="{% static 'quotation/quotation_list.css' %}">
+
+<div class="container-fluid my-3">
+  <div class="page-header d-flex align-items-center justify-content-between">
+    <div>
+      <h3 class="mb-0">Quotations</h3>
+      <div class="muted-small">Manage quotations — review, confirm, convert to consumer</div>
+    </div>
+    <div class="text-end">
+
+
+      <a href="{% url 'quotation:create_quotation' %}" class="btn btn-outline-primary me-2">
+        <i class="bi bi-plus-lg"></i> New Quotation
+      </a>
+      <a href="#" id="exportCsv" class="btn btn-outline-secondary export-btn">
+        <i class="bi bi-download"></i> Export CSV
+      </a>
+    </div>
+  </div>
+
+  <div class="card card-compact mb-3">
+    <div class="card-body">
+      <div class="toolbar mb-3">
+        <div class="row g-2">
+          <div class="col-md-4 col-sm-12">
+            <input id="qSearch" class="form-control" placeholder="Search quotation no, consumer, city..." />
+          </div>
+          <div class="col-md-3 col-sm-6">
+            <select id="filterType" class="form-select">
+              <option value="">All Consumer Types</option>
+              <option>Residential</option>
+              <option>Commercial</option>
+              <option>Industrial</option>
+              <option>Government</option>
+            </select>
+          </div>
+          <div class="col-md-3 col-sm-6">
+            <select id="filterProject" class="form-select">
+              <option value="">All Project Types</option>
+              <option>RoofTop</option>
+              <option>Ground Mount PV</option>
+              <option>Water Pump</option>
+              <option>Street Light</option>
+              <option>Hi-Mas</option>
+              <option>Other</option>
+            </select>
+          </div>
+          <div class="col-md-2 col-sm-12 text-end d-flex justify-content-end gap-2">
+            <button id="clearFilters" class="btn btn-outline-secondary">Clear</button>
+            <button id="applyFilters" class="btn btn-primary">Apply</button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
+<style>
+.previous-quotation {
+    background-color: pink;
+    font-size: 0.9rem;
+    color: #555;
+    border-left: 4px solid #dee2e6;
+}
+
+.previous-quotation td {
+    padding-top: 6px;
+    padding-bottom: 6px;
+}
+</style>
+<style>
+    .convert-consumer-btn {
+        margin-right: 5px;
+        margin-bottom: 5px;
+    }
+
+    /* Style for confirmed status */
+    .confirmed-status {
+        color: green;
+        font-weight: bold;
+    }
+</style>
+<div class="container-fluid mt-4">
+
+<h4 class="fw-bold mb-3">Quotation List</h4>
+
+<table id="quotationTable" class="table table-hover align-middle">
+<thead class="table-light">
+<tr>
+  <th>Quotation No</th>
+  <th>Customer</th>
+  <th>Type</th>
+  <th>Project</th>
+  <th>Capacity</th>
+  <th>Date</th>
+  <th class="text-end">Final Amount</th>
+  <th>Status</th>
+  <th class="text-center">Actions</th>
+</tr>
+</thead>
+<tbody id="quotationTableBody">
+{% for q in quotations %}
+<tr class="quotation-row base-{{ q.base_no }}{% if not q.is_latest_revision %} previous-quotation{% endif %}"
+    data-latest="{{ q.is_latest_revision|yesno:'1,0' }}"
+    data-consumer-type="{{ q.consumer_type|default:'' }}"
+    data-project-type="{{ q.project_type|default:'' }}"
+    {% if q.hide_row %}style="display:none"{% endif %}>
+
+  <!-- Quotation No -->
+  <td class="fw-semibold">
+    {{ q.quotation_no }}
+  </td>
+
+  <!-- Consumer Name -->
+  <td>
+    {{ q.consumer_name }}
+
+    {% if q.is_latest_revision and q.has_multiple %}
+    <br>
+      <small class="small text-primary fw-semibold mt-1"
+           style="cursor:pointer"
+           data-label="Details ({{ q.previous_count }} previous)"
+           onclick="toggleDetails('{{ q.base_no }}', this)">
+        Details ({{ q.previous_count }} previous)
+      </small>
+    {% endif %}
+  </td>
+  <td>
+    <span class="badge bg-info-subtle text-dark">
+      {{ q.get_consumer_type_display }}
+    </span>
+  </td>
+  <td>
+    <span class="muted-small">{{ q.project_type }}</span>
+  </td>
+
+  <td>{{ q.plant_capacity_kw }}</td>
+
+  <td>{{ q.date|date:"d-m-Y" }}</td>
+
+  <td class="text-end fw-semibold">
+    ₹ {{ q.final_amount|floatformat:2 }}
+  </td>
+
+   <td class="text-center">
+              {% if q.is_confirmed %}
+                <span class="badge bg-success">Confirmed</span>
+              {% else %}
+                <span class="badge bg-warning">Pending</span>
+              {% endif %}
+            </td>
+<td class="text-center">
+
+{% if q.is_latest_revision and not q.is_confirmed %}
+  <a href="{% url 'quotation:edit_quotation' q.pk %}"
+     class="btn btn-sm btn-outline-secondary">Edit</a>
+
+  <a href="{% url 'quotation:revise_quotation' q.pk %}"
+     class="btn btn-sm btn-outline-warning">Revise</a>
+
+  <button class="btn btn-sm btn-outline-success"
+    data-bs-toggle="modal"
+    data-bs-target="#confirmModal"
+    data-id="{{ q.pk }}"
+    data-name="{{ q.consumer_name }}"
+    data-capacity="{{ q.plant_capacity_kw }}"
+    data-no="{{ q.quotation_no }}"
+    data-date="{{ q.date|date:'d-m-Y' }}"
+    data-amount="{{ q.final_amount }}">
+    Confirm
+  </button>
+{% endif %}
+{% if q.is_confirmed %}
+        <!-- Add Convert Consumer button for confirmed quotations -->
+        <button class="btn btn-sm btn-primary convert-consumer-btn"
+            data-id="{{ q.pk }}"
+            data-type="{{ q.consumer_type }}">
+            Convert Consumer
+        </button>
+    {% endif %}
+<a href="{% url 'quotation:quotation_pdf' q.pk %}"
+   target="_blank"
+   class="btn btn-sm btn-outline-primary">PDF</a>
+
+</td>
+
+</tr>
+{% endfor %}
+</tbody>
+</table>
+</div>
+
+<!-- ================= CONFIRM MODAL ================= -->
+
+<div class="modal fade" id="confirmModal" tabindex="-1">
+<div class="modal-dialog modal-lg">
+<form id="confirmForm">{% csrf_token %}
+<div class="modal-content">
+
+<div class="modal-header">
+<h5 class="modal-title">Quotation Confirmation</h5>
+<button class="btn-close" data-bs-dismiss="modal"></button>
+</div>
+
+<div class="modal-body">
+<p><b>Customer:</b> <span id="m_name"></span></p>
+<p><b>Plant Capacity:</b> <span id="m_capacity"></span></p>
+<p><b>Quotation No:</b> <span id="m_no"></span></p>
+<p><b>Date:</b> <span id="m_date"></span></p>
+<p><b>Final Amount:</b> ₹ <span id="m_amount"></span></p>
+
+<hr>
+
+<div class="row">
+<div class="col-md-6">
+<label>Payment Type</label>
+<select name="payment_type" class="form-control" required>
+<option value="">Select</option>
+<option>Full Payment</option>
+<option>Part Payment</option>
+<option>Part payment & remaning payment after subsidy</option>
+</select>
+</div>
+
+<div class="col-md-6">
+<label>Payment Mode</label>
+<select name="payment_mode" id="paymentMode" class="form-control" required>
+<option value="">Select</option>
+<option>Net Banking</option>
+<option>UPI</option>
+<option>Cash</option>
+<option>Hybrid</option>
+<option>Check</option>
+</select>
+</div>
+</div>
+
+<div class="row mt-2 d-none" id="hybridBox">
+<div class="col-md-6">
+<label>Hybrid Mode</label>
+<select name="hybrid_mode" class="form-control">
+<option>UPI + Cash</option>
+<option>UPI + Net Banking</option>
+<option>UPI + BANK CHECK</option>
+</select>
+</div>
+</div>
+
+<hr>
+
+<div class="row">
+<div class="col-md-6">
+<label>PO Order No (Optional)</label>
+<input type="text" name="po_order_no" class="form-control">
+</div>
+
+<div class="col-md-6">
+<label>PO Date (Optional)</label>
+<input type="date" name="po_date" class="form-control">
+</div>
+</div>
+
+</div>
+
+<div class="modal-footer">
+<button class="btn btn-success" type="submit">Save</button>
+</div>
+
+</div>
+</form>
+</div>
+</div>
+<script>
+function toggleDetails(baseNo, el) {
+
+  const rows = document.querySelectorAll('.base-' + baseNo);
+  const expanded = el.dataset.expanded === "1";
+
+  rows.forEach(row => {
+    if (row.dataset.latest === "0") {
+      row.style.display = expanded ? "none" : "";
+      row.classList.toggle("previous-quotation", !expanded);
+    }
+  });
+
+  if (expanded) {
+    // collapse → restore original label with count
+    el.innerText = el.dataset.label;
+    el.dataset.expanded = "0";
+  } else {
+    // expand
+    el.innerText = "Hide Details";
+    el.dataset.expanded = "1";
+  }
+}
+</script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script src="{% static 'js/quotation_list.js' %}"></script>
+<div id="success-banner" class="success-banner" style="display:none"></div>
+{% endblock %}
+

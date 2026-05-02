@@ -78,6 +78,7 @@ urlpatterns = [
     path('delete_brand/<int:id>/', views.delete_brand, name='delete_brand'),
     path('delete_unit/<int:id>/', views.delete_unit, name='delete_unit'),
     path('delete_supplier/<int:id>/', views.delete_supplier, name='delete_supplier'),
+    path('precheck-delete/<str:entity>/<int:id>/', views.precheck_delete_usage, name='precheck_delete_usage'),
     # path('edit-category/<int:id>/', views.edit_category, name='edit_category'),
     # path('edit-subcategory/<int:id>/', views.edit_subcategory, name='edit_subcategory'),
     # path('edit-product/<int:id>/', views.edit_product, name='edit_product'),

@@ -5,6 +5,11 @@
 <link href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.1.0-rc.0/css/select2.min.css" rel="stylesheet" />
 <script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.1.0-rc.0/js/select2.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/fuse.js/6.6.2/fuse.min.js"></script>
+<style>
+  html, body {
+    overflow-y: auto !important;
+  }
+</style>
 <div class="container mt-5">
    <h3 class="page-title text-center">Task Assigner</h3>
    <div class="card mt-3" style="border: 5px solid #573170; background-color: #f7f7f7;">
@@ -14,6 +19,20 @@
          <hr>
          <form method="post" style="background-color: #f7f7f7;">
             {% csrf_token %}
+            <input type="hidden" name="task_type" id="task_type" value="complaint">
+            <div class="row mb-3">
+               <div class="col-sm-12">
+                  <label class="col-form-label d-block"><b>Request Type:</b></label>
+                  <div class="btn-group btn-group-toggle" data-toggle="buttons">
+                     <label class="btn btn-primary active" id="complaintTypeLabel">
+                        <input type="radio" name="task_type_toggle" value="complaint" autocomplete="off" checked> Complaints
+                     </label>
+                     <label class="btn btn-outline-primary" id="serviceTypeLabel">
+                        <input type="radio" name="task_type_toggle" value="service" autocomplete="off"> Services
+                     </label>
+                  </div>
+               </div>
+            </div>
             <!-- Button to trigger the modal -->
             <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#profileModal">
             First Select Department
@@ -123,7 +142,7 @@
       <div class="modal-content">
          <div class="modal-header">
             <h5 class="modal-title" id="profileModalLabel">User Profile</h5>
-            <button type="button" class="close" data-bs-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+            <button type="button" class="close" data-bs-dismiss="modal" data-dismiss="modal" onclick="closeProfileModal()" aria-label="Close"><span aria-hidden="true">&times;</span></button>
          </div>
          <div class="modal-body">
             <form method="post">
@@ -149,7 +168,8 @@
                </div>
                <!-- Add more fields as needed -->
                <div class="modal-footer">
-                  <button type="submit" class="btn btn-primary">Save</button>
+                  <button type="button" class="btn btn-primary">Save</button>
+                  <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" data-dismiss="modal" onclick="closeProfileModal()">Close</button>
                   <!--            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>-->
                </div>
             </form>
@@ -221,6 +241,76 @@
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
 <script>
+   document.addEventListener('DOMContentLoaded', function () {
+     var hiddenType = document.getElementById('task_type');
+     var complaintLabel = document.getElementById('complaintTypeLabel');
+     var serviceLabel = document.getElementById('serviceTypeLabel');
+     var complaintRadio = document.querySelector('input[name="task_type_toggle"][value="complaint"]');
+     var serviceRadio = document.querySelector('input[name="task_type_toggle"][value="service"]');
+
+     function setTaskType(type) {
+       if (!hiddenType) return;
+       var selected = (type === 'service') ? 'service' : 'complaint';
+       hiddenType.value = selected;
+       if (complaintRadio) complaintRadio.checked = selected === 'complaint';
+       if (serviceRadio) serviceRadio.checked = selected === 'service';
+
+       if (serviceLabel) {
+         serviceLabel.classList.toggle('active', selected === 'service');
+         serviceLabel.classList.toggle('btn-primary', selected === 'service');
+         serviceLabel.classList.toggle('btn-outline-primary', selected !== 'service');
+       }
+       if (complaintLabel) {
+         complaintLabel.classList.toggle('active', selected === 'complaint');
+         complaintLabel.classList.toggle('btn-primary', selected === 'complaint');
+         complaintLabel.classList.toggle('btn-outline-primary', selected !== 'complaint');
+       }
+     }
+
+     if (complaintLabel) {
+       complaintLabel.addEventListener('click', function (e) {
+         e.preventDefault();
+         setTaskType('complaint');
+       });
+     }
+     if (serviceLabel) {
+       serviceLabel.addEventListener('click', function (e) {
+         e.preventDefault();
+         setTaskType('service');
+       });
+     }
+     if (complaintRadio) complaintRadio.addEventListener('change', function () { setTaskType('complaint'); });
+     if (serviceRadio) serviceRadio.addEventListener('change', function () { setTaskType('service'); });
+
+     setTaskType(hiddenType && hiddenType.value ? hiddenType.value : 'complaint');
+   });
+
+   function closeProfileModal() {
+     var el = document.getElementById('profileModal');
+     if (!el) return;
+     // Prefer Bootstrap 5 API
+     if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
+       try {
+         bootstrap.Modal.getOrCreateInstance(el).hide();
+       } catch (e) {}
+     }
+     // Support Bootstrap 4/jQuery API if loaded
+     if (window.jQuery && typeof jQuery.fn.modal === 'function') {
+       try {
+         jQuery(el).modal('hide');
+       } catch (e) {}
+     }
+     // Manual cleanup for mixed Bootstrap environments
+     el.classList.remove('show');
+     el.style.display = 'none';
+     el.setAttribute('aria-hidden', 'true');
+     el.removeAttribute('aria-modal');
+     document.body.classList.remove('modal-open');
+     document.body.style.overflow = '';
+     document.body.style.paddingRight = '';
+     document.querySelectorAll('.modal-backdrop').forEach(function (b) { b.remove(); });
+   }
+
    $(document).ready(function() {
      // Retrieve the dropdown elements
      var departmentDropdown = $('#department');
@@ -273,8 +363,8 @@
        // Update the AssignTo and Department textboxes in the main form
        departmentTextbox.val(selectedDepartment);
 
-       // Close the modal
-       $('#profileModal').modal('hide');
+      // Close the modal
+      closeProfileModal();
      });
 
      // Define the options for departments and first names
@@ -1555,6 +1645,6 @@
 
 <!--------------------------------->
 
-{% include 'footer.html' %}
+
 {% endblock %}
 

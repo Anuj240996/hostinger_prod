@@ -23,11 +23,13 @@
             position: relative; /* For the checkmark */
         }
 
-<!--        /* Styles for active labels */-->
-<!--        .active {-->
-<!--            background-color: green; /* Background color when active */-->
-<!--            color: white; /* Text color for active state */-->
-<!--        }-->
+        /* Styles for active labels */
+        /*
+        .active {
+            background-color: green;
+            color: white;
+        }
+        */
 
         /* Styles for active labels inside the modal */
         .modal-active {
@@ -191,6 +193,20 @@
     <!-- Container for dynamically added form rows -->
     <div id="stockitem">
         <div class="panel-body">
+            <div id="stock-table-header-row" class="row align-items-end" style="display: none;">
+                <div class="form-group mb-1 col-md-1 text-center">
+                    <label class="panel-body-text" style="text-align: center; font-weight: bold;">Sr No</label>
+                </div>
+                <div class="form-group mb-1 col-md-6 text-center">
+                    <label class="panel-body-text" style="text-align: center; font-weight: bold;">Stock</label>
+                </div>
+                <div class="form-group mb-1 col-md-2 text-center">
+                    <label class="panel-body-text" style="text-align: center; font-weight: bold;">Avb.Qunt.</label>
+                </div>
+                <div class="form-group mb-1 col-md-3 text-center">
+                    <label class="panel-body-text" style="text-align: center; font-weight: bold;">Quantity</label>
+                </div>
+            </div>
         </div>
     </div>
            <div style="width: 100%; display: flex; justify-content: flex-end;">
@@ -289,32 +305,6 @@
       </div>
       <div class="modal-body">
         <form id="modalForm">
-          <!-- Checkbox to toggle fields visibility -->
-<!--          <div class="form-group form-check">-->
-<!--            <input type="checkbox" class="form-check-input" id="hidePreviousDetailsCheckbox">-->
-<!--            <label class="form-check-label" for="hidePreviousDetailsCheckbox">Current Delivery Challen</label>-->
-<!--          </div>-->
-
-<!--          <div class="toggle-container">-->
-<!--                <div id="previousBillLabel" class="toggle-label active">Previous Bill</div>-->
-<!--                <label class="toggle-switch">-->
-<!--                    <input type="checkbox" id="hidePreviousDetailsToggle">-->
-<!--                    <span class="slider"></span>-->
-<!--                </label>-->
-<!--                <div id="currentBillLabel" class="toggle-label">Current Bill</div>-->
-<!--            </div>-->
-
-<!--            <div class="toggle-container">-->
-<!--        <div id="currentBillLabel" class="toggle-label" style="width: 180px; text-align: center;">-->
-<!--            Current Bill-->
-<!--            <span class="checkmark" id="checkCurrent" style="text-align: center;">✔</span>-->
-<!--        </div>-->
-<!--        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<div id="previousBillLabel" class="toggle-label" style="width: 180px;">-->
-<!--            Previous Bill-->
-<!--            <span class="checkmark" id="checkPrevious">✔</span>-->
-<!--        </div>-->
-<!--    </div>-->
-
             <div class="toggle-container" style="display: flex; justify-content: center; align-items: center; width: 100%;">
                 <div id="currentBillLabel" class="toggle-label" style="display: flex; flex-direction: column; align-items: center; margin-right: 20px; width: 180px;">
                     <span style="line-height: 1.5;">Current Bill</span>
@@ -325,50 +315,57 @@
                     <span class="checkmark" id="checkPrevious" style="margin-left: 30px; line-height: 1.5;">✔</span>
                 </div>
             </div>
+            <br>
+            <fieldset>
+                <div class="toggle-container" style="display: flex; justify-content: center; align-items: center; width: 100%;">
+                    <div class="form-group" id="previousBillField" style="display: flex; flex-direction: column; margin-right: 20px; width: 180px;">
+                        <label for="eway_no">Prev. Delivery Challan No <span style="color: red;">*</span></label>
+                        <input type="text" id="eway_no" name="eway_no" class="form-control">
+                    </div>
+                    <div class="form-group" id="previousDateField" style="display: flex; flex-direction: column; width: 180px;">
+                        <label for="bill_date">Prev. Bill Date <span style="color: red;">*</span></label>
+                        <input type="date" id="bill_date" name="bill_date" class="form-control">
+                    </div>
+                </div>
 
+                <div class="toggle-container" style="display: flex; justify-content: center; align-items: center; width: 100%;">
+                    <div class="form-group" style="display: flex; flex-direction: column; margin-right: 20px; width: 180px;">
+                        <label for="po_no">PO No</label>
+                        <input type="text" id="po_no" name="po_no" class="form-control" value="{% if supplier.po_order != '0' %}{{ supplier.po_order }}{% endif %}">
+                    </div>
+                    <div class="form-group" style="display: flex; flex-direction: column; width: 180px;">
+                        <label for="po_date">PO Date</label>
+                        <input type="date" id="po_date" name="po_date" class="form-control" value="{{ supplier.po_date|date:'Y-m-d' }}">
+                    </div>
+                </div>
 
-          <!-- Previous Bill and Previous Date Fields -->
-          <div class="form-group" id="previousBillField">
-            <label for="eway_no">Prev. Delivery Challan No <span style="color: red;">*</span></label>
-            <input type="text" id="eway_no" name="eway_no" class="form-control">
-          </div>
-          <div class="form-group" id="previousDateField">
-            <label for="bill_date">Prev. Bill Date <span style="color: red;">*</span></label>
-            <input type="date" id="bill_date" name="bill_date" class="form-control">
-          </div>
+                <div class="toggle-container" style="display: flex; justify-content: center; align-items: center; width: 100%;">
+                    <div class="form-group" style="display: flex; flex-direction: column; margin-right: 20px; width: 180px;">
+                        <label for="veh_no">Vehicle No</label>
+                        <input type="text" id="veh_no" name="veh_no" class="form-control">
+                    </div>
+                    <div class="form-group" style="display: flex; flex-direction: column; width: 180px;">
+                        <label for="arrange">Arrange By <span style="color: red;">*</span></label>
+                        <input type="text" id="arrange" name="arrange" class="form-control" required>
+                    </div>
+                </div>
 
-          <div class="form-group">
-            <label for="veh_no">Vehicle No</label>
-            <input type="text" id="veh_no" name="veh_no" class="form-control">
-          </div>
-          <div class="form-group">
-            <label for="arrange">Arrange By <span style="color: red;">*</span></label>
-            <input type="text" id="arrange" name="arrange" class="form-control" required>
-          </div>
-            <div class="form-group">
-            <label for="handby">Handled By <span style="color: red;">*</span></label>
-            <input type="text" id="handby" name="handby" class="form-control" required>
-          </div>
-          <div class="form-group">
-            <label for="destination">Source <span style="color: red;">*</span></label>
-            <select id="destination" name="destination" class="form-control" required>
-              <option value="" disabled selected></option>
-              <option value="Warehouse" {% if billdetails.destination == "Warehouse" %}selected{% endif %}>Warehouse</option>
-              <option value="Office" {% if billdetails.destination == "Office" %}selected{% endif %}>Office</option>
-              <option value="Vendor" {% if billdetails.destination == "Vendor" %}selected{% endif %}>Vendor</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label for="po_no">PO No</label>
-<!--            <input type="text" id="po_no" name="po_no" class="form-control" value="{{ supplier.po_order }}">-->
-              <input type="text" id="po_no" name="po_no" class="form-control" value="{% if supplier.po_order != '0' %}{{ supplier.po_order }}{% endif %}">
-          </div>
-          <div class="form-group">
-            <label for="po_date">PO Date</label>
-<!--            <input type="date" id="po_date" name="po_date" class="form-control" value="{{ supplier.po_date }}">-->
-            <input type="date" id="po_date" name="po_date" class="form-control" value="{{ supplier.po_date|date:'Y-m-d' }}">
-
-          </div>
+                <div class="toggle-container" style="display: flex; justify-content: center; align-items: center; width: 100%;">
+                    <div class="form-group" style="display: flex; flex-direction: column; margin-right: 20px; width: 180px;">
+                        <label for="handby">Handled By <span style="color: red;">*</span></label>
+                        <input type="text" id="handby" name="handby" class="form-control" required>
+                    </div>
+                    <div class="form-group" style="display: flex; flex-direction: column; width: 180px;">
+                        <label for="destination">Source <span style="color: red;">*</span></label>
+                        <select id="destination" name="destination" class="form-control" required>
+                            <option value="" disabled selected></option>
+                            <option value="Warehouse" {% if billdetails.destination == "Warehouse" %}selected{% endif %}>Warehouse</option>
+                            <option value="Office" {% if billdetails.destination == "Office" %}selected{% endif %}>Office</option>
+                            <option value="Vendor" {% if billdetails.destination == "Vendor" %}selected{% endif %}>Vendor</option>
+                        </select>
+                    </div>
+                </div>
+            </fieldset>
         </form>
       </div>
       <div class="modal-footer">
@@ -407,6 +404,139 @@
     .custom-flex input {
         margin-right: 10px; /* Add some space between the input and the image */
     }
+    /* Confirmation modal field focus background behavior */
+    #confirmationModal .form-control,
+    #confirmationModal select.form-control {
+        background-color: #ffffff;
+        transition: background-color 0.2s ease-in-out;
+    }
+    #confirmationModal .form-control:focus,
+    #confirmationModal select.form-control:focus,
+    #confirmationModal input[type="date"]:focus {
+        background-color: #ffe6ee !important;
+    }
+    #confirmationModal input[type="date"]:focus::-webkit-datetime-edit,
+    #confirmationModal input[type="date"]:focus::-webkit-date-and-time-value {
+        background-color: #ffe6ee !important;
+    }
+    #confirmationModal .form-control:not(:focus),
+    #confirmationModal select.form-control:not(:focus) {
+        background-color: #ffffff;
+    }
+
+    #serialNumberModal .modal-dialog {
+        max-width: 500px;
+        transition: max-width 0.2s ease;
+    }
+    #serialNumberModal .modal-dialog.modal-wide {
+        max-width: 680px;
+    }
+    #serialNumberModal .modal-content {
+        border-radius: 12px;
+        border: 1px solid #e4e7ec;
+        box-shadow: 0 12px 30px rgba(16, 24, 40, 0.12);
+    }
+    #serialNumberModal .serial-modal-body {
+        max-height: 70vh;
+        overflow-y: auto;
+    }
+    .serial-modal-topbar {
+        display: flex;
+        justify-content: flex-end;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 12px;
+        flex-wrap: nowrap;
+    }
+    .serial-actions {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        flex-wrap: nowrap;
+        justify-content: flex-end;
+    }
+    #selectedSerialCount {
+        font-size: 12px;
+        color: #0f5132;
+        background: #d1e7dd;
+        border: 1px solid #badbcc;
+        border-radius: 999px;
+        padding: 2px 10px;
+        white-space: nowrap;
+    }
+    #purchase-bill-container.bill-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+        gap: 10px;
+    }
+    #purchase-bill-container.bill-grid.single-card {
+        grid-template-columns: 1fr;
+    }
+    .purchase-bill-card {
+        border: 1px solid #d0d5dd;
+        border-left-width: 5px;
+        border-radius: 10px;
+        cursor: pointer;
+        transition: transform 0.15s ease, box-shadow 0.15s ease;
+    }
+    .purchase-bill-card:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 6px 16px rgba(16, 24, 40, 0.12);
+    }
+    .purchase-bill-card .pb-title {
+        font-weight: 700;
+        font-size: 14px;
+        line-height: 1.1;
+    }
+    .purchase-bill-card .pb-count {
+        display: block;
+        margin-top: 0;
+        font-size: 11px;
+        line-height: 1.1;
+        opacity: 0.9;
+    }
+    .bill-theme-1 { background: #eff8ff; border-left-color: #2e90fa; }
+    .bill-theme-2 { background: #f5f3ff; border-left-color: #7a5af8; }
+    .bill-theme-3 { background: #ecfdf3; border-left-color: #12b76a; }
+    .bill-theme-4 { background: #fff6ed; border-left-color: #f79009; }
+    .bill-theme-5 { background: #fff1f3; border-left-color: #ee46bc; }
+    .bill-theme-6 { background: #f9fafb; border-left-color: #667085; }
+    #serial-number-container {
+        display: grid;
+        grid-auto-flow: column;
+        grid-template-rows: repeat(10, minmax(18px, auto));
+        grid-auto-columns: minmax(105px, max-content);
+        row-gap: 2px;
+        column-gap: 12px;
+        overflow-x: auto;
+        padding-bottom: 4px;
+        justify-content: start;
+        justify-items: start;
+        text-align: left;
+    }
+    #serial-number-container .form-check {
+        display: inline-flex;
+        align-items: center;
+        justify-content: flex-start;
+        gap: 2px;
+        margin: 0;
+        min-height: 22px;
+        text-align: left;
+    }
+    #serial-number-container .form-check-input {
+        position: static;
+        margin: 0;
+        margin-left: 0;
+        margin-right: 6px;
+        transform: scale(1.12);
+        transform-origin: center;
+    }
+    #serial-number-container .form-check-label {
+        margin: 0;
+        line-height: 1.2;
+        font-size: 14px;
+        text-align: left;
+    }
 </style>
 
 <div class="modal fade" id="serialNumberModal" tabindex="-1" role="dialog" aria-labelledby="serialNumberModalLabel" aria-hidden="true">
@@ -418,8 +548,17 @@
                     <span aria-hidden="true">&times;</span>
                 </button>
             </div>
-            <div class="modal-body">
+            <div class="modal-body serial-modal-body">
                 <form id="serialNumberForm">
+                    <div class="serial-modal-topbar">
+                        <div class="serial-actions">
+                            <span id="selectedSerialCount">Selected: 0</span>
+                            <button type="button" class="btn btn-sm btn-outline-primary" id="selectAllSerialsBtn">Select All</button>
+                            <button type="button" class="btn btn-sm btn-outline-secondary" id="clearAllSerials">Clear All</button>
+                        </div>
+                    </div>
+                    <div id="purchase-bill-container" class="mb-3 bill-grid"></div>
+                    <hr>
                     <div id="serial-number-container">
                         <!-- Checkboxes will be dynamically added here -->
                     </div>
@@ -436,7 +575,76 @@
 <script type="text/javascript">
 $(document).ready(function() {
     var selectedStockId;
+    var selectedQty = 0;
     var selectedSerialNumbers = {};
+    var serialBillMap = {};
+
+    function getCheckedCount() {
+        return $('#serial-number-container input[type="checkbox"]:checked').length;
+    }
+
+    function enforceSelectionLimit() {
+        var checkedCount = getCheckedCount();
+        var $allCheckboxes = $('#serial-number-container input[type="checkbox"]');
+        var totalAvailable = $allCheckboxes.length;
+        var selectionCap = selectedQty > 0 ? Math.min(selectedQty, totalAvailable) : totalAvailable;
+        if (selectedQty > 0 && checkedCount >= selectedQty) {
+            $allCheckboxes.not(':checked').prop('disabled', true);
+        } else {
+            $allCheckboxes.prop('disabled', false);
+        }
+        var allCount = $allCheckboxes.length;
+        var isAllChecked = allCount > 0 && checkedCount === allCount;
+        $('#selectAllSerialsBtn').text(isAllChecked ? 'Unselect All' : 'Select All');
+        $('#selectedSerialCount').text('Selected: ' + checkedCount + ' / ' + selectionCap);
+    }
+
+    function bindSerialChangeHandlers() {
+        $('#serial-number-container input[type="checkbox"]').off('change').on('change', function() {
+            enforceSelectionLimit();
+        });
+    }
+
+    function addSerialCheckbox(serialNo, billNo, isChecked) {
+        var safeSerial = String(serialNo).replace(/"/g, '&quot;');
+        var safeBill = String(billNo || '').replace(/"/g, '&quot;');
+        var checkbox = `<div class="form-check">
+            <input class="form-check-input serial-checkbox" type="checkbox"
+                value="${safeSerial}"
+                id="serialNo-${safeSerial}"
+                data-billno="${safeBill}"
+                ${isChecked ? 'checked' : ''}>
+            <label class="form-check-label" for="serialNo-${safeSerial}">${safeSerial}</label>
+        </div>`;
+        $('#serial-number-container').append(checkbox);
+    }
+
+    function renderPurchaseBillCards(groupedSerials) {
+        var $billContainer = $('#purchase-bill-container');
+        var $modalDialog = $('#serialNumberModal .modal-dialog');
+        $billContainer.empty().removeClass('single-card');
+        $modalDialog.removeClass('modal-wide');
+        if (!groupedSerials.length) {
+            $billContainer.append('<div class="text-muted small">No active serial numbers found.</div>');
+            return;
+        }
+        if (groupedSerials.length === 1) {
+            $billContainer.addClass('single-card');
+        } else if (groupedSerials.length > 4) {
+            $modalDialog.addClass('modal-wide');
+        }
+
+        groupedSerials.forEach(function(group, index) {
+            var themeClass = 'bill-theme-' + ((index % 6) + 1);
+            var card = `<div class="card purchase-bill-card ${themeClass}" data-billno="${group.billno}">
+                <div class="card-body py-2 px-3">
+                    <span class="pb-title">P.B. ${group.billno}</span>
+                    <small class="pb-count">${group.serial_count} serial no.</small>
+                </div>
+            </div>`;
+            $billContainer.append(card);
+        });
+    }
 
     // When clicking on stock name, open modal and load serial numbers
     $(document).on('click', '.stockName', function(e) {
@@ -444,47 +652,77 @@ $(document).ready(function() {
         selectedStockId = $(this).closest('.form-row').find('input[name*="stock"]').val();
 
         // Fetch the quantity from the purchase form
-        var quantity = parseInt($(this).closest('.form-row').find('input[name*="quantity"]').val()) || 0;
+        selectedQty = parseInt($(this).closest('.form-row').find('input[name*="quantity"]').val()) || 0;
 
         // Fetch serial numbers for the selected stock
         $.ajax({
             url: '{% url "get_serial_numbers" %}', // Add appropriate URL here
             data: { 'stock_id': selectedStockId },
             success: function(data) {
-                var serialNumbers = data.serial_numbers; // Assume the data contains a list of serial numbers
+                var serialNumbers = data.serial_numbers || [];
+                var groupedSerials = data.grouped_by_bill || [];
                 $('#serial-number-container').empty();
+                $('#purchase-bill-container').empty();
+                $('#selectAllSerialsBtn').text('Select All');
+                serialBillMap = {};
 
                 // Dynamically add checkboxes for each serial number
                 serialNumbers.forEach(function(serial) {
-                    var isChecked = selectedSerialNumbers[selectedStockId] && selectedSerialNumbers[selectedStockId].includes(serial.serialNo);
-                    var checkbox = `<div class="form-check">
-                        <input class="form-check-input" type="checkbox" value="${serial.serialNo}" id="serialNo-${serial.serialNo}" ${isChecked ? 'checked' : ''}>
-                        <label class="form-check-label" for="serialNo-${serial.serialNo}">${serial.serialNo}</label>
-                    </div>`;
-                    $('#serial-number-container').append(checkbox);
+                    var serialNo = serial.serialNo;
+                    var billNo = serial.billno || 'N/A';
+                    var isChecked = selectedSerialNumbers[selectedStockId] && selectedSerialNumbers[selectedStockId].includes(serialNo);
+                    serialBillMap[serialNo] = billNo;
+                    addSerialCheckbox(serialNo, billNo, isChecked);
                 });
 
-                // Set the maximum selection based on quantity
-                updateCheckboxState(quantity);
+                renderPurchaseBillCards(groupedSerials);
+                bindSerialChangeHandlers();
+                enforceSelectionLimit();
 
                 $('#serialNumberModal').modal('show');
             }
         });
     });
 
-    // Update the checkbox state based on selected quantity
-    function updateCheckboxState(quantity) {
-        $('#serial-number-container input[type="checkbox"]').off('change').on('change', function() {
-            var checkedCount = $('#serial-number-container input[type="checkbox"]:checked').length;
+    // Select all available serials (limited by entered quantity)
+    $('#selectAllSerialsBtn').on('click', function() {
+        var checkedCount = getCheckedCount();
+        var totalCount = $('#serial-number-container input[type="checkbox"]').length;
+        var shouldSelect = !(totalCount > 0 && checkedCount === totalCount);
+        var $enabledBoxes = $('#serial-number-container input[type="checkbox"]:enabled');
+        if (shouldSelect) {
+            var alreadyChecked = getCheckedCount();
+            var availableToSelect = Math.max(0, selectedQty - alreadyChecked);
+            $enabledBoxes.not(':checked').slice(0, availableToSelect).prop('checked', true);
+        } else {
+            $('#serial-number-container input[type="checkbox"]').prop('checked', false).prop('disabled', false);
+        }
+        enforceSelectionLimit();
+    });
 
-            // Enable/disable checkboxes based on checked count and quantity
-            if (checkedCount >= quantity) {
-                $('#serial-number-container input[type="checkbox"]').not(':checked').prop('disabled', true);
-            } else {
-                $('#serial-number-container input[type="checkbox"]').prop('disabled', false);
-            }
-        });
-    }
+    $('#clearAllSerials').on('click', function() {
+        $('#serial-number-container input[type="checkbox"]').prop('checked', false).prop('disabled', false);
+        $('#selectAllSerialsBtn').text('Select All');
+        enforceSelectionLimit();
+    });
+
+    // Bill card click: select all serials for that bill (quantity limit applied)
+    $(document).on('click', '.purchase-bill-card', function() {
+        var billNo = $(this).data('billno');
+        if (!billNo) {
+            return;
+        }
+        var $targetBoxes = $('#serial-number-container input[type="checkbox"][data-billno="' + billNo + '"]');
+        var checkedCount = getCheckedCount();
+        var remainingAllowed = Math.max(0, selectedQty - checkedCount);
+
+        if (remainingAllowed <= 0) {
+            enforceSelectionLimit();
+            return;
+        }
+        $targetBoxes.filter(':enabled').not(':checked').slice(0, remainingAllowed).prop('checked', true);
+        enforceSelectionLimit();
+    });
 
     // Save selected serial numbers when the modal is submitted
     $('#saveSerialNumbers').on('click', function() {
@@ -507,6 +745,7 @@ $(document).ready(function() {
             .val(checkedSerials.join(','));
 
         // Append the hidden field to the form (purchaseForm)
+        $('#purchaseForm').find('input[name="serials-' + selectedStockId + '"]').remove();
         $('#purchaseForm').append(hiddenField);
 
         $('#serialNumberModal').modal('hide');
@@ -616,11 +855,9 @@ $(document).ready(function() {
                     var newRow = `<div class="row form-row">
                         <input type="hidden" name="form-${total}-DELETE" id="id_form-${total}-DELETE">
                         <div class="form-group col-md-1 text-center">
-                            ${total === 0 ? '<label class="panel-body-text" style="text-align: center; font-weight: bold;">Sr No</label>' : ''}
                             <span class="form-control-plaintext">${serialNo}</span>
                         </div>
                         <div class="form-group col-md-6 text-center">
-                            ${total === 0 ? '<label class="panel-body-text" style="text-align: center; font-weight: bold;">Stock</label>' : ''}
                             <div style="display: flex; flex-direction: column; align-items: center;">
                                 <a href="#" class="stockName text-capitalize form-control-plaintext">${stockName}</a>
                                 <input type="hidden" name="form-${total}-stock" value="${stockId}">
@@ -630,7 +867,6 @@ $(document).ready(function() {
                             </div>
                         </div>
                         <div class="form-group col-md-2 text-center">
-                            ${total === 0 ? '<label class="panel-body-text" style="text-align: center; font-weight: bold;">Avb.Qunt.</label>' : ''}
                             <div class="d-flex justify-content-center align-items-center mt-1">
                                 <input type="hidden" class="form-control stock-quantity" value="${stockQuantity}" readonly>
 <!--                                <span class="badge ${badgeClass}">${stockQuantity} <small>${purchase}</small></span>-->
@@ -638,7 +874,6 @@ $(document).ready(function() {
                             </div>
                         </div>
                         <div class="form-group col-md-3 text-center">
-                            ${total === 0 ? '<label class="panel-body-text" style="text-align: center; font-weight: bold;">Quantity</label>' : ''}
                             <div class="input-group">
                                  <input type="number" class="form-control quantity" style="text-align: center;" name="form-${total}-quantity" value="1">
                                 <div class="input-group-append">
@@ -659,6 +894,7 @@ $(document).ready(function() {
                     </div>`;
 
                     $('#stockitem .panel-body').append(newRow);
+                    $('#stock-table-header-row').show();
                     total++;
                     $('#id_form-TOTAL_FORMS').val(total);
                     selectedStock.remove();
@@ -750,6 +986,7 @@ $(document).ready(function() {
         deleteForm('form', $(this));
 
         if ($('#stockitem .form-row').length === 0) {
+            $('#stock-table-header-row').hide();
             $('#fieldset-container').hide();
         }
         updateGSTValues(); // Update GST values after deletion

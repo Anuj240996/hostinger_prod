@@ -1617,6 +1617,47 @@ def search_view(request):
 
     wattage_quantity_dict = {}
 
+    # Build sign image data URL for print preview (avoids /static/images/sign.jpeg 404 in browser print window).
+    print_sign_data_url = ''
+    try:
+        import os
+        import base64
+        from pathlib import Path
+        from django.contrib.staticfiles import finders
+
+        def _resolve_sign_path():
+            candidates = ("images/sign.jpeg", "images/sign.jpg", "images/sign.png", "sign.jpeg", "sign.jpg", "sign.png")
+            for rel in candidates:
+                p = finders.find(rel)
+                if p and os.path.isfile(p):
+                    return p
+            for rel in candidates:
+                for static_dir in getattr(settings, "STATICFILES_DIRS", []):
+                    p = os.path.join(static_dir, rel.replace("images/", "images" + os.sep))
+                    if os.path.isfile(p):
+                        return p
+            for rel in candidates:
+                p = os.path.join(getattr(settings, "STATIC_ROOT", "") or "", rel.replace("images/", "images" + os.sep))
+                if p and os.path.isfile(p):
+                    return p
+            static_root = Path(settings.BASE_DIR) / "static"
+            if static_root.exists():
+                for name in ("sign.jpeg", "sign.jpg", "sign.png"):
+                    for fp in static_root.rglob("*"):
+                        if fp.is_file() and fp.name.lower() == name:
+                            return str(fp)
+            return None
+
+        sign_path = _resolve_sign_path()
+        if sign_path:
+            ext = Path(sign_path).suffix.lower()
+            mime = "image/png" if ext == ".png" else "image/jpeg"
+            with open(sign_path, "rb") as f:
+                b64 = base64.b64encode(f.read()).decode("ascii")
+            print_sign_data_url = f"data:{mime};base64,{b64}"
+    except Exception:
+        print_sign_data_url = ''
+
     if request.method == 'POST':
         selected_company = request.POST.get('company')
         selected_product = request.POST.get('product')
@@ -1673,7 +1714,7 @@ def search_view(request):
                    'unique_wattages': unique_wattages, 'wattage_quantity_dict': wattage_quantity_dict,'inverter_wattages': inverter_wattages,
                    'inverter_panel_total_quantity': inverter_panel_total_quantity,'wattage1_quantity_dict': wattage1_quantity_dict,
                    'inverter_panel_quantity_by_wattage': inverter_panel_quantity_by_wattage, 'items1': items1, 'notification1': notification1,
-                   'count1': count1,})
+                   'count1': count1, 'print_sign_data_url': print_sign_data_url})
 
 
 # views.py
@@ -1779,6 +1820,115 @@ from .models import BarcodeImage
 
 from PIL import Image
 
+
+def _stamp_barcode_pdf_letterhead_on_each_page(pdf_bytes, logo_fs_path, sign_fs_path=None, seal_fs_path=None):
+    """
+    Draw HERAMB letterhead (logo + text) on every page. HTML/xhtml2pdf only paints fixed headers
+    on page 1 reliably; PyMuPDF stamps consistently without overlap/LayoutError issues.
+    """
+    import fitz  # PyMuPDF
+
+    doc = fitz.open(stream=pdf_bytes, filetype="pdf")
+    try:
+        for page in doc:
+            pw = page.rect.width
+            lm = 22
+            rm = 22
+            text_x0 = 90
+            if logo_fs_path:
+                try:
+                    page.insert_image(
+                        # Keep manual X; reduce top margin of logo slightly.
+                        fitz.Rect(lm + 70, 7, lm + 70 + 82, 14 + 70),
+                        filename=logo_fs_path,
+                    )
+                except Exception:
+                    pass
+            # Draw title via direct coordinates (more reliable than textbox clipping for some fonts/pages).
+            title = "HERAMB INDUSTRIES"
+            title_font = "helvetica-bold"
+            title_size = 13
+            title_w = fitz.get_text_length(title, fontname=title_font, fontsize=title_size)
+            title_x = text_x0 + max(0, ((pw - rm - text_x0) - title_w) / 2)
+            page.insert_text(
+                fitz.Point(title_x, 28),
+                title,
+                fontsize=title_size,
+                fontname=title_font,
+                color=(0, 0, 0),
+            )
+            subtitle = "Sales - On-Grid / Off-Grid Solar"
+            sub_font = "helvetica"
+            sub_size = 9
+            sub_w = fitz.get_text_length(subtitle, fontname=sub_font, fontsize=sub_size)
+            sub_x = text_x0 + max(0, ((pw - rm - text_x0) - sub_w) / 2)
+            page.insert_text(
+                fitz.Point(sub_x, 39),
+                subtitle,
+                fontsize=sub_size,
+                fontname=sub_font,
+                color=(0, 0, 0),
+            )
+            addr = (
+                "REGD ADDRESS : Bhagya Bangla, Block No. 2, Opp - Sant Eknamth Mandir,\n"
+                "New Osmanpura, Chh.Sambhaji Nagar. Maharashtra, 431001\n"
+                "EMAIL : herambasd1@gmail.com    GSTIN/UIN : 27AIPPD9639R1Z6"
+            )
+            addr_r = fitz.Rect(text_x0, 43, pw - rm, 92)
+            page.insert_textbox(
+                addr_r,
+                addr,
+                fontsize=6.5,
+                fontname="helvetica",
+                color=(0.13, 0.13, 0.13),
+                align=fitz.TEXT_ALIGN_CENTER,
+            )
+            # Letterhead separator line below logo + company block on every page.
+            page.draw_line(
+                fitz.Point(lm, 85),
+                fitz.Point(pw - rm, 85),
+                color=(0.6, 0.6, 0.6),
+                width=0.7,
+            )
+        # Add company seal + sign on the LAST generated page only (as requested).
+        last_page = doc[-1]
+        lpw = last_page.rect.width
+        lph = last_page.rect.height
+        block_x = lpw - rm - 180
+        block_y = lph - 128
+        last_page.insert_text(
+            fitz.Point(block_x + 58, block_y),
+            "With Regards,",
+            fontsize=9,
+            fontname="helvetica-bold",
+            color=(0, 0, 0),
+        )
+        if sign_fs_path:
+            try:
+                last_page.insert_image(
+                    fitz.Rect(block_x + 45, block_y + 6, block_x + 145, block_y + 58),
+                    filename=sign_fs_path,
+                )
+            except Exception:
+                pass
+        if seal_fs_path:
+            try:
+                last_page.insert_image(
+                    fitz.Rect(block_x - 4, block_y + 10, block_x + 52, block_y + 66),
+                    filename=seal_fs_path,
+                )
+            except Exception:
+                pass
+        last_page.insert_text(
+            fitz.Point(block_x + 40, block_y + 74),
+            "M/S HERAMB INDUSTRIES",
+            fontsize=9,
+            fontname="helvetica-bold",
+            color=(0, 0, 0),
+        )
+        return doc.tobytes()
+    finally:
+        doc.close()
 
 
 @login_required(login_url='user-login')
@@ -1920,25 +2070,78 @@ def GeneratePDF(request):
             'selected_no': selected_no,
         }
 
-        response = HttpResponse(content_type='application/pdf')
-        # response['Content-Disposition'] = 'attachment; filename="pdf_template.pdf"'
-
-
-        # Modify the filename to use the selected_company
         filename = f"{selected_company}_invoice.pdf"
-
-        # Set the Content-Disposition header with the modified filename
-        response['Content-Disposition'] = f'attachment; filename="{filename}"'
 
         template_path = 'detect_barcodes/pdf_template.html'
         template = get_template(template_path)
         html = template.render(context)
-        pisa_status = pisa.CreatePDF(html, dest=response)
 
+        from io import BytesIO
+        from django.contrib.staticfiles import finders
 
+        pdf_buf = BytesIO()
+        pisa_status = pisa.CreatePDF(html, dest=pdf_buf)
         if pisa_status.err:
             return HttpResponse('PDF generation failed <pre>' + html + '</pre>', content_type='text/html')
 
+        pdf_bytes = pdf_buf.getvalue()
+
+        def _resolve_static_image_path(*relative_candidates):
+            import os
+            from pathlib import Path
+            # 1) Django staticfiles finder
+            for rel in relative_candidates:
+                p = finders.find(rel)
+                if p:
+                    return p
+            # 2) STATICFILES_DIRS (same pattern as quotation link_callback)
+            for rel in relative_candidates:
+                for static_dir in getattr(settings, "STATICFILES_DIRS", []):
+                    p = os.path.join(static_dir, rel.replace("images/", "images" + os.sep))
+                    if os.path.isfile(p):
+                        return p
+            # 3) STATIC_ROOT fallback (same pattern as quotation link_callback)
+            for rel in relative_candidates:
+                static_path = rel.replace("images/", "images" + os.sep)
+                p = os.path.join(getattr(settings, "STATIC_ROOT", "") or "", static_path)
+                if p and os.path.isfile(p):
+                    return p
+            # 4) Direct filesystem fallback (BASE_DIR/static)
+            for rel in relative_candidates:
+                p = os.path.join(settings.BASE_DIR, "static", rel.replace("images/", "images" + os.sep))
+                if os.path.exists(p):
+                    return p
+            # 5) Case-insensitive fallback scan in BASE_DIR/static (for Sign.jpeg vs sign.jpeg etc.)
+            static_root = Path(settings.BASE_DIR) / "static"
+            for rel in relative_candidates:
+                target_name = Path(rel).name.lower()
+                if static_root.exists():
+                    for fp in static_root.rglob("*"):
+                        if fp.is_file() and fp.name.lower() == target_name:
+                            return str(fp)
+            return None
+
+        logo_fs = _resolve_static_image_path("images/db_logo_200.png")
+        # Reuse quotation PDF sign asset on final page.
+        sign_fs = _resolve_static_image_path("images/sign.jpeg", "sign.jpeg", "images/sign.jpg", "images/sign.png")
+        # Keep only one image (sign). Leave seal slot empty.
+        seal_fs = None
+        try:
+            pdf_bytes = _stamp_barcode_pdf_letterhead_on_each_page(
+                pdf_bytes,
+                logo_fs,
+                sign_fs_path=sign_fs,
+                seal_fs_path=seal_fs,
+            )
+        except Exception:
+            import logging
+
+            logging.getLogger(__name__).exception(
+                "Barcode PDF letterhead stamp failed; returning unstamped PDF."
+            )
+
+        response = HttpResponse(pdf_bytes, content_type='application/pdf')
+        response['Content-Disposition'] = f'attachment; filename="{filename}"'
         return response
 
 # def editbarcode(request):
@@ -2389,8 +2592,11 @@ def displayproduct(request):
     replace_wattages = []
     replace_panel_quantity_by_wattage = []
     replace_panel_total_quantity = 0
-    user_record = Customer.objects.get(new_customer_id=request.user.id)
-    selected_company = user_record.Comp_name
+    # Ensure the logged-in user has an associated Customer record.
+    # If not, show a proper 404 instead of crashing with DoesNotExist.
+    customer = get_object_or_404(Customer, new_customer_id=request.user.id)
+    user_record = customer
+    selected_company = customer.Comp_name
     items = BarcodeImage.objects.filter(company=selected_company)
     solar_items = items.filter(product_name='SolarPanel')
     inverter_items = items.filter(product_name='Inverter')
@@ -2408,8 +2614,7 @@ def displayproduct(request):
     replace_wattages = {item['wattage'] for item in replace_panel_quantity_by_wattage}
 
     # Generation Meter Details
-    user_record = Customer.objects.get(new_customer_id=request.user.id)
-    selected_comp_name = user_record.Comp_name
+    selected_comp_name = customer.Comp_name
     # print(selected_comp_name)
 
     meters_records = Meters.objects.filter(comp_name=selected_comp_name)
@@ -2417,7 +2622,7 @@ def displayproduct(request):
     generation_ct_records = GenerationCT.objects.filter(comp_name=selected_comp_name)
 
     # CODE FOr MSEB Status
-    customer = get_object_or_404(Customer, new_customer_id=request.user.id)
+    # `customer` is already fetched above (get_object_or_404).
     # customer = Customer.objects.filter(new_customer_id=request.user.id)
     mseb_data = MSEB.objects.filter(customer=customer).first()
     records = MSEB.objects.filter(customer=customer).first()

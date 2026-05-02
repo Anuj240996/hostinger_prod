@@ -2,6 +2,24 @@
 {% block title %}Order Page{% endblock %}
 {% load static %}
 {% block content %}
+<!-- Add this at the top of Comp_Cust.html, after the messages section -->
+<div style="background-color: #f0f0f0; padding: 10px; margin-bottom: 10px; border: 1px solid #ccc;">
+    <h4>Debug Information - Industrial Conversion:</h4>
+    <p>From Quotation: {{ from_quotation|default:'false' }}</p>
+    <p>Consumer type: {{ consumer_type|default:'Not set' }}</p>
+    <p>Project Type: {{ project_type|default:'Not set' }}</p>
+    <p>Plant Capacity: {{ Plant_Capacity|default:'Not set' }}</p>
+    <p>Phase: {{ phase|default:'Not set' }}</p>
+    <p>PO Order: {{ po_order|default:'Not set' }}</p>
+    <p>PO Date: {{ po_date|default:'Not set' }}</p>
+    <p>Company Name: {{ Comp_name|default:'Not set' }}</p>
+    <p>Address: {{ Address|default:'Not set' }}</p>
+    <p>City: {{ city_name|default:'Not set' }}</p>
+    <p>State: {{ state|default:'Not set' }}</p>
+    <p>Email: {{ email|default:'Not set' }}</p>
+    <p>Phone: {{ phone|default:'Not set' }}</p>
+    <p>Consumer No: {{ Consumer|default:'Not set' }}</p>
+</div>
 <style>
     @media (max-width: 767px) {
         .banner-text {
@@ -21,18 +39,88 @@
         background-color: #ffffff; /* White background color for deactivated fieldsets */
         border-color: blue; /* Change the border color to red for active fieldsets */
     }
+
+    /* Style for messages */
+    .messages {
+        list-style: none;
+        padding: 10px;
+        margin: 10px 0;
+    }
+    .messages .success {
+        background-color: #d4edda;
+        color: #155724;
+        border: 1px solid #c3e6cb;
+        padding: 10px;
+        border-radius: 5px;
+    }
+    .messages .error {
+        background-color: #f8d7da;
+        color: #721c24;
+        border: 1px solid #f5c6cb;
+        padding: 10px;
+        border-radius: 5px;
+    }
+    .error-message {
+        color: red; /* Set error text color to red */
+        font-size: 12px;
+        margin-top: 5px;
+        display: block;
+    }
+    .required-error {
+        color: red; /* Set error text color to red */
+        font-size: 12px;
+        margin-top: 5px;
+        display: block;
+    }
+    .error-border {
+        border: 2px solid red !important; /* Set border color to red for input fields with errors */
+    }
+    .required-field label span {
+        color: red; /* Make asterisk red */
+    }
+
+    /* Style for each row inside the fieldset */
+    .highlighted-row {
+        display: flex;
+        align-items: center; /* Center vertically */
+        padding: 8px 15px; /* Add padding for better spacing */
+        border-radius: 10px; /* Rounded corners */
+        margin: 5px; /* Prevents overlapping with fieldset border */
+    }
+
+    /* Highlighted row with background color, padding, and border */
+    .highlighted {
+        background-color: #518988 !important; /* Light pink */
+        padding: 10px; /* Space inside */
+        border: 2px solid #372c7d; /* Red border */
+        border-radius: 10px; /* Matches fieldset */
+    }
+
+    /* Ensure the fieldset has padding and rounded corners */
+    fieldset {
+        overflow: hidden;
+        position: relative;
+        padding: 15px; /* Ensure spacing inside fieldset */
+        border-radius: 10px; /* Rounded corners */
+    }
+
+    /* When the fieldset is NOT active, reset row styles */
+    fieldset:not(.active-fieldset) .highlighted-row {
+        background-color: white !important;
+        border: none !important;
+    }
 </style>
 
     {% if messages %}
         <ul class="messages">
             {% for message in messages %}
-            {% if message.tags %} <script> alert("{{ message }}") </script> {% endif %}>{% endfor %}
+            <li{% if message.tags %} class="{{ message.tags }}"{% endif %}>{{ message }}</li>
+            {% endfor %}
         </ul>
     {% endif %}
 
-
     <div class="testbox">
-        <form  method="post" name="Cust_Form" onfocus="frm_onfocus(this)" hx-post="" hx-target="body" onsubmit="return validateForm()">
+        <form method="post" name="Cust_Form" id="Cust_Form" onfocus="frm_onfocus(this)" hx-post="" hx-target="body" novalidate>
         {% csrf_token %}
 <!--        <div class="banner d-flex flex-column align-items-center">-->
              <div style=" position: relative;
@@ -44,25 +132,24 @@
       align-item1s: center;
       text-align: center;" alt="Logo">
          <h2 class="banner-text">
-
             Industrial Consumer Registration
          </h2>
         </div> <br>
 
-		 <div class="form-group">
-                           <label for="project_type">Select Project Type</label>
-<!--                           <select class="form-control" id="project_type" name="project_type" onchange="updateForm()">-->
-                           <select class="form-control" id="project_type" name="project_type" onchange="updateForm()" required>
-                              <option value="">--- Select Project Type ---</option>
-                              <option value="Rooftop">Rooftop</option>
-                              <option value="Ground Mount PV">Ground Mount PV</option>
-                              <option value="Street Light">Street Light</option>
-                              <option value="Water Pump">Water Pump</option>
-                              <option value="Hi-Mas">Hi-Mas</option>
-                              <option value="Other">Other</option>
-                           </select>
-         </div>
-
+<!--		 <div class="form-group">-->
+<div class="form-group">
+    <label for="project_type">Select Project Type<span>*</span></label>
+    <select class="form-control" id="project_type" name="project_type" onchange="updateForm()">
+        <option value="">--- Select Project Type ---</option>
+        <option value="Rooftop" {% if project_type == 'Rooftop' or project_type == 'RoofTop' %}selected{% endif %}>Rooftop</option>
+        <option value="Ground Mount PV" {% if project_type == 'Ground Mount PV' %}selected{% endif %}>Ground Mount PV</option>
+        <option value="Street Light" {% if project_type == 'Street Light' %}selected{% endif %}>Street Light</option>
+        <option value="Water Pump" {% if project_type == 'Water Pump' %}selected{% endif %}>Water Pump</option>
+        <option value="Hi-Mas" {% if project_type == 'Hi-Mas' %}selected{% endif %}>Hi-Mas</option>
+        <option value="Other" {% if project_type == 'Other' %}selected{% endif %}>Other</option>
+    </select>
+    <div class="required-error" id="project_type-error"></div>
+</div>
 
         <script>
             function updateForm() {
@@ -114,26 +201,11 @@
                     pumpwarrantyLabel.innerHTML = 'Solar Water Pump Warranty <span style="color: red;">*</span>';
                     pumpwarrantyInput.placeholder = "Solar Water Pump Warranty";
 
-                    // Add required attribute to Water Pump fields
-                    solarPumpField.setAttribute("required", true);
-                    pumpQuntField.setAttribute("required", true);
-                    pumpWarrantyField.setAttribute("required", true);
-
-
-
-                    // Remove required attribute from MSEB fields
-                    consumerField.removeAttribute("required");
-                    billUnitField.removeAttribute("required");
-                    loadSanctionField.removeAttribute("required");
-
-
-
                     // Adjust column width when the pump warranty field is shown
                     warrantyFields.forEach(field => {
                         field.classList.remove("col-md-4");
                         field.classList.add("col-md-3");
                     });
-
 
                     // Adjust column width when the pump warranty field is shown
                     projectFields.forEach(field => {
@@ -150,23 +222,13 @@
 
                     inverterLabel.innerHTML = 'Inverter Make <span style="color: red;">*</span>';
                     inverterInput.placeholder = "Inverter Company";
-                    inverterQtyLabel.innerHTML = 'Inverter Quantity <span style="color: red;">*</span>';
+                    inverterQtyLabel.innerHTML = 'Inverter Quantity <span style="color red;">*</span>';
                     inverterQtyInput.placeholder = "Inverter Quantity";
                     upssoftLabel.innerHTML = 'Inverter Online Software <span style="color: red;">*</span>';
                     upssoftInput.placeholder = "Inverter Software";
 
                     invwarrantyLabel.innerHTML = 'Inverter Warranty <span style="color: red;">*</span>';
                     invwarrantyInput.placeholder = "Inverter Warranty";
-
-                    // Remove required attribute from Water Pump fields
-                    solarPumpField.removeAttribute("required");
-                    pumpQuntField.removeAttribute("required");
-                    pumpWarrantyField.removeAttribute("required");
-
-                    // Add required attribute to MSEB fields
-                    consumerField.setAttribute("required", true);
-                    billUnitField.setAttribute("required", true);
-                    loadSanctionField.setAttribute("required", true);
 
                     // Adjust column width back to original when Water Pump is deselected
                     warrantyFields.forEach(field => {
@@ -181,109 +243,129 @@
                 }
             }
 
+            // Call updateForm when page loads to set initial state based on existing data
+            document.addEventListener('DOMContentLoaded', function() {
+                updateForm();
+            });
         </script>
 
          <fieldset>
           <legend style="color: darkblue;">Purchase Order Details</legend>
             <div class="row mb-1 align-items-center">
-                <div class="col-md-4 item1">
+                <div class="col-md-4 item1 required-field">
                     <label for="Plant_Capacity">Plant Capacity<span>*</span></label>
                     <div class="input-group">
-                        <input id="Plant_Capacity" class="text-capitalize form-control" type="number" placeholder="Plant Capacity"name="Plant_Capacity" onfocus="txt_onfocus(this)" onchange="txt_onchange(this)" value="{{ Plant_Capacity }}" min="0" required/>
-<!--                        <span class="input-group-text" style="color:black; background: white;border:0;align:left">Kw</span>-->
+                         <input id="Plant_Capacity" class="text-capitalize form-control" type="number"
+                               placeholder="Plant Capacity" name="Plant_Capacity" step="0.01"
+                               onfocus="txt_onfocus(this)" onchange="txt_onchange(this)"
+                               value="{% if Plant_Capacity %}{{ Plant_Capacity|floatformat:0 }}{% endif %}"
+                               min="0"/>
                         <span class="input-group-text" style="color:#495057;border:0;align:left">Kw</span>
-
                     </div>
+                    <div class="required-error" id="Plant_Capacity-error"></div>
                 </div>
 
                  <!-- Updated Phase Dropdown -->
-                <div class="col-md-4 mb-3 item1">
+                <div class="col-md-4 mb-3 item1 required-field">
                     <label class="col-form-label" for="phase">Phase<span>*</span></label>
-                    <select id="phase" class="form-control" name="phase" required>
+                    <select id="phase" class="form-control" name="phase">
                         <option value="" disabled selected>Select Phase</option>
                         <option value="0" {% if phase == 0 %}selected{% endif %}>Not Applicable</option>
                         <option value="1" {% if phase == 1 %}selected{% endif %}>1 Phase</option>
                         <option value="3" {% if phase == 3 %}selected{% endif %}>3 Phase</option>
                     </select>
+                    <div class="required-error" id="phase-error"></div>
                 </div>
-                <div class="col-md-4 mb-3 item1">
+                <div class="col-md-4 mb-3 item1 required-field">
                     <label class="col-form-label" for="po_order">PO Order No<span>*</span></label>
-                    <input id="po_order" type="text" class="text-capitalize form-control" name="po_order" placeholder="PO Order No" onfocus="txt_onfocus(this)" onchange="txt_onchange(this)" value="{{ po_order }}" onblur="pink" required/>
+                    <input id="po_order" type="text" class="text-capitalize form-control" name="po_order" placeholder="PO Order No" onfocus="txt_onfocus(this)" onchange="txt_onchange(this)" value="{{ po_order }}" onblur="pink"/>
+<!--                    <div class="required-error" id="po_order-error"></div>-->
                 </div>
 
-                <div class="col-md-4 mb-3 item1">
+                <div class="col-md-4 mb-3 item1 required-field">
                     <label class="col-form-label" for="po_date">PO Date<span>*</span></label>
-                    <input id="po_date" class="text-capitalize form-control" type="Date" name="po_date" placeholder="PO Date" onfocus="txt_onfocus(this)" onchange="txt_onchange(this)" value="{{ po_date }}" required/>
+                    <input id="po_date" class="text-capitalize form-control" type="Date" name="po_date" placeholder="PO Date" onfocus="txt_onfocus(this)" onchange="txt_onchange(this)" value="{{ po_date }}"/>
+<!--                    <div class="required-error" id="po_date-error"></div>-->
                 </div>
-                 <div class="col-md-8 mb-3 item1">
-                    <label class="col-form-label" for="advance_status">Advance Amount<span style="color:red;">*</span></label>
-
+                 <div class="col-md-8 mb-3 item1 required-field">
+                    <label class="col-form-label" for="advance_status">Advance Amount<span>*</span></label>
                     <div style="display: flex; align-items: center; gap: 20px;">
                       <label style="display: flex; align-items: center; gap: 5px;">
-                        <input type="radio" name="advance_paid" value="paid" class="checkbox-input" required>
+                        <input type="radio" name="advance_paid" value="paid" class="checkbox-input">
                         Already Paid
                       </label>
-
                       <label style="display: flex; align-items: center; gap: 5px;">
                         <input type="radio" name="advance_paid" value="not_paid" class="checkbox-input">
                         Not Paid
                       </label>
                     </div>
-
+                    <div class="required-error" id="advance_paid-error"></div>
                 </div>
-
             </div>
          </fieldset>
 
             <fieldset>
             <legend style="color: darkblue;"> Consumer Details</legend>
             <div class="row mb-1">
-                <div class="col-md-12 item1">
+                <div class="col-md-12 item1 required-field">
                     <label for="Comp_name">Company/Farm Name<span>*</span></label>
-                    <input id="Comp_name" type="text" class="text-capitalize form-control" name="Comp_name" placeholder="Farm name" onfocus="txt_onfocus(this)" onchange="txt_onchange(this)" onblur="checkCompanyName(this)" required/>
+                    <input id="Comp_name" type="text" class="text-capitalize form-control" name="Comp_name"
+                           placeholder="Farm name" onfocus="txt_onfocus(this)"
+                           onblur="checkCompanyName(this)" value="{{ Comp_name|default:'' }}"/>
                     <div class="error-message" id="comp-name-error"></div>
                 </div>
             </div>
 
              <div class="row mb-1">
-               <div class="col-md-4 item1">
+               <div class="col-md-4 item1 required-field">
                  <label for="Address">Address<span>*</span></label>
-                 <input id="Address" type="text" name="Address" placeholder="Address" class="text-capitalize form-control" onfocus="txt_onfocus(this)" onchange="txt_onchange(this)" value="{{ Address }}" required/>
+                 <input id="Address" type="text" name="Address" placeholder="Address" class="text-capitalize form-control" onfocus="txt_onfocus(this)" onchange="txt_onchange(this)" value="{{ Address }}"/>
+                 <div class="required-error" id="Address-error"></div>
                </div>
-               <div class="col-md-4 item1">
-                 <label for="city-select"> City<span>*</span></label>
-                <select name="city_name" id="city-select" onchange="handleCitySelection()" class="form-control">
-                  <option value="" disabled selected>select City</option>
-                   {% for city in cities %}
-                    <option value="{{ city }}">{{ city }}</option>
-                   {% endfor %}
-                   <option value="Other">Other</option>
-                </select>
-                <input type="text" name="new_city_name" id="new-city-textbox" placeholder="Enter a new city" style="display: none;" class="text-capitalize form-control">
-               </div>
-
-
-               <div class="col-md-4 item1">
+<div class="col-md-4 item1 required-field">
+    <label for="city-select"> City<span>*</span></label>
+    <select name="city_name" id="city-select" onchange="handleCitySelection()" class="form-control">
+        <option value="" disabled {% if not city_name %}selected{% endif %}>select City</option>
+        {% for city in cities %}
+            <option value="{{ city }}"
+                    {% if city_name == city %}selected{% endif %}>
+                {{ city }}
+            </option>
+        {% endfor %}
+        <option value="Other"
+                {% if city_name and city_name != "Other" and city_name not in cities %}selected{% endif %}>
+            Other
+        </option>
+    </select>
+    <input type="text" name="new_city_name" id="new-city-textbox"
+           placeholder="Enter a new city"
+           style="display: {% if city_name and city_name != "Other" and city_name not in cities %}block{% else %}none{% endif %};"
+           value="{% if city_name and city_name != "Other" and city_name not in cities %}{{ city_name }}{% endif %}"
+           class="text-capitalize form-control">
+    <div class="required-error" id="city_name-error"></div>
+</div>
+               <div class="col-md-4 item1 required-field">
                  <label for="state">State<span>*</span></label>
-                 <input id="state"  type="text" name="state" placeholder="State" class="text-capitalize form-control" onfocus="txt_onfocus(this)" onchange="txt_onchange(this)" value="{{ state }}" required/>
+                 <input id="state"  type="text" name="state" placeholder="State" class="text-capitalize form-control" onfocus="txt_onfocus(this)" onchange="txt_onchange(this)" value="{{ state }}"/>
+                 <div class="required-error" id="state-error"></div>
                </div>
              </div>
              <div class="row mb-1">
-               <div class="col-md-4 item1">
+               <div class="col-md-4 item1 required-field">
                   <label for="Pincode">Pincode<span>*</span></label>
-                  <input id="Pincode" type="tel" name="Pincode" class="text-capitalize form-control" maxlength="6" placeholder="Pincode" onfocus="txt_onfocus(this)" onchange="txt_onchange(this)" onblur="validatePincode(this)" value="{{ Pincode }}" required/>
+                  <input id="Pincode" type="tel" name="Pincode" class="text-capitalize form-control" maxlength="6" placeholder="Pincode" onfocus="txt_onfocus(this)" onchange="txt_onchange(this)" onblur="validatePincode(this)" value="{{ Pincode }}"/>
                   <div class="error-message" id="pincode-error"></div>
                </div>
 
-               <div class="col-md-4 item1">
+               <div class="col-md-4 item1 required-field">
                 <label for="email">Email Address<span>*</span></label>
-                <input id="email" type="email" name="email" class="form-control" placeholder="Email" onfocus="txt_onfocus(this)" onchange="txt_onchange(this)" onblur="validateEmail(this)" value="{{ email }}" required/>
+                <input id="email" type="email" name="email" class="form-control" placeholder="Email" onfocus="txt_onfocus(this)" onchange="txt_onchange(this)" onblur="validateEmail(this)" value="{{ email }}"/>
                 <div class="error-message" id="email-error"></div>
                </div>
 
-               <div class="col-md-4 item1">
+               <div class="col-md-4 item1 required-field">
                  <label for="phone">Phone<span>*</span></label>
-                 <input id="phone" type="tel" name="phone" class="text-capitalize form-control" minlength="10" maxlength="10" placeholder="Phone" onfocus="txt_onfocus(this)" onchange="txt_onchange(this)" onblur="validatePhone(this)" value="{{ phone }}" required/>
+                 <input id="phone" type="tel" name="phone" class="text-capitalize form-control" minlength="10" maxlength="10" placeholder="Phone" onfocus="txt_onfocus(this)" onchange="txt_onchange(this)" onblur="validatePhone(this)" value="{{ phone }}"/>
                <div class="error-message" id="phone-error"></div>
             </div>
            </div>
@@ -292,187 +374,152 @@
         <fieldset id="msebdetailsrow">
             <legend style="color: darkblue;"> Consumer MSEB Details</legend>
 	       <div class="row mb-1">
-           <div class="col-md-4 item1">
+           <div class="col-md-4 item1 required-field">
             <label for="Consumer">Consumer Number(MSEDCL)<span>*</span></label>
-		    <input id="Consumer" type="number" name="Consumer" class="text-capitalize form-control" placeholder="Consumer number" onfocus="txt_onfocus(this)" onchange="txt_onchange(this)" value="{{ Consumer }}"  min="0" required/>
+		    <input id="Consumer" type="number" name="Consumer" class="text-capitalize form-control" placeholder="Consumer number" onfocus="txt_onfocus(this)" onchange="txt_onchange(this)" value="{{ Consumer }}"  min="0"/>
+            <div class="required-error" id="Consumer-error"></div>
 		   </div>
-		   <div class="col-md-4 item1">
+		   <div class="col-md-4 item1 required-field">
                 <label for="Bill_unit">Current Load Sanction<span>*</span></label>
                  <div class="input-group">
-                <input id="Bill_unit" class="text-capitalize form-control" type="number" name="Bill_unit" placeholder="Current Load Sanction" onfocus="txt_onfocus(this)" onchange="txt_onchange(this)" value="{{ Bill_unit }}" min="0" required/>
-<!--                 <span class="input-group-text" style="color:black; background: white;border:0;align:left">Kw</span>-->
+                <input id="Bill_unit" class="text-capitalize form-control" type="number" name="Bill_unit" placeholder="Current Load Sanction" onfocus="txt_onfocus(this)" onchange="txt_onchange(this)" value="{{ Bill_unit }}" min="0"/>
                  <span class="input-group-text" style="color:#495057;border:0;align:left">Kw</span>
                 </div>
+                <div class="required-error" id="Bill_unit-error"></div>
                  </div>
-               <div class="col-md-4 item1">
+               <div class="col-md-4 item1 required-field">
                 <label for="loadsancution">Final Load Sanction<span>*</span></label>
                 <div class="input-group">
-                <input id="loadsancution" type="number" name="loadsancution" class="text-capitalize form-control" placeholder="Additional Load Sanction" onfocus="txt_onfocus(this)" onchange="txt_onchange(this)" value="{{ loadsancution }}" min="0" required/>
-<!--                <span class="input-group-text" style="color:black; background: white;border:0;align:left">Kw</span>-->
+                <input id="loadsancution" type="number" name="loadsancution" class="text-capitalize form-control" placeholder="Additional Load Sanction" onfocus="txt_onfocus(this)" onchange="txt_onchange(this)" value="{{ loadsancution }}" min="0"/>
                 <span class="input-group-text" style="color:#495057;border:0;align:left">Kw</span>
                 </div>
+                <div class="required-error" id="loadsancution-error"></div>
                </div>
          </div>
         </fieldset>
 
-
-
         <fieldset>
             <legend style="color: darkblue;">Consumer Solar Project Details</legend>
-<!--               <fieldset style="border: 0;">-->
                 <div class="highlighted-row mb-1">
-
-               <div class="col-md-4 item3">
-
+               <div class="col-md-4 item3 required-field">
                 <label for="solar_comp">Solar Module Make<span style="color: red;">*</span></label>
-                <input id="solar_comp" class="text-capitalize form-control" type="text" class="text-capitalize" name="solar_comp" placeholder="Solar Panel Company" onfocus="txt_onfocus(this)" onchange="txt_onchange(this)" value="{{ solar_comp }}" required/>
+                <input id="solar_comp" class="text-capitalize form-control" type="text" class="text-capitalize" name="solar_comp" placeholder="Solar Panel Company" onfocus="txt_onfocus(this)" onchange="txt_onchange(this)" value="{{ solar_comp }}"/>
+                <div class="required-error" id="solar_comp-error"></div>
                </div>
-                <div class="col-md-4 item3">
+                <div class="col-md-4 item3 required-field">
                 <label for="qunt_solarpanel">Solar Module Quantity<span style="color: red;">*</span></label>
                <div class="input-group">
-                <input id="qunt_solarpanel" type="number" name="qunt_solar" class="text-capitalize form-control" placeholder="Solar Module Quantity" onfocus="txt_onfocus(this)" onchange="txt_onchange(this)" value="{{ Ups_Soft }}" min="0" required/>
+                <input id="qunt_solarpanel" type="number" name="qunt_solar" class="text-capitalize form-control" placeholder="Solar Module Quantity" onfocus="txt_onfocus(this)" onchange="txt_onchange(this)" value="{{ qunt_solar }}" min="0"/>
                 <span class="input-group-text">Nos.</span>
                </div>
+               <div class="required-error" id="qunt_solar-error"></div>
                </div>
-
-                <div class="col-md-4 item2">
+                <div class="col-md-4 item2 required-field">
                 <label for="sol_comp">Solar Module Warranty<span style="color: red;">*</span></label>
                 <div class="input-group">
-                <input id="sol_warranty" class="text-capitalize form-control" type="number" class="text-capitalize" name="sol_warranty" placeholder="Solar Panel Warranty" onfocus="txt_onfocus(this)" onchange="txt_onchange(this)" value="{{ sol_warranty }}" min="0" required/>
+                <input id="sol_warranty" class="text-capitalize form-control" type="number" class="text-capitalize" name="sol_warranty" placeholder="Solar Panel Warranty" onfocus="txt_onfocus(this)" onchange="txt_onchange(this)" value="{{ sol_warranty }}" min="0"/>
                 <span class="input-group-text">Year</span>
                </div>
+               <div class="required-error" id="sol_warranty-error"></div>
                </div>
                 </div>
                     <div class="highlighted-row mb-1">
-                   <div class="col-md-4 item3">
+                   <div class="col-md-4 item3 required-field">
                     <label for="UPSC">Inverter Make<span style="color: red;">*</span></label>
-                    <input id="UPSC" type="text" name="UPSC" class="text-capitalize form-control" placeholder="Inverter Company" onfocus="txt_onfocus(this)" onchange="txt_onchange(this)" value="{{ UPSC }}" required="">
+                    <input id="UPSC" type="text" name="UPSC" class="text-capitalize form-control" placeholder="Inverter Company" onfocus="txt_onfocus(this)" onchange="txt_onchange(this)" value="{{ UPSC }}"/>
+                    <div class="required-error" id="UPSC-error"></div>
                   </div>
-                             <div class="col-md-4 item3">
+                             <div class="col-md-4 item3 required-field">
                     <label for="qunt_inverter">Inverter Quantity<span style="color: red;">*</span></label>
                     <div class="input-group">
-                    <input id="qunt_inverter" type="number" name="qunt_inv" class="text-capitalize form-control" placeholder="Inverter Quantity" onfocus="txt_onfocus(this)" onchange="txt_onchange(this)" value="{{ Ups_Soft }}" min="0" required/>
+                    <input id="qunt_inverter" type="number" name="qunt_inv" class="text-capitalize form-control" placeholder="Inverter Quantity" onfocus="txt_onfocus(this)" onchange="txt_onchange(this)" value="{{ qunt_inv }}" min="0"/>
                      <span class="input-group-text">Nos.</span>
                      </div>
+                     <div class="required-error" id="qunt_inv-error"></div>
                    </div>
-                         <div class="col-md-4 item2">
+                         <div class="col-md-4 item2 required-field">
                     <label for="inv_warranty">Inverter Warranty<span style="color: red;">*</span></label>
                     <div class="input-group">
-                    <input id="inv_warranty" type="number" name="inv_warranty" class="text-capitalize form-control" placeholder="Inverter Warranty" onfocus="txt_onfocus(this)" onchange="txt_onchange(this)" value="{{ inv_warranty }}"  min="0" required="">
+                    <input id="inv_warranty" type="number" name="inv_warranty" class="text-capitalize form-control" placeholder="Inverter Warranty" onfocus="txt_onfocus(this)" onchange="txt_onchange(this)" value="{{ inv_warranty }}"  min="0"/>
                     <span class="input-group-text">Year</span>
                    </div>
+                   <div class="required-error" id="inv_warranty-error"></div>
                   </div>
                     </div>
-<!--            </fieldset>-->
-<!--            <fieldset id="waterpump2"  style="display: none; border: 0;">-->
                 <div class="highlighted-row mb-1" style="display: none;" id="waterpump2">
-                <div id="waterpump" style="display: none;" class="col-md-4 item3">
+                <div id="waterpump" style="display: none;" class="col-md-4 item3 required-field">
                     <label for="pump_make_label" id="pump_make_label">Solar Water Pump Make<span style="color: red;">*</span></label>
-                    <input id="pump_make" type="text" name="solar_pump" class="text-capitalize form-control" placeholder="Solar Water Pump Make" onfocus="txt_onfocus(this)" onchange="txt_onchange(this)" value="{{ pump_make }}">
+                    <input id="pump_make" type="text" name="solar_pump" class="text-capitalize form-control" placeholder="Solar Water Pump Make" onfocus="txt_onfocus(this)" onchange="txt_onchange(this)" value="{{ solar_pump }}">
+                    <div class="required-error" id="solar_pump-error"></div>
                 </div>
-
-                <div id="waterpump1" style="display: none;" class="col-md-4 item3">
+                <div id="waterpump1" style="display: none;" class="col-md-4 item3 required-field">
                     <label for="pump_qunt_label" id="pump_qunt_label">Solar Water Pump Quantity<span style="color: red;">*</span></label>
                     <div class="input-group">
                     <input id="pump_qunt" type="number" name="pump_qunt" class="text-capitalize form-control" placeholder="Solar Water Pump Quantity" onfocus="txt_onfocus(this)" onchange="txt_onchange(this)" value="{{ pump_qunt }}" min="0">
                     <span class="input-group-text">Nos.</span>
                   </div>
+                  <div class="required-error" id="pump_qunt-error"></div>
                 </div>
-                 <div class="col-md-4 item2" id="pumpwarranty" style="display: none;">
+                 <div class="col-md-4 item2 required-field" id="pumpwarranty" style="display: none;">
                     <label for="pump_warranty" id="pump_warranty_label">Solar Water Pump Warranty<span style="color: red;">*</span></label>
                     <div class="input-group">
                     <input id="pump_warranty" type="number" name="pump_warranty" class="text-capitalize form-control" placeholder="Solar Water Pump Warranty" onfocus="txt_onfocus(this)" onchange="txt_onchange(this)" value="{{ pump_warranty }}" min="0">
                     <span class="input-group-text">Year</span>
                    </div>
+                   <div class="required-error" id="pump_warranty-error"></div>
                 </div>
                 </div>
-<!--            </fieldset>-->
-<!--            <fieldset style="border: 0;">-->
                     <div class="highlighted-row mb-1">
-                   <div class="col-md-4 item3">
+                   <div class="col-md-4 item3 required-field">
                     <label for="Ups_Soft">Inverter Online Software<span style="color: red;">*</span></label>
-                    <input id="Ups_Soft" type="text" name="Ups_Soft" class="text-capitalize form-control" placeholder="Inverter Software" onfocus="txt_onfocus(this)" onchange="txt_onchange(this)" value="{{ Ups_Soft }}" required/>
+                    <input id="Ups_Soft" type="text" name="Ups_Soft" class="text-capitalize form-control" placeholder="Inverter Software" onfocus="txt_onfocus(this)" onchange="txt_onchange(this)" value="{{ Ups_Soft }}"/>
+                    <div class="required-error" id="Ups_Soft-error"></div>
                    </div>
-                         <div class="col-md-4 item2">
+                         <div class="col-md-4 item2 required-field">
                     <label for="com_warranty">O & M Warranty<span style="color: red;">*</span></label>
                     <div class="input-group">
-                    <input id="com_warranty" type="number" name="com_warranty" class="text-capitalize form-control" placeholder="O & M Warranty" onfocus="txt_onfocus(this)" onchange="txt_onchange(this)" value="{{ com_warranty }}" min="0" required/>
+                    <input id="com_warranty" type="number" name="com_warranty" class="text-capitalize form-control" placeholder="O & M Warranty" onfocus="txt_onfocus(this)" onchange="txt_onchange(this)" value="{{ com_warranty }}" min="0"/>
                      <span class="input-group-text">Year</span>
                       </div>
+                      <div class="required-error" id="com_warranty-error"></div>
                    </div>
-                   <div class="col-md-4 item3">
-                     <label for="Engineer_Assigned">Engineer Assigned<span style="color: red;">*</span></label>
-                    <select id="Engineer_Assigned" name="Engineer_Assigned" class="form-control" required>
+                  </div>
+        </fieldset>
+
+        <fieldset>
+            <legend style="color: darkblue;">Assign Solar Project</legend>
+            <div class="highlighted-row mb-1">
+                <div class="col-md-6 item3 required-field">
+                    <label for="Associate_Assigned">Associate Assigned<span style="color: red;">*</span></label>
+                    <select id="Associate_Assigned" name="Associate_Assigned" class="form-control">
+                        <option value="" disabled selected>Select Associate</option>
+                        {% for associate in associates %}
+                            <option value="{{ associate.id }}">{{ associate.first_name }} {{ associate.last_name }}</option>
+                        {% endfor %}
+                    </select>
+                    <div class="required-error" id="Associate_Assigned-error"></div>
+                </div>
+
+                <div class="col-md-6 item3 required-field">
+                    <label for="Engineer_Assigned">Engineer Assigned<span style="color: red;">*</span></label>
+                    <select id="Engineer_Assigned" name="Engineer_Assigned" class="form-control">
                         <option value="" disabled selected>Select Engineer</option>
                         {% for engineer in engineers %}
                             <option value="{{ engineer.id }}">{{ engineer.first_name }} {{ engineer.last_name }}</option>
                         {% endfor %}
                         <option value="1">Other</option>
                     </select>
-                  </div>
-                  </div>
+                    <div class="required-error" id="Engineer_Assigned-error"></div>
+                </div>
+            </div>
         </fieldset>
-<style>
-    /* Style for each row inside the fieldset */
-    .highlighted-row {
-        display: flex;
-        align-items: center; /* Center vertically */
-        padding: 8px 15px; /* Add padding for better spacing */
-        border-radius: 10px; /* Rounded corners */
-        // margin: 5px; /* Prevents overlapping with fieldset border */
-    }
-
-    /* Highlighted row with background color, padding, and border */
-    .highlighted {
-        // background-color: #a5a9d9 !important; /* Light pink */
-        background-color: #518988 !important; /* Light pink */
-        padding: 10px; /* Space inside */
-        border: 2px solid #372c7d; /* Red border */
-        border-radius: 10px; /* Matches fieldset */
-        // margin: 5px; /* Keeps it inside the fieldset */
-    }
-
-    /* Ensure the fieldset has padding and rounded corners */
-    fieldset {
-        overflow: hidden;
-        position: relative;
-        padding: 15px; /* Ensure spacing inside fieldset */
-        border-radius: 10px; /* Rounded corners */
-    }
-
-
-    /* When the fieldset is NOT active, reset row styles */
-    fieldset:not(.active-fieldset) .highlighted-row {
-        background-color: white !important;
-        border: none !important;
-    }
-</style>
-
-<script>
-    document.addEventListener("DOMContentLoaded", function () {
-        const rows = document.querySelectorAll(".highlighted-row.mb-1"); // Select all rows inside the fieldset
-
-        rows.forEach(function (row) {
-            row.addEventListener("click", function () {
-                // Remove background from all rows
-                rows.forEach(function (r) {
-                    r.classList.remove("highlighted");
-                });
-
-                // Add background to clicked row
-                row.classList.add("highlighted");
-            });
-        });
-    });
-</script>
 
           <fieldset>
             <legend style="color: darkblue;">Consumer Account Details</legend>
             <div class="row mb-1">
-             <div class="col-md-6 item1">
-<!--            <div class="col-md-4 item1">-->
+             <div class="col-md-6 item1 required-field">
                 <label for="username">Username<span>*</span></label>
-                <input id="username" type="text" name="username" class="form-control" placeholder="Username" onfocus="txt_onfocus(this)" onchange="txt_onchange(this)" onblur="checkUsername(this)" required/>
+                <input id="username" type="text" name="username" class="form-control" placeholder="Username" onfocus="txt_onfocus(this)" onchange="txt_onchange(this)" onblur="checkUsername(this)"/>
                 <div class="error-message" id="username-error"></div>
              </div>
             <div class="col-md-6 item1">
@@ -487,44 +534,47 @@
 <br>
 <div class="row mb-1">
          <div class="btn-block col-md-4">
-<!--            <button type="submit"  value="{{Comm_Cust}}">Submit </button>-->
-              <button type="submit"  value="{{Comp_Cust}}" style="width: 80%; height: 110%;">Save & New</button>
+              <button type="button" name="save_new" value="save_new" style="width: 80%; height: 110%;" onclick="handleSaveNew()">Save & New</button>
          </div>
     <br><br>
          <div class="btn-block col-md-4">
-             <button type="submit"  id="saveAndRedirect" style="width: 80%; height: 110%;">Save & Exit</button>
+             <button type="button" name="save_exit" value="save_exit" style="width: 80%; height: 110%;" onclick="handleSaveExit()">Save & Exit</button>
          </div>
     <br><br>
          <div class="btn-block col-md-4">
-            <button type="Reset" href="/" style="width: 80%; height: 110%;">Clear</button>
+            <button type="button" href="/" style="width: 80%; height: 110%;" onclick="clearForm()">Clear</button>
          </div>
 </div>
 <br>
-
         </form>
     </div>
 
-<style>
-    .error-message {
-        color: red; /* Set error text color to red */
-    }
-
-    .error-border {
-        border: 1px solid red !important; /* Set border color to red for input fields with errors */
-    }
-</style>
 <script>
+    // Track validation state
+    let isValidationInProgress = false;
+    let validationErrors = [];
+    let companyNameValidated = false;
+    let usernameValidated = false;
 
     function checkCompanyName(input) {
         const compName = input.value;
         const compNameError = document.getElementById('comp-name-error');
 
-         if (compName === '') {
-                compNameError.textContent = 'Company name cannot be empty.';
-                input.classList.add('error-border');
-                input.focus();
-                return;
-         }
+        // Clear previous error
+        compNameError.textContent = '';
+        input.classList.remove('error-border');
+
+        // Check if field is empty
+        if (compName.trim() === '') {
+            compNameError.textContent = 'Company name cannot be empty.';
+            input.classList.add('error-border');
+            companyNameValidated = false;
+            return false;
+        }
+
+        // Show loading indicator
+        compNameError.textContent = 'Checking...';
+        compNameError.style.color = 'blue';
 
         fetch("{% url 'check_company_name' %}", {
             method: "POST",
@@ -538,15 +588,21 @@
         .then(data => {
             if (data.exists) {
                 compNameError.textContent = 'Company name already exists. Please enter a different Company Name.';
+                compNameError.style.color = 'red';
                 input.classList.add('error-border');
-                input.focus();
+                companyNameValidated = false;
             } else {
                 compNameError.textContent = '';
+                compNameError.style.color = 'green';
                 input.classList.remove('error-border');
+                companyNameValidated = true;
             }
         })
         .catch(error => {
             console.error('Error:', error);
+            compNameError.textContent = 'Error checking company name. Please try again.';
+            compNameError.style.color = 'red';
+            companyNameValidated = false;
         });
     }
 
@@ -554,12 +610,22 @@
         const username = input.value;
         const usernameError = document.getElementById('username-error');
 
-         if (username === '') {
-                usernameError.textContent = 'Username cannot be empty.';
-                input.classList.add('error-border');
-                input.focus();
-                return;
-         }
+        // Clear previous error
+        usernameError.textContent = '';
+        input.classList.remove('error-border');
+
+        // Check if field is empty
+        if (username.trim() === '') {
+            usernameError.textContent = 'Username cannot be empty.';
+            input.classList.add('error-border');
+            usernameValidated = false;
+            return;
+        }
+
+        // Show loading indicator
+        usernameError.textContent = 'Checking...';
+        usernameError.style.color = 'blue';
+
         fetch("{% url 'check-username' %}", {
             method: "POST",
             headers: {
@@ -572,136 +638,573 @@
         .then(data => {
             if (data.exists) {
                 usernameError.textContent = 'This username already exists. Please enter a different username.';
+                usernameError.style.color = 'red';
                 input.classList.add('error-border');
-                input.focus();
+                usernameValidated = false;
             } else {
                 usernameError.textContent = '';
+                usernameError.style.color = 'green';
                 input.classList.remove('error-border');
+                usernameValidated = true;
             }
         })
         .catch(error => {
             console.error('Error:', error);
+            usernameError.textContent = 'Error checking username. Please try again.';
+            usernameError.style.color = 'red';
+            usernameValidated = false;
         });
     }
 
+    function validatePincode(input) {
+        const pincode = input.value;
+        const pincodeError = document.getElementById('pincode-error');
 
-  function validatePincode(input) {
-    const pincode = input.value;
-    const pincodeError = document.getElementById('pincode-error');
-
-    if (pincode.length !== 6 || isNaN(pincode)) {
-        if (!/^\d{0,6}$/.test(pincode)) {
-            // Check if input contains non-numeric characters
-            pincodeError.textContent = 'Please enter a 6-digit numeric pincode.';
-            input.classList.add('error-border'); // Add error border class
-            input.focus();
-            input.value = pincode.replace(/[^0-9]/g, '').slice(0, 6); // Remove non-numeric characters
+        if (pincode.length !== 6 || isNaN(pincode)) {
+            if (!/^\d{0,6}$/.test(pincode)) {
+                pincodeError.textContent = 'Please enter a 6-digit numeric pincode.';
+                input.classList.add('error-border');
+                input.focus();
+                input.value = pincode.replace(/[^0-9]/g, '').slice(0, 6);
+            } else {
+                pincodeError.textContent = 'Please enter a 6-digit numeric pincode.';
+                input.classList.add('error-border');
+                input.focus();
+            }
+            return false;
         } else {
-            pincodeError.textContent = 'Please enter a 6-digit numeric pincode.';
-            input.classList.add('error-border'); // Add error border class
-            input.focus();
+            pincodeError.textContent = '';
+            input.classList.remove('error-border');
+            return true;
         }
-    } else {
-        pincodeError.textContent = ''; // Clear error message
-        input.classList.remove('error-border'); // Remove error border class
     }
-}
 
-function validatePhone(input) {
-    const phone = input.value;
-    const phoneError = document.getElementById('phone-error');
+    function validatePhone(input) {
+        const phone = input.value;
+        const phoneError = document.getElementById('phone-error');
 
-    if (phone.length !== 10 || isNaN(phone)) {
-        if (!/^\d{0,10}$/.test(phone)) {
-            // Check if input contains non-numeric characters
-            phoneError.textContent = 'Please enter a 10-digit numeric phone number.';
-            input.classList.add('error-border'); // Add error border class
-            input.focus();
-            input.value = phone.replace(/[^0-9]/g, '').slice(0, 10); // Remove non-numeric characters
+        if (phone.length !== 10 || isNaN(phone)) {
+            if (!/^\d{0,10}$/.test(phone)) {
+                phoneError.textContent = 'Please enter a 10-digit numeric phone number.';
+                input.classList.add('error-border');
+                input.focus();
+                input.value = phone.replace(/[^0-9]/g, '').slice(0, 10);
+            } else {
+                phoneError.textContent = 'Please enter a 10-digit numeric phone number.';
+                input.classList.add('error-border');
+                input.focus();
+            }
+            return false;
         } else {
-            phoneError.textContent = 'Please enter a 10-digit numeric phone number.';
-            input.classList.add('error-border'); // Add error border class
-            input.focus();
+            phoneError.textContent = '';
+            input.classList.remove('error-border');
+            return true;
         }
-    } else {
-        phoneError.textContent = ''; // Clear error message
-        input.classList.remove('error-border'); // Remove error border class
     }
-}
 
-function validateEmail(input) {
+    function validateEmail(input) {
         const email = input.value;
         const emailError = document.getElementById('email-error');
-
-        // Simple email validation using a regular expression
         const emailPattern = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$/;
 
         if (!emailPattern.test(email)) {
             emailError.textContent = 'Please enter a valid email address.';
             input.classList.add('error-border');
             input.focus();
+            return false;
         } else {
             emailError.textContent = '';
             input.classList.remove('error-border');
+            return true;
         }
     }
 
-</script>
+    // Function to validate required fields
+    function validateRequiredFields() {
+        let isValid = true;
 
-<script>
-    function validateForm() {
-    const pincodeInput = document.getElementById('Pincode');
-    const phoneInput = document.getElementById('phone');
-    const compNameInput = document.getElementById('Comp_name');
-    const usernameInput = document.getElementById('username');
+        // Clear all required error messages
+        document.querySelectorAll('.required-error').forEach(el => {
+            el.textContent = '';
+        });
 
-    // Run pincode and phone validation
-    validatePincode(pincodeInput);
-    validatePhone(phoneInput);
-    checkCompanyName(compNameInput);
-    checkUsername(usernameInput);
+        // Remove error borders from all inputs
+        document.querySelectorAll('input, select, textarea').forEach(el => {
+            el.classList.remove('error-border');
+        });
 
-    // Check if there are any error messages
-    const pincodeError = document.getElementById('pincode-error');
-    const phoneError = document.getElementById('phone-error');
-    const compNameError = document.getElementById('comp-name-error');
-    const usernameError = document.getElementById('username-error');
+        // Project Type validation
+        const projectType = document.getElementById('project_type');
+        if (!projectType.value) {
+            document.getElementById('project_type-error').textContent = 'Project Type is required';
+            projectType.classList.add('error-border');
+            isValid = false;
+        }
 
+        // Purchase Order Details
+        const plantCapacity = document.getElementById('Plant_Capacity');
+        if (!plantCapacity.value) {
+            document.getElementById('Plant_Capacity-error').textContent = 'Plant Capacity is required';
+            plantCapacity.classList.add('error-border');
+            isValid = false;
+        }
 
-    if (pincodeError.textContent || phoneError.textContent || compNameError.textContent || usernameError.textContent) {
-        // Return false to prevent form submission if there are errors
-        return false;
+        const phase = document.getElementById('phase');
+        if (!phase.value) {
+            document.getElementById('phase-error').textContent = 'Phase is required';
+            phase.classList.add('error-border');
+            isValid = false;
+        }
+
+<!--        const poOrder = document.getElementById('po_order');-->
+<!--        if (!poOrder.value) {-->
+<!--            document.getElementById('po_order-error').textContent = 'PO Order No is required';-->
+<!--            poOrder.classList.add('error-border');-->
+<!--            isValid = false;-->
+<!--        }-->
+
+<!--        const poDate = document.getElementById('po_date');-->
+<!--        if (!poDate.value) {-->
+<!--            document.getElementById('po_date-error').textContent = 'PO Date is required';-->
+<!--            poDate.classList.add('error-border');-->
+<!--            isValid = false;-->
+<!--        }-->
+
+        const advancePaid = document.querySelector('input[name="advance_paid"]:checked');
+        if (!advancePaid) {
+            document.getElementById('advance_paid-error').textContent = 'Please select Advance Amount status';
+            isValid = false;
+        }
+
+        // Consumer Details
+        const address = document.getElementById('Address');
+        if (!address.value) {
+            document.getElementById('Address-error').textContent = 'Address is required';
+            address.classList.add('error-border');
+            isValid = false;
+        }
+
+        const citySelect = document.getElementById('city-select');
+        if (!citySelect.value) {
+            document.getElementById('city_name-error').textContent = 'City is required';
+            citySelect.classList.add('error-border');
+            isValid = false;
+        } else if (citySelect.value === 'Other') {
+            const newCity = document.getElementById('new-city-textbox');
+            if (!newCity.value) {
+                document.getElementById('city_name-error').textContent = 'Please enter city name';
+                newCity.classList.add('error-border');
+                isValid = false;
+            }
+        }
+
+        const state = document.getElementById('state');
+        if (!state.value) {
+            document.getElementById('state-error').textContent = 'State is required';
+            state.classList.add('error-border');
+            isValid = false;
+        }
+
+        // Pincode, Email, Phone - already validated by other functions
+        if (!validatePincode(document.getElementById('Pincode'))) isValid = false;
+        if (!validateEmail(document.getElementById('email'))) isValid = false;
+        if (!validatePhone(document.getElementById('phone'))) isValid = false;
+
+        // MSEB Details (only if project type is not Water Pump)
+        const projectTypeValue = document.getElementById('project_type').value;
+        if (projectTypeValue !== 'Water Pump') {
+            const consumer = document.getElementById('Consumer');
+            if (!consumer.value) {
+                document.getElementById('Consumer-error').textContent = 'Consumer Number is required';
+                consumer.classList.add('error-border');
+                isValid = false;
+            }
+
+            const billUnit = document.getElementById('Bill_unit');
+            if (!billUnit.value) {
+                document.getElementById('Bill_unit-error').textContent = 'Current Load Sanction is required';
+                billUnit.classList.add('error-border');
+                isValid = false;
+            }
+
+            const loadSanction = document.getElementById('loadsancution');
+            if (!loadSanction.value) {
+                document.getElementById('loadsancution-error').textContent = 'Final Load Sanction is required';
+                loadSanction.classList.add('error-border');
+                isValid = false;
+            }
+        }
+
+        // Solar Project Details
+        const solarComp = document.getElementById('solar_comp');
+        if (!solarComp.value) {
+            document.getElementById('solar_comp-error').textContent = 'Solar Module Make is required';
+            solarComp.classList.add('error-border');
+            isValid = false;
+        }
+
+        const quntSolar = document.getElementById('qunt_solarpanel');
+        if (!quntSolar.value) {
+            document.getElementById('qunt_solar-error').textContent = 'Solar Module Quantity is required';
+            quntSolar.classList.add('error-border');
+            isValid = false;
+        }
+
+        const solWarranty = document.getElementById('sol_warranty');
+        if (!solWarranty.value) {
+            document.getElementById('sol_warranty-error').textContent = 'Solar Module Warranty is required';
+            solWarranty.classList.add('error-border');
+            isValid = false;
+        }
+
+        const upsc = document.getElementById('UPSC');
+        if (!upsc.value) {
+            document.getElementById('UPSC-error').textContent = 'Inverter Make is required';
+            upsc.classList.add('error-border');
+            isValid = false;
+        }
+
+        const quntInv = document.getElementById('qunt_inverter');
+        if (!quntInv.value) {
+            document.getElementById('qunt_inv-error').textContent = 'Inverter Quantity is required';
+            quntInv.classList.add('error-border');
+            isValid = false;
+        }
+
+        const invWarranty = document.getElementById('inv_warranty');
+        if (!invWarranty.value) {
+            document.getElementById('inv_warranty-error').textContent = 'Inverter Warranty is required';
+            invWarranty.classList.add('error-border');
+            isValid = false;
+        }
+
+        // Water Pump fields (only if project type is Water Pump)
+        if (projectTypeValue === 'Water Pump') {
+            const solarPump = document.getElementById('pump_make');
+            if (solarPump && !solarPump.value) {
+                document.getElementById('solar_pump-error').textContent = 'Solar Water Pump Make is required';
+                solarPump.classList.add('error-border');
+                isValid = false;
+            }
+
+            const pumpQunt = document.getElementById('pump_qunt');
+            if (pumpQunt && !pumpQunt.value) {
+                document.getElementById('pump_qunt-error').textContent = 'Solar Water Pump Quantity is required';
+                pumpQunt.classList.add('error-border');
+                isValid = false;
+            }
+
+            const pumpWarranty = document.getElementById('pump_warranty');
+            if (pumpWarranty && !pumpWarranty.value) {
+                document.getElementById('pump_warranty-error').textContent = 'Solar Water Pump Warranty is required';
+                pumpWarranty.classList.add('error-border');
+                isValid = false;
+            }
+        }
+
+        const upsSoft = document.getElementById('Ups_Soft');
+        if (!upsSoft.value) {
+            document.getElementById('Ups_Soft-error').textContent = 'Inverter Online Software is required';
+            upsSoft.classList.add('error-border');
+            isValid = false;
+        }
+
+        const comWarranty = document.getElementById('com_warranty');
+        if (!comWarranty.value) {
+            document.getElementById('com_warranty-error').textContent = 'O & M Warranty is required';
+            comWarranty.classList.add('error-border');
+            isValid = false;
+        }
+
+        const associateAssigned = document.getElementById('Associate_Assigned');
+        if (!associateAssigned.value) {
+            document.getElementById('Associate_Assigned-error').textContent = 'Associate Assigned is required';
+            associateAssigned.classList.add('error-border');
+            isValid = false;
+        }
+
+        const engineerAssigned = document.getElementById('Engineer_Assigned');
+        if (!engineerAssigned.value) {
+            document.getElementById('Engineer_Assigned-error').textContent = 'Engineer Assigned is required';
+            engineerAssigned.classList.add('error-border');
+            isValid = false;
+        }
+
+        return isValid;
     }
 
-
-    // Form is valid, allow submission
-    return true;
-}
-
 </script>
-
 
 <script>
-    // Get a reference to the "Save and Redirect" button
-    const saveAndRedirectButton = document.getElementById('saveAndRedirect');
+    document.addEventListener('DOMContentLoaded', function() {
+        const form = document.getElementById('Cust_Form');
+        const compNameInput = document.getElementById('Comp_name');
+        const usernameInput = document.getElementById('username');
 
-    // Add a click event listener to the button
-    saveAndRedirectButton.addEventListener('click', function () {
-        if (validateForm()) {
-            // Trigger the form's submit method
-            document.Cust_Form.submit();
+        // Reset validation flag when company name changes
+        compNameInput.addEventListener('input', function() {
+            companyNameValidated = false;
+            const compNameError = document.getElementById('comp-name-error');
+            compNameError.textContent = '';
+            this.classList.remove('error-border');
+        });
 
-            // Redirect to the specified URL after the form submission
-             alert('New Customer enrolled Successfully');
-            window.location.href = '{% url 'customer-cust' %}';
+        // Reset validation flag when username changes
+        usernameInput.addEventListener('input', function() {
+            usernameValidated = false;
+            const usernameError = document.getElementById('username-error');
+            usernameError.textContent = '';
+            this.classList.remove('error-border');
+        });
 
-              // Reload the page after a short delay (e.g., 1000 milliseconds or 1 second)
-            setTimeout(function () {
-                location.reload();
-            }, 1000); // Adjust the delay as needed
-          }
+        // Also check company name on page load if it already has a value
+        if (compNameInput.value.trim() !== '') {
+            checkCompanyName(compNameInput);
+        }
+
+        // Also check username on page load if it already has a value
+        if (usernameInput.value.trim() !== '') {
+            checkUsername(usernameInput);
+        }
     });
+
+    function handleSaveNew() {
+        // Validate required fields
+        if (!validateRequiredFields()) {
+            return false;
+        }
+
+        // Now check company name if not already validated
+        const compNameInput = document.getElementById('Comp_name');
+        const compNameError = document.getElementById('comp-name-error');
+
+        if (!companyNameValidated) {
+            if (compNameInput.value.trim() === '') {
+                compNameError.textContent = 'Company name cannot be empty.';
+                compNameInput.classList.add('error-border');
+                compNameInput.focus();
+                return false;
+            }
+
+            // Show checking message
+            compNameError.textContent = 'Checking company name...';
+            compNameError.style.color = 'blue';
+
+            // Perform the AJAX check
+            fetch("{% url 'check_company_name' %}", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-CSRFToken": "{{ csrf_token }}"
+                },
+                body: JSON.stringify({ comp_name: compNameInput.value })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.exists) {
+                    compNameError.textContent = 'Company name already exists. Please enter a different Company Name.';
+                    compNameError.style.color = 'red';
+                    compNameInput.classList.add('error-border');
+                    compNameInput.focus();
+                    return false;
+                } else {
+                    compNameError.textContent = '';
+                    compNameError.style.color = 'green';
+                    compNameInput.classList.remove('error-border');
+                    companyNameValidated = true;
+
+                    // Now validate username
+                    validateUsernameAndSubmit('save_new');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                compNameError.textContent = 'Error checking company name. Please try again.';
+                compNameError.style.color = 'red';
+                return false;
+            });
+        } else {
+            // Company name already validated, validate username
+            validateUsernameAndSubmit('save_new');
+        }
+    }
+
+    function validateUsernameAndSubmit(actionType) {
+        const usernameInput = document.getElementById('username');
+        const usernameError = document.getElementById('username-error');
+
+        // Validate username if not already validated
+        if (!usernameValidated) {
+            if (usernameInput.value.trim() === '') {
+                usernameError.textContent = 'Username cannot be empty.';
+                usernameInput.classList.add('error-border');
+                usernameInput.focus();
+                return false;
+            }
+
+            // Show checking message
+            usernameError.textContent = 'Checking username...';
+            usernameError.style.color = 'blue';
+
+            // Perform the AJAX check
+            fetch("{% url 'check-username' %}", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-CSRFToken": "{{ csrf_token }}"
+                },
+                body: JSON.stringify({ username: usernameInput.value })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.exists) {
+                    usernameError.textContent = 'This username already exists. Please enter a different username.';
+                    usernameError.style.color = 'red';
+                    usernameInput.classList.add('error-border');
+                    usernameInput.focus();
+                    return false;
+                } else {
+                    usernameError.textContent = '';
+                    usernameError.style.color = 'green';
+                    usernameInput.classList.remove('error-border');
+                    usernameValidated = true;
+
+                    // Submit the form
+                    submitForm(actionType);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                usernameError.textContent = 'Error checking username. Please try again.';
+                usernameError.style.color = 'red';
+                return false;
+            });
+        } else {
+            // Username already validated, submit the form
+            submitForm(actionType);
+        }
+    }
+
+    function submitForm(actionType) {
+        const form = document.getElementById('Cust_Form');
+
+        // If validation passes, show success message
+        alert('New Customer enrolled Successfully');
+
+        if (actionType === 'save_exit') {
+            // Create a hidden input to indicate Save & Exit
+            const hiddenInput = document.createElement('input');
+            hiddenInput.type = 'hidden';
+            hiddenInput.name = 'save_exit';
+            hiddenInput.value = 'true';
+            form.appendChild(hiddenInput);
+
+            // Submit the form
+            form.submit();
+
+            // Redirect after a short delay
+            setTimeout(function() {
+                window.location.href = '{% url 'customer-cust' %}';
+            }, 1000);
+        } else {
+            // For Save & New, submit normally
+            const hiddenInput = document.createElement('input');
+            hiddenInput.type = 'hidden';
+            hiddenInput.name = 'save_new';
+            hiddenInput.value = 'true';
+            form.appendChild(hiddenInput);
+            form.submit();
+        }
+    }
+
+    function handleSaveExit() {
+        // Validate required fields
+        if (!validateRequiredFields()) {
+            return false;
+        }
+
+        // Now check company name if not already validated
+        const compNameInput = document.getElementById('Comp_name');
+        const compNameError = document.getElementById('comp-name-error');
+
+        if (!companyNameValidated) {
+            if (compNameInput.value.trim() === '') {
+                compNameError.textContent = 'Company name cannot be empty.';
+                compNameInput.classList.add('error-border');
+                compNameInput.focus();
+                return false;
+            }
+
+            // Show checking message
+            compNameError.textContent = 'Checking company name...';
+            compNameError.style.color = 'blue';
+
+            // Perform the AJAX check
+            fetch("{% url 'check_company_name' %}", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-CSRFToken": "{{ csrf_token }}"
+                },
+                body: JSON.stringify({ comp_name: compNameInput.value })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.exists) {
+                    compNameError.textContent = 'Company name already exists. Please enter a different Company Name.';
+                    compNameError.style.color = 'red';
+                    compNameInput.classList.add('error-border');
+                    compNameInput.focus();
+                    return false;
+                } else {
+                    compNameError.textContent = '';
+                    compNameError.style.color = 'green';
+                    compNameInput.classList.remove('error-border');
+                    companyNameValidated = true;
+
+                    // Now validate username
+                    validateUsernameAndSubmit('save_exit');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                compNameError.textContent = 'Error checking company name. Please try again.';
+                compNameError.style.color = 'red';
+                return false;
+            });
+        } else {
+            // Company name already validated, validate username
+            validateUsernameAndSubmit('save_exit');
+        }
+    }
+
+    function clearForm() {
+        if (confirm('Are you sure you want to clear all form data?')) {
+            document.getElementById('Cust_Form').reset();
+
+            // Clear all error messages
+            document.querySelectorAll('.error-message, .required-error').forEach(el => {
+                el.textContent = '';
+            });
+
+            // Remove error borders
+            document.querySelectorAll('.error-border').forEach(el => {
+                el.classList.remove('error-border');
+            });
+
+            // Reset validation flags
+            companyNameValidated = false;
+            usernameValidated = false;
+
+            // Reset city selection
+            handleCitySelection();
+
+            // Reset project type display
+            updateForm();
+        }
+    }
 </script>
+
 <script>
     // JavaScript function to toggle the "active-fieldset" class
     function toggleActiveFieldset(fieldset) {
@@ -723,16 +1226,40 @@ function validateEmail(input) {
         });
     });
 </script>
- <script>
-        function handleCitySelection() {
-            var select = document.getElementById("city-select");
-            var textBox = document.getElementById("new-city-textbox");
 
-            if (select.value === "Other") {
-                textBox.style.display = "block";
-            } else {
-                textBox.style.display = "none";
-            }
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const rows = document.querySelectorAll(".highlighted-row.mb-1"); // Select all rows inside the fieldset
+
+        rows.forEach(function (row) {
+            row.addEventListener("click", function () {
+                // Remove background from all rows
+                rows.forEach(function (r) {
+                    r.classList.remove("highlighted");
+                });
+
+                // Add background to clicked row
+                row.classList.add("highlighted");
+            });
+        });
+    });
+</script>
+
+<script>
+    function handleCitySelection() {
+        var select = document.getElementById("city-select");
+        var textBox = document.getElementById("new-city-textbox");
+
+        if (select.value === "Other") {
+            textBox.style.display = "block";
+        } else {
+            textBox.style.display = "none";
         }
-    </script>
+    }
+
+    // Call handleCitySelection on page load if city is "Other"
+    document.addEventListener('DOMContentLoaded', function() {
+        handleCitySelection();
+    });
+</script>
 {% endblock %}

@@ -3,7 +3,12 @@ from __future__ import annotations
 from django.http import HttpResponseForbidden
 from django.urls import resolve
 
-from .permission_map import PORTAL_URLS, required_permission
+from .permission_map import (
+    DASHBOARD_SUBMODULE_URL_NAMES,
+    PORTAL_URLS,
+    PORTAL_URLS_ANY,
+    required_permission,
+)
 from .permissions import has_cp_operation, has_portal_access, has_nav_url_access
 
 
@@ -46,14 +51,23 @@ class CPPermissionMiddleware:
                 if url_name and not has_nav_url_access(user, url_name):
                     return HttpResponseForbidden("Access denied (submodule).")
 
-                # Portal access checks
-                portal = PORTAL_URLS.get(url_name or "")
-                if portal and not has_portal_access(user, portal):
-                    return HttpResponseForbidden("Access denied (portal).")
+                # Portal access checks (any-of first, then single portal).
+                # Dashboard routes are already gated by has_nav_url_access (portal + submodule);
+                # skipping the second portal pass avoids false "Access denied (portal)" when
+                # only submodule or only portal was used to grant access.
+                if url_name not in DASHBOARD_SUBMODULE_URL_NAMES:
+                    portals_any = PORTAL_URLS_ANY.get(url_name or "")
+                    if portals_any:
+                        if not any(has_portal_access(user, p) for p in portals_any):
+                            return HttpResponseForbidden("Access denied (portal).")
+                    else:
+                        portal = PORTAL_URLS.get(url_name or "")
+                        if portal and not has_portal_access(user, portal):
+                            return HttpResponseForbidden("Access denied (portal).")
 
-                # Module/operation checks
+                # Module/operation checks (not for the four dashboard landing URLs — access is CP portal/nav)
                 perm = required_permission(url_name, request)
-                if perm:
+                if perm and url_name not in DASHBOARD_SUBMODULE_URL_NAMES:
                     module, operation = perm
                     if not has_cp_operation(user, module, operation):
                         return HttpResponseForbidden("Access denied (permission).")

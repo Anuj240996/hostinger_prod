@@ -1,4 +1,5 @@
 from django import template
+import re
 
 register = template.Library()
 #
@@ -66,3 +67,28 @@ def clean_decimal(value):
         number_part = number_part.rstrip("0").rstrip(".")
 
     return number_part
+
+
+@register.filter
+def indian_format_no_decimals(value):
+    """
+    Format number in Indian grouping and remove decimals.
+    Examples:
+      121100.00 -> 1,21,100
+      12345678  -> 1,23,45,678
+    """
+    try:
+        number = float(value)
+    except (ValueError, TypeError):
+        return value
+
+    sign = "-" if number < 0 else ""
+    integer_part = str(int(abs(number)))
+
+    if len(integer_part) <= 3:
+        return sign + integer_part
+
+    last_three = integer_part[-3:]
+    rest = integer_part[:-3]
+    rest = re.sub(r"(\d)(?=(\d{2})+(?!\d))", r"\1,", rest)
+    return sign + rest + "," + last_three

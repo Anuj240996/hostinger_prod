@@ -42,7 +42,7 @@
                 </thead>
                 <tbody align="center">
                     {% for item in sale_items %}
-                    <tr data-id="{{ item.id }}">
+                    <tr data-id="{{ item.id }}" data-has-serial="{% if item.serials.exists %}1{% else %}0{% endif %}">
                         <td class="sr-no">{{ forloop.counter }}</td>
                         <td>{{ item.stock.category.name }}</td>
                         <td>{{ item.stock.subcategory.name }}</td>
@@ -146,14 +146,38 @@
             row.find('.total-quantity').val(quantity);
         });
 
+        function validateSerialsBeforeSave() {
+            let valid = true;
+            $('#billTable tbody tr').each(function () {
+                const $row = $(this);
+                const hasSerial = String($row.data('has-serial')) === '1';
+                if (!hasSerial) return;
+
+                const reduceQty = parseInt($row.find('input[name^="return_quantity_"]').val(), 10) || 0;
+                if (reduceQty <= 0) return;
+
+                const stockId = $row.find('input[name="existing_stock_ids[]"]').val();
+                const hiddenField = $(`input[name="serials-${stockId}"]`);
+                const selected = hiddenField.length
+                    ? hiddenField.val().split(',').map(s => s.trim()).filter(Boolean)
+                    : [];
+
+                if (selected.length !== reduceQty) {
+                    alert("Please remove the serial numbers first before saving.");
+                    valid = false;
+                    return false;
+                }
+            });
+            return valid;
+        }
+
         // Handle submit button click
         $('#calculateTotalQuantity').on('click', function (event) {
             event.preventDefault(); // Prevent form submission immediately
-<!--            if (validateQuantities()) {-->
-                $('#confirmationModal').modal('show'); // Show confirmation modal if validation passes
-<!--            } else {-->
-<!--                alert('Please ensure all quantities are within available stock limits.');-->
-<!--            }-->
+            if (!validateSerialsBeforeSave()) {
+                return;
+            }
+            $('#confirmationModal').modal('show'); // Show confirmation modal if validation passes
         });
 
         // Handle confirmation modal submit

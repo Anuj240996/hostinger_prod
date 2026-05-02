@@ -34,6 +34,14 @@ app_name = 'quotation'
 
 urlpatterns = [
     path('quotations/', views.quotation_list, name='quotation_list'),
+    path("confirm/<int:pk>/", views.confirm_quotation, name="confirm_quotation"),
+
+    # New URLs for convert consumer functionality
+    path('check-confirmed/<int:pk>/', views.check_quotation_confirmed, name='check_quotation_confirmed'),
+    path('get-quotation-details/<int:pk>/', views.get_quotation_details, name='get_quotation_details'),
+    path('store-quotation-data/', views.store_quotation_data, name='store_quotation_data'),
+
+    # path('confirm/<int:quotation_id>/', views.confirm_quotation, name='confirm_quotation'),
     path('quotation/new/', views.create_quotation, name='create_quotation'),
     path('add_other_item/', views.add_other_item_api, name='add_other_item_api'),
 

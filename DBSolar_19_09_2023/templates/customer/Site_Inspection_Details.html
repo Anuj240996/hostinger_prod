@@ -127,12 +127,54 @@
     .table-responsive .dropdown .dropdown-menu {
        width: 100%;
     }
+
+    /* Unified page: segmented tabs (same style as MSEB) */
+    .site-inspection-mode-toolbar { margin: 12px 0 16px; }
+    .site-inspection-segmented-wrap { width: 100%; }
+    .site-inspection-segmented {
+        display: flex; width: 100%; background: #D9EDE9; border-radius: 8px; padding: 4px; gap: 3px;
+        box-sizing: border-box; border: 1px solid rgba(0, 137, 123, 0.2);
+    }
+    .site-inspection-segmented .site-inspection-segment {
+        flex: 1 1 0; min-width: 0; margin: 0; border: none; background: transparent; color: #00897B;
+        font-weight: 500; font-size: 14px; padding: 10px 8px; border-radius: 6px; cursor: pointer;
+        transition: background 0.2s ease, color 0.2s ease; white-space: nowrap;
+        display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+        -webkit-tap-highlight-color: transparent;
+    }
+    .site-inspection-segmented .site-inspection-segment:hover:not(.active) {
+        color: #00695c; background: rgba(0, 137, 123, 0.1);
+    }
+    .site-inspection-segmented .site-inspection-segment:focus { outline: none; }
+    .site-inspection-segmented .site-inspection-segment:focus-visible {
+        box-shadow: 0 0 0 2px #fff, 0 0 0 4px #00897B;
+    }
+    .site-inspection-segmented .site-inspection-segment.active::before {
+        content: "\2713"; font-size: 1.05em; font-weight: 700; line-height: 1; flex-shrink: 0;
+    }
+    .site-inspection-segmented .site-inspection-segment.active {
+        background: #00897B; color: #fff; font-weight: 700;
+    }
+    #site-inspection-view-panel { margin-top: 1rem; }
 </style>
 
+<div class="d-flex align-items-end justify-content-center row site-inspection-mode-toolbar mx-0">
+    {% with sim=site_inspection_mode|default:"new" %}
+    <div class="col-12 col-sm-11 site-inspection-segmented-wrap">
+        <div class="site-inspection-segmented" role="group" aria-label="Site inspection mode">
+            <button type="button" class="site-inspection-segment{% if sim == 'new' %} active{% endif %}" data-mode="new"{% if sim == 'new' %} aria-current="page"{% endif %}>New Site Inspection</button>
+            <button type="button" class="site-inspection-segment{% if sim == 'view' %} active{% endif %}" data-mode="view"{% if sim == 'view' %} aria-current="page"{% endif %}>View Site Inspection</button>
+        </div>
+    </div>
+    {% endwith %}
+</div>
+
+<div id="site-inspection-new-panel">
 <br>
 <br>
     <form id="inspectionForm" method="post" action="">
         {% csrf_token %}
+        <input type="hidden" name="site_inspection_action" value="save_new">
         <h3>Final Inspection Report</h3>
           <label for="comp_name" class="col-sm-2 col-form-label">Company Name:</label>
                     <div class="col-sm-10">
@@ -519,18 +561,64 @@
             </div>
     </form>
 {% endif %}
-<script>
-document.getElementById('infoCorrect').addEventListener('change', function() {
-    var submitButton = document.getElementById('submit');
-    submit.hidden = !this.checked;
-});
+</div>
 
-document.getElementById('inspectionForm').addEventListener('submit', function(event) {
-    var confirmation = confirm('Are you sure you want to submit the report?');
-    if (!confirmation) {
-        event.preventDefault(); // Prevent form submission if user cancels
+<div id="site-inspection-view-panel">
+{% include 'customer/_display_site_inspection_panel.html' %}
+</div>
+
+<script>
+(function() {
+    var mode = '{{ site_inspection_mode|default:"new"|escapejs }}';
+    var newEl = document.getElementById('site-inspection-new-panel');
+    var viewEl = document.getElementById('site-inspection-view-panel');
+    function applySiteInspectionMode(m) {
+        if (!newEl || !viewEl) return;
+        var isNew = m === 'new';
+        newEl.style.display = isNew ? '' : 'none';
+        viewEl.style.display = isNew ? 'none' : '';
+        document.querySelectorAll('.site-inspection-segment').forEach(function(b) {
+            var on = b.getAttribute('data-mode') === m;
+            b.classList.toggle('active', on);
+            if (on) { b.setAttribute('aria-current', 'page'); }
+            else { b.removeAttribute('aria-current'); }
+        });
+        if (history.replaceState) {
+            try {
+                var u = new URL(window.location.href);
+                u.searchParams.set('mode', m);
+                history.replaceState({}, '', u);
+            } catch (e) {}
+        }
     }
-});
+    document.querySelectorAll('.site-inspection-segment').forEach(function(b) {
+        b.addEventListener('click', function() {
+            var m = b.getAttribute('data-mode');
+            if (m) applySiteInspectionMode(m);
+        });
+    });
+    applySiteInspectionMode(mode);
+})();
+</script>
+<script>
+(function() {
+    var ic = document.getElementById('infoCorrect');
+    if (ic) {
+        ic.addEventListener('change', function() {
+            var submitButton = document.getElementById('submit');
+            if (submitButton) submitButton.hidden = !this.checked;
+        });
+    }
+    var inf = document.getElementById('inspectionForm');
+    if (inf) {
+        inf.addEventListener('submit', function(event) {
+            var confirmation = confirm('Are you sure you want to submit the report?');
+            if (!confirmation) {
+                event.preventDefault();
+            }
+        });
+    }
+})();
 </script>
 <script>
         function fetchData() {

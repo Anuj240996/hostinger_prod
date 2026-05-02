@@ -1,4 +1,5 @@
 {% extends 'partials/base.html' %}
+{% load static %}
 {% load widget_tweaks %}
 {% load indian_filters %}
 {% block title %} Sales List {% endblock title %}
@@ -101,11 +102,10 @@
        <!-- Add these buttons inside the col-auto div -->
                 <div class="col-auto text-right float-right ml-auto" style="margin-right: 25px;">
                     <div class="dt-buttons btn-group flex-wrap">
-                        <!--       <a href="#" class="btn btn-outline-primary mr-2" name="download" id="download-pdf"><i class="fas fa-download"></i>Download</a>-->
-<!--                        <a id="generate-pdf-all" href="#" class="btn btn-primary" onclick="generatePDF()" type="button" title="PDF"><i class="fas fa-file-pdf fs-4" style="font-size: 1.1rem;"></i></a>-->
-                        <a id="generate-excel-all" href="#" class="btn btn-primary" onclick="generateExcel()" title="Excel"><i class="mdi mdi-microsoft-excel" style="font-size: 19px;"></i></a>
-                        <a id="generate-print-all" href="#" class="btn btn-primary" onclick="copyToClipboard()" title="Copy"><i class="fas fa-solid fa-copy"></i></a>
-                        <a id="generate-copy-all" href="#" class="btn btn-primary" onclick="printTable()" title="Print"><i class="fas fa-solid fa-print"></i></a>
+                        <a href="#" class="btn btn-primary" onclick="returnSaleListGeneratePDF(); return false;" title="PDF"><i class="fas fa-file-pdf" style="font-size: 1.05rem;"></i></a>
+                        <a href="#" class="btn btn-primary" onclick="returnSaleListGenerateExcel(); return false;" title="Excel"><i class="mdi mdi-microsoft-excel" style="font-size: 19px;"></i></a>
+                        <a href="#" class="btn btn-primary" onclick="returnSaleListCopyToClipboard(); return false;" title="Copy"><i class="fas fa-copy"></i></a>
+                        <a href="#" class="btn btn-primary" onclick="returnSaleListPrintTable(); return false;" title="Print"><i class="fas fa-print"></i></a>
                         <a href="{% url 'return_select_customer' %}" class="btn btn-primary" title="Create Return DC"><i class="fas fa-plus"></i></a>
                         <!--       <button class="btn btn-outline-primary mr-2" id="generate-pdf"><i class="fas fa-file-pdf"></i> Generate PDF</button>-->
                         <!--       <button class="btn btn-outline-primary" id="generate-excel"><i class="fas fa-file-excel"></i> Generate Excel</button>-->
@@ -275,7 +275,7 @@
     </div>
 <!--<form>-->
 <!--    <table class="table table-css table-hover table-bordered">-->
-    <table id="yourDataTable" class="table table-hover table-center table.dataTable.table-sm mb-0 datatable table.sm" style="width: 100%;">
+    <table id="yourDataTable" class="table table-hover table-center table.dataTable.table-sm mb-0 datatable table.sm dt-compact-cols dt-tools-minimal" style="width: 100%;">
 
         <thead class="thead-dark align-middle">
             <tr align="center">
@@ -322,11 +322,20 @@
                     {{ item.r_quantity|indian_format }} <small style="color: #909494">{{ item.stock.sales.short_name }}</small><br>
                   {% endfor %}
                 </td>
-                <td>{{ sale.time|date:"d-m-Y" }}</td>
+                <td>{{ sale.time|as_bill_date }}</td>
                 <td>
-                    <a href="{% url 'return-bill' sale.billno %}" class="text-warning">
+                    <a href="{% url 'return-bill' sale.billno %}" class="text-warning" title="View">
                         <i class="fas fa-eye"></i>
                     </a>
+                    {% if sale.is_deleted %}
+                    &nbsp;&nbsp;<span class="text-muted" style="font-size: 16px;"><i class="fas fa-trash" title="Delete"></i></span>
+                    {% else %}
+                    &nbsp;&nbsp;<a href="{% url 'delete-return-sale' sale.pk %}"
+                       style="color: red; font-size: 16px;"
+                       title="Delete return bill">
+                        <i class="fas fa-trash"></i>
+                    </a>
+                    {% endif %}
                 </td>
             </tr>
             {% endfor %}
@@ -351,185 +360,42 @@
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-    $(document).ready(function() {
-    // Initialize DataTables
-    var table = $('#yourDataTable').DataTable();
-    $('#yourDataTable').DataTable({
-        destroy: true,  // Destroy any existing instance before reinitializing
-        paging: true,      // Enable pagination
-        searching: true,   // Enable search bar
-        ordering: true,    // Enable column ordering
-        order: [[7, 'desc']],  // Column index 6 (time.) in descending order
-        info: true,        // Show table info
-        lengthChange: true // Allow users to change how many records are shown per page
+(function ($) {
+    var dateCol = 6;
+    function afterGlobalDataTable() {
+        var $tbl = $('#yourDataTable');
+        if (!$tbl.length || !$.fn.dataTable || !$.fn.dataTable.isDataTable($tbl[0])) return false;
+        var table = $tbl.DataTable();
+        table.page.len(10).draw(false);
+        table.order([[dateCol, 'desc']]).draw(false);
+        if (typeof attachViewButtonEvent === 'function') {
+            attachViewButtonEvent();
+            $tbl.off('draw.returnSalesListInit').on('draw.returnSalesListInit', function () {
+                attachViewButtonEvent();
+            });
+        }
+        return true;
+    }
+    $(function () {
+        if (!afterGlobalDataTable()) {
+            setTimeout(afterGlobalDataTable, 50);
+            $(window).on('load', function () { afterGlobalDataTable(); });
+        }
     });
-
-
-    // Attach event on document ready
-    attachViewButtonEvent();
-
-    // Rebind event after every page draw (for DataTables pagination)
-    table.on('draw', function() {
-        attachViewButtonEvent();  // Rebind the event
-    });
-});
+})(window.jQuery);
 </script>
-       <!-- Add these in the head section of your HTML -->
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.4.0/jspdf.umd.min.js"></script>
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.0/xlsx.full.min.js"></script>
-
-
-<script>
-    function generatePDF() {
-        const pdf = new jsPDF();
-        pdf.autoTable({
-            html: '#yourDataTable'
-        });
-        pdf.save('table.pdf');
-    }
-
-    function generateExcel() {
-        const table = $('#yourDataTable').DataTable();
-        const header = [...getHeaderWithoutActions(table)];
-        const filteredData = table.rows({
-            search: 'applied'
-        }).data().toArray();
-        const cleanData = filteredData.map((row, index) => {
-            const rowDataWithoutActions = row.filter((_, columnIndex) => !isActionColumn(table, columnIndex));
-            return [...rowDataWithoutActions.map(stripHtml)];
-        });
-        const data = [header, ...cleanData];
-
-        const ws = XLSX.utils.aoa_to_sheet(data);
-        const wb = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(wb, ws, 'Sheet1');
-        XLSX.writeFile(wb, 'table.xlsx');
-    }
-
-    function copyToClipboard() {
-        const table = $('#yourDataTable').DataTable();
-        const header = ['Sr No.', ...getHeaderWithoutActions(table)];
-        const filteredData = table.rows({
-            search: 'applied'
-        }).data().toArray();
-        const cleanData = filteredData.map((row, index) => {
-            const rowDataWithoutActions = row.filter((_, columnIndex) => !isActionColumn(table, columnIndex));
-            return [index + 1, ...rowDataWithoutActions];
-        });
-        const data = [header, ...cleanData];
-
-        // Convert the data to plain text (excluding HTML tags)
-        const plainTextData = data.map(row => row.map(cell => stripHtml(cell)).join('\t')).join('\n');
-
-        const plainText = document.createElement('textarea');
-        plainText.textContent = plainTextData;
-        document.body.appendChild(plainText);
-        plainText.select();
-        document.execCommand('copy');
-        document.body.removeChild(plainText);
-        alert('Filtered table copied to clipboard!');
-    }
-
-    // Function to strip HTML tags
-    function stripHtml(html) {
-        let doc = new DOMParser().parseFromString(html, 'text/html');
-        return doc.body.textContent || "";
-    }
-
-    function printTable() {
-        const selectedCustType = document.getElementById("custTypeFilter");
-        const selectedCustTypeText = selectedCustType.options[selectedCustType.selectedIndex].text;
-        // Get caption text from the HTML element
-        const captionText = document.getElementById("caption-text").getAttribute("data-caption");
-        const table = $('#yourDataTable').DataTable();
-
-        const header = [...getHeaderWithoutActions(table)];
-        const filteredData = table.rows({ search: 'applied' }).data().toArray();
-        const cleanData = filteredData.map((row) => {
-            const rowDataWithoutActions = row.filter((_, columnIndex) => !isActionColumn(table, columnIndex));
-            return [...rowDataWithoutActions];
-        });
-        const data = [header, ...cleanData];
-
-        const printWindow = window.open('', '_blank');
-        printWindow.document.open();
-        printWindow.document.write(`
-            <html>
-            <head>
-                <title>Filtered Table Print</title>
-                <style>
-                    body {
-                        font-family: Arial, sans-serif;
-                        text-align: center;
-                    }
-                    table {
-                        width: 80%;
-                        margin: auto;
-                        border-collapse: collapse;
-                        color: black;
-                    }
-                    th, td {
-                        border: 1px solid black;
-                        padding: 8px;
-                        text-align: center;
-                    }
-                    th {
-                        background-color: #f2f2f2;
-                        font-weight: bold;
-                        font-size: 14px;
-                    }
-                    td {
-                        font-size: 12px;
-                        color: black;
-                    }
-                    h1 {
-                        text-align: center;
-                    }
-                </style>
-            </head>
-            <body>
-                <h1 class="page-heading">DB Solar Pvt Ltd. Ch.SambhajiNagar</h1>
-                <h3 class="page-heading" style="margin-top: -10px;">${selectedCustTypeText} Consumer Final Delivery Challan List</h3>
-                <h3 class="page-heading" style="margin-top: -10px;">${captionText}</h3>
-                <table style="margin-top: -10px; width: 100%;">
-                    <thead>
-                        <tr>
-                            ${header.map(h => `<th>${h}</th>`).join('')}
-                        </tr>
-                    </thead>
-                    <tbody>
-                        ${cleanData.map(row =>
-                            '<tr>' + row.map((cell, index) => {
-                                if (index === row.length - 5) {
-                                    return `<td style="text-align: left; padding-left: 20px;">${cell}</td>`;
-                                }
-                                if (index === row.length - 1) {
-                                    return `<td style="color: black;">${cell}</td>`;
-                                }
-                                if (index === row.length - 4) {
-                                    return `<td style="text-align: left;">${cell}</td>`;
-                                }
-
-                                return `<td>${cell}</td>`;
-                            }).join('') + '</tr>'
-                        ).join('')}
-                    </tbody>
-                </table>
-            </body>
-            </html>
-        `);
-        printWindow.document.close();
-        printWindow.print();
-    }
-
-    function getHeaderWithoutActions(table) {
-        return table.columns().header().toArray().map(th => th.innerText).filter(header => header !== 'Action' && header !== 'Sr No.');
-    }
-
-    function isActionColumn(table, columnIndex) {
-        const header = table.columns().header().toArray()[columnIndex].innerText;
-        return header === 'Action' || header === 'Sr No.';
-    }
-</script>
+<script>window.LIST_PAGE_EXPORT_LOGO_PATH = "{% static 'images/db_logo_200.png' %}";</script>
+        <script src="{% static 'js/list_page_export.js' %}"></script>
+        <script>
+            ListPageExport.register({
+                apiPrefix: 'returnSaleList',
+                pdfFilename: 'return_sales_list.pdf',
+                excelFilename: 'return_sales_list.xlsx',
+                excelSheetName: 'ReturnSales',
+                printDocumentTitle: 'Return DC Bill List',
+                pdfCaption: 'Return List',
+                pdfSplitInlinePhNoColumn: true
+            });
+        </script>
 
 {% endblock content %}

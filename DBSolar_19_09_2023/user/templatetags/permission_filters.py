@@ -50,6 +50,20 @@ def has_portal_access_filter(user, portal_name: str):
         return False
 
 
+@register.filter(name="is_associate_staff")
+def is_associate_staff_filter(user):
+    """
+    True for staff users with Profile.department == 'Associate'.
+    Usage: {% if user|is_associate_staff %}
+    """
+    try:
+        from customer.staff_access import is_associate_staff
+
+        return is_associate_staff(user)
+    except Exception:
+        return False
+
+
 @register.filter(name="has_url_permission")
 def has_url_permission_filter(user, url_name: str):
     """

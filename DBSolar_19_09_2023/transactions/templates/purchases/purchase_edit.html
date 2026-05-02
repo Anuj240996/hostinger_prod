@@ -91,8 +91,8 @@
                     <!-- Each row is marked with the class "form-row" -->
                     <tr data-id="{{ item.id }}" class="form-row">
                         <td class="sr-no">{{ forloop.counter }}</td>
-                        <td>{{ item.stock.category.name }}</td>
-                        <td>{{ item.stock.subcategory.name }}</td>
+                        <td>{% if item.stock.safe_category %}{{ item.stock.safe_category.name }}{% endif %}</td>
+                        <td>{% if item.stock.safe_subcategory %}{{ item.stock.safe_subcategory.name }}{% endif %}</td>
                         <td>
                             &nbsp;<a href="#" class="stockName text-capitalize form-control-plaintext">
                                 {{ item.stock.name }}<br>
@@ -968,8 +968,6 @@ $(document).ready(function() {
        event.preventDefault(); // Prevent form submission immediately
         if (validateForm()) {
           $('#confirmationModal').modal('show'); // Show confirmation modal if validation passes
-<!--        } else {-->
-<!--           alert('Please ensure all quantities are within available stock limits.');-->
         }
    });
 
@@ -1306,6 +1304,25 @@ $(document).ready(function() {
     .custom-flex input {
         margin-right: 10px; /* Add some space between the input and the image */
     }
+    /* Confirmation modal field focus background behavior */
+    #confirmationModal .form-control,
+    #confirmationModal select.form-control {
+        background-color: #ffffff;
+        transition: background-color 0.2s ease-in-out;
+    }
+    #confirmationModal .form-control:focus,
+    #confirmationModal select.form-control:focus,
+    #confirmationModal input[type="date"]:focus {
+        background-color: #ffe6ee !important;
+    }
+    #confirmationModal input[type="date"]:focus::-webkit-datetime-edit,
+    #confirmationModal input[type="date"]:focus::-webkit-date-and-time-value {
+        background-color: #ffe6ee !important;
+    }
+    #confirmationModal .form-control:not(:focus),
+    #confirmationModal select.form-control:not(:focus) {
+        background-color: #ffffff;
+    }
 </style>
 <style>
     .success {
@@ -1377,7 +1394,7 @@ $(document).ready(function() {
 
         .green-text {
             color: green;
-<!--            font-weight: bold;-->
+            font-weight: bold;
         }
 
     </style>

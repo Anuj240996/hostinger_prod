@@ -23,11 +23,10 @@
             position: relative; /* For the checkmark */
         }
 
-<!--        /* Styles for active labels */-->
-<!--        .active {-->
-<!--            background-color: green; /* Background color when active */-->
-<!--            color: white; /* Text color for active state */-->
-<!--        }-->
+        .modal-active {
+            background-color: green;
+            color: white;
+        }
 
         .checkmark {
             position: absolute;
@@ -895,7 +894,20 @@
 
             <div id="stockitem">
                 <div class="panel-body">
-                    <!-- Container for dynamically added form rows -->
+                    <div id="stock-table-header-row" class="row align-items-end" style="display: none;">
+                        <div class="form-group mb-1 col-md-1 text-center">
+                            <label class="panel-body-text" style="text-align: center; font-weight: bold;">Sr No</label>
+                        </div>
+                        <div class="form-group mb-1 col-md-6 text-center">
+                            <label class="panel-body-text" style="text-align: center; font-weight: bold;">Stock</label>
+                        </div>
+                        <div class="form-group mb-1 col-md-2 text-center">
+                            <label class="panel-body-text" style="text-align: center; font-weight: bold;">Avb. Qunt.</label>
+                        </div>
+                        <div class="form-group mb-1 col-md-3 text-center">
+                            <label class="panel-body-text" style="text-align: center; font-weight: bold;">Quantity</label>
+                        </div>
+                    </div>
                 </div>
             </div>
             <div style="width: 100%; display: flex; justify-content: flex-end;">
@@ -945,46 +957,57 @@
                     <span class="checkmark" id="checkPrevious" style="margin-left: 30px; line-height: 1.5;">✔</span>
                 </div>
             </div>
+            <br>
+            <fieldset>
+                <div class="toggle-container" style="display: flex; justify-content: center; align-items: center; width: 100%;">
+                    <div class="form-group" id="previousBillField" style="display: flex; flex-direction: column; margin-right: 20px; width: 180px;">
+                        <label for="eway_no">Prev. Delivery Challan No <span style="color: red;">*</span></label>
+                        <input type="text" id="eway_no" name="eway_no" class="form-control">
+                    </div>
+                    <div class="form-group" id="previousDateField" style="display: flex; flex-direction: column; width: 180px;">
+                        <label for="bill_date">Prev. Bill Date <span style="color: red;">*</span></label>
+                        <input type="date" id="bill_date" name="bill_date" class="form-control">
+                    </div>
+                </div>
 
-          <!-- Previous Bill and Previous Date Fields -->
-          <div class="form-group" id="previousBillField">
-            <label for="eway_no">Prev. Delivery Challan No <span style="color: red;">*</span></label>
-            <input type="text" id="eway_no" name="eway_no" class="form-control">
-          </div>
-          <div class="form-group" id="previousDateField">
-            <label for="bill_date">Prev. Bill Date <span style="color: red;">*</span></label>
-            <input type="date" id="bill_date" name="bill_date" class="form-control">
-          </div>
+                <div class="toggle-container" style="display: flex; justify-content: center; align-items: center; width: 100%;">
+                    <div class="form-group" style="display: flex; flex-direction: column; margin-right: 20px; width: 180px;">
+                        <label for="po_no">PO No</label>
+                        <input type="text" id="po_no" name="po_no" class="form-control">
+                    </div>
+                    <div class="form-group" style="display: flex; flex-direction: column; width: 180px;">
+                        <label for="po_date">PO Date</label>
+                        <input type="date" id="po_date" name="po_date" class="form-control">
+                    </div>
+                </div>
 
-          <div class="form-group">
-            <label for="veh_no">Vehicle No</label>
-            <input type="text" id="veh_no" name="veh_no" class="form-control">
-          </div>
-          <div class="form-group">
-            <label for="arrange">Arrange By <span style="color: red;">*</span></label>
-            <input type="text" id="arrange" name="arrange" class="form-control" required>
-          </div>
-            <div class="form-group">
-            <label for="handby">Handled By <span style="color: red;">*</span></label>
-            <input type="text" id="handby" name="handby" class="form-control" required>
-          </div>
-          <div class="form-group">
-            <label for="destination">Source <span style="color: red;">*</span></label>
-            <select id="destination" name="destination" class="form-control" required>
-              <option value="" disabled selected></option>
-              <option value="Warehouse" {% if billdetails.destination == "Warehouse" %}selected{% endif %}>Warehouse</option>
-              <option value="Office" {% if billdetails.destination == "Office" %}selected{% endif %}>Office</option>
-              <option value="Vendor" {% if billdetails.destination == "Vendor" %}selected{% endif %}>Vendor</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label for="po_no">PO No</label>
-            <input type="text" id="po_no" name="po_no" class="form-control">
-          </div>
-          <div class="form-group">
-            <label for="po_date">PO Date</label>
-            <input type="date" id="po_date" name="po_date" class="form-control">
-          </div>
+                <div class="toggle-container" style="display: flex; justify-content: center; align-items: center; width: 100%;">
+                    <div class="form-group" style="display: flex; flex-direction: column; margin-right: 20px; width: 180px;">
+                        <label for="veh_no">Vehicle No</label>
+                        <input type="text" id="veh_no" name="veh_no" class="form-control">
+                    </div>
+                    <div class="form-group" style="display: flex; flex-direction: column; width: 180px;">
+                        <label for="arrange">Arrange By <span style="color: red;">*</span></label>
+                        <input type="text" id="arrange" name="arrange" class="form-control" required>
+                    </div>
+                </div>
+
+                <div class="toggle-container" style="display: flex; justify-content: center; align-items: center; width: 100%;">
+                    <div class="form-group" style="display: flex; flex-direction: column; margin-right: 20px; width: 180px;">
+                        <label for="handby">Handled By <span style="color: red;">*</span></label>
+                        <input type="text" id="handby" name="handby" class="form-control" required>
+                    </div>
+                    <div class="form-group" style="display: flex; flex-direction: column; width: 180px;">
+                        <label for="destination">Source <span style="color: red;">*</span></label>
+                        <select id="destination" name="destination" class="form-control" required>
+                            <option value="" disabled selected></option>
+                            <option value="Warehouse" {% if billdetails.destination == "Warehouse" %}selected{% endif %}>Warehouse</option>
+                            <option value="Office" {% if billdetails.destination == "Office" %}selected{% endif %}>Office</option>
+                            <option value="Vendor" {% if billdetails.destination == "Vendor" %}selected{% endif %}>Vendor</option>
+                        </select>
+                    </div>
+                </div>
+            </fieldset>
         </form>
       </div>
       <div class="modal-footer">
@@ -1572,10 +1595,12 @@ $(document).ready(function () {
                 url: '{% url "get_favoritelist_stocks" %}',
                 data: { 'favoritelist_id': favoritelistId },
                 success: function (data) {
-                    $('#stockitem .panel-body').empty();
+                    const panelBody = $('#stockitem .panel-body');
+                    panelBody.find('.stock-row, .empty-stock-message').remove();
+                    $('#stock-table-header-row').hide();
 
                     if (data.stocks.length === 0) {
-                        $('#stockitem .panel-body').append('<p>No stocks found for the selected favorite list.</p>');
+                        panelBody.append('<p class="empty-stock-message">No stocks found for the selected favorite list.</p>');
                         updateTotalQuantity();
                         return;
                     }
@@ -1584,7 +1609,6 @@ $(document).ready(function () {
                     $('#id_form-TOTAL_FORMS').val(0);
 
                     $.each(data.stocks, function (index, stock) {
-                        var isFirstRow = index === 0;
                         var formattedQuantity = (stock.quantity % 1 === 0) ? parseInt(stock.quantity) : stock.quantity;
 
                         // 🔹 Multiply favorite item quantity by favorite list quantity
@@ -1594,11 +1618,9 @@ $(document).ready(function () {
                             <div class="row form-row stock-row" data-total="${total}">
                                 <input type="hidden" name="form-${total}-DELETE" id="id_form-${total}-DELETE">
                                 <div class="form-group col-md-1 text-center">
-                                    ${isFirstRow ? '<label class="panel-body-text" style="font-weight:bold;">Sr No</label>' : ''}
                                     <span class="form-control-plaintext sr-no">${total + 1}</span>
                                 </div>
                                 <div class="form-group col-md-6 text-center">
-                                    ${isFirstRow ? '<label class="panel-body-text" style="font-weight:bold;">Stock</label>' : ''}
                                     <div style="display:flex;flex-direction:column;align-items:center;">
                                         <a href="#" class="stockName text-capitalize form-control-plaintext">${stock.name}</a>
                                         <input type="hidden" name="form-${total}-stock" value="${stock.id}">
@@ -1606,14 +1628,12 @@ $(document).ready(function () {
                                     </div>
                                 </div>
                                 <div class="form-group col-md-2 text-center">
-                                    ${isFirstRow ? '<label class="panel-body-text" style="font-weight:bold;">Avb. Qunt.</label>' : ''}
                                     <div class="d-flex justify-content-center align-items-center mt-1">
                                         <input type="hidden" class="form-control stock-quantity" value="${stock.quantity}" readonly>
                                         <span class="badge ${stock.quantity > stock.stock_alert ? 'success' : 'danger'}">${formattedQuantity} <small>${stock.purchase}</small></span>
                                     </div>
                                 </div>
                                 <div class="form-group col-md-3 text-center">
-                                    ${isFirstRow ? '<label class="panel-body-text" style="font-weight:bold;">Quantity</label>' : ''}
                                     <div class="input-group">
                                         <input type="number" class="form-control quantity" style="text-align:center;" name="form-${total}-quantity" value="${multipliedQty}">
                                         <div class="input-group-append"><span class="input-group-text me-2">${stock.purchase}</span></div>
@@ -1626,6 +1646,7 @@ $(document).ready(function () {
                                 </div>
                             </div>`;
                         $('#stockitem .panel-body').append(newRow);
+                        $('#stock-table-header-row').show();
                         attachQuantityChangeListener(total, stock.quantity);
                         total++;
                         $('#id_form-TOTAL_FORMS').val(total);
@@ -1638,7 +1659,8 @@ $(document).ready(function () {
                 }
             });
         } else {
-            $('#stockitem .panel-body').empty();
+            $('#stockitem .panel-body').find('.stock-row, .empty-stock-message').remove();
+            $('#stock-table-header-row').hide();
             updateTotalQuantity();
         }
 
@@ -1700,6 +1722,9 @@ $(document).ready(function () {
         });
 
         $('#id_form-TOTAL_FORMS').val($('#stockitem .stock-row').length);
+        if ($('#stockitem .stock-row').length === 0) {
+            $('#stock-table-header-row').hide();
+        }
         updateTotalQuantity();
     });
 
@@ -1712,7 +1737,7 @@ $(document).ready(function () {
 <script type="text/javascript">
 $(document).ready(function() {
     // Initialize the previous bill fields to show by default
-    $('#previousBillLabel').addClass('active');
+    $('#previousBillLabel').addClass('modal-active');
     $('#checkPrevious').show(); // Show checkmark for Previous Bill
     $('#previousBillField').show(); // Ensure the fields are shown initially
     $('#previousDateField').show();
@@ -1754,8 +1779,8 @@ $(document).ready(function() {
     // Click event for Current Bill label
     $('#currentBillLabel').on('click', function() {
         // Set this label as active and remove active state from the other
-        $(this).addClass('active');
-        $('#previousBillLabel').removeClass('active');
+        $(this).addClass('modal-active');
+        $('#previousBillLabel').removeClass('modal-active');
         $('#checkCurrent').show(); // Show checkmark for Current Bill
         $('#checkPrevious').hide(); // Hide checkmark for Previous Bill
 
@@ -1769,8 +1794,8 @@ $(document).ready(function() {
     // Click event for Previous Bill label
     $('#previousBillLabel').on('click', function() {
         // Set this label as active and remove active state from the other
-        $(this).addClass('active');
-        $('#currentBillLabel').removeClass('active');
+        $(this).addClass('modal-active');
+        $('#currentBillLabel').removeClass('modal-active');
         $('#checkPrevious').show(); // Show checkmark for Previous Bill
         $('#checkCurrent').hide(); // Hide checkmark for Current Bill
 
@@ -1792,8 +1817,8 @@ $(document).ready(function() {
         const po_date = $('#po_date').val();
 
         // Check if required fields are filled based on selected bill type
-        const isCurrentBill = $('#currentBillLabel').hasClass('active');
-        const isPreviousBill = $('#previousBillLabel').hasClass('active');
+        const isCurrentBill = $('#currentBillLabel').hasClass('modal-active');
+        const isPreviousBill = $('#previousBillLabel').hasClass('modal-active');
 
         // Validate fields based on the selected bill type
         if (isCurrentBill) {
@@ -1866,6 +1891,25 @@ $(document).ready(function() {
     }
     .custom-flex input {
         margin-right: 10px; /* Add some space between the input and the image */
+    }
+    /* Confirmation modal field focus background behavior */
+    #confirmationModal .form-control,
+    #confirmationModal select.form-control {
+        background-color: #ffffff;
+        transition: background-color 0.2s ease-in-out;
+    }
+    #confirmationModal .form-control:focus,
+    #confirmationModal select.form-control:focus,
+    #confirmationModal input[type="date"]:focus {
+        background-color: #ffe6ee !important;
+    }
+    #confirmationModal input[type="date"]:focus::-webkit-datetime-edit,
+    #confirmationModal input[type="date"]:focus::-webkit-date-and-time-value {
+        background-color: #ffe6ee !important;
+    }
+    #confirmationModal .form-control:not(:focus),
+    #confirmationModal select.form-control:not(:focus) {
+        background-color: #ffffff;
     }
 </style>
 

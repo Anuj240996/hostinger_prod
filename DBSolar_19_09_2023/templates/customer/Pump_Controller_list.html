@@ -238,7 +238,7 @@
             <td style="{% if not supplier.status %}color: red;{% endif %}">{{forloop.counter}}</td>
 <!--            <td style="text-align: left; margin-left: 5px;"><a href="{% url 'sale' 'vendor' supplier.pk %}" class="text-capitalize" style="{% if not supplier.status %}color: red;{% endif %}">{{ supplier.name }}</a></td>-->
             <td style="text-align: left; margin-left: 5px;"><a href="{% url 'sale' 'vendor' supplier.pk %}" class="text-capitalize" style="{% if not supplier.status %}color: red;{% endif %}">{{ supplier.name }}</a></td>
-            <td class="align-middle" class="text-capitalize" style="{% if not supplier.status %}color: red;{% endif %}">{{ supplier.category.short_name }}</td>
+            <td class="align-middle" class="text-capitalize" style="{% if not supplier.status %}color: red;{% endif %}">{% if supplier.safe_category %}{{ supplier.safe_category.short_name }}{% else %}—{% endif %}</td>
             <td class="align-middle" style="{% if not supplier.status %}color: red;{% endif %}">{{ supplier.phone }}</td>
             <td class="align-middle" style="{% if not supplier.status %}color: red;{% endif %}">{{ supplier.gstin }}</td>
             <td class="align-middle">

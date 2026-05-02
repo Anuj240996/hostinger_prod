@@ -370,6 +370,26 @@
 
 
 
+            {% if customer.Assoc_Assign %}
+            <tr>
+               <th colspan="2">
+                  <h5 class="p-1 text-danger" style="border-bottom : 2px solid orange"> Assigned Associate Details</h5>
+               </th>
+            </tr>
+            <tr>
+               <th style="text-align: left; padding-left: 15px;"> Associate ID</th>
+               <td style="text-align: left; padding-left: 15px;">DB_{{ customer.Assoc_Assign.id }}</td>
+            </tr>
+            <tr>
+               <th style="text-align: left; padding-left: 15px;"> Associate Name</th>
+               <td style="text-align: left; padding-left: 15px;">{{ customer.Assoc_Assign.get_full_name|default:customer.Assoc_Assign.username }}</td>
+            </tr>
+            <tr>
+               <th style="text-align: left; padding-left: 15px;"> Associate Contact No.</th>
+               <td style="text-align: left; padding-left: 15px;">{% if customer.Assoc_Assign.profile %}{{ customer.Assoc_Assign.profile.workphone|default:"—" }}{% else %}—{% endif %}</td>
+            </tr>
+            {% endif %}
+            {% if customer.Engg_Assign %}
             <tr>
                <th colspan="2">
                   <h5 class="p-1 text-danger" style="border-bottom : 2px solid orange"> Assigned Engineer Details</h5>
@@ -385,8 +405,9 @@
             </tr>
             <tr>
                <th style="text-align: left; padding-left: 15px;"> Engineers Contact No.</th>
-               <td style="text-align: left; padding-left: 15px;">{{ customer.Engg_Assign.profile.workphone }}</td>
+               <td style="text-align: left; padding-left: 15px;">{{ customer.Engg_Assign.profile.workphone|default:"—" }}</td>
             </tr>
+            {% endif %}
             <tr>
                <th colspan="2">
                   <h5 class="p-1 text-danger" style="border-bottom : 2px solid orange"> Consumer Record Filled By</h5>
@@ -1560,10 +1581,18 @@ document.getElementById("generate-excel-all").addEventListener("click", function
     addData('Previous Load Sanction', '{{ customer.current_load }} Kw');
     addData('Final Load Sanction', '{{ customer.loadsancution }} Kw');
 
+    {% if customer.Assoc_Assign %}
+    addSection('Assigned Associate Details');
+    addData('Associate ID', 'DB_{{ customer.Assoc_Assign.id }}');
+    addData('Associate Name', '{{ customer.Assoc_Assign.first_name }} {{ customer.Assoc_Assign.last_name }}');
+    addData('Associate Contact No.', '{{ customer.Assoc_Assign.profile.workphone|default:"" }}');
+    {% endif %}
+    {% if customer.Engg_Assign %}
     addSection('Assigned Engineer Details');
     addData('Engineer ID', 'DB_{{ customer.Engg_Assign.id }}');
     addData('Engineer Name', '{{ customer.Engg_Assign.first_name }} {{ customer.Engg_Assign.last_name }}');
-    addData('Engineer Contact No.', '{{ customer.Engg_Assign.profile.workphone }}');
+    addData('Engineer Contact No.', '{{ customer.Engg_Assign.profile.workphone|default:"" }}');
+    {% endif %}
 
     addSection('Consumer Record Filled By');
     addData('Employee Name', '{{ customer.Emp_id.first_name }} {{ customer.Emp_id.last_name }}');

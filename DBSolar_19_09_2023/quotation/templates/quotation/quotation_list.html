@@ -1,87 +1,414 @@
 {% extends 'partials/base.html' %}
-{% load static %}
-{% load indian_filters %}
-
-{% block title %}Quotation List{% endblock title %}
+{% load static number_filters permission_filters %}
+{% block title %}Quotations — DB SOLAR{% endblock %}
 
 {% block content %}
+<meta name="csrf-token" content="{{ csrf_token }}">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@mdi/font/css/materialdesignicons.min.css">
+<link rel="stylesheet" href="{% static 'quotation/quotation_list.css' %}">
+<style>
+  .quotation-mode-toolbar { margin: 12px 0 16px; }
+  .quotation-mode-toolbar .quotation-segmented-wrap { width: 100%; }
+  .quotation-segmented {
+    display: flex;
+    width: 100%;
+    background: #D9EDE9;
+    border-radius: 8px;
+    padding: 4px;
+    gap: 3px;
+    box-sizing: border-box;
+    border: 1px solid rgba(0, 137, 123, 0.2);
+  }
+  .quotation-segmented .quotation-segment {
+    flex: 1 1 0;
+    min-width: 0;
+    margin: 0;
+    border: none;
+    background: transparent;
+    color: #00897B;
+    font-weight: 500;
+    font-size: 14px;
+    padding: 10px 8px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background 0.2s ease, color 0.2s ease;
+    white-space: nowrap;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+  }
+  .quotation-segmented .quotation-segment.active::before {
+    content: "\2713";
+    font-size: 1.05em;
+    font-weight: 700;
+    line-height: 1;
+    flex-shrink: 0;
+  }
+  .quotation-segmented .quotation-segment.active {
+    background: #00897B;
+    color: #fff;
+    font-weight: 700;
+  }
+</style>
+
+<div class="container-fluid my-3">
+  <div class="page-header d-flex align-items-center justify-content-between">
+    <div>
+      <h3 class="mb-0">Quotations</h3>
+      <div class="muted-small">Manage quotations — review, confirm, convert to consumer</div>
+    </div>
+    <div class="text-end">
+      <div class="dt-buttons btn-group flex-wrap me-2">
+        <a href="#" class="btn btn-primary" onclick="quotationListGeneratePDF(); return false;" title="PDF"><i class="fas fa-file-pdf" style="font-size: 1.05rem;"></i></a>
+        <a href="#" class="btn btn-primary" onclick="quotationListGenerateExcel(); return false;" title="Excel"><i class="mdi mdi-microsoft-excel" style="font-size: 19px;"></i></a>
+        <a href="#" class="btn btn-primary" onclick="quotationListCopyToClipboard(); return false;" title="Copy"><i class="fas fa-copy"></i></a>
+        <a href="#" class="btn btn-primary" onclick="quotationListPrintTable(); return false;" title="Print"><i class="fas fa-print"></i></a>
+        {% if user|has_url_permission:"quotation:create_quotation" or user.is_superuser %}
+        <a href="#" class="btn btn-primary" data-toggle="modal" data-target="#quotationModal" title="Generate quotation">
+          <i class="bi bi-plus-lg"></i>
+        </a>
+        {% endif %}
+      </div>
+     
+    </div>
+  </div>
+
+  <div class="card card-compact mb-3">
+    <div class="card-body">
+      <div class="toolbar mb-3">
+        <div class="row g-2">
+          <div class="col-md-4 col-sm-12">
+            <input id="qSearch" class="form-control" placeholder="Search quotation no, consumer, city..." />
+          </div>
+          <div class="col-md-3 col-sm-6">
+            <select id="filterType" class="form-select">
+              <option value="">All Consumer Types</option>
+              <option>Residential</option>
+              <option>Commercial</option>
+              <option>Industrial</option>
+              <option>Government</option>
+            </select>
+          </div>
+          <div class="col-md-3 col-sm-6">
+            <select id="filterProject" class="form-select">
+              <option value="">All Project Types</option>
+              <option>RoofTop</option>
+              <option>Ground Mount PV</option>
+              <option>Water Pump</option>
+              <option>Street Light</option>
+              <option>Hi-Mas</option>
+              <option>Other</option>
+            </select>
+          </div>
+          <div class="col-md-2 col-sm-12 text-end d-flex justify-content-end gap-2">
+            <button id="clearFilters" class="btn btn-outline-secondary">Clear</button>
+            <button id="applyFilters" class="btn btn-primary">Apply</button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
+<style>
+.previous-quotation {
+    background-color: pink;
+    font-size: 0.9rem;
+    color: #555;
+    border-left: 4px solid #dee2e6;
+}
+
+.previous-quotation td {
+    padding-top: 6px;
+    padding-bottom: 6px;
+}
+</style>
+<style>
+    .convert-consumer-btn {
+        margin-right: 5px;
+        margin-bottom: 5px;
+    }
+    .quotation-action-btn {
+        width: 72px;
+        padding-left: 6px;
+        padding-right: 6px;
+        text-align: center;
+    }
+
+    /* Style for confirmed status */
+    .confirmed-status {
+        color: green;
+        font-weight: bold;
+    }
+</style>
 <div class="container-fluid mt-4">
 
-  <div class="d-flex justify-content-between align-items-center mb-4">
-    <div>
-      <h4 class="fw-bold mb-1">Quotation List</h4>
-      <small class="text-muted">All generated quotations</small>
+<h4 class="fw-bold mb-3">Quotation List</h4>
+<div class="d-flex align-items-end justify-content-center row quotation-mode-toolbar mx-0">
+  <div class="col-12 col-sm-11 quotation-segmented-wrap">
+    <div class="quotation-segmented" id="quotationQuickFilter" role="group" aria-label="Quotation consumer filters">
+      <button type="button" data-filter="all" class="quotation-segment active" aria-current="page">All</button>
+      <button type="button" data-filter="new" class="quotation-segment">New</button>
+      <button type="button" data-filter="revise" class="quotation-segment">Revise</button>
+      <button type="button" data-filter="confirm" class="quotation-segment">Confirmed</button>
+      <button type="button" data-filter="converted" class="quotation-segment">Converted</button>
     </div>
-    <a href="{% url 'quotation:create_quotation' %}" class="btn btn-primary">
-      + New Quotation
-    </a>
   </div>
+</div>
 
-  <div class="card shadow-sm border-0">
-    <div class="card-body p-0">
+<div class="table-responsive">
+<table id="quotationTable" data-default-order='[]' class="table table-hover align-middle table.dataTable table-sm mb-0 datatable table.sm dt-compact-cols dt-tools-minimal dt-no-pagination" style="width: 100%;">
+<thead class="table-light">
+<tr>
+  <th class="text-center">Quotation No</th>
+  <th class="text-center">Customer</th>
+  <th class="text-center">Associate</th>
+  <th class="text-center">Type</th>
+  <th class="text-center">Project</th>
+  <th class="text-center">Capacity</th>
+  <th class="text-center">Date</th>
+  <th class="text-end">Final Amount</th>
+  <th class="text-center">Status</th>
+  <th class="text-center">Actions</th>
+</tr>
+</thead>
+<tbody id="quotationTableBody">
+{% for q in quotations %}
+<tr class="quotation-row base-{{ q.base_no }}{% if not q.is_latest_revision %} previous-quotation{% endif %}"
+    data-latest="{{ q.is_latest_revision|yesno:'1,0' }}"
+    data-quotation-no="{{ q.quotation_no }}"
+    data-consumer-type="{{ q.consumer_type|default:'' }}"
+    data-project-type="{{ q.project_type|default:'' }}"
+    data-confirmed="{{ q.is_confirmed|yesno:'1,0' }}"
+    data-converted="{{ q.convert_consumer|yesno:'1,0' }}"
+    data-revise="{{ q.has_multiple|yesno:'1,0' }}"
+    {% if q.hide_row %}style="display:none"{% endif %}>
 
-      <table class="table table-hover align-middle mb-0">
-        <thead class="table-light text-uppercase small">
-          <tr>
-            <th>Quotation No</th>
-            <th>Consumer Name</th>
-            <th>Quotation Type</th>
-            <th>Project Capacity</th>
-            <th>Date</th>
-            <th class="text-end">Final Amount</th>
-            <th class="text-center">Actions</th>
-          </tr>
-        </thead>
+  <!-- Quotation No -->
+  <td class="fw-semibold">
+    {{ q.quotation_no }}
+  </td>
 
-        <tbody>
-          {% for q in quotations %}
-          <tr>
-            <td class="fw-semibold">{{ q.quotation_no }}</td>
-            <td>{{ q.consumer_name }}</td>
+  <!-- Consumer Name -->
+  <td>
+    {{ q.consumer_name }}
 
-            <td>
-              <span class="badge bg-info-subtle text-dark">
-                {{ q.get_consumer_type_display }}
-              </span>
-            </td>
-            <td>{{ q.plant_capacity_kw }}</td>
-            <!-- ✅ SAFE POSTGRES DATE DISPLAY -->
-            <td>
-              {% if q.created_at %}
-                {{ q.date }}
+    {% if q.is_latest_revision and q.has_multiple %}
+    <br>
+      <small class="small text-primary fw-semibold mt-1"
+           style="cursor:pointer"
+           data-label="Details ({{ q.previous_count }} previous)"
+           onclick="toggleDetails('{{ q.base_no }}', this)">
+        Details ({{ q.previous_count }} previous)
+      </small>
+    {% endif %}
+  </td>
+  <td class="muted-small">
+    {% if q.assigned_associate %}
+      {{ q.assigned_associate.get_full_name|default:q.assigned_associate.username }}
+    {% else %}
+      —
+    {% endif %}
+  </td>
+  <td>
+    <span class="badge bg-info-subtle text-dark">
+      {{ q.get_consumer_type_display }}
+    </span>
+  </td>
+  <td>
+    <span class="muted-small">{{ q.project_type }}</span>
+  </td>
+
+  <td>{{ q.plant_capacity_kw }}</td>
+
+  <td class="text-center text-nowrap">{{ q.display_date|default:"-" }}</td>
+
+  <td class="text-end fw-semibold" data-export="₹ {{ q.final_amount|indian_format_no_decimals }}">
+    ₹ {{ q.final_amount|indian_format_no_decimals }}
+  </td>
+
+   <td class="text-center">
+              {% if q.convert_consumer %}
+                <span class="badge bg-primary">Convert Consumer</span>
+              {% elif q.is_confirmed %}
+                <span class="badge bg-success">Confirmed</span>
+              {% elif "_" in q.quotation_no %}
+                <span class="badge bg-info text-dark">Revise</span>
               {% else %}
-                —
+                <span class="badge bg-warning text-dark">New</span>
               {% endif %}
             </td>
-            <td class="text-end fw-semibold">
-             <b> ₹ {{ q.final_amount|floatformat:2 }}  </b>
-            </td>
+<td class="text-center">
 
-            <td class="text-center">
-              {% if q.is_latest_revision %}
-                <a href="{% url 'quotation:edit_quotation' q.pk %}"
-                   class="btn btn-sm btn-outline-secondary me-1">Edit</a>
-                <a href="{% url 'quotation:revise_quotation' q.pk %}"
-                   class="btn btn-sm btn-outline-warning me-1">Revise</a>
-              {% endif %}
-              <a href="{% url 'quotation:quotation_pdf' q.pk %}"
-                 target="_blank"
-                 class="btn btn-sm btn-outline-primary">PDF</a>
-            </td>
-          </tr>
-          {% empty %}
-          <tr>
-            <td colspan="7" class="text-center text-muted py-4">
-              No quotations available.
-            </td>
-          </tr>
-          {% endfor %}
-        </tbody>
+{% if q.is_latest_revision and not q.is_confirmed %}
+  <a href="{% url 'quotation:edit_quotation' q.pk %}"
+     class="btn btn-sm btn-outline-secondary quotation-action-btn">Edit</a>
 
-      </table>
+  <a href="{% url 'quotation:revise_quotation' q.pk %}"
+     class="btn btn-sm btn-outline-warning quotation-action-btn">Revise</a>
 
-    </div>
-  </div>
+  <button type="button" class="btn btn-sm btn-outline-success quotation-action-btn"
+    data-bs-toggle="modal"
+    data-bs-target="#confirmModal"
+    data-id="{{ q.pk }}"
+    data-name="{{ q.consumer_name }}"
+    data-capacity="{{ q.plant_capacity_kw }}"
+    data-no="{{ q.quotation_no }}"
+    data-date="{{ q.display_date|default:'-' }}"
+    data-amount="{{ q.final_amount }}">
+    Confirm
+  </button>
+{% endif %}
+{% if q.is_confirmed %}
+        {% if not q.convert_consumer %}
+        <!-- Add Convert Consumer button for confirmed quotations (hidden if already converted) -->
+        <button type="button" class="btn btn-sm btn-primary convert-consumer-btn"
+            data-id="{{ q.pk }}"
+            data-type="{{ q.consumer_type }}"
+            data-converted="{{ q.convert_consumer|yesno:'1,0' }}">
+            Convert Consumer
+        </button>
+        {% endif %}
+    {% endif %}
+<a href="{% url 'quotation:quotation_pdf' q.pk %}"
+   target="_blank"
+   class="btn btn-sm btn-outline-primary">PDF</a>
+
+</td>
+
+</tr>
+{% endfor %}
+</tbody>
+</table>
+</div>
+</div>
+
+<!-- ================= CONFIRM MODAL ================= -->
+
+<div class="modal fade" id="confirmModal" tabindex="-1" aria-labelledby="confirmModalTitle" aria-hidden="true">
+<div class="modal-dialog modal-lg">
+<div class="modal-content">
+
+<div class="modal-header">
+<h5 class="modal-title" id="confirmModalTitle">Quotation Confirmation</h5>
+{# type="button" required: default <button> inside a form is submit and would POST on close #}
+<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+</div>
+
+<form id="confirmForm" method="post" action="#">{% csrf_token %}
+<div class="modal-body">
+<p><b>Customer:</b> <span id="m_name"></span></p>
+<p><b>Plant Capacity:</b> <span id="m_capacity"></span></p>
+<p><b>Quotation No:</b> <span id="m_no"></span></p>
+<p><b>Date:</b> <span id="m_date"></span></p>
+<p><b>Final Amount:</b> ₹ <span id="m_amount"></span></p>
+
+<hr>
+
+<div class="row">
+<div class="col-md-6">
+<label>Payment Type</label>
+<select name="payment_type" class="form-control" required>
+<option value="">Select</option>
+<option>Full Payment</option>
+<option>Part Payment</option>
+<option>Part payment & remaning payment after subsidy</option>
+</select>
+</div>
+
+<div class="col-md-6">
+<label>Payment Mode</label>
+<select name="payment_mode" id="paymentMode" class="form-control" required>
+<option value="">Select</option>
+<option>Net Banking</option>
+<option>UPI</option>
+<option>Cash</option>
+<option>Hybrid</option>
+<option>Check</option>
+</select>
+</div>
+</div>
+
+<div class="row mt-2 d-none" id="hybridBox">
+<div class="col-md-6">
+<label>Hybrid Mode</label>
+<select name="hybrid_mode" class="form-control">
+<option>UPI + Cash</option>
+<option>UPI + Net Banking</option>
+<option>UPI + BANK CHECK</option>
+</select>
+</div>
+</div>
+
+<hr>
+
+<div class="row">
+<div class="col-md-6">
+<label>PO Order No (Optional)</label>
+<input type="text" name="po_order_no" class="form-control">
+</div>
+
+<div class="col-md-6">
+<label>PO Date (Optional)</label>
+<input type="date" name="po_date" class="form-control">
+</div>
+</div>
 
 </div>
+
+<div class="modal-footer">
+<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+<button class="btn btn-success" type="submit">Save</button>
+</div>
+
+</form>
+</div>
+</div>
+</div>
+<script>
+function toggleDetails(baseNo, el) {
+
+  const rows = document.querySelectorAll('.base-' + baseNo);
+  const expanded = el.dataset.expanded === "1";
+
+  rows.forEach(row => {
+    if (row.dataset.latest === "0") {
+      row.style.display = expanded ? "none" : "";
+      row.classList.toggle("previous-quotation", !expanded);
+    }
+  });
+
+  if (expanded) {
+    // collapse → restore original label with count
+    el.innerText = el.dataset.label;
+    el.dataset.expanded = "0";
+  } else {
+    // expand
+    el.innerText = "Hide Details";
+    el.dataset.expanded = "1";
+  }
+}
+</script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script src="{% static 'js/quotation_list.js' %}"></script>
+<script>window.LIST_PAGE_EXPORT_LOGO_PATH = "{% static 'images/db_logo_200.png' %}";</script>
+<script src="{% static 'js/list_page_export.js' %}"></script>
+<script>
+  ListPageExport.register({
+    apiPrefix: 'quotationList',
+    tableSelector: '#quotationTable',
+    pdfFilename: 'quotation_list.pdf',
+    excelFilename: 'quotation_list.xlsx',
+    excelSheetName: 'QuotationList',
+    printDocumentTitle: 'Quotation List',
+    pdfCaption: 'Quotation List',
+    pdfEmbedUnicodeFont: true
+  });
+</script>
+<div id="success-banner" class="success-banner" style="display:none"></div>
 {% endblock %}

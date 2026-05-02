@@ -232,43 +232,86 @@ document.addEventListener("DOMContentLoaded", function () {
         </div>
       </div>
     </div>
-  <div class="row mb-1 align-items-center">
-   <div class="col-md-12 item1">
-    {{ form.consumer_name.label_tag }} {{ form.consumer_name }}
-   </div>
- <div class="col-md-6 mb-3 item1">
-    {{ form.consumer_address1.label_tag }} {{ form.consumer_address1 }}
-     </div>
- <div class="col-md-6 mb-3 item1">
-    {{ form.consumer_address2.label_tag }} {{ form.consumer_address2 }}
-     </div>
- <div class="col-md-6 item1">
-    {{ form.consumer_no.label_tag }} {{ form.consumer_no }}
-     </div>
- <div class="col-md-6 item1">
-    {{ form.consumer_mobile.label_tag }} {{ form.consumer_mobile }}
- </div>
-  </div>
+
+    <div class="row mb-1 align-items-center">
+        <div class="col-md-12 item1">
+            {{ form.consumer_name.label_tag }} {{ form.consumer_name }}
+        </div>
+    </div>
+
+    <div class="row mb-1 align-items-center">
+        <div class="col-md-6 mb-3 item1">
+            {{ form.consumer_address1.label_tag }} {{ form.consumer_address1 }}
+        </div>
+        <!-- CHANGED: Consumer Address 2 renamed to City -->
+        <div class="col-md-6 mb-3 item1">
+            <label for="{{ form.consumer_address2.id_for_label }}">City:</label>
+            {{ form.consumer_address2 }}
+        </div>
+
+    </div>
+
+    <!-- NEW: State and Email Fields -->
+    <div class="row mb-1 align-items-center">
+        <div class="col-md-6 item1">
+            <label for="{{ form.consumer_state.id_for_label }}">State:</label>
+            {{ form.consumer_state }}
+        </div>
+        <div class="col-md-6 item1">
+            <label for="{{ form.consumer_email.id_for_label }}">Email ID:</label>
+            {{ form.consumer_email }}
+        </div>
+    </div>
+
+    <div class="row mb-1 align-items-center">
+        <div class="col-md-6 item1">
+            {{ form.consumer_mobile.label_tag }} {{ form.consumer_mobile }}
+        </div>
+        <!-- NEW: Project Type Dropdown -->
+        <div class="col-md-6 item1">
+            <label for="{{ form.project_type.id_for_label }}">Project Type:</label>
+            {{ form.project_type }}
+        </div>
+    </div>
   </fieldset>
 
 <fieldset>
     <legend>Quotation Meta</legend>
+    {# Row 1: Date, Plant capacity, Electricity unit rate #}
     <div class="row mb-1 align-items-center">
-   <div class="col-md-4 mb-3 item1">
-    {{ form.date.label_tag }} {{ form.date }}
-   </div>
         <div class="col-md-4 mb-3 item1">
-    {{ form.plant_capacity_kw.label_tag }}
-    <div class="input-group">
-        {{ form.plant_capacity_kw }}
-        <button type="button" class="btn btn-success" id="openPlantCapacityModal"
-                style="border-top-left-radius: 0; border-bottom-left-radius: 0; width: 40px;"
-                title="Add New Plant Capacity">+</button>
+            {{ form.date.label_tag }} {{ form.date }}
+        </div>
+        <div class="col-md-4 mb-3 item1">
+            {{ form.plant_capacity_kw.label_tag }}
+            <div class="input-group">
+                {{ form.plant_capacity_kw }}
+                <button type="button" class="btn btn-success" id="openPlantCapacityModal"
+                        style="border-top-left-radius: 0; border-bottom-left-radius: 0; width: 40px;"
+                        title="Add New Plant Capacity">+</button>
+            </div>
+        </div>
+        <div class="col-md-4 mb-3 item1">
+            {{ form.electricity_unit_rate.label_tag }}
+            <div class="input-group">
+                {{ form.electricity_unit_rate }}
+                <span class="input-group-text">₹/kWh</span>
+            </div>
+            <small class="form-text text-muted">Used for yearly saving calculation</small>
+            {% if form.electricity_unit_rate.errors %}<div class="text-danger small">{{ form.electricity_unit_rate.errors }}</div>{% endif %}
+        </div>
     </div>
-</div>
-        <div class="col-md-4 mb-3 item1">
-    Representative Name  {{ form.employee_name }}
-   </div>
+    {# Row 2: Assign Associate (full name in list), Representative #}
+    <div class="row mb-1 align-items-center">
+        <div class="col-md-6 mb-3 item1">
+            {{ form.assigned_associate.label_tag }} {{ form.assigned_associate }}
+            {% if form.assigned_associate.errors %}<div class="text-danger small">{{ form.assigned_associate.errors }}</div>{% endif %}
+        </div>
+        <div class="col-md-6 mb-3 item1">
+            <label for="{{ form.employee_name.id_for_label }}">Representative Name</label>
+            {{ form.employee_name }}
+            {% if form.employee_name.errors %}<div class="text-danger small">{{ form.employee_name.errors }}</div>{% endif %}
+        </div>
     </div>
   </fieldset>
 
@@ -643,17 +686,6 @@ document.addEventListener("DOMContentLoaded", function () {
   <fieldset>
     <legend>Pricing & Tax</legend>
 
-    <!-- Add electricity_unit_rate field -->
-    <div class="row mb-1 align-items-center">
-        <div class="col-md-6 item1">
-            {{ form.electricity_unit_rate.label_tag }} {{ form.electricity_unit_rate }}
-            {% if form.electricity_unit_rate.errors %}
-                <div style="color:red;">{{ form.electricity_unit_rate.errors }}</div>
-            {% endif %}
-        </div>
-    </div>
-    <br>
-
     {{ form.pricing_mode.label_tag }} {{ form.pricing_mode }}<br><br>
 
     <div id="net-amount-field" style="display:none;">
@@ -675,6 +707,7 @@ document.addEventListener("DOMContentLoaded", function () {
     </div>
     <br>
 
+    <div id="pricing-calculated-block" style="display:none;">
     <label>Special Discount:</label>
     {% if form.special_discount.value %}
       <input type="text" name="special_discount" class="form-control" value="{{ form.special_discount.value }}">
@@ -706,6 +739,7 @@ document.addEventListener("DOMContentLoaded", function () {
       {% else %}
         <input type="text" id="id_total_amount" readonly style="background:#f7f7f7;" value="{{ quotation.final_amount }}">
       {% endif %}
+    </div>
     </div>
   </fieldset>
 
@@ -1161,6 +1195,7 @@ document.addEventListener('DOMContentLoaded', function(){
     const dropdown = document.querySelector('[name="pricing_mode"]');
     const netFieldDiv = document.getElementById('net-amount-field');
     const finalFieldDiv = document.getElementById('final-amount-field');
+    const pricingCalcBlock = document.getElementById('pricing-calculated-block');
     const netInput = document.querySelector('[name="net_amount_input"]');
     const finalInput = document.querySelector('[name="final_amount_input"]');
     const gst5Input = document.querySelector('[name="gst_5_percent"]');
@@ -1168,102 +1203,194 @@ document.addEventListener('DOMContentLoaded', function(){
     const discountInput = document.querySelector('[name="special_discount"]');
     const totalDisplay = document.getElementById('id_total_amount');
 
+    function parseINR(val) {
+      if (val == null || String(val).trim() === '') return 0;
+      var n = parseFloat(String(val).replace(/,/g, '').trim());
+      return isNaN(n) ? 0 : n;
+    }
+
+    function formatINR2(n) {
+      var x = Number(n);
+      if (isNaN(x)) return '';
+      return x.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+
+    function formatNetDiscountDisplay(n) {
+      var x = Number(n);
+      if (isNaN(x)) return '';
+      var r = Math.round(x * 100) / 100;
+      if (Math.abs(r - Math.round(r)) < 1e-9) {
+        return Math.round(r).toLocaleString('en-IN');
+      }
+      return r.toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+    }
+
+    function indianGroupDigits(numStr) {
+      if (!numStr) return '';
+      if (numStr.length <= 3) return numStr;
+      var last3 = numStr.slice(-3);
+      var rest = numStr.slice(0, -3);
+      rest = rest.replace(/\B(?=(\d{2})+(?!\d))/g, ',');
+      return rest + ',' + last3;
+    }
+
+    function formatIndianInputLive(raw) {
+      raw = String(raw ?? '');
+      var neg = /^\s*-/.test(raw);
+      var s = raw.replace(/,/g, '').replace(/^\s*-/, '');
+      var dotIdx = s.indexOf('.');
+      var intRaw = dotIdx >= 0 ? s.slice(0, dotIdx) : s;
+      var decRaw = dotIdx >= 0 ? s.slice(dotIdx + 1).replace(/\./g, '') : '';
+      intRaw = intRaw.replace(/\D/g, '');
+      decRaw = decRaw.replace(/\D/g, '').slice(0, 2);
+      var out = indianGroupDigits(intRaw);
+      if (neg && (intRaw !== '' || decRaw !== '' || dotIdx >= 0)) {
+        out = '-' + out;
+      }
+      if (dotIdx >= 0) {
+        out += '.' + decRaw;
+      }
+      return out;
+    }
+
+    function countDigitsBeforeCursor(str, caret) {
+      return str.slice(0, caret).replace(/[^\d]/g, '').length;
+    }
+
+    function caretFromDigitIndex(str, digitCount) {
+      if (digitCount <= 0) return 0;
+      var dc = 0;
+      var i;
+      for (i = 0; i < str.length; i++) {
+        if (/\d/.test(str[i])) {
+          dc++;
+          if (dc >= digitCount) return i + 1;
+        }
+      }
+      return str.length;
+    }
+
+    function wireLiveIndianNetOrDiscount(el, recalc) {
+      if (!el) return;
+      el.addEventListener('input', function() {
+        var caret = el.selectionStart;
+        var digitsBefore = countDigitsBeforeCursor(el.value, caret);
+        var formatted = formatIndianInputLive(el.value);
+        el.value = formatted;
+        var newCaret = caretFromDigitIndex(formatted, digitsBefore);
+        try {
+          el.setSelectionRange(newCaret, newCaret);
+        } catch (e1) { /* ignore */ }
+        if (typeof recalc === 'function') recalc();
+      });
+      el.addEventListener('blur', function() {
+        if (String(el.value).trim() === '') return;
+        el.value = formatNetDiscountDisplay(parseINR(el.value));
+        if (typeof recalc === 'function') recalc();
+      });
+    }
+
     function togglePricingFields(){
-      if(!dropdown) return;
-      if(dropdown.value === 'net'){
+      if (!dropdown || !netFieldDiv || !finalFieldDiv) return;
+      var mode = dropdown.value;
+      var showPricing = mode === 'net' || mode === 'final';
+      if (pricingCalcBlock) pricingCalcBlock.style.display = showPricing ? 'block' : 'none';
+      if(mode === 'net'){
         netFieldDiv.style.display = 'block';
         finalFieldDiv.style.display = 'none';
-        // don't clear here — we will recalc from net below
-      } else if(dropdown.value === 'final'){
+        clearFields();
+      } else if(mode === 'final'){
         finalFieldDiv.style.display = 'block';
         netFieldDiv.style.display = 'none';
-        // recalc from final below
+        clearFields();
       } else {
         netFieldDiv.style.display = 'none';
         finalFieldDiv.style.display = 'none';
+        clearFields();
       }
     }
-    // FORMAT NUMBER IN INDIAN STYLE (12,34,56,789)
-    // AND ROUND OFF VALUE
-    function formatINR(num){
-        num = Math.round(num);
-        return num.toLocaleString('en-IN');
-    }
-
 
     function clearFields(){
-      if(gst5Input) gst5Input.value = '';
-      if(gst18Input) gst18Input.value = '';
-      if(totalDisplay) totalDisplay.value = '';
+      if (gst5Input) gst5Input.value = '';
+      if (gst18Input) gst18Input.value = '';
+      if (totalDisplay) totalDisplay.value = '';
     }
+
     function calcFromNet(){
-        const net = parseFloat(netInput && netInput.value) || 0;
-        const discount = parseFloat(discountInput && discountInput.value) || 0;
+      const net = parseINR(netInput && netInput.value);
+      const discount = parseINR(discountInput && discountInput.value);
+      if(net <= 0) { clearFields(); return; }
 
-        if(net <= 0) { clearFields(); return; }
+      const taxableAmount = net - discount;
+      if (taxableAmount < 0) { clearFields(); return; }
 
-        // After-discount amount
-        const taxable = net - discount;
-        if(taxable < 0){ clearFields(); return; }
+      const gst5 = (taxableAmount * 0.70) * 0.05;
+      const gst18 = (taxableAmount * 0.30) * 0.18;
+      const total = taxableAmount + gst5 + gst18;
 
-        const gst5 = (taxable * 0.70) * 0.05;
-        const gst18 = (taxable * 0.30) * 0.18;
-
-        const total = taxable + gst5 + gst18;
-
-        if(gst5Input) gst5Input.value = gst5.toFixed(2);
-        if(gst18Input) gst18Input.value = gst18.toFixed(2);
-
-        // APPLY ROUND + INDIAN FORMAT
-        if(totalDisplay) totalDisplay.value = formatINR(total);
+      if (gst5Input) gst5Input.value = formatINR2(gst5);
+      if (gst18Input) gst18Input.value = formatINR2(gst18);
+      if (totalDisplay) totalDisplay.value = formatINR2(total);
     }
 
     function calcFromFinal(){
-        const finalAmt = parseFloat(finalInput && finalInput.value) || 0;
-        if(finalAmt <= 0) { clearFields(); return; }
+      const finalAmt = parseINR(finalInput && finalInput.value);
+      if(finalAmt <= 0) { clearFields(); return; }
 
-        const gstFactor = (0.70 * 0.05) + (0.30 * 0.18);
+      const gstFactor = (0.70 * 0.05) + (0.30 * 0.18);
+      const taxableAmount = finalAmt / (1 + gstFactor);
 
-        const taxable = finalAmt / (1 + gstFactor);
+      const gst5 = (taxableAmount * 0.70) * 0.05;
+      const gst18 = (taxableAmount * 0.30) * 0.18;
 
-        const gst5 = (taxable * 0.70) * 0.05;
-        const gst18 = (taxable * 0.30) * 0.18;
-
-        if(gst5Input) gst5Input.value = gst5.toFixed(2);
-        if(gst18Input) gst18Input.value = gst18.toFixed(2);
-
-        // Final amount already entered → just round & format
-        if(totalDisplay) totalDisplay.value = formatINR(finalAmt);
+      if (gst5Input) gst5Input.value = formatINR2(gst5);
+      if (gst18Input) gst18Input.value = formatINR2(gst18);
+      if (totalDisplay) totalDisplay.value = formatINR2(finalAmt);
     }
 
-
-
-    // Event listeners
-    if(dropdown){
-      dropdown.addEventListener('change', function(){
-        togglePricingFields();
-        // Immediately recalc when mode toggles
-        if(dropdown.value === 'net') calcFromNet();
-        if(dropdown.value === 'final') calcFromFinal();
-      });
-    }
-    if(netInput) netInput.addEventListener('input', calcFromNet);
-    if(finalInput) finalInput.addEventListener('input', calcFromFinal);
-    if(discountInput) discountInput.addEventListener('input', function(){
-      if(dropdown && dropdown.value === 'net') calcFromNet();
-      if(dropdown && dropdown.value === 'final') calcFromFinal();
+    wireLiveIndianNetOrDiscount(netInput, function() {
+      if (dropdown && dropdown.value === 'net') calcFromNet();
+    });
+    wireLiveIndianNetOrDiscount(finalInput, function() {
+      if (dropdown && dropdown.value === 'final') calcFromFinal();
+    });
+    wireLiveIndianNetOrDiscount(discountInput, function() {
+      if (dropdown && dropdown.value === 'net') calcFromNet();
+      if (dropdown && dropdown.value === 'final') calcFromFinal();
     });
 
-    // Initialize visibility & calculate once using current values from form or DB
+    if (dropdown) {
+      dropdown.addEventListener('change', function(){
+        togglePricingFields();
+        if (dropdown.value === 'net') calcFromNet();
+        else if (dropdown.value === 'final') calcFromFinal();
+      });
+    }
+
     togglePricingFields();
-    if(dropdown && dropdown.value === 'net'){
+    if (netInput && String(netInput.value).trim() !== '') {
+      netInput.value = formatNetDiscountDisplay(parseINR(netInput.value));
+    }
+    if (finalInput && String(finalInput.value).trim() !== '') {
+      finalInput.value = formatNetDiscountDisplay(parseINR(finalInput.value));
+    }
+    if (discountInput && String(discountInput.value).trim() !== '') {
+      discountInput.value = formatNetDiscountDisplay(parseINR(discountInput.value));
+    }
+
+    if (dropdown && dropdown.value === 'net' && netInput && parseINR(netInput.value) > 0) {
       calcFromNet();
-    } else if(dropdown && dropdown.value === 'final'){
+    } else if (dropdown && dropdown.value === 'final' && finalInput && parseINR(finalInput.value) > 0) {
       calcFromFinal();
     } else {
-      // If neither, still try to show fields if values exist
-      if(netInput && netInput.value) { netFieldDiv.style.display = 'block'; calcFromNet(); }
-      if(finalInput && finalInput.value) { finalFieldDiv.style.display = 'block'; calcFromFinal(); }
+      if (netInput && netInput.value) {
+        netFieldDiv.style.display = 'block';
+        calcFromNet();
+      }
+      if (finalInput && finalInput.value) {
+        finalFieldDiv.style.display = 'block';
+        calcFromFinal();
+      }
     }
   });
   </script>

@@ -2,10 +2,46 @@ from django import forms
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.models import User
 
-from django import forms
 from .models import Category, SubCategory, Product, Brand, Unit, Supplier
 
+
+class SafeCategoryModelChoiceField(forms.ModelChoiceField):
+    """
+    Avoid MultipleObjectsReturned when the DB has duplicate Category rows for the same
+    logical key (legacy data). Prefer lowest id.
+    """
+
+    def to_python(self, value):
+        if value in self.empty_values:
+            return None
+        key = self.to_field_name or "pk"
+        try:
+            qs = self.queryset.filter(**{key: value})
+        except (ValueError, TypeError):
+            raise forms.ValidationError(
+                self.error_messages["invalid_choice"],
+                code="invalid_choice",
+                params={"value": value},
+            )
+        cnt = qs.count()
+        if cnt == 0:
+            raise forms.ValidationError(
+                self.error_messages["invalid_choice"],
+                code="invalid_choice",
+                params={"value": value},
+            )
+        if cnt > 1:
+            return qs.order_by("id").first()
+        return qs.first()
+
+
 class CategoryForm(forms.ModelForm):
+    """
+    Model has null=True on name/short_name but not blank=True, so ModelForm would
+    incorrectly require short_name. We require name only; short_name is optional.
+    Empty short_name is stored as NULL so unique=True does not clash on ''.
+    """
+
     class Meta:
         model = Category
         fields = ['name', 'short_name', 'status']
@@ -17,13 +53,33 @@ class CategoryForm(forms.ModelForm):
             }),
             'short_name': forms.TextInput(attrs={
                 'class': 'form-control item1',
-                'placeholder': 'Enter Short Name',
+                'placeholder': 'Enter Short Name (optional)',
             }),
              'status': forms.CheckboxInput(attrs={
                 'class': 'form-check-input d-inline-block',  # Updated to include d-inline-block
                 'style': 'margin-left: 10px; width:20px; height:20px;',  # Add margin-left to create space
             }),
         }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['name'].required = True
+        self.fields['short_name'].required = False
+        # Unchecked checkbox is omitted from POST; must not be "required"
+        self.fields['status'].required = False
+
+    def clean_name(self):
+        data = (self.cleaned_data.get('name') or '').strip()
+        if not data:
+            raise forms.ValidationError('Category name is required.')
+        return data
+
+    def clean_short_name(self):
+        data = self.cleaned_data.get('short_name')
+        if data is None:
+            return None
+        data = data.strip()
+        return data or None
 
 class SubCategoryForm(forms.ModelForm):
     class Meta:
@@ -49,6 +105,15 @@ class SubCategoryForm(forms.ModelForm):
             }),
         }
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["category"] = SafeCategoryModelChoiceField(
+            queryset=Category.objects.all().order_by("name", "id"),
+            required=True,
+            widget=forms.Select(
+                attrs={"class": "form-control item1", "style": "color: black;"}
+            ),
+        )
 
 
 # class ProductForm(forms.ModelForm):
@@ -134,6 +199,17 @@ class ProductForm(forms.ModelForm):
                 'style': 'margin-left: 10px; width:20px; height:20px;',  # Add margin-left to create space
             }),
         }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["category"] = SafeCategoryModelChoiceField(
+            queryset=Category.objects.all().order_by("name", "id"),
+            required=True,
+            widget=forms.Select(
+                attrs={"class": "form-control item1", "style": "color: black;"}
+            ),
+        )
+
 
 class BrandForm(forms.ModelForm):
     class Meta:
@@ -221,4 +297,17 @@ class SupplierForm(forms.ModelForm):
                 'style': 'margin-left: 10px; width:20px; height:20px;',  # Add margin-left to create space
             }),
         }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["category"] = SafeCategoryModelChoiceField(
+            queryset=Category.objects.all().order_by("name", "id"),
+            required=True,
+            widget=forms.Select(
+                attrs={
+                    "class": "form-control item1",
+                    "placeholder": "Select Category",
+                }
+            ),
+        )
 

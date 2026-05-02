@@ -128,7 +128,7 @@
                             </thead>
 
                             <tbody>
-                              {% if user.is_authenticated and user.is_staff and user.is_superuser %}
+                              {% if user.is_authenticated and user.is_staff %}
                                 {% for i in filtered_firereport %}
                                 <tr>
                                     <td class="text-center">{{forloop.counter}}</td>
@@ -139,7 +139,7 @@
                                     <td>{{i.Message}}</td>
                                     <td>{{i.Postingdate}}</td>
                                     <td>{{i.Status}}</td>
-                                    <td>{{i.AssignTo.first_name}}  {{i.AssignTo.last_name}}</td>
+                                    <td>{% if i.AssignTo %}{{i.AssignTo.first_name}}  {{i.AssignTo.last_name}}{% else %}-{% endif %}</td>
                                     <td class="text-center">
                                         <div class="btn-group">
                                             <a class="btn btn-primary" href="{% url 'firereport-reviewRequestDetails' i.id %}"><i class="fa fa-eye"></i></a> &nbsp;&nbsp;
@@ -149,37 +149,7 @@
                                     </td>
                                 </tr>
                                 {% endfor %}
-                            {% else %}
-                                {% for i in filtered_firereport %}
-                                {% if i.AssignTo == user %}
-                                <tr>
-                                    <td class="text-center">{{forloop.counter}}</td>
-                                    <td class="text-center">{{i.id}}</td>
-                                    <td>{{i.FullName}}</td>
-                                    <td>{{i.MobileNumber}}</td>
-                                    <td>{{i.Location}}</td>
-                                    <td>{{i.Message}}</td>
-                                    <td>{{i.Postingdate}}</td>
-                                    <td>{{i.Status}}</td>
-                                    <td>{{i.AssignTo.first_name}}  {{i.AssignTo.last_name}}</td>
-                                    <td class="text-center">
-                                        <div class="btn-group">
-                                            <a class="btn btn-primary" href="{% url 'firereport-viewRequestDetails' i.id %}"><i class="fa fa-eye"></i></a> &nbsp;&nbsp;
-<!--                                            <a class="btn btn-danger" onclick="return confirm('Are you sure to Delete ?')" href="{% url 'firereport-deleteRequest' i.id %}"><i-->
-<!--                                                class="fa fa-trash-alt"></i></a>-->
-                                        </div>
-                                    </td>
-                                </tr>
-                                {% if i.AssignTo != user %}
-                                  <tr class="text-center">
-                                      <td colspan="8" class="text-center"><h1>No customers found.</h1></td>
-                                  </tr>
-                                {% endif %}
-                                {% endif %}
-
-                                {% endfor %}
-
-                            {% endif %}
+                              {% endif %}
                             </tbody>
                         </table>
                     </div>

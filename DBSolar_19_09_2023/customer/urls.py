@@ -1,5 +1,6 @@
-#from turtle import home
-from django.urls import path
+from turtle import home
+
+from django.urls import path, include
 from . import views
 from .views import get_company_data, check_company_name, check_username
 
@@ -37,6 +38,8 @@ urlpatterns = [
     path('change_staff/', views.filter_data, name='customer-change_staff'),
     path('save_change_staff/', views.save_change_staff, name='customer-save_change_staff'),
     path('MSEB/', views.mseb_view, name='customer-MSEB'),
+    path('mseb_customer_list/', views.mseb_customer_list, name='customer-mseb_customer_list'),
+    path('mseb_tracking_json/', views.mseb_tracking_json, name='customer-mseb_tracking_json'),
     path('complete_MSEB/', views.complete_mseb_view, name='customer-complete_MSEB'),
     path('Update_MSEB/', views.update_mseb_view, name='customer-Update_MSEB'),
     path('get_mseb_data/', views.get_mseb_data, name='customer-get_mseb_data'),
@@ -55,4 +58,5 @@ urlpatterns = [
 
 ]
 
+# Note: CRM was moved to a separate 'leads' app. No additional URLs appended here.
 

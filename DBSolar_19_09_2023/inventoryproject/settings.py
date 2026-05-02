@@ -10,27 +10,28 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/3.1/ref/settings/
 """
 
-import os
 from pathlib import Path
+import sys
 
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+LEAD_PROJECT_DIR = BASE_DIR / "lead"
+if LEAD_PROJECT_DIR.exists():
+    sys.path.insert(0, str(LEAD_PROJECT_DIR))
 
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/3.1/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.environ.get('SECRET_KEY', '@ujr-e&a%8m%6!z(+ka16+(sm6cug(h6noe%#p%=6%d2nz5t+#')
+SECRET_KEY = '@ujr-e&a%8m%6!z(+ka16+(sm6cug(h6noe%#p%=6%d2nz5t+#'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = os.environ.get('DEBUG', 'False').lower() == 'true'
+DEBUG = True  # Temporarily enabled to see error details
 
 #ALLOWED_HOSTS = ['anujdeshmukh24.pythonanywhere.com']
-# Read ALLOWED_HOSTS from environment variable, fallback to default
-ALLOWED_HOSTS_ENV = os.environ.get('ALLOWED_HOSTS', 'www.db-solar.co.in,db-solar.co.in,72.60.98.248,app.db-solar.co.in,api.db-solar.co.in')
-ALLOWED_HOSTS = [host.strip() for host in ALLOWED_HOSTS_ENV.split(',') if host.strip()]
+ALLOWED_HOSTS = ['www.db-solar.co.in', 'db-solar.co.in', 'localhost', '127.0.0.1', 'testserver']
 
 # Application definition
 
@@ -67,6 +68,7 @@ INSTALLED_APPS = [
     'user.apps.UserConfig',
     'customer.apps.CustomerConfig',
     'crispy_forms',
+    'crispy_bootstrap4',
     'firereport.apps.FirereportConfig',
     'widget_tweaks',
     'user.group_filters',
@@ -78,6 +80,17 @@ INSTALLED_APPS = [
     'transactions.apps.TransactionsConfig',
     'quotation.apps.QuotationConfig',
     'homepage.apps.HomepageConfig',
+    # CRM (from /lead folder); legacy ``leads`` app removed — use ``manage.py drop_legacy_leads_app`` if tables remain.
+    'apps.core.apps.CoreConfig',
+    'apps.leads.apps.LeadsConfig',
+    'apps.pipeline',
+    'apps.surveys',
+    'apps.quotations',
+    'apps.revenue',
+    'apps.analytics',
+    'apps.team',
+    'apps.settings',
+    'apps.control_panel',
     'rest_framework',
     'corsheaders',
     'api.apps.ApiConfig',
@@ -87,12 +100,12 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
-    # Temporarily disabled WhiteNoise - using direct file serving via URL patterns instead
-    # 'whitenoise.middleware.WhiteNoiseMiddleware',  # Disabled - files served directly via URL patterns
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'apps.core.middleware.OrganizationMiddleware',
+    'user.middleware.CPPermissionMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'corsheaders.middleware.CorsMiddleware',
@@ -104,7 +117,7 @@ ROOT_URLCONF = 'inventoryproject.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [BASE_DIR / 'templates'],
+        'DIRS': [BASE_DIR / 'templates', BASE_DIR / 'lead' / 'templates'],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -120,15 +133,52 @@ TEMPLATES = [
 WSGI_APPLICATION = 'inventoryproject.wsgi.application'
 
 
-import os
-import dj_database_url
+#DATABASES = {
+#    'default': {
+#        'ENGINE': 'django.db.backends.sqlite3',
+#       #'NAME': #'/home/anujdeshmukh24/DBSolar_19_09_2023/DBSolar_19_09_2023/db.sqlite3',
+#        'NAME': BASE_DIR / "db.sqlite3",
+#   }
+#}
 
 DATABASES = {
-    'default': dj_database_url.parse(
-        os.environ.get('DATABASE_URL'),
-        conn_max_age=600
-    )
+    'default': {
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': 'db_solar',
+        'USER': 'postgres',
+        'PASSWORD': 'root',
+        'HOST': 'localhost',
+        'PORT': '5432',
+    }
 }
+
+# DATABASES = {
+#     'default': {
+#         'ENGINE': 'django.db.backends.postgresql',
+#         'NAME': 'db_solar',
+#         # 'USER': 'root',
+#         'PASSWORD': 'Anuj@25032503',
+#         'HOST': '',
+#         'PORT': '5432',
+#     }
+# }
+
+
+# DATABASES = {
+#     'default': {
+#         'ENGINE': 'django.db.backends.mysql',
+#         'NAME': 'anujdeshmukh24$db',
+#         'USER': 'anujdeshmukh24',
+#         'PASSWORD': 'Db@275194',
+#         'HOST': 'anujdeshmukh24.mysql.pythonanywhere-services.com',
+#         'PORT': '3306',
+#         'OPTIONS': {
+#             'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
+#         },
+#     }
+# }
+
+
 
 
 
@@ -156,8 +206,8 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LANGUAGE_CODE = 'en-us'
 
-TIME_ZONE = 'UTC'
-#TIME_ZONE = 'Asia/kolkata'
+# Use India timezone for correct local date/time display.
+TIME_ZONE = 'Asia/Kolkata'
 USE_I18N = True
 
 USE_L10N = True
@@ -169,37 +219,21 @@ CRISPY_TEMPLATE_PACK = 'bootstrap4'
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/3.1/howto/static-files/
 
-#STATIC_URL = '/static/'
-#STATIC_ROOT = BASE_DIR / 'staticfiles'
-
-#MEDIA_URL = '/media/'
-#MEDIA_ROOT = BASE_DIR / 'media'
-
 STATIC_URL = '/static/'
 
-# Directories where Django will collect static files from
-STATICFILES_DIRS = [
-    BASE_DIR / 'static',
-    BASE_DIR / 'asert',  # Include asert directory as a static files source
-]
-
-# Directory where collectstatic will gather all static files
-STATIC_ROOT = BASE_DIR / 'staticfiles'
-
-# WhiteNoise configuration
-# WhiteNoise will serve files from STATIC_ROOT (after collectstatic)
-# WHITENOISE_USE_FINDERS allows it to also serve from STATICFILES_DIRS
-# This is important so files in static/ and asert/ are accessible
-WHITENOISE_USE_FINDERS = True  # Enable WhiteNoise to find files in STATICFILES_DIRS (static/ and asert/)
-WHITENOISE_AUTOREFRESH = True  # Set to True to auto-refresh when files change (useful for development)
-WHITENOISE_ROOT = STATIC_ROOT  # Explicitly set the root directory
+MEDIA_ROOT = (BASE_DIR/"media/")
 
 MEDIA_URL = '/media/'
-MEDIA_ROOT = BASE_DIR / 'media'
+
+STATICFILES_DIRS = [
+    BASE_DIR / "static",
+    BASE_DIR / "lead" / "static",
+]
+
+STATIC_ROOT = (BASE_DIR/"asert/")
 
 
-
-LOGIN_REDIRECT_URL = 'dashboard-index'
+LOGIN_REDIRECT_URL = 'user:post_login_redirect'
 #CUSTOMER_URL = 'customer-index'
 
 LOGIN_URL = 'user-login'
@@ -209,12 +243,12 @@ LOGIN_URL = 'user-login'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST = os.environ.get('EMAIL_HOST', 'smtp.gmail.com')
-EMAIL_PORT = int(os.environ.get('EMAIL_PORT', '587'))
-EMAIL_USE_TLS = os.environ.get('EMAIL_USE_TLS', 'True').lower() == 'true'
-EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER', 'deshmukh.ssd24@gmail.com')
-EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD', 'pesebzcjfrxnuvsg')
-PASSWORD_RESET_TIMEOUT = int(os.environ.get('PASSWORD_RESET_TIMEOUT', '240'))
+EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = 'deshmukh.ssd24@gmail.com'
+EMAIL_HOST_PASSWORD = 'pesebzcjfrxnuvsg'
+PASSWORD_RESET_TIMEOUT = 240
 # SESSION_EXPIRE_AT_BROWSER_CLOSE=False
 CORS_ALLOW_ALL_ORIGINS = True
 

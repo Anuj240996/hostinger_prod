@@ -45,7 +45,7 @@
                     <div class="row mb-4">
                         <div class="col-md-12">
                             <h4><i class="fas fa-users"></i> Select User to Manage Permissions</h4>
-                            <p class="text-muted">Choose a user (Employee/Vendor/Associate) to view and manage their access rights.</p>
+                            <p class="text-muted">Choose a user (Employee/Vendor/Customer) to view and manage their access rights.</p>
                         </div>
                     </div>
 
@@ -61,28 +61,39 @@
                         </div>
                     </div>
 
-                    <ul class="nav nav-tabs mb-3" id="userTabs" role="tablist">
-                        <li class="nav-item" role="presentation">
-                            <a class="nav-link active" id="employees-tab" data-toggle="tab" href="#employees" role="tab">
-                                <i class="fas fa-user-tie"></i> Employees ({{ employees|length }})
-                            </a>
-                        </li>
-                        <li class="nav-item" role="presentation">
-                            <a class="nav-link" id="vendors-tab" data-toggle="tab" href="#vendors" role="tab">
-                                <i class="fas fa-store"></i> Vendors ({{ vendors|length }})
-                            </a>
-                        </li>
-                        <li class="nav-item" role="presentation">
-                            <a class="nav-link" id="associates-tab" data-toggle="tab" href="#associates" role="tab">
-                                <i class="fas fa-handshake"></i> Associates ({{ associates|length }})
-                            </a>
-                        </li>
-                        <li class="nav-item" role="presentation">
-                            <a class="nav-link" id="all-tab" data-toggle="tab" href="#all" role="tab">
-                                <i class="fas fa-list"></i> All Users ({{ all_users|length }})
-                            </a>
-                        </li>
-                    </ul>
+                    <div class="cp-home-tabs-toolbar d-flex flex-wrap align-items-end justify-content-between border-bottom mb-3 pb-0">
+                        <ul class="nav nav-tabs border-bottom-0 mb-0 flex-grow-1" id="userTabs" role="tablist">
+                            <li class="nav-item" role="presentation">
+                                <a class="nav-link active" id="employees-tab" data-toggle="tab" href="#employees" role="tab">
+                                    <i class="fas fa-user-tie"></i> Employees ({{ employees|length }})
+                                </a>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <a class="nav-link" id="vendors-tab" data-toggle="tab" href="#vendors" role="tab">
+                                    <i class="fas fa-store"></i> Vendors ({{ vendor_tab_rows|length }})
+                                </a>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <a class="nav-link" id="customers-tab" data-toggle="tab" href="#customers" role="tab">
+                                    <i class="fas fa-user-friends"></i> Customers ({{ customers|length }})
+                                </a>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <a class="nav-link" id="all-tab" data-toggle="tab" href="#all" role="tab">
+                                    <i class="fas fa-list"></i> All Users ({{ all_users|length }})
+                                </a>
+                            </li>
+                        </ul>
+                        <div class="cp-home-search-wrap pl-md-2 pb-2 ml-auto">
+                            <label class="font-weight-bold small text-muted d-block mb-1 text-md-right" for="cpHomeSearch">Search (same as Permissions Manager)</label>
+                            <div class="input-group input-group-sm" style="min-width: 260px; max-width: 420px;">
+                                <div class="input-group-prepend">
+                                    <span class="input-group-text"><i class="fas fa-search"></i></span>
+                                </div>
+                                <input type="text" class="form-control" id="cpHomeSearch" placeholder="Username / name / vendor / email / department..." autocomplete="off">
+                            </div>
+                        </div>
+                    </div>
 
                     <div class="tab-content" id="userTabsContent">
                         <!-- Employees Tab -->
@@ -102,7 +113,7 @@
                                     </thead>
                                     <tbody>
                                         {% for user in employees %}
-                                        <tr>
+                                        <tr class="cp-home-row" data-search="{{ user.username }} {{ user.first_name }} {{ user.last_name }} {{ user.email }} {% if user.profile %}{{ user.profile.department }} {{ user.profile.designation }}{% endif %}">
                                             <td>{{ user.id }}</td>
                                             <td><strong>{{ user.username }}</strong></td>
                                             <td>{{ user.first_name }} {{ user.last_name }}</td>
@@ -153,8 +164,9 @@
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        {% for row in vendors %}
-                                        <tr>
+                                        {% for row in vendor_tab_rows %}
+                                        {% if not row.is_associate_row %}
+                                        <tr class="cp-home-row" data-search="{% if row.account %}{{ row.account.user.username }}{% endif %} {{ row.vendor.name }} {{ row.vendor.vendor_id|default:'' }} {{ row.vendor.email }} {{ row.vendor.phone|default:'' }} {% if row.account %}{{ row.account.user.email }}{% endif %}">
                                             <td><strong>{{ row.vendor.vendor_id|default:row.vendor.id }}</strong></td>
                                             <td>{{ row.vendor.name }}</td>
                                             <td>{{ row.vendor.email }}</td>
@@ -162,6 +174,9 @@
                                             <td>
                                                 {% if row.account %}
                                                     <strong>{{ row.account.user.username }}</strong>
+                                                    {% if row.account.user.profile and row.account.user.profile.department == "Associate" %}
+                                                    <span class="badge badge-info ml-1">Associate</span>
+                                                    {% endif %}
                                                 {% else %}
                                                     <span class="text-muted">Not linked</span>
                                                 {% endif %}
@@ -182,9 +197,48 @@
                                                 {% endif %}
                                             </td>
                                         </tr>
+                                        {% else %}
+                                        <tr class="cp-home-row table-light" data-search="{{ row.associate_user.username }} Associate {{ row.associate_user.first_name }} {{ row.associate_user.last_name }} {{ row.vend_id_display }} {{ row.associate_user.email }} {% if row.associate_user.profile and row.associate_user.profile.phone %}{{ row.associate_user.profile.phone }}{% endif %} {% if row.vendor_account %}{{ row.vendor_account.vendor.name }} {{ row.vendor_account.vendor.vendor_id|default:row.vendor_account.vendor.id }} {{ row.vendor_account.vendor.email }}{% endif %}">
+                                            <td>
+                                                {% if row.vend_id_display and row.vend_id_display != "—" %}
+                                                <strong>{{ row.vend_id_display }}</strong>
+                                                <br>
+                                                {% endif %}
+                                                <span class="badge badge-info">Associate</span>
+                                            </td>
+                                            <td>
+                                                <strong>{{ row.associate_user.username }}</strong>
+                                                {% if row.associate_user.first_name or row.associate_user.last_name %}
+                                                <br><small class="text-muted">{{ row.associate_user.first_name }} {{ row.associate_user.last_name }}</small>
+                                                {% endif %}
+                                            </td>
+                                            <td>{{ row.associate_user.email|default:"—" }}</td>
+                                            <td>
+                                                {% if row.associate_user.profile and row.associate_user.profile.phone %}
+                                                    {{ row.associate_user.profile.phone }}
+                                                {% else %}
+                                                    <span class="text-muted">—</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                {% if row.vendor_account %}
+                                                    <small class="text-muted">Linked vendor:</small> {{ row.vendor_account.vendor.name }}
+                                                    <span class="text-muted">({{ row.vendor_account.vendor.vendor_id|default:row.vendor_account.vendor.id }})</span>
+                                                {% else %}
+                                                    <span class="text-muted">No vendor login</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                <a href="{% url 'user:control_panel_permissions' %}?category=vendor&targets={{ row.associate_user.id }}"
+                                                   class="btn btn-primary btn-sm">
+                                                    <i class="fas fa-user-shield"></i> Manage Permissions
+                                                </a>
+                                            </td>
+                                        </tr>
+                                        {% endif %}
                                         {% empty %}
                                         <tr>
-                                            <td colspan="6" class="text-center text-muted">No vendors found</td>
+                                            <td colspan="6" class="text-center text-muted">No vendors or associate users found</td>
                                         </tr>
                                         {% endfor %}
                                     </tbody>
@@ -192,8 +246,8 @@
                             </div>
                         </div>
 
-                        <!-- Associates Tab -->
-                        <div class="tab-pane fade" id="associates" role="tabpanel">
+                        <!-- Customers Tab -->
+                        <div class="tab-pane fade" id="customers" role="tabpanel">
                             <div class="table-responsive">
                                 <table class="table table-hover table-striped">
                                     <thead class="table-dark">
@@ -206,8 +260,8 @@
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        {% for user in associates %}
-                                        <tr>
+                                        {% for user in customers %}
+                                        <tr class="cp-home-row" data-search="{{ user.username }} {{ user.first_name }} {{ user.last_name }} {{ user.email }}">
                                             <td>{{ user.id }}</td>
                                             <td><strong>{{ user.username }}</strong></td>
                                             <td>{{ user.first_name }} {{ user.last_name }}</td>
@@ -221,7 +275,7 @@
                                         </tr>
                                         {% empty %}
                                         <tr>
-                                            <td colspan="5" class="text-center text-muted">No associates found</td>
+                                            <td colspan="5" class="text-center text-muted">No customers found</td>
                                         </tr>
                                         {% endfor %}
                                     </tbody>
@@ -245,7 +299,7 @@
                                     </thead>
                                     <tbody>
                                         {% for user in all_users %}
-                                        <tr>
+                                        <tr class="cp-home-row" data-search="{{ user.username }} {{ user.first_name }} {{ user.last_name }} {{ user.email }} {% if user.profile %}{{ user.profile.department }}{% endif %}">
                                             <td>{{ user.id }}</td>
                                             <td><strong>{{ user.username }}</strong></td>
                                             <td>{{ user.first_name }} {{ user.last_name }}</td>
@@ -280,7 +334,55 @@
     </div>
 </div>
 
+<script>
+(function() {
+  function filterCpHomeRows(text) {
+    var q = (text || "").toLowerCase().trim();
+    var pane = document.querySelector("#userTabsContent .tab-pane.active");
+    if (!pane) return;
+    pane.querySelectorAll("tbody tr.cp-home-row").forEach(function(row) {
+      var hay = (row.getAttribute("data-search") || "").toLowerCase();
+      row.style.display = (!q || hay.indexOf(q) !== -1) ? "" : "none";
+    });
+  }
+  function reapplyCpHomeFilter() {
+    var inp = document.getElementById("cpHomeSearch");
+    filterCpHomeRows(inp ? inp.value : "");
+  }
+  document.addEventListener("DOMContentLoaded", function() {
+    var inp = document.getElementById("cpHomeSearch");
+    if (inp) inp.addEventListener("input", function() { filterCpHomeRows(this.value); });
+    // Re-apply the same search text when switching tabs (Staff / Vendor / Customer / All).
+    if (window.jQuery) {
+      var $tabs = jQuery('#userTabs a[data-toggle="tab"]');
+      $tabs.on('shown.bs.tab', reapplyCpHomeFilter);
+      // After Bootstrap switches .active (shown.bs.tab is primary; delay covers edge cases).
+      $tabs.on('click', function() {
+        setTimeout(reapplyCpHomeFilter, 80);
+      });
+    } else {
+      document.querySelectorAll('#userTabs a[data-toggle="tab"]').forEach(function(a) {
+        a.addEventListener('click', function() { setTimeout(reapplyCpHomeFilter, 80); });
+      });
+    }
+  });
+})();
+</script>
 <style>
+    .cp-home-tabs-toolbar {
+        gap: 0.5rem 0;
+    }
+    .cp-home-search-wrap {
+        flex: 0 0 auto;
+    }
+    @media (max-width: 767.98px) {
+        .cp-home-search-wrap {
+            width: 100%;
+        }
+        .cp-home-search-wrap .input-group {
+            max-width: none !important;
+        }
+    }
     .nav-tabs .nav-link {
         color: #495057;
     }

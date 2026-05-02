@@ -5,6 +5,74 @@
 {% block content %}
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@mdi/font/css/materialdesignicons.min.css">
 <script type="text/javascript" src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+<style>
+  /* Same buffering style as Create Favorite List (company logo) */
+  .inventory-stock-loading-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 9998;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(248, 249, 250, 0.92);
+    backdrop-filter: blur(4px);
+  }
+  .inventory-stock-loading-overlay.d-none {
+    display: none !important;
+  }
+  .inventory-stock-loading-inner {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1.25rem;
+  }
+  .inventory-stock-loading-brand {
+    position: relative;
+    width: 100px;
+    height: 100px;
+    display: grid;
+    place-items: center;
+  }
+  .inventory-stock-loading-ring {
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    border: 3px solid rgba(13, 110, 253, 0.1);
+    border-top-color: #0d6efd;
+    border-right-color: rgba(13, 110, 253, 0.45);
+    animation: inventory-stock-ring-rotate 1.25s cubic-bezier(0.55, 0.15, 0.45, 0.85) infinite;
+    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.85) inset;
+  }
+  .inventory-stock-loading-logo {
+    position: relative;
+    z-index: 1;
+    width: 52px;
+    height: auto;
+    max-height: 52px;
+    object-fit: contain;
+    border-radius: 8px;
+    animation: inventory-stock-logo-pulse 2s ease-in-out infinite;
+    filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.08));
+  }
+  .inventory-stock-loading-text {
+    font-size: 0.9rem;
+    font-weight: 500;
+    letter-spacing: 0.02em;
+    color: #5c636a;
+    animation: inventory-stock-text-fade 1.8s ease-in-out infinite;
+  }
+  @keyframes inventory-stock-ring-rotate {
+    to { transform: rotate(360deg); }
+  }
+  @keyframes inventory-stock-logo-pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.92; transform: scale(0.96); }
+  }
+  @keyframes inventory-stock-text-fade {
+    0%, 100% { opacity: 0.65; }
+    50% { opacity: 1; }
+  }
+</style>
 
   <br>
     <div class="row" style="color: #4e4e4e; font-style: bold; font-size: 3rem;">
@@ -12,11 +80,10 @@
        <!-- Add these buttons inside the col-auto div -->
                 <div class="col-auto text-right float-right ml-auto" style="margin-right: 25px;">
                     <div class="dt-buttons btn-group flex-wrap">
-                        <!--       <a href="#" class="btn btn-outline-primary mr-2" name="download" id="download-pdf"><i class="fas fa-download"></i>Download</a>-->
-<!--                        <a id="generate-pdf-all" href="#" class="btn btn-primary" onclick="generatePDF()" type="button" title="PDF"><i class="fas fa-file-pdf fs-4" style="font-size: 1.1rem;"></i></a>-->
-                        <a id="generate-excel-all" href="#" class="btn btn-primary" onclick="generateExcel()" title="Excel"><i class="mdi mdi-microsoft-excel" style="font-size: 19px;"></i></a>
-                        <a id="generate-print-all" href="#" class="btn btn-primary" onclick="copyToClipboard()" title="Copy"><i class="fas fa-solid fa-copy"></i></a>
-                        <a id="generate-copy-all" href="#" class="btn btn-primary" onclick="printTable()" title="Print"><i class="fas fa-solid fa-print"></i></a>
+                        <a href="#" class="btn btn-primary" onclick="inventoryListGeneratePDF(); return false;" title="PDF"><i class="fas fa-file-pdf" style="font-size: 1.05rem;"></i></a>
+                        <a href="#" class="btn btn-primary" onclick="inventoryListGenerateExcel(); return false;" title="Excel"><i class="mdi mdi-microsoft-excel" style="font-size: 19px;"></i></a>
+                        <a href="#" class="btn btn-primary" onclick="inventoryListCopyToClipboard(); return false;" title="Copy"><i class="fas fa-copy"></i></a>
+                        <a href="#" class="btn btn-primary" onclick="inventoryListPrintTable(); return false;" title="Print"><i class="fas fa-print"></i></a>
                         <a href="{% url 'select-supplier' %}" class="btn btn-primary" title="New Add Stock"><i class="fas fa-plus"></i></a>
                         <!--       <button class="btn btn-outline-primary mr-2" id="generate-pdf"><i class="fas fa-file-pdf"></i> Generate PDF</button>-->
                         <!--       <button class="btn btn-outline-primary" id="generate-excel"><i class="fas fa-file-excel"></i> Generate Excel</button>-->
@@ -24,6 +91,46 @@
                 </div>
     </div>
 <br>
+    {% if messages %}
+      {% for message in messages %}
+        {% if message.tags == 'error' %}
+          <div class="modal fade" id="inventoryDeleteErrorModal" tabindex="-1" role="dialog" aria-labelledby="inventoryDeleteErrorModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered" role="document">
+              <div class="modal-content">
+                <div class="modal-header bg-danger text-white">
+                  <h5 class="modal-title" id="inventoryDeleteErrorModalLabel">Delete Not Allowed</h5>
+                  <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                  </button>
+                </div>
+                <div class="modal-body" style="white-space: pre-line; color: #212529;">
+                  {{ message }}
+                </div>
+                <div class="modal-footer">
+                  <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                </div>
+              </div>
+            </div>
+          </div>
+          <script>
+            document.addEventListener('DOMContentLoaded', function () {
+              if (window.jQuery && $('#inventoryDeleteErrorModal').modal) {
+                $('#inventoryDeleteErrorModal').modal('show');
+              }
+            });
+          </script>
+        {% endif %}
+      {% endfor %}
+      <script>
+        document.addEventListener('DOMContentLoaded', function () {
+          {% for message in messages %}
+            {% if message.tags != 'error' %}
+              alert("{{ message|escapejs }}");
+            {% endif %}
+          {% endfor %}
+        });
+      </script>
+    {% endif %}
      <form>
     <div style="border-bottom: 1px solid white;"></div>
        <div class="form-row">
@@ -32,11 +139,10 @@
       <div class="form-group col-md-2">
         <label for="stock-filter">Select Stock Filter:</label>
         <select id="stock-filter" class="form-control" name="stock_filter">
-          <option value="all_1" hidden="">Choose Stock Filter</option>
           <option value="all">Select All</option>
           <option value="all_active">Active</option>
           <option value="all_inactive">Inactive</option>
-          <option value="all_stock_alert">Stock Alert</option>
+          <option value="all_stock_alert" selected>Stock Alert</option>
           <option value="select_all">Custom Filter</option>
           <option value="select_active">Custom Active</option>
           <option value="select_inactive">Custom Inactive</option>
@@ -68,12 +174,12 @@
   <!-- Dynamic stock table heading -->
   <h4 id="stock-heading" align="center" style="color: blue;"></h4>
       <div class="table-responsive">
-        <table id="yourDataTable" class="table table-hover table-center table.dataTable.table-sm mb-0 datatable table.sm" style="width: 100%;">
+        <table id="yourDataTable" class="table table-hover table-center table.dataTable.table-sm mb-0 datatable table.sm dt-compact-cols dt-tools-minimal" style="width: 100%;">
           <thead class="thead-dark align-middle">
             <tr class="text-center">
               <th style="width: 10%;">Sr No</th>
-              <th style="width: 15%;">Category Name</th>
-              <th style="width: 35%;">Stock Name</th>
+              <th class="col-primary-name-field" style="width: 15%;">Category Name</th>
+              <th class="col-primary-name-field" style="width: 35%;">Stock Name</th>
               <th style="width: 15%;">Current Stock</th>
               <th style="width: 15%;">Status</th>
               <th style="width: 10%;">Action</th>
@@ -87,167 +193,177 @@
     </div>
   </form>
 
+<!-- Buffering overlay (same logo as Create Favorite List) -->
+<div id="inventoryStockLoadingOverlay" class="inventory-stock-loading-overlay d-none" aria-hidden="true">
+  <div class="inventory-stock-loading-inner">
+    <div class="inventory-stock-loading-brand">
+      <div class="inventory-stock-loading-ring" aria-hidden="true"></div>
+      <img src="{% static 'images/dblogo200.png' %}" alt="" class="inventory-stock-loading-logo" width="52" height="52">
+    </div>
+    <span class="inventory-stock-loading-text">Loading…</span>
+  </div>
+</div>
+
 <script>
-   let selectedStockFilter = ""; // Global variable to store the selected stock filter value
+   let selectedStockFilter = "";
+
+   var inventoryAjaxLoadCount = 0;
+   function beginInventoryAjaxLoad() {
+     inventoryAjaxLoadCount += 1;
+     var el = document.getElementById('inventoryStockLoadingOverlay');
+     if (el) {
+       el.classList.remove('d-none');
+       el.setAttribute('aria-hidden', 'false');
+     }
+   }
+   function endInventoryAjaxLoad() {
+     inventoryAjaxLoadCount = Math.max(0, inventoryAjaxLoadCount - 1);
+     if (inventoryAjaxLoadCount === 0) {
+       var el = document.getElementById('inventoryStockLoadingOverlay');
+       if (el) {
+         el.classList.add('d-none');
+         el.setAttribute('aria-hidden', 'true');
+       }
+     }
+   }
+
+   var inventoryRoot = "{% url 'inventory' %}";
+   if (!inventoryRoot.endsWith('/')) {
+     inventoryRoot += '/';
+   }
+
+   function applyStockFilterUiFromSelect() {
+     var sel = document.getElementById('stock-filter');
+     if (!sel) return;
+     var selectedValue = sel.value;
+     var selectedOption = sel.options[sel.selectedIndex].text;
+     var stockHeading = document.getElementById('stock-heading');
+     selectedStockFilter = selectedOption;
+     stockHeading.textContent = selectedOption ? (selectedOption + ' Stock') : '';
+
+     var colors = {
+       all: 'lightgreen',
+       all_active: 'lightblue',
+       all_inactive: 'lightcoral',
+       all_stock_alert: 'yellow',
+       select_all: 'lightgray',
+       select_active: 'lightcyan',
+       select_inactive: 'lightpink',
+       select_stock_alert: 'yellow'
+     };
+     sel.style.backgroundColor = colors[selectedValue] || '';
+
+     var categoryContainer = document.getElementById('category-container');
+     var subcategoryContainer = document.getElementById('subcategory-container');
+     if (selectedValue.indexOf('all') === 0) {
+       categoryContainer.style.display = 'none';
+       subcategoryContainer.style.display = 'none';
+     } else {
+       categoryContainer.style.display = 'block';
+       subcategoryContainer.style.display = 'block';
+     }
+   }
 
    document.getElementById('stock-filter').addEventListener('change', function() {
-        const selectedOption = this.options[this.selectedIndex].text;  // Get the selected option's text
-        const stockHeading = document.getElementById('stock-heading');
+     applyStockFilterUiFromSelect();
+     loadStocks();
+   });
 
-        // Update the global variable with the selected stock filter value
-        selectedStockFilter = selectedOption;
-
-        // Update the heading with the selected option text and the word "Stock"
-        if (selectedOption !== "Choose Stock Filter") {
-            stockHeading.textContent = `${selectedOption} Stock`;
-        }
-
-        // Change the background color of the dropdown based on the selected option
-        const selectElement = document.getElementById('stock-filter');
-        switch (selectedOption) {
-            case 'All':
-                selectElement.style.backgroundColor = 'lightgreen';
-                break;
-            case 'All Active':
-                selectElement.style.backgroundColor = 'lightblue';
-                break;
-            case 'All Inactive':
-                selectElement.style.backgroundColor = 'lightcoral';
-                break;
-            case 'All Stock Alert':
-                selectElement.style.backgroundColor = 'yellow';
-                break;
-            case 'Select All':
-                selectElement.style.backgroundColor = 'lightgray';
-                break;
-            case 'Select Active':
-                selectElement.style.backgroundColor = 'lightcyan';
-                break;
-            case 'Select Inactive':
-                selectElement.style.backgroundColor = 'lightpink';
-                break;
-            case 'Select Stock Alert':
-                selectElement.style.backgroundColor = 'yellow';
-                break;
-            default:
-                selectElement.style.backgroundColor = ''; // Default to no color
-        }
-
-        // Show or hide category and subcategory based on the selected filter
-        const selectedValue = this.value;
-        const categoryContainer = document.getElementById('category-container');
-        const subcategoryContainer = document.getElementById('subcategory-container');
-
-        if (selectedValue.startsWith('all')) {
-            categoryContainer.style.display = 'none';
-            subcategoryContainer.style.display = 'none';
-        } else {
-            categoryContainer.style.display = 'block';
-            subcategoryContainer.style.display = 'block';
-        }
-
-        // Load stocks based on the selected filter
-        loadStocks();
-    });
-
-
-   // Category change logic
-  document.getElementById('category').addEventListener('change', function() {
-    const categoryId = this.value;
-    // Change the background color of the dropdown based on the selected option
-    const selectElement = document.getElementById('category');
+   document.getElementById('category').addEventListener('change', function() {
+    var categoryId = this.value;
+    var selectElement = document.getElementById('category');
     if (categoryId) {
-            selectElement.style.backgroundColor = '#d3dbec';
+      selectElement.style.backgroundColor = '#d3dbec';
     }
 
-    const subcategorySelect = document.getElementById('subcategory');
+    var subcategorySelect = document.getElementById('subcategory');
     subcategorySelect.innerHTML = '<option value="">-- Select Subcategory --</option>';
     subcategorySelect.disabled = true;
 
     if (categoryId) {
-      fetch(`/inventory/get-subcategories/${categoryId}/`)
-        .then(response => response.json())
-        .then(data => {
-          data.forEach(subcategory => {
-            const option = document.createElement('option');
+      beginInventoryAjaxLoad();
+      fetch(inventoryRoot + 'get-subcategories/' + categoryId + '/')
+        .then(function(response) { return response.json(); })
+        .then(function(data) {
+          data.forEach(function(subcategory) {
+            var option = document.createElement('option');
             option.value = subcategory.id;
             option.text = subcategory.name;
             subcategorySelect.appendChild(option);
           });
           subcategorySelect.disabled = false;
-        });
+        })
+        .catch(function(err) { console.error(err); })
+        .finally(function() { endInventoryAjaxLoad(); });
     }
   });
 
-  // Subcategory change logic
   document.getElementById('subcategory').addEventListener('change', function() {
-    const subcategoryId = this.value;
-    // Change the background color of the dropdown based on the selected option
-    const selectElement = document.getElementById('subcategory');
+    var subcategoryId = this.value;
+    var selectElement = document.getElementById('subcategory');
     if (subcategoryId) {
-            selectElement.style.backgroundColor = '#d3dbec';
+      selectElement.style.backgroundColor = '#d3dbec';
     }
-
-
     loadStocks();
   });
 
+  function destroyInventoryDataTableIfAny() {
+    if (window.jQuery && jQuery.fn.dataTable && jQuery.fn.dataTable.isDataTable('#yourDataTable')) {
+      jQuery('#yourDataTable').DataTable().clear().destroy();
+    }
+  }
+
   function loadStocks() {
-      const stockFilter = document.getElementById('stock-filter').value;
-      const categoryId = document.getElementById('category').value;
-      const subcategoryId = document.getElementById('subcategory').value;
-      const stockList = document.getElementById('stock-list');
+      var stockFilter = document.getElementById('stock-filter').value;
+      var categoryId = document.getElementById('category').value;
+      var subcategoryId = document.getElementById('subcategory').value;
+      var stockList = document.getElementById('stock-list');
 
-      // Destroy the DataTable instance before loading new data
-      const dataTableInstance = $('#yourDataTable').DataTable();
-      dataTableInstance.clear().destroy();  // Clear the previous data and destroy the table instance
+      beginInventoryAjaxLoad();
+      destroyInventoryDataTableIfAny();
+      stockList.innerHTML = '';
 
-      stockList.innerHTML = ''; // Clear current stock list
+      var url = inventoryRoot + 'get-stocks-all/' + encodeURIComponent(stockFilter) + '/';
 
-      let url = `/inventory/get-stocks-all/${stockFilter}/`;  // Base URL with stock filter
-
-      // Append category and subcategory to the URL if applicable
-      if (stockFilter.startsWith('select')) {
+      if (stockFilter.indexOf('select') === 0) {
           if (subcategoryId) {
-              url = `/inventory/get-stocks/${stockFilter}/${subcategoryId}/`;
+              url = inventoryRoot + 'get-stocks/' + encodeURIComponent(stockFilter) + '/' + encodeURIComponent(subcategoryId) + '/';
           } else if (categoryId) {
-              url = `/inventory/get-stocks/${stockFilter}/category/${categoryId}/`;
+              url = inventoryRoot + 'get-stocks/' + encodeURIComponent(stockFilter) + '/category/' + encodeURIComponent(categoryId) + '/';
           }
       }
 
-      // Fetch stocks and update the table
       fetch(url)
-          .then(response => response.json())
-          .then(data => {
-              data.forEach((stock, index) => {
-                  const statusColor = stock.status ? 'green' : 'red';
-                  const statusText = stock.status ? 'Active' : 'Inactive';
-                  const editUrl = `/inventory/stock/${stock.id}/edit`;
-                  const deleteUrl = `/inventory/stock/${stock.id}/delete`;
+          .then(function(response) {
+            if (!response.ok) throw new Error('HTTP ' + response.status);
+            return response.json();
+          })
+          .then(function(data) {
+              if (!Array.isArray(data)) data = [];
+              data.forEach(function(stock, index) {
+                  var statusColor = stock.status ? 'green' : 'red';
+                  var statusText = stock.status ? 'Active' : 'Inactive';
+                  var editUrl = inventoryRoot + 'stock/' + stock.id + '/edit';
+                  var deleteUrl = inventoryRoot + 'stock/' + stock.id + '/delete';
 
-                  let quantityBackgroundColor = 'white';
-                  let quantityTextColor = 'black';
-                  if (stock.quantity <= stock.stock_alert) {
-<!--                      quantityBackgroundColor = 'lightcoral';-->
+                  var quantityBackgroundColor = 'white';
+                  var quantityTextColor = 'black';
+                  if (Number(stock.quantity) <= Number(stock.stock_alert)) {
                       quantityBackgroundColor = '#9c4500';
                       quantityTextColor = 'white';
                   }
 
-                  const row = `
+                  var row = `
                       <tr>
                         <td class="text-center">${index + 1}</td>
-                        <td class="text-center">${stock.category}/${stock.subcategory}</td>
-                        <td>${stock.name}</td>
+                        <td class="text-center col-primary-name-field">${stock.category}/${stock.subcategory}</td>
+                        <td class="col-primary-name-field">${stock.name}</td>
                         <td class="text-center">
                             <div class="quantity-cell" style="background-color: ${quantityBackgroundColor}; color: ${quantityTextColor}; padding: 0px; border-radius: 4px; display: inline-block; width: 100%;">
                                 ${stock.quantity}
                                 <span style="margin-left: 0px;"><small>${stock.purchase}</small></span>
                             </div>
                         </td>
-
-
-
-
                         <td class="text-center">
                           <span style="color: ${statusColor};" class="text-center">${statusText}</span>
                         </td>
@@ -266,21 +382,27 @@
                   stockList.innerHTML += row;
               });
 
-              // Reinitialize DataTable after inserting new rows
-              $('#yourDataTable').DataTable({
-                  paging: true,      // Enable pagination
-                  searching: true,   // Enable search bar
-                  ordering: true,    // Enable column ordering
-                  info: true,        // Show table info
-                  lengthChange: true // Allow users to change how many records are shown per page
-              });
-          });
+              if (window.jQuery && jQuery.fn.DataTable) {
+                $('#yourDataTable').DataTable({
+                  paging: true,
+                  searching: true,
+                  ordering: true,
+                  info: true,
+                  lengthChange: true
+                });
+              }
+          })
+          .catch(function(err) {
+            console.error('Inventory loadStocks:', err);
+            alert('Could not load inventory list.');
+          })
+          .finally(function() { endInventoryAjaxLoad(); });
   }
 
-
-
-  // Initial load of stocks when the page loads
-  loadStocks();
+  window.addEventListener('load', function() {
+    applyStockFilterUiFromSelect();
+    loadStocks();
+  });
 </script>
 
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
@@ -310,158 +432,17 @@
                font-weight: bold;
            }
         </style>
-       <!-- Add these in the head section of your HTML -->
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.4.0/jspdf.umd.min.js"></script>
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.0/xlsx.full.min.js"></script>
-
+        <script>window.LIST_PAGE_EXPORT_LOGO_PATH = "{% static 'images/db_logo_200.png' %}";</script>
+        <script src="{% static 'js/list_page_export.js' %}"></script>
         <script>
-            function generatePDF() {
-                const pdf = new jsPDF();
-                pdf.autoTable({
-                    html: '#yourDataTable'
-                });
-                pdf.save('table.pdf');
-            }
-
-            function generateExcel() {
-                const table = $('#yourDataTable').DataTable();
-                const header = [...getHeaderWithoutActions(table)];
-                const filteredData = table.rows({
-                    search: 'applied'
-                }).data().toArray();
-                const cleanData = filteredData.map((row, index) => {
-                    const rowDataWithoutActions = row.filter((_, columnIndex) => !isActionColumn(table, columnIndex));
-                    return [...rowDataWithoutActions.map(stripHtml)];
-                });
-                const data = [header, ...cleanData];
-
-                const ws = XLSX.utils.aoa_to_sheet(data);
-                const wb = XLSX.utils.book_new();
-                XLSX.utils.book_append_sheet(wb, ws, 'Sheet1');
-                XLSX.writeFile(wb, 'table.xlsx');
-            }
-
-
-            function copyToClipboard() {
-                const table = $('#yourDataTable').DataTable();
-                const header = ['Sr No.', ...getHeaderWithoutActions(table)];
-                const filteredData = table.rows({
-                    search: 'applied'
-                }).data().toArray();
-                const cleanData = filteredData.map((row, index) => {
-                    const rowDataWithoutActions = row.filter((_, columnIndex) => !isActionColumn(table, columnIndex));
-                    return [index + 1, ...rowDataWithoutActions];
-                });
-                const data = [header, ...cleanData];
-
-                // Convert the data to plain text (excluding HTML tags)
-                const plainTextData = data.map(row => row.map(cell => stripHtml(cell)).join('\t')).join('\n');
-
-                const plainText = document.createElement('textarea');
-                plainText.textContent = plainTextData;
-                document.body.appendChild(plainText);
-                plainText.select();
-                document.execCommand('copy');
-                document.body.removeChild(plainText);
-                alert('Filtered table copied to clipboard!');
-            }
-
-               // Function to strip HTML tags
-                function stripHtml(html) {
-                    let doc = new DOMParser().parseFromString(html, 'text/html');
-                    return doc.body.textContent || "";
-                }
-
-                function printTable() {
-                    const table = $('#yourDataTable').DataTable();
-
-                    // Get the selected value from the Stock-filter dropdown
-                    const selectedStock = $('#stock-filter').val();  // Assuming your dropdown has the id 'Stock-filter'
-
-                    const header = [...getHeaderWithoutActions(table)];
-                    const filteredData = table.rows({ search: 'applied' }).data().toArray();
-                    const cleanData = filteredData.map((row) => {
-                        const rowDataWithoutActions = row.filter((_, columnIndex) => !isActionColumn(table, columnIndex));
-                        return [...rowDataWithoutActions];
-                    });
-                    const data = [header, ...cleanData];
-
-                    const printWindow = window.open('', '_blank');
-                    printWindow.document.open();
-                    printWindow.document.write(`
-                        <html>
-                        <head>
-                            <title>Filtered Table Print</title>
-                            <style>
-                                body {
-                                    font-family: Arial, sans-serif;
-                                    text-align: center;
-                                }
-                                table {
-                                    width: 80%;
-                                    margin: auto;
-                                    border-collapse: collapse;
-
-                                }
-                                th, td {
-                                    border: 1px solid black;
-                                    padding: 8px;
-                                    text-align: center;
-                                }
-                                th {
-                                    background-color: #f2f2f2;
-                                    font-weight: bold; /* Make table header bold */
-                                    font-size: 14px; /* Set table body text size to 10 */
-                                }
-                                td {
-                                    font-size: 12px; /* Set table body text size to 10 */
-                                    color: black;
-                                }
-                                h1 {
-                                    text-align: center;
-                                }
-                            </style>
-                        </head>
-                        <body>
-                            <h1 class="page-heading">DB Solar Pvt Ltd. Ch.SambhajiNagar</h1>
-                            <h3 class="page-heading" style="margin-top: -10px;">${selectedStockFilter} Stock</h3> <!-- Dynamically added Stock-filter value -->
-                            <table style="margin-top: -10px; width: 100%;">
-                                <thead>
-                                    <tr>
-                                        ${header.map(h => `<th>${h}</th>`).join('')}
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    ${cleanData.map(row =>
-                                        '<tr>' + row.map((cell, index) => {
-                                            // Assuming status is the last column
-                                            if (index === row.length - 3) {
-                                                return `<td style="text-align: left; padding-left: 20px;">${cell}</td>`;
-                                            }
-                                            if (index === row.length - 1) {
-                                                return `<td style="color: black;">${cell}</td>`;
-                                            }
-
-                                            return `<td>${cell}</td>`;
-                                        }).join('') + '</tr>'
-                                    ).join('')}
-                                </tbody>
-                            </table>
-                        </body>
-                        </html>
-                    `);
-                    printWindow.document.close();
-                    printWindow.print();
-                }
-
-                function getHeaderWithoutActions(table) {
-                    return table.columns().header().toArray().map(th => th.innerText).filter(header => header !== 'Action' && header !== 'Sr No.');
-                }
-
-                function isActionColumn(table, columnIndex) {
-                    const header = table.columns().header().toArray()[columnIndex].innerText;
-                    return header === 'Action' || header === 'Sr No.';
-                }
+            ListPageExport.register({
+                apiPrefix: 'inventoryList',
+                pdfFilename: 'inventory_list.pdf',
+                excelFilename: 'inventory_list.xlsx',
+                excelSheetName: 'Inventory',
+                printDocumentTitle: 'Inventory List',
+                pdfCaption: 'Inventory List'
+            });
         </script>
 
 

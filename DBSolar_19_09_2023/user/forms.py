@@ -910,12 +910,13 @@ class PDFGenerationForm(forms.Form):
 
     # Create the choices list without 'first_name' and 'last_name'
     user_choices = [
-        (field.name, field.verbose_name)
+        (field.name, getattr(field, 'verbose_name', field.name))
         for field in User._meta.get_fields()
         if field.name not in ['password', 'id', 'groups', 'user_permissions', 'profile', 'first_name', 'last_name', 'last_login',
                               'is_superuser', 'is_active', 'is_staff','date_joined', 'username',
                               'email']
            and not isinstance(field, ManyToOneRel)
+           and hasattr(field, 'verbose_name')
     ]
 
     # Add 'full_name' as a choice

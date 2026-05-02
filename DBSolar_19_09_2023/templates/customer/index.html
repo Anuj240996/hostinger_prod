@@ -178,9 +178,9 @@
                                                 {% if Cust.mseb_data.exists %}
                                                     {% with mseb_record=Cust.mseb_data.first %}
                                                         {% if mseb_record.installation_date %}
-                                                            <a href="{% url 'customer-MSEB_tracking' Cust.Cust_id %}"><span class="badge badge-success">Completed</span></a>
+                                                            <a href="{% url 'customer-MSEB' %}?cust_id={{ Cust.Cust_id }}"><span class="badge badge-success">Completed</span></a>
                                                         {% else %}
-                                                            <a href="{% url 'customer-MSEB_tracking' Cust.Cust_id %}"><span class="badge badge-warning">Pending</span></a>
+                                                            <a href="{% url 'customer-MSEB' %}?cust_id={{ Cust.Cust_id }}"><span class="badge badge-warning">Pending</span></a>
                                                         {% endif %}
 
                                                     {% endwith %}

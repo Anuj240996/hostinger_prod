@@ -1,0 +1,399 @@
+{% extends 'new_lead_base.html' %}
+{% load humanize %}
+
+{% block title %}{{ lead.name }} - Lead Details{% endblock %}
+
+{% block content %}
+<div class="lead-detail">
+    <!-- Header with actions -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="mb-1">{{ lead.name }}</h2>
+            <div>
+                <span class="badge stage-{{ lead.stage }} me-2">{{ lead.get_stage_display }}</span>
+                <span class="badge score-{{ lead.score }}">{{ lead.get_score_display }} Score</span>
+            </div>
+        </div>
+        <div class="btn-group">
+            <a href="/new-lead/leads/{{ lead.id }}/edit/" class="btn btn-outline-primary">
+                <i class="fas fa-edit me-2"></i>Edit
+            </a>
+            <button type="button" class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#lostLeadModal">
+                <i class="fas fa-times me-2"></i>Mark Lost
+            </button>
+        </div>
+    </div>
+
+    <!-- 3 Column Layout -->
+    <div class="row">
+        <!-- LEFT COLUMN - Customer Info -->
+        <div class="col-md-3">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Customer Information</h5>
+                </div>
+                <div class="card-body">
+                    <div class="info-list">
+                        <div class="info-item mb-3">
+                            <label class="text-muted d-block small">Phone</label>
+                            <div class="d-flex align-items-center">
+                                <i class="fas fa-phone text-primary me-2"></i>
+                                <span>{{ lead.phone }}</span>
+                                {% if lead.alternate_phone %}
+                                <br><small class="text-muted">Alt: {{ lead.alternate_phone }}</small>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <div class="info-item mb-3">
+                            <label class="text-muted d-block small">Email</label>
+                            <div class="d-flex align-items-center">
+                                <i class="fas fa-envelope text-info me-2"></i>
+                                <span>{{ lead.email|default:'Not provided' }}</span>
+                            </div>
+                        </div>
+
+                        <div class="info-item mb-3">
+                            <label class="text-muted d-block small">Address</label>
+                            <div class="d-flex">
+                                <i class="fas fa-map-marker-alt text-danger me-2"></i>
+                                <div>
+                                    {{ lead.address }}<br>
+                                    {{ lead.city }}, {{ lead.state }} - {{ lead.pincode }}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="info-item mb-3">
+                            <label class="text-muted d-block small">Electricity Bill</label>
+                            <div class="d-flex align-items-center">
+                                <i class="fas fa-file-invoice text-warning me-2"></i>
+                                <span>₹{{ lead.electricity_bill|default:'0'|intcomma }}/month</span>
+                            </div>
+                        </div>
+
+                        <div class="info-item mb-3">
+                            <label class="text-muted d-block small">Property Details</label>
+                            <div>
+                                <span class="badge bg-light text-dark me-1">{{ lead.get_property_type_display }}</span>
+                                <span class="badge bg-light text-dark">{{ lead.get_roof_type_display }} Roof</span>
+                            </div>
+                        </div>
+
+                        <div class="info-item mb-3">
+                            <label class="text-muted d-block small">Budget</label>
+                            <div class="d-flex align-items-center">
+                                <i class="fas fa-rupee-sign text-success me-2"></i>
+                                <span>₹{{ lead.budget|default:'Not specified'|intcomma }}</span>
+                            </div>
+                        </div>
+
+                        <div class="info-item mb-3">
+                            <label class="text-muted d-block small">Source & Campaign</label>
+                            <div>
+                                <span class="badge bg-info">{{ lead.source.name|default:'Direct' }}</span>
+                                {% if lead.campaign %}
+                                <span class="badge bg-secondary">{{ lead.campaign.name }}</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- CENTER COLUMN - Timeline Activity Feed -->
+        <div class="col-md-5">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Activity Timeline</h5>
+                    <button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#addActivityModal">
+                        <i class="fas fa-plus me-1"></i>Add Activity
+                    </button>
+                </div>
+                <div class="card-body" style="max-height: 600px; overflow-y: auto;">
+                    <div class="timeline">
+                        {% for activity in activities %}
+                        <div class="timeline-item">
+                            <div class="timeline-marker
+                                {% if activity.activity_type == 'call' %}bg-primary
+                                {% elif activity.activity_type == 'whatsapp' %}bg-success
+                                {% elif activity.activity_type == 'email' %}bg-info
+                                {% elif activity.activity_type == 'note' %}bg-warning
+                                {% elif activity.activity_type == 'followup' %}bg-danger
+                                {% elif activity.activity_type == 'stage_change' %}bg-secondary
+                                {% else %}bg-secondary{% endif %}">
+                                <i class="fas
+                                    {% if activity.activity_type == 'call' %}fa-phone
+                                    {% elif activity.activity_type == 'whatsapp' %}fa-whatsapp
+                                    {% elif activity.activity_type == 'email' %}fa-envelope
+                                    {% elif activity.activity_type == 'note' %}fa-sticky-note
+                                    {% elif activity.activity_type == 'followup' %}fa-calendar
+                                    {% elif activity.activity_type == 'stage_change' %}fa-exchange-alt
+                                    {% else %}fa-clock{% endif %}">
+                                </i>
+                            </div>
+                            <div class="timeline-content">
+                                <div class="d-flex justify-content-between">
+                                    <h6 class="mb-1">{{ activity.get_activity_type_display }}</h6>
+                                    <small class="text-muted">{{ activity.created|timesince }} ago</small>
+                                </div>
+                                <p class="mb-1">{{ activity.description }}</p>
+                                <small class="text-muted">by {{ activity.user.get_full_name|default:activity.user.username }}</small>
+                            </div>
+                        </div>
+                        {% empty %}
+                        <div class="text-center py-4">
+                            <i class="fas fa-history fa-3x text-muted mb-3"></i>
+                            <p class="text-muted">No activities yet</p>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- RIGHT COLUMN - Pipeline Panel -->
+        <div class="col-md-4">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Pipeline Status</h5>
+                </div>
+                <div class="card-body">
+                    <form method="post" action="/new-lead/leads/{{ lead.id }}/update-stage/" id="stage-form">
+                        {% csrf_token %}
+                        <div class="mb-3">
+                            <label class="form-label">Current Stage</label>
+                            <select name="stage" class="form-select" onchange="this.form.submit()">
+                                {% for stage_value, stage_label in stage_choices %}
+                                <option value="{{ stage_value }}" {% if lead.stage == stage_value %}selected{% endif %}>
+                                    {{ stage_label }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </form>
+
+                    <div class="pipeline-values">
+                        <div class="row mb-3">
+                            <div class="col-6">
+                                <label class="text-muted small">Opportunity Value</label>
+                                <h5 class="mb-0">₹{{ lead.estimated_value|default:'0'|intcomma }}</h5>
+                            </div>
+                            <div class="col-6">
+                                <label class="text-muted small">Probability</label>
+                                <h5 class="mb-0">{{ lead.probability }}%</h5>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="text-muted small">Expected Close Date</label>
+                            <p class="mb-0">{{ lead.next_followup|date:'d M Y'|default:'Not set' }}</p>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="text-muted small">Weighted Value</label>
+                            <h4 class="text-success">₹{{ lead.weighted_value|intcomma }}</h4>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Quick Actions</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <button class="btn btn-outline-primary" onclick="logCall()">
+                            <i class="fas fa-phone me-2"></i>Log Call
+                        </button>
+                        <button class="btn btn-outline-success" onclick="sendWhatsApp()">
+                            <i class="fab fa-whatsapp me-2"></i>Send WhatsApp
+                        </button>
+                        <button class="btn btn-outline-info" onclick="sendEmail()">
+                            <i class="fas fa-envelope me-2"></i>Send Email
+                        </button>
+                        <button class="btn btn-outline-warning" onclick="addNote()">
+                            <i class="fas fa-sticky-note me-2"></i>Add Note
+                        </button>
+                        <button class="btn btn-outline-danger" onclick="scheduleFollowup()">
+                            <i class="fas fa-calendar me-2"></i>Schedule Follow-up
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Lost Lead Modal -->
+<div class="modal fade" id="lostLeadModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Mark Lead as Lost</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="post" action="/new-lead/leads/{{ lead.id }}/mark-lost/">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Lost Reason</label>
+                        <select name="lost_reason" class="form-select" required>
+                            <option value="">Select reason</option>
+                            <option value="Price too high">Price too high</option>
+                            <option value="Competitor">Competitor</option>
+                            <option value="No subsidy">No subsidy</option>
+                            <option value="Budget issues">Budget issues</option>
+                            <option value="Not interested">Not interested</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Competitor (if applicable)</label>
+                        <input type="text" name="competitor" class="form-control">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Notes</label>
+                        <textarea name="notes" class="form-control" rows="3"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-danger">Mark as Lost</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Add Activity Modal -->
+<div class="modal fade" id="addActivityModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Add Activity</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="post" action="/new-lead/leads/{{ lead.id }}/add-activity/">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Activity Type</label>
+                        <select name="activity_type" class="form-select" id="activityType" required>
+                            <option value="call">Call</option>
+                            <option value="whatsapp">WhatsApp</option>
+                            <option value="email">Email</option>
+                            <option value="note">Note</option>
+                            <option value="followup">Follow-up</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Description</label>
+                        <textarea name="description" class="form-control" rows="3" required></textarea>
+                    </div>
+                    <div id="callFields" class="activity-fields" style="display: none;">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Duration (minutes)</label>
+                                <input type="number" name="duration" class="form-control">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Outcome</label>
+                                <select name="outcome" class="form-select">
+                                    <option value="interested">Interested</option>
+                                    <option value="not_interested">Not Interested</option>
+                                    <option value="callback">Callback Requested</option>
+                                    <option value="no_answer">No Answer</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="followupFields" class="activity-fields" style="display: none;">
+                        <div class="mb-3">
+                            <label class="form-label">Follow-up Date</label>
+                            <input type="datetime-local" name="followup_date" class="form-control">
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Add Activity</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Show/hide fields based on activity type
+    document.getElementById('activityType').addEventListener('change', function() {
+        document.querySelectorAll('.activity-fields').forEach(el => el.style.display = 'none');
+        if (this.value === 'call') {
+            document.getElementById('callFields').style.display = 'block';
+        } else if (this.value === 'followup') {
+            document.getElementById('followupFields').style.display = 'block';
+        }
+    });
+
+    // Quick action functions
+    function logCall() {
+        document.getElementById('activityType').value = 'call';
+        document.getElementById('activityType').dispatchEvent(new Event('change'));
+        new bootstrap.Modal(document.getElementById('addActivityModal')).show();
+    }
+
+    function sendWhatsApp() {
+        window.open('https://wa.me/91{{ lead.phone }}', '_blank');
+    }
+
+    function sendEmail() {
+        window.location.href = 'mailto:{{ lead.email }}';
+    }
+
+    function addNote() {
+        document.getElementById('activityType').value = 'note';
+        new bootstrap.Modal(document.getElementById('addActivityModal')).show();
+    }
+
+    function scheduleFollowup() {
+        document.getElementById('activityType').value = 'followup';
+        document.getElementById('activityType').dispatchEvent(new Event('change'));
+        new bootstrap.Modal(document.getElementById('addActivityModal')).show();
+    }
+</script>
+
+<style>
+    .timeline {
+        position: relative;
+        padding: 20px 0;
+    }
+
+    .timeline-item {
+        position: relative;
+        padding-left: 50px;
+        margin-bottom: 20px;
+    }
+
+    .timeline-marker {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+    }
+
+    .timeline-content {
+        padding: 10px 15px;
+        background: #f8f9fa;
+        border-radius: 8px;
+    }
+</style>
+{% endblock %}

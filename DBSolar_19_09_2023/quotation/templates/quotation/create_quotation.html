@@ -185,45 +185,93 @@ document.addEventListener("DOMContentLoaded", function () {
             </div>
         </div>
     </div>
-  <div class="row mb-1 align-items-center">
-   <div class="col-md-12 item1">
-    {{ form.consumer_name.label_tag }} {{ form.consumer_name }}
-   </div>
- <div class="col-md-6 mb-3 item1">
-    {{ form.consumer_address1.label_tag }} {{ form.consumer_address1 }}
-     </div>
- <div class="col-md-6 mb-3 item1">
-    {{ form.consumer_address2.label_tag }} {{ form.consumer_address2 }}
-     </div>
- <div class="col-md-6 item1">
-    {{ form.consumer_no.label_tag }} {{ form.consumer_no }}
-     </div>
- <div class="col-md-6 item1">
-    {{ form.consumer_mobile.label_tag }} {{ form.consumer_mobile }}
- </div>
-  </div>
+
+    <div class="row mb-1 align-items-center">
+        <div class="col-md-12 item1">
+            {{ form.consumer_name.label_tag }} {{ form.consumer_name }}
+        </div>
+    </div>
+
+    <div class="row mb-1 align-items-center">
+        <div class="col-md-6 mb-3 item1">
+            {{ form.consumer_address1.label_tag }} {{ form.consumer_address1 }}
+        </div>
+        <!-- CHANGED: Consumer Address 2 renamed to City -->
+        <div class="col-md-6 mb-3 item1">
+            <label for="{{ form.consumer_address2.id_for_label }}">City:</label>
+            {{ form.consumer_address2 }}
+        </div>
+    </div>
+
+    <!-- NEW: State and Email Fields -->
+    <div class="row mb-1 align-items-center">
+        <div class="col-md-6 item1">
+            <label for="id_consumer_state">State:</label>
+            <input type="text" name="consumer_state" id="id_consumer_state" class="form-control" maxlength="100">
+        </div>
+        <div class="col-md-6 item1">
+            <label for="id_consumer_email">Email ID:</label>
+            <input type="email" name="consumer_email" id="id_consumer_email" class="form-control" maxlength="255">
+        </div>
+    </div>
+
+    <div class="row mb-1 align-items-center">
+        <div class="col-md-6 item1">
+            {{ form.consumer_mobile.label_tag }} {{ form.consumer_mobile }}
+        </div>
+        <!-- NEW: Project Type Dropdown -->
+        <div class="col-md-6 item1">
+            <label for="id_project_type">Project Type:</label>
+            <select name="project_type" id="id_project_type" class="form-control">
+                <option value="">Select Project Type</option>
+                <option value="RoofTop">RoofTop</option>
+                <option value="Ground Mount PV">Ground Mount PV</option>
+                <option value="Street Light">Street Light</option>
+                <option value="Water Pump">Water Pump</option>
+                <option value="Hi-Mas">Hi-Mas</option>
+                <option value="Other">Other</option>
+            </select>
+        </div>
+    </div>
   </fieldset>
 
 <fieldset>
     <legend>Quotation Meta</legend>
+    {# Row 1: Date, Plant capacity, Electricity unit rate #}
     <div class="row mb-1 align-items-center">
-   <div class="col-md-4 mb-3 item1">
-    {{ form.date.label_tag }} {{ form.date }}
-   </div>
-
         <div class="col-md-4 mb-3 item1">
-    {{ form.plant_capacity_kw.label_tag }}
-    <div class="input-group">
-        {{ form.plant_capacity_kw }}
-        <button type="button" class="btn btn-success" id="openPlantCapacityModal"
-                style="border-top-left-radius: 0; border-bottom-left-radius: 0; width: 40px;"
-                title="Add New Plant Capacity">+</button>
+            {{ form.date.label_tag }} {{ form.date }}
+        </div>
+        <div class="col-md-4 mb-3 item1">
+            {{ form.plant_capacity_kw.label_tag }}
+            <div class="input-group">
+                {{ form.plant_capacity_kw }}
+                <button type="button" class="btn btn-success" id="openPlantCapacityModal"
+                        style="border-top-left-radius: 0; border-bottom-left-radius: 0; width: 40px;"
+                        title="Add New Plant Capacity">+</button>
+            </div>
+        </div>
+        <div class="col-md-4 mb-3 item1">
+            {{ form.electricity_unit_rate.label_tag }}
+            <div class="input-group">
+                {{ form.electricity_unit_rate }}
+                <span class="input-group-text">₹/kWh</span>
+            </div>
+            <small class="form-text text-muted">Used for yearly saving calculation</small>
+            {% if form.electricity_unit_rate.errors %}<div class="text-danger small">{{ form.electricity_unit_rate.errors }}</div>{% endif %}
+        </div>
     </div>
-</div>
-        <div class="col-md-4 mb-3 item1">
-<!--    {{ form.employee_name.label_tag }} -->
-    Representative Name  {{ form.employee_name }}
-   </div>
+    {# Row 2: Assign Associate (full name in list), Representative #}
+    <div class="row mb-1 align-items-center">
+        <div class="col-md-6 mb-3 item1">
+            {{ form.assigned_associate.label_tag }} {{ form.assigned_associate }}
+            {% if form.assigned_associate.errors %}<div class="text-danger small">{{ form.assigned_associate.errors }}</div>{% endif %}
+        </div>
+        <div class="col-md-6 mb-3 item1">
+            <label for="{{ form.employee_name.id_for_label }}">Representative Name</label>
+            {{ form.employee_name }}
+            {% if form.employee_name.errors %}<div class="text-danger small">{{ form.employee_name.errors }}</div>{% endif %}
+        </div>
     </div>
 
 <!-- Add Representative Modal -->
@@ -241,18 +289,6 @@ document.addEventListener("DOMContentLoaded", function () {
   </div>
 </div>
 
-     <!-- ADD THIS NEW ROW FOR ELECTRICITY UNIT RATE -->
-    <div class="row mb-1 align-items-center">
-        <div class="col-md-4 mb-3 item1">
-            {{ form.electricity_unit_rate.label_tag }}
-            <div class="input-group">
-                {{ form.electricity_unit_rate }}
-                <span class="input-group-text">₹/kWh</span>
-            </div>
-            <small class="form-text text-muted">Used for yearly saving calculation</small>
-        </div>
-    </div>
-<!--</div>-->
   </fieldset>
 
   <fieldset>
@@ -691,16 +727,18 @@ document.addEventListener("DOMContentLoaded", function () {
     </div>
     <br>
 
-    {{ form.special_discount.label_tag }} {{ form.special_discount|indian_format_with_decimals }}<br>
+    <div id="pricing-calculated-block" style="display:none;">
+    {{ form.special_discount.label_tag }} {{ form.special_discount }}<br>
     <label>5% GST (on 70%):</label>
-    {{ form.gst_5_percent|indian_format_with_decimals }}<br>
+    {{ form.gst_5_percent }}<br>
 
     <label>18% GST (on 30%):</label>
-    {{ form.gst_18_percent|indian_format_with_decimals }}<br>
+    {{ form.gst_18_percent }}<br>
 
     <div id="total-amount-display" style="margin-top:10px;">
       <label>Total Amount (after GST & discount):</label>
       <input type="text" id="id_total_amount" readonly style="background:#f7f7f7;">
+    </div>
     </div>
   </fieldset>
 
@@ -1081,12 +1119,12 @@ document.addEventListener("DOMContentLoaded", function () {
 document.addEventListener('DOMContentLoaded', function(){
     // Terms & Conditions Modal
     const openTermsBtn = document.getElementById('openTermsModal');
-    const termsModal = document.getElementById('termsModal');
-    const closeTermsBtn = document.getElementById('closeTermsBtn');
-    const saveTermsBtn = document.getElementById('saveTermsBtn');
-    const termsContent = document.getElementById('termsContent');
-    const yellowBackgroundCheckbox = document.getElementById('yellowBackgroundCheckbox');
-    const termsContainer = document.getElementById('terms-checkboxes');
+    const termsModal = document.getElementById('termsModal");
+    const closeTermsBtn = document.getElementById("closeTermsBtn");
+    const saveTermsBtn = document.getElementById("saveTermsBtn");
+    const termsContent = document.getElementById("termsContent");
+    const yellowBackgroundCheckbox = document.getElementById("yellowBackgroundCheckbox");
+    const termsContainer = document.getElementById("terms-checkboxes");
 
     openTermsBtn.addEventListener('click', function(e){
         termsContent.value = '';
@@ -1218,6 +1256,7 @@ document.addEventListener('DOMContentLoaded', function(){
       const dropdown = document.querySelector('[name="pricing_mode"]');
       const netFieldDiv = document.getElementById('net-amount-field');
       const finalFieldDiv = document.getElementById('final-amount-field');
+      const pricingCalcBlock = document.getElementById('pricing-calculated-block');
       const netInput = document.querySelector('[name="net_amount_input"]');
       const finalInput = document.querySelector('[name="final_amount_input"]');
       const gst5Input = document.querySelector('[name="gst_5_percent"]');
@@ -1225,12 +1264,104 @@ document.addEventListener('DOMContentLoaded', function(){
       const discountInput = document.querySelector('[name="special_discount"]');
       const totalDisplay = document.getElementById('id_total_amount');
 
+      function parseINR(val) {
+        if (val == null || String(val).trim() === '') return 0;
+        var n = parseFloat(String(val).replace(/,/g, '').trim());
+        return isNaN(n) ? 0 : n;
+      }
+
+      function formatINR2(n) {
+        var x = Number(n);
+        if (isNaN(x)) return '';
+        return x.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      }
+
+      /** Net / Final amount / Special discount: Indian grouping; whole rupees show without .00 */
+      function formatNetDiscountDisplay(n) {
+        var x = Number(n);
+        if (isNaN(x)) return '';
+        var r = Math.round(x * 100) / 100;
+        if (Math.abs(r - Math.round(r)) < 1e-9) {
+          return Math.round(r).toLocaleString('en-IN');
+        }
+        return r.toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+      }
+
+      function indianGroupDigits(numStr) {
+        if (!numStr) return '';
+        if (numStr.length <= 3) return numStr;
+        var last3 = numStr.slice(-3);
+        var rest = numStr.slice(0, -3);
+        rest = rest.replace(/\B(?=(\d{2})+(?!\d))/g, ',');
+        return rest + ',' + last3;
+      }
+
+      /** Live typing: insert commas (Indian); max 2 decimal digits; no forced .00 */
+      function formatIndianInputLive(raw) {
+        raw = String(raw ?? '');
+        var neg = /^\s*-/.test(raw);
+        var s = raw.replace(/,/g, '').replace(/^\s*-/, '');
+        var dotIdx = s.indexOf('.');
+        var intRaw = dotIdx >= 0 ? s.slice(0, dotIdx) : s;
+        var decRaw = dotIdx >= 0 ? s.slice(dotIdx + 1).replace(/\./g, '') : '';
+        intRaw = intRaw.replace(/\D/g, '');
+        decRaw = decRaw.replace(/\D/g, '').slice(0, 2);
+        var out = indianGroupDigits(intRaw);
+        if (neg && (intRaw !== '' || decRaw !== '' || dotIdx >= 0)) {
+          out = '-' + out;
+        }
+        if (dotIdx >= 0) {
+          out += '.' + decRaw;
+        }
+        return out;
+      }
+
+      function countDigitsBeforeCursor(str, caret) {
+        return str.slice(0, caret).replace(/[^\d]/g, '').length;
+      }
+
+      function caretFromDigitIndex(str, digitCount) {
+        if (digitCount <= 0) return 0;
+        var dc = 0;
+        var i;
+        for (i = 0; i < str.length; i++) {
+          if (/\d/.test(str[i])) {
+            dc++;
+            if (dc >= digitCount) return i + 1;
+          }
+        }
+        return str.length;
+      }
+
+      function wireLiveIndianNetOrDiscount(el, recalc) {
+        if (!el) return;
+        el.addEventListener('input', function() {
+          var caret = el.selectionStart;
+          var digitsBefore = countDigitsBeforeCursor(el.value, caret);
+          var formatted = formatIndianInputLive(el.value);
+          el.value = formatted;
+          var newCaret = caretFromDigitIndex(formatted, digitsBefore);
+          try {
+            el.setSelectionRange(newCaret, newCaret);
+          } catch (e1) { /* ignore */ }
+          if (typeof recalc === 'function') recalc();
+        });
+        el.addEventListener('blur', function() {
+          if (String(el.value).trim() === '') return;
+          el.value = formatNetDiscountDisplay(parseINR(el.value));
+          if (typeof recalc === 'function') recalc();
+        });
+      }
+
       function togglePricingFields(){
-        if(dropdown.value === 'net'){
+        var mode = dropdown.value;
+        var showPricing = mode === 'net' || mode === 'final';
+        if (pricingCalcBlock) pricingCalcBlock.style.display = showPricing ? 'block' : 'none';
+        if(mode === 'net'){
           netFieldDiv.style.display = 'block';
           finalFieldDiv.style.display = 'none';
           clearFields();
-        } else if(dropdown.value === 'final'){
+        } else if(mode === 'final'){
           finalFieldDiv.style.display = 'block';
           netFieldDiv.style.display = 'none';
           clearFields();
@@ -1241,75 +1372,72 @@ document.addEventListener('DOMContentLoaded', function(){
         }
       }
 
-      // Indian Number Formatter
-      function formatIndianNumber(x) {
-            x = Number(x);
-            x = Math.round(x);
-            return x.toLocaleString('en-IN');
-      }
-
       function clearFields(){
-        gst5Input.value = '';
-        gst18Input.value = '';
-        totalDisplay.value = '';
+        if (gst5Input) gst5Input.value = '';
+        if (gst18Input) gst18Input.value = '';
+        if (totalDisplay) totalDisplay.value = '';
       }
 
       function calcFromNet(){
-        const net = parseFloat(netInput.value) || 0;
-        const discount = parseFloat(discountInput.value) || 0;
+        const net = parseINR(netInput && netInput.value);
+        const discount = parseINR(discountInput && discountInput.value);
         if(net <= 0) { clearFields(); return; }
 
-        // First apply discount to get taxable amount
         const taxableAmount = net - discount;
 
-        // Then calculate GST on the taxable amount
-        const gst5 = (taxableAmount * 0.70) * 0.05;     // 5% on 70% of taxable amount
-        const gst18 = (taxableAmount * 0.30) * 0.18;    // 18% on 30% of taxable amount
+        const gst5 = (taxableAmount * 0.70) * 0.05;
+        const gst18 = (taxableAmount * 0.30) * 0.18;
         const total = taxableAmount + gst5 + gst18;
 
-        gst5Input.value = gst5.toFixed(2);
-        gst18Input.value = gst18.toFixed(2);
-
-        totalDisplay.value = formatIndianNumber(total);
-
+        if (gst5Input) gst5Input.value = formatINR2(gst5);
+        if (gst18Input) gst18Input.value = formatINR2(gst18);
+        if (totalDisplay) totalDisplay.value = formatINR2(total);
       }
 
       function calcFromFinal(){
-        const finalAmt = parseFloat(finalInput.value) || 0;
-        const discount = parseFloat(discountInput.value) || 0;
+        const finalAmt = parseINR(finalInput && finalInput.value);
+        const discount = parseINR(discountInput && discountInput.value);
         if(finalAmt <= 0) { clearFields(); return; }
 
-        // Reverse calculation: final amount includes GST but excludes discount
-        // So we need to find the taxable amount first
-        const gstFactor = (0.70 * 0.05) + (0.30 * 0.18); // combined GST %
+        const gstFactor = (0.70 * 0.05) + (0.30 * 0.18);
         const taxableAmount = finalAmt / (1 + gstFactor);
 
-        // Now calculate GST on taxable amount
         const gst5 = (taxableAmount * 0.70) * 0.05;
         const gst18 = (taxableAmount * 0.30) * 0.18;
 
-        // Net amount before discount = taxableAmount + discount
-        const netAmount = taxableAmount + discount;
-
-        gst5Input.value = gst5.toFixed(2);
-        gst18Input.value = gst18.toFixed(2);
-        totalDisplay.value = (taxableAmount + gst5 + gst18).toFixed(2);
-
-        // If you need to show the net amount somewhere
-        // netInput.value = netAmount.toFixed(2);
-        totalDisplay.value = formatIndianNumber(finalAmt);
-
+        if (gst5Input) gst5Input.value = formatINR2(gst5);
+        if (gst18Input) gst18Input.value = formatINR2(gst18);
+        if (totalDisplay) totalDisplay.value = formatINR2(finalAmt);
       }
 
-      dropdown.addEventListener('change', togglePricingFields);
-      netInput.addEventListener('input', calcFromNet);
-      finalInput.addEventListener('input', calcFromFinal);
-      discountInput.addEventListener('input', function(){
-        if(dropdown.value === 'net') calcFromNet();
-        if(dropdown.value === 'final') calcFromFinal();
+      wireLiveIndianNetOrDiscount(netInput, function() {
+        if (dropdown.value === 'net') calcFromNet();
+      });
+      wireLiveIndianNetOrDiscount(finalInput, function() {
+        if (dropdown.value === 'final') calcFromFinal();
+      });
+      wireLiveIndianNetOrDiscount(discountInput, function() {
+        if (dropdown.value === 'net') calcFromNet();
+        if (dropdown.value === 'final') calcFromFinal();
       });
 
+      dropdown.addEventListener('change', togglePricingFields);
+
       togglePricingFields();
+      if (netInput && String(netInput.value).trim() !== '') {
+        netInput.value = formatNetDiscountDisplay(parseINR(netInput.value));
+      }
+      if (finalInput && String(finalInput.value).trim() !== '') {
+        finalInput.value = formatNetDiscountDisplay(parseINR(finalInput.value));
+      }
+      if (discountInput && String(discountInput.value).trim() !== '') {
+        discountInput.value = formatNetDiscountDisplay(parseINR(discountInput.value));
+      }
+      if (dropdown && dropdown.value === 'net' && netInput && parseINR(netInput.value) > 0) {
+        calcFromNet();
+      } else if (dropdown && dropdown.value === 'final' && finalInput && parseINR(finalInput.value) > 0) {
+        calcFromFinal();
+      }
     });
 </script>
 <!--  <button type="submit">💾 Save & Generate PDF</button>-->

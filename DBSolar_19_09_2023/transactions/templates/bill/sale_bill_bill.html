@@ -1,9 +1,10 @@
 {% extends 'partials/base.html' %}
 
 {% load static %}
+{% load indian_filters %}
 
 
-{% block title %} Sale Bill No : {{ bill.billno }}{% endblock title %}
+{% block title %}{% endblock title %}
 
 
 {% block content %}
@@ -17,8 +18,59 @@
     <link rel="stylesheet" type="text/css" href="{% static 'css/main.css' %}">
 <!--    <link rel="stylesheet" type="text/css" href="{% static 'css/sidebar.css' %}">-->
     <link rel="stylesheet" type="text/css" href="{% static 'css/bill1.css' %}">
+    <style id="bill-print-repeat-header">
+      @media print {
+        body * { visibility: hidden; }
+        #printArea, #printArea * { visibility: visible; }
+        #printArea { position: absolute; left: 0; top: 0; width: 100%; }
+        #printArea table.bill-root-table > thead { display: table-header-group !important; }
+        #printArea table.goods-table > thead { display: table-header-group !important; }
+        #printArea table.bill-root-table,
+        #printArea table.bill-root-table > tbody > tr > td table { page-break-inside: auto; }
+        #printArea table.goods-table { page-break-inside: auto; }
+        #printArea .bill-details-block { page-break-inside: avoid; }
+        #printArea tfoot { display: table-footer-group; }
+        #printArea table.bill-root-table > tbody > tr.bill-goods-row,
+        #printArea table.bill-root-table > tbody > tr.bill-totals-row,
+        #printArea table.bill-root-table > tbody > tr.bill-footer-extras-row,
+        #printArea table.bill-root-table > tbody > tr.bill-signature-row {
+          page-break-before: avoid;
+          break-before: avoid-page;
+        }
+        #printArea.bill-has-serial-sheet table.bill-root-table > tbody > tr.bill-signature-row > td {
+          border-bottom: 1px solid #000 !important;
+        }
+        #printArea:not(.bill-has-serial-sheet) table.bill-root-table > tbody > tr:last-child {
+          display: none !important;
+        }
+        #printArea table.bill-root-table > tbody > tr.bill-serial-sheet-row {
+          page-break-before: always;
+          break-before: page;
+        }
+        #printArea table.bill-root-table > tbody > tr.bill-serial-sheet-placeholder {
+          display: none !important;
+        }
+        #printArea table.bill-root-table > tbody > tr.bill-serial-sheet-row > td {
+          border-top: none !important;
+        }
+        #printArea table.bill-root-table > tbody > tr.bill-serial-sheet-row > td > table.bill-serial-sheet-inner {
+          border-top: none !important;
+        }
+        #printArea table.bill-root-table > tbody > tr.bill-serial-sheet-row > td > table.bill-serial-sheet-inner > tbody > tr:first-child > td {
+          border-top: none !important;
+        }
+        #printArea .bill-serial-sheet-outside-sign {
+          page-break-inside: avoid;
+          break-inside: avoid;
+        }
+        .screen-only,
+        #print-controls {
+          display: none !important;
+        }
+      }
+    </style>
 <br>
-    <div style="color:#575757; font-style: bold; font-size: 2rem;  border-bottom: 1px solid white;">Delivery Challen No : {{ bill.billno }}</div>
+    <div class="screen-only" style="color:#575757; font-style: bold; font-size: 2rem;  border-bottom: 1px solid white;">Delivery Challen No : {{ bill.billno }}</div>
     <!-- <br><br> --><!-- Log on to codeastro.com for more projects -->
   <br>
  <form method="post" style="width: 900px; margin: 0 auto;">
@@ -27,10 +79,10 @@
         <div class="bg">
             <br>
             <div id="printArea" class="bg">
-                <table class="outer-box inner-box" style="width: 840px; margin-left: auto; margin-right: auto;">
-                    <tbody>
-                        <tr style="text-align: center;">
-                            <td>
+                <table id="bill-layout-table" class="outer-box inner-box bill-root-table" style="width: 840px; margin-left: auto; margin-right: auto;">
+                    <thead>
+                        <tr class="bill-letterhead-row" style="text-align: center;">
+                            <td colspan="7">
                                 <div style="text-align: center; display: flex; align-items: flex-start; justify-content: center;">
                                     <div style="flex: 500px 300px 0 300px;">
                                         <img style="width: 150px; height: auto;" src="{% static 'images/dblogo200.png' %}" alt="DB Logo">
@@ -46,8 +98,10 @@
                                 </div>
                             </td>
                         </tr>
-                        <tr>
-                            <td>
+                    </thead>
+                    <tbody>
+                        <tr class="bill-details-block">
+                            <td colspan="7">
                             <table class="outer-box" style="width: 800px; margin-left: auto; margin-right: auto;">
                                 <tbody>
                                     <tr>
@@ -66,7 +120,7 @@
                                                 <td class="inner-box text-capitalize" style="width: 50%;  padding-left: 10px;">&nbsp;{{ bill.Vend_id.name }}</td>
                                             {% endif %}
                                         <td class="inner-box" style="width: 25%; font-weight: bold;">&nbsp;DATE</td>
-                                        <td class="inner-box" style="width: 25%;">&nbsp;&nbsp;{{ bill.time.date|date:'d/m/Y' }}</td>
+                                        <td class="inner-box" style="width: 25%;">&nbsp;&nbsp;{{ bill.time|as_bill_date }}</td>
                                     </tr>
                                     <tr style="height: auto;"><!-- Log on to codeastro.com for more projects -->
 <!--                                        <td class="inner-box text-capitalize" style="width: 50%;" rowspan="6">{{ bill.Cust_id.Address|linebreaks }}{{bill.Cust_id.City}},{{bill.Cust_id.phone}}</td>-->
@@ -135,11 +189,11 @@
                             </td>
                         </tr>
 
-                        <tr>
-                            <td><!-- Log on to codeastro.com for more projects -->
-                            <table class="outer-box" style="width: 800px; margin-left: auto; margin-right: auto;">
-                                <tbody>
-                                    <tr>
+                        <tr class="bill-goods-row">
+                            <td colspan="7">
+                            <table id="goods-table" class="outer-box goods-table" style="width: 800px; margin-left: auto; margin-right: auto;">
+                                <thead>
+                                    <tr class="outer-box">
                                         <td class="inner-box" style="width: 05%; font-weight: bold; text-align: center;">&nbsp;SL</td>
                                         <td class="inner-box" style="width: 30%; font-weight: bold; text-align: center;">GOODS</td>
                                         <td class="inner-box" style="width: 10%; font-weight: bold; text-align: center;">&nbsp;HSN/SAC</td>
@@ -147,37 +201,70 @@
                                         <td class="inner-box" style="width: 12%; font-weight: bold; text-align: center;">RATE PMT</td>
                                         <td class="inner-box" style="width: 7%; font-weight: bold; text-align: center;">GST</td>
                                         <td class="inner-box" style="width: 12%; font-weight: bold; text-align: center;"><i class="fas fa-rupee-sign"></i>  &nbsp;AMOUNT</td>
-<!--                                        <td class="inner-box" style="width: 05%; font-weight: bold; text-align: center;">PS</td>-->
                                     </tr>
+                                </thead>
+                                <tbody>
                                     {% for item in items %}
-              <tr style="height: auto;">
+                                    <tr class="outer-box" style="height: auto;">
                 <td class="inner-box" style="width: 5%;">&nbsp; {{ forloop.counter }}</td>
                 <td class="inner-box text-capitalize" style="width: 30%; line-height: 1;">
                     &nbsp;{{ item.stock.name }}<br>
                     {% if item.serials.exists %}
-                        &nbsp;&nbsp;<small style="color: black">Sr No:
-                            {% for serial in item.serials %}
-                                {{ serial.serialNo }}{% if not forloop.last %}, {% endif %}
-                            {% endfor %}
-                        </small>
+                        {% if item.serials|length > 10 %}
+                            &nbsp;&nbsp;<small style="color: black; font-weight: bold;">As per Serial Number Sheet attached.</small>
+                        {% else %}
+                            &nbsp;&nbsp;<small style="color: black">Sr No:
+                                {% for serial in item.serials %}
+                                    {{ serial.serialNo }}{% if not forloop.last %}, {% endif %}
+                                {% endfor %}
+                            </small>
+                        {% endif %}
                     {% endif %}
                 </td>
                 <td class="inner-box" style="width: 10%;">&nbsp;</td>
                 <td class="inner-box" style="width: 12%; padding-right: 10px;" align="right">&nbsp; <b>{{ item.quantity }}&nbsp;<small style="color: black">{{ item.purchase.short_name }}</small></b></td>
                 <td class="inner-box" style="width: 12%; padding-right: 10px;" align="right">&nbsp; {{ item.perprice|floatformat:2 }}</td>
-<!--                <td class="inner-box" style="width: 7%; padding-right: 10px;" align="right">&nbsp; {{ item.stock.gst|floatformat:"-1" }}%</td>-->
                 <td class="inner-box" style="width: 7%; padding-right: 10px;" align="right">&nbsp; {{ billdetails.gst_value }}%</td>
                 <td class="inner-box" style="width: 12%; padding-right: 10px;" align="right"><b>&nbsp;{{ item.totalprice|floatformat:2 }}</b></td>
-            </tr>
-
-        {% endfor %}
+                                    </tr>
+                                    {% endfor %}
                                 </tbody>
                             </table>
                             </td>
                         </tr>
 
-                        <tr>
-                            <td>
+                        <tr class="bill-serial-sheet-placeholder" style="display:none;">
+                            <td colspan="7">
+                                {% for item in items %}
+                                    {% if item.serials.exists and item.serials|length > 10 %}
+                                        <table class="outer-box inner-box serial-sheet-table" style="width: 800px; margin-left: auto; margin-right: auto;">
+                                            <thead>
+                                                <tr>
+                                                    <td colspan="3" class="inner-box" style="text-align:center; font-weight:bold;">Serial Number Sheet</td>
+                                                </tr>
+                                                <tr>
+                                                    <td class="inner-box" style="width:8%; text-align:center; font-weight:bold;">SL</td>
+                                                    <td class="inner-box" style="width:40%; text-align:left; font-weight:bold; padding-left:8px;">Item</td>
+                                                    <td class="inner-box" style="width:52%; text-align:left; font-weight:bold; padding-left:8px;">Serial Number</td>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {% for serial in item.serials %}
+                                                <tr>
+                                                    <td class="inner-box" style="text-align:center;">{{ forloop.counter }}</td>
+                                                    <td class="inner-box text-capitalize" style="padding-left:8px;">{{ item.stock.name }}</td>
+                                                    <td class="inner-box" style="padding-left:8px;">{{ serial.serialNo }}</td>
+                                                </tr>
+                                                {% endfor %}
+                                            </tbody>
+                                        </table>
+                                    {% endif %}
+                                {% endfor %}
+                            </td>
+                        </tr>
+
+                        <tr class="bill-totals-row">
+                            <td colspan="7">
                             <table class="outer-box inner-box" style="width: 800px; margin-left: auto; margin-right: auto;">
                                 <tbody>
                                     <tr>
@@ -209,14 +296,61 @@
                             </td>
                         </tr>
 
-                        <tr>
-                            <td style="padding-right: 30px;" align="right">
-                                <span style="font-weight: bold;">FOR COMPANY <br><br><br><br> Signature</span>
+                        <tr class="bill-signature-row">
+                            <td style="padding-right: 30px;" align="right" colspan="7">
+                                <div style="display:flex; justify-content:space-between; align-items:flex-end; width:100%; gap:12px; padding:0 10px 4px 10px; font-size:11px;">
+                                    <div style="flex:1; text-align:center; font-weight:bold;">Consumer Sign</div>
+                                    <div style="flex:1; text-align:center; font-weight:bold;">Arrange By Sign</div>
+                                    <div style="flex:1; text-align:center; font-weight:bold;">Handle By Sign</div>
+                                    <div style="flex:1.2; text-align:center;">
+                                        <div style="font-weight:bold;">For Heramb Industries</div>
+                                        <img src="{% static 'images/sign.jpeg' %}" onerror="this.onerror=null;this.src='{% static 'images/sign.jpg' %}';this.onerror=function(){this.onerror=null;this.src='{% static 'images/sign.png' %}';};" style="max-width:150px; max-height:64px; object-fit:contain;" alt="Authorized Sign">
+                                        <div style="font-weight:bold;">Seal &amp; Sign</div>
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+
+                        <tr class="bill-serial-sheet-row">
+                            <td colspan="7">
+                                <table class="outer-box inner-box bill-serial-sheet-inner" style="width: 800px; margin-left: auto; margin-right: auto;">
+                                    <tbody>
+                                        <tr>
+                                            <td class="inner-box" style="text-align:center; font-weight:bold;">Serial Number Sheet</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="inner-box" style="padding:10px;">
+                                                {% for item in items %}
+                                                    {% if item.serials.exists and item.serials|length > 10 %}
+                                                        <div style="font-weight:bold; margin-top:8px;">{{ item.stock.name }}</div>
+                                                        <ul style="column-count:{% if item.serials|length > 30 %}4{% else %}3{% endif %}; column-gap:24px; margin:6px 0 10px 0; padding:0; list-style:none;">
+                                                            {% for serial in item.serials %}
+                                                                <li style="break-inside: avoid; page-break-inside: avoid; margin:0 0 2px 0;">
+                                                                    <span style="display:inline-block; min-width:28px; font-weight:bold;">{{ forloop.counter }}.</span>{{ serial.serialNo }}
+                                                                </li>
+                                                            {% endfor %}
+                                                        </ul>
+                                                    {% endif %}
+                                                {% endfor %}
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                                <div class="bill-serial-sheet-outside-sign" style="display:flex; justify-content:space-between; align-items:flex-end; width:800px; max-width:100%; margin:12px auto 0 auto; gap:12px; padding:0 10px 4px 10px; font-size:11px; box-sizing:border-box;">
+                                    <div style="flex:1; text-align:center; font-weight:bold;">Consumer Sign</div>
+                                    <div style="flex:1; text-align:center; font-weight:bold;">Arrange By Sign</div>
+                                    <div style="flex:1; text-align:center; font-weight:bold;">Handle By Sign</div>
+                                    <div style="flex:1.2; text-align:center;">
+                                        <div style="font-weight:bold;">For Heramb Industries</div>
+                                        <img src="{% static 'images/sign.jpeg' %}" onerror="this.onerror=null;this.src='{% static 'images/sign.jpg' %}';this.onerror=function(){this.onerror=null;this.src='{% static 'images/sign.png' %}';};" style="max-width:150px; max-height:64px; object-fit:contain;" alt="Authorized Sign">
+                                        <div style="font-weight:bold;">Seal &amp; Sign</div>
+                                    </div>
+                                </div>
                             </td>
                         </tr>
 
                         <tr>
-                            <td style="text-align: center;">
+                            <td style="text-align: center;" colspan="7">
                                 <!-- FINAL TEXT -->
                             </td>
                         </tr>
@@ -232,27 +366,31 @@
 
         <br><br>
 
-        <div class="wrapper">
-<!--            <button class="center btn btn-primary" onclick="printpage('printArea')">Print</button>-->
-<!--            <button class="center btn btn-success" type="submit">Save Draft</button>-->
-<!--            <a href="{% url 'purchases-list' %}" class=" btn center btn-secondary">Go Back</a>-->
-
-            <button class="center btn btn-primary" onclick="printpage('printArea')">Print</button>
-            <button class="center btn btn-success" type="submit">Save Draft</button>
+        <div id="print-controls" class="wrapper">
+            <button type="button" class="center btn btn-primary" onclick="printpage('printArea'); return false;">Print</button>
             <a href="{% url 'sales-list' %}" class="btn center btn-secondary">Go Back</a>
         </div><!-- Log on to codeastro.com for more projects -->
 
     </form>
 
     <script>
-        function printpage(divName) {
-            var printContents = document.getElementById(divName).innerHTML;
-            var originalContents = document.body.innerHTML;
-            document.body.innerHTML = printContents;
+        function printpage() {
             window.print();
-            document.body.innerHTML = originalContents;
         }
         </script>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        var printArea = document.getElementById("printArea");
+        var serialSheetRow = document.querySelector("#bill-layout-table tr.bill-serial-sheet-row");
+        if (!serialSheetRow) return;
+        var serialEntries = serialSheetRow.querySelectorAll("li");
+        if (!serialEntries.length) {
+            serialSheetRow.style.display = "none";
+        } else if (printArea) {
+            printArea.classList.add("bill-has-serial-sheet");
+        }
+    });
+</script>
 <style>
     .outer-box{
     border-collapse: collapse;

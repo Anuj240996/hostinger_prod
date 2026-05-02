@@ -21,10 +21,20 @@ PORTAL_URLS = {
     "dashboard-index": "admin",
     "dashboard-index1": "staff",
     "customer-view_all": "customer",
-    "home": "staff",  # stock dashboard
     "vendor-dashboard": "vendor",
     # vendor portal landing will be added later (vendor-portal todo)
 }
+
+# URL is allowed if the user has ANY of these portals (see Control Panel portal matrix).
+PORTAL_URLS_ANY = {
+    "home": ("staff", "stock_dashboard"),  # stock dashboard
+    "firereport-dashboard": ("staff", "customer", "complaint_dashboard"),
+}
+
+# Sidebar / CP submodule url_names for the four Dashboard entries (portal + nav sync).
+DASHBOARD_SUBMODULE_URL_NAMES = frozenset(
+    {"dashboard-index1", "customer-view_all", "firereport-dashboard", "home"}
+)
 
 
 def required_permission(url_name: Optional[str], request: HttpRequest) -> Optional[Permission]:
@@ -188,6 +198,17 @@ def required_permission(url_name: Optional[str], request: HttpRequest) -> Option
 
     if url_name in {"firereport-deleteTeam", "firereport-deleteRequest"}:
         return ("firereport", "delete")
+
+    # SERVICES
+    if url_name in {
+        "firereport-service-assigned",
+        "firereport-service-in-process",
+        "firereport-service-completed",
+        "firereport-service-viewRequestDetails",
+    }:
+        return ("firereport", "view")
+    if url_name in {"firereport-service-mark-in-process", "firereport-service-mark-completed"}:
+        return ("firereport", "edit")
 
     # BARCODE / detect_barcodes
     if url_name.startswith("detect_barcodes-") or url_name.startswith("generate_barcodes-"):

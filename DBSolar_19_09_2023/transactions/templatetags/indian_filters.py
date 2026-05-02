@@ -172,3 +172,60 @@ def indian_format_with_decimals(value):
     formatted_frac = f"{fraction:.2f}"[1:]
 
     return sign + formatted_int + formatted_frac
+
+
+def _parse_bill_time(value):
+    """Return datetime or date or None from DB-backed bill time (datetime, date, str)."""
+    from datetime import date, datetime
+
+    if value is None or value == "":
+        return None
+    if isinstance(value, datetime):
+        return value
+    if isinstance(value, date):
+        return value
+    if isinstance(value, str):
+        s = value.strip()
+        if not s:
+            return None
+        from django.utils.dateparse import parse_date, parse_datetime
+
+        dt = parse_datetime(s.replace("Z", "+00:00") if "Z" in s else s)
+        if dt is not None:
+            return dt
+        if len(s) >= 10:
+            d = parse_date(s[:10])
+            if d is not None:
+                return d
+        return None
+    if hasattr(value, "strftime"):
+        try:
+            return value
+        except Exception:
+            return None
+    return None
+
+
+@register.filter
+def as_bill_date(value):
+    """
+    Format bill time for DC/PDF (dd/mm/yyyy). Handles datetime, date, ISO strings, None.
+    Replaces broken {{ bill.time.date|date:'d/m/Y' }} when time is a string from PostgreSQL.
+    """
+    from django.utils import dateformat
+
+    parsed = _parse_bill_time(value)
+    if parsed is None:
+        return ""
+    return dateformat.format(parsed, "d/m/Y")
+
+
+@register.filter
+def as_bill_date_iso(value):
+    """HTML date input value (yyyy-mm-dd). Same inputs as as_bill_date."""
+    from django.utils import dateformat
+
+    parsed = _parse_bill_time(value)
+    if parsed is None:
+        return ""
+    return dateformat.format(parsed, "Y-m-d")

@@ -139,7 +139,7 @@
                      <div class="col-md-3">
 
                            <label><b> Current Department :</b></label>
-                           <input type="text" name="dept1" disabled class="form-control text-capitalize" placeholder="Enter Department" value="{% if employee.department %}{{ employee.department }}{% else %}{{ placeholder }}{% endif %}">
+                           <input type="text" name="dept1" disabled class="form-control text-capitalize" placeholder="Enter Department" value="{% if employee.department %}{{ employee.department }}{% elif is_associate_user %}Associate{% else %}{{ placeholder }}{% endif %}">
                      </div>
                      <div class="col-md-3">
 
@@ -156,7 +156,7 @@
                      <div class="col-md-3">
 
                            <label> <b>Current Designation :</b></label>
-                           <input type="text" name="desig1" disabled class="form-control text-capitalize" placeholder="Enter Designation" value="{% if employee.designation %}{{ employee.designation }}{% else %}{{ placeholder }}{% endif %}">
+                           <input type="text" name="desig1" disabled class="form-control text-capitalize" placeholder="Enter Designation" value="{% if employee.designation %}{{ employee.designation }}{% elif is_associate_user %}Associate{% else %}{{ placeholder }}{% endif %}">
 
                      </div>
                      <div class="col-md-3">
@@ -165,7 +165,7 @@
                            <select id="desig" name="desig" style="width: 210px; height: 40px; font-size: 16px;">
                               <option value="" selected disabled class="text-center">--Select Designation--</option>
                             {% for designation in designations %}
-                                <option value="{{ designation.0 }}">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{{ designation.1 }}</option>
+                                <option value="{{ designation.0 }}" data-designation="{{ designation.0 }}">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{{ designation.1 }}</option>
                             {% endfor %}
                            </select>
 
@@ -513,6 +513,50 @@ function validateYearLength(input) {
     return true;
 }
 
+</script>
+
+<script>
+  (function () {
+    const deptEl = document.getElementById('dept');
+    const desigEl = document.getElementById('desig');
+    if (!deptEl || !desigEl) return;
+
+    const designationByDepartment = {
+      'Administration': ['Admin', 'Staff', 'Sr.Cleark', 'Jr.Cleark', 'Accountant'],
+      'Finance': ['Accountant', 'Staff'],
+      'Engineers': ['Sr.Engg', 'Jr.Engg', 'Staff'],
+      'Stockist': ['Staff', 'Sr.Cleark', 'Jr.Cleark'],
+      'Associate': ['Associate']
+    };
+
+    const allOptions = Array.from(desigEl.querySelectorAll('option')).map((opt) => ({
+      value: opt.value,
+      text: opt.textContent
+    }));
+
+    function rebuildDesignationOptions() {
+      const selectedDepartment = deptEl.value;
+      const allowed = designationByDepartment[selectedDepartment] || [];
+      const currentValue = desigEl.value;
+
+      desigEl.innerHTML = '<option value="" selected disabled class="text-center">--Select Designation--</option>';
+      allOptions.forEach((opt) => {
+        if (!opt.value) return;
+        if (allowed.length === 0 || allowed.includes(opt.value)) {
+          const option = document.createElement('option');
+          option.value = opt.value;
+          option.textContent = opt.text;
+          if (opt.value === currentValue) {
+            option.selected = true;
+          }
+          desigEl.appendChild(option);
+        }
+      });
+    }
+
+    deptEl.addEventListener('change', rebuildDesignationOptions);
+    rebuildDesignationOptions();
+  })();
 </script>
 
 {% endblock %}

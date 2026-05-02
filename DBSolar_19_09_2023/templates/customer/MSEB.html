@@ -5,9 +5,8 @@
 {% block content %}
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
 <style>
-    /* Set fixed width for Ok and Cancel columns */
-    #mseb_table_body .ok-column,
-    #mseb_table_body .cancel-column {
+    /* Set fixed width for Ok column */
+    #mseb_table_body .ok-column {
         width: 200px;
     }
 
@@ -31,6 +30,107 @@
     #mseb_table_body .status.in-process {
         color: yellow;
     }
+
+    /* Segmented control — full width (aligned with company row), rectangular, teal */
+    .mseb-mode-toolbar {
+        margin: 12px 0 16px;
+    }
+    .mseb-mode-toolbar .mseb-segmented-wrap {
+        width: 100%;
+    }
+    .mseb-segmented {
+        display: flex;
+        align-items: stretch;
+        width: 100%;
+        background: #D9EDE9;
+        border-radius: 8px;
+        padding: 4px;
+        gap: 3px;
+        box-sizing: border-box;
+        border: 1px solid rgba(0, 137, 123, 0.2);
+    }
+    .mseb-segmented .mseb-segment {
+        flex: 1 1 0;
+        min-width: 0;
+        margin: 0;
+        border: none;
+        background: transparent;
+        color: #00897B;
+        font-weight: 500;
+        font-size: 14px;
+        line-height: 1.25;
+        padding: 10px 8px;
+        border-radius: 6px;
+        cursor: pointer;
+        transition: background 0.2s ease, color 0.2s ease, font-weight 0.15s ease;
+        white-space: nowrap;
+        text-align: center;
+        -webkit-tap-highlight-color: transparent;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+    }
+    .mseb-segmented .mseb-segment:hover:not(.active) {
+        color: #00695c;
+        background: rgba(0, 137, 123, 0.1);
+    }
+    .mseb-segmented .mseb-segment:focus {
+        outline: none;
+    }
+    .mseb-segmented .mseb-segment:focus-visible {
+        box-shadow: 0 0 0 2px #fff, 0 0 0 4px #00897B;
+    }
+    /* Checkmark only on selected segment */
+    .mseb-segmented .mseb-segment.active::before {
+        content: "\2713";
+        font-size: 1.05em;
+        font-weight: 700;
+        line-height: 1;
+        flex-shrink: 0;
+    }
+    .mseb-segmented .mseb-segment.active {
+        background: #00897B;
+        color: #fff;
+        font-weight: 700;
+    }
+    .mseb-segmented .mseb-segment.active:focus-visible {
+        box-shadow: 0 0 0 2px #fff, 0 0 0 4px #004d40;
+    }
+    @media (max-width: 576px) {
+        .mseb-segmented { padding: 3px; gap: 2px; }
+        .mseb-segmented .mseb-segment {
+            font-size: 11px;
+            padding: 9px 4px;
+            gap: 4px;
+        }
+    }
+    #mseb_tracking_panel { margin-top: 16px; padding: 12px; border: 1px solid #dee2e6; border-radius: 6px; background: #f8f9fa; display: none; }
+    /* Same vertical gap from consumer row (or tracking) to table — all modes */
+    #mseb-workflow-section,
+    #mseb-update-section,
+    #mseb-completed-section {
+        margin-top: 2rem;
+    }
+    #mseb_tracking_timeline { list-style: none; padding: 0; margin: 8px 0; display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
+    #mseb_tracking_timeline li { padding: 6px 10px; border-radius: 4px; font-size: 13px; }
+    #mseb_tracking_timeline li.done { background: #d4edda; color: #155724; }
+    #mseb_tracking_timeline li.pending { background: #fff3cd; color: #856404; }
+    #mseb_update_table_body .light-blue-background,
+    #mseb_completed_table_body .light-blue-background { background-color: lightblue; }
+
+    /* Completed page (legacy): 4-column table */
+    #mseb_completed_table_body td,
+    #mseb_completed_table_body th { padding: 10px; }
+    #mseb_completed_table_body input[type="checkbox"] { width: 20px; height: 20px; }
+    #mseb_completed_table_body .status.Done { color: green; }
+    #mseb_completed_table_body .status.in-process { color: yellow; }
+
+    /* Update page (legacy): extra cells under Completion Date / Ok / Update */
+    #mseb_update_table_body td,
+    #mseb_update_table_body th { padding: 10px; }
+    #mseb_update_table_body input[type="checkbox"] { width: 20px; height: 20px; }
+    #mseb_update_table_body .status.Done { color: green; }
 </style>
 
 <style>
@@ -65,81 +165,647 @@
         'installation_date': 'Meter Installation Date'
     };
 
+    var msebPageMode = '{{ mseb_initial_mode|default:"new"|escapejs }}';
+    var msebCustomerListUrl = '{% url "customer-mseb_customer_list" %}';
+    var msebTrackingJsonUrl = '{% url "customer-mseb_tracking_json" %}';
+    var msebUpdatePostUrl = '{% url "customer-Update_MSEB" %}';
+
+    function getCookie(name) {
+        var cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            var cookies = document.cookie.split(';');
+            for (var i = 0; i < cookies.length; i++) {
+                var cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+
+    /** dd/mm/yyyy for display (expects valid Date). */
+    function formatDate(date) {
+        if (!date || !(date instanceof Date) || isNaN(date.getTime())) return '';
+        var day = String(date.getDate()).padStart(2, '0');
+        var month = String(date.getMonth() + 1).padStart(2, '0');
+        var year = date.getFullYear();
+        return day + '/' + month + '/' + year;
+    }
+
+    /**
+     * Parse get_mseb_data created_at: ISO, 'YYYY-MM-DD HH:MM:SS', microseconds, date-only.
+     * Avoids Safari/IE issues with new Date('YYYY-MM-DD HH:MM:SS').
+     */
+    function parseMsebCreatedAt(raw) {
+        if (raw == null || raw === '') return null;
+        var s = String(raw).trim();
+        if (!s) return null;
+        var d = new Date(s);
+        if (!isNaN(d.getTime())) return d;
+        var m = s.match(/^(\d{4})-(\d{2})-(\d{2})[ T](\d{1,2}):(\d{2}):(\d{2})(?:\.\d+)?/);
+        if (m) {
+            d = new Date(
+                parseInt(m[1], 10),
+                parseInt(m[2], 10) - 1,
+                parseInt(m[3], 10),
+                parseInt(m[4], 10),
+                parseInt(m[5], 10),
+                parseInt(m[6], 10)
+            );
+            if (!isNaN(d.getTime())) return d;
+        }
+        m = s.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+        if (m) {
+            d = new Date(parseInt(m[1], 10), parseInt(m[2], 10) - 1, parseInt(m[3], 10));
+            if (!isNaN(d.getTime())) return d;
+        }
+        return null;
+    }
+
+    function formatMsebDateFromApi(raw) {
+        var d = parseMsebCreatedAt(raw);
+        if (d) return formatDate(d);
+        if (raw != null && String(raw).trim() !== '') return String(raw).trim();
+        return '';
+    }
+
+    /** HTML5 date input value (yyyy-mm-dd) → dd/mm/yyyy */
+    function formatYmdInputToDisplay(ymd) {
+        if (!ymd) return '';
+        var p = String(ymd).split('-');
+        if (p.length === 3 && p[0].length === 4) return p[2] + '/' + p[1] + '/' + p[0];
+        return formatMsebDateFromApi(ymd);
+    }
+
+    function msebParseYmdLocal(ymd) {
+        if (!ymd) return null;
+        var p = String(ymd).split('-');
+        if (p.length !== 3) return null;
+        var y = parseInt(p[0], 10), mo = parseInt(p[1], 10) - 1, d = parseInt(p[2], 10);
+        if (isNaN(y) || isNaN(mo) || isNaN(d)) return null;
+        var dt = new Date(y, mo, d);
+        if (dt.getFullYear() !== y || dt.getMonth() !== mo || dt.getDate() !== d) return null;
+        return dt;
+    }
+
+    function msebParseDdMmYyyyLocal(s) {
+        if (!s) return null;
+        var p = String(s).trim().split('/');
+        if (p.length !== 3) return null;
+        var d = parseInt(p[0], 10), mo = parseInt(p[1], 10) - 1, y = parseInt(p[2], 10);
+        if (isNaN(y) || isNaN(mo) || isNaN(d)) return null;
+        var dt = new Date(y, mo, d);
+        if (dt.getFullYear() !== y || dt.getMonth() !== mo || dt.getDate() !== d) return null;
+        return dt;
+    }
+
+    /** Previous table row completion date (dd/mm/yyyy text or date input), or null */
+    function msebGetPreviousRowCompletionDate($tr) {
+        var $prev = $tr.prev('tr');
+        if (!$prev.length) return null;
+        var $cinp = $prev.find('.completion-date');
+        if ($cinp.length && $cinp.val()) {
+            return msebParseYmdLocal($cinp.val());
+        }
+        var txt = $prev.find('td.created-at').first().text().trim();
+        if (txt) {
+            var parsed = msebParseDdMmYyyyLocal(txt);
+            if (parsed) return parsed;
+        }
+        return null;
+    }
+
+    function msebDayMonthYearLabel(dt) {
+        if (!dt) return '';
+        return String(dt.getDate()).padStart(2, '0') + '/' + String(dt.getMonth() + 1).padStart(2, '0') + '/' + dt.getFullYear();
+    }
+
+    function msebCreatedAtToYmdInput(raw) {
+        var d = parseMsebCreatedAt(raw);
+        if (!d) return '';
+        return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+    }
+
+    function msebUpdateRowSavedDateDisplay($tr) {
+        return msebParseDdMmYyyyLocal($tr.find('.created-at-cell').text().trim());
+    }
+
+    function msebGetUpdateTablePreviousStepDate($tr) {
+        var $p = $tr.prev('tr');
+        if (!$p.length) return null;
+        if ($p.find('.update-checkbox').is(':checked')) {
+            return msebParseYmdLocal($p.find('.completion-date').val());
+        }
+        return msebUpdateRowSavedDateDisplay($p);
+    }
+
+    /** Update mode Save / checkbox: each checked row needs a date; dates must be >= prior step (table order). */
+    function msebValidateUpdateTableSequential() {
+        var $rows = $('#mseb_update_table_body tr');
+        var lastDate = null;
+        var i, $r, ymd, rd, sd;
+        for (i = 0; i < $rows.length; i++) {
+            $r = $rows.eq(i);
+            if ($r.find('.update-checkbox').is(':checked')) {
+                ymd = $r.find('.completion-date').val();
+                if (!ymd) {
+                    return { ok: false, msg: 'Select a completion date for each checked phase (' + $r.find('td:first').text().trim() + ').' };
+                }
+                rd = msebParseYmdLocal(ymd);
+                if (!rd) {
+                    return { ok: false, msg: 'Invalid date for "' + $r.find('td:first').text().trim() + '".' };
+                }
+                if (lastDate !== null && rd < lastDate) {
+                    return { ok: false, msg: 'Date for "' + $r.find('td:first').text().trim() + '" must be on or after the previous step (' + msebDayMonthYearLabel(lastDate) + ').' };
+                }
+                lastDate = rd;
+            } else {
+                sd = msebUpdateRowSavedDateDisplay($r);
+                if (sd) lastDate = sd;
+            }
+        }
+        return { ok: true };
+    }
+
+    function applyMsebModeUi() {
+        var mode = msebPageMode;
+        var isWorkflow = (mode === 'new' || mode === 'in_progress');
+        var isUpdate = (mode === 'update');
+        var isCompleted = (mode === 'completed');
+
+        $('#mseb-workflow-section').toggle(isWorkflow);
+        $('#mseb-update-section').toggle(isUpdate);
+        $('#mseb-completed-section').toggle(isCompleted);
+        $('#mseb_tracking_panel').hide();
+
+        var titles = {
+            'new': 'Consumer MSEB Details — New Entry',
+            'in_progress': 'Consumer MSEB Details — In Progress',
+            'update': 'Update Consumer MSEB Details',
+            'completed': 'Completed Consumer MSEB Details'
+        };
+        $('#mseb_card_title').text(titles[mode] || titles['new']);
+
+        $('.mseb-mode-toolbar .mseb-segment').removeClass('active').removeAttr('aria-current');
+        $('.mseb-mode-toolbar .mseb-segment[data-mode="' + mode + '"]').addClass('active').attr('aria-current', 'page');
+        if (history.replaceState) {
+            var u = new URL(window.location.href);
+            u.searchParams.set('mode', msebPageMode);
+            history.replaceState({}, '', u);
+        }
+    }
+
+    /** Hide & clear all MSEB result tables (when switching consumer or mode). */
+    function clearMsebFetchedDataUi() {
+        $('#mseb_table_body').empty();
+        $('#mseb_update_table_body').empty();
+        $('#mseb_completed_table_body').empty();
+        $('#mseb_table').hide();
+        $('#mseb_update_table').hide();
+        $('#mseb_completed_table').hide();
+        $('#submit_button').hide();
+        $('#mseb_tracking_panel').hide();
+    }
+
+    function refreshMsebCustomerDropdown(mode, callback) {
+        $.getJSON(msebCustomerListUrl, { mode: mode })
+            .done(function (data) {
+                var $sel = $('#Comp_name');
+                $sel.empty().append($('<option>', { value: '', text: '— Select company —' }));
+                (data.customers || []).forEach(function (row) {
+                    var id = row[0], name = row[1], city = row[2] || '';
+                    var label = name + ' , ' + city + ' (ID - ' + id + ')';
+                    $sel.append($('<option>', { value: id, text: label }));
+                });
+                if (typeof callback === 'function') callback();
+            });
+    }
+
+    function setMsebMode(mode) {
+        msebPageMode = mode;
+        clearMsebFetchedDataUi();
+        applyMsebModeUi();
+        var params = new URLSearchParams(window.location.search);
+        var keepCust = params.get('cust_id');
+        refreshMsebCustomerDropdown(mode, function () {
+            if (keepCust) {
+                $('#Comp_name').val(keepCust);
+            }
+        });
+    }
+
+    function loadMsebTracking(custId) {
+        if (!custId) return;
+        /* MSEB status strip: only on New Entry (not In Progress / Update / Completed). */
+        if (msebPageMode !== 'new') return;
+        $.getJSON(msebTrackingJsonUrl, { cust_id: custId })
+            .done(function (data) {
+                var $p = $('#mseb_tracking_panel');
+                var $ol = $('#mseb_tracking_timeline').empty();
+                if (!data.steps || !data.steps.length) {
+                    $p.hide();
+                    return;
+                }
+                $('#mseb_tracking_consumer').text(data.consumer || '');
+                data.steps.forEach(function (s) {
+                    var cls = s.value ? 'done' : 'pending';
+                    var txt = s.label + (s.date ? ' (' + String(s.date).substring(0, 10) + ')' : '');
+                    $ol.append($('<li>').addClass(cls).text(txt));
+                });
+                $p.show();
+            })
+            .fail(function () { $('#mseb_tracking_panel').hide(); });
+    }
+
+    /** Update mode: same as legacy Update_MSEB.html — only Done steps, 7-cell row layout. */
+    function populateUpdateTableFromResponse(msebData) {
+        var order = getMsebFieldsOrder(msebData.current_load, msebData.loadsancution);
+        var html = '';
+        for (var i = 0; i < order.length; i++) {
+            var fn = order[i];
+            var key = fn + '_ok';
+            var cell = msebData[key];
+            if (!cell || typeof cell !== 'object') {
+                cell = { value: false, created_at: null };
+            }
+            if (!isMsebStepDone(cell)) continue;
+            var dateDisplay = formatMsebDateFromApi(cell.created_at);
+            var ymdPrefill = msebCreatedAtToYmdInput(cell.created_at);
+            html += '<tr data-saved-ymd="' + ymdPrefill + '">';
+            html += '<td>' + fieldNames[fn] + '</td>';
+            html += '<td class="status Done">Done</td>';
+            html += '<td class="completion-date-cell" style="display:none;"><input type="date" class="completion-date" placeholder="YYYY-MM-DD" value="' + ymdPrefill + '" disabled></td>';
+            html += '<td class="created-at-cell">' + dateDisplay + '</td>';
+            html += '<td class="completion" style="display:none;">Update</td>';
+            html += '<td class="completion-checkmark"><span class="checkmark">✓</span></td>';
+            html += '<td><input type="checkbox" class="ok-checkbox update-checkbox" name="' + key + '" value="ok"></td>';
+            html += '</tr>';
+        }
+        $('#mseb_update_table_body').html(html);
+    }
+
+    /** Match Django get_mseb_data: int equality with 0 fallback (NaN === NaN is false in JS). */
+    function msebLoadsAreEqual(currentLoad, loadSanction) {
+        var a = parseInt(String(currentLoad != null && currentLoad !== '' ? currentLoad : '0'), 10);
+        var b = parseInt(String(loadSanction != null && loadSanction !== '' ? loadSanction : '0'), 10);
+        if (!isNaN(a) && !isNaN(b)) {
+            return a === b;
+        }
+        return currentLoad == loadSanction;
+    }
+
+    /** Completed mode: same as legacy complete_MSEB.html — iterate response keys in server order (for...in). */
+    function populateCompletedTableFromResponse(msebData) {
+        var html = '';
+        var showNextRow = false;
+        for (var key in msebData) {
+            if (!msebData.hasOwnProperty(key)) continue;
+            if (key === 'current_load' || key === 'loadsancution' || key === 'error') continue;
+            if (key.slice(-3) !== '_ok') continue;
+            var fn = key.replace(/_ok$/, '');
+            if (!fieldNames.hasOwnProperty(fn)) continue;
+            var cell = msebData[key];
+            if (!cell || typeof cell !== 'object') continue;
+            if (isMsebStepDone(cell)) {
+                var dateStr = formatMsebDateFromApi(cell.created_at);
+                html += '<tr>';
+                html += '<td>' + fieldNames[fn] + '</td>';
+                html += '<td class="status Done">Done</td>';
+                html += '<td class="created-at">' + dateStr + '</td>';
+                html += '<td><span class="checkmark">✓</span></td>';
+                html += '</tr>';
+                showNextRow = true;
+            } else if (showNextRow) {
+                html += '<tr>';
+                html += '<td>' + fieldNames[fn] + '</td>';
+                html += '<td class="status in-process">In Process</td>';
+                html += '<td class="created-at"><input type="date" class="completion-date" placeholder="YYYY-MM-DD"></td>';
+                html += '<td><input type="checkbox" class="ok-checkbox" name="' + key + '" value="ok" disabled></td>';
+                html += '</tr>';
+                showNextRow = false;
+            }
+        }
+        if (!html && !msebData.error) {
+            html = populateCompletedTableOrderedFallback(msebData);
+        }
+        $('#mseb_completed_table_body').html(html);
+    }
+
+    /** If key iteration yields nothing, build from ordered fields (fully done customers, etc.). */
+    function populateCompletedTableOrderedFallback(msebData) {
+        var order = getMsebFieldsOrder(msebData.current_load, msebData.loadsancution);
+        var html = '';
+        var showNextRow = false;
+        var i, fn, key, cell, dateStr;
+        for (i = 0; i < order.length; i++) {
+            fn = order[i];
+            key = fn + '_ok';
+            cell = msebData[key];
+            if (!cell || typeof cell !== 'object') {
+                cell = { value: false, created_at: null };
+            }
+            if (isMsebStepDone(cell)) {
+                dateStr = formatMsebDateFromApi(cell.created_at);
+                html += '<tr>';
+                html += '<td>' + fieldNames[fn] + '</td>';
+                html += '<td class="status Done">Done</td>';
+                html += '<td class="created-at">' + dateStr + '</td>';
+                html += '<td><span class="checkmark">✓</span></td>';
+                html += '</tr>';
+                showNextRow = true;
+            } else if (showNextRow) {
+                html += '<tr>';
+                html += '<td>' + fieldNames[fn] + '</td>';
+                html += '<td class="status in-process">In Process</td>';
+                html += '<td class="created-at"><input type="date" class="completion-date" placeholder="YYYY-MM-DD"></td>';
+                html += '<td><input type="checkbox" class="ok-checkbox" name="' + key + '" value="ok" disabled></td>';
+                html += '</tr>';
+                showNextRow = false;
+            }
+        }
+        if (!html) {
+            for (i = 0; i < order.length; i++) {
+                fn = order[i];
+                key = fn + '_ok';
+                cell = msebData[key];
+                if (!cell || typeof cell !== 'object') cell = { value: false, created_at: null };
+                if (!isMsebStepDone(cell)) {
+                    html += '<tr>';
+                    html += '<td>' + fieldNames[fn] + '</td>';
+                    html += '<td class="status in-process">In Process</td>';
+                    html += '<td class="created-at"><input type="date" class="completion-date" placeholder="YYYY-MM-DD"></td>';
+                    html += '<td><input type="checkbox" class="ok-checkbox" name="' + key + '" value="ok" disabled></td>';
+                    html += '</tr>';
+                    break;
+                }
+                dateStr = formatMsebDateFromApi(cell.created_at);
+                html += '<tr>';
+                html += '<td>' + fieldNames[fn] + '</td>';
+                html += '<td class="status Done">Done</td>';
+                html += '<td class="created-at">' + dateStr + '</td>';
+                html += '<td><span class="checkmark">✓</span></td>';
+                html += '</tr>';
+            }
+        }
+        return html;
+    }
+
+    function getMsebFieldsOrder(currentLoad, loadSanction) {
+        if (msebLoadsAreEqual(currentLoad, loadSanction)) {
+            return ['net_meter', 'flexibility', 'approval', 'meter_testing', 'agreement', 'release', 'installation_date'];
+        }
+        return ['load_extension', 'flisibility', 'quotation', 'sent_to_bill', 'net_meter', 'flexibility', 'approval', 'meter_testing', 'agreement', 'release', 'installation_date'];
+    }
+
+    /** True if this step is saved as done (handles JSON bool, 0/1, strings). */
+    function isMsebStepDone(cell) {
+        if (!cell || typeof cell !== 'object') return false;
+        var v = cell.value;
+        if (v === true || v === 1) return true;
+        if (typeof v === 'string') {
+            var s = v.trim().toLowerCase();
+            return s === '1' || s === 'true' || s === 't' || s === 'yes';
+        }
+        return false;
+    }
+
+    /** Build table rows from get_mseb_data JSON (skips current_load / loadsancution; preserves step order). */
+    function buildMsebTableRowsFromResponse(msebData) {
+        var fieldsOrder = getMsebFieldsOrder(msebData.current_load, msebData.loadsancution);
+        var firstIncomplete = fieldsOrder.length;
+        for (var i = 0; i < fieldsOrder.length; i++) {
+            var cell = msebData[fieldsOrder[i] + '_ok'];
+            if (!cell || typeof cell !== 'object') {
+                firstIncomplete = i;
+                break;
+            }
+            if (!isMsebStepDone(cell)) {
+                firstIncomplete = i;
+                break;
+            }
+        }
+        var html = '';
+        for (var j = 0; j < fieldsOrder.length; j++) {
+            var fn = fieldsOrder[j];
+            var cell = msebData[fn + '_ok'];
+            if (!cell || typeof cell !== 'object') {
+                cell = { value: false, created_at: null };
+            }
+            var trHidden = (firstIncomplete < fieldsOrder.length && j > firstIncomplete) ? ' style="display:none;"' : '';
+            if (isMsebStepDone(cell)) {
+                html += '<tr' + trHidden + '>';
+                html += '<td>' + fieldNames[fn] + '</td>';
+                html += '<td class="status Done">Done</td>';
+                var dateStr = formatMsebDateFromApi(cell.created_at);
+                html += '<td class="created-at">' + dateStr + '</td>';
+                html += '<td><span class="checkmark">✓</span></td>';
+                html += '</tr>';
+            } else {
+                html += '<tr' + trHidden + '>';
+                html += '<td>' + fieldNames[fn] + '</td>';
+                html += '<td class="status in-process">In Process</td>';
+                html += '<td class="created-at"><input type="date" class="completion-date" placeholder="YYYY-MM-DD"></td>';
+                html += '<td><input type="checkbox" class="ok-checkbox" name="' + fn + '_ok" value="ok" disabled></td>';
+                html += '</tr>';
+            }
+        }
+        return html;
+    }
+
     $(document).ready(function(){
-        // Hide all rows except the first one initially
-        $("tbody tr:not(:first)").hide();
+        var params = new URLSearchParams(window.location.search);
+        if (params.get('mode')) { msebPageMode = params.get('mode'); }
+        var preCust = params.get('cust_id');
+        if (preCust) { $('#Comp_name').val(preCust); }
 
-        // Event listener for Comp_name dropdown change
-         $("#fetchDataBtn").click(function() {
+        applyMsebModeUi();
+        $('.mseb-mode-toolbar .mseb-segment').on('click', function () {
+            var m = $(this).data('mode');
+            if (m) { setMsebMode(m); }
+        });
 
+        /* Same mode + different consumer: hide previous table until Fetch again */
+        $(document).on('change', '#Comp_name', function () {
+            clearMsebFetchedDataUi();
+        });
+
+        $("#fetchDataBtn").click(function() {
             var selectedCustId = $("#Comp_name").val();
-            var selectedCompName = $("#Comp_name option:selected").text().split(' (ID: ')[0]; // Extract Comp_name
-            $("#compName").val(selectedCompName); // Set Comp_name to hidden input field
+            if (!selectedCustId) { alert('Please select a company.'); return; }
+            var selectedCompName = $("#Comp_name option:selected").text().split(' (ID: ')[0];
+            $("#compName").val(selectedCompName);
 
+            if (msebPageMode === 'update') {
+                $.ajax({
+                    url: '/customer/get_mseb_data/',
+                    method: 'GET',
+                    data: {'cust_id': selectedCustId},
+                    dataType: 'json',
+                    success: function(response) {
+                        if (response && response.error) {
+                            alert('No MSEB data for this company.');
+                            return;
+                        }
+                        populateUpdateTableFromResponse(response);
+                        $("#mseb_update_table").show();
+                        $("#submit_button").show();
+                    }
+                });
+                return;
+            }
 
-            // AJAX request to fetch MSEB data for the selected company
+            if (msebPageMode === 'completed') {
+                $.ajax({
+                    url: '/customer/get_mseb_data/',
+                    method: 'GET',
+                    data: {'cust_id': selectedCustId},
+                    dataType: 'json',
+                    success: function(response) {
+                        $("#mseb_completed_table_body").empty();
+                        if (response && response.error && response.error === "No data found for the selected company") {
+                            if (msebLoadsAreEqual(response.current_load, response.loadsancution)) {
+                                createNetMeterRowCompleted();
+                            } else {
+                                createLoadExtensionRowCompleted();
+                            }
+                        } else {
+                            populateCompletedTableFromResponse(response);
+                        }
+                        $("#mseb_completed_table").show();
+                    },
+                    error: function(xhr, errmsg, err) {
+                        console.log("Error:", errmsg);
+                    }
+                });
+                return;
+            }
+
             $.ajax({
                 url: '/customer/get_mseb_data/',
-                method: 'GET', // Use GET method to retrieve data
+                method: 'GET',
                 data: {'cust_id': selectedCustId},
                 dataType: 'json',
                 success: function(response) {
-                    console.log("Response:", response); // Log the response to inspect its structure
-                    // Clear previous data
                     $("#mseb_table_body").empty();
-                    var current_load = parseInt(response.current_load);
-                    var loadsancution = parseInt(response.loadsancution);
-
                     if (response && response.error && response.error === "No data found for the selected company") {
-                        // No data available for the selected company
-                        console.log("No MSEB data available for the selected company");
-                        if (current_load === loadsancution) {
-                            // If they are equal, display all field names from 'net_meter' onwards
-                            createNetMeterRow(); // Create the first row with "Load Extension" field
+                        if (msebLoadsAreEqual(response.current_load, response.loadsancution)) {
+                            createNetMeterRow();
                         } else {
-                            // If they are not equal, display all available field names
-                            createLoadExtensionRow(); // Create the first row with "Load Extension" field
+                            createLoadExtensionRow();
                         }
                     } else {
-                        // Populate form fields with fetched data
-                        var msebData = response;
-                        var html = '';
-                        var showNextRow = false;
-                        for (var key in msebData) {
-                            if (msebData.hasOwnProperty(key)) {
-                                var fieldName = key.replace('_ok', ''); // Extract field name
-                                var fieldValue = msebData[key].value; // Extract field value
-                                var createdAt = msebData[key].created_at; // Extract created_at date
-
-                                if (fieldValue) {
-                                    html += '<tr>';
-                                    html += '<td>' + fieldNames[fieldName] + '</td>';
-                                    html += '<td class="status">Done</td>'; // Updated from "Ok" to "Done"
-                                    html += '<td class="created-at">' + (createdAt ? formatDate(new Date(createdAt)) : '') + '</td>'; // Format createdAt as "d-m-Y"
-                                    //html += '<td><input type="checkbox" class="ok-checkbox" name="' + key + '" value="ok"' + (fieldValue ? ' checked' : '') + ' disabled></td>';
-                                    html += '<td><span id="ctCheckmark" class="hidden checkmark">✓</span></td>';
-                                    html += '<td><input type="checkbox" class="cancel-checkbox" name="' + key.replace('_ok', '_cancel') + '" value="cancel" style="display: none;"></td>';
-                                    html += '</tr>';
-                                    showNextRow = true;
-                                } else if (showNextRow) {
-                                    html += '<tr>';
-                                    html += '<td>' + fieldNames[fieldName] + '</td>';
-                                    html += '<td class="status">In Process</td>'; // Updated from "Pending" to "In Process"
-                                    //html += '<td class="created-at">' + (createdAt ? createdAt : '') + '</td>'; // Display created_at date
-                                    html += '<td class="created-at"><input type="date" class="completion-date" placeholder="YYYY-MM-DD"></td>'; // Manual entry of completion date
-                                    html += '<td><input type="checkbox" class="ok-checkbox" name="' + key + '" value="ok"></td>';
-                                    html += '<td><input type="checkbox" class="cancel-checkbox" name="' + key.replace('_ok', '_cancel') + '" value="cancel"></td>';
-                                    html += '</tr>';
-                                    showNextRow = false; // Only show one In Process row after an unchecked Done row
-                                }
-                            }
-                        }
-                        $("#mseb_table_body").html(html);
+                        $("#mseb_table_body").html(buildMsebTableRowsFromResponse(response));
                     }
+                    $("#mseb_table").show();
+                    loadMsebTracking(selectedCustId);
                 },
                 error: function(xhr, errmsg, err) {
-                    // Handle error
                     console.log("Error:", errmsg);
+                }
+            });
+        });
+
+        $(document).on('change', '#mseb_update_table_body .update-checkbox', function() {
+            var $this = $(this);
+            var isChecked = $this.is(":checked");
+            var $row = $this.closest("tr");
+            var $inp = $row.find('.completion-date');
+            if (isChecked) {
+                $row.find('.completion-date-cell').show();
+                $inp.prop('disabled', false);
+                var saved = $row.attr('data-saved-ymd') || '';
+                if (!$inp.val() && saved) {
+                    $inp.val(saved);
+                }
+                var ymd = $inp.val();
+                if (ymd) {
+                    var cur = msebParseYmdLocal(ymd);
+                    if (cur) {
+                        var prevDt = msebGetUpdateTablePreviousStepDate($row);
+                        if (prevDt && cur < prevDt) {
+                            alert('Completion date must be on or after the previous step (' + msebDayMonthYearLabel(prevDt) + ').');
+                            $this.prop('checked', false);
+                            $inp.prop('disabled', true);
+                            $row.find('.completion-date-cell').hide();
+                            return;
+                        }
+                    }
+                }
+                $row.find('.completion-checkmark').hide();
+                $row.find('.created-at-cell').hide();
+                $row.find('.completion').show();
+            } else {
+                $inp.prop('disabled', true);
+                $inp.val($row.attr('data-saved-ymd') || '');
+                $row.find('.completion-date-cell').hide();
+                $row.find('.completion-checkmark').show();
+                $row.find('.created-at-cell').show();
+                $row.find('.completion').hide();
+            }
+        });
+
+        $('#saveBtn').click(function() {
+            var v = msebValidateUpdateTableSequential();
+            if (!v.ok) {
+                alert(v.msg);
+                return;
+            }
+            var updates = [];
+            $('#mseb_update_table_body .update-checkbox:checked').each(function() {
+                var $row = $(this).closest('tr');
+                var phaseName = $row.find('td:first').text().trim();
+                var fieldName = '';
+                for (var key in fieldNames) {
+                    if (fieldNames.hasOwnProperty(key) && fieldNames[key] === phaseName) {
+                        fieldName = key;
+                        break;
+                    }
+                }
+                var completionDate = $row.find('.completion-date').val();
+                updates.push({
+                    cust_id: $("#Comp_name").val(),
+                    fieldName: fieldName,
+                    createdAt: completionDate
+                });
+            });
+            if (updates.length === 0) {
+                alert('Select at least one phase to update and pick dates.');
+                return;
+            }
+            var csrftoken = getCookie('csrftoken') || $('input[name="csrfmiddlewaretoken"]').val();
+            $.ajax({
+                url: msebUpdatePostUrl,
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': csrftoken,
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Content-Type': 'application/json'
+                },
+                data: JSON.stringify({ updates: updates }),
+                success: function() {
+                    alert('Data saved successfully!');
+                    $('#mseb_update_table_body .update-checkbox:checked').each(function() {
+                        var $row = $(this).closest('tr');
+                        var $inp = $row.find('.completion-date');
+                        var fd = $inp.val();
+                        if (fd) {
+                            $row.find('.created-at-cell').text(formatYmdInputToDisplay(fd));
+                            $row.attr('data-saved-ymd', fd);
+                            $inp.val(fd);
+                        }
+                        $(this).prop('checked', false);
+                        $inp.prop('disabled', true);
+                        $row.find('.completion-date-cell').hide();
+                        $row.find('.completion-checkmark').show();
+                        $row.find('.created-at-cell').show();
+                        $row.find('.completion').hide();
+                        $row.addClass('light-blue-background');
+                    });
+                },
+                error: function(xhr) {
+                    alert('Save failed: ' + (xhr.responseText || xhr.statusText));
                 }
             });
         });
@@ -148,57 +814,107 @@
         function createLoadExtensionRow() {
             var html = '<tr>';
             html += '<td>' + fieldNames['load_extension'] + '</td>';
-            html += '<td class="status"></td>';
+            html += '<td class="status in-process">In Process</td>';
             //html += '<td class="created-at"></td>';
             html += '<td class="created-at"><input type="date" class="completion-date" placeholder="YYYY-MM-DD"></td>'; // Manual entry of completion date
-            html += '<td><input type="checkbox" class="ok-checkbox" name="load_extension_ok" value="ok"></td>';
-            html += '<td><input type="checkbox" class="cancel-checkbox" name="load_extension_cancel" value="cancel"></td>';
+            html += '<td><input type="checkbox" class="ok-checkbox" name="load_extension_ok" value="ok" disabled></td>';
             html += '</tr>';
             $("#mseb_table_body").html(html);
+        }
+
+        function createLoadExtensionRowCompleted() {
+            var html = '<tr>';
+            html += '<td>' + fieldNames['load_extension'] + '</td>';
+            html += '<td class="status in-process">In Process</td>';
+            html += '<td class="created-at"><input type="date" class="completion-date" placeholder="YYYY-MM-DD"></td>';
+            html += '<td><input type="checkbox" class="ok-checkbox" name="load_extension_ok" value="ok" disabled></td>';
+            html += '</tr>';
+            $("#mseb_completed_table_body").html(html);
         }
 
         // Function to create the first row with "net_meter" field
         function createNetMeterRow() {
             var html = '<tr>';
             html += '<td>' + fieldNames['net_meter'] + '</td>';
-            html += '<td class="status"></td>';
+            html += '<td class="status in-process">In Process</td>';
             //html += '<td class="created-at"></td>';
             html += '<td class="created-at"><input type="date" class="completion-date" placeholder="YYYY-MM-DD"></td>'; // Manual entry of completion date
-            html += '<td><input type="checkbox" class="ok-checkbox" name="net_meter_ok" value="ok"></td>';
-            html += '<td><input type="checkbox" class="cancel-checkbox" name="net_meter_cancel" value="cancel"></td>';
+            html += '<td><input type="checkbox" class="ok-checkbox" name="net_meter_ok" value="ok" disabled></td>';
             html += '</tr>';
             $("#mseb_table_body").html(html);
         }
-        function formatDate(date) {
-            /// Extract the components of the date
-            var day = String(date.getDate()).padStart(2, '0'); // Pad with leading zero if needed
-            var month = String(date.getMonth() + 1).padStart(2, '0'); // Months are zero-based; pad with leading zero if needed
-            var year = date.getFullYear();
 
-            // Return the formatted date string
-            return day + '/' + month + '/' + year;
+        function createNetMeterRowCompleted() {
+            var html = '<tr>';
+            html += '<td>' + fieldNames['net_meter'] + '</td>';
+            html += '<td class="status in-process">In Process</td>';
+            html += '<td class="created-at"><input type="date" class="completion-date" placeholder="YYYY-MM-DD"></td>';
+            html += '<td><input type="checkbox" class="ok-checkbox" name="net_meter_ok" value="ok" disabled></td>';
+            html += '</tr>';
+            $("#mseb_completed_table_body").html(html);
         }
 
+        $(document).on('input change', '#mseb_table_body .completion-date, #mseb_completed_table_body .completion-date', function () {
+            var $tr = $(this).closest('tr');
+            var $cb = $tr.find('.ok-checkbox');
+            if (!$(this).val()) {
+                $cb.prop('disabled', true).prop('checked', false);
+                $cb.next('button').remove();
+            } else {
+                $cb.prop('disabled', false);
+            }
+        });
 
-        // Event listener for Ok checkboxes change
-        // Event listener for Ok checkboxes change
-        $(document).on('change', '.ok-checkbox', function(){
+        // Workflow + Completed tables (same save flow as legacy MSEB / complete_MSEB)
+        $(document).on('change', '#mseb_table_body .ok-checkbox, #mseb_completed_table_body .ok-checkbox', function(){
             var $this = $(this);
             var isChecked = $this.is(":checked");
-            var $cancelCheckbox = $this.closest("tr").find(".cancel-checkbox");
             var $okCheckbox = $this.closest("tr").find(".ok-checkbox");
             var $completionDateInput = $this.closest("tr").find(".completion-date");
+            var $row = $this.closest("tr");
 
             // Show confirmation button when checkbox is clicked
             if (isChecked) {
+                var completionDateEarly = $completionDateInput.val();
+                if (!completionDateEarly) {
+                    alert('Please select the completion date first, then check OK.');
+                    $this.prop('checked', false);
+                    return;
+                }
+                var prevDt = msebGetPreviousRowCompletionDate($row);
+                var curDt = msebParseYmdLocal(completionDateEarly);
+                if (!curDt) {
+                    alert('Please choose a valid completion date.');
+                    $this.prop('checked', false);
+                    return;
+                }
+                if (prevDt && curDt < prevDt) {
+                    alert('Completion date must be on or after the previous step date (' + msebDayMonthYearLabel(prevDt) + '). Past dates are not allowed.');
+                    $this.prop('checked', false);
+                    return;
+                }
                 $completionDateInput.show(); // Show completion date input
                 var $confirmButton = $("<button>Confirm</button>").click(function() {
                     var completionDate = $completionDateInput.val(); // Get manually entered completion date
                     var confirmMessage = "Are you sure you want to save/update this record?";
 
-                    // Get the previous row's completion date
-                    var $prevRow = $this.closest("tr").prev();
-                    var prevCompletionDate = $prevRow.find(".completion-date").val();
+                    if (!completionDate) {
+                        alert('Please select the completion date first.');
+                        return;
+                    }
+                    var prevDt2 = msebGetPreviousRowCompletionDate($row);
+                    var curDt2 = msebParseYmdLocal(completionDate);
+                    if (!curDt2) {
+                        alert('Please choose a valid completion date.');
+                        return;
+                    }
+                    if (prevDt2 && curDt2 < prevDt2) {
+                        alert('Completion date must be on or after the previous step date (' + msebDayMonthYearLabel(prevDt2) + ').');
+                        $this.prop('checked', false);
+                        $confirmButton.remove();
+                        $okCheckbox.prop('disabled', !$completionDateInput.val());
+                        return;
+                    }
 
                     if (completionDate && confirm(confirmMessage)) {
                         // Save the record via AJAX
@@ -220,26 +936,27 @@
                         $.ajax({
                             url: '/customer/MSEB/',
                             type: 'POST',
+                            dataType: 'json',
                             headers: {
-                                'X-CSRFToken': csrfToken // Include CSRF token in headers
+                                'X-CSRFToken': csrfToken,
+                                'X-Requested-With': 'XMLHttpRequest'
                             },
                             data: {
                                 cust_id: $("#Comp_name").val(),
                                 fieldName: fieldName,
-                                isChecked: isChecked,
+                                isChecked: isChecked ? 'true' : 'false',
                                 createdAt: completionDate // Use completion date provided by the user
                             },
                             success: function(response) {
-                                console.log("Record saved successfully!");
+                                console.log("Record saved successfully!", response);
 
                                 // Change status and show next row if not last field name
-                                $this.closest("tr").find(".status").text("Done");
+                                $this.closest("tr").find(".status").removeClass('in-process').addClass('Done').text("Done");
                                 //$this.closest("tr").find(".created-at").text(completionDate);
                                 $this.closest("tr").find(".created-at").text(formattedDate);
 
                                 $this.hide(); // Hide the Ok checkbox
                                 $this.closest("td").html('<span class="checkmark">✓</span>'); // Show the checkmark
-                                // $cancelCheckbox.hide(); // Hide the Cancel checkbox
                                 // $completionDateInput.replaceWith('<span class="created-at">' + formatDate(new Date(completionDate)) + '</span>'); // Display the entered completion date
                                 // $this.closest("tr").find(".status").text('Done'); // Update status to Done
 
@@ -259,15 +976,15 @@
                                     if ($nextRow.length > 0) {
                                         $nextRow.show();
                                         // Change status to "In Process"
-                                        $nextRow.find(".status").text("In Process");
+                                        $nextRow.find(".status").removeClass('Done').addClass('in-process').text("In Process");
                                     } else {
                                         // If next row not found, create it
-                                        createRowForFieldName(nextFieldName);
+                                        createRowForFieldName(nextFieldName, $this.closest('tbody'));
                                     }
 
-                                    // Enable the next field
                                     if ($nextRow.length > 0) {
-                                        $nextRow.find('.ok-checkbox').prop('disabled', false);
+                                        var $nd = $nextRow.find('.completion-date').val();
+                                        $nextRow.find('.ok-checkbox').prop('disabled', !$nd);
                                     }
                                 }
                             },
@@ -280,8 +997,7 @@
                         $this.prop("checked", false); // Uncheck checkbox if user cancels
                         $completionDateInput.show(); // Hide completion date input after saving or canceling
                         $confirmButton.remove(); // Remove the confirm button
-                        $cancelCheckbox.prop("disabled", false).show();
-                        $okCheckbox.prop("disabled", false).show();
+                        $okCheckbox.prop("disabled", !$completionDateInput.val()).show();
                     }
                     //$completionDateInput.hide(); // Hide completion date input after saving or canceling
                     $confirmButton.remove(); // Remove the confirm button
@@ -292,34 +1008,29 @@
                 // Hide completion date input and remove confirm button if checkbox is unchecked
                 $completionDateInput.hide();
                 $this.closest("tr").find(".status").text("In Process");
-                $cancelCheckbox.show();
                 $this.closest("tr").find(".created-at").text("");
                 $this.next("button").remove();
+                $okCheckbox.prop('disabled', true);
             }
 
-
-
-            // Hide/show the cancel checkbox based on the checked state of the Ok checkbox
             if (isChecked) {
-                $cancelCheckbox.prop("disabled", true).hide();
                 $okCheckbox.prop("disabled", true).show();
             } else {
-                $cancelCheckbox.prop("disabled", false).show();
-
+                $okCheckbox.prop("disabled", false).show();
             }
         });
 
         // Function to create a row for a given field name
-        function createRowForFieldName(fieldName) {
+        function createRowForFieldName(fieldName, $tbody) {
+            var $tb = ($tbody && $tbody.length) ? $tbody : $("#mseb_table_body");
             var html = '<tr>';
             html += '<td>' + fieldNames[fieldName] + '</td>';
-            html += '<td class="status">In Process</td>'; // Set status to "In Process"
+            html += '<td class="status in-process">In Process</td>'; // Set status to "In Process"
             //html += '<td class="created-at"></td>';
             html += '<td class="created-at"><input type="date" class="completion-date" placeholder="YYYY-MM-DD"></td>'; // Manual entry of completion date
-            html += '<td><input type="checkbox" class="ok-checkbox" name="' + fieldName + '_ok" value="ok"></td>';
-            html += '<td><input type="checkbox" class="cancel-checkbox" name="' + fieldName + '_cancel" value="cancel"></td>';
+            html += '<td><input type="checkbox" class="ok-checkbox" name="' + fieldName + '_ok" value="ok" disabled></td>';
             html += '</tr>';
-            $("#mseb_table_body").append(html);
+            $tb.append(html);
         }
     });
 </script>
@@ -331,58 +1042,93 @@
         <!-- general form elements -->
         <div class="card card-primary">
             <div class="card-header">
-                <h3>Consumer MSEB Details</h3>
+                <h3 id="mseb_card_title">Consumer MSEB Details</h3>
+                <p class="text-muted small mb-0">New Entry, In Progress, Update, and Completed are on one page (replaces separate MSEB / Complete / Update / Tracking menus).</p>
             </div>
-            <br>
-<!--           <div class="form-group row">-->
+            <div class="d-flex align-items-end justify-content-center row mseb-mode-toolbar mx-0">
+                {% with m=mseb_initial_mode|default:"new" %}
+                <div class="col-12 col-sm-11 mseb-segmented-wrap">
+                    <div class="mseb-segmented" role="group" aria-label="MSEB view mode">
+                        <button type="button" data-mode="new" class="mseb-segment{% if m == 'new' %} active{% endif %}"{% if m == 'new' %} aria-current="page"{% endif %}>New Entry</button>
+                        <button type="button" data-mode="in_progress" class="mseb-segment{% if m == 'in_progress' %} active{% endif %}"{% if m == 'in_progress' %} aria-current="page"{% endif %}>In Progress</button>
+                        <button type="button" data-mode="update" class="mseb-segment{% if m == 'update' %} active{% endif %}"{% if m == 'update' %} aria-current="page"{% endif %}>Update</button>
+                        <button type="button" data-mode="completed" class="mseb-segment{% if m == 'completed' %} active{% endif %}"{% if m == 'completed' %} aria-current="page"{% endif %}>Completed</button>
+                    </div>
+                </div>
+                {% endwith %}
+            </div>
             <div class="d-flex align-items-end justify-content-center row">
                 <div class="col-sm-9">
                     <label for="Comp_name"><b>Select Company Name:</b></label>
                     <select class="form-control text-capitalize" name="Comp_name" id="Comp_name" required>
-                        <option value=""></option>
+                        <option value="">— Select company —</option>
                         {% for cust_id, comp_name, city in customers %}
                             <option value="{{ cust_id }}">{{ comp_name }} , {{city}} &nbsp;&nbsp;&nbsp;(ID - {{ cust_id }})</option>
                         {% endfor %}
                     </select>
-
                     <input type="hidden" id="compName">
                 </div>
-
                 <div class="col-sm-2">
                     <button type="button" id="fetchDataBtn">Fetch Data</button>
-<!--                    <button type="button" id="preview"><i class="nav-icon fa fa-eye" aria-hidden="true"></i>   Preview</button>-->
                 </div>
             </div>
 
+            <div id="mseb_tracking_panel" class="col-lg-11 mx-auto">
+                <strong>MSEB status</strong> — <span id="mseb_tracking_consumer"></span>
+                <ul id="mseb_tracking_timeline"></ul>
+            </div>
 
-            <br><br>
-           <div class="table-responsive">
-            <table border="1" id="mseb_table" style="display: none;" class="col-lg-11 text-center" align="center">
-                <thead class="table-success">
-                    <tr align="center">
-                        <th>Phase</th>
-                        <th>Status</th>
-                        <th>Completion Date</th>
-                        <th style="width: 130px; height: 50px;">Ok</th>
-                        <th>Cancel</th>
-                    </tr>
-                </thead>
-                <tbody id="mseb_table_body" align="center" style="width: 130px; height: 50px;">
-                    <!-- Table rows will be populated dynamically -->
-                </tbody>
-            </table>
-           </div>
+            <div id="mseb-workflow-section" class="table-responsive">
+                <table border="1" id="mseb_table" style="display: none;" class="col-lg-11 text-center mx-auto" align="center">
+                    <thead class="table-success">
+                        <tr align="center">
+                            <th>Phase</th>
+                            <th>Status</th>
+                            <th>Completion Date</th>
+                            <th style="width: 130px; height: 50px;">Ok</th>
+                        </tr>
+                    </thead>
+                    <tbody id="mseb_table_body" align="center"></tbody>
+                </table>
+            </div>
+
+            <div id="mseb-update-section" style="display: none;">
+                <div class="table-responsive">
+                    <table border="1" id="mseb_update_table" style="display: none;" class="col-lg-11 text-center mx-auto" align="center">
+                        <thead class="table-success">
+                            <tr align="center">
+                                <th>Phase</th>
+                                <th>Status</th>
+                                <th>Completion Date</th>
+                                <th style="width: 130px; height: 50px;">Ok</th>
+                                <th>Update</th>
+                            </tr>
+                        </thead>
+                        <tbody id="mseb_update_table_body" align="center"></tbody>
+                    </table>
+                </div>
+                <div class="text-center mt-3" style="display: none;" id="submit_button">
+                    <button type="button" id="saveBtn" class="btn btn-primary">Save</button>
+                </div>
+            </div>
+
+            <div id="mseb-completed-section" style="display: none;">
+                <div class="table-responsive">
+                    <table border="1" id="mseb_completed_table" style="display: none;" class="col-lg-11 text-center mx-auto" align="center">
+                        <thead class="table-success">
+                            <tr align="center">
+                                <th>Phase</th>
+                                <th>Status</th>
+                                <th>Completion Date</th>
+                                <th style="width: 130px; height: 50px;">Ok</th>
+                            </tr>
+                        </thead>
+                        <tbody id="mseb_completed_table_body" align="center"></tbody>
+                    </table>
+                </div>
+            </div>
         </div>
     </div>
 </form>
-
-<script>
-    $(document).ready(function() {
-    $('#fetchDataBtn').click(function() {
-        $('#mseb_table').toggle();
-    });
-});
-
-</script>
 
 {% endblock %}

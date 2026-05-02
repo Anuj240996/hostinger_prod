@@ -106,6 +106,30 @@
     <!-- Container for dynamically added form rows -->
     <div id="stockitem">
         <div class="panel-body">
+            {# Fixed column titles — not part of removable .form-row rows #}
+            <div id="stock-table-header-row" class="row align-items-end stock-grid-header" style="display: none;">
+                <div class="form-group col-md-1 text-center">
+                    <label class="panel-body-text" style="text-align: center; font-weight: bold;">Sr No</label>
+                </div>
+                <div class="form-group stock-col col-md-4 text-center">
+                    <label class="panel-body-text" style="text-align: center; font-weight: bold;">Stock</label>
+                </div>
+                <div class="form-group col-md-1 text-center">
+                    <label class="panel-body-text" style="text-align: center; font-weight: bold;">Avb.Qunt.</label>
+                </div>
+                <div class="form-group qty-col col-md-2 text-center">
+                    <label class="panel-body-text" style="text-align: center; font-weight: bold;">Quantity</label>
+                </div>
+                <div class="form-group quantity-container rate-col col-md-2 text-center">
+                    <label class="panel-body-text" style="text-align: center; font-weight: bold;">Rate</label>
+                </div>
+                <div class="form-group gst-container col-md-1 text-center" style="display: none;">
+                    <label class="panel-body-text" id="gst_label" style="text-align: center; font-weight: bold;">GST</label>
+                </div>
+                <div class="form-group total-col col-md-2 text-center">
+                    <label class="panel-body-text" style="text-align: center; font-weight: bold;">Total</label>
+                </div>
+            </div>
 
             <!-- Existing rows from formset -->
 
@@ -338,6 +362,48 @@
     }
     .custom-flex input {
         margin-right: 10px; /* Add some space between the input and the image */
+    }
+    /* Confirmation modal field focus background behavior */
+    #confirmationModal .form-control,
+    #confirmationModal select.form-control {
+        background-color: #ffffff;
+        transition: background-color 0.2s ease-in-out;
+    }
+    #confirmationModal .form-control:focus,
+    #confirmationModal select.form-control:focus,
+    #confirmationModal input[type="date"]:focus {
+        background-color: #ffe6ee !important;
+    }
+    #confirmationModal input[type="date"]:focus::-webkit-datetime-edit,
+    #confirmationModal input[type="date"]:focus::-webkit-date-and-time-value {
+        background-color: #ffe6ee !important;
+    }
+    #confirmationModal .form-control:not(:focus),
+    #confirmationModal select.form-control:not(:focus) {
+        background-color: #ffffff;
+    }
+    /* Stock lines table: less gap between column header row and data rows */
+    #stockitem #stock-table-header-row.stock-grid-header {
+        margin-bottom: 0.2rem !important;
+        margin-top: 0;
+    }
+    #stockitem #stock-table-header-row .form-group {
+        margin-bottom: 0.15rem;
+        padding-bottom: 0;
+    }
+    #stockitem #stock-table-header-row label {
+        margin-bottom: 0;
+        line-height: 1.15;
+        font-size: 0.9rem;
+    }
+    #stockitem .panel-body > .form-row {
+        margin-bottom: 0.35rem;
+    }
+    #stockitem .panel-body > .form-row .form-group {
+        margin-bottom: 0.4rem;
+    }
+    #stockitem .panel-body > .form-row .mt-1 {
+        margin-top: 0.15rem !important;
     }
     /* Styling for toggle button */
         .switch {
@@ -620,14 +686,11 @@ $(document).ready(function() {
                     var newRow = `<div class="row form-row">
                         <input type="hidden" name="form-${total}-DELETE" id="id_form-${total}-DELETE">
                         <div class="form-group col-md-1 text-center">
-<!--                            ${total === 0 ? '<label class="panel-body-text" style="text-align: center; font-weight: bold;">Sr No</label>' : ''}-->
-                            ${total === 0 ? '<label class="panel-body-text" style="text-align: center; font-weight: bold;">Sr No</label>' : ''}
                             <span class="form-control-plaintext">${serialNo}</span>
                         </div>
 
 
-                      <div class="form-group col-md-4 text-center">
-                            ${total === 0 ? '<label class="panel-body-text" style="text-align: center; font-weight: bold;">Stock</label>' : ''}
+                      <div class="form-group stock-col col-md-4 text-center">
                             <div style="display: flex; flex-direction: column; align-items: center;">
                                 <a href="#" class="stockName text-capitalize form-control-plaintext">${stockName}</a>
                                 <input type="hidden" name="form-${total}-stock" value="${stockId}">
@@ -641,7 +704,6 @@ $(document).ready(function() {
 
 
                         <div class="form-group col-md-1 text-center">
-                            ${total === 0 ? '<label class="panel-body-text" style="text-align: center; font-weight: bold;">Avb.Qunt.</label>' : ''}
                             <div class="d-flex justify-content-center align-items-center mt-1">
                              <input type="hidden" class="form-control stock-quantity" value="${stockQuantity}" readonly>
 <!--                            <span class="badge ${badgeClass}">${stockQuantity} <small style="color: green">${purchase}</small></span>-->
@@ -649,8 +711,7 @@ $(document).ready(function() {
                             </div>
                         </div>
 
-                        <div class="form-group col-md-2 text-center">
-                            ${total === 0 ? '<label class="panel-body-text" style="text-align: center; font-weight: bold;">Quantity</label>' : ''}
+                        <div class="form-group qty-col col-md-2 text-center">
                             <div class="input-group">
                               <input type="number" class="form-control quantity" style="text-align: center;" name="form-${total}-quantity" value=1>
                                <div class="input-group-append">
@@ -663,8 +724,7 @@ $(document).ready(function() {
                         </div>
 
 
-                        <div class="form-group quantity-container col-md-2 text-center">
-                            ${total === 0 ? '<label class="panel-body-text" style="text-align: center; font-weight: bold;">Rate</label>' : ''}
+                        <div class="form-group quantity-container rate-col col-md-2 text-center">
                             <div class="input-group">
                                 <input type="text" class="form-control price" name="form-${total}-perprice" required>
                                 <div class="input-group-append">
@@ -675,7 +735,6 @@ $(document).ready(function() {
                         </div>
 
                         <div class="form-group gst-container col-md-1 text-center" style="display: none;">
-                            ${total === 0 ? '<label class="panel-body-text" id="gst_label" style="text-align: center; font-weight: bold;">GST</label>' : ''}
                             <div class="d-flex justify-content-center align-items-center mt-1">
                                 <input type="hidden" class="form-control gst" value="${stockgst}" readonly>
 <!--                                <span class="badge gst_badge" style="font-size: 1rem;" style="text-align: center;">${stockgst}%</span>-->
@@ -684,8 +743,7 @@ $(document).ready(function() {
                             </div>
                         </div>
 
-                        <div class="form-group col-md-2 text-center">
-                            ${total === 0 ? '<label class="panel-body-text" style="text-align: center; font-weight: bold;">Total</label>' : ''}
+                        <div class="form-group total-col col-md-2 text-center">
                             <div class="custom-flex">
                                 <input type="text" style="text-align: right;" class="textinput form-control totalprice me-2" value="${stockPrice}" readonly>
                                 <img src="{% static 'images/letter-x (1).png' %}" class="remove-form-row" alt="Remove" style="cursor: pointer; width: 15px; height: 15px;">
@@ -694,6 +752,7 @@ $(document).ready(function() {
                     </div>`;
 
                     $('#stockitem .panel-body').append(newRow);
+                    $('#stock-table-header-row').show();
                     total++;
                     $('#id_form-TOTAL_FORMS').val(total);
 
@@ -702,7 +761,7 @@ $(document).ready(function() {
                 updateTotals();
                 if ($('#gstToggle').is(':checked')) {
                     $('.gst-container').show();
-                    $('.quantity-container').removeClass('col-md-2').addClass('col-md-1');
+                    $('.qty-col, .rate-col, .total-col').removeClass('col-md-1 col-md-2').addClass('col');
                     calculateGST();
 
                 }
@@ -753,6 +812,7 @@ $(document).ready(function() {
         deleteForm('form', $(this));
 
         if ($('#stockitem .form-row').length === 0) {
+            $('#stock-table-header-row').hide();
             $('#fieldset-container').hide();
         }
         updateGSTValues(); // Update GST values after deletion
@@ -949,7 +1009,7 @@ $(document).ready(function() {
             $('#delivery_charges_label').show();
 			$('#delivery_charges').show();
 
-            $('.quantity-container').removeClass('col-md-2').addClass('col-md-1');
+            $('.qty-col, .rate-col, .total-col').removeClass('col-md-1 col-md-2').addClass('col');
             $('.gst-container').show();
 
             updateGSTValues();
@@ -969,7 +1029,7 @@ $(document).ready(function() {
             $('#delivery_charges_label').show();
 			$('#delivery_charges').show();
 
-            $('.quantity-container').removeClass('col-md-1').addClass('col-md-2');
+            $('.qty-col, .rate-col, .total-col').removeClass('col col-md-1').addClass('col-md-2');
             $('.gst-container').hide();
         }
     }
@@ -993,7 +1053,7 @@ $(document).ready(function() {
 			$('#delivery_charges').show();
 
             // Adjust column sizes
-            $('.quantity-container').removeClass('col-md-2').addClass('col-md-1'); // Smaller quantity field
+            $('.qty-col, .rate-col, .total-col').removeClass('col-md-1 col-md-2').addClass('col'); // Auto-fill remaining row width
             $('.gst-container').show();  // Show GST field (col-md-1)
 
             updateGSTValues();
@@ -1014,7 +1074,7 @@ $(document).ready(function() {
 			$('#delivery_charges').show();
 
             // Adjust column sizes
-            $('.quantity-container').removeClass('col-md-1').addClass('col-md-2'); // Larger quantity field
+            $('.qty-col, .rate-col, .total-col').removeClass('col col-md-1').addClass('col-md-2'); // Restore standard layout
             $('.gst-container').hide();  // Hide GST field (col-md-1)
         }
     });
@@ -1174,11 +1234,21 @@ $(document).ready(function() {
     let currentQuantity = 0;
     let scannedSerials = [];
 
+    /** Must match Django formset index (0,1,…) — not jQuery .index() (header row shifts siblings). */
+    function getPurchaseFormsetIndex($row) {
+        var name = $row.find('input[name^="form-"][name$="-stock"]').first().attr('name');
+        if (name) {
+            var m = name.match(/^form-(\d+)-stock$/);
+            if (m) return parseInt(m[1], 10);
+        }
+        return $('#stockitem .panel-body > .form-row').index($row);
+    }
+
     // Open modal
     $(document).on('click', '.stockName', function(e) {
         e.preventDefault();
         currentRow = $(this).closest('.form-row');
-        currentRowIndex = currentRow.index();
+        currentRowIndex = getPurchaseFormsetIndex(currentRow);
         currentQuantity = parseInt(currentRow.find('.quantity').val()) || 0;
 
         if (currentQuantity <= 0) {
@@ -1248,10 +1318,14 @@ $(document).ready(function() {
             renderSerialInputs(containerSelector, updatedSerials);
         });
 
-        // Re-validate
+        // Re-validate (manual: blur-style rules + DB check; other methods unchanged)
         setTimeout(() => {
+            if (containerSelector === '#serial-number-container') {
+                validateAllManualSerialInputs();
+            } else {
             const values = container.find('input.serial-input').map((i, el) => $(el).val().trim()).get();
             validateSerialNumbers(values, containerSelector);
+            }
         }, 100);
     }
 
@@ -1318,10 +1392,105 @@ $(document).ready(function() {
    // ✅ Make it available globally
    window.setupManualInputs = setupManualInputs;
 
-    // Listen for changes in manual serial inputs and validate in real-time
-    $(document).on('input', '#serial-number-container .serial-input', function () {
-        const serials = $('#serial-number-container .serial-input').map((i, el) => $(el).val().trim()).get();
-        validateSerialNumbers(serials, '#serial-number-container');
+    function applyManualSerialFieldStyles($input, state, message) {
+        const $label = $input.closest('.serial-box').find('label').first();
+        $input.tooltip('dispose');
+        if (state === 'empty') {
+            $input.removeClass('is-valid is-invalid').removeAttr('title').css('color', '');
+            $label.css('color', '');
+            return;
+        }
+        if (state === 'invalid') {
+            $input.addClass('is-invalid').removeClass('is-valid')
+                .css('color', 'red')
+                .attr('title', message)
+                .tooltip({ trigger: 'hover' });
+            $label.css('color', 'red');
+            return;
+        }
+        if (state === 'valid') {
+            $input.addClass('is-valid').removeClass('is-invalid')
+                .css('color', 'green')
+                .removeAttr('title')
+                .tooltip('dispose');
+            $label.css('color', 'green');
+        }
+    }
+
+    function validateAllManualSerialInputs() {
+        if (!currentRow) {
+            return Promise.resolve({ valid: true });
+        }
+        const stockId = currentRow.find('input[name*="stock"]').val();
+        const $container = $('#serial-number-container');
+        const $inputs = $container.find('.serial-input');
+        if (!$inputs.length) {
+            return Promise.resolve({ valid: true });
+        }
+
+        const trimmed = $inputs.map((_, el) => $(el).val().trim()).get();
+        const counts = {};
+        trimmed.forEach(function (v) {
+            if (v) counts[v] = (counts[v] || 0) + 1;
+        });
+        const localDup = new Set(Object.keys(counts).filter(function (v) { return counts[v] > 1; }));
+        const uniqueForDb = [];
+        const seenDb = {};
+        trimmed.forEach(function (v) {
+            if (v && !localDup.has(v) && !seenDb[v]) {
+                seenDb[v] = true;
+                uniqueForDb.push(v);
+            }
+        });
+
+        function finish(dbDupSet) {
+            $inputs.each(function () {
+                const $el = $(this);
+                const v = $el.val().trim();
+                if (!v) {
+                    applyManualSerialFieldStyles($el, 'empty');
+                    return;
+                }
+                if (localDup.has(v)) {
+                    applyManualSerialFieldStyles($el, 'invalid', 'You have already entered this serial number in another field.');
+                } else if (dbDupSet.has(v)) {
+                    applyManualSerialFieldStyles($el, 'invalid', 'This serial number already exists for this stock.');
+                } else {
+                    applyManualSerialFieldStyles($el, 'valid');
+                }
+            });
+        }
+
+        function manualHasInvalid() {
+            return $container.find('.serial-input.is-invalid').length > 0;
+        }
+
+        if (uniqueForDb.length === 0) {
+            finish(new Set());
+            return Promise.resolve({ valid: !manualHasInvalid() });
+        }
+
+        return fetch('/transactions/check-duplicate-serials/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCSRFToken()
+            },
+            body: JSON.stringify({ serials: uniqueForDb, stock_id: stockId })
+        })
+        .then(function (res) { return res.json(); })
+        .then(function (data) {
+            finish(new Set(data.duplicates || []));
+            return { valid: !manualHasInvalid() };
+        })
+        .catch(function () {
+            finish(new Set());
+            return { valid: !manualHasInvalid() };
+        });
+    }
+
+    $(document).on('blur', '#serial-number-container .serial-input', function () {
+        validateAllManualSerialInputs();
     });
 
     function showSection(method) {
@@ -1341,8 +1510,11 @@ $(document).ready(function() {
     }
 
 
-    // Global input handler for all serial input sections
+    // Global input handler for all serial input sections (manual validates on blur only)
     $(document).on('input', '.input-section:visible .serial-input', function () {
+        if ($(this).closest('#serial-number-container').length) {
+            return;
+        }
         const containerSelector = '#' + $(this).closest('.input-section').attr('id');
         const serials = $(containerSelector + ' .serial-input').map((i, el) => $(el).val().trim()).get();
         validateSerialNumbers(serials, containerSelector);
@@ -1432,7 +1604,6 @@ $(document).ready(function() {
     $('#saveSerialNumbers').on('click', function () {
         if (!currentRow || currentRowIndex === null) return;
 
-        let serials = [];
         const activeMethod = $('[data-method].active').data('method');
         let containerSelector = "";
 
@@ -1454,6 +1625,7 @@ $(document).ready(function() {
                 break;
         }
 
+        function performSave() {
         const inputs = $(containerSelector + ' .serial-input');
         const newSerials = [];
 
@@ -1464,37 +1636,39 @@ $(document).ready(function() {
             }
         });
 
-        // Retrieve previously saved serials from hidden inputs
         const existingInputs = currentRow.find('[name^="serial_numbers_"]');
         const previousSerials = existingInputs.map((_, el) => $(el).val()).get();
 
-        // Merge and deduplicate
         const mergedSerials = Array.from(new Set([...previousSerials, ...newSerials])).slice(0, currentQuantity);
 
-        // Update display below stock name
         currentRow.find('.stockNameDisplay').html(`
             <div class="text-muted small">
                 Serials: ${mergedSerials.join(', ')}
             </div>
         `);
 
-        // Remove all previous hidden inputs
         existingInputs.remove();
 
-        // Add updated hidden serial inputs
         mergedSerials.forEach(serial => {
             currentRow.append(`<input type="hidden" name="serial_numbers_${currentRowIndex}[]" value="${serial}">`);
         });
 
         $('#serialNumberModal').modal('hide');
+        }
+
+        if (activeMethod === 'manual') {
+            validateAllManualSerialInputs().then(function (result) {
+                if (!result || result.valid !== true) {
+                    alert('Please fix serial number errors before saving. Correct duplicate or existing serials, then try again.');
+                    return;
+                }
+                performSave();
+            });
+            return;
+        }
+
+        performSave();
     });
-
-
-
-            if (mergedSerials.length >= currentQuantity) {
-                alert(`You have reached the maximum of ${currentQuantity} serial numbers.`);
-            }
-
 
         // Clear on modal close
         $('#serialNumberModal').on('hidden.bs.modal', function() {

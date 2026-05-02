@@ -51,10 +51,10 @@
                 </thead>
                 <tbody align="center">
                     {% for item in sale_items %}
-                    <tr data-id="{{ item.id }}">
+                    <tr data-id="{{ item.id }}" data-has-serial="{% if item.serials.exists %}1{% else %}0{% endif %}">
                         <td class="sr-no">{{ forloop.counter }}</td>
-                        <td>{{ item.stock.category.name }}</td>
-                        <td>{{ item.stock.subcategory.name }}</td>
+                        <td>{{ item.safe_category_name }}</td>
+                        <td>{{ item.safe_subcategory_name }}</td>
                         <td>
                             &nbsp;<a href="#" class="stockName text-capitalize form-control-plaintext">{{ item.stock.name }}<br></a>
                             <a href="{% url 'get_serial_numbers' %}?stock_id={{ item.stock.id }}"></a>
@@ -197,10 +197,38 @@
         });
 
 
+        function validateSerialsBeforeSave() {
+            let valid = true;
+            $('#billTable tbody tr').each(function () {
+                const $row = $(this);
+                const hasSerial = String($row.data('has-serial')) === '1';
+                if (!hasSerial) return;
+
+                const reduceQty = parseInt($row.find('input[name^="current_quantity_"]').val(), 10) || 0;
+                if (reduceQty <= 0) return;
+
+                const stockId = $row.find('input[name="existing_stock_ids[]"]').val();
+                const hiddenField = $(`input[name="serials-${stockId}"]`);
+                const selected = hiddenField.length
+                    ? hiddenField.val().split(',').map(s => s.trim()).filter(Boolean)
+                    : [];
+
+                if (selected.length !== reduceQty) {
+                    alert("Please remove the serial numbers first before saving.");
+                    valid = false;
+                    return false;
+                }
+            });
+            return valid;
+        }
+
         // Handle submit button click
         $('#calculateTotalQuantity').on('click', function (event) {
             event.preventDefault(); // Prevent form submission immediately
-                $('#confirmationModal').modal('show'); // Show confirmation modal if validation passes
+            if (!validateSerialsBeforeSave()) {
+                return;
+            }
+            $('#confirmationModal').modal('show'); // Show confirmation modal if validation passes
         });
 
         // Handle confirmation modal submit
@@ -385,7 +413,6 @@
       </div>
       <div class="modal-body">
         <form id="modalForm">
-
             <div class="toggle-container" style="display: flex; justify-content: center; align-items: center; width: 100%;">
                 <div id="currentBillLabel" class="toggle-label" style="display: flex; flex-direction: column; align-items: center; margin-right: 20px; width: 180px;">
                     <span style="line-height: 1.5;">Current Bill</span>
@@ -396,47 +423,57 @@
                     <span class="checkmark" id="checkPrevious" style="margin-left: 30px; line-height: 1.5;">✔</span>
                 </div>
             </div>
+            <br>
+            <fieldset>
+                <div class="toggle-container" style="display: flex; justify-content: center; align-items: center; width: 100%;">
+                    <div class="form-group" id="previousBillField" style="display: flex; flex-direction: column; margin-right: 20px; width: 180px;">
+                        <label for="eway_no">Prev. Delivery Challan No <span style="color: red;">*</span></label>
+                        <input type="text" id="eway_no" name="eway_no" class="form-control" value="{{ final_bill_details.eway }}">
+                    </div>
+                    <div class="form-group" id="previousDateField" style="display: flex; flex-direction: column; width: 180px;">
+                        <label for="bill_date">Prev. Bill Date <span style="color: red;">*</span></label>
+                        <input type="date" id="bill_date" name="bill_date" class="form-control" value="{{ final_bill_details.tcs }}">
+                    </div>
+                </div>
 
-          <!-- Previous Bill and Previous Date Fields -->
-          <div class="form-group" id="previousBillField">
-            <label for="eway_no">Prev. Delivery Challan No <span style="color: red;">*</span></label>
-            <input type="text" id="eway_no" name="eway_no" class="form-control" value="{{ final_bill_details.eway }}">
-          </div>
-          <div class="form-group" id="previousDateField">
-            <label for="bill_date">Prev. Bill Date <span style="color: red;">*</span></label>
-            <input type="date" id="bill_date" name="bill_date" class="form-control" value="{{ final_bill_details.tcs }}">
-          </div>
+                <div class="toggle-container" style="display: flex; justify-content: center; align-items: center; width: 100%;">
+                    <div class="form-group" style="display: flex; flex-direction: column; margin-right: 20px; width: 180px;">
+                        <label for="po_no">PO No</label>
+                        <input type="text" id="po_no" name="po_no" class="form-control" value="{{ final_bill_details.po }}" required>
+                    </div>
+                    <div class="form-group" style="display: flex; flex-direction: column; width: 180px;">
+                        <label for="po_date">PO Date</label>
+                        <input type="date" id="po_date" name="po_date" class="form-control" value="{{ final_bill_details.cgst }}" required>
+                    </div>
+                </div>
 
-          <div class="form-group">
-            <label for="veh_no">Vehicle No</label>
-            <input type="text" id="veh_no" name="veh_no" class="form-control" value="{{ final_bill_details.veh }}">
-          </div>
-          <div class="form-group">
-            <label for="arrange">Arrange By <span style="color: red;">*</span></label>
-            <input type="text" id="arrange" name="arrange" class="form-control" value="{{ final_bill_details.sgst }}" required>
-          </div>
-            <div class="form-group">
-            <label for="handby">Handled By <span style="color: red;">*</span></label>
-            <input type="text" id="handby" name="handby" class="form-control" value="{{ final_bill_details.igst }}" required>
-          </div>
-            <div class="form-group">
-              <label for="destination">Destination <span style="color: red;">*</span></label>
-              <select id="destination" name="destination" class="form-control" required>
-                <option value="" disabled {% if not final_bill_details.destination %}selected{% endif %}></option>
-                <option value="Warehouse" {% if final_bill_details.destination == "Warehouse" %}selected{% endif %}>Warehouse</option>
-                <option value="Office" {% if final_bill_details.destination == "Office" %}selected{% endif %}>Office</option>
-                <option value="Vendor" {% if final_bill_details.destination == "Vendor" %}selected{% endif %}>Vendor</option>
-              </select>
-            </div>
+                <div class="toggle-container" style="display: flex; justify-content: center; align-items: center; width: 100%;">
+                    <div class="form-group" style="display: flex; flex-direction: column; margin-right: 20px; width: 180px;">
+                        <label for="veh_no">Vehicle No</label>
+                        <input type="text" id="veh_no" name="veh_no" class="form-control" value="{{ final_bill_details.veh }}">
+                    </div>
+                    <div class="form-group" style="display: flex; flex-direction: column; width: 180px;">
+                        <label for="arrange">Arrange By <span style="color: red;">*</span></label>
+                        <input type="text" id="arrange" name="arrange" class="form-control" value="{{ final_bill_details.sgst }}" required>
+                    </div>
+                </div>
 
-          <div class="form-group">
-            <label for="po_no">PO No</label>
-            <input type="text" id="po_no" name="po_no" class="form-control" value="{{ final_bill_details.po }}" required>
-          </div>
-          <div class="form-group">
-            <label for="po_date">PO Date</label>
-            <input type="date" id="po_date" name="po_date" class="form-control" value="{{ final_bill_details.cgst }}" required>
-          </div>
+                <div class="toggle-container" style="display: flex; justify-content: center; align-items: center; width: 100%;">
+                    <div class="form-group" style="display: flex; flex-direction: column; margin-right: 20px; width: 180px;">
+                        <label for="handby">Handled By <span style="color: red;">*</span></label>
+                        <input type="text" id="handby" name="handby" class="form-control" value="{{ final_bill_details.igst }}" required>
+                    </div>
+                    <div class="form-group" style="display: flex; flex-direction: column; width: 180px;">
+                        <label for="destination">Destination <span style="color: red;">*</span></label>
+                        <select id="destination" name="destination" class="form-control" required>
+                            <option value="" disabled {% if not final_bill_details.destination %}selected{% endif %}></option>
+                            <option value="Warehouse" {% if final_bill_details.destination == "Warehouse" %}selected{% endif %}>Warehouse</option>
+                            <option value="Office" {% if final_bill_details.destination == "Office" %}selected{% endif %}>Office</option>
+                            <option value="Vendor" {% if final_bill_details.destination == "Vendor" %}selected{% endif %}>Vendor</option>
+                        </select>
+                    </div>
+                </div>
+            </fieldset>
         </form>
       </div>
       <div class="modal-footer">
@@ -570,6 +607,25 @@ $(document).ready(function() {
     }
     .custom-flex input {
         margin-right: 10px; /* Add some space between the input and the image */
+    }
+    /* Confirmation modal field focus background behavior */
+    #confirmationModal .form-control,
+    #confirmationModal select.form-control {
+        background-color: #ffffff;
+        transition: background-color 0.2s ease-in-out;
+    }
+    #confirmationModal .form-control:focus,
+    #confirmationModal select.form-control:focus,
+    #confirmationModal input[type="date"]:focus {
+        background-color: #ffe6ee !important;
+    }
+    #confirmationModal input[type="date"]:focus::-webkit-datetime-edit,
+    #confirmationModal input[type="date"]:focus::-webkit-date-and-time-value {
+        background-color: #ffe6ee !important;
+    }
+    #confirmationModal .form-control:not(:focus),
+    #confirmationModal select.form-control:not(:focus) {
+        background-color: #ffffff;
     }
 </style>
 <style>
