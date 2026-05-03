@@ -99,17 +99,17 @@ from user.views import profile
 from rest_framework_simplejwt.views import TokenObtainPairView
 from django.views.generic import RedirectView
 
-from inventoryproject.legacy_redirects import redirect_legacy_leads_path
+#from inventoryproject.legacy_redirects import redirect_legacy_leads_path
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('', include('dashboard.urls')),
     path('quotation/', include('quotation.urls')),
     # Legacy /leads/* URLs → integrated CRM (old leads app removed)
-    path('leads/create/', RedirectView.as_view(url='/new-lead/leads/create/', permanent=False), name='lead_create'),
-    path('leads/', RedirectView.as_view(url='/new-lead/leads/', permanent=False)),
-    re_path(r'^leads/(?P<subpath>.+)/$', redirect_legacy_leads_path),
-    path('new-lead/', include('crm.urls')),
+    # path('leads/create/', RedirectView.as_view(url='/new-lead/leads/create/', permanent=False), name='lead_create'),
+    # path('leads/', RedirectView.as_view(url='/new-lead/leads/', permanent=False)),
+    # re_path(r'^leads/(?P<subpath>.+)/$', redirect_legacy_leads_path),
+    # path('new-lead/', include('crm.urls')),
     path('customer/', include('customer.urls')),
     path('firereport/', include('firereport.urls')),
    #path('photos/', include('photos.urls')),
