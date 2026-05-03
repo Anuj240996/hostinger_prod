@@ -1,4 +1,4 @@
-from turtle import home
+#from turtle import home
 
 from django.urls import path, include
 from . import views
