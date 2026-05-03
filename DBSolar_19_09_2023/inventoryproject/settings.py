@@ -16,9 +16,9 @@ import sys
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
-LEAD_PROJECT_DIR = BASE_DIR / "lead"
-if LEAD_PROJECT_DIR.exists():
-    sys.path.insert(0, str(LEAD_PROJECT_DIR))
+#LEAD_PROJECT_DIR = BASE_DIR / "lead"
+#if LEAD_PROJECT_DIR.exists():
+#    sys.path.insert(0, str(LEAD_PROJECT_DIR))
 
 
 # Quick-start development settings - unsuitable for production
@@ -120,7 +120,9 @@ ROOT_URLCONF = 'inventoryproject.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [BASE_DIR / 'templates', BASE_DIR / 'lead' / 'templates'],
+        'DIRS': [BASE_DIR / 'templates'
+                 #, BASE_DIR / 'lead' / 'templates'
+                ],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -230,7 +232,7 @@ MEDIA_URL = '/media/'
 
 STATICFILES_DIRS = [
     BASE_DIR / "static",
-    BASE_DIR / "lead" / "static",
+   # BASE_DIR / "lead" / "static",
 ]
 
 STATIC_ROOT = (BASE_DIR/"asert/")
