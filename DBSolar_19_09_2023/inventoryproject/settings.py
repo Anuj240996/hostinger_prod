@@ -81,21 +81,24 @@ INSTALLED_APPS = [
     'quotation.apps.QuotationConfig',
     'homepage.apps.HomepageConfig',
     # CRM (from /lead folder); legacy ``leads`` app removed — use ``manage.py drop_legacy_leads_app`` if tables remain.
-    'apps.core.apps.CoreConfig',
-    'apps.leads.apps.LeadsConfig',
-    'apps.pipeline',
-    'apps.surveys',
-    'apps.quotations',
-    'apps.revenue',
-    'apps.analytics',
-    'apps.team',
-    'apps.settings',
-    'apps.control_panel',
+    'lead.apps.core.apps.CoreConfig',
+    'lead.apps.leads.apps.LeadsConfig',
+    'lead.apps.pipeline',
+    'lead.apps.surveys',
+    'lead.apps.quotations',
+    'lead.apps.revenue',
+    'lead.apps.analytics',
+    'lead.apps.team',
+    'lead.apps.settings',
+    'lead.apps.control_panel',
     'rest_framework',
     'corsheaders',
     'api.apps.ApiConfig',
     'rest_framework_simplejwt',
     'rest_framework.authtoken',
+
+    
+    
 ]
 
 MIDDLEWARE = [
