@@ -39,6 +39,9 @@ def _csrf_trusted_origins_from_env_or_hosts():
     )
     origins = []
     for entry in entries:
+        if entry.startswith("."):
+            # Wildcards belong in ALLOWED_HOSTS only, not CSRF_TRUSTED_ORIGINS.
+            continue
         if entry.startswith("http://") or entry.startswith("https://"):
             origins.append(entry)
             continue
