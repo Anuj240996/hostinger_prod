@@ -1,0 +1,62 @@
+{% extends 'base.html' %}
+
+{% block sidebar %}
+<!-- Override sidebar with control panel navigation -->
+<div class="sidebar-header">
+    <h3><i class="fas fa-cog me-2"></i>Control Panel</h3>
+</div>
+
+{% if request.user.is_authenticated and perms.core.view_all_organizations_data and request.session.selected_org_id %}
+    <div class="alert alert-info alert-dismissible fade show m-3" role="alert">
+        <strong>Viewing as:</strong> {{ request.organization.legal_name }}
+        <a href="{% url 'control_panel:clear_organization_context' %}" class="alert-link">Clear context</a>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+{% endif %}
+
+<!-- Control Panel Navigation -->
+<ul class="nav flex-column">
+        <li class="nav-item">
+            <a href="{% url 'control_panel:dashboard' %}" class="nav-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
+                <i class="fas fa-tachometer-alt me-3"></i>Dashboard
+            </a>
+        </li>    <li class="nav-item">
+        <a href="{% url 'control_panel:organizations' %}" class="nav-link {% if request.resolver_match.url_name == 'organizations' %}active{% endif %}">
+            <i class="fas fa-building me-3"></i>Organizations
+        </a>
+    </li>
+    <li class="nav-item">
+        <a href="{% url 'control_panel:users' %}" class="nav-link {% if request.resolver_match.url_name == 'users' %}active{% endif %}">
+            <i class="fas fa-users me-3"></i>Users
+        </a>
+    </li>
+    <li class="nav-item">
+        <a href="{% url 'control_panel:roles' %}" class="nav-link {% if request.resolver_match.url_name == 'roles' %}active{% endif %}">
+            <i class="fas fa-tags me-3"></i>Roles & Permissions
+        </a>
+    </li>
+    <li class="nav-item">
+        <a href="{% url 'control_panel:subscriptions' %}" class="nav-link {% if request.resolver_match.url_name == 'subscriptions' %}active{% endif %}">
+            <i class="fas fa-credit-card me-3"></i>Subscriptions
+        </a>
+    </li>
+    <li class="nav-item">
+        <a href="{% url 'control_panel:feature_flags' %}" class="nav-link {% if request.resolver_match.url_name == 'feature_flags' %}active{% endif %}">
+            <i class="fas fa-flag me-3"></i>Feature Flags
+        </a>
+    </li>
+    <li class="nav-item">
+        <a href="{% url 'control_panel:audit_logs' %}" class="nav-link {% if request.resolver_match.url_name == 'audit_logs' %}active{% endif %}">
+            <i class="fas fa-history me-3"></i>Audit Logs
+        </a>
+    </li>
+
+</ul>
+
+{% endblock %}
+
+{% block content %}
+<div class="control-panel-content">
+    {% block panel_content %}{% endblock %}
+</div>
+{% endblock %}

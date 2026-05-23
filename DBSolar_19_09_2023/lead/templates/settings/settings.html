@@ -1,0 +1,990 @@
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block title %}Settings - Solar CRM{% endblock %}
+
+{% block content %}
+<div class="settings-page">
+    <h2 class="mb-4">System Settings</h2>
+
+    <div class="row">
+        <div class="col-md-3">
+            <div class="list-group mb-4" id="settingsTabs" role="tablist">
+                <a class="list-group-item list-group-item-action active" data-bs-toggle="list" href="#lead-stages" role="tab">
+                    <i class="fas fa-tasks me-2"></i>Lead Stages
+                </a>
+                <a class="list-group-item list-group-item-action" data-bs-toggle="list" href="#lead-sources" role="tab">
+                    <i class="fas fa-database me-2"></i>Lead Sources
+                </a>
+                <a class="list-group-item list-group-item-action" data-bs-toggle="list" href="#campaigns" role="tab">
+                    <i class="fas fa-bullhorn me-2"></i>Campaigns
+                </a>
+                <a class="list-group-item list-group-item-action" data-bs-toggle="list" href="#lost-reasons" role="tab">
+                    <i class="fas fa-times-circle me-2"></i>Lost Reasons
+                </a>
+                <a class="list-group-item list-group-item-action" data-bs-toggle="list" href="#scoring-rules" role="tab">
+                    <i class="fas fa-star me-2"></i>Scoring Rules
+                </a>
+                <a class="list-group-item list-group-item-action" data-bs-toggle="list" href="#user-roles" role="tab">
+                    <i class="fas fa-users-cog me-2"></i>User Roles
+                </a>
+                <a class="list-group-item list-group-item-action" data-bs-toggle="list" href="#automation" role="tab">
+                    <i class="fas fa-robot me-2"></i>Automation
+                </a>
+            </div>
+        </div>
+
+        <div class="col-md-9">
+            <div class="tab-content">
+                <!-- Lead Stages Tab -->
+                <div class="tab-pane active" id="lead-stages" role="tabpanel">
+                    <div class="card">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0">Lead Stages</h5>
+                            <button class="btn btn-sm btn-primary" onclick="openStageModal()">
+                                <i class="fas fa-plus me-2"></i>Add Stage
+                            </button>
+                        </div>
+                        <div class="card-body">
+                            <p class="text-muted mb-3">Customize your sales pipeline stages</p>
+                            <div class="list-group" id="stagesList">
+                                {% for stage in pipeline_stages %}
+                                <div class="list-group-item d-flex justify-content-between align-items-center" data-id="{{ stage.id }}">
+                                    <div>
+                                        <span class="badge me-2" style="background-color: {{ stage.color }};">&nbsp;</span>
+                                        <strong>{{ stage.name }}</strong>
+                                        <br>
+                                        <small class="text-muted">Probability: {{ stage.probability }}% | Order: {{ stage.order }}</small>
+                                    </div>
+                                    <div class="btn-group">
+                                        <button class="btn btn-sm btn-outline-primary" onclick="editStage({{ stage.id }})">
+                                            <i class="fas fa-edit"></i>
+                                        </button>
+                                        <button class="btn btn-sm btn-outline-danger" onclick="deleteStage({{ stage.id }})">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                {% empty %}
+                                <div class="text-center py-4">
+                                    <p class="text-muted">No stages defined. Click "Add Stage" to create one.</p>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Lead Sources Tab -->
+                <div class="tab-pane" id="lead-sources" role="tabpanel">
+                    <div class="card">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0">Lead Sources</h5>
+                            <button class="btn btn-sm btn-primary" onclick="openSourceModal()">
+                                <i class="fas fa-plus me-2"></i>Add Source
+                            </button>
+                        </div>
+                        <div class="card-body">
+                            <table class="table" id="sourcesTable">
+                                <thead>
+                                    <tr>
+                                        <th>Source Name</th>
+                                        <th>Cost Per Lead</th>
+                                        <th>Status</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for source in lead_sources %}
+                                    <tr data-id="{{ source.id }}">
+                                        <td>{{ source.name }}</td>
+                                        <td>₹{{ source.cost_per_lead|default:0|intcomma }}</td>
+                                        <td>
+                                            {% if source.is_active %}
+                                            <span class="badge bg-success">Active</span>
+                                            {% else %}
+                                            <span class="badge bg-secondary">Inactive</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <button class="btn btn-sm btn-outline-primary" onclick="editSource({{ source.id }})">
+                                                <i class="fas fa-edit"></i>
+                                            </button>
+                                            <button class="btn btn-sm btn-outline-warning" onclick="toggleSource({{ source.id }})">
+                                                <i class="fas fa-power-off"></i>
+                                            </button>
+                                            <button class="btn btn-sm btn-outline-danger" onclick="deleteSource({{ source.id }})">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                    {% empty %}
+                                    <tr><td colspan="4" class="text-center py-4">No sources defined.</td></tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Campaigns Tab -->
+                <div class="tab-pane" id="campaigns" role="tabpanel">
+                    <div class="card">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0">Marketing Campaigns</h5>
+                            <button class="btn btn-sm btn-primary" onclick="openCampaignModal()">
+                                <i class="fas fa-plus me-2"></i>Add Campaign
+                            </button>
+                        </div>
+                        <div class="card-body">
+                            <table class="table" id="campaignsTable">
+                                <thead>
+                                    <tr>
+                                        <th>Campaign Name</th>
+                                        <th>Source</th>
+                                        <th>Start Date</th>
+                                        <th>End Date</th>
+                                        <th>Budget</th>
+                                        <th>Status</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for campaign in campaigns %}
+                                    <tr data-id="{{ campaign.id }}">
+                                        <td>{{ campaign.name }}</td>
+                                        <td>{{ campaign.source.name }}</td>
+                                        <td>{{ campaign.start_date|date:'d M Y' }}</td>
+                                        <td>{{ campaign.end_date|date:'d M Y' }}</td>
+                                        <td>₹{{ campaign.budget|intcomma }}</td>
+                                        <td>
+                                            {% if campaign.is_active %}
+                                            <span class="badge bg-success">Active</span>
+                                            {% else %}
+                                            <span class="badge bg-secondary">Inactive</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <button class="btn btn-sm btn-outline-primary" onclick="editCampaign({{ campaign.id }})">
+                                                <i class="fas fa-edit"></i>
+                                            </button>
+                                            <button class="btn btn-sm btn-outline-info" onclick="viewCampaignStats({{ campaign.id }})">
+                                                <i class="fas fa-chart-bar"></i>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                    {% empty %}
+                                    <tr>
+                                        <td colspan="7" class="text-center py-4">No campaigns defined. Click "Add Campaign" to create one.</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Lost Reasons Tab -->
+                <div class="tab-pane" id="lost-reasons" role="tabpanel">
+                    <div class="card">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0">Lost Reasons</h5>
+                            <button class="btn btn-sm btn-primary" onclick="openLostReasonModal()">
+                                <i class="fas fa-plus me-2"></i>Add Reason
+                            </button>
+                        </div>
+                        <div class="card-body">
+                            <div class="list-group" id="lostReasonsList">
+                                {% for reason in lost_reasons %}
+                                <div class="list-group-item d-flex justify-content-between align-items-center" data-id="{{ reason.id }}">
+                                    {{ reason.name }}
+                                    <button class="btn btn-sm btn-outline-danger" onclick="deleteLostReason({{ reason.id }})">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
+                                {% empty %}
+                                <div class="text-center py-4">
+                                    <p class="text-muted">No lost reasons defined. Click "Add Reason" to create one.</p>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Scoring Rules Tab -->
+                <div class="tab-pane" id="scoring-rules" role="tabpanel">
+                    <div class="card">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0">Lead Scoring Rules</h5>
+                            <button class="btn btn-sm btn-primary" onclick="openScoringRuleModal()">
+                                <i class="fas fa-plus me-2"></i>Add Rule
+                            </button>
+                        </div>
+                        <div class="card-body">
+                            <table class="table" id="scoringRulesTable">
+                                <thead>
+                                    <tr>
+                                        <th>Criteria</th>
+                                        <th>Condition</th>
+                                        <th>Value</th>
+                                        <th>Points</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for rule in scoring_rules %}
+                                    <tr data-id="{{ rule.id }}">
+                                        <td>{{ rule.get_criteria_display }}</td>
+                                        <td>{{ rule.get_condition_display }}</td>
+                                        <td>{{ rule.value }}</td>
+                                        <td>{{ rule.points }}</td>
+                                        <td>
+                                            <button class="btn btn-sm btn-outline-primary" onclick="editScoringRule({{ rule.id }})">
+                                                <i class="fas fa-edit"></i>
+                                            </button>
+                                            <button class="btn btn-sm btn-outline-danger" onclick="deleteScoringRule({{ rule.id }})">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                    {% empty %}
+                                    <tr>
+                                        <td colspan="5" class="text-center py-4">No scoring rules defined. Click "Add Rule" to create one.</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- User Roles Tab (tree permissions) -->
+                <div class="tab-pane" id="user-roles" role="tabpanel">
+                    <div class="card">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0">User Roles & Permissions</h5>
+                            <button class="btn btn-sm btn-primary" onclick="openRoleModal()">
+                                <i class="fas fa-plus me-2"></i>Add Role
+                            </button>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <div class="list-group" id="rolesList">
+                                        {% for role in roles %}
+                                        <a href="#" class="list-group-item list-group-item-action {% if forloop.first %}active{% endif %}" data-role-id="{{ role.id }}" onclick="selectRole({{ role.id }}); return false;">
+                                            {{ role.name }}
+                                        </a>
+                                        {% empty %}
+                                        <p class="text-muted">No roles defined. Click "Add Role" to create one.</p>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                                <div class="col-md-8">
+                                    <div class="card" id="permissionsCard" style="display: {% if roles %}block{% else %}none{% endif %};">
+                                        <div class="card-body">
+                                            <h6 id="selectedRoleName">Permissions</h6>
+                                            <form id="permissionsForm">
+                                                {% csrf_token %}
+                                                <input type="hidden" id="currentRoleId" value="{% if roles %}{{ roles.0.id }}{% endif %}">
+                                                <div class="row" id="permissionsList">
+                                                    <!-- Permissions will be loaded via AJAX -->
+                                                </div>
+                                                <button type="submit" class="btn btn-primary mt-3">Save Permissions</button>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Automation Tab -->
+                <div class="tab-pane" id="automation" role="tabpanel">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0">Automation Rules</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="list-group">
+                                <div class="list-group-item">
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" id="autoAssign" checked>
+                                        <label class="form-check-label" for="autoAssign">
+                                            <strong>Auto-assign leads to sales reps</strong><br>
+                                            <small class="text-muted">Automatically assign new leads based on round-robin or workload</small>
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="list-group-item">
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" id="autoFollowup" checked>
+                                        <label class="form-check-label" for="autoFollowup">
+                                            <strong>Auto-create follow-ups</strong><br>
+                                            <small class="text-muted">Create follow-up tasks when lead stage changes</small>
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="list-group-item">
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" id="autoEmail">
+                                        <label class="form-check-label" for="autoEmail">
+                                            <strong>Send automatic emails</strong><br>
+                                            <small class="text-muted">Send welcome emails and follow-up reminders</small>
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="list-group-item">
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" id="autoScore" checked>
+                                        <label class="form-check-label" for="autoScore">
+                                            <strong>Auto-score leads</strong><br>
+                                            <small class="text-muted">Calculate lead scores based on rules and activity</small>
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                            <hr>
+                            <h6 class="mb-3">Email Templates</h6>
+                            <div class="list-group">
+                                <div class="list-group-item d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <strong>Welcome Email</strong><br>
+                                        <small class="text-muted">Sent when new lead is created</small>
+                                    </div>
+                                    <button class="btn btn-sm btn-outline-primary" onclick="editEmailTemplate('welcome')">Edit</button>
+                                </div>
+                                <div class="list-group-item d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <strong>Follow-up Reminder</strong><br>
+                                        <small class="text-muted">Sent 24h before scheduled follow-up</small>
+                                    </div>
+                                    <button class="btn btn-sm btn-outline-primary" onclick="editEmailTemplate('followup')">Edit</button>
+                                </div>
+                                <div class="list-group-item d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <strong>Quotation Sent</strong><br>
+                                        <small class="text-muted">Sent when quotation is generated</small>
+                                    </div>
+                                    <button class="btn btn-sm btn-outline-primary" onclick="editEmailTemplate('quotation')">Edit</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ========== MODALS ========== -->
+
+<!-- Lead Stage Modal -->
+<div class="modal fade" id="stageModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="stageModalTitle">Add Stage</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="stageForm">
+                <div class="modal-body">
+                    <input type="hidden" id="stageId">
+                    <div class="mb-3">
+                        <label class="form-label">Stage Name</label>
+                        <input type="text" class="form-control" id="stageName" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Order</label>
+                        <input type="number" class="form-control" id="stageOrder" value="1" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Color</label>
+                        <input type="color" class="form-control" id="stageColor" value="#0d6efd">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Probability (%)</label>
+                        <input type="number" class="form-control" id="stageProbability" min="0" max="100" value="50" required>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Stage</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Lead Source Modal -->
+<div class="modal fade" id="sourceModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="sourceModalTitle">Add Source</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="sourceForm">
+                <div class="modal-body">
+                    <input type="hidden" id="sourceId" name="sourceId">
+                    <div class="mb-3">
+                        <label class="form-label">Source Name</label>
+                        <input type="text" class="form-control" id="sourceName" name="name" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Cost Per Lead (₹)</label>
+                        <input type="number" step="0.01" class="form-control" id="sourceCost" name="cost_per_lead" value="0">
+                    </div>
+                    <div class="mb-3 form-check">
+                        <input type="checkbox" class="form-check-input" id="sourceActive" name="is_active" checked>
+                        <label class="form-check-label">Active</label>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Source</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Campaign Modal -->
+<div class="modal fade" id="campaignModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="campaignModalTitle">Add Campaign</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="campaignForm">
+                <div class="modal-body">
+                    <input type="hidden" id="campaignId" name="campaignId">
+                    <div class="mb-3">
+                        <label class="form-label">Campaign Name</label>
+                        <input type="text" class="form-control" id="campaignName" name="name" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Source</label>
+                        <select class="form-select" id="campaignSource" name="source" required>
+                            <option value="">Select source</option>
+                            {% for source in lead_sources %}
+                            <option value="{{ source.id }}">{{ source.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Start Date</label>
+                        <input type="date" class="form-control" id="campaignStartDate" name="start_date" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">End Date</label>
+                        <input type="date" class="form-control" id="campaignEndDate" name="end_date" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Budget (₹)</label>
+                        <input type="number" step="0.01" class="form-control" id="campaignBudget" name="budget" required>
+                    </div>
+                    <div class="mb-3 form-check">
+                        <input type="checkbox" class="form-check-input" id="campaignActive" name="is_active" checked>
+                        <label class="form-check-label">Active</label>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Campaign</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Lost Reason Modal -->
+<div class="modal fade" id="lostReasonModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Add Lost Reason</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="lostReasonForm">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Reason Name</label>
+                        <input type="text" class="form-control" id="lostReasonName" name="name" required>
+                    </div>
+                    <div class="mb-3 form-check">
+                        <input type="checkbox" class="form-check-input" id="lostReasonActive" name="is_active" checked>
+                        <label class="form-check-label">Active</label>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Reason</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Scoring Rule Modal -->
+<div class="modal fade" id="scoringRuleModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="scoringRuleModalTitle">Add Scoring Rule</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="scoringRuleForm">
+                <div class="modal-body">
+                    <input type="hidden" id="scoringRuleId" name="scoringRuleId">
+                    <div class="mb-3">
+                        <label class="form-label">Criteria</label>
+                        <select class="form-select" id="scoringRuleCriteria" name="criteria" required>
+                            <option value="">Select criteria</option>
+                            <option value="electricity_bill">Electricity Bill (₹)</option>
+                            <option value="property_type">Property Type</option>
+                            <option value="roof_type">Roof Type</option>
+                            <option value="location">Location (City)</option>
+                            <option value="source">Lead Source</option>
+                            <option value="age">Lead Age (days)</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Condition</label>
+                        <select class="form-select" id="scoringRuleCondition" name="condition" required>
+                            <option value="">Select condition</option>
+                            <option value="gt">Greater Than</option>
+                            <option value="lt">Less Than</option>
+                            <option value="eq">Equals</option>
+                            <option value="contains">Contains</option>
+                            <option value="in">In List (comma-separated)</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Value</label>
+                        <input type="text" class="form-control" id="scoringRuleValue" name="value" placeholder="e.g., 5000" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Points</label>
+                        <input type="number" class="form-control" id="scoringRulePoints" name="points" value="10" required>
+                    </div>
+                    <div class="mb-3 form-check">
+                        <input type="checkbox" class="form-check-input" id="scoringRuleActive" name="is_active" checked>
+                        <label class="form-check-label">Active</label>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Rule</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Role Modal -->
+<div class="modal fade" id="roleModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="roleModalTitle">Add Role</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="roleForm">
+                <div class="modal-body">
+                    <input type="hidden" id="roleId">
+                    <div class="mb-3">
+                        <label class="form-label">Role Name</label>
+                        <input type="text" class="form-control" id="roleName" name="name" required>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Role</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // CSRF token helper
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+    const csrftoken = getCookie('csrftoken');
+
+    // -------------------- Lead Stages --------------------
+    function openStageModal(id) {
+        if (id) {
+            fetch(`/new-lead/settings/pipeline-stage/${id}/get/`, { headers: {'X-Requested-With': 'XMLHttpRequest'} })
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('stageId').value = data.id;
+                    document.getElementById('stageName').value = data.name;
+                    document.getElementById('stageOrder').value = data.order;
+                    document.getElementById('stageColor').value = data.color;
+                    document.getElementById('stageProbability').value = data.probability;
+                    document.getElementById('stageModalTitle').innerText = 'Edit Stage';
+                    new bootstrap.Modal(document.getElementById('stageModal')).show();
+                });
+        } else {
+            document.getElementById('stageForm').reset();
+            document.getElementById('stageId').value = '';
+            document.getElementById('stageOrder').value = 1;
+            document.getElementById('stageColor').value = '#0d6efd';
+            document.getElementById('stageProbability').value = 50;
+            document.getElementById('stageModalTitle').innerText = 'Add Stage';
+            new bootstrap.Modal(document.getElementById('stageModal')).show();
+        }
+    }
+
+    document.getElementById('stageForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        const id = document.getElementById('stageId').value;
+        const url = id ? `/new-lead/settings/pipeline-stage/${id}/edit/` : "{% url 'add_pipeline_stage' %}";
+        const formData = new FormData();
+        formData.append('name', document.getElementById('stageName').value);
+        formData.append('order', document.getElementById('stageOrder').value);
+        formData.append('color', document.getElementById('stageColor').value);
+        formData.append('probability', document.getElementById('stageProbability').value);
+        if (id) formData.append('is_active', 'on');
+
+        fetch(url, {
+            method: 'POST',
+            body: formData,
+            headers: { 'X-CSRFToken': csrftoken }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) location.reload();
+            else alert('Error: ' + JSON.stringify(data.errors));
+        });
+    });
+
+    function editStage(id) { openStageModal(id); }
+
+    function deleteStage(id) {
+        if (confirm('Delete this stage?')) {
+            fetch(`/new-lead/settings/pipeline-stage/${id}/delete/`, {
+                method: 'POST',
+                headers: { 'X-CSRFToken': csrftoken }
+            })
+            .then(response => response.json())
+            .then(data => { if (data.success) location.reload(); });
+        }
+    }
+
+    // -------------------- Lead Sources --------------------
+    function openSourceModal(id) {
+        if (id) {
+            fetch(`/new-lead/settings/lead-source/${id}/get/`, {
+                headers: {'X-Requested-With': 'XMLHttpRequest'}
+            })
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('sourceId').value = data.id;
+                document.getElementById('sourceName').value = data.name;
+                document.getElementById('sourceCost').value = data.cost_per_lead;
+                document.getElementById('sourceActive').checked = data.is_active;
+                document.getElementById('sourceModalTitle').innerText = 'Edit Source';
+                new bootstrap.Modal(document.getElementById('sourceModal')).show();
+            });
+        } else {
+            document.getElementById('sourceForm').reset();
+            document.getElementById('sourceId').value = '';
+            document.getElementById('sourceActive').checked = true;
+            document.getElementById('sourceCost').value = 0;
+            document.getElementById('sourceModalTitle').innerText = 'Add Source';
+            new bootstrap.Modal(document.getElementById('sourceModal')).show();
+        }
+    }
+
+    document.getElementById('sourceForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        const id = document.getElementById('sourceId').value;
+        const url = id ? `/new-lead/settings/lead-source/${id}/edit/` : "{% url 'add_lead_source' %}";
+        const formData = new FormData(this);
+        fetch(url, {
+            method: 'POST',
+            body: formData,
+            headers: { 'X-CSRFToken': csrftoken }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) location.reload();
+            else alert('Error: ' + JSON.stringify(data.errors));
+        });
+    });
+
+    function editSource(id) { openSourceModal(id); }
+
+    function toggleSource(id) {
+        if (confirm('Toggle active status?')) {
+            fetch(`/new-lead/settings/lead-source/${id}/toggle/`, {
+                method: 'POST',
+                headers: { 'X-CSRFToken': csrftoken }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) location.reload();
+            });
+        }
+    }
+
+    function deleteSource(id) {
+        if (confirm('Are you sure you want to permanently delete this source?')) {
+            fetch(`/new-lead/settings/lead-source/${id}/delete/`, {
+                method: 'POST',
+                headers: { 'X-CSRFToken': csrftoken }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) location.reload();
+            });
+        }
+    }
+
+    // -------------------- Campaigns --------------------
+    function openCampaignModal(id) {
+        if (id) {
+            fetch(`/new-lead/settings/campaign/${id}/get/`, {
+                headers: {'X-Requested-With': 'XMLHttpRequest'}
+            })
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('campaignId').value = data.id;
+                document.getElementById('campaignName').value = data.name;
+                document.getElementById('campaignSource').value = data.source;
+                document.getElementById('campaignStartDate').value = data.start_date;
+                document.getElementById('campaignEndDate').value = data.end_date;
+                document.getElementById('campaignBudget').value = data.budget;
+                document.getElementById('campaignActive').checked = data.is_active;
+                document.getElementById('campaignModalTitle').innerText = 'Edit Campaign';
+                new bootstrap.Modal(document.getElementById('campaignModal')).show();
+            });
+        } else {
+            document.getElementById('campaignForm').reset();
+            document.getElementById('campaignId').value = '';
+            document.getElementById('campaignActive').checked = true;
+            document.getElementById('campaignModalTitle').innerText = 'Add Campaign';
+            new bootstrap.Modal(document.getElementById('campaignModal')).show();
+        }
+    }
+
+    document.getElementById('campaignForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        const id = document.getElementById('campaignId').value;
+        const url = id ? `/new-lead/settings/campaign/${id}/edit/` : "{% url 'add_campaign' %}";
+        const formData = new FormData(this);
+        fetch(url, {
+            method: 'POST',
+            body: formData,
+            headers: { 'X-CSRFToken': csrftoken }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) location.reload();
+            else alert('Error: ' + JSON.stringify(data.errors));
+        });
+    });
+
+    function editCampaign(id) { openCampaignModal(id); }
+    function viewCampaignStats(id) { alert('Campaign stats – coming soon.'); }
+
+    // -------------------- Lost Reasons --------------------
+    function openLostReasonModal() {
+        document.getElementById('lostReasonForm').reset();
+        new bootstrap.Modal(document.getElementById('lostReasonModal')).show();
+    }
+
+    document.getElementById('lostReasonForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        const formData = new FormData(this);
+        fetch("{% url 'add_lost_reason' %}", {
+            method: 'POST',
+            body: formData,
+            headers: { 'X-CSRFToken': csrftoken }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) location.reload();
+            else alert('Error: ' + JSON.stringify(data.errors));
+        });
+    });
+
+    function deleteLostReason(id) {
+        if (confirm('Delete this lost reason?')) {
+            fetch(`/new-lead/settings/lost-reason/${id}/delete/`, {
+                method: 'POST',
+                headers: { 'X-CSRFToken': csrftoken }
+            })
+            .then(response => response.json())
+            .then(data => { if (data.success) location.reload(); });
+        }
+    }
+
+    // -------------------- Scoring Rules --------------------
+    function openScoringRuleModal(id) {
+        if (id) {
+            fetch(`/new-lead/settings/scoring-rule/${id}/get/`, {
+                headers: {'X-Requested-With': 'XMLHttpRequest'}
+            })
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('scoringRuleId').value = data.id;
+                document.getElementById('scoringRuleCriteria').value = data.criteria;
+                document.getElementById('scoringRuleCondition').value = data.condition;
+                document.getElementById('scoringRuleValue').value = data.value;
+                document.getElementById('scoringRulePoints').value = data.points;
+                document.getElementById('scoringRuleActive').checked = data.is_active;
+                document.getElementById('scoringRuleModalTitle').innerText = 'Edit Scoring Rule';
+                new bootstrap.Modal(document.getElementById('scoringRuleModal')).show();
+            });
+        } else {
+            document.getElementById('scoringRuleForm').reset();
+            document.getElementById('scoringRuleId').value = '';
+            document.getElementById('scoringRulePoints').value = 10;
+            document.getElementById('scoringRuleActive').checked = true;
+            document.getElementById('scoringRuleModalTitle').innerText = 'Add Scoring Rule';
+            new bootstrap.Modal(document.getElementById('scoringRuleModal')).show();
+        }
+    }
+
+    document.getElementById('scoringRuleForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        const id = document.getElementById('scoringRuleId').value;
+        const url = id ? `/new-lead/settings/scoring-rule/${id}/edit/` : "{% url 'add_scoring_rule' %}";
+        const formData = new FormData(this);
+        fetch(url, {
+            method: 'POST',
+            body: formData,
+            headers: { 'X-CSRFToken': csrftoken }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) location.reload();
+            else alert('Error: ' + JSON.stringify(data.errors));
+        });
+    });
+
+    function editScoringRule(id) { openScoringRuleModal(id); }
+    function deleteScoringRule(id) {
+        if (confirm('Delete this scoring rule?')) {
+            fetch(`/new-lead/settings/scoring-rule/${id}/delete/`, {
+                method: 'POST',
+                headers: { 'X-CSRFToken': csrftoken }
+            })
+            .then(response => response.json())
+            .then(data => { if (data.success) location.reload(); });
+        }
+    }
+
+    // -------------------- User Roles (Tree Permissions) --------------------
+    function selectRole(roleId) {
+        document.getElementById('currentRoleId').value = roleId;
+        document.querySelectorAll('#rolesList .list-group-item').forEach(el => el.classList.remove('active'));
+        document.querySelector(`[data-role-id="${roleId}"]`).classList.add('active');
+
+        fetch(`/new-lead/settings/role/${roleId}/permissions/`, {
+            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        })
+        .then(response => response.json())
+        .then(data => {
+            // Group by app_label (using the custom Permission model's app_label field)
+            const grouped = {};
+            data.permissions.forEach(p => {
+                if (!grouped[p.app_label]) grouped[p.app_label] = [];
+                grouped[p.app_label].push(p);
+            });
+
+            let html = '';
+            for (const [app, perms] of Object.entries(grouped)) {
+                html += `<div class="col-12"><h6 class="mt-3">${app}</h6></div>`;
+                perms.forEach(p => {
+                    html += `
+                        <div class="col-md-6">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="permissions" value="${p.id}" id="perm_${p.id}" ${p.assigned ? 'checked' : ''}>
+                                <label class="form-check-label" for="perm_${p.id}">${p.name}</label>
+                            </div>
+                        </div>
+                    `;
+                });
+            }
+
+            document.getElementById('permissionsList').innerHTML = html;
+            document.getElementById('permissionsCard').style.display = 'block';
+        });
+    }
+
+    document.getElementById('permissionsForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        const roleId = document.getElementById('currentRoleId').value;
+        const formData = new FormData();
+        document.querySelectorAll('input[name="permissions"]:checked').forEach(cb => formData.append('permissions', cb.value));
+        fetch(`/new-lead/settings/role/${roleId}/permissions/update/`, {
+            method: 'POST',
+            body: formData,
+            headers: { 'X-CSRFToken': csrftoken }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) alert('Permissions saved.');
+            else alert('Error saving permissions.');
+        });
+    });
+
+    function openRoleModal() {
+        document.getElementById('roleForm').reset();
+        document.getElementById('roleId').value = '';
+        document.getElementById('roleModalTitle').innerText = 'Add Role';
+        new bootstrap.Modal(document.getElementById('roleModal')).show();
+    }
+
+    document.getElementById('roleForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        const id = document.getElementById('roleId').value;
+        const url = id ? `/new-lead/settings/role/${id}/edit/` : "{% url 'add_role' %}";
+        const formData = new FormData(this);
+        fetch(url, {
+            method: 'POST',
+            body: formData,
+            headers: { 'X-CSRFToken': csrftoken }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) location.reload();
+            else alert('Error: ' + JSON.stringify(data.errors));
+        });
+    });
+
+    // -------------------- Automation Email Templates --------------------
+    function editEmailTemplate(templateName) {
+        alert(`Edit template: ${templateName}\n\nThis feature will be implemented soon.`);
+    }
+
+    // Load first role's permissions on page load
+    {% if roles %}
+    window.onload = function() {
+        selectRole({{ roles.0.id }});
+    };
+    {% endif %}
+</script>
+{% endblock %}

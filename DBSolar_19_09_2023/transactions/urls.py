@@ -328,6 +328,16 @@ urlpatterns = [
     path('generate-final-bill/', views.generate_final_bill, name='generate_final_bill'),
 
     path('finalsales/', views.FinalSaleView.as_view(), name='finalsales-list'),
+    path(
+        'finalsales/<int:pk>/return-bills/',
+        views.final_sale_return_bills_for_delete,
+        name='final-sale-return-bills',
+    ),
+    path(
+        'finalsales/<int:pk>/delete-return-bills/',
+        views.final_sale_delete_return_bills,
+        name='final-sale-delete-returns',
+    ),
     # path('sales/<pk>/delete_final_sale', views.FinalSaleDeleteView.as_view(), name='delete-final-sale'),
     path('sales/<int:pk>/delete_final_sale/', views.FinalSaleDeleteView.as_view(), name='delete-final-sale'),
     # path('sales/finalbill/<int:billno>/', views.FinalSaleBillView.as_view(), name='final-sale-bill'),  # Ensure this is correct
@@ -377,6 +387,11 @@ urlpatterns = [
 
     # Return List
     path('return/returnsales/', views.ReturnSaleView.as_view(), name='returnsales-list'),
+    path(
+        'return/<int:pk>/delete_return_sale/',
+        views.ReturnSaleDeleteView.as_view(),
+        name='delete-return-sale',
+    ),
 
 
    # Create the Salelist / finalsale list / return list of single consumer or vendor

@@ -1,0 +1,385 @@
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block title %}Quotation #{{ quotation.quote_number }} - Details{% endblock %}
+
+{% block content %}
+<div class="quotation-detail">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>Quotation #{{ quotation.quote_number }}</h2>
+        <div>
+            <span class="badge {% if quotation.status == 'approved' %}bg-success{% elif quotation.status == 'sent' %}bg-primary{% elif quotation.status == 'draft' %}bg-secondary{% elif quotation.status == 'rejected' %}bg-danger{% else %}bg-warning{% endif %} me-2">
+                {{ quotation.get_status_display }}
+            </span>
+            <span class="text-muted">Version {{ quotation.version }}</span>
+        </div>
+    </div>
+
+    <!-- Action Buttons (after send: edit, approval, PDF, reject, revise — same as sent-quotation workflow) -->
+    <div class="d-flex flex-wrap gap-2 mb-4 align-items-center">
+        <a href="{% url 'quotation_edit' quotation.id %}" class="btn btn-outline-primary">
+            <i class="fas fa-edit me-2"></i>Edit
+        </a>
+        {% if quotation.status == 'draft' %}
+        <form method="post" action="{% url 'quotation_send' quotation.id %}" class="d-inline m-0">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-outline-success">
+                <i class="fas fa-paper-plane me-2"></i>Send
+            </button>
+        </form>
+        {% endif %}
+        {% if quotation.status == 'sent' or quotation.status == 'negotiating' or quotation.status == 'viewed' %}
+        <form method="post" action="{% url 'quotation_approve' quotation.id %}" class="d-inline m-0">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-outline-success" onclick="return confirm('Approve this quotation?')">
+                <i class="fas fa-check-circle me-2"></i>Approve
+            </button>
+        </form>
+        <form method="post" action="{% url 'quotation_reject' quotation.id %}" class="d-inline m-0">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-outline-danger" onclick="return confirm('Reject this quotation?')">
+                <i class="fas fa-times-circle me-2"></i>Reject
+            </button>
+        </form>
+        {% endif %}
+        {% if quotation.status == 'approved' %}
+        <form method="post" action="{% url 'quotation_reject' quotation.id %}" class="d-inline m-0">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-outline-danger" onclick="return confirm('Reject this quotation?')">
+                <i class="fas fa-times-circle me-2"></i>Reject
+            </button>
+        </form>
+        {% endif %}
+        <button type="button" id="openLeadQuotationPdfModal" class="btn btn-outline-danger">
+            <i class="fas fa-file-pdf me-2"></i>PDF
+        </button>
+        {% if quotation.status == 'sent' or quotation.status == 'viewed' or quotation.status == 'negotiating' or quotation.status == 'approved' %}
+        <form method="post" action="{% url 'quotation_revise' quotation.id %}" class="d-inline m-0"
+              onsubmit="return confirm('Create a new draft quotation copied from this one?');">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-outline-warning">
+                <i class="fas fa-copy me-2"></i>Revise
+            </button>
+        </form>
+        {% endif %}
+        <a href="{% url 'quotation_list' %}" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left me-2"></i>Back to List
+        </a>
+    </div>
+
+    <div id="leadQuotationPdfModal" style="display:none; position:fixed; z-index:99999; left:0; top:0; right:0; bottom:0; background:rgba(0,0,0,0.5); align-items:center; justify-content:center;">
+        <div style="background:white; margin:auto; padding:30px; border-radius:10px; max-width:500px; box-shadow:0 6px 18px rgba(0,0,0,0.3);">
+            <h3 style="color:#1e41d1;">Generate PDF</h3>
+            <p style="margin-bottom:20px;">Choose a template (same style as generated quotation flow):</p>
+            <div style="display:flex; gap:15px; margin-bottom:25px; flex-wrap:wrap;">
+                <button type="button" id="leadPdfStandardBtn" class="pdf-option-btn-lead" style="flex:1; min-width:140px; padding:15px; background:#4a6cf7; color:white; border:none; border-radius:5px; cursor:pointer;">
+                    <strong>Standard quotation</strong><br>
+                    <small>Default layout</small>
+                </button>
+                <button type="button" id="leadPdfCompanyBtn" class="pdf-option-btn-lead" style="flex:1; min-width:140px; padding:15px; background:#1e41d1; color:white; border:none; border-radius:5px; cursor:pointer;">
+                    <strong>Company quotation</strong><br>
+                    <small>Company-branded layout</small>
+                </button>
+            </div>
+            <div style="text-align:right;">
+                <button type="button" id="closeLeadQuotationPdfModal" style="padding:8px 20px; background:#6c757d; color:white; border:none; border-radius:4px;">Cancel</button>
+            </div>
+        </div>
+    </div>
+    <style>
+    .pdf-option-btn-lead:hover { opacity: 0.92; transform: translateY(-2px); transition: all 0.25s ease; }
+    </style>
+    <script>
+    document.addEventListener('DOMContentLoaded', function () {
+        var modal = document.getElementById('leadQuotationPdfModal');
+        var openBtn = document.getElementById('openLeadQuotationPdfModal');
+        var closeBtn = document.getElementById('closeLeadQuotationPdfModal');
+        var stdBtn = document.getElementById('leadPdfStandardBtn');
+        var coBtn = document.getElementById('leadPdfCompanyBtn');
+        var basePdfUrl = "{% url 'quotation_pdf' quotation.id %}";
+        if (!modal || !openBtn) return;
+        openBtn.addEventListener('click', function () {
+            modal.style.display = 'flex';
+        });
+        closeBtn.addEventListener('click', function () {
+            modal.style.display = 'none';
+        });
+        modal.addEventListener('click', function (e) {
+            if (e.target === modal) modal.style.display = 'none';
+        });
+        if (stdBtn) stdBtn.addEventListener('click', function () {
+            window.open(basePdfUrl + '?template=standard', '_blank');
+            modal.style.display = 'none';
+        });
+        if (coBtn) coBtn.addEventListener('click', function () {
+            window.open(basePdfUrl + '?template=company', '_blank');
+            modal.style.display = 'none';
+        });
+    });
+    </script>
+
+    <div class="row">
+        <!-- Main Column -->
+        <div class="col-md-8">
+            <!-- Lead Information -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Lead Information</h5>
+                </div>
+                <div class="card-body">
+                    <table class="table table-sm table-borderless">
+                        <tr>
+                            <th>Lead name:</th>
+                            <td><a href="{% url 'lead_detail' quotation.lead.id %}">{{ quotation.lead.name }}</a></td>
+                        </tr>
+                        <tr>
+                            <th>Phone:</th>
+                            <td>{{ quotation.lead.phone }}</td>
+                        </tr>
+                        <tr>
+                            <th>Email:</th>
+                            <td>{{ quotation.lead.email|default:'-' }}</td>
+                        </tr>
+                        <tr>
+                            <th>Address:</th>
+                            <td>{{ quotation.lead.address }}, {{ quotation.lead.city }}</td>
+                        </tr>
+                        <tr>
+                            <th>Monthly Bill:</th>
+                            <td>₹{{ quotation.lead.electricity_bill|default:0|intcomma }}</td>
+                        </tr>
+                    </table>
+                    {% if quotation.survey %}
+                    <a href="{% url 'survey_detail' quotation.survey.id %}" class="btn btn-sm btn-outline-info">
+                        <i class="fas fa-hard-hat me-2"></i>View Survey
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- System Details -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">System Details</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <table class="table table-sm table-borderless">
+                                <tr><th>System Size:</th><td>{{ quotation.system_size }} kW</td></tr>
+                                <tr><th>Panel Type:</th><td>{{ quotation.panel_type }}</td></tr>
+                                <tr><th>Panel Count:</th><td>{{ quotation.panel_count }}</td></tr>
+                                <tr><th>Inverter Type:</th><td>{{ quotation.inverter_type }}</td></tr>
+                            </table>
+                        </div>
+                        <div class="col-md-6">
+                            <table class="table table-sm table-borderless">
+                                <tr><th>Mounting Type:</th><td>{{ quotation.mounting_type }}</td></tr>
+                                <tr><th>Warranty:</th><td>{{ quotation.warranty_years }} years</td></tr>
+                                <tr><th>Est. Generation:</th><td>{{ quotation.estimated_generation }} kWh/year</td></tr>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Cost Breakdown -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Cost Breakdown</h5>
+                </div>
+                <div class="card-body">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Description</th>
+                                <th class="text-end">Qty</th>
+                                <th class="text-end">Unit Price</th>
+                                <th class="text-end">Total</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in quotation.items.all %}
+                            <tr>
+                                <td>{{ item.description }}</td>
+                                <td class="text-end">{{ item.quantity }}</td>
+                                <td class="text-end">₹{{ item.unit_price|intcomma }}</td>
+                                <td class="text-end">₹{{ item.total_price|intcomma }}</td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="4" class="text-center text-muted">No items added yet.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                        <tfoot class="table-group-divider">
+                            <tr>
+                                <th colspan="3" class="text-end">Subtotal:</th>
+                                <td class="text-end">₹{{ quotation.subtotal|intcomma }}</td>
+                            </tr>
+                            <tr>
+                                <th colspan="3" class="text-end">GST ({{ quotation.gst_percentage }}%):</th>
+                                <td class="text-end">₹{{ quotation.gst_amount|intcomma }}</td>
+                            </tr>
+                            <tr>
+                                <th colspan="3" class="text-end">Total:</th>
+                                <td class="text-end">₹{{ quotation.total_cost|intcomma }}</td>
+                            </tr>
+                            <tr>
+                                <th colspan="3" class="text-end">Subsidy:</th>
+                                <td class="text-end text-success">- ₹{{ quotation.subsidy_amount|intcomma }}</td>
+                            </tr>
+                            <tr class="table-active">
+                                <th colspan="3" class="text-end">Net Cost:</th>
+                                <td class="text-end"><strong>₹{{ quotation.net_cost|intcomma }}</strong></td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Financial Analysis -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Financial Analysis</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-md-3">
+                            <div class="p-3 bg-light rounded">
+                                <h6>ROI</h6>
+                                <h3 class="text-success">{{ quotation.roi }}%</h3>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="p-3 bg-light rounded">
+                                <h6>Payback</h6>
+                                <h3>{{ quotation.payback_years }} years</h3>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="p-3 bg-light rounded">
+                                <h6>Monthly EMI</h6>
+                                <h3>₹{{ quotation.monthly_emi|intcomma }}</h3>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="p-3 bg-light rounded">
+                                <h6>Monthly Savings</h6>
+                                <h3 class="text-success">₹{{ quotation.monthly_savings|intcomma }}</h3>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Terms & Conditions -->
+            {% if quotation.terms_conditions %}
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Terms & Conditions</h5>
+                </div>
+                <div class="card-body">
+                    {{ quotation.terms_conditions|linebreaks }}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Revision History -->
+            {% if quotation.revisions.exists %}
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Revision History</h5>
+                </div>
+                <div class="card-body">
+                    <ul class="list-group">
+                        {% for rev in quotation.revisions.all %}
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            Version {{ rev.version }}
+                            <span>₹{{ rev.total_cost|intcomma }}</span>
+                            <small class="text-muted">{{ rev.created|date:'d M Y' }} by {{ rev.created_by.get_full_name }}</small>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Sidebar -->
+        <div class="col-md-4">
+            <!-- Dates Card -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Dates</h5>
+                </div>
+                <div class="card-body">
+                    <ul class="list-group list-group-flush">
+                        <li class="list-group-item d-flex justify-content-between">
+                            <span>Created:</span>
+                            <span>{{ quotation.created|date:'d M Y' }}</span>
+                        </li>
+                        {% if quotation.sent_date %}
+                        <li class="list-group-item d-flex justify-content-between">
+                            <span>Sent:</span>
+                            <span>{{ quotation.sent_date|date:'d M Y' }}</span>
+                        </li>
+                        {% endif %}
+                        {% if quotation.approval_date %}
+                        <li class="list-group-item d-flex justify-content-between">
+                            <span>Approved:</span>
+                            <span>{{ quotation.approval_date|date:'d M Y' }}</span>
+                        </li>
+                        {% endif %}
+                        <li class="list-group-item d-flex justify-content-between">
+                            <span>Valid Until:</span>
+                            <span>{{ quotation.valid_until|date:'d M Y' }}</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Approval Status -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Approval Status</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>Customer Approval:</span>
+                        {% if quotation.customer_approved %}
+                        <span class="badge bg-success">Approved</span>
+                        {% else %}
+                        <span class="badge bg-warning">Pending</span>
+                        {% endif %}
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        <span>Internal Approval:</span>
+                        {% if quotation.internal_approved %}
+                        <span class="badge bg-success">Approved</span>
+                        {% else %}
+                        <span class="badge bg-warning">Pending</span>
+                        {% endif %}
+                    </div>
+                    {% if quotation.approved_by %}
+                    <hr>
+                    <small class="text-muted">Approved by: {{ quotation.approved_by.get_full_name }}</small>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Negotiation Notes -->
+            {% if quotation.negotiation_notes %}
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Negotiation Notes</h5>
+                </div>
+                <div class="card-body">
+                    {{ quotation.negotiation_notes|linebreaks }}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

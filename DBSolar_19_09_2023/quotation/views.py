@@ -2,21 +2,345 @@ from decimal import Decimal
 
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import render, redirect, get_object_or_404
+from django.urls import reverse
 from django.forms import modelformset_factory
 from django.http import HttpResponse
 from django.template.loader import render_to_string
 from xhtml2pdf import pisa
 from django.utils import timezone
+from django.utils.dateparse import parse_date, parse_datetime
+from datetime import date as date_cls, datetime as datetime_cls, time as time_cls
 
 from .models import Quotation, SolarPanelCompany, InverterCompany, Representative, PlantCapacity, TermsAndCondition
 from .forms import QuotationForm
 # views.py
 from django.http import JsonResponse, HttpResponseBadRequest
-from django.views.decorators.http import require_POST
+from django.views.decorators.http import require_GET, require_POST
 from django.views.decorators.csrf import csrf_exempt, ensure_csrf_cookie
 from .models import OtherItem, Quotation, SolarPanelCompany, InverterCompany
 from django.db import connection
+from django.db.models import Q
 from django.views.decorators.csrf import csrf_protect
+
+from customer.staff_access import (
+    quotation_queryset_for_request,
+    is_associate_staff,
+)
+
+
+def get_quotation_or_404_for_request(request, pk):
+    """Associates may only open quotations assigned to them."""
+    qs = quotation_queryset_for_request(request.user)
+    return get_object_or_404(qs, pk=pk)
+
+
+def _parse_timeline_value_to_aware_datetime(value):
+    """
+    Coerce DateTimeField/DateField or legacy string values to an aware datetime for sorting.
+    Returns None if unparseable.
+    """
+    if value is None:
+        return None
+    if isinstance(value, datetime_cls):
+        dt = value
+        if timezone.is_naive(dt):
+            return timezone.make_aware(dt, timezone.get_current_timezone())
+        return dt
+    if isinstance(value, date_cls) and not isinstance(value, datetime_cls):
+        return timezone.make_aware(
+            datetime_cls.combine(value, time_cls.min),
+            timezone.get_current_timezone(),
+        )
+    if isinstance(value, str):
+        s = value.strip()
+        if not s:
+            return None
+        dt = parse_datetime(s)
+        if dt is not None:
+            if timezone.is_naive(dt):
+                return timezone.make_aware(dt, timezone.get_current_timezone())
+            return dt
+        d = parse_date(s)
+        if d is not None:
+            return timezone.make_aware(
+                datetime_cls.combine(d, time_cls.min),
+                timezone.get_current_timezone(),
+            )
+    return None
+
+
+def _timeline_event_sort_key(item):
+    dt = _parse_timeline_value_to_aware_datetime(item.get("date"))
+    if dt is None:
+        return (1, 0.0, item.get("label") or "")
+    return (0, dt.timestamp())
+
+
+def _resolve_quotation_created_datetime(q):
+    """
+    Exact same value as CRM Dates sidebar 'Created' (apps.quotations _erp_quotation_sidebar_dates):
+    _erp_quotation_datetime_for_template(date) then fallback created_at — returned as-is so
+    templates format identically (avoids timezone/day shifts from re-parsing).
+    """
+    from apps.quotations.views import _erp_quotation_datetime_for_template
+
+    q_date = getattr(q, "date", None)
+    created_at = getattr(q, "created_at", None)
+    disp = _erp_quotation_datetime_for_template(q_date)
+    if disp is None and created_at is not None:
+        disp = created_at
+    return disp
+
+
+def _resolve_family_card_created_datetime(q):
+    """
+    For quote family history cards, "Created" should reflect the actual row creation
+    (revision generation time), so prefer created_at over quotation date.
+    """
+    created_at = getattr(q, "created_at", None)
+    if created_at:
+        parsed_created = _parse_timeline_value_to_aware_datetime(created_at)
+        if parsed_created is not None:
+            return parsed_created
+    return _resolve_quotation_created_datetime(q)
+
+
+def _timeline_datetime_for_field(q, attr):
+    """Normalize a row's datetime field for timeline display and sorting."""
+    v = getattr(q, attr, None)
+    if v is None or v == "":
+        return None
+    return _parse_timeline_value_to_aware_datetime(v)
+
+
+def _sort_quotations_by_quote_no_asc(q):
+    """Ascending revision order (oldest first), same numeric rule as CRM list."""
+    no = (getattr(q, "quotation_no", None) or "").strip()
+    if not no:
+        return (0, 0, getattr(q, "pk", None) or 0)
+    parts = no.split("_")
+    try:
+        base = int(parts[0])
+    except (ValueError, TypeError):
+        base = 0
+    try:
+        rev = int(parts[1]) if len(parts) > 1 else 0
+    except (ValueError, TypeError):
+        rev = 0
+    pk = getattr(q, "pk", None) or 0
+    return (base, rev, pk)
+
+
+def _quotation_family_rows_for_request(request, anchor_quotation):
+    """
+    ERP quotation rows in the same quote-no family, oldest first.
+    """
+    no = (getattr(anchor_quotation, "quotation_no", None) or "").strip()
+    if not no:
+        return [anchor_quotation]
+    base = no.split("_")[0].strip()
+    if not base:
+        return [anchor_quotation]
+    qs = quotation_queryset_for_request(request.user).filter(
+        Q(quotation_no=base) | Q(quotation_no__startswith=f"{base}_")
+    )
+    return sorted(list(qs), key=_sort_quotations_by_quote_no_asc)
+
+
+def quotation_is_latest_in_family_for_request(request, quotation):
+    """
+    True when this row is the highest revision for its quotation_no family (same ordering as CRM).
+    Older revisions should only expose PDF + navigation, not Edit/Send/Approve/Reject/Revise.
+    """
+    rows = _quotation_family_rows_for_request(request, quotation)
+    if not rows:
+        return True
+    latest = max(rows, key=_sort_quotations_by_quote_no_asc)
+    return getattr(latest, "pk", None) == getattr(quotation, "pk", None)
+
+
+def quotation_family_cards_for_request(request, anchor_quotation):
+    """
+    One card per quotation revision in the family, with Created / Sent / Approved / Converted (and
+    order confirmed on the relevant row). For UI on CRM detail and revise pages.
+    """
+    rows = _quotation_family_rows_for_request(request, anchor_quotation)
+    rejection_dt_by_pk = {}
+    conversion_dt_by_pk = {}
+    try:
+        from django.db.models import Max
+        from quotation.models import QuotationConversionRecord, QuotationRejectionRecord
+
+        row_ids = [q.pk for q in rows if getattr(q, "pk", None) is not None]
+        if row_ids:
+            rejection_rows = (
+                QuotationRejectionRecord.objects.filter(quotation_id__in=row_ids)
+                .values("quotation_id")
+                .annotate(last_rejected_at=Max("created_at"))
+            )
+            rejection_dt_by_pk = {
+                r["quotation_id"]: r["last_rejected_at"] for r in rejection_rows
+            }
+            conversion_rows = (
+                QuotationConversionRecord.objects.filter(quotation_id__in=row_ids)
+                .values("quotation_id")
+                .annotate(last_converted_at=Max("created_at"))
+            )
+            conversion_dt_by_pk = {
+                r["quotation_id"]: r["last_converted_at"] for r in conversion_rows
+            }
+    except Exception:
+        rejection_dt_by_pk = {}
+        conversion_dt_by_pk = {}
+    anchor_pk = getattr(anchor_quotation, "pk", None)
+    cards = []
+    for idx, q in enumerate(rows):
+        qno = (q.quotation_no or "").strip() or f"#{q.pk}"
+        if idx == 0:
+            title = f"Quotation {qno}"
+            badge = "Original"
+        else:
+            title = f"Revise v{idx + 1}"
+            badge = f"Rev. {idx + 1}"
+        items = [
+            {
+                "label": "Created",
+                "date": _resolve_family_card_created_datetime(q),
+                "date_is_dateonly": False,
+            }
+        ]
+        if q.sent_date:
+            items.append(
+                {
+                    "label": "Sent",
+                    "date": _timeline_datetime_for_field(q, "sent_date"),
+                    "date_is_dateonly": False,
+                }
+            )
+        if q.approved_date:
+            items.append(
+                {
+                    "label": "Approved",
+                    "date": _timeline_datetime_for_field(q, "approved_date"),
+                    "date_is_dateonly": False,
+                }
+            )
+        if getattr(q, "status", "") == "converted":
+            items.append(
+                {
+                    "label": "Converted",
+                    # No dedicated converted datetime field on quotation; fallback to approval timeline.
+                    "date": conversion_dt_by_pk.get(getattr(q, "pk", None))
+                    or _timeline_datetime_for_field(q, "approved_date")
+                    or _timeline_datetime_for_field(q, "sent_date")
+                    or _resolve_family_card_created_datetime(q),
+                    "date_is_dateonly": False,
+                }
+            )
+        rejected_dt = rejection_dt_by_pk.get(getattr(q, "pk", None))
+        if rejected_dt is not None or getattr(q, "status", "") == "rejected":
+            items.append(
+                {
+                    "label": "Rejected",
+                    "date": rejected_dt
+                    or _timeline_datetime_for_field(q, "approved_date")
+                    or _timeline_datetime_for_field(q, "sent_date")
+                    or _resolve_family_card_created_datetime(q),
+                    "date_is_dateonly": False,
+                }
+            )
+        try:
+            status = q.get_status_display()
+        except Exception:
+            status = (getattr(q, "status", None) or "") and str(getattr(q, "status", ""))
+        cards.append(
+            {
+                "title": title,
+                "quotation_no": qno,
+                "pk": q.pk,
+                "badge": badge,
+                "status": status,
+                "is_current": q.pk == anchor_pk,
+                "items": items,
+            }
+        )
+    confirmed_rows = [
+        q
+        for q in rows
+        if getattr(q, "is_confirmed", False)
+        and getattr(q, "status", "") in ("approved", "converted")
+    ]
+    if confirmed_rows:
+        q_conf = max(confirmed_rows, key=_sort_quotations_by_quote_no_asc)
+        for c in cards:
+            if c["pk"] == q_conf.pk:
+                c["items"].append(
+                    {
+                        "label": "Order confirmed",
+                        "date": conversion_dt_by_pk.get(getattr(q_conf, "pk", None))
+                        or _timeline_datetime_for_field(q_conf, "approved_date")
+                        or q_conf.po_date,
+                        "date_is_dateonly": False,
+                    }
+                )
+                break
+    return cards
+
+
+def quotation_family_timeline_for_request(request, anchor_quotation):
+    """
+    All ERP rows for the same quote number family (e.g. 100, 100_1, 100_2), scoped to the user.
+    Returns a list of dicts: label, date, date_is_dateonly — ordered by time, with order
+    confirmed last (PO date if set).
+    """
+    rows = _quotation_family_rows_for_request(request, anchor_quotation)
+
+    events = []
+    for idx, q in enumerate(rows):
+        qno = (q.quotation_no or "").strip() or f"#{q.pk}"
+        if idx == 0:
+            label = f"Quotation {qno} created"
+        else:
+            label = f"Revise v{idx + 1} ({qno}) created"
+        events.append(
+            {
+                "label": label,
+                "date": _resolve_family_card_created_datetime(q),
+                "date_is_dateonly": False,
+            }
+        )
+        if q.sent_date:
+            events.append(
+                {
+                    "label": f"Sent — {qno}",
+                    "date": _timeline_datetime_for_field(q, "sent_date"),
+                    "date_is_dateonly": False,
+                }
+            )
+        if q.approved_date:
+            events.append(
+                {
+                    "label": f"Approved — {qno}",
+                    "date": _timeline_datetime_for_field(q, "approved_date"),
+                    "date_is_dateonly": False,
+                }
+            )
+
+    events.sort(key=_timeline_event_sort_key)
+
+    confirmed_rows = [q for q in rows if getattr(q, "is_confirmed", False)]
+    if confirmed_rows:
+        q_conf = max(confirmed_rows, key=_sort_quotations_by_quote_no_asc)
+        qno = (q_conf.quotation_no or "").strip() or str(q_conf.pk)
+        events.append(
+            {
+                "label": f"Order confirmed — {qno}",
+                "date": q_conf.po_date,
+                "date_is_dateonly": True,
+            }
+        )
+
+    return events
 
 
 def get_active_terms_conditions():
@@ -119,45 +443,448 @@ def get_active_terms_conditions():
 #     return render(request, 'quotation/quotation_list.html', {'quotations': quotations_list})
 
 
+#
+# def quotation_list(request):
+#     quotations = Quotation.objects.all()
+#
+#     def sort_key(q):
+#         quotation_no = q.quotation_no or "0"
+#         parts = quotation_no.split('_')
+#         base_no = parts[0]
+#         revision = int(parts[1]) if len(parts) > 1 else 0
+#         try:
+#             base_num = int(base_no)
+#         except (ValueError, TypeError):
+#             base_num = 0
+#         return (base_num, revision)
+#
+#     quotations_list = list(quotations)
+#     quotations_list.sort(key=sort_key, reverse=True)
+#
+#     quotation_groups = {}
+#     for quotation in quotations_list:
+#         base_no = quotation.quotation_no.split('_')[0]
+#         if base_no not in quotation_groups:
+#             quotation_groups[base_no] = quotation.pk
+#         else:
+#             existing = Quotation.objects.get(pk=quotation_groups[base_no])
+#             if quotation.created_at and existing.created_at and quotation.created_at > existing.created_at:
+#                 quotation_groups[base_no] = quotation.pk
+#
+#     for quotation in quotations_list:
+#         quotation.is_latest_revision = (
+#             quotation.pk == quotation_groups.get(quotation.quotation_no.split('_')[0])
+#         )
+#
+#     return render(
+#         request,
+#         'quotation/quotation_list.html',
+#         {'quotations': quotations_list}
+#     )
+
+from django.shortcuts import render, get_object_or_404
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+from .models import Quotation
+
+from django.shortcuts import render, get_object_or_404
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+from .models import Quotation
+
+from django.shortcuts import render, get_object_or_404
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+from .models import Quotation
+
+
+# def quotation_list(request):
+#     quotations = Quotation.objects.all()
+#
+#     def sort_key(q):
+#         parts = q.quotation_no.split("_")
+#         base = int(parts[0])
+#         rev = int(parts[1]) if len(parts) > 1 else 0
+#         return (base, rev)
+#
+#     quotations = sorted(list(quotations), key=sort_key, reverse=True)
+#
+#     latest_map = {}
+#     for q in quotations:
+#         q.base_no = q.quotation_no.split("_")[0]
+#         if q.base_no not in latest_map:
+#             latest_map[q.base_no] = q
+#
+#     for q in quotations:
+#         latest = latest_map[q.base_no]
+#         q.is_latest_revision = (q.id == latest.id)
+#         q.latest_confirmed = latest.is_confirmed   # ✅ NEW FLAG
+#
+#         # Hide only old revisions when latest is confirmed
+#         q.hide_row = (
+#             q.latest_confirmed and not q.is_latest_revision
+#         )
+#
+#     return render(
+#         request,
+#         "quotation/quotation_list.html",
+#         {"quotations": quotations}
+#     )
+
+from collections import defaultdict
+from collections import defaultdict
 
 def quotation_list(request):
-    quotations = Quotation.objects.all()
+    mode = (request.GET.get("mode") or "latest").strip().lower()
+    if mode not in {"latest", "all"}:
+        mode = "latest"
+
+    quotations = list(
+        quotation_queryset_for_request(request.user).select_related(
+            "assigned_associate", "plant_capacity_kw"
+        )
+    )
 
     def sort_key(q):
-        quotation_no = q.quotation_no or "0"
-        parts = quotation_no.split('_')
-        base_no = parts[0]
-        revision = int(parts[1]) if len(parts) > 1 else 0
+        parts = q.quotation_no.split("_")
+        base = int(parts[0])
+        rev = int(parts[1]) if len(parts) > 1 else 0
+        return (base, rev)
+
+    quotations = sorted(list(quotations), key=sort_key, reverse=True)
+
+    latest_map = {}
+    count_map = defaultdict(int)
+
+    def _format_display_date(raw_value):
+        if not raw_value:
+            return "-"
         try:
-            base_num = int(base_no)
-        except (ValueError, TypeError):
-            base_num = 0
-        return (base_num, revision)
+            # Datetime/date objects
+            if hasattr(raw_value, "strftime"):
+                return raw_value.strftime("%d.%m.%Y")
+            # String values from legacy rows
+            raw_str = str(raw_value).strip()
+            if not raw_str:
+                return "-"
+            for fmt in ("%Y-%m-%d", "%Y-%m-%d %H:%M:%S", "%d-%m-%Y", "%d/%m/%Y", "%Y/%m/%d"):
+                try:
+                    from datetime import datetime
+                    return datetime.strptime(raw_str[:19], fmt).strftime("%d.%m.%Y")
+                except Exception:
+                    continue
+            # Already in date-like text, try first 10 chars as YYYY-MM-DD
+            if len(raw_str) >= 10:
+                from datetime import datetime
+                try:
+                    return datetime.strptime(raw_str[:10], "%Y-%m-%d").strftime("%d.%m.%Y")
+                except Exception:
+                    pass
+        except Exception:
+            pass
+        return "-"
 
-    quotations_list = list(quotations)
-    quotations_list.sort(key=sort_key, reverse=True)
+    # Count records per quotation
+    for q in quotations:
+        q.base_no = q.quotation_no.split("_")[0]
+        count_map[q.base_no] += 1
 
-    quotation_groups = {}
-    for quotation in quotations_list:
-        base_no = quotation.quotation_no.split('_')[0]
-        if base_no not in quotation_groups:
-            quotation_groups[base_no] = quotation.pk
-        else:
-            existing = Quotation.objects.get(pk=quotation_groups[base_no])
-            if quotation.created_at and existing.created_at and quotation.created_at > existing.created_at:
-                quotation_groups[base_no] = quotation.pk
+        if q.base_no not in latest_map:
+            latest_map[q.base_no] = q
 
-    for quotation in quotations_list:
-        quotation.is_latest_revision = (
-            quotation.pk == quotation_groups.get(quotation.quotation_no.split('_')[0])
-        )
+    for q in quotations:
+        latest = latest_map[q.base_no]
+
+        q.is_latest_revision = (q.id == latest.id)
+        q.latest_confirmed = latest.is_confirmed
+        q.display_date = _format_display_date(getattr(q, "date", None) or getattr(q, "created_at", None))
+
+        q.has_multiple = count_map[q.base_no] > 1
+
+        # ✅ number of previous quotations
+        q.previous_count = count_map[q.base_no] - 1
+
+        # Hide old revisions initially in "latest" mode only.
+        q.hide_row = (mode == "latest") and q.has_multiple and not q.is_latest_revision
 
     return render(
         request,
-        'quotation/quotation_list.html',
-        {'quotations': quotations_list}
+        "quotation/quotation_list.html",
+        {
+            "quotations": quotations,
+            "quotation_initial_mode": mode,
+        }
     )
 
+# def quotation_list(request):
+#     quotations = Quotation.objects.all()
+#
+#     def sort_key(q):
+#         parts = q.quotation_no.split("_")
+#         base = int(parts[0])
+#         rev = int(parts[1]) if len(parts) > 1 else 0
+#         return (base, rev)
+#
+#     quotations = sorted(list(quotations), key=sort_key, reverse=True)
+#
+#     latest_map = {}
+#     count_map = defaultdict(int)
+#
+#     # Count how many records per base quotation
+#     for q in quotations:
+#         q.base_no = q.quotation_no.split("_")[0]
+#         count_map[q.base_no] += 1
+#
+#         if q.base_no not in latest_map:
+#             latest_map[q.base_no] = q
+#
+#     for q in quotations:
+#         latest = latest_map[q.base_no]
+#
+#         q.is_latest_revision = (q.id == latest.id)
+#         q.latest_confirmed = latest.is_confirmed
+#
+#         # ✅ NEW FLAG
+#         q.has_multiple = count_map[q.base_no] > 1
+#
+#         # Hide older revisions initially
+#         q.hide_row = q.has_multiple and not q.is_latest_revision
+#
+#     return render(
+#         request,
+#         "quotation/quotation_list.html",
+#         {"quotations": quotations}
+#     )
+
+@csrf_exempt
+def confirm_quotation(request, pk):
+    if request.method == "POST":
+        q = get_quotation_or_404_for_request(request, pk)
+
+        q.payment_type = request.POST.get("payment_type")
+        q.payment_mode = request.POST.get("payment_mode")
+        q.hybrid_mode = request.POST.get("hybrid_mode")
+        q.po_order_no = request.POST.get("po_order_no")
+        q.po_date = request.POST.get("po_date") or None
+        q.is_confirmed = True
+        q.save()
+
+        return JsonResponse({"status": "success"})
+
+
+# In your views.py (quotation app), add these missing views:
+
+@csrf_exempt
+def check_quotation_confirmed(request, pk):
+    """Check if quotation is already confirmed"""
+    try:
+        quotation = quotation_queryset_for_request(request.user).get(pk=pk)
+        return JsonResponse({
+            'is_confirmed': quotation.is_confirmed,
+            'consumer_type': quotation.consumer_type
+        })
+    except Quotation.DoesNotExist:
+        return JsonResponse({'error': 'Quotation not found'}, status=404)
+
+
+@csrf_exempt
+# def get_quotation_details(request, pk):
+#     """Get quotation details for conversion"""
+#     try:
+#         quotation = Quotation.objects.get(pk=pk)
+#
+#         # Split full name into first, middle, last
+#         name_parts = quotation.consumer_name.split()
+#         first_name = name_parts[0] if len(name_parts) > 0 else ""
+#         last_name = name_parts[-1] if len(name_parts) > 1 else ""
+#         middle_name = " ".join(name_parts[1:-1]) if len(name_parts) > 2 else ""
+#
+#         # If only two words, first becomes first name, second becomes last name
+#         if len(name_parts) == 2:
+#             first_name = name_parts[0]
+#             last_name = name_parts[1]
+#             middle_name = ""
+#
+#         # Get plant capacity - handle PlantCapacity object properly
+#         plant_capacity = 0
+#         if quotation.plant_capacity_kw:
+#             # Check if plant_capacity_kw is a ForeignKey to PlantCapacity
+#             if hasattr(quotation.plant_capacity_kw, '__str__'):
+#                 # Try to extract numeric value from string representation
+#                 import re
+#                 capacity_str = str(quotation.plant_capacity_kw)
+#                 match = re.search(r'(\d+(\.\d+)?)', capacity_str)
+#                 if match:
+#                     plant_capacity = float(match.group(1))
+#
+#         data = {
+#             'consumer_type': quotation.consumer_type,
+#             'project_type': quotation.project_type,
+#             'plant_capacity': plant_capacity,
+#             'phase': quotation.inv_phase,
+#             'consumer_no': quotation.consumer_no,
+#             'consumer_full_name': quotation.consumer_name,
+#             'first_name': first_name,
+#             'middle_name': middle_name,
+#             'last_name': last_name,
+#             'address': quotation.consumer_address1,
+#             'city': quotation.consumer_address2,  # You might need to add city field to quotation model
+#             'state': quotation.consumer_state,
+#             'email': quotation.consumer_email,
+#             'phone': quotation.consumer_mobile,
+#             'po_order_no': quotation.po_order_no,
+#             'po_date': quotation.po_date.strftime('%Y-%m-%d') if quotation.po_date else None,
+#         }
+#         return JsonResponse(data)
+#     except Quotation.DoesNotExist:
+#         return JsonResponse({'error': 'Quotation not found'}, status=404)
+@csrf_exempt
+def get_quotation_details(request, pk):
+    """Get quotation details for conversion"""
+    try:
+        quotation = quotation_queryset_for_request(request.user).get(pk=pk)
+
+        print(f"DEBUG: Getting quotation details for ID: {pk}")
+        print(f"DEBUG: Consumer Name: {quotation.consumer_name}")
+        print(f"DEBUG: Project Type: {quotation.project_type}")
+        print(f"DEBUG: Phase: {quotation.inv_phase}")
+
+        # Split full name into first, middle, last
+        name_parts = quotation.consumer_name.split()
+        print(f"DEBUG: Name parts: {name_parts}")
+
+        first_name = name_parts[0] if len(name_parts) > 0 else ""
+        last_name = name_parts[-1] if len(name_parts) > 1 else ""
+        middle_name = " ".join(name_parts[1:-1]) if len(name_parts) > 2 else ""
+
+        # If only two words, first becomes first name, second becomes last name
+        if len(name_parts) == 2:
+            first_name = name_parts[0]
+            last_name = name_parts[1]
+            middle_name = ""
+
+        print(f"DEBUG: First: {first_name}, Middle: {middle_name}, Last: {last_name}")
+
+        # Get plant capacity
+        plant_capacity = 0
+        if quotation.plant_capacity_kw:
+            if hasattr(quotation.plant_capacity_kw, '__str__'):
+                import re
+                capacity_str = str(quotation.plant_capacity_kw)
+                print(f"DEBUG: Capacity string: {capacity_str}")
+                match = re.search(r'(\d+(\.\d+)?)', capacity_str)
+                if match:
+                    plant_capacity = float(match.group(1))
+
+        print(f"DEBUG: Plant Capacity: {plant_capacity}")
+
+        # Get city from consumer_address2 if available
+        city = quotation.consumer_address2 if quotation.consumer_address2 else ''
+
+        data = {
+            'consumer_type': quotation.consumer_type,
+            'project_type': quotation.project_type,
+            'plant_capacity': plant_capacity,
+            'phase': quotation.inv_phase,
+            'consumer_no': quotation.consumer_no,
+            'consumer_full_name': quotation.consumer_name,
+            'first_name': first_name,
+            'middle_name': middle_name,
+            'last_name': last_name,
+            'address': quotation.consumer_address1,
+            'city': city,
+            'state': quotation.consumer_state,
+            'email': quotation.consumer_email,
+            'phone': quotation.consumer_mobile,
+            'po_order_no': quotation.po_order_no,
+            'po_date': quotation.po_date.strftime('%Y-%m-%d') if quotation.po_date else None,
+            'comp_name': quotation.consumer_name,
+        }
+
+        print(f"DEBUG: Final data being sent: {data}")
+
+        return JsonResponse(data)
+    except Quotation.DoesNotExist:
+        print(f"DEBUG: Quotation {pk} not found")
+        return JsonResponse({'error': 'Quotation not found'}, status=404)
+    except Exception as e:
+        print(f"DEBUG: Error: {str(e)}")
+        return JsonResponse({'error': str(e)}, status=500)
+
+
+@csrf_exempt
+def store_quotation_data(request):
+    """Store quotation data in session for form pre-filling"""
+    import json
+    if request.method == "POST":
+        try:
+            data = json.loads(request.body)
+            # Store both the data and timestamp to avoid session conflicts
+            request.session['quotation_data'] = {
+                'data': data.get('data', {}),
+                'timestamp': timezone.now().timestamp(),
+                'quotation_id': data.get('quotation_id')
+            }
+            request.session.modified = True  # Mark session as modified
+            return JsonResponse({'status': 'success', 'message': 'Data stored successfully'})
+        except json.JSONDecodeError as e:
+            return JsonResponse({'error': 'Invalid JSON', 'details': str(e)}, status=400)
+        except Exception as e:
+            return JsonResponse({'error': 'Server error', 'details': str(e)}, status=500)
+    return JsonResponse({'error': 'Invalid method'}, status=405)
+
+#
+# def quotation_list(request):
+#     quotations = Quotation.objects.all()
+#
+#     def sort_key(q):
+#         quotation_no = q.quotation_no or "0"
+#         parts = quotation_no.split('_')
+#         base_no = parts[0]
+#         revision = int(parts[1]) if len(parts) > 1 else 0
+#         try:
+#             base_num = int(base_no)
+#         except:
+#             base_num = 0
+#         return (base_num, revision)
+#
+#     quotations_list = list(quotations)
+#     quotations_list.sort(key=sort_key, reverse=True)
+#
+#     quotation_groups = {}
+#     for q in quotations_list:
+#         base_no = q.quotation_no.split('_')[0]
+#         if base_no not in quotation_groups:
+#             quotation_groups[base_no] = q.pk
+#         else:
+#             old = Quotation.objects.get(pk=quotation_groups[base_no])
+#             if q.created_at > old.created_at:
+#                 quotation_groups[base_no] = q.pk
+#
+#     for q in quotations_list:
+#         q.is_latest_revision = (
+#             q.pk == quotation_groups.get(q.quotation_no.split('_')[0])
+#         )
+#
+#     return render(request, "quotation/quotation_list.html", {
+#         "quotations": quotations_list
+#     })
+#
+#
+# @csrf_exempt
+# def confirm_quotation(request, pk):
+#     if request.method == "POST":
+#         q = get_object_or_404(Quotation, pk=pk)
+#
+#         q.payment_type = request.POST.get("payment_type")
+#         q.payment_mode = request.POST.get("payment_mode")
+#         q.hybrid_mode = request.POST.get("hybrid_mode")
+#         q.po_order_no = request.POST.get("po_order_no")
+#         q.po_date = request.POST.get("po_date") or None
+#         q.is_confirmed = True
+#
+#         q.save()
+#         return JsonResponse({"status": "success"})
 
 
 
@@ -908,9 +1635,386 @@ logger = logging.getLogger(__name__)
 #         logger.error(f"Error fetching terms and conditions: {e}")
 #         return []
 
+#
+# def revise_quotation(request, pk):
+#     original_quotation = get_object_or_404(Quotation, pk=pk)
+#
+#     panel_companies = list(SolarPanelCompany.objects.all())
+#     inverter_companies = list(InverterCompany.objects.all())
+#     terms_conditions = get_active_terms_conditions()
+#
+#     # Build other_dynamic_list from stored other_details
+#     other_dynamic_list = [x.strip() for x in (original_quotation.other_details or "").split(" / ") if x.strip()]
+#
+#     # Set of names existing in OtherItem table
+#     static_item_names = set(OtherItem.objects.values_list("name", flat=True))
+#
+#     # Store the new quotation ID between AJAX save and PDF generation
+#     new_quotation_id = None
+#
+#     if request.method == "POST":
+#         # Check if this is an AJAX save request or final PDF generation
+#         is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.POST.get('save_only')
+#
+#         # Check if we already have a saved quotation (for PDF generation phase)
+#         saved_quotation_id = request.POST.get('saved_quotation_id')
+#         if saved_quotation_id and not is_ajax:
+#             try:
+#                 # We already saved the quotation, just redirect to PDF
+#                 new_quotation = Quotation.objects.get(pk=saved_quotation_id)
+#                 pdf_template = request.POST.get('pdf_template', 'quotation')
+#                 if pdf_template == 'industrial':
+#                     return redirect("quotation:industrial_quotation_pdf", pk=new_quotation.pk)
+#                 else:
+#                     return redirect("quotation:quotation_pdf", pk=new_quotation.pk)
+#             except Quotation.DoesNotExist:
+#                 pass  # Continue with normal save process
+#
+#         form = QuotationForm(request.POST)
+#
+#         # Get active term IDs for validation
+#         active_term_ids = [term.id for term in terms_conditions]
+#
+#         # Set terms_conditions queryset before validation
+#         if active_term_ids:
+#             form.fields['terms_conditions'].queryset = TermsAndCondition.objects.filter(id__in=active_term_ids)
+#         else:
+#             form.fields['terms_conditions'].queryset = TermsAndCondition.objects.none()
+#
+#         if form.is_valid():
+#             # Create new quotation instance (don't save yet)
+#             new_quotation = form.save(commit=False)
+#
+#             # Handle system_na checkbox - clear capacities if NA is checked
+#             system_na = form.cleaned_data.get('system_na', False)
+#             if system_na:
+#                 new_quotation.dc_capacity = None
+#                 new_quotation.ac_capacity = None
+#             else:
+#                 # Ensure capacities are saved if not NA
+#                 new_quotation.dc_capacity = form.cleaned_data.get('dc_capacity')
+#                 new_quotation.ac_capacity = form.cleaned_data.get('ac_capacity')
+#
+#             # Set system_na to False initially
+#             new_quotation.system_na = False
+#
+#             # Handle Other Details NA checkbox
+#             na_other_checked = request.POST.get("na_other_checkbox") == "on"
+#             if na_other_checked:
+#                 new_quotation.other_details = ""
+#             else:
+#                 # Process other items only if NA is not checked
+#                 static_qs = form.cleaned_data.get("other_items") or []
+#                 static_names = []
+#                 for item in static_qs:
+#                     if hasattr(item, 'name'):
+#                         static_names.append(item.name)
+#
+#                 dynamic_inputs = [x.strip() for x in request.POST.getlist("dynamic_other_items[]") if x.strip()]
+#
+#                 combined = []
+#                 for n in static_names + dynamic_inputs:
+#                     if n and n not in combined:
+#                         combined.append(n)
+#
+#                 new_quotation.other_details = " / ".join(combined)
+#
+#             # Only generate new quotation number if this is the first save
+#             if not saved_quotation_id:
+#                 # Generate new quotation number with revision
+#                 base_quotation_no = original_quotation.quotation_no.split('_')[0]
+#
+#                 # Find the highest revision number for this base quotation
+#                 existing_revisions = Quotation.objects.filter(
+#                     quotation_no__startswith=base_quotation_no + '_'
+#                 )
+#
+#                 if existing_revisions.exists():
+#                     # Get the highest revision number
+#                     max_revision = 0
+#                     for rev in existing_revisions:
+#                         try:
+#                             rev_num = int(rev.quotation_no.split('_')[1])
+#                             if rev_num > max_revision:
+#                                 max_revision = rev_num
+#                         except (IndexError, ValueError):
+#                             continue
+#                     new_revision = max_revision + 1
+#                 else:
+#                     # This is the first revision
+#                     new_revision = 1
+#
+#                 new_quotation.quotation_no = f"{base_quotation_no}_{new_revision}"
+#             else:
+#                 # We're updating an existing revision, keep the same number
+#                 try:
+#                     existing_quotation = Quotation.objects.get(pk=saved_quotation_id)
+#                     new_quotation.quotation_no = existing_quotation.quotation_no
+#                 except Quotation.DoesNotExist:
+#                     # Fallback to generating new number
+#                     base_quotation_no = original_quotation.quotation_no.split('_')[0]
+#                     new_quotation.quotation_no = f"{base_quotation_no}_1"
+#
+#             # Save the quotation
+#             new_quotation.save()
+#
+#             # Store the new quotation ID
+#             new_quotation_id = new_quotation.pk
+#
+#             # Update system_na using raw SQL to handle bit varying type
+#             with connection.cursor() as cursor:
+#                 cursor.execute("""
+#                     UPDATE quotation_quotation
+#                     SET system_na = %s
+#                     WHERE id = %s
+#                 """, ['1' if system_na else '0', new_quotation.id])
+#
+#             form.save_m2m()
+#
+#             # PANEL COMPANIES
+#             panel_ids = request.POST.getlist("panel_companies")
+#             new_quotation.panel_companies.set(panel_ids)
+#             panel_names = SolarPanelCompany.objects.filter(id__in=panel_ids).values_list("name", flat=True)
+#             new_quotation.panel_company_names = " / ".join(panel_names)
+#
+#             # INVERTER COMPANIES + warranty
+#             inverter_ids = request.POST.getlist("inverter_companies")
+#             new_quotation.inverter_companies.set(inverter_ids)
+#
+#             inv_names = []
+#             inv_warranties = []
+#             for inv_id in inverter_ids:
+#                 try:
+#                     inv = InverterCompany.objects.get(id=inv_id)
+#                     inv_names.append(inv.name)
+#                     wt = request.POST.get(f"inverter_warranty_{inv_id}", "").strip()
+#                     inv_warranties.append(wt)
+#                 except InverterCompany.DoesNotExist:
+#                     continue
+#
+#             new_quotation.inverter_company_names = " / ".join(inv_names)
+#             new_quotation.inverter_warranty = " / ".join(inv_warranties)
+#
+#             # REPRESENTATIVES
+#             rep_ids = request.POST.getlist('representatives')
+#             new_quotation.representatives.set(rep_ids)
+#
+#             # Store textual representation for PDF
+#             rep_dict = {str(r.id): r for r in Representative.objects.filter(id__in=rep_ids)}
+#             rep_texts = []
+#             for i, rep_id in enumerate(rep_ids):
+#                 if rep_id in rep_dict:
+#                     r = rep_dict[rep_id]
+#                     contact_str = f" - {r.contact}" if r.contact else ""
+#                     rep_texts.append(f"{i + 1}. {r.name}{contact_str}")
+#             new_quotation.representative_names = "\n".join(rep_texts)
+#
+#             # TERMS & CONDITIONS
+#             terms_ids = request.POST.getlist('terms_conditions')
+#             new_quotation.terms_conditions.set(terms_ids)
+#
+#             # Store terms content for PDF
+#             terms_qs = TermsAndCondition.objects.filter(id__in=terms_ids).order_by('id')
+#             terms_texts = []
+#             for i, term in enumerate(terms_qs):
+#                 terms_texts.append(f"{i + 1}. {term.content}")
+#             new_quotation.terms_conditions_text = "\n".join(terms_texts)
+#
+#             # PRICING
+#             pricing_mode = form.cleaned_data.get("pricing_mode")
+#             net_input = form.cleaned_data.get("net_amount_input")
+#             final_input = form.cleaned_data.get("final_amount_input")
+#
+#             if pricing_mode == "net" and net_input is not None:
+#                 new_quotation.net_amount = net_input
+#                 new_quotation.calculate_from_net()
+#             elif pricing_mode == "final" and final_input is not None:
+#                 new_quotation.final_amount = final_input
+#                 new_quotation.calculate_from_final()
+#
+#             new_quotation.save()
+#
+#             # Update system_na again after final save
+#             with connection.cursor() as cursor:
+#                 cursor.execute("""
+#                     UPDATE quotation_quotation
+#                     SET system_na = %s
+#                     WHERE id = %s
+#                 """, ['1' if system_na else '0', new_quotation.id])
+#
+#             # If this is an AJAX save request (save_only), return JSON success with quotation ID
+#             if is_ajax:
+#                 return JsonResponse({
+#                     'success': True,
+#                     'quotation_id': new_quotation.pk,
+#                     'quotation_no': new_quotation.quotation_no,
+#                     'message': 'Quotation revised successfully'
+#                 })
+#
+#             # If this is a normal POST with pdf_template selected, redirect to PDF
+#             pdf_template = request.POST.get('pdf_template', 'quotation')
+#             if pdf_template == 'industrial':
+#                 return redirect("quotation:industrial_quotation_pdf", pk=new_quotation.pk)
+#             else:
+#                 return redirect("quotation:quotation_pdf", pk=new_quotation.pk)
+#
+#         else:
+#             # Form has errors
+#             logger.error(f"Form errors: {form.errors}")
+#
+#             # If AJAX request, return errors as JSON
+#             if is_ajax:
+#                 return JsonResponse({
+#                     'success': False,
+#                     'errors': dict(form.errors)
+#                 }, status=400)
+#
+#     else:
+#         # GET - create form pre-filled with original quotation data
+#         formatted_date = None
+#         if original_quotation.date:
+#             if hasattr(original_quotation.date, 'strftime'):
+#                 formatted_date = original_quotation.date.strftime('%Y-%m-%d')
+#             elif isinstance(original_quotation.date, str):
+#                 try:
+#                     from datetime import datetime
+#                     for fmt in ['%Y-%m-%d', '%Y-%m-%d %H:%M:%S', '%d/%m/%Y', '%d-%m-%Y', '%Y-%m-%d %H:%M:%S%z']:
+#                         try:
+#                             parsed_date = datetime.strptime(original_quotation.date, fmt)
+#                             formatted_date = parsed_date.strftime('%Y-%m-%d')
+#                             break
+#                         except ValueError:
+#                             continue
+#                     if not formatted_date and len(original_quotation.date) >= 10:
+#                         formatted_date = original_quotation.date[:10]
+#                 except Exception:
+#                     formatted_date = original_quotation.date
+#             else:
+#                 formatted_date = str(original_quotation.date)
+#
+#         form = QuotationForm(initial={
+#             'consumer_type': original_quotation.consumer_type,
+#             'consumer_no': original_quotation.consumer_no,
+#             'title': original_quotation.title,
+#             'consumer_name': original_quotation.consumer_name,
+#             'consumer_address1': original_quotation.consumer_address1,
+#             'consumer_address2': original_quotation.consumer_address2,
+#             'consumer_no': original_quotation.consumer_no,
+#             'consumer_mobile': original_quotation.consumer_mobile,
+#             'date': formatted_date,
+#             'plant_capacity_kw': original_quotation.plant_capacity_kw,
+#             'employee_name': original_quotation.employee_name,
+#             'panel_type': original_quotation.panel_type,
+#             'panel_capacity_watt': original_quotation.panel_capacity_watt,
+#             'panel_qty': original_quotation.panel_qty,
+#             'panel_manufacturing_warranty': original_quotation.panel_manufacturing_warranty,
+#             'panel_performance_warranty': original_quotation.panel_performance_warranty,
+#             'inv_phase': original_quotation.inv_phase,
+#             'inv_capacity_kw': original_quotation.inv_capacity_kw,
+#             'inverter_qty': original_quotation.inverter_qty,
+#             'structure_type': original_quotation.structure_type,
+#             'structure_back_height_ft': original_quotation.structure_back_height_ft,
+#             'structure_front_height_ft': original_quotation.structure_front_height_ft,
+#             'structure_warranty': original_quotation.structure_warranty,
+#             'special_discount': original_quotation.special_discount,
+#             'gst_5_percent': original_quotation.gst_5_percent,
+#             'gst_18_percent': original_quotation.gst_18_percent,
+#             'net_amount_input': original_quotation.net_amount,
+#             'final_amount_input': original_quotation.final_amount,
+#             'dc_capacity': original_quotation.dc_capacity,
+#             'ac_capacity': original_quotation.ac_capacity,
+#             'system_na': original_quotation.system_na,
+#             'electricity_unit_rate': original_quotation.electricity_unit_rate or 11.00,
+#         })
+#
+#         # Set initial terms_conditions from the original quotation
+#         existing_term_ids = list(original_quotation.terms_conditions.values_list('id', flat=True))
+#         if existing_term_ids:
+#             form.initial['terms_conditions'] = existing_term_ids
+#             form.fields['terms_conditions'].initial = existing_term_ids
+#
+#         # Set terms_conditions queryset for GET request
+#         active_term_ids = [term.id for term in terms_conditions]
+#         if active_term_ids:
+#             all_term_ids = list(set(active_term_ids + existing_term_ids))
+#             form.fields['terms_conditions'].queryset = TermsAndCondition.objects.filter(id__in=all_term_ids)
+#         else:
+#             form.fields['terms_conditions'].queryset = TermsAndCondition.objects.none()
+#
+#         # Pre-check static other_items checkboxes
+#         if original_quotation.other_details:
+#             static_names_to_check = [n for n in other_dynamic_list if n in static_item_names]
+#             if static_names_to_check:
+#                 checked_qs = OtherItem.objects.filter(name__in=static_names_to_check)
+#                 form.fields["other_items"].initial = checked_qs
+#
+#     # Prepare warranty mapping
+#     stored_names = [n.strip() for n in (original_quotation.inverter_company_names or "").split(" / ") if n.strip()]
+#     stored_wts = [w.strip() for w in (original_quotation.inverter_warranty or "").split(" / ") if w.strip()]
+#
+#     name_to_wt = {}
+#     for i, name in enumerate(stored_names):
+#         name_to_wt[name] = stored_wts[i] if i < len(stored_wts) else ""
+#
+#     for comp in inverter_companies:
+#         comp.warranty = name_to_wt.get(comp.name, "")
+#
+#     context = {
+#         "form": form,
+#         "original_quotation": original_quotation,
+#         "panel_companies": panel_companies,
+#         "inverter_companies": inverter_companies,
+#         "terms_conditions": terms_conditions,
+#         "other_dynamic_list": other_dynamic_list,
+#         "static_item_names": static_item_names,
+#         "representatives": Representative.objects.all().order_by('name'),
+#     }
+#     return render(request, "quotation/revise_quotation.html", context)
+
+REVISE_LOCKED_CONSUMER_ATTRS = (
+    'consumer_type',
+    'consumer_no',
+    'title',
+    'consumer_name',
+    'consumer_address1',
+    'consumer_address2',
+    'consumer_mobile',
+    'consumer_state',
+    'consumer_email',
+    'project_type',
+)
+
+
+def _lock_revise_consumer_form_fields(form):
+    """Revise flow: consumer details are copied from the original quotation only."""
+    for name in REVISE_LOCKED_CONSUMER_ATTRS:
+        if name not in form.fields:
+            continue
+        widget = form.fields[name].widget
+        attrs = widget.attrs
+        if name == 'consumer_type':
+            attrs.update({
+                'class': (attrs.get('class', '') + ' form-control').strip(),
+                'readonly': True,
+                'style': 'pointer-events: none; background-color: #e9ecef;',
+            })
+        elif getattr(widget, 'input_type', None) == 'radio':
+            attrs['disabled'] = True
+        else:
+            attrs.update({
+                'readonly': True,
+                'class': (attrs.get('class', '') + ' bg-light').strip(),
+            })
+
+
+def _apply_revise_locked_consumer_from_original(quotation, original_quotation):
+    for attr in REVISE_LOCKED_CONSUMER_ATTRS:
+        setattr(quotation, attr, getattr(original_quotation, attr, None) or '')
+
 
 def revise_quotation(request, pk):
-    original_quotation = get_object_or_404(Quotation, pk=pk)
+    original_quotation = get_quotation_or_404_for_request(request, pk)
+    is_crm_revise = '/new-lead/' in (getattr(request, 'path', '') or '')
 
     panel_companies = list(SolarPanelCompany.objects.all())
     inverter_companies = list(InverterCompany.objects.all())
@@ -934,7 +2038,7 @@ def revise_quotation(request, pk):
         if saved_quotation_id and not is_ajax:
             try:
                 # We already saved the quotation, just redirect to PDF
-                new_quotation = Quotation.objects.get(pk=saved_quotation_id)
+                new_quotation = get_quotation_or_404_for_request(request, int(saved_quotation_id))
                 pdf_template = request.POST.get('pdf_template', 'quotation')
                 if pdf_template == 'industrial':
                     return redirect("quotation:industrial_quotation_pdf", pk=new_quotation.pk)
@@ -943,7 +2047,11 @@ def revise_quotation(request, pk):
             except Quotation.DoesNotExist:
                 pass  # Continue with normal save process
 
-        form = QuotationForm(request.POST)
+        post_data = request.POST.copy()
+        for attr in REVISE_LOCKED_CONSUMER_ATTRS:
+            post_data[attr] = getattr(original_quotation, attr, '') or ''
+
+        form = QuotationForm(post_data, form_user=request.user)
 
         # Get active term IDs for validation
         active_term_ids = [term.id for term in terms_conditions]
@@ -958,6 +2066,25 @@ def revise_quotation(request, pk):
             # Create new quotation instance (don't save yet)
             new_quotation = form.save(commit=False)
 
+            if not getattr(new_quotation, 'organization_id', None) and original_quotation.organization_id:
+                new_quotation.organization_id = original_quotation.organization_id
+
+            lead_for_apply = form.cleaned_data.get('lead') or original_quotation.lead
+            survey_for_apply = form.cleaned_data.get('survey') or original_quotation.survey
+
+            apply_crm_lead_survey_to_quotation(
+                new_quotation,
+                lead_for_apply,
+                survey_for_apply,
+            )
+            ensure_quotation_consumer_name(new_quotation)
+
+            if request.user.is_authenticated and not new_quotation.created_by_id:
+                new_quotation.created_by = request.user
+
+            # Consumer details stay identical to the quotation being revised.
+            _apply_revise_locked_consumer_from_original(new_quotation, original_quotation)
+
             # Handle system_na checkbox - clear capacities if NA is checked
             system_na = form.cleaned_data.get('system_na', False)
             if system_na:
@@ -970,6 +2097,10 @@ def revise_quotation(request, pk):
 
             # Set system_na to False initially
             new_quotation.system_na = False
+
+            plant_capacity = form.cleaned_data.get('plant_capacity_kw')
+            if plant_capacity:
+                new_quotation.plant_capacity_kw = plant_capacity
 
             # Handle Other Details NA checkbox
             na_other_checked = request.POST.get("na_other_checkbox") == "on"
@@ -1018,15 +2149,21 @@ def revise_quotation(request, pk):
                     new_revision = 1
 
                 new_quotation.quotation_no = f"{base_quotation_no}_{new_revision}"
+                new_quotation.version = (original_quotation.version or 1) + 1
             else:
                 # We're updating an existing revision, keep the same number
                 try:
-                    existing_quotation = Quotation.objects.get(pk=saved_quotation_id)
+                    existing_quotation = quotation_queryset_for_request(request.user).get(
+                        pk=int(saved_quotation_id)
+                    )
                     new_quotation.quotation_no = existing_quotation.quotation_no
                 except Quotation.DoesNotExist:
                     # Fallback to generating new number
                     base_quotation_no = original_quotation.quotation_no.split('_')[0]
                     new_quotation.quotation_no = f"{base_quotation_no}_1"
+
+            if not saved_quotation_id:
+                new_quotation.status = 'draft'
 
             # Save the quotation
             new_quotation.save()
@@ -1075,11 +2212,11 @@ def revise_quotation(request, pk):
             # Store textual representation for PDF
             rep_dict = {str(r.id): r for r in Representative.objects.filter(id__in=rep_ids)}
             rep_texts = []
-            for i, rep_id in enumerate(rep_ids):
+            for rep_id in rep_ids:
                 if rep_id in rep_dict:
                     r = rep_dict[rep_id]
                     contact_str = f" - {r.contact}" if r.contact else ""
-                    rep_texts.append(f"{i + 1}. {r.name}{contact_str}")
+                    rep_texts.append(f"{r.name}{contact_str}")
             new_quotation.representative_names = "\n".join(rep_texts)
 
             # TERMS & CONDITIONS
@@ -1115,14 +2252,38 @@ def revise_quotation(request, pk):
                     WHERE id = %s
                 """, ['1' if system_na else '0', new_quotation.id])
 
+            if not saved_quotation_id and getattr(new_quotation, 'lead_id', None):
+                try:
+                    new_quotation.refresh_from_db()
+                    from apps.leads.timeline import log_quotation_timeline_activity
+                    log_quotation_timeline_activity(
+                        new_quotation,
+                        request.user if request.user.is_authenticated else None,
+                        event='revised',
+                    )
+                except Exception:
+                    import logging
+                    logging.getLogger(__name__).exception(
+                        'Could not add revised quotation to lead timeline'
+                    )
+
             # If this is an AJAX save request (save_only), return JSON success with quotation ID
             if is_ajax:
-                return JsonResponse({
+                payload = {
                     'success': True,
                     'quotation_id': new_quotation.pk,
                     'quotation_no': new_quotation.quotation_no,
-                    'message': 'Quotation revised successfully'
-                })
+                    'message': 'Revised quotation saved successfully.',
+                }
+                if is_crm_revise:
+                    from django.urls import reverse
+
+                    payload['redirect_url'] = reverse(
+                        'quotation_detail',
+                        kwargs={'pk': new_quotation.pk},
+                    )
+                    payload['skip_pdf_modal'] = True
+                return JsonResponse(payload)
 
             # If this is a normal POST with pdf_template selected, redirect to PDF
             pdf_template = request.POST.get('pdf_template', 'quotation')
@@ -1165,7 +2326,7 @@ def revise_quotation(request, pk):
             else:
                 formatted_date = str(original_quotation.date)
 
-        form = QuotationForm(initial={
+        revise_initial = {
             'consumer_type': original_quotation.consumer_type,
             'consumer_no': original_quotation.consumer_no,
             'title': original_quotation.title,
@@ -1174,6 +2335,9 @@ def revise_quotation(request, pk):
             'consumer_address2': original_quotation.consumer_address2,
             'consumer_no': original_quotation.consumer_no,
             'consumer_mobile': original_quotation.consumer_mobile,
+            'consumer_state': original_quotation.consumer_state,
+            'consumer_email': original_quotation.consumer_email,
+            'project_type': original_quotation.project_type,
             'date': formatted_date,
             'plant_capacity_kw': original_quotation.plant_capacity_kw,
             'employee_name': original_quotation.employee_name,
@@ -1198,7 +2362,14 @@ def revise_quotation(request, pk):
             'ac_capacity': original_quotation.ac_capacity,
             'system_na': original_quotation.system_na,
             'electricity_unit_rate': original_quotation.electricity_unit_rate or 11.00,
-        })
+            'assigned_associate': original_quotation.assigned_associate_id,
+        }
+        if original_quotation.lead_id:
+            revise_initial['lead'] = original_quotation.lead
+        if original_quotation.survey_id:
+            revise_initial['survey'] = original_quotation.survey
+
+        form = QuotationForm(initial=revise_initial, form_user=request.user)
 
         # Set initial terms_conditions from the original quotation
         existing_term_ids = list(original_quotation.terms_conditions.values_list('id', flat=True))
@@ -1232,6 +2403,14 @@ def revise_quotation(request, pk):
     for comp in inverter_companies:
         comp.warranty = name_to_wt.get(comp.name, "")
 
+    _lock_revise_consumer_form_fields(form)
+
+    quotation_family_cards = quotation_family_cards_for_request(
+        request, original_quotation
+    )
+    # CRM list/detail URLs (e.g. quotation_detail) exist only under /new-lead/quotations/.
+    show_crm_quotation_family_links = "/new-lead/" in (getattr(request, "path", "") or "")
+
     context = {
         "form": form,
         "original_quotation": original_quotation,
@@ -1241,10 +2420,15 @@ def revise_quotation(request, pk):
         "other_dynamic_list": other_dynamic_list,
         "static_item_names": static_item_names,
         "representatives": Representative.objects.all().order_by('name'),
+        "quotation_family_cards": quotation_family_cards,
+        "show_crm_quotation_family_links": show_crm_quotation_family_links,
+        "lock_consumer_details": True,
+        "skip_pdf_after_save": is_crm_revise,
     }
-    return render(request, "quotation/revise_quotation.html", context)
-
-
+    template_name = "quotation/revise_quotation.html"
+    if getattr(request, "path", "") and "/new-lead/" in request.path:
+        template_name = "quotations/crm_revise_quotation.html"
+    return render(request, template_name, context)
 
 #
 # def edit_quotation(request, pk):
@@ -2849,6 +4033,477 @@ def check_consumer(request):
 #     }
 #     return render(request, 'quotation/create_quotation.html', context)
 
+#
+# def create_quotation(request):
+#     panel_companies = SolarPanelCompany.objects.all()
+#     inverter_companies = InverterCompany.objects.all()
+#     representatives = Representative.objects.all()
+#
+#     # Get terms_conditions using helper function - returns a list, not queryset
+#     # This prevents any queryset evaluation errors
+#     terms_conditions = get_active_terms_conditions()
+#
+#     # Get consumer_type and consumer_no from URL parameters
+#     consumer_type = request.GET.get('consumer_type', 'Residential')
+#     consumer_no = request.GET.get('consumer_no', '')
+#
+#     if request.method == 'POST':
+#         form = QuotationForm(request.POST)
+#
+#         # Set terms_conditions queryset before validation to avoid "not one of the available choices" error
+#         # Use raw SQL to get active term IDs to avoid boolean comparison issues
+#         try:
+#             with connection.cursor() as cursor:
+#                 cursor.execute("""
+#                     SELECT id FROM quotation_termsandcondition
+#                     WHERE CAST(is_active AS TEXT) IN ('1', 't', 'true', 'y', 'yes')
+#                 """)
+#                 active_term_ids = [row[0] for row in cursor.fetchall()]
+#             # Set queryset to include only active terms (filtering by ID only, no boolean comparison)
+#             if active_term_ids:
+#                 form.fields['terms_conditions'].queryset = TermsAndCondition.objects.filter(id__in=active_term_ids)
+#             else:
+#                 form.fields['terms_conditions'].queryset = TermsAndCondition.objects.none()
+#         except Exception as e:
+#             # If query fails, set to empty queryset (form will still validate, but terms won't be saved)
+#             import logging
+#             logger = logging.getLogger(__name__)
+#             logger.warning(f"Could not set terms_conditions queryset: {e}")
+#             form.fields['terms_conditions'].queryset = TermsAndCondition.objects.none()
+#
+#         if form.is_valid():
+#             quotation = form.save(commit=False)
+#
+#             # Handle plant capacity (it's now a ForeignKey)
+#             plant_capacity = form.cleaned_data.get('plant_capacity_kw')
+#             if plant_capacity:
+#                 quotation.plant_capacity_kw = plant_capacity
+#
+#             # Handle system_na - convert boolean to bit varying compatible format
+#             system_na_value = form.cleaned_data.get('system_na', False)
+#
+#             # Store system_na value temporarily - we'll set it via raw SQL after save
+#             quotation._system_na_temp = system_na_value
+#             quotation.system_na = False  # Set default for NOT NULL constraint
+#
+#             # -----------------------------
+#             # SAVE THE QUOTATION FIRST (CRITICAL)
+#             # -----------------------------
+#             # Try to save - if it fails due to system_na type mismatch, use raw SQL workaround
+#             try:
+#                 quotation.save()
+#             except Exception as e:
+#                 error_str = str(e)
+#                 # If save fails due to system_na type issue, use raw SQL to insert
+#                 if 'system_na' in error_str or 'bit varying' in error_str or 'boolean' in error_str:
+#                     import logging
+#                     logger = logging.getLogger(__name__)
+#                     logger.warning(f"Save failed due to system_na type issue, using raw SQL workaround: {e}")
+#
+#                     from django.db import transaction
+#                     # Use raw SQL to insert the record with correct bit varying value
+#                     with transaction.atomic():
+#                         with connection.cursor() as cursor:
+#                             # Get quotation_no if not set
+#                             if not quotation.quotation_no:
+#                                 # Get all quotation numbers and extract base numbers (before underscore for revisions)
+#                                 all_quotations = Quotation.objects.exclude(quotation_no__isnull=True).exclude(
+#                                     quotation_no='')
+#                                 max_base_no = 0
+#
+#                                 for q in all_quotations:
+#                                     # Extract base number (part before underscore if revision exists)
+#                                     base_no_str = q.quotation_no.split('_')[0]
+#                                     try:
+#                                         base_no = int(base_no_str)
+#                                         if base_no > max_base_no:
+#                                             max_base_no = base_no
+#                                     except (ValueError, TypeError):
+#                                         continue
+#
+#                                 # Increment from the maximum base number found
+#                                 newno = max_base_no + 1 if max_base_no > 0 else 1000
+#                                 quotation.quotation_no = str(newno)
+#
+#                             # Ensure plant_capacity_kw_id is set
+#                             if not quotation.plant_capacity_kw_id and quotation.plant_capacity_kw:
+#                                 quotation.plant_capacity_kw_id = quotation.plant_capacity_kw.pk
+#
+#                             # Insert using raw SQL with correct bit varying value for system_na
+#                             # Handle None values properly
+#                             try:
+#                                 # Ensure plant_capacity_kw_id is set
+#                                 if quotation.plant_capacity_kw and not quotation.plant_capacity_kw_id:
+#                                     quotation.plant_capacity_kw_id = quotation.plant_capacity_kw.pk
+#
+#                                 # Count: 41 columns total - added electricity_unit_rate
+#                                 params = [
+#                                     quotation.consumer_type or 'Residential',  # 1
+#                                     quotation.dc_capacity,  # 2
+#                                     quotation.ac_capacity,  # 3
+#                                     1 if system_na_value else 0,  # 4 (system_na - cast in SQL)
+#                                     quotation.title or 'Mr',  # 5
+#                                     quotation.consumer_name or '',  # 6
+#                                     quotation.consumer_address1 or '',  # 7
+#                                     quotation.consumer_address2 or '',  # 8
+#                                     quotation.consumer_no or '',  # 9
+#                                     quotation.consumer_mobile or '',  # 10
+#                                     quotation.quotation_no or '',  # 11
+#                                     quotation.date,  # 12
+#                                     quotation.created_at,  # 13
+#                                     quotation.plant_capacity_kw_id,  # 14
+#                                     quotation.employee_name or '',  # 15
+#                                     quotation.panel_qty or 0,  # 16
+#                                     quotation.inverter_qty or 0,  # 17
+#                                     quotation.panel_type or '',  # 18
+#                                     quotation.panel_capacity_watt or '',  # 19
+#                                     quotation.inv_phase or 'Single Phase',  # 20
+#                                     quotation.inv_capacity_kw or 0,  # 21
+#                                     quotation.panel_company_names or '',  # 22
+#                                     quotation.inverter_company_names or '',  # 23
+#                                     quotation.panel_manufacturing_warranty or '',  # 24
+#                                     quotation.panel_performance_warranty or '',  # 25
+#                                     quotation.inverter_warranty or '',  # 26
+#                                     quotation.structure_type or 'GI Structure',  # 27
+#                                     quotation.structure_back_height_ft,  # 28
+#                                     quotation.structure_front_height_ft,  # 29
+#                                     quotation.structure_warranty or '',  # 30
+#                                     quotation.special_discount or 0,  # 31
+#                                     quotation.gst_5_percent or 0,  # 32
+#                                     quotation.gst_18_percent or 0,  # 33
+#                                     quotation.gst_5_amount or 0,  # 34
+#                                     quotation.gst_18_amount or 0,  # 35
+#                                     quotation.net_amount or 0,  # 36
+#                                     quotation.final_amount or 0,  # 37
+#                                     quotation.representative_names or '',  # 38
+#                                     quotation.terms_conditions_text or '',  # 39
+#                                     quotation.other_details or '',  # 40
+#                                     quotation.electricity_unit_rate or Decimal('11.00'),  # 41 - NEW
+#                                 ]
+#
+#                                 # Build SQL with 41 placeholders for 41 columns
+#                                 sql = """
+#                                     INSERT INTO quotation_quotation (
+#                                         consumer_type, dc_capacity, ac_capacity, system_na, title,
+#                                         consumer_name, consumer_address1, consumer_address2, consumer_no,
+#                                         consumer_mobile, quotation_no, date, created_at, plant_capacity_kw_id,
+#                                         employee_name, panel_qty, inverter_qty, panel_type, panel_capacity_watt,
+#                                         inv_phase, inv_capacity_kw, panel_company_names, inverter_company_names,
+#                                         panel_manufacturing_warranty, panel_performance_warranty, inverter_warranty,
+#                                         structure_type, structure_back_height_ft, structure_front_height_ft, structure_warranty,
+#                                         special_discount, gst_5_percent, gst_18_percent, gst_5_amount,
+#                                         gst_18_amount, net_amount, final_amount, representative_names,
+#                                         terms_conditions_text, other_details, electricity_unit_rate
+#                                     ) VALUES (
+#                                         %s, %s, %s, (%s)::bit(1)::bit varying, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
+#                                         %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
+#                                         %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s
+#                                     ) RETURNING id
+#                                 """
+#
+#                                 cursor.execute(sql, params)
+#                                 quotation.id = cursor.fetchone()[0]
+#                                 # Refresh the object from database
+#                                 quotation.refresh_from_db()
+#                             except Exception as sql_error:
+#                                 logger.error(f"Raw SQL insert failed: {sql_error}")
+#                                 raise
+#                 else:
+#                     # Re-raise if it's a different error
+#                     raise
+#
+#             # Update system_na using raw SQL if save succeeded normally
+#             if quotation.id and hasattr(quotation, '_system_na_temp'):
+#                 with connection.cursor() as cursor:
+#                     cursor.execute("""
+#                         UPDATE quotation_quotation
+#                         SET system_na = (%s)::bit(1)::bit varying
+#                         WHERE id = %s
+#                     """, [1 if quotation._system_na_temp else 0, quotation.id])
+#                 delattr(quotation, '_system_na_temp')
+#
+#             # -----------------------------
+#             # NOW SET MANY-TO-MANY RELATIONSHIPS
+#             # -----------------------------
+#
+#             # Save form's many-to-many data
+#             form.save_m2m()
+#
+#             # Save representatives - Use selection order if provided, otherwise preserve existing order
+#             rep_ids = request.POST.getlist('representatives')
+#             rep_order_str = request.POST.get('representatives_order', '').strip()
+#
+#             # If order is provided, use it
+#             if rep_order_str:
+#                 # Parse the order from comma-separated string
+#                 ordered_rep_ids = [rid.strip() for rid in rep_order_str.split(',') if rid.strip() in rep_ids]
+#                 # Add any remaining reps that weren't in the order (shouldn't happen, but safety)
+#                 for rid in rep_ids:
+#                     if rid not in ordered_rep_ids:
+#                         ordered_rep_ids.append(rid)
+#                 rep_ids = ordered_rep_ids
+#             else:
+#                 # No order provided - preserve existing order from quotation
+#                 # Parse representative_names to extract the order (most reliable source)
+#                 if quotation.representative_names:
+#                     # representative_names format: "1. Name - Contact\n2. Name - Contact\n..."
+#                     # Create a mapping of all existing representatives
+#                     all_reps = {str(r.id): r for r in Representative.objects.all()}
+#                     existing_reps = {str(r.id): r for r in quotation.representatives.all()}
+#
+#                     # Parse lines from representative_names
+#                     lines = quotation.representative_names.strip().split('\n')
+#                     ordered_rep_ids = []
+#
+#                     for line in lines:
+#                         line = line.strip()
+#                         if not line or '.' not in line:
+#                             continue
+#
+#                         # Extract name from line (format: "1. Name - Contact" or "1. Name")
+#                         # Remove number prefix (e.g., "1. ")
+#                         name_part = line.split('.', 1)[1].strip()
+#                         # Remove contact part if exists (e.g., "Name - Contact" -> "Name")
+#                         name = name_part.split(' - ', 1)[0].strip()
+#
+#                         # Find matching representative by name
+#                         for rep_id, rep in existing_reps.items():
+#                             if rep.name.strip() == name.strip() and rep_id in rep_ids:
+#                                 if rep_id not in ordered_rep_ids:
+#                                     ordered_rep_ids.append(rep_id)
+#                                 break
+#
+#                     # Add any new reps that weren't in the original order
+#                     for rid in rep_ids:
+#                         if rid not in ordered_rep_ids:
+#                             ordered_rep_ids.append(rid)
+#
+#                     rep_ids = ordered_rep_ids if ordered_rep_ids else rep_ids
+#
+#             quotation.representatives.set(rep_ids)
+#
+#             # Build representative names for PDF in selection order
+#             # Create a mapping of ID to Representative for quick lookup
+#             rep_dict = {str(r.id): r for r in Representative.objects.filter(id__in=rep_ids)}
+#             rep_texts = []
+#             for i, rep_id in enumerate(rep_ids):
+#                 if rep_id in rep_dict:
+#                     r = rep_dict[rep_id]
+#                     contact_str = f" - {r.contact}" if r.contact else ""
+#                     rep_texts.append(f"{i + 1}. {r.name}{contact_str}")
+#             quotation.representative_names = "\n".join(rep_texts)
+#
+#             # Save panel companies
+#             panel_ids = request.POST.getlist('panel_companies')
+#             quotation.panel_companies.set(panel_ids)
+#             panel_names = SolarPanelCompany.objects.filter(id__in=panel_ids).values_list('name', flat=True)
+#             quotation.panel_company_names = " / ".join(panel_names)
+#
+#             # Save inverter companies + warranty
+#             inverter_ids = request.POST.getlist('inverter_companies')
+#             quotation.inverter_companies.set(inverter_ids)
+#             inverter_names = []
+#             warranty_values = []
+#             for inv_id in inverter_ids:
+#                 name = InverterCompany.objects.get(id=inv_id).name
+#                 inverter_names.append(name)
+#                 wt = request.POST.get(f'inverter_warranty_{inv_id}', '').strip()
+#                 if wt:
+#                     warranty_values.append(wt)
+#             quotation.inverter_company_names = " / ".join(inverter_names)
+#             quotation.inverter_warranty = " / ".join(warranty_values)
+#
+#             # Save other items
+#             other_qs = form.cleaned_data.get('other_items')
+#             other_names = []
+#             if other_qs:
+#                 other_names = list(other_qs.values_list('name', flat=True))
+#             dynamic_items = request.POST.getlist('dynamic_other_items[]')
+#             combined = []
+#             for n in other_names + dynamic_items:
+#                 n = n.strip()
+#                 if n and n not in combined:
+#                     combined.append(n)
+#             quotation.other_details = " / ".join(combined)
+#
+#             # -----------------------------
+#             # SAVE TERMS & CONDITIONS
+#             # -----------------------------
+#             terms_ids = request.POST.getlist('terms_conditions')
+#             quotation.terms_conditions.set(terms_ids)
+#
+#             # Build textual representation for PDF
+#             terms_qs = TermsAndCondition.objects.filter(id__in=terms_ids)
+#             terms_texts = []
+#             for i, term in enumerate(terms_qs, 1):
+#                 terms_texts.append(f"{i}. {term.content}")
+#             quotation.terms_conditions_text = "\n".join(terms_texts)
+#
+#             # -----------------------------
+#             # APPLY PRICING LOGIC
+#             # -----------------------------
+#             pricing_mode = form.cleaned_data.get('pricing_mode')
+#             net_input = form.cleaned_data.get('net_amount_input')
+#             final_input = form.cleaned_data.get('final_amount_input')
+#
+#             if pricing_mode == 'net' and net_input:
+#                 quotation.net_amount = net_input
+#                 quotation.calculate_from_net()
+#
+#             elif pricing_mode == 'final' and final_input:
+#                 quotation.final_amount = final_input
+#                 quotation.calculate_from_final()
+#
+#             # -----------------------------
+#             # FINAL SAVE WITH ALL UPDATES
+#             # -----------------------------
+#             quotation.save()
+#
+#             # Update system_na again after final save to ensure it's persisted
+#             with connection.cursor() as cursor:
+#                 cursor.execute("""
+#                     UPDATE quotation_quotation
+#                     SET system_na = %s::bit varying
+#                     WHERE id = %s
+#                 """, ['1' if system_na_value else '0', quotation.id])
+#
+#             # Check if it's an AJAX request
+#             if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+#                 return JsonResponse({
+#                     'success': True,
+#                     'quotation_id': quotation.pk,
+#                     'message': 'Quotation saved successfully!'
+#                 })
+#             else:
+#                 # For non-AJAX requests, redirect to regular PDF
+#                 return redirect('quotation:quotation_pdf', pk=quotation.pk)
+#         else:
+#             # Form is invalid
+#             if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+#                 return JsonResponse({
+#                     'success': False,
+#                     'error': 'Form validation failed',
+#                     'errors': form.errors
+#                 })
+#     else:
+#         # Pre-populate the form with consumer_type and consumer_no from URL parameters
+#         initial_data = {
+#             'consumer_type': consumer_type,
+#             'consumer_no': consumer_no,
+#         }
+#         # Wrap form creation in try-except to handle database schema issues
+#         from django.db.utils import ProgrammingError
+#         try:
+#             form = QuotationForm(initial=initial_data)
+#         except ProgrammingError as e:
+#             # If form creation fails due to boolean type issues, create form with empty queryset
+#             import logging
+#             logger = logging.getLogger(__name__)
+#             logger.warning(f"Form creation failed due to database schema issue: {e}")
+#             # Create form and manually set terms_conditions to empty queryset
+#             form = QuotationForm(initial=initial_data)
+#             form.fields['terms_conditions'].queryset = TermsAndCondition.objects.none()
+#
+#         # ------------------------------------------------
+#         # MAKE FIELDS READONLY ONLY IN CREATE PAGE
+#         # ------------------------------------------------
+#         form.fields['consumer_type'].widget.attrs.update({
+#             'class': 'form-control',
+#             'readonly': True,
+#             'style': 'pointer-events: none;'
+#         })
+#         form.fields['consumer_no'].widget.attrs['readonly'] = True
+#
+#     context = {
+#         'form': form,
+#         'panel_companies': panel_companies,
+#         'inverter_companies': inverter_companies,
+#         'representatives': representatives,
+#         'terms_conditions': terms_conditions,
+#         'passed_consumer_type': consumer_type,  # Pass to template for display
+#         'passed_consumer_no': consumer_no,  # Pass to template for display
+#     }
+#     return render(request, 'quotation/create_quotation.html', context)
+
+
+def link_crm_lead_survey_on_quotation(quotation, lead, survey=None):
+    """Attach CRM lead/survey FK only (do not overwrite consumer fields on edit)."""
+    if lead:
+        quotation.lead = lead
+    if survey:
+        quotation.survey = survey
+
+
+def apply_crm_lead_survey_to_quotation(quotation, lead, survey=None):
+    """Fill ERP quotation consumer_* from CRM Lead / Survey (Lead CRM app)."""
+    if lead:
+        quotation.lead = lead
+        quotation.consumer_name = (lead.name or '')[:255]
+        quotation.consumer_address1 = (lead.address or '')[:255]
+        quotation.consumer_address2 = (lead.city or '')[:255]
+        quotation.consumer_mobile = (lead.phone or '')[:20]
+        em = lead.email or ''
+        quotation.consumer_email = em[:255] if em else ''
+        quotation.consumer_state = (lead.state or '')[:100]
+    if survey:
+        quotation.survey = survey
+        if survey.recommended_size is not None:
+            try:
+                quotation.dc_capacity = survey.recommended_size
+            except Exception:
+                pass
+
+
+def ensure_quotation_consumer_name(quotation):
+    """Model requires consumer_name; create form only fills it from CRM lead—fallback when lead is empty."""
+    if (getattr(quotation, 'consumer_name', None) or '').strip():
+        return
+    no = (getattr(quotation, 'consumer_no', None) or '').strip()
+    quotation.consumer_name = (f'Consumer {no}' if no else 'Customer')[:255]
+
+
+def _survey_lead_rows_for_quotation_template():
+    try:
+        from apps.surveys.models import Survey
+        return list(
+            Survey.objects.filter(completed_date__isnull=False)
+            .values('id', 'lead_id')
+            .order_by('lead_id', '-scheduled_date')
+        )
+    except Exception:
+        return []
+
+
+@login_required
+@require_GET
+def surveys_for_lead_api(request):
+    """
+    Surveys for a CRM lead from surveys_survey (same filter as QuotationForm.survey).
+    Only rows with completed_date set (not null).
+    """
+    from apps.leads.models import Lead
+    from apps.surveys.models import Survey
+
+    lead_id = (request.GET.get('lead_id') or request.GET.get('lead') or '').strip()
+    if not lead_id:
+        return JsonResponse({'surveys': []})
+    try:
+        lead = Lead.objects.get(pk=lead_id)
+    except (Lead.DoesNotExist, ValueError, TypeError):
+        return JsonResponse({'surveys': []})
+
+    qs = Survey.objects.filter(lead=lead, completed_date__isnull=False).order_by('-scheduled_date')
+    surveys = []
+    for s in qs:
+        try:
+            d = s.scheduled_date.date()
+            status_label = s.get_status_display()
+            label = f'Survey #{s.pk} — {d} ({status_label})'
+        except Exception:
+            label = f'Survey #{s.pk}'
+        surveys.append({'id': str(s.pk), 'label': label})
+    return JsonResponse({'surveys': surveys})
+
 
 def create_quotation(request):
     panel_companies = SolarPanelCompany.objects.all()
@@ -2863,8 +4518,26 @@ def create_quotation(request):
     consumer_type = request.GET.get('consumer_type', 'Residential')
     consumer_no = request.GET.get('consumer_no', '')
 
+    crm_mode = bool(getattr(request, 'path', '') and '/new-lead/' in request.path)
+
+    def _apply_crm_available_leads_queryset(target_form):
+        if not crm_mode:
+            return
+        if 'lead' not in target_form.fields:
+            return
+        # Import here: a later `from apps.leads.models import Lead` in this function
+        # makes `Lead` local to create_quotation; POST never runs that branch, which
+        # caused "free variable 'Lead' referenced before assignment" in this closure.
+        from apps.leads.models import Lead
+        used_lead_ids = Quotation.objects.filter(lead_id__isnull=False).values_list('lead_id', flat=True)
+        leads_qs = Lead.objects.filter(stage__in=['qualified', 'survey', 'quote']).exclude(id__in=used_lead_ids)
+        if not leads_qs.exists():
+            leads_qs = Lead.objects.exclude(id__in=used_lead_ids).order_by('-created')[:300]
+        target_form.fields['lead'].queryset = leads_qs
+
     if request.method == 'POST':
-        form = QuotationForm(request.POST)
+        form = QuotationForm(request.POST, form_user=request.user)
+        _apply_crm_available_leads_queryset(form)
 
         # Set terms_conditions queryset before validation to avoid "not one of the available choices" error
         # Use raw SQL to get active term IDs to avoid boolean comparison issues
@@ -2889,6 +4562,21 @@ def create_quotation(request):
 
         if form.is_valid():
             quotation = form.save(commit=False)
+
+            apply_crm_lead_survey_to_quotation(
+                quotation,
+                form.cleaned_data.get('lead'),
+                form.cleaned_data.get('survey'),
+            )
+            ensure_quotation_consumer_name(quotation)
+
+            if request.user.is_authenticated and not quotation.created_by_id:
+                quotation.created_by = request.user
+
+            # Handle new fields manually since they're not in the model
+            quotation.consumer_state = request.POST.get('consumer_state', '')
+            quotation.consumer_email = request.POST.get('consumer_email', '')
+            quotation.project_type = request.POST.get('project_type', '')
 
             # Handle plant capacity (it's now a ForeignKey)
             plant_capacity = form.cleaned_data.get('plant_capacity_kw')
@@ -2952,7 +4640,7 @@ def create_quotation(request):
                                 if quotation.plant_capacity_kw and not quotation.plant_capacity_kw_id:
                                     quotation.plant_capacity_kw_id = quotation.plant_capacity_kw.pk
 
-                                # Count: 41 columns total - added electricity_unit_rate
+                                # Count: 44 columns total - added new fields
                                 params = [
                                     quotation.consumer_type or 'Residential',  # 1
                                     quotation.dc_capacity,  # 2
@@ -2964,56 +4652,62 @@ def create_quotation(request):
                                     quotation.consumer_address2 or '',  # 8
                                     quotation.consumer_no or '',  # 9
                                     quotation.consumer_mobile or '',  # 10
-                                    quotation.quotation_no or '',  # 11
-                                    quotation.date,  # 12
-                                    quotation.created_at,  # 13
-                                    quotation.plant_capacity_kw_id,  # 14
-                                    quotation.employee_name or '',  # 15
-                                    quotation.panel_qty or 0,  # 16
-                                    quotation.inverter_qty or 0,  # 17
-                                    quotation.panel_type or '',  # 18
-                                    quotation.panel_capacity_watt or '',  # 19
-                                    quotation.inv_phase or 'Single Phase',  # 20
-                                    quotation.inv_capacity_kw or 0,  # 21
-                                    quotation.panel_company_names or '',  # 22
-                                    quotation.inverter_company_names or '',  # 23
-                                    quotation.panel_manufacturing_warranty or '',  # 24
-                                    quotation.panel_performance_warranty or '',  # 25
-                                    quotation.inverter_warranty or '',  # 26
-                                    quotation.structure_type or 'GI Structure',  # 27
-                                    quotation.structure_back_height_ft,  # 28
-                                    quotation.structure_front_height_ft,  # 29
-                                    quotation.structure_warranty or '',  # 30
-                                    quotation.special_discount or 0,  # 31
-                                    quotation.gst_5_percent or 0,  # 32
-                                    quotation.gst_18_percent or 0,  # 33
-                                    quotation.gst_5_amount or 0,  # 34
-                                    quotation.gst_18_amount or 0,  # 35
-                                    quotation.net_amount or 0,  # 36
-                                    quotation.final_amount or 0,  # 37
-                                    quotation.representative_names or '',  # 38
-                                    quotation.terms_conditions_text or '',  # 39
-                                    quotation.other_details or '',  # 40
-                                    quotation.electricity_unit_rate or Decimal('11.00'),  # 41 - NEW
+                                    quotation.consumer_state or '',  # 11 - NEW
+                                    quotation.consumer_email or '',  # 12 - NEW
+                                    quotation.project_type or '',  # 13 - NEW
+                                    quotation.quotation_no or '',  # 14
+                                    quotation.date,  # 15
+                                    quotation.created_at,  # 16
+                                    quotation.plant_capacity_kw_id,  # 17
+                                    quotation.employee_name or '',  # 18
+                                    quotation.panel_qty or 0,  # 19
+                                    quotation.inverter_qty or 0,  # 20
+                                    quotation.panel_type or '',  # 21
+                                    quotation.panel_capacity_watt or '',  # 22
+                                    quotation.inv_phase or 'Single Phase',  # 23
+                                    quotation.inv_capacity_kw or 0,  # 24
+                                    quotation.panel_company_names or '',  # 25
+                                    quotation.inverter_company_names or '',  # 26
+                                    quotation.panel_manufacturing_warranty or '',  # 27
+                                    quotation.panel_performance_warranty or '',  # 28
+                                    quotation.inverter_warranty or '',  # 29
+                                    quotation.structure_type or 'GI Structure',  # 30
+                                    quotation.structure_back_height_ft,  # 31
+                                    quotation.structure_front_height_ft,  # 32
+                                    quotation.structure_warranty or '',  # 33
+                                    quotation.special_discount or 0,  # 34
+                                    quotation.gst_5_percent or 0,  # 35
+                                    quotation.gst_18_percent or 0,  # 36
+                                    quotation.gst_5_amount or 0,  # 37
+                                    quotation.gst_18_amount or 0,  # 38
+                                    quotation.net_amount or 0,  # 39
+                                    quotation.final_amount or 0,  # 40
+                                    quotation.representative_names or '',  # 41
+                                    quotation.terms_conditions_text or '',  # 42
+                                    quotation.other_details or '',  # 43
+                                    quotation.electricity_unit_rate or Decimal('11.00'),  # 44
+                                    quotation.assigned_associate_id,  # 45
                                 ]
 
-                                # Build SQL with 41 placeholders for 41 columns
+                                # Build SQL (includes assigned_associate_id)
                                 sql = """
                                     INSERT INTO quotation_quotation (
                                         consumer_type, dc_capacity, ac_capacity, system_na, title,
                                         consumer_name, consumer_address1, consumer_address2, consumer_no,
-                                        consumer_mobile, quotation_no, date, created_at, plant_capacity_kw_id,
+                                        consumer_mobile, consumer_state, consumer_email, project_type,
+                                        quotation_no, date, created_at, plant_capacity_kw_id,
                                         employee_name, panel_qty, inverter_qty, panel_type, panel_capacity_watt,
                                         inv_phase, inv_capacity_kw, panel_company_names, inverter_company_names,
                                         panel_manufacturing_warranty, panel_performance_warranty, inverter_warranty,
                                         structure_type, structure_back_height_ft, structure_front_height_ft, structure_warranty,
                                         special_discount, gst_5_percent, gst_18_percent, gst_5_amount,
                                         gst_18_amount, net_amount, final_amount, representative_names,
-                                        terms_conditions_text, other_details, electricity_unit_rate
+                                        terms_conditions_text, other_details, electricity_unit_rate,
+                                        assigned_associate_id
                                     ) VALUES (
-                                        %s, %s, %s, (%s)::bit(1)::bit varying, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
+                                        %s, %s, %s, (%s)::bit(1)::bit varying, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
                                         %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
-                                        %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s
+                                        %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s
                                     ) RETURNING id
                                 """
 
@@ -3102,11 +4796,11 @@ def create_quotation(request):
             # Create a mapping of ID to Representative for quick lookup
             rep_dict = {str(r.id): r for r in Representative.objects.filter(id__in=rep_ids)}
             rep_texts = []
-            for i, rep_id in enumerate(rep_ids):
+            for rep_id in rep_ids:
                 if rep_id in rep_dict:
                     r = rep_dict[rep_id]
                     contact_str = f" - {r.contact}" if r.contact else ""
-                    rep_texts.append(f"{i + 1}. {r.name}{contact_str}")
+                    rep_texts.append(f"{r.name}{contact_str}")
             quotation.representative_names = "\n".join(rep_texts)
 
             # Save panel companies
@@ -3183,6 +4877,21 @@ def create_quotation(request):
                     WHERE id = %s
                 """, ['1' if system_na_value else '0', quotation.id])
 
+            if getattr(quotation, 'lead_id', None):
+                try:
+                    quotation.refresh_from_db()
+                    from apps.leads.timeline import log_quotation_timeline_activity
+                    log_quotation_timeline_activity(
+                        quotation,
+                        request.user if request.user.is_authenticated else None,
+                        event='draft',
+                    )
+                except Exception:
+                    import logging
+                    logging.getLogger(__name__).exception(
+                        'Could not add quotation to lead timeline'
+                    )
+
             # Check if it's an AJAX request
             if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
                 return JsonResponse({
@@ -3199,7 +4908,7 @@ def create_quotation(request):
                 return JsonResponse({
                     'success': False,
                     'error': 'Form validation failed',
-                    'errors': form.errors
+                    'errors': {k: [str(e) for e in v] for k, v in form.errors.items()},
                 })
     else:
         # Pre-populate the form with consumer_type and consumer_no from URL parameters
@@ -3207,17 +4916,44 @@ def create_quotation(request):
             'consumer_type': consumer_type,
             'consumer_no': consumer_no,
         }
+        if (
+            request.user.is_authenticated
+            and is_associate_staff(request.user)
+            and not request.user.is_superuser
+        ):
+            initial_data['assigned_associate'] = request.user.pk
+
+        try:
+            from apps.leads.models import Lead
+            from apps.surveys.models import Survey
+            lead_id = request.GET.get('lead')
+            survey_id = request.GET.get('survey')
+            if lead_id:
+                try:
+                    initial_data['lead'] = Lead.objects.get(pk=lead_id)
+                except Lead.DoesNotExist:
+                    pass
+            if survey_id:
+                try:
+                    initial_data['survey'] = Survey.objects.get(pk=survey_id)
+                except Survey.DoesNotExist:
+                    pass
+        except Exception:
+            pass
+
         # Wrap form creation in try-except to handle database schema issues
         from django.db.utils import ProgrammingError
         try:
-            form = QuotationForm(initial=initial_data)
+            form = QuotationForm(initial=initial_data, form_user=request.user)
+            _apply_crm_available_leads_queryset(form)
         except ProgrammingError as e:
             # If form creation fails due to boolean type issues, create form with empty queryset
             import logging
             logger = logging.getLogger(__name__)
             logger.warning(f"Form creation failed due to database schema issue: {e}")
             # Create form and manually set terms_conditions to empty queryset
-            form = QuotationForm(initial=initial_data)
+            form = QuotationForm(initial=initial_data, form_user=request.user)
+            _apply_crm_available_leads_queryset(form)
             form.fields['terms_conditions'].queryset = TermsAndCondition.objects.none()
 
         # ------------------------------------------------
@@ -3230,6 +4966,17 @@ def create_quotation(request):
         })
         form.fields['consumer_no'].widget.attrs['readonly'] = True
 
+    after_save_list_url = reverse('quotation:quotation_list')
+    try:
+        if getattr(request, 'path', '') and '/new-lead/' in request.path:
+            after_save_list_url = reverse('quotation_list')
+    except Exception:
+        pass
+
+    template_name = 'quotation/create_quotation.html'
+    if getattr(request, 'path', '') and '/new-lead/' in request.path:
+        template_name = 'quotations/crm_create_quotation.html'
+
     context = {
         'form': form,
         'panel_companies': panel_companies,
@@ -3238,8 +4985,10 @@ def create_quotation(request):
         'terms_conditions': terms_conditions,
         'passed_consumer_type': consumer_type,  # Pass to template for display
         'passed_consumer_no': consumer_no,  # Pass to template for display
+        'survey_lead_rows': _survey_lead_rows_for_quotation_template(),
+        'after_save_list_url': after_save_list_url,
     }
-    return render(request, 'quotation/create_quotation.html', context)
+    return render(request, template_name, context)
 
 #
 # @login_required(login_url='user-login')
@@ -3467,10 +5216,38 @@ def create_quotation(request):
 #     return response
 
 def industrial_quotation_pdf(request, pk):
-    quotation = get_object_or_404(Quotation, pk=pk)
+    quotation = get_quotation_or_404_for_request(request, pk)
     # Refresh from database to ensure all fields are loaded
     quotation.refresh_from_db()
     reps = list(quotation.representatives.all())
+    # Preserve selection sequence like regular quotation PDF by reading representative_names.
+    rep_lines = [ln.strip() for ln in (quotation.representative_names or "").splitlines() if ln.strip()]
+    if rep_lines and reps:
+        ordered_reps = []
+        remaining_reps = reps[:]
+        for line in rep_lines:
+            # Supports both "1. Name - Contact" and "Name - Contact" formats.
+            if ". " in line and line.split(". ", 1)[0].isdigit():
+                line = line.split(". ", 1)[1].strip()
+            line_name, line_contact = line, ""
+            if " - " in line:
+                line_name, line_contact = [x.strip() for x in line.split(" - ", 1)]
+            matched = None
+            # Prefer exact match on name+contact, fallback to name only.
+            for rep in remaining_reps:
+                rep_contact = (rep.contact or "").strip()
+                if rep.name.strip() == line_name and rep_contact == line_contact:
+                    matched = rep
+                    break
+            if matched is None:
+                for rep in remaining_reps:
+                    if rep.name.strip() == line_name:
+                        matched = rep
+                        break
+            if matched is not None:
+                ordered_reps.append(matched)
+                remaining_reps.remove(matched)
+        reps = ordered_reps + remaining_reps
 
     # Format other_details to replace / with ,
     if quotation.other_details:
@@ -5533,13 +7310,323 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+#
+# def edit_quotation(request, pk):
+#     """
+#     Edit an existing quotation (not create a revision).
+#     Similar to revise_quotation but updates the same quotation instead of creating a new one.
+#     """
+#     quotation = get_object_or_404(Quotation, pk=pk)
+#
+#     panel_companies = list(SolarPanelCompany.objects.all())
+#     inverter_companies = list(InverterCompany.objects.all())
+#
+#     # Get active terms and conditions - handle bit varying properly
+#     try:
+#         # Try with text cast first (most reliable)
+#         with connection.cursor() as cursor:
+#             cursor.execute("""
+#                 SELECT id FROM quotation_termsandcondition
+#                 WHERE CAST(is_active AS TEXT) IN ('1', 't', 'true', 'y', 'yes', 'on')
+#             """)
+#             active_term_ids = [row[0] for row in cursor.fetchall()]
+#         terms_conditions = TermsAndCondition.objects.filter(id__in=active_term_ids).order_by('id')
+#     except Exception as e:
+#         logger.error(f"Error getting active terms with text cast: {e}")
+#         try:
+#             # Try alternative - just check for '1' in bit varying
+#             with connection.cursor() as cursor:
+#                 cursor.execute("""
+#                     SELECT id FROM quotation_termsandcondition
+#                     WHERE is_active = '1'::bit varying
+#                 """)
+#                 active_term_ids = [row[0] for row in cursor.fetchall()]
+#             terms_conditions = TermsAndCondition.objects.filter(id__in=active_term_ids).order_by('id')
+#         except Exception as e2:
+#             logger.error(f"Error getting active terms with bit varying: {e2}")
+#             # Last resort: get all terms and filter in Python
+#             all_terms = TermsAndCondition.objects.all().order_by('id')
+#             # Try to determine active terms by checking their values
+#             active_term_ids = []
+#             for term in all_terms:
+#                 try:
+#                     # Try to get the raw value
+#                     with connection.cursor() as cursor:
+#                         cursor.execute("""
+#                             SELECT is_active FROM quotation_termsandcondition WHERE id = %s
+#                         """, [term.id])
+#                         result = cursor.fetchone()
+#                         if result:
+#                             # Check if value indicates active (1, t, true, etc.)
+#                             value = str(result[0]).lower()
+#                             if value in ('1', 't', 'true', 'y', 'yes', 'on'):
+#                                 active_term_ids.append(term.id)
+#                 except:
+#                     continue
+#             terms_conditions = TermsAndCondition.objects.filter(id__in=active_term_ids).order_by('id')
+#             if not active_term_ids:
+#                 # If still no active terms, use all terms
+#                 terms_conditions = all_terms
+#                 active_term_ids = list(all_terms.values_list('id', flat=True))
+#
+#     # Build other_dynamic_list from stored other_details
+#     other_dynamic_list = [x.strip() for x in (quotation.other_details or "").split(" / ") if x.strip()]
+#
+#     # Set of names existing in OtherItem table
+#     static_item_names = set(OtherItem.objects.values_list("name", flat=True))
+#
+#     if request.method == "POST":
+#         # Check if this is an AJAX save request
+#         is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.POST.get('save_only')
+#
+#         # Get existing term IDs from the quotation
+#         existing_term_ids = list(quotation.terms_conditions.values_list('id', flat=True))
+#
+#         # Get submitted term IDs from POST data
+#         submitted_term_ids = [int(id) for id in request.POST.getlist('terms_conditions') if id.isdigit()]
+#
+#         # Combine: active + existing + submitted
+#         all_term_ids = list(set(active_term_ids + existing_term_ids + submitted_term_ids))
+#
+#         # Create queryset
+#         if all_term_ids:
+#             terms_queryset = TermsAndCondition.objects.filter(id__in=all_term_ids)
+#         else:
+#             terms_queryset = TermsAndCondition.objects.none()
+#
+#         # Create form with instance
+#         form = QuotationForm(request.POST, instance=quotation)
+#         form.fields['terms_conditions'].queryset = terms_queryset
+#
+#         # Validate the form
+#         if form.is_valid():
+#             quotation = form.save(commit=False)
+#
+#             # Handle system_na checkbox
+#             system_na = form.cleaned_data.get('system_na', False)
+#             if system_na:
+#                 quotation.dc_capacity = None
+#                 quotation.ac_capacity = None
+#             else:
+#                 quotation.dc_capacity = form.cleaned_data.get('dc_capacity')
+#                 quotation.ac_capacity = form.cleaned_data.get('ac_capacity')
+#
+#             quotation.system_na = False
+#
+#             # Handle Other Details NA checkbox
+#             na_other_checked = request.POST.get("na_other_checkbox") == "on"
+#             if na_other_checked:
+#                 quotation.other_details = ""
+#             else:
+#                 static_qs = form.cleaned_data.get("other_items") or []
+#                 static_names = []
+#                 for item in static_qs:
+#                     if hasattr(item, 'name'):
+#                         static_names.append(item.name)
+#                 dynamic_inputs = [x.strip() for x in request.POST.getlist("dynamic_other_items[]") if x.strip()]
+#                 combined = []
+#                 for n in static_names + dynamic_inputs:
+#                     if n and n not in combined:
+#                         combined.append(n)
+#                 quotation.other_details = " / ".join(combined)
+#
+#             quotation.save()
+#
+#             # Update system_na using raw SQL to handle bit varying
+#             try:
+#                 # First try Django's save
+#                 quotation.system_na = system_na
+#                 quotation.save()
+#             except Exception as e:
+#                 logger.warning(f"Django save failed for system_na, using raw SQL: {e}")
+#                 # If Django save fails, use raw SQL with text value
+#                 with connection.cursor() as cursor:
+#                     cursor.execute("""
+#                         UPDATE quotation_quotation
+#                         SET system_na = %s
+#                         WHERE id = %s
+#                     """, ['1' if system_na else '0', quotation.id])
+#
+#             form.save_m2m()
+#
+#             # PANEL COMPANIES
+#             panel_ids = request.POST.getlist("panel_companies")
+#             quotation.panel_companies.set(panel_ids)
+#             panel_names = SolarPanelCompany.objects.filter(id__in=panel_ids).values_list("name", flat=True)
+#             quotation.panel_company_names = " / ".join(panel_names)
+#
+#             # INVERTER COMPANIES + warranty
+#             inverter_ids = request.POST.getlist("inverter_companies")
+#             quotation.inverter_companies.set(inverter_ids)
+#             inv_names = []
+#             inv_warranties = []
+#             for inv_id in inverter_ids:
+#                 try:
+#                     inv = InverterCompany.objects.get(id=inv_id)
+#                     inv_names.append(inv.name)
+#                     wt = request.POST.get(f"inverter_warranty_{inv_id}", "").strip()
+#                     inv_warranties.append(wt)
+#                 except InverterCompany.DoesNotExist:
+#                     continue
+#             quotation.inverter_company_names = " / ".join(inv_names)
+#             quotation.inverter_warranty = " / ".join(inv_warranties)
+#
+#             # REPRESENTATIVES
+#             rep_ids = request.POST.getlist('representatives')
+#             quotation.representatives.set(rep_ids)
+#
+#             rep_dict = {str(r.id): r for r in Representative.objects.filter(id__in=rep_ids)}
+#             rep_texts = []
+#             for i, rep_id in enumerate(rep_ids):
+#                 if rep_id in rep_dict:
+#                     r = rep_dict[rep_id]
+#                     contact_str = f" - {r.contact}" if r.contact else ""
+#                     rep_texts.append(f"{i + 1}. {r.name}{contact_str}")
+#             quotation.representative_names = "\n".join(rep_texts)
+#
+#             # TERMS & CONDITIONS
+#             terms_ids = request.POST.getlist('terms_conditions')
+#             if terms_ids:
+#                 quotation.terms_conditions.set(terms_ids)
+#                 terms_qs = TermsAndCondition.objects.filter(id__in=terms_ids).order_by('id')
+#                 terms_texts = []
+#                 for i, term in enumerate(terms_qs, 1):
+#                     terms_texts.append(f"{i}. {term.content}")
+#                 quotation.terms_conditions_text = "\n".join(terms_texts)
+#             else:
+#                 quotation.terms_conditions.clear()
+#                 quotation.terms_conditions_text = ""
+#
+#             # PRICING
+#             pricing_mode = form.cleaned_data.get("pricing_mode")
+#             net_input = form.cleaned_data.get("net_amount_input")
+#             final_input = form.cleaned_data.get("final_amount_input")
+#
+#             if pricing_mode == "net" and net_input is not None:
+#                 quotation.net_amount = net_input
+#                 quotation.calculate_from_net()
+#             elif pricing_mode == "final" and final_input is not None:
+#                 quotation.final_amount = final_input
+#                 quotation.calculate_from_final()
+#
+#             quotation.save()
+#
+#             # Update system_na again
+#             try:
+#                 quotation.system_na = system_na
+#                 quotation.save()
+#             except:
+#                 with connection.cursor() as cursor:
+#                     cursor.execute("""
+#                         UPDATE quotation_quotation
+#                         SET system_na = %s
+#                         WHERE id = %s
+#                     """, ['1' if system_na else '0', quotation.id])
+#
+#             # If this is an AJAX save request (save_only), return JSON success
+#             if is_ajax:
+#                 return JsonResponse({
+#                     'success': True,
+#                     'quotation_id': quotation.pk,
+#                     'message': 'Quotation saved successfully'
+#                 })
+#
+#             # If this is a normal POST with pdf_template selected, redirect to PDF
+#             pdf_template = request.POST.get('pdf_template', 'quotation')
+#             if pdf_template == 'industrial':
+#                 return redirect("quotation:industrial_quotation_pdf", pk=quotation.pk)
+#             else:
+#                 return redirect("quotation:quotation_pdf", pk=quotation.pk)
+#
+#         else:
+#             # Form has errors
+#             logger.error(f"Form errors: {form.errors}")
+#
+#             # If AJAX request, return errors as JSON
+#             if is_ajax:
+#                 return JsonResponse({
+#                     'success': False,
+#                     'errors': dict(form.errors)
+#                 }, status=400)
+#
+#             # For normal POST with errors, render the form with errors
+#             # Re-prepare inverter companies warranty mapping
+#             stored_names = [n.strip() for n in (quotation.inverter_company_names or "").split(" / ") if n.strip()]
+#             stored_wts = [w.strip() for w in (quotation.inverter_warranty or "").split(" / ") if w.strip()]
+#             name_to_wt = {}
+#             for i, name in enumerate(stored_names):
+#                 name_to_wt[name] = stored_wts[i] if i < len(stored_wts) else ""
+#             for comp in inverter_companies:
+#                 comp.warranty = name_to_wt.get(comp.name, "")
+#
+#             # Re-set terms queryset for error display
+#             if 'all_term_ids' in locals():
+#                 form.fields['terms_conditions'].queryset = TermsAndCondition.objects.filter(
+#                     id__in=all_term_ids) if all_term_ids else TermsAndCondition.objects.none()
+#             else:
+#                 # Recalculate all_term_ids for error display
+#                 existing_term_ids = list(quotation.terms_conditions.values_list('id', flat=True))
+#                 submitted_term_ids = [int(id) for id in request.POST.getlist('terms_conditions') if id.isdigit()]
+#                 all_term_ids = list(set(active_term_ids + existing_term_ids + submitted_term_ids))
+#                 form.fields['terms_conditions'].queryset = TermsAndCondition.objects.filter(
+#                     id__in=all_term_ids) if all_term_ids else TermsAndCondition.objects.none()
+#
+#     else:
+#         # GET request - create form pre-filled with existing quotation data
+#         form = QuotationForm(instance=quotation)
+#
+#         # Get existing term IDs from the quotation
+#         existing_term_ids = list(quotation.terms_conditions.values_list('id', flat=True))
+#
+#         # Combine active and existing term IDs
+#         all_term_ids = list(set(active_term_ids + existing_term_ids))
+#
+#         if all_term_ids:
+#             form.fields['terms_conditions'].queryset = TermsAndCondition.objects.filter(id__in=all_term_ids)
+#         else:
+#             form.fields['terms_conditions'].queryset = TermsAndCondition.objects.none()
+#
+#         # Pre-check static other_items checkboxes
+#         if quotation.other_details:
+#             static_names_to_check = [n for n in other_dynamic_list if n in static_item_names]
+#             if static_names_to_check:
+#                 checked_qs = OtherItem.objects.filter(name__in=static_names_to_check)
+#                 form.fields["other_items"].initial = checked_qs
+#
+#     # Prepare warranty mapping (for GET and POST with errors)
+#     if 'form' in locals() and form.errors:
+#         # If we're re-rendering with errors, use the POST data for inverter warranties
+#         pass  # Already handled above
+#     else:
+#         # For GET or successful POST
+#         stored_names = [n.strip() for n in (quotation.inverter_company_names or "").split(" / ") if n.strip()]
+#         stored_wts = [w.strip() for w in (quotation.inverter_warranty or "").split(" / ") if w.strip()]
+#         name_to_wt = {}
+#         for i, name in enumerate(stored_names):
+#             name_to_wt[name] = stored_wts[i] if i < len(stored_wts) else ""
+#         for comp in inverter_companies:
+#             comp.warranty = name_to_wt.get(comp.name, "")
+#
+#     context = {
+#         "form": form,
+#         "quotation": quotation,
+#         "panel_companies": panel_companies,
+#         "inverter_companies": inverter_companies,
+#         "terms_conditions": terms_conditions,
+#         "other_dynamic_list": other_dynamic_list,
+#         "static_item_names": static_item_names,
+#         "representatives": Representative.objects.all().order_by('name'),
+#     }
+#     return render(request, "quotation/edit_quotation.html", context)
+
 
 def edit_quotation(request, pk):
     """
     Edit an existing quotation (not create a revision).
     Similar to revise_quotation but updates the same quotation instead of creating a new one.
     """
-    quotation = get_object_or_404(Quotation, pk=pk)
+    quotation = get_quotation_or_404_for_request(request, pk)
+    is_crm_edit = '/new-lead/' in (getattr(request, 'path', '') or '')
 
     panel_companies = list(SolarPanelCompany.objects.all())
     inverter_companies = list(InverterCompany.objects.all())
@@ -5618,12 +7705,27 @@ def edit_quotation(request, pk):
             terms_queryset = TermsAndCondition.objects.none()
 
         # Create form with instance
-        form = QuotationForm(request.POST, instance=quotation)
-        form.fields['terms_conditions'].queryset = terms_queryset
+        form = QuotationForm(
+            request.POST,
+            instance=quotation,
+            terms_conditions_queryset=terms_queryset,
+            form_user=request.user,
+        )
+        # # Create form with instance
+        # form = QuotationForm(request.POST, instance=quotation)
+        # form.fields['terms_conditions'].queryset = terms_queryset
 
         # Validate the form
         if form.is_valid():
             quotation = form.save(commit=False)
+
+            # Edit: keep consumer/contact fields from the form; only link lead/survey.
+            link_crm_lead_survey_on_quotation(
+                quotation,
+                form.cleaned_data.get('lead'),
+                form.cleaned_data.get('survey'),
+            )
+            ensure_quotation_consumer_name(quotation)
 
             # Handle system_na checkbox
             system_na = form.cleaned_data.get('system_na', False)
@@ -5635,6 +7737,11 @@ def edit_quotation(request, pk):
                 quotation.ac_capacity = form.cleaned_data.get('ac_capacity')
 
             quotation.system_na = False
+
+            # Handle new fields from form
+            quotation.consumer_state = form.cleaned_data.get('consumer_state', '')
+            quotation.consumer_email = form.cleaned_data.get('consumer_email', '')
+            quotation.project_type = form.cleaned_data.get('project_type', '')
 
             # Handle Other Details NA checkbox
             na_other_checked = request.POST.get("na_other_checkbox") == "on"
@@ -5652,6 +7759,9 @@ def edit_quotation(request, pk):
                     if n and n not in combined:
                         combined.append(n)
                 quotation.other_details = " / ".join(combined)
+
+            if request.user.is_authenticated and not quotation.created_by_id:
+                quotation.created_by = request.user
 
             quotation.save()
 
@@ -5700,11 +7810,11 @@ def edit_quotation(request, pk):
 
             rep_dict = {str(r.id): r for r in Representative.objects.filter(id__in=rep_ids)}
             rep_texts = []
-            for i, rep_id in enumerate(rep_ids):
+            for rep_id in rep_ids:
                 if rep_id in rep_dict:
                     r = rep_dict[rep_id]
                     contact_str = f" - {r.contact}" if r.contact else ""
-                    rep_texts.append(f"{i + 1}. {r.name}{contact_str}")
+                    rep_texts.append(f"{r.name}{contact_str}")
             quotation.representative_names = "\n".join(rep_texts)
 
             # TERMS & CONDITIONS
@@ -5748,11 +7858,32 @@ def edit_quotation(request, pk):
 
             # If this is an AJAX save request (save_only), return JSON success
             if is_ajax:
-                return JsonResponse({
+                quotation.refresh_from_db()
+                if is_crm_edit:
+                    try:
+                        from apps.leads.timeline import log_quotation_timeline_activity
+
+                        log_quotation_timeline_activity(
+                            quotation,
+                            request.user if request.user.is_authenticated else None,
+                            event='draft',
+                        )
+                    except Exception:
+                        pass
+                payload = {
                     'success': True,
                     'quotation_id': quotation.pk,
-                    'message': 'Quotation saved successfully'
-                })
+                    'message': 'Quotation updated successfully.',
+                }
+                if is_crm_edit:
+                    from django.urls import reverse
+
+                    payload['redirect_url'] = reverse(
+                        'quotation_detail',
+                        kwargs={'pk': quotation.pk},
+                    )
+                    payload['skip_pdf_modal'] = True
+                return JsonResponse(payload)
 
             # If this is a normal POST with pdf_template selected, redirect to PDF
             pdf_template = request.POST.get('pdf_template', 'quotation')
@@ -5796,7 +7927,29 @@ def edit_quotation(request, pk):
 
     else:
         # GET request - create form pre-filled with existing quotation data
-        form = QuotationForm(instance=quotation)
+        initial_crm = {}
+        try:
+            from apps.leads.models import Lead
+            from apps.surveys.models import Survey
+            if getattr(quotation, 'lead_id', None):
+                initial_crm['lead'] = quotation.lead
+                if getattr(quotation, 'survey_id', None):
+                    initial_crm['survey'] = quotation.survey
+            else:
+                cn = (quotation.consumer_name or '').strip()
+                if cn:
+                    ml = Lead.objects.filter(name__iexact=cn).first()
+                    if ml:
+                        initial_crm['lead'] = ml
+                        sv = Survey.objects.filter(
+                            lead=ml, completed_date__isnull=False
+                        ).order_by('-scheduled_date').first()
+                        if sv:
+                            initial_crm['survey'] = sv
+        except Exception:
+            pass
+
+        form = QuotationForm(instance=quotation, initial=initial_crm, form_user=request.user)
 
         # Get existing term IDs from the quotation
         existing_term_ids = list(quotation.terms_conditions.values_list('id', flat=True))
@@ -5839,8 +7992,14 @@ def edit_quotation(request, pk):
         "other_dynamic_list": other_dynamic_list,
         "static_item_names": static_item_names,
         "representatives": Representative.objects.all().order_by('name'),
+        "survey_lead_rows": _survey_lead_rows_for_quotation_template(),
+        "skip_pdf_after_save": is_crm_edit,
     }
-    return render(request, "quotation/edit_quotation.html", context)
+    template_name = "quotation/edit_quotation.html"
+    if is_crm_edit:
+        template_name = "quotations/crm_edit_quotation.html"
+    return render(request, template_name, context)
+
 
 # ---- AJAX: Add Panel Company ----
 @require_POST
@@ -6209,10 +8368,36 @@ def add_other_item_api(request):
 #     return response
 
 def quotation_pdf(request, pk):
-    quotation = get_object_or_404(Quotation, pk=pk)
+    quotation = get_quotation_or_404_for_request(request, pk)
     # Refresh from database to ensure all fields are loaded
     quotation.refresh_from_db()
     reps = list(quotation.representatives.all())
+    # Preserve selected representative sequence using representative_names.
+    rep_lines = [ln.strip() for ln in (quotation.representative_names or "").splitlines() if ln.strip()]
+    if rep_lines and reps:
+        ordered_reps = []
+        remaining_reps = reps[:]
+        for line in rep_lines:
+            if ". " in line and line.split(". ", 1)[0].isdigit():
+                line = line.split(". ", 1)[1].strip()
+            line_name, line_contact = line, ""
+            if " - " in line:
+                line_name, line_contact = [x.strip() for x in line.split(" - ", 1)]
+            matched = None
+            for rep in remaining_reps:
+                rep_contact = (rep.contact or "").strip()
+                if rep.name.strip() == line_name and rep_contact == line_contact:
+                    matched = rep
+                    break
+            if matched is None:
+                for rep in remaining_reps:
+                    if rep.name.strip() == line_name:
+                        matched = rep
+                        break
+            if matched is not None:
+                ordered_reps.append(matched)
+                remaining_reps.remove(matched)
+        reps = ordered_reps + remaining_reps
 
     # Format other_details to replace / with ,
     if quotation.other_details:

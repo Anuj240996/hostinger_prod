@@ -1,0 +1,2172 @@
+﻿
+<style>
+.select-readonly {
+    background-color: white !important;
+    pointer-events: none;   /* Prevent changes */
+}
+</style>
+
+<style>
+.other-details-disabled {
+    background-color: #ffe5e5 !important; /* light red */
+}
+
+.inv-item {
+    margin-bottom: 8px;
+}
+
+.inv-item input[type=checkbox] {
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+    margin-right: 6px;
+}
+
+/*
+ * Bootstrap form-switch needs default .form-check padding (≈2.5em). Do NOT add ps-1/ps-0 here —
+ * tiny padding breaks negative-margin alignment and draws the switch outside the fieldset border.
+ */
+/* Proposed System: keep Bootstrap switch proportions (do not shrink to 16px) */
+#proposedSystemFieldset .form-check.form-switch .form-check-input {
+    width: 2.5em;
+    height: 1.25em;
+    margin-right: 0.75rem;
+    cursor: pointer;
+}
+
+#proposedSystemFieldset .form-check.form-switch .form-check-label {
+    cursor: pointer;
+    padding-left: 0;
+}
+
+/* Other Details N.A.: same switch sizing as Proposed System */
+#otherDetailsFieldset #na_other_row .form-check.form-switch .form-check-input {
+    width: 2.5em;
+    height: 1.25em;
+    margin-right: 0.75rem;
+    cursor: pointer;
+}
+
+#otherDetailsFieldset #na_other_row .form-check.form-switch .form-check-label {
+    cursor: pointer;
+    padding-left: 0;
+}
+
+/* Wider input (2.5em) needs slightly more track room than default BS 2em switch */
+#proposedSystemFieldset .form-check.form-switch,
+#otherDetailsFieldset #na_other_row .form-check.form-switch {
+    padding-left: 3em;
+}
+#proposedSystemFieldset .form-check.form-switch .form-check-input,
+#otherDetailsFieldset #na_other_row .form-check.form-switch .form-check-input {
+    margin-left: -3em;
+}
+
+#otherDetailsFieldset .checkbox-label input[type=checkbox] {
+    width: 16px;
+    height: 16px;
+}
+
+.inv-warranty-input {
+    margin-left: 10px;
+    width: 180px;
+}
+</style>
+<style>
+/* -------- Fieldset Active / Inactive -------- */
+fieldset {
+    background-color: #ffffff;
+    border: 2px solid #4a6cf7;
+    border-radius: 10px;
+    padding: 15px;
+    transition: all 0.3s ease;
+    /* Avoid horizontal scrollbar / clipped switches when nested grids use negative margins */
+    box-sizing: border-box;
+    width: 100%;
+    max-width: 100%;
+    margin-bottom: 0.5rem;
+}
+
+fieldset legend {
+    display: block;
+    width: 100%;
+    float: none;
+    font-size: 1.125rem;
+    font-weight: 600;
+    line-height: 1.35;
+    color: #1e41d1;
+    margin: 0 0 1rem 0;
+    padding: 0 0 0.6rem 0;
+    /* border-bottom: 2px solid rgba(74, 108, 247, 0.35); */
+}
+
+/* Active Fieldset */
+fieldset.active-fieldset {
+    background-color: #dbe3ff;
+    border-color: #1e41d1;
+    box-shadow: 0 0 10px rgba(0, 34, 120, 0.3);
+}
+
+/* -------- Highlight Focused Input -------- */
+input.form-control,
+select.form-control {
+    transition: all 0.25s ease-in-out;
+    border: 1px solid #b5b5b5;
+}
+
+input.form-control:focus,
+select.form-control:focus {
+    border-color: #1e41d1;
+    box-shadow: 0 0 6px rgba(0, 34, 120, 0.3);
+    transform: scale(1.02);   /* textbox resize effect */
+}
+
+/* Prevent layout breaking */
+.input-group:focus-within {
+    transform: scale(1.02);
+}
+</style>
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+
+    const fieldsets = document.querySelectorAll("fieldset");
+
+    /* Highlight fieldset when clicked */
+    fieldsets.forEach(fs => {
+        fs.addEventListener("click", () => activateFieldset(fs));
+    });
+
+    /* Highlight fieldset when any textbox inside is focused */
+    const allInputs = document.querySelectorAll("input, select, textarea");
+
+    allInputs.forEach(input => {
+        input.addEventListener("focus", function () {
+            let fs = this.closest("fieldset");
+            if (fs) activateFieldset(fs);
+        });
+    });
+
+    function activateFieldset(activeFs) {
+        fieldsets.forEach(fs => fs.classList.remove("active-fieldset"));
+        activeFs.classList.add("active-fieldset");
+    }
+});
+</script>
+<style>
+    .checkbox-label {
+    display: block;
+    margin-bottom: 10px; /* Adjust this value to control spacing */
+    padding: 5px 0;
+}
+
+/* Or for horizontal layout with spacing */
+.checkbox-label {
+    display: inline-block;
+    margin-right: 20px; /* Adjust this value to control spacing */
+    margin-bottom: 10px;
+    padding: 5px;
+}
+
+/* New styles for Proposed System */
+.system-na-disabled {
+    background-color: #f8f9fa !important;
+    color: #6c757d !important;
+}
+
+.capacity-input {
+    transition: all 0.3s ease;
+}
+</style>
+
+<h3>Create New Quotation</h3>
+<!-- Display passed consumer information -->
+{% if passed_consumer_type and passed_consumer_no %}
+<div class="alert alert-info">
+    <strong>Consumer Information:</strong>
+    Type: {{ passed_consumer_type }} |
+    Consumer No: {{ passed_consumer_no }}
+</div>
+{% endif %}
+
+{% if form.errors %}
+<div style="color:red;">
+  <strong>Form Errors:</strong>
+  <ul>
+  {% for field, errors in form.errors.items %}
+    <li>{{ field }}: {{ errors|join:", " }}</li>
+  {% endfor %}
+  </ul>
+</div>
+{% endif %}
+
+{% if form.errors %}
+   <div style="color:red; font-weight:bold;">
+       {{ form.errors }}
+   </div>
+{% endif %}
+
+{% if formset.errors %}
+   <div style="color:red; font-weight:bold;">
+       {{ formset.errors }}
+   </div>
+{% endif %}
+
+<div class="testbox">
+<form method="post" id="quotationForm">
+  {% csrf_token %}
+
+  <fieldset>
+    <legend>Consumer Details</legend>
+
+      <!-- NEW: Consumer Type Field -->
+    <div class="row mb-3 align-items-center">
+        <div class="col-md-6 item1">
+            {{ form.consumer_type.label_tag }} {{ form.consumer_type }}
+        </div>
+        <div class="col-md-6 item1">
+            {{ form.consumer_no.label_tag }} {{ form.consumer_no }}
+        </div>
+    </div>
+
+    <!-- NEW: Title Radio Buttons -->
+    <div class="row mb-3 align-items-center">
+        <div class="col-md-12 item1">
+            <label>Title:</label><br>
+            <div class="form-check form-check-inline">
+                <input class="form-check-input" type="radio" name="title" id="title_mr" value="Mr" checked>
+                <label class="form-check-label" for="title_mr">Mr</label>
+            </div>
+            <div class="form-check form-check-inline">
+                <input class="form-check-input" type="radio" name="title" id="title_ms" value="Ms">
+                <label class="form-check-label" for="title_ms">Ms</label>
+            </div>
+        </div>
+    </div>
+
+    {{ survey_lead_rows|json_script:"survey-lead-data-erp" }}
+    <div class="row mb-3 align-items-end">
+        <div class="col-md-6 item1">
+            {{ form.lead.label_tag }} {{ form.lead }}
+           
+        </div>
+        <div class="col-md-6 item1">
+            {{ form.survey.label_tag }} {{ form.survey }}
+        </div>
+    </div>
+
+    <div class="row mb-1 align-items-center">
+        <div class="col-md-6 mb-3 item1">
+            {{ form.consumer_address1.label_tag }} {{ form.consumer_address1 }}
+        </div>
+        <!-- CHANGED: Consumer Address 2 renamed to City -->
+        <div class="col-md-6 mb-3 item1">
+            <label for="{{ form.consumer_address2.id_for_label }}">City:</label>
+            {{ form.consumer_address2 }}
+        </div>
+    </div>
+
+    <!-- NEW: State and Email Fields -->
+    <div class="row mb-1 align-items-center">
+        <div class="col-md-6 item1">
+            <label for="id_consumer_state">State:</label>
+            <input type="text" name="consumer_state" id="id_consumer_state" class="form-control" maxlength="100">
+        </div>
+        <div class="col-md-6 item1">
+            <label for="id_consumer_email">Email ID:</label>
+            <input type="email" name="consumer_email" id="id_consumer_email" class="form-control" maxlength="255">
+        </div>
+    </div>
+
+    <div class="row mb-1 align-items-center">
+        <div class="col-md-6 item1">
+            {{ form.consumer_mobile.label_tag }} {{ form.consumer_mobile }}
+        </div>
+        <!-- NEW: Project Type Dropdown -->
+        <div class="col-md-6 item1">
+            <label for="id_project_type">Project Type:</label>
+            <select name="project_type" id="id_project_type" class="form-control">
+                <option value="">Select Project Type</option>
+                <option value="RoofTop">RoofTop</option>
+                <option value="Ground Mount PV">Ground Mount PV</option>
+                <option value="Street Light">Street Light</option>
+                <option value="Water Pump">Water Pump</option>
+                <option value="Hi-Mas">Hi-Mas</option>
+                <option value="Other">Other</option>
+            </select>
+        </div>
+    </div>
+  </fieldset>
+
+<fieldset>
+    <legend>Quotation Meta</legend>
+    {# Row 1: Date, Plant capacity, Electricity unit rate #}
+    <div class="row mb-1 align-items-center">
+        <div class="col-md-4 mb-3 item1">
+            {{ form.date.label_tag }} {{ form.date }}
+        </div>
+        <div class="col-md-4 mb-3 item1">
+            {{ form.plant_capacity_kw.label_tag }}
+            <div class="input-group">
+                {{ form.plant_capacity_kw }}
+                <button type="button" class="btn btn-success" id="openPlantCapacityModal"
+                        style="border-top-left-radius: 0; border-bottom-left-radius: 0; width: 40px;"
+                        title="Add New Plant Capacity">+</button>
+            </div>
+        </div>
+        <div class="col-md-4 mb-3 item1">
+            {{ form.electricity_unit_rate.label_tag }}
+            <div class="input-group">
+                {{ form.electricity_unit_rate }}
+                <span class="input-group-text">₹/kWh</span>
+            </div>
+            <small class="form-text text-muted">Used for yearly saving calculation</small>
+            {% if form.electricity_unit_rate.errors %}<div class="text-danger small">{{ form.electricity_unit_rate.errors }}</div>{% endif %}
+        </div>
+    </div>
+    {# Row 2: Assign Associate (full name in list), Representative #}
+    <div class="row mb-1 align-items-center">
+        <div class="col-md-6 mb-3 item1">
+            {{ form.assigned_associate.label_tag }} {{ form.assigned_associate }}
+            {% if form.assigned_associate.errors %}<div class="text-danger small">{{ form.assigned_associate.errors }}</div>{% endif %}
+        </div>
+        <div class="col-md-6 mb-3 item1">
+            <label for="{{ form.employee_name.id_for_label }}">Representative Name</label>
+            {{ form.employee_name }}
+            {% if form.employee_name.errors %}<div class="text-danger small">{{ form.employee_name.errors }}</div>{% endif %}
+        </div>
+    </div>
+
+<!-- Add Representative Modal -->
+<div id="repModal" style="display:none; position:fixed; z-index:9999; left:0; top:0; right:0; bottom:0; align-items:center; justify-content:center;">
+  <div style="background:white; margin:auto; padding:20px; border-radius:6px; max-width:420px; box-shadow:0 6px 18px rgba(0,0,0,0.2);">
+    <h3>Add Representative</h3>
+    <label>Name</label><br>
+    <input type="text" id="repName" style="width:100%; margin-bottom:8px;">
+    <label>Contact</label><br>
+    <input type="text" id="repContact" style="width:100%; margin-bottom:8px;">
+    <div style="text-align:right;">
+      <button type="button" id="closeRepModal">Cancel</button>
+      <button type="button" id="saveRepBtn">Save</button>
+    </div>
+  </div>
+</div>
+
+  </fieldset>
+
+  <fieldset>
+    <legend>Solar Panel Details</legend>
+    <div class="row mb-1 align-items-center">
+   <div class="col-md-4 mb-3 item1">
+    {{ form.panel_type.label_tag }} {{ form.panel_type }}
+   </div>
+   <div class="col-md-4 mb-3 item1">
+    {{ form.panel_capacity_watt.label_tag }}
+    <div class="input-group">
+      {{ form.panel_capacity_watt }}
+      <span class="input-group-text" style="color: #495057;">kW</span>
+    </div>
+   </div>
+
+   <div class="col-md-4 mb-3 item1">
+    {{ form.panel_qty.label_tag }}
+    <div class="input-group">
+      {{ form.panel_qty }}
+      <span class="input-group-text" style="color: #495057;">Nos</span>
+    </div>
+   </div>
+    </div>
+
+
+    <strong>Solar Panel Companies:</strong><br>
+    <button type="button" id="openPanelModal">+ Add Panel Company</button>
+      <div class="inv-item item1">
+    {% for c in panel_companies %}
+        <label class="checkbox-label">
+            <input type="checkbox" name="panel_companies" value="{{ c.id }}">
+            {{ c.name }}
+        </label>
+    {% empty %}
+        <em>No panel companies added yet.</em>
+    {% endfor %}
+</div>
+
+  <div class="row mb-1 align-items-center">
+   <div class="col-md-6 mb-3 item1">
+    <label>Manufacturing Warranty:</label>
+    <div class="input-group">
+      {{ form.panel_manufacturing_warranty }}
+      <span class="input-group-text" style="color: #495057;">Year</span>
+    </div>
+        </div>
+   <div class="col-md-6 mb-3 item1">
+
+    <label>Performance Warranty:</label>
+    <div class="input-group">
+      {{ form.panel_performance_warranty }}
+      <span class="input-group-text" style="color: #495057;">Year</span>
+    </div>
+   </div>
+    </div>
+  </fieldset>
+
+  <fieldset>
+    <legend>Inverter</legend>
+   <div class="row mb-1 align-items-center">
+   <div class="col-md-4 mb-3 item1">
+    {{ form.inv_phase.label_tag }} {{ form.inv_phase }}
+   </div>
+   <div class="col-md-4 mb-3 item1">
+    {{ form.inv_capacity_kw.label_tag }}
+    <div class="input-group">
+      {{ form.inv_capacity_kw }}
+      <span class="input-group-text" style="color: #495057;">kW</span>
+    </div>
+   </div>
+   <div class="col-md-4 mb-3 item1">
+    {{ form.inverter_qty.label_tag }}
+    <div class="input-group">
+      {{ form.inverter_qty }}
+      <span class="input-group-text" style="color: #495057;">Nos</span>
+    </div>
+   </div>
+   </div>
+
+    <strong>Inverter Companies:</strong><br>
+
+        <button type="button" id="openInverterModal">+ Add Inverter Company</button>
+<style>
+.inv-companies-container1 {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: flex-start;
+}
+
+.inv-item1 {
+    display: flex;
+    align-items: center;
+    min-height: 35px;
+    flex: 0 0 auto;
+}
+
+.checkbox-label1 {
+    display: flex;
+    align-items: center;
+    min-width: 100px;
+    margin-right: 3px;000000
+}
+
+.inv-checkbox1 {
+    margin-right: 3px;
+    width: 16px;
+    height: 16px;
+}
+
+.warranty-input1 {
+    display: none;
+    min-width: 80px;
+    margin-left: 1px;
+    padding: 3px 6px;
+}
+
+/* Ensure consistent spacing when warranty box is visible */
+.inv-item1.with-warranty1 {
+    min-width: 280px; /* Reduced from 350px */
+}
+</style>
+
+<div class="inv-companies-container1">
+    {% for company in inverter_companies %}
+    <div class="inv-item1" id="inv_item_{{ company.id }}">
+        <label class="checkbox-label">
+            <input type="checkbox"
+                   name="inverter_companies"
+                   value="{{ company.id }}"
+                   class="inv-checkbox1 inv-company-checkbox1"
+                   data-company-id="{{ company.id }}"
+                   onchange="toggleWarrantyBox(this)">
+            {{ company.name }}
+        </label>
+
+        <!-- Hidden Warranty Box -->
+        <input type="text"
+               name="inverter_warranty_{{ company.id }}"
+               placeholder="Enter Warranty"
+               class="warranty-input1 inv-warranty-input1"
+               id="warranty_box_{{ company.id }}">
+    </div>
+    {% endfor %}
+</div>
+
+<script>
+function toggleWarrantyBox(checkbox) {
+    const companyId = checkbox.dataset.companyId;
+    const warrantyBox = document.getElementById('warranty_box_' + companyId);
+    const invItem = document.getElementById('inv_item_' + companyId);
+
+    if (checkbox.checked) {
+        warrantyBox.style.display = 'inline-block';
+        invItem.classList.add('with-warranty');
+    } else {
+        warrantyBox.style.display = 'none';
+        invItem.classList.remove('with-warranty');
+    }
+}
+
+// Optional: Initialize on page load in case of form repopulation
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('.inv-company-checkbox1').forEach(checkbox => {
+        if (checkbox.checked) {
+            toggleWarrantyBox(checkbox);
+        }
+    });
+});
+</script>
+  </fieldset>
+
+<!-- PANEL COMPANY MODAL -->
+<div id="panelCompanyModal" style="display:none;
+     position:fixed; z-index:9999; left:0; top:0; right:0; bottom:0;
+     align-items:center; justify-content:center;">
+  <div style="background:white; margin:auto; padding:20px; border-radius:6px;
+              max-width:420px; box-shadow:0 6px 18px rgba(0,0,0,0.2);">
+
+      <h3>Add Solar Panel Company</h3>
+      <input type="text" id="panelCompanyName" placeholder="Company Name"
+             style="width:100%; margin-bottom:10px;">
+
+      <div style="text-align:right;">
+          <button type="button" id="closePanelModal">Cancel</button>
+          <button type="button" id="savePanelCompany">Save</button>
+      </div>
+  </div>
+</div>
+
+
+ <!-- INVERTER COMPANY MODAL -->
+<div id="invCompanyModal" style="display:none;
+     position:fixed; z-index:9999; left:0; top:0; right:0; bottom:0;
+     align-items:center; justify-content:center;">
+  <div style="background:white; margin:auto; padding:20px; border-radius:6px;
+              max-width:420px; box-shadow:0 6px 18px rgba(0,0,0,0.2);">
+
+      <h3>Add New Inverter Company</h3>
+      <input type="text" id="invCompanyName" placeholder="Company Name"
+             style="width:100%; margin-bottom:10px;">
+
+      <div style="text-align:right;">
+          <button type="button" id="closeInvModal">Cancel</button>
+          <button type="button" id="saveInvCompany">Save</button>
+      </div>
+  </div>
+</div>
+        <!-- NEW: Plant Capacity Modal -->
+          <div id="plantCapacityModal" style="display:none; position:fixed; z-index:9999; left:0; top:0; right:0; bottom:0; align-items:center; justify-content:center;">
+            <div style="background:white; margin:auto; padding:20px; border-radius:6px; max-width:420px; box-shadow:0 6px 18px rgba(0,0,0,0.2);">
+                <h3>Add New Plant Capacity</h3>
+                <input type="number" id="plantCapacityValue" step="0.1" min="0" placeholder="Capacity in kW" style="width:100%; margin-bottom:10px;">
+                <div style="text-align:right;">
+                    <button type="button" id="closePlantCapacityModal">Cancel</button>
+                    <button type="button" id="savePlantCapacity">Save</button>
+                </div>
+            </div>
+          </div>
+<script>
+// Plant Capacity Modal functionality
+document.addEventListener("DOMContentLoaded", function () {
+    const plantCapacityModal = document.getElementById("plantCapacityModal");
+    const openPlantCapacity = document.getElementById("openPlantCapacityModal");
+    const closePlantCapacity = document.getElementById("closePlantCapacityModal");
+    const savePlantCapacity = document.getElementById("savePlantCapacity");
+    const plantCapacityValue = document.getElementById("plantCapacityValue");
+
+    openPlantCapacity.onclick = () => {
+        plantCapacityValue.value = '';
+        plantCapacityModal.style.display = 'flex';
+        plantCapacityValue.focus();
+    };
+
+    closePlantCapacity.onclick = () => plantCapacityModal.style.display = 'none';
+
+    savePlantCapacity.onclick = function () {
+        const capacity = plantCapacityValue.value.trim();
+        if (!capacity) { alert("Enter capacity"); return; }
+
+        fetch("{% url 'quotation:add_plant_capacity_api' %}", {
+            method: "POST",
+            headers: {"X-CSRFToken": csrftoken},
+            body: new URLSearchParams({ capacity })
+        })
+        .then(resp => resp.json())
+        .then(data => {
+            if (!data.success) return alert(data.error);
+
+            // Update the dropdown
+            const select = document.querySelector('[name="plant_capacity_kw"]');
+            const option = document.createElement('option');
+            option.value = data.id;
+            option.textContent = data.capacity + ' kW';
+            select.appendChild(option);
+
+            // Select the new option
+            option.selected = true;
+
+            plantCapacityModal.style.display = "none";
+        });
+    };
+});
+
+// Your existing JavaScript code
+</script>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+
+    const csrftoken = getCookie('csrftoken');
+
+    // PANEL MODAL
+    const panelModal = document.getElementById("panelCompanyModal");
+    const openPanel = document.getElementById("openPanelModal");
+    const closePanel = document.getElementById("closePanelModal");
+    const savePanel = document.getElementById("savePanelCompany");
+    const panelCompanyName = document.getElementById("panelCompanyName");
+    const panelContainer = document.querySelector('[name="panel_companies"]').parentNode;
+
+    openPanel.onclick = () => {
+        panelCompanyName.value = '';
+        panelModal.style.display = 'flex';
+        panelCompanyName.focus();
+    };
+
+    closePanel.onclick = () => panelModal.style.display = 'none';
+
+    savePanel.onclick = function () {
+        const name = panelCompanyName.value.trim();
+        if (!name) { alert("Enter name"); return; }
+
+        fetch("{% url 'quotation:add_panel_company_api' %}", {
+            method: "POST",
+            headers: {"X-CSRFToken": csrftoken},
+            body: new URLSearchParams({ name })
+        })
+        .then(resp => resp.json())
+        .then(data => {
+            if (!data.success) return alert(data.error);
+
+            // Insert new checkbox immediately
+            const div = document.createElement("div");
+            div.classList.add("inv-item1");
+            div.innerHTML = `
+              <label>
+                <input type="checkbox" name="panel_companies" value="${data.id}" checked>
+                ${data.name}
+              </label>
+            `;
+            panelContainer.appendChild(div);
+
+
+            panelModal.style.display = "none";
+        });
+    };
+});
+</script>
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+
+    const csrftoken = getCookie('csrftoken');
+
+    // INVERTER MODAL
+    const invModal = document.getElementById("invCompanyModal");
+    const openInv = document.getElementById("openInverterModal");
+    const closeInv = document.getElementById("closeInvModal");
+    const saveInv = document.getElementById("saveInvCompany");
+    const invName = document.getElementById("invCompanyName");
+
+    // FIX: ensure new item always goes to bottom
+    const invContainer = document.querySelector('[name="inverter_companies"]').closest('div');
+
+    openInv.onclick = () => {
+        invName.value = '';
+        invModal.style.display = 'flex';
+        invName.focus();
+    };
+
+    closeInv.onclick = () => invModal.style.display = 'none';
+
+    saveInv.onclick = function () {
+        const name = invName.value.trim();
+        if (!name) { alert("Enter name"); return; }
+
+        fetch("{% url 'quotation:add_inverter_company_api' %}", {
+            method: "POST",
+            headers: {"X-CSRFToken": csrftoken},
+            body: new URLSearchParams({ name })
+        })
+        .then(resp => resp.json())
+        .then(data => {
+            if (!data.success) return alert(data.error);
+
+            const id = data.id;
+
+            // Always append at bottom
+            const div = document.createElement("div");
+            div.classList.add("inv-item");
+            div.innerHTML = `
+                <label>
+                    <input type="checkbox"
+                           name="inverter_companies"
+                           value="${id}"
+                           class="inv-company-checkbox"
+                           data-company-id="${id}"
+                           checked>
+                    ${data.name}
+                </label>
+
+                <input type="text"
+                    name="inverter_warranty_${id}"
+                    placeholder="Enter Warranty"
+                    class="inv-warranty-input"
+                    id="warranty_box_${id}"
+                    style="margin-left:10px;">
+            `;
+
+            document.querySelectorAll('[name="inverter_companies"]').item(
+                document.querySelectorAll('[name="inverter_companies"]').length - 1
+            ).closest("div").insertAdjacentElement("afterend", div);
+
+
+            invModal.style.display = "none";
+        });
+    };
+});
+</script>
+
+  <script>
+  document.addEventListener("DOMContentLoaded", function() {
+
+      document.querySelectorAll(".inv-company-checkbox").forEach(function(cb) {
+
+          cb.addEventListener("change", function() {
+
+              let id = this.dataset.companyId;
+              let box = document.getElementById("warranty_box_" + id);
+
+              if (this.checked) {
+                  box.style.display = "inline-block";
+              } else {
+                  box.value = "";
+                  box.style.display = "none";
+              }
+          });
+
+      });
+
+  });
+  </script>
+
+	<fieldset>
+    <legend>Structure</legend>
+     <div class="row mb-1 align-items-center">
+        <div class="col-md-6 mb-3 item1">
+                {{ form.structure_type.label_tag }} {{ form.structure_type }}
+        </div>
+        <div class="col-md-6 mb-3 item1">
+                <label>Structure Warranty</label>
+                <div class="input-group">
+                  {{ form.structure_warranty }}
+                  <span class="input-group-text" style="color: #495057;">Year</span>
+                </div>
+        </div>
+     </div>
+        <div id="structure-heights" style="display:none;">
+            <div class="row mb-1 align-items-center">
+            <div class="col-md-6 mb-3 item1">
+                {{ form.structure_back_height_ft.label_tag }}  <div class="input-group">{{ form.structure_back_height_ft }}
+                  <span class="input-group-text" style="color: #495057;">Ft</span>
+
+                </div>
+            </div>
+            <div class="col-md-6 mb-3 item1">
+                {{ form.structure_front_height_ft.label_tag }} <div class="input-group">{{ form.structure_front_height_ft }}
+                <span class="input-group-text" style="color: #495057;">Ft</span>
+                </div>
+            </div>
+            </div>
+
+        </div>
+<!--     </div>-->
+  </fieldset>
+  <fieldset>
+    <legend>Pricing & Tax</legend>
+
+    <div class="mb-3">
+      {{ form.pricing_mode.label_tag }} {{ form.pricing_mode }}
+    </div>
+
+    <div id="pricing-calculated-block" style="display:none;">
+      <div class="row g-3 align-items-start">
+        <div class="col-md-6">
+          <div id="net-amount-field" style="display:none;" class="mb-3">
+            <label for="id_net_amount_input" class="form-label">Enter Net Amount:</label>
+            <div class="input-group">
+              <span class="input-group-text">₹</span>
+              {{ form.net_amount_input }}
+            </div>
+          </div>
+          <div id="final-amount-field" style="display:none;" class="mb-3">
+            <label for="id_final_amount_input" class="form-label">Enter Final Amount:</label>
+            <div class="input-group">
+              <span class="input-group-text">₹</span>
+              {{ form.final_amount_input }}
+            </div>
+          </div>
+          <div class="mb-3">
+            <label class="form-label d-block" for="discount_visible">Special Discount</label>
+            <div class="input-group align-items-stretch">
+              <div class="input-group-prepend m-0 align-self-stretch">
+                <div class="btn-group h-100" role="group" aria-label="Discount unit" id="discount-unit-toggle">
+                  <button type="button" class="btn btn-outline-secondary active px-3 h-100" id="discount-unit-rupees" data-unit="rupees">₹</button>
+                  <button type="button" class="btn btn-outline-secondary px-3 h-100" id="discount-unit-percent" data-unit="percent">%</button>
+                </div>
+              </div>
+              <input type="text" name="" id="discount_visible" class="form-control" autocomplete="off" aria-describedby="discount-hint" placeholder="Amount or %">
+            </div>
+            <small class="form-text text-muted d-block mt-1" id="discount-hint"></small>
+            <div class="d-none" aria-hidden="true">{{ form.special_discount }}{{ form.discount_percentage }}</div>
+          </div>
+          <div class="d-none" aria-hidden="true">
+            {{ form.gst_5_percent }}
+            {{ form.gst_18_percent }}
+          </div>
+        </div>
+        <div class="col-md-6">
+          <div class="border rounded p-3 h-100 bg-light" id="pricing-summary-panel">
+            <div class="fw-semibold text-secondary mb-2 small text-uppercase">Pricing summary</div>
+            <dl class="row mb-0 small">
+              <dt class="col-6">Basic amount</dt>
+              <dd class="col-6 text-end mb-1" id="pricing-summary-basic">—</dd>
+              <dt class="col-6">Discount</dt>
+              <dd class="col-6 text-end mb-1" id="pricing-summary-discount">—</dd>
+              <dt class="col-6">GST 5% (on 70%)</dt>
+              <dd class="col-6 text-end mb-1" id="pricing-summary-gst5">—</dd>
+              <dt class="col-6">GST 18% (on 30%)</dt>
+              <dd class="col-6 text-end mb-1" id="pricing-summary-gst18">—</dd>
+              <dt class="col-6 pt-2 mt-2 border-top fw-bold text-primary fs-5">Final amount</dt>
+              <dd class="col-6 text-end pt-2 mt-2 border-top fw-bold text-primary fs-5" id="pricing-summary-final">—</dd>
+            </dl>
+          </div>
+        </div>
+      </div>
+    </div>
+  </fieldset>
+
+    <script>
+      // helper to get CSRF token from cookie (Django default)
+      function getCookie(name) {
+          let cookieValue = null;
+          if (document.cookie && document.cookie !== '') {
+              const cookies = document.cookie.split(';');
+              for (let i = 0; i < cookies.length; i++) {
+                  const cookie = cookies[i].trim();
+                  if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                      cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                      break;
+                  }
+              }
+          }
+          return cookieValue;
+      }
+      const csrftoken = getCookie('csrftoken');
+    </script>
+
+  <!-- NEW: Proposed System Fieldset (switch: input + label as siblings — not nested in one control) -->
+      <fieldset id="proposedSystemFieldset">
+        <legend>Proposed System</legend>
+
+        <div class="row mb-3 align-items-center">
+            <div class="col-md-12 mb-3">
+                <div class="form-check form-switch">
+                    <input class="form-check-input" type="checkbox" role="switch" id="system_na_checkbox" name="system_na"
+                           {% if form.system_na.value %}checked{% endif %}>
+                    <label class="form-check-label fw-bold text-danger" for="system_na_checkbox">
+                        Mark as Not Applicable (N.A.)
+                    </label>
+                    <small class="form-text text-muted d-block mt-1 ms-1">
+                        Check this if the proposed system capacities are not applicable for this quotation.
+                    </small>
+                </div>
+            </div>
+        </div>
+
+       <div id="capacityFields">
+        <div class="row mb-1 align-items-center">
+            <div class="col-md-6 mb-3 item1">
+                <label for="{{ form.dc_capacity.id_for_label }}" class="form-label">
+                    <i class="fas fa-bolt text-warning"></i> DC Capacity (kWp)
+                </label>
+                <div class="input-group">
+                    {{ form.dc_capacity }}
+                    <span class="input-group-text">kWp</span>
+
+
+                </div>
+                <small class="form-text text-muted">Direct Current capacity of the system</small>
+            </div>
+            <div class="col-md-6 mb-3 item1">
+                <label for="{{ form.ac_capacity.id_for_label }}" class="form-label">
+                    <i class="fas fa-plug text-success"></i> AC Capacity (kWh)
+                </label>
+                <div class="input-group">
+                    {{ form.ac_capacity }}
+                    <span class="input-group-text">kWh</span>
+
+
+                </div>
+                <small class="form-text text-muted">Alternating Current capacity of the system</small>
+            </div>
+
+        </div>
+        <!-- Auto-calculation button removed -->
+    </div>
+  </fieldset>
+
+  <fieldset id="otherDetailsFieldset">
+
+      <legend>Other Details</legend>
+
+      <strong class="d-block mb-2">Select Required Items:</strong>
+        <div id="na_other_row" class="mb-3">
+                <div class="form-check form-switch">
+                    <input class="form-check-input" type="checkbox" role="switch" id="na_other_checkbox" autocomplete="off">
+                    <label class="form-check-label fw-bold text-danger" for="na_other_checkbox">
+                        Mark as Not Applicable (N.A.)
+                    </label>
+                    <small class="form-text text-muted d-block mt-1 ms-1">
+                        Toggle on if none of the optional items below apply to this quotation.
+                    </small>
+                </div>
+        </div>
+
+<div id="other-items-checkboxes" class="inv-item item1">
+      {% for item in form.other_items %}
+          <label class="checkbox-label">
+              {{ item.tag }}
+              {{ item.choice_label }}
+          </label>
+      {% endfor %}
+  </div>
+
+      <div id="dynamic-other-container"></div>
+
+      <button type="button" class="btn btn-outline-secondary btn-sm mt-2" id="openOtherBtn">+ Add New Item</button>
+
+    </fieldset>
+  <script>
+    document.addEventListener("DOMContentLoaded", function () {
+        // Existing Other Details NA functionality
+        const naOtherCheckbox = document.getElementById("na_other_checkbox");
+        const naOtherRow = document.getElementById("na_other_row");
+        const otherCheckboxWrapper = document.getElementById("other-items-checkboxes");
+        const otherCheckboxes = otherCheckboxWrapper.querySelectorAll('input[type="checkbox"]');
+        const addOtherBtn = document.getElementById("openOtherBtn");
+        const otherFieldset = document.getElementById("otherDetailsFieldset");
+
+        // Proposed System NA functionality
+
+
+        const systemNaCheckbox = document.getElementById("system_na_checkbox");
+        const capacityFields = document.getElementById("capacityFields");
+        const dcCapacityInput = document.querySelector('[name="dc_capacity"]');
+        const acCapacityInput = document.querySelector('[name="ac_capacity"]');
+        const proposedSystemFieldset = document.getElementById("proposedSystemFieldset");
+
+        // Function to handle Proposed System NA checkbox
+        function handleSystemNaToggle() {
+            if (systemNaCheckbox.checked) {
+                // Hide and disable capacity fields
+                capacityFields.style.display = 'none';
+                dcCapacityInput.disabled = true;
+                acCapacityInput.disabled = true;
+
+                // Clear the values
+                dcCapacityInput.value = '';
+                acCapacityInput.value = '';
+
+                // Add light red background to fieldset (same as other details)
+                proposedSystemFieldset.classList.add("other-details-disabled");
+            } else {
+                // Show and enable capacity fields
+                capacityFields.style.display = 'block';
+                dcCapacityInput.disabled = false;
+                acCapacityInput.disabled = false;
+
+                // Remove light red background
+                proposedSystemFieldset.classList.remove("other-details-disabled");
+            }
+        }
+
+        // Initialize on page load
+        handleSystemNaToggle();
+
+        // Add event listener for system NA checkbox
+        systemNaCheckbox.addEventListener("change", handleSystemNaToggle);
+
+        // Existing Other Details functionality (keep your existing code)
+        otherCheckboxes.forEach(cb => {
+            cb.addEventListener("change", function () {
+                const anyChecked = Array.from(otherCheckboxes).some(x => x.checked);
+                if (naOtherRow) {
+                    naOtherRow.style.display = anyChecked ? "none" : "";
+                }
+            });
+        });
+
+        naOtherCheckbox.addEventListener("change", function () {
+            if (this.checked) {
+                otherCheckboxes.forEach(cb => {
+                    cb.checked = false;
+                    cb.disabled = true;
+                });
+                addOtherBtn.disabled = true;
+                otherFieldset.classList.add("other-details-disabled");
+                otherCheckboxWrapper.style.display = "none";
+                addOtherBtn.style.display = "none";
+            } else {
+                otherCheckboxes.forEach(cb => {
+                    cb.disabled = false;
+                });
+                addOtherBtn.disabled = false;
+                otherFieldset.classList.remove("other-details-disabled");
+                otherCheckboxWrapper.style.display = "block";
+                addOtherBtn.style.display = "inline-block";
+                naOtherCheckbox.disabled = Array.from(otherCheckboxes).some(x => x.checked);
+            }
+        });
+
+    });
+    </script>
+
+<fieldset>
+    <legend>Contact Person Details</legend>
+    <input type="hidden" name="representatives_order" id="representatives_order" value="">
+    <!-- Representative section -->
+    <div class="row mb-1 align-items-center">
+        <div class="col-md-12 mb-3 item1">
+            <label>Representative</label><br>
+            <button type="button" id="openRepModal">+ Add Contact Person</button>
+            <div id="representatives-list" class="inv-item" style="margin-top:20px;">
+                {% for r in representatives %}
+                    <label class="checkbox-label">
+                        <input type="checkbox" name="representatives" value="{{ r.id }}">
+                        {{ r.name }}{% if r.contact %} — {{ r.contact }}{% endif %}<br>
+                    </label>
+                {% empty %}
+                    <em>No representatives yet.</em>
+                {% endfor %}
+            </div>
+
+
+        </div>
+    </div>
+</fieldset>
+
+    <!-- Modal (keeps it inside page but the Save button must not submit the form) -->
+    <div id="otherModal" style="display:none; position:fixed; z-index:9999; left:0; top:0; right:0; bottom:0; align-items:center; justify-content:center;">
+      <div style="background:white; margin:auto; padding:20px; border-radius:6px; max-width:420px; box-shadow:0 6px 18px rgba(0,0,0,0.2);">
+        <h3>Add Other Item</h3>
+        <label for="otherItemName">Item Name</label><br>
+        <input type="text" id="otherItemName" style="width:100%" /><br><br>
+
+        <div style="text-align:right">
+          <button type="button" id="closeOtherBtn">Cancel</button>
+          <button type="button" id="saveOtherBtn">Save</button>
+        </div>
+      </div>
+    </div>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', function(){
+
+      const openBtn = document.getElementById('openOtherBtn');
+      const modal = document.getElementById('otherModal');
+      const closeBtn = document.getElementById('closeOtherBtn');
+      const saveBtn = document.getElementById('saveOtherBtn');
+      const itemInput = document.getElementById('otherItemName');
+      const otherContainer = document.getElementById('other-items-checkboxes');
+
+      openBtn.addEventListener('click', function(e){
+        itemInput.value = '';
+        modal.style.display = 'flex';
+        itemInput.focus();
+      });
+
+      closeBtn.addEventListener('click', function(){
+        modal.style.display = 'none';
+      });
+
+      // IMPORTANT: Save button is type="button" -> prevents form submit
+      saveBtn.addEventListener('click', function(){
+        const name = itemInput.value.trim();
+        if (!name) {
+          alert('Please enter a name');
+          return;
+        }
+
+        // disable while posting
+        saveBtn.disabled = true;
+
+        fetch("{% url 'quotation:add_other_item_api' %}", {
+          method: 'POST',
+          headers: {
+            'X-CSRFToken': csrftoken,
+            'Accept': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest',
+          },
+          body: new URLSearchParams({ name: name })
+        })
+        .then(resp => {
+          saveBtn.disabled = false;
+          if (!resp.ok) {
+            return resp.json().then(j => { throw j; });
+          }
+          return resp.json();
+        })
+        .then(data => {
+          if (data.success) {
+            // Append a new checkbox that matches ModelMultipleChoice expected structure:
+            // the form.field expects inputs named "other_items" with value=PK
+            const id = data.id;
+            const label = data.name;
+
+            const wrapper = document.createElement('div');
+            wrapper.classList.add("inv-item");
+            wrapper.innerHTML = `
+              <label>
+                <input type="checkbox" name="other_items" value="${id}" checked>
+                ${label}
+              </label>
+            `;
+            // Add the new checkbox at end of the current checkbox list
+            otherContainer.appendChild(wrapper);
+
+            modal.style.display = 'none';
+          } else {
+            alert(data.error || 'Unable to add item');
+          }
+        })
+        .catch(err => {
+          saveBtn.disabled = false;
+          console.error('Error adding other item:', err);
+          alert((err && err.error) ? err.error : 'Server error');
+        });
+      });
+
+      // prevent the Enter key in modal from submitting the parent form (optional)
+      itemInput.addEventListener('keydown', function(e){
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          saveBtn.click();
+        }
+      });
+
+    });
+    </script>
+<fieldset>
+    <legend>Terms & Conditions</legend>
+    <strong>Select Terms & Conditions:</strong><br>
+    <div id="terms-checkboxes" class="inv-item item1">
+        {% for term in terms_conditions %}
+            <label class="checkbox-label">
+                <input type="checkbox" name="terms_conditions" value="{{ term.id }}"
+                       data-has-yellow="{{ term.has_yellow_background|yesno:'true,false' }}"
+                       {% if term.has_yellow_background %}data-style="yellow"{% endif %}
+                       >
+                <span class="term-content {% if term.has_yellow_background %}yellow-bg{% endif %}">
+
+                    {{ term.content|truncatewords:10 }}
+                </span>
+            </label>
+        {% empty %}
+            <em>No terms and conditions added yet.</em>
+        {% endfor %}
+    </div>
+
+    <button type="button" class="btn btn-outline-secondary btn-sm" id="openTermsModal">+ Add New Term</button>
+</fieldset>
+
+<!-- Terms & Conditions Modal -->
+<div id="termsModal" style="display:none; position:fixed; z-index:10050; left:0; top:0; right:0; bottom:0; background:rgba(0,0,0,0.45); align-items:center; justify-content:center;">
+  <div style="background:white; margin:auto; padding:20px; border-radius:6px; max-width:500px; box-shadow:0 6px 18px rgba(0,0,0,0.2);">
+    <h3>Add New Term & Condition</h3>
+    <label for="termsContent">Term Content:</label><br>
+    <textarea id="termsContent" style="width:100%; height:120px; margin-bottom:10px;" placeholder="Enter term and condition content..."></textarea>
+
+    <div style="margin-bottom: 15px;">
+        <label class="checkbox-label">
+            <input type="checkbox" id="yellowBackgroundCheckbox">
+            Add yellow background to this term
+        </label>
+    </div>
+
+    <div style="text-align:right">
+      <button type="button" id="closeTermsBtn">Cancel</button>
+      <button type="button" id="saveTermsBtn">Save</button>
+    </div>
+  </div>
+</div>
+
+<style>
+.yellow-bg {
+    background-color: yellow;
+    padding: 2px 4px;
+    border-radius: 3px;
+}
+
+.term-content {
+    display: inline-block;
+    padding: 2px 4px;
+    border-radius: 3px;
+    transition: background-color 0.3s ease;
+}
+
+/* Style for the yellow background checkbox in modal */
+#yellowBackgroundCheckbox {
+    width: 16px;
+    height: 16px;
+    margin-right: 8px;
+}
+
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function(){
+    // Terms & Conditions Modal
+    const csrftoken = (typeof getCookie === 'function')
+        ? getCookie('csrftoken')
+        : (document.querySelector('[name=csrfmiddlewaretoken]') || {}).value;
+
+    const openTermsBtn = document.getElementById('openTermsModal');
+    const termsModal = document.getElementById('termsModal');
+    const closeTermsBtn = document.getElementById("closeTermsBtn");
+    const saveTermsBtn = document.getElementById("saveTermsBtn");
+    const termsContent = document.getElementById("termsContent");
+    const yellowBackgroundCheckbox = document.getElementById("yellowBackgroundCheckbox");
+    const termsContainer = document.getElementById("terms-checkboxes");
+
+    if (!openTermsBtn || !termsModal || !termsContent || !termsContainer) {
+        return;
+    }
+
+    openTermsBtn.addEventListener('click', function(e){
+        e.preventDefault();
+        e.stopPropagation();
+        termsContent.value = '';
+        if (yellowBackgroundCheckbox) {
+            yellowBackgroundCheckbox.checked = false;
+        }
+        termsModal.style.display = 'flex';
+        termsContent.focus();
+    });
+
+    if (closeTermsBtn) {
+        closeTermsBtn.addEventListener('click', function(){
+            termsModal.style.display = 'none';
+        });
+    }
+
+    if (!saveTermsBtn) {
+        return;
+    }
+
+    saveTermsBtn.addEventListener('click', function(){
+        const content = termsContent.value.trim();
+        if (!content) {
+            alert('Please enter term content');
+            return;
+        }
+
+
+        const hasYellowBackground = yellowBackgroundCheckbox ? yellowBackgroundCheckbox.checked : false;
+
+        saveTermsBtn.disabled = true;
+
+        fetch("{% url 'quotation:add_terms_condition_api' %}", {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': csrftoken,
+                'Accept': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest',
+            },
+            body: new URLSearchParams({
+                content: content,
+                has_yellow_background: hasYellowBackground
+            })
+        })
+        .then(resp => {
+            saveTermsBtn.disabled = false;
+            if (!resp.ok) {
+                return resp.json().then(j => { throw j; });
+            }
+            return resp.json();
+        })
+        .then(data => {
+            if (data.success) {
+                // Append new checkbox with yellow background if selected
+                const wrapper = document.createElement('div');
+                wrapper.classList.add("inv-item");
+
+                const yellowClass = data.has_yellow_background ? 'yellow-bg' : '';
+
+                const yellowData = data.has_yellow_background ? 'data-style="yellow"' : '';
+
+
+                wrapper.innerHTML = `
+                    <label class="checkbox-label">
+                        <input type="checkbox" name="terms_conditions" value="${data.id}"
+                               data-has-yellow="${data.has_yellow_background}"
+                               ${yellowData} checked>
+                        <span class="term-content ${yellowClass}">
+                            ${data.content}
+                        </span>
+                    </label>
+                `;
+                termsContainer.appendChild(wrapper);
+
+                termsModal.style.display = 'none';
+            } else {
+                alert(data.error || 'Unable to add term');
+            }
+        })
+        .catch(err => {
+            saveTermsBtn.disabled = false;
+            console.error('Error adding term:', err);
+            alert((err && err.error) ? err.error : 'Server error');
+        });
+    });
+
+    // Toggle yellow background when checkbox state changes
+    termsContainer.addEventListener('change', function(e) {
+        if (e.target.type === 'checkbox' && e.target.name === 'terms_conditions') {
+            const checkbox = e.target;
+            const termContentSpan = checkbox.nextElementSibling;
+
+
+            const hasYellowBackground = checkbox.getAttribute('data-has-yellow') === 'true';
+
+
+            if (checkbox.checked && hasYellowBackground) {
+                termContentSpan.classList.add('yellow-bg');
+            } else {
+                termContentSpan.classList.remove('yellow-bg');
+            }
+        }
+    });
+
+    // Initialize yellow backgrounds for existing checkboxes
+    function initializeTermBackgrounds() {
+        const termCheckboxes = termsContainer.querySelectorAll('input[name="terms_conditions"]');
+        termCheckboxes.forEach(checkbox => {
+            const termContentSpan = checkbox.nextElementSibling;
+
+
+            const hasYellowBackground = checkbox.getAttribute('data-has-yellow') === 'true';
+
+
+            if (checkbox.checked && hasYellowBackground) {
+                termContentSpan.classList.add('yellow-bg');
+            } else {
+                termContentSpan.classList.remove('yellow-bg');
+            }
+        });
+    }
+
+    // Initialize on page load
+    initializeTermBackgrounds();
+
+    // Prevent Enter key in modal from submitting parent form
+    termsContent.addEventListener('keydown', function(e){
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            saveTermsBtn.click();
+        }
+    });
+});
+</script>
+<script>
+    document.addEventListener('DOMContentLoaded', function(){
+      const dropdown = document.querySelector('[name="pricing_mode"]');
+      const netFieldDiv = document.getElementById('net-amount-field');
+      const finalFieldDiv = document.getElementById('final-amount-field');
+      const pricingCalcBlock = document.getElementById('pricing-calculated-block');
+      const netInput = document.querySelector('[name="net_amount_input"]');
+      const finalInput = document.querySelector('[name="final_amount_input"]');
+      const gst5Input = document.querySelector('[name="gst_5_percent"]');
+      const gst18Input = document.querySelector('[name="gst_18_percent"]');
+      const discountHidden = document.querySelector('[name="special_discount"]');
+      const discountPctHidden = document.getElementById('id_discount_percentage');
+      const discountVisible = document.getElementById('discount_visible');
+      const discountHint = document.getElementById('discount-hint');
+      const btnDiscountRupees = document.getElementById('discount-unit-rupees');
+      const btnDiscountPercent = document.getElementById('discount-unit-percent');
+      let discountPercentMode = false;
+
+      const summaryBasic = document.getElementById('pricing-summary-basic');
+      const summaryDiscount = document.getElementById('pricing-summary-discount');
+      const summaryGst5 = document.getElementById('pricing-summary-gst5');
+      const summaryGst18 = document.getElementById('pricing-summary-gst18');
+      const summaryFinal = document.getElementById('pricing-summary-final');
+
+      function formatRupeeSummary(s) {
+        if (s == null || String(s).trim() === '') return '—';
+        return '\u20B9\u00a0' + String(s).trim();
+      }
+
+      function setPricingSummary(basicStr, discountStr, gst5Str, gst18Str, finalStr) {
+        if (summaryBasic) summaryBasic.textContent = formatRupeeSummary(basicStr);
+        if (summaryDiscount) summaryDiscount.textContent = formatRupeeSummary(discountStr);
+        if (summaryGst5) summaryGst5.textContent = formatRupeeSummary(gst5Str);
+        if (summaryGst18) summaryGst18.textContent = formatRupeeSummary(gst18Str);
+        if (summaryFinal) summaryFinal.textContent = formatRupeeSummary(finalStr);
+      }
+
+      function parseINR(val) {
+        if (val == null || String(val).trim() === '') return 0;
+        var n = parseFloat(String(val).replace(/,/g, '').trim());
+        return isNaN(n) ? 0 : n;
+      }
+
+      function parsePercent(val) {
+        if (val == null || String(val).trim() === '') return 0;
+        var n = parseFloat(String(val).replace(/,/g, '').trim());
+        return isNaN(n) ? 0 : n;
+      }
+
+      function formatINR2(n) {
+        var x = Number(n);
+        if (isNaN(x)) return '';
+        return x.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      }
+
+      function formatNetDiscountDisplay(n) {
+        var x = Number(n);
+        if (isNaN(x)) return '';
+        var r = Math.round(x * 100) / 100;
+        if (Math.abs(r - Math.round(r)) < 1e-9) {
+          return Math.round(r).toLocaleString('en-IN');
+        }
+        return r.toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+      }
+
+      function setHiddenDiscountRupees(rs) {
+        if (!discountHidden) return;
+        var x = Number(rs);
+        if (!isFinite(x) || x < 0) x = 0;
+        discountHidden.value = String(Math.round(x * 100) / 100);
+      }
+
+      function syncDiscountPercentageForSubmit() {
+        if (!discountPctHidden) return;
+        if (discountPercentMode) {
+          var p = parsePercent(discountVisible && discountVisible.value);
+          if (p >= 0 && p <= 100) {
+            discountPctHidden.value = String(Math.round(p * 100) / 100);
+          } else {
+            discountPctHidden.value = '';
+          }
+        } else {
+          discountPctHidden.value = '';
+        }
+      }
+
+      function formatPercentLive(raw) {
+        raw = String(raw ?? '').replace(/,/g, '');
+        var dotIdx = raw.indexOf('.');
+        var intRaw = dotIdx >= 0 ? raw.slice(0, dotIdx) : raw;
+        var decRaw = dotIdx >= 0 ? raw.slice(dotIdx + 1).replace(/\./g, '') : '';
+        intRaw = intRaw.replace(/\D/g, '');
+        decRaw = decRaw.replace(/\D/g, '').slice(0, 2);
+        var out = intRaw;
+        if (dotIdx >= 0) out += '.' + decRaw;
+        var n = parseFloat(out);
+        if (!isNaN(n) && n > 100) return '100';
+        return out;
+      }
+
+      function indianGroupDigits(numStr) {
+        if (!numStr) return '';
+        if (numStr.length <= 3) return numStr;
+        var last3 = numStr.slice(-3);
+        var rest = numStr.slice(0, -3);
+        rest = rest.replace(/\B(?=(\d{2})+(?!\d))/g, ',');
+        return rest + ',' + last3;
+      }
+
+      function formatIndianInputLive(raw) {
+        raw = String(raw ?? '');
+        var neg = /^\s*-/.test(raw);
+        var s = raw.replace(/,/g, '').replace(/^\s*-/, '');
+        var dotIdx = s.indexOf('.');
+        var intRaw = dotIdx >= 0 ? s.slice(0, dotIdx) : s;
+        var decRaw = dotIdx >= 0 ? s.slice(dotIdx + 1).replace(/\./g, '') : '';
+        intRaw = intRaw.replace(/\D/g, '');
+        decRaw = decRaw.replace(/\D/g, '').slice(0, 2);
+        var out = indianGroupDigits(intRaw);
+        if (neg && (intRaw !== '' || decRaw !== '' || dotIdx >= 0)) {
+          out = '-' + out;
+        }
+        if (dotIdx >= 0) {
+          out += '.' + decRaw;
+        }
+        return out;
+      }
+
+      function countDigitsBeforeCursor(str, caret) {
+        return str.slice(0, caret).replace(/[^\d]/g, '').length;
+      }
+
+      function caretFromDigitIndex(str, digitCount) {
+        if (digitCount <= 0) return 0;
+        var dc = 0;
+        var i;
+        for (i = 0; i < str.length; i++) {
+          if (/\d/.test(str[i])) {
+            dc++;
+            if (dc >= digitCount) return i + 1;
+          }
+        }
+        return str.length;
+      }
+
+      function updateDiscountUnitUi() {
+        if (btnDiscountRupees) btnDiscountRupees.classList.toggle('active', !discountPercentMode);
+        if (btnDiscountPercent) btnDiscountPercent.classList.toggle('active', !!discountPercentMode);
+        if (discountHint && dropdown) {
+          discountHint.textContent = discountPercentMode
+            ? (dropdown.value === 'final'
+                ? 'Discount as % of basic (pre-GST). Summary shows basic and rupee discount; final matches your entered total.'
+                : 'Discount as % of net amount. Final amount is calculated after GST.')
+            : 'Enter discount in rupees.';
+        }
+      }
+
+      function wireLiveIndianNetOrDiscount(el, recalc) {
+        if (!el) return;
+        el.addEventListener('input', function() {
+          var caret = el.selectionStart;
+          var digitsBefore = countDigitsBeforeCursor(el.value, caret);
+          var formatted = formatIndianInputLive(el.value);
+          el.value = formatted;
+          var newCaret = caretFromDigitIndex(formatted, digitsBefore);
+          try {
+            el.setSelectionRange(newCaret, newCaret);
+          } catch (e1) { /* ignore */ }
+          if (typeof recalc === 'function') recalc();
+        });
+        el.addEventListener('blur', function() {
+          if (String(el.value).trim() === '') return;
+          el.value = formatNetDiscountDisplay(parseINR(el.value));
+          if (typeof recalc === 'function') recalc();
+        });
+      }
+
+      function recalcFromDiscount() {
+        if (dropdown.value === 'net') calcFromNet();
+        else if (dropdown.value === 'final') calcFromFinal();
+      }
+
+      function wireDiscountVisible() {
+        if (!discountVisible) return;
+        discountVisible.addEventListener('input', function() {
+          if (discountPercentMode) {
+            discountVisible.value = formatPercentLive(discountVisible.value);
+            recalcFromDiscount();
+          } else {
+            var caret = discountVisible.selectionStart;
+            var digitsBefore = countDigitsBeforeCursor(discountVisible.value, caret);
+            var formatted = formatIndianInputLive(discountVisible.value);
+            discountVisible.value = formatted;
+            var newCaret = caretFromDigitIndex(formatted, digitsBefore);
+            try { discountVisible.setSelectionRange(newCaret, newCaret); } catch (e1) { /* ignore */ }
+            recalcFromDiscount();
+          }
+        });
+        discountVisible.addEventListener('blur', function() {
+          if (String(discountVisible.value).trim() === '') {
+            setHiddenDiscountRupees(0);
+            recalcFromDiscount();
+            return;
+          }
+          if (discountPercentMode) {
+            var pp = parsePercent(discountVisible.value);
+            if (pp > 100) discountVisible.value = '100';
+            recalcFromDiscount();
+          } else {
+            discountVisible.value = formatNetDiscountDisplay(parseINR(discountVisible.value));
+            recalcFromDiscount();
+          }
+        });
+      }
+
+      if (btnDiscountRupees) {
+        btnDiscountRupees.addEventListener('click', function() {
+          if (!discountPercentMode) return;
+          discountPercentMode = false;
+          if (discountVisible) discountVisible.value = '';
+          setHiddenDiscountRupees(0);
+          updateDiscountUnitUi();
+          recalcFromDiscount();
+        });
+      }
+      if (btnDiscountPercent) {
+        btnDiscountPercent.addEventListener('click', function() {
+          if (discountPercentMode) return;
+          discountPercentMode = true;
+          if (discountVisible) discountVisible.value = '';
+          setHiddenDiscountRupees(0);
+          updateDiscountUnitUi();
+          recalcFromDiscount();
+        });
+      }
+
+      function togglePricingFields(){
+        var mode = dropdown.value;
+        var showPricing = mode === 'net' || mode === 'final';
+        if (pricingCalcBlock) pricingCalcBlock.style.display = showPricing ? 'block' : 'none';
+        if(mode === 'net'){
+          netFieldDiv.style.display = 'block';
+          finalFieldDiv.style.display = 'none';
+          clearFields();
+        } else if(mode === 'final'){
+          finalFieldDiv.style.display = 'block';
+          netFieldDiv.style.display = 'none';
+          clearFields();
+        } else {
+          netFieldDiv.style.display = 'none';
+          finalFieldDiv.style.display = 'none';
+          clearFields();
+        }
+        updateDiscountUnitUi();
+      }
+
+      function clearFields(){
+        if (gst5Input) gst5Input.value = '';
+        if (gst18Input) gst18Input.value = '';
+        setPricingSummary('', '', '', '', '');
+      }
+
+      function resetPricingAmountInputs() {
+        if (netInput) netInput.value = '';
+        if (finalInput) finalInput.value = '';
+        if (discountVisible) discountVisible.value = '';
+        if (discountHidden) discountHidden.value = '';
+        if (discountPctHidden) discountPctHidden.value = '';
+        discountPercentMode = false;
+        updateDiscountUnitUi();
+      }
+
+      function calcFromNet(){
+        var net = parseINR(netInput && netInput.value);
+        var discountRs = 0;
+        if (discountPercentMode) {
+          var p = parsePercent(discountVisible && discountVisible.value);
+          if (p < 0 || p > 100) { clearFields(); return; }
+          discountRs = net * (p / 100);
+          setHiddenDiscountRupees(discountRs);
+        } else {
+          discountRs = parseINR(discountVisible && discountVisible.value);
+          setHiddenDiscountRupees(discountRs);
+        }
+        if (net <= 0) { clearFields(); return; }
+
+        var taxableAmount = net - discountRs;
+        if (taxableAmount < 0) { clearFields(); return; }
+
+        var gst5 = (taxableAmount * 0.70) * 0.05;
+        var gst18 = (taxableAmount * 0.30) * 0.18;
+        var total = taxableAmount + gst5 + gst18;
+
+        if (gst5Input) gst5Input.value = formatINR2(gst5);
+        if (gst18Input) gst18Input.value = formatINR2(gst18);
+        setPricingSummary(
+          formatNetDiscountDisplay(net),
+          formatNetDiscountDisplay(discountRs),
+          formatINR2(gst5),
+          formatINR2(gst18),
+          formatINR2(total)
+        );
+      }
+
+      function calcFromFinal(){
+        var finalAmt = parseINR(finalInput && finalInput.value);
+        if (finalAmt <= 0) { clearFields(); return; }
+
+        var gstFactor = (0.70 * 0.05) + (0.30 * 0.18);
+        var taxableAmount = finalAmt / (1 + gstFactor);
+
+        var discountRs = 0;
+        var basicNet = 0;
+        if (discountPercentMode) {
+          var p = parsePercent(discountVisible && discountVisible.value);
+          if (p < 0 || p >= 100) { clearFields(); return; }
+          if (p === 0) {
+            discountRs = 0;
+            basicNet = taxableAmount;
+          } else {
+            basicNet = taxableAmount / (1 - p / 100);
+            discountRs = basicNet - taxableAmount;
+          }
+          setHiddenDiscountRupees(discountRs);
+        } else {
+          discountRs = parseINR(discountVisible && discountVisible.value);
+          basicNet = taxableAmount + discountRs;
+          setHiddenDiscountRupees(discountRs);
+        }
+
+        var gst5 = (taxableAmount * 0.70) * 0.05;
+        var gst18 = (taxableAmount * 0.30) * 0.18;
+
+        if (gst5Input) gst5Input.value = formatINR2(gst5);
+        if (gst18Input) gst18Input.value = formatINR2(gst18);
+        setPricingSummary(
+          formatNetDiscountDisplay(basicNet),
+          formatNetDiscountDisplay(discountRs),
+          formatINR2(gst5),
+          formatINR2(gst18),
+          formatINR2(finalAmt)
+        );
+      }
+
+      wireLiveIndianNetOrDiscount(netInput, function() {
+        if (dropdown.value === 'net') calcFromNet();
+      });
+      wireLiveIndianNetOrDiscount(finalInput, function() {
+        if (dropdown.value === 'final') calcFromFinal();
+      });
+      wireDiscountVisible();
+
+      var saveQuotationBtn = document.getElementById('saveQuotationBtn');
+      if (saveQuotationBtn && saveQuotationBtn.form) {
+        saveQuotationBtn.form.addEventListener('submit', function() {
+          syncDiscountPercentageForSubmit();
+          if (dropdown.value === 'net') calcFromNet();
+          else if (dropdown.value === 'final') calcFromFinal();
+        });
+      }
+
+      dropdown.addEventListener('change', function() {
+        resetPricingAmountInputs();
+        togglePricingFields();
+      });
+
+      togglePricingFields();
+      if (discountPctHidden && String(discountPctHidden.value).trim() !== '' && parseFloat(String(discountPctHidden.value).replace(/,/g, '')) > 0) {
+        discountPercentMode = true;
+        updateDiscountUnitUi();
+        if (discountVisible) {
+          var pv = parseFloat(String(discountPctHidden.value).replace(/,/g, ''));
+          if (!isNaN(pv)) discountVisible.value = formatPercentLive(String(pv));
+        }
+      } else if (discountHidden && discountHidden.value != null && String(discountHidden.value).trim() !== '' && discountVisible) {
+        discountVisible.value = formatNetDiscountDisplay(parseINR(discountHidden.value));
+      }
+      updateDiscountUnitUi();
+
+      if (netInput && String(netInput.value).trim() !== '') {
+        netInput.value = formatNetDiscountDisplay(parseINR(netInput.value));
+      }
+      if (finalInput && String(finalInput.value).trim() !== '') {
+        finalInput.value = formatNetDiscountDisplay(parseINR(finalInput.value));
+      }
+      if (dropdown && dropdown.value === 'net' && netInput && parseINR(netInput.value) > 0) {
+        calcFromNet();
+      } else if (dropdown && dropdown.value === 'final' && finalInput && parseINR(finalInput.value) > 0) {
+        calcFromFinal();
+      }
+    });
+</script>
+<!--  <button type="submit">💾 Save & Generate PDF</button>-->
+    <!-- Replace the existing submit button with this: -->
+<button type="submit" id="saveQuotationBtn" class="btn btn-primary">
+  <i class="fas fa-save me-1" aria-hidden="true"></i> Save Quotation
+</button>
+<!--  <button type="button" id="saveAndGenerateBtn">💾 Save & Generate PDF</button>-->
+</form>
+
+</div>
+<!-- PDF Generation Modal -->
+<div id="pdfModal" style="display:none; position:fixed; z-index:9999; left:0; top:0; right:0; bottom:0; background:rgba(0,0,0,0.5); align-items:center; justify-content:center;">
+  <div style="background:white; margin:auto; padding:30px; border-radius:10px; max-width:500px; box-shadow:0 6px 18px rgba(0,0,0,0.3);">
+    <h3 style="color:#1e41d1;">Generate PDF</h3>
+    <p style="margin-bottom:20px;">Choose a template for PDF generation:</p>
+
+    <div style="display:flex; gap:15px; margin-bottom:25px;">
+      <button type="button" id="generateRegularPDF" class="pdf-option-btn" style="flex:1; padding:15px; background:#4a6cf7; color:white; border:none; border-radius:5px; cursor:pointer;">
+        <strong>Regular Quotation</strong><br>
+        <small>Standard template</small>
+      </button>
+      <button type="button" id="generateIndustrialPDF" class="pdf-option-btn" style="flex:1; padding:15px; background:#1e41d1; color:white; border:none; border-radius:5px; cursor:pointer;">
+        <strong>Industrial Quotation</strong><br>
+        <small>Industrial template</small>
+      </button>
+    </div>
+
+    <div style="text-align:right;">
+      <button type="button" id="closePdfModal" style="padding:8px 20px; background:#6c757d; color:white; border:none; border-radius:4px; margin-right:10px;">Cancel</button>
+    </div>
+
+    <!-- Hidden input to store quotation ID after save -->
+    <input type="hidden" id="savedQuotationId" value="">
+  </div>
+</div>
+
+<style>
+.pdf-option-btn:hover {
+  opacity: 0.9;
+  transform: translateY(-2px);
+  transition: all 0.3s ease;
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const saveBtn = document.getElementById('saveQuotationBtn');
+  const pdfModal = document.getElementById('pdfModal');
+  const closePdfModal = document.getElementById('closePdfModal');
+  const generateRegularPDF = document.getElementById('generateRegularPDF');
+  const generateIndustrialPDF = document.getElementById('generateIndustrialPDF');
+  const savedQuotationId = document.getElementById('savedQuotationId');
+
+  // Form submission handler
+  const form = document.querySelector('#quotationForm');
+  let formSubmitted = false;
+
+  form.addEventListener('submit', function(e) {
+    if (!formSubmitted) {
+      e.preventDefault();
+      saveBtn.disabled = true;
+      saveBtn.innerHTML = 'Saving...';
+
+      // Submit form via AJAX (same URL as current page — works under /quotation/... or /new-lead/quotations/create/)
+      fetch("{{ request.path }}", {
+        method: 'POST',
+        body: new FormData(form),
+        headers: {
+          'X-Requested-With': 'XMLHttpRequest',
+        }
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.success) {
+          // Save successful: do not open PDF modal on CRM create flow.
+          alert('Quotation saved successfully.');
+          window.location.href = "{{ after_save_list_url }}";
+        } else {
+          var errMsg = data.error || 'Unknown error';
+          if (data.errors && typeof data.errors === 'object') {
+            var parts = [];
+            for (var k in data.errors) {
+              if (data.errors.hasOwnProperty(k) && data.errors[k] && data.errors[k].length) {
+                parts.push(k + ': ' + data.errors[k].join(' '));
+              }
+            }
+            if (parts.length) errMsg = parts.join('\n');
+          }
+          alert('Error saving quotation:\n' + errMsg);
+          saveBtn.disabled = false;
+          saveBtn.innerHTML = '<i class="fas fa-save me-1" aria-hidden="true"></i> Save Quotation';
+        }
+      })
+      .catch(error => {
+        console.error('Error:', error);
+        alert('Error saving quotation');
+        saveBtn.disabled = false;
+        saveBtn.innerHTML = '<i class="fas fa-save me-1" aria-hidden="true"></i> Save Quotation';
+      });
+    }
+  });
+
+  // Close modal
+  closePdfModal.onclick = function() {
+    pdfModal.style.display = 'none';
+    // Redirect to quotation list or stay on page
+    window.location.href = "{{ after_save_list_url }}";
+  };
+
+  // Generate Regular PDF
+  generateRegularPDF.onclick = function() {
+    const quotationId = savedQuotationId.value;
+    if (quotationId) {
+      window.open(`/quotation/${quotationId}/pdf/`, '_blank');
+      pdfModal.style.display = 'none';
+      window.location.href = "{{ after_save_list_url }}";
+    }
+  };
+
+  // Generate Industrial PDF
+  generateIndustrialPDF.onclick = function() {
+    const quotationId = savedQuotationId.value;
+    if (quotationId) {
+      window.open(`/quotation/${quotationId}/industrial_pdf/`, '_blank');
+      pdfModal.style.display = 'none';
+      window.location.href = "{{ after_save_list_url }}";
+    }
+  };
+
+  // Close modal when clicking outside
+  window.onclick = function(event) {
+    if (event.target == pdfModal) {
+      pdfModal.style.display = 'none';
+      window.location.href = "{{ after_save_list_url }}";
+    }
+  };
+});
+</script>
+<script>
+  // show structure heights when GI or MS selected
+  function toggleStructureHeights() {
+    var st = document.querySelector('[name="structure_type"]').value;
+    var el = document.getElementById('structure-heights');
+    if (st === 'GI Structure' || st === 'MS Structure') {
+      el.style.display = 'block';
+    } else {
+      el.style.display = 'none';
+    }
+  }
+  document.addEventListener('DOMContentLoaded', function(){
+    var s = document.querySelector('[name="structure_type"]');
+    if (s) {
+      s.addEventListener('change', toggleStructureHeights);
+      toggleStructureHeights();
+    }
+    // toggle panel/company fields (optional UX)
+  });
+</script>
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const repModal = document.getElementById('repModal');
+        const openRep = document.getElementById('openRepModal');
+        const closeRep = document.getElementById('closeRepModal');
+        const saveRepBtn = document.getElementById('saveRepBtn');
+        const repName = document.getElementById('repName');
+        const repContact = document.getElementById('repContact');
+        const repList = document.getElementById('representatives-list');
+        const repOrderInput = document.getElementById('representatives_order');
+        const csrftoken = getCookie('csrftoken');
+        let selectedRepresentativeOrder = [];
+
+        function syncRepresentativeOrderInput() {
+            if (!repOrderInput) return;
+            repOrderInput.value = selectedRepresentativeOrder.join(',');
+        }
+
+        function addRepresentativeToOrder(repId) {
+            if (!repId) return;
+            if (!selectedRepresentativeOrder.includes(repId)) {
+                selectedRepresentativeOrder.push(repId);
+                syncRepresentativeOrderInput();
+            }
+        }
+
+        function removeRepresentativeFromOrder(repId) {
+            if (!repId) return;
+            selectedRepresentativeOrder = selectedRepresentativeOrder.filter(function (id) {
+                return id !== repId;
+            });
+            syncRepresentativeOrderInput();
+        }
+
+        function initializeRepresentativeOrderFromChecked() {
+            selectedRepresentativeOrder = [];
+            repList.querySelectorAll('input[type="checkbox"][name="representatives"]:checked').forEach(function (cb) {
+                addRepresentativeToOrder(cb.value);
+            });
+            syncRepresentativeOrderInput();
+        }
+
+        repList.addEventListener('change', function (e) {
+            const target = e.target;
+            if (!target || target.name !== 'representatives') return;
+            if (target.checked) {
+                addRepresentativeToOrder(target.value);
+            } else {
+                removeRepresentativeFromOrder(target.value);
+            }
+        });
+
+        initializeRepresentativeOrderFromChecked();
+
+        openRep.addEventListener('click', function() {
+            repName.value = '';
+            repContact.value = '';
+            repModal.style.display = 'flex';
+            repName.focus();
+        });
+        closeRep.addEventListener('click', function() {
+            repModal.style.display = 'none';
+        });
+
+        saveRepBtn.addEventListener('click', function() {
+            const name = repName.value.trim();
+            const contact = repContact.value.trim();
+            if (!name) { alert('Enter name'); return; }
+            saveRepBtn.disabled = true;
+
+            fetch("{% url 'quotation:add_representative_api' %}", {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': csrftoken,
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: new URLSearchParams({ name: name, contact: contact })
+            })
+            .then(resp => {
+                saveRepBtn.disabled = false;
+                if (!resp.ok) return resp.json().then(j => { throw j; });
+                return resp.json();
+            })
+            .then(data => {
+                if (!data.success) return alert(data.error || 'Error');
+
+                // Append new checkbox and select it
+                const wrapper = document.createElement('div');
+                wrapper.classList.add('inv-item');
+                wrapper.innerHTML = `
+                    <label class="checkbox-label">
+                        <input type="checkbox" name="representatives" value="${data.id}" checked>
+                        ${data.name}${data.contact ? ' — ' + data.contact : ''}
+                    </label>
+                `;
+                repList.appendChild(wrapper);
+                addRepresentativeToOrder(String(data.id));
+                repModal.style.display = 'none';
+            })
+            .catch(err => {
+                console.error('error creating representative', err);
+                alert((err && err.error) ? err.error : 'Server error');
+                saveRepBtn.disabled = false;
+            });
+        });
+
+        // pressing Enter in the modal triggers Save
+        repName.addEventListener('keydown', function(e){ if (e.key === 'Enter') { e.preventDefault(); saveRepBtn.click(); } });
+        repContact.addEventListener('keydown', function(e){ if (e.key === 'Enter') { e.preventDefault(); saveRepBtn.click(); } });
+    });
+
+</script>
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    var sel = document.querySelector("select[name='plant_capacity_kw']");
+    if (!sel) return;
+
+    Array.from(sel.options).forEach(function (opt) {
+        let txt = opt.text.trim();
+
+        // Split number and unit (Kw)
+        let parts = txt.split(" ");
+        let numberPart = parts[0];  // "3.00"
+        let unitPart = parts.slice(1).join(" "); // "Kw" or ""
+
+        let num = Number(numberPart);
+
+        if (!isNaN(num)) {
+            if (Number.isInteger(num)) {
+                // Integer → remove decimals
+                numberPart = String(num);
+            } else {
+                // Decimal → remove trailing zeros
+                numberPart = num.toString();
+            }
+        }
+
+        // Rejoin with unit
+        opt.text = unitPart ? numberPart + " " + unitPart : numberPart;
+    });
+});
+</script>
+<script>
+var SURVEYS_FOR_LEAD_URL = "{% url 'quotation:surveys_for_lead_api' %}";
+document.addEventListener('DOMContentLoaded', function () {
+  var dataEl = document.getElementById('survey-lead-data-erp');
+  var rows = [];
+  if (dataEl) {
+    try {
+      rows = JSON.parse(dataEl.textContent);
+    } catch (e) {
+      rows = [];
+    }
+  }
+  var leadSel = document.getElementById('id_crm_lead');
+  var surveySel = document.getElementById('id_crm_survey');
+  if (!leadSel || !surveySel) return;
+  var initialSurvey = surveySel.value;
+
+  function fallbackItems(lid) {
+    return rows.filter(function (r) {
+      return String(r.lead_id) === String(lid);
+    }).map(function (r) {
+      return { id: String(r.id), label: 'Survey #' + r.id };
+    });
+  }
+
+  async function refillSurveys() {
+    var lid = leadSel.value;
+    var cur = surveySel.value;
+    surveySel.innerHTML = '';
+    var optEmpty = document.createElement('option');
+    optEmpty.value = '';
+
+    if (!lid) {
+      optEmpty.textContent = 'Select a lead first';
+      surveySel.appendChild(optEmpty);
+      surveySel.disabled = true;
+      return;
+    }
+
+    surveySel.disabled = false;
+
+    function finish(items) {
+      if (!items.length) {
+        optEmpty.textContent = 'No survey with completion date for this lead';
+        surveySel.appendChild(optEmpty);
+        return;
+      }
+      optEmpty.textContent = 'Select a survey (optional)';
+      surveySel.appendChild(optEmpty);
+      items.forEach(function (item) {
+        var o = document.createElement('option');
+        o.value = String(item.id);
+        o.textContent = item.label || ('Survey #' + item.id);
+        surveySel.appendChild(o);
+      });
+      var opts = [].slice.call(surveySel.options);
+      var curStr = String(cur);
+      var initStr = String(initialSurvey);
+      if (curStr && opts.some(function (o) { return o.value === curStr; })) {
+        surveySel.value = curStr;
+      } else if (initStr && opts.some(function (o) { return o.value === initStr; })) {
+        surveySel.value = initStr;
+      }
+    }
+
+    if (typeof SURVEYS_FOR_LEAD_URL === 'string' && SURVEYS_FOR_LEAD_URL) {
+      try {
+        var sep = SURVEYS_FOR_LEAD_URL.indexOf('?') >= 0 ? '&' : '?';
+        var res = await fetch(SURVEYS_FOR_LEAD_URL + sep + 'lead_id=' + encodeURIComponent(lid), {
+          credentials: 'same-origin',
+          headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        });
+        if (res.ok) {
+          var data = await res.json();
+          finish(data.surveys || []);
+          return;
+        }
+      } catch (e) {}
+    }
+    finish(fallbackItems(lid));
+  }
+
+  leadSel.addEventListener('change', refillSurveys);
+  refillSurveys();
+});
+</script>

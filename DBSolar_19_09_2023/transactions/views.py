@@ -11,8 +11,11 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.db import transaction
 from django.db.models.functions import Lower
 from django.shortcuts import render, redirect, get_object_or_404
+from django.urls import reverse
+from django.http import JsonResponse
+from django.views.decorators.http import require_GET, require_POST
 from django.utils import timezone
-from datetime import timedelta
+from datetime import date, datetime, timedelta
 from django.views.generic import (
     View,
     ListView,
@@ -22,9 +25,16 @@ from django.views.generic import (
 )
 from django.contrib.messages.views import SuccessMessageMixin
 from django.contrib import messages
+from django.core.exceptions import PermissionDenied
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 
 from customer.models import Customer
+from customer.staff_access import (
+    associate_assigned_customer_pk_list,
+    associate_assert_customer_pk_allowed,
+    associate_forbid_transactions_write,
+    is_associate_staff,
+)
 from dashboard.models import staff_Notification
 from .models import (
     PurchaseBill,
@@ -49,8 +59,26 @@ from .forms import (
     SaleDetailsForm, SelectSaleForm, SaleItemFormset_bill, VendorForm
 )
 from inventory.models import Stock, FavoriteListStock
-from product.models import Product, Category, SubCategory, Unit
-from django.db.models import Q, Prefetch  # Add this import
+from product.models import (
+    Product,
+    Category,
+    SubCategory,
+    Unit,
+    category_for_fk_id,
+    subcategory_for_fk_id,
+)
+from transactions.templatetags.indian_filters import as_bill_date
+from django.db.models import (
+    Q,
+    Prefetch,
+    Sum,
+    Value,
+    OuterRef,
+    Subquery,
+    IntegerField,
+    Count,
+)
+from django.db.models.functions import Coalesce
 
 # # shows a lists of all suppliers
 # class SupplierListView(ListView):
@@ -132,22 +160,18 @@ class SupplierListView(LoginRequiredMixin, ListView):
 
     def get_queryset(self):
         queryset = Supplier.objects.all()
-        category = self.request.GET.get('category')
-        show_all = self.request.GET.get('show_all')
-
-        # Filter by category if selected
+        category = self.request.GET.get("category")
+        show_all = self.request.GET.get("show_all")
         if category:
             queryset = queryset.filter(category_id=category)
-
-        # Filter by active/inactive status based on toggle switch
-        if show_all == '1':
+        if show_all == "1":
             queryset = queryset.filter(status=True)
-        return queryset.order_by('name')
+        return queryset.order_by("name")
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        # Add categories to the context for the dropdown
-        context['categories'] = Category.objects.all()
+        # Stable order; avoids ambiguous dropdown if legacy duplicate names exist
+        context["categories"] = Category.objects.all().order_by("name", "id")
 
         # Add staff notification count and notifications to the context
         context['count1'] = staff_Notification.objects.filter(
@@ -156,7 +180,6 @@ class SupplierListView(LoginRequiredMixin, ListView):
             staff_id=self.request.user.id, status=False).order_by('-created_at')
 
         return context
-
 
 
 # # used to add a new supplier
@@ -352,6 +375,30 @@ class SupplierDeleteView(LoginRequiredMixin, View):
 
 from django.utils.dateparse import parse_date
 
+
+def _scope_dc_list_queryset_for_associate(request, queryset, *, use_salebill_cust_fk=False):
+    """
+    Non-superuser associates: only list DCs for consumers (Customer) assigned to them
+    (Assoc_Assign). Vendor-only lists are hidden. Superuser and non-associate staff unchanged.
+    """
+    user = request.user
+    if (
+        not getattr(user, "is_authenticated", False)
+        or not is_associate_staff(user)
+        or getattr(user, "is_superuser", False)
+    ):
+        return queryset
+    user_type = request.GET.get("user_type", "All")
+    if user_type == "Vendor":
+        return queryset.none()
+    pks = associate_assigned_customer_pk_list(user)
+    if not pks:
+        return queryset.none()
+    if use_salebill_cust_fk:
+        return queryset.filter(Cust_id_id__in=pks)
+    return queryset.filter(customer_id__in=pks)
+
+
 class SupplierView(LoginRequiredMixin, View):
     login_url = '/index/'
 
@@ -423,11 +470,18 @@ class AllSaleView(LoginRequiredMixin, View):
 
     def get(self, request, typ, obj_id):
         if typ == 'customer':
+            associate_assert_customer_pk_allowed(request.user, obj_id)
             supplierobj = get_object_or_404(Customer, Cust_id=obj_id)
             bill_list = SaleBill.objects.filter(Cust_id=supplierobj)
             context_object = {'supplier': supplierobj}
             template_name = 'sales/sale.html'
         elif typ == 'vendor':
+            if is_associate_staff(request.user) and not getattr(
+                request.user, "is_superuser", False
+            ):
+                raise PermissionDenied(
+                    "Vendor DC lists are not available for your account."
+                )
             vendorobj = get_object_or_404(Vendor, pk=obj_id)
             bill_list = SaleBill.objects.filter(Vend_id=vendorobj)
             context_object = {'vendor': vendorobj}
@@ -462,11 +516,18 @@ class AllFinalSaleView(LoginRequiredMixin, View):
 
     def get(self, request, typ, obj_id):
         if typ == 'customer':
+            associate_assert_customer_pk_allowed(request.user, obj_id)
             supplierobj = get_object_or_404(Customer, Cust_id=obj_id)
             bill_list = FinalSale.objects.filter(customer=supplierobj)
             context_object = {'supplier': supplierobj}
             template_name = 'sales/finalsale.html'
         elif typ == 'vendor':
+            if is_associate_staff(request.user) and not getattr(
+                request.user, "is_superuser", False
+            ):
+                raise PermissionDenied(
+                    "Vendor DC lists are not available for your account."
+                )
             vendorobj = get_object_or_404(Vendor, pk=obj_id)
             bill_list = FinalSale.objects.filter(vendor=vendorobj)
             context_object = {'vendor': vendorobj}
@@ -543,11 +604,18 @@ class AllReturnSaleView(LoginRequiredMixin, View):
 
     def get(self, request, typ, obj_id):
         if typ == 'customer':
+            associate_assert_customer_pk_allowed(request.user, obj_id)
             supplierobj = get_object_or_404(Customer, Cust_id=obj_id)
             bill_list = ReturnSale.objects.filter(customer=supplierobj)
             context_object = {'supplier': supplierobj}
             template_name = "return/return.html"
         elif typ == 'vendor':
+            if is_associate_staff(request.user) and not getattr(
+                request.user, "is_superuser", False
+            ):
+                raise PermissionDenied(
+                    "Vendor DC lists are not available for your account."
+                )
             vendorobj = get_object_or_404(Vendor, pk=obj_id)
             bill_list = ReturnSale.objects.filter(vendor=vendorobj)
             context_object = {'vendor': vendorobj}
@@ -939,24 +1007,33 @@ class PurchaseView(LoginRequiredMixin, ListView):
         filter_value = self.request.GET.get('filter', 'All')
         today = timezone.now().replace(hour=0, minute=0, second=0, microsecond=0)
         start_date, end_date = None, None
+        table_name = PurchaseBill._meta.db_table
+
+        def _apply_text_date_between(qs, start_dt, end_dt):
+            return qs.extra(
+                where=[
+                    f"substring(COALESCE({table_name}.time::text, ''), 1, 10) BETWEEN %s AND %s"
+                ],
+                params=[start_dt.strftime("%Y-%m-%d"), end_dt.strftime("%Y-%m-%d")],
+            )
 
         # Date filter logic
         if filter_value == 'Today':
             start_date = today
             end_date = today
-            queryset = queryset.filter(time__date=today)
+            queryset = _apply_text_date_between(queryset, start_date, end_date)
         elif filter_value == 'Last7Days':
             start_date = today - timedelta(days=7)
             end_date = today
-            queryset = queryset.filter(time__gte=start_date)
+            queryset = _apply_text_date_between(queryset, start_date, end_date)
         elif filter_value == 'Last30Days':
             start_date = today - timedelta(days=30)
             end_date = today
-            queryset = queryset.filter(time__gte=start_date)
+            queryset = _apply_text_date_between(queryset, start_date, end_date)
         elif filter_value == 'ThisMonth':
             start_date = today.replace(day=1)
             end_date = today
-            queryset = queryset.filter(time__month=start_date.month)
+            queryset = _apply_text_date_between(queryset, start_date, end_date)
         elif filter_value == 'Custom':
             # Get custom date range from the request
             start_date_str = self.request.GET.get('start_date')
@@ -968,7 +1045,7 @@ class PurchaseView(LoginRequiredMixin, ListView):
 
             # If valid start_date and end_date, apply filter
             if start_date and end_date:
-                queryset = queryset.filter(time__date__range=[start_date, end_date])
+                queryset = _apply_text_date_between(queryset, start_date, end_date)
             else:
                 # Show all data if dates are not valid
                 queryset = queryset.none()
@@ -4374,33 +4451,45 @@ class SaleView(LoginRequiredMixin, ListView):
         filter_value = self.request.GET.get("filter", "All")
         today = timezone.now().replace(hour=0, minute=0, second=0, microsecond=0)
         start_date, end_date = None, None
+        table_name = SaleBill._meta.db_table
+
+        def _apply_text_date_between(qs, start_dt, end_dt):
+            return qs.extra(
+                where=[
+                    f"substring(COALESCE({table_name}.time::text, ''), 1, 10) BETWEEN %s AND %s"
+                ],
+                params=[start_dt.strftime("%Y-%m-%d"), end_dt.strftime("%Y-%m-%d")],
+            )
 
         if filter_value == "Today":
             start_date = today
             end_date = today
-            queryset = queryset.filter(time__date=today)
+            queryset = _apply_text_date_between(queryset, start_date, end_date)
         elif filter_value == "Last7Days":
             start_date = today - timedelta(days=7)
             end_date = today
-            queryset = queryset.filter(time__gte=start_date)
+            queryset = _apply_text_date_between(queryset, start_date, end_date)
         elif filter_value == "Last30Days":
             start_date = today - timedelta(days=30)
             end_date = today
-            queryset = queryset.filter(time__gte=start_date)
+            queryset = _apply_text_date_between(queryset, start_date, end_date)
         elif filter_value == "ThisMonth":
             start_date = today.replace(day=1)
             end_date = today
-            queryset = queryset.filter(time__month=start_date.month)
+            queryset = _apply_text_date_between(queryset, start_date, end_date)
         elif filter_value == "Custom":
             start_date_str = self.request.GET.get("start_date")
             end_date_str = self.request.GET.get("end_date")
             start_date = parse_date(start_date_str) if start_date_str else None
             end_date = parse_date(end_date_str) if end_date_str else None
             if start_date and end_date:
-                queryset = queryset.filter(time__date__range=[start_date, end_date])
+                queryset = _apply_text_date_between(queryset, start_date, end_date)
             else:
                 queryset = queryset.none()
 
+        queryset = _scope_dc_list_queryset_for_associate(
+            self.request, queryset, use_salebill_cust_fk=True
+        )
         return queryset
 
     def get_context_data(self, **kwargs):
@@ -4644,23 +4733,34 @@ class FinalSaleView(LoginRequiredMixin, ListView):
         filter_value = self.request.GET.get("filter", "All")
         today = timezone.now().replace(hour=0, minute=0, second=0, microsecond=0)
         start_date, end_date = None, None
+        table_name = FinalSale._meta.db_table
+
+        def _apply_text_date_between(qs, start_dt, end_dt):
+            # DB-safe for both timestamp and legacy text columns:
+            # compare YYYY-MM-DD prefix from time::text.
+            return qs.extra(
+                where=[
+                    f"substring(COALESCE({table_name}.time::text, ''), 1, 10) BETWEEN %s AND %s"
+                ],
+                params=[start_dt.strftime("%Y-%m-%d"), end_dt.strftime("%Y-%m-%d")],
+            )
 
         if filter_value == "Today":
             start_date = today
             end_date = today
-            queryset = queryset.filter(time__date=today)
+            queryset = _apply_text_date_between(queryset, start_date, end_date)
         elif filter_value == "Last7Days":
             start_date = today - timedelta(days=7)
             end_date = today
-            queryset = queryset.filter(time__gte=start_date)
+            queryset = _apply_text_date_between(queryset, start_date, end_date)
         elif filter_value == "Last30Days":
             start_date = today - timedelta(days=30)
             end_date = today
-            queryset = queryset.filter(time__gte=start_date)
+            queryset = _apply_text_date_between(queryset, start_date, end_date)
         elif filter_value == "ThisMonth":
             start_date = today.replace(day=1)
             end_date = today
-            queryset = queryset.filter(time__month=start_date.month)
+            queryset = _apply_text_date_between(queryset, start_date, end_date)
         elif filter_value == "Custom":
             start_date_str = self.request.GET.get("start_date")
             end_date_str = self.request.GET.get("end_date")
@@ -4669,10 +4769,29 @@ class FinalSaleView(LoginRequiredMixin, ListView):
             end_date = parse_date(end_date_str) if end_date_str else None
 
             if start_date and end_date:
-                queryset = queryset.filter(time__date__range=[start_date, end_date])
+                queryset = _apply_text_date_between(queryset, start_date, end_date)
             else:
                 queryset = queryset.none()
 
+        queryset = _scope_dc_list_queryset_for_associate(self.request, queryset)
+        # Scalar subquery avoids PostgreSQL GROUP BY errors when the queryset uses .extra()
+        # (date filter) alongside a join + Count on return_sales.
+        _active_returns_subq = (
+            ReturnSale.objects.filter(
+                final_bill_id=OuterRef("billno"),
+                is_deleted=False,
+            )
+            .order_by()
+            .values("final_bill_id")
+            .annotate(_n=Count("pk"))
+            .values("_n")[:1]
+        )
+        queryset = queryset.annotate(
+            active_return_count=Coalesce(
+                Subquery(_active_returns_subq, output_field=IntegerField()),
+                Value(0),
+            )
+        )
         return queryset
 
     def get_context_data(self, **kwargs):
@@ -5334,7 +5453,7 @@ class customeView(LoginRequiredMixin, View):
         # Check for both Customer and Vendor using filter().first()
         supplierobj = Customer.objects.filter(Cust_id=pk).first()
         vendor_obj = Vendor.objects.filter(pk=pk).first()
-        stocks = Stock.objects.filter(is_deleted=False)  # Initial stock list
+        stocks = Stock.objects.for_forms_dropdown()  # PG-safe vs legacy bit boolean columns
         favorite_lists = FavoriteList.objects.all()  # Get all favorite lists
         favorite_list = FavoriteList.objects.all().order_by(Lower('name'))
 
@@ -5447,7 +5566,7 @@ class customeView(LoginRequiredMixin, View):
         context = {
             'formset': formset,
             'supplier': supplierobj,
-            'stock_list': Stock.objects.filter(is_deleted=False),
+            'stock_list': Stock.objects.for_forms_dropdown(),
             'categories': Category.objects.all(),
         }
         return render(request, self.template_name, context)
@@ -5957,9 +6076,44 @@ def update_purchase_serial_numbers(request):
 
 def get_serial_numbers(request):
     stock_id = request.GET.get('stock_id')
-    serial_numbers = PurchaseSerial.objects.filter(stock_id=stock_id, sales_billno=None)
-    serials = [{'serialNo': s.serialNo} for s in serial_numbers]
-    return JsonResponse({'serial_numbers': serials})
+    serial_numbers = (
+        PurchaseSerial.objects
+        .filter(
+            stock_id=stock_id,
+            sales_billno__isnull=True,
+            final_salebill__isnull=True
+        )
+        .select_related('billno')
+        .order_by('billno__billno', 'serialNo')
+    )
+
+    serials = []
+    grouped = {}
+
+    for s in serial_numbers:
+        bill_no = str(s.billno.billno) if s.billno_id else "N/A"
+        serial_value = (s.serialNo or "").strip()
+        if not serial_value:
+            continue
+        serials.append({
+            'serialNo': serial_value,
+            'billno': bill_no
+        })
+        grouped.setdefault(bill_no, []).append(serial_value)
+
+    grouped_by_bill = [
+        {
+            'billno': bill_no,
+            'serial_numbers': values,
+            'serial_count': len(values)
+        }
+        for bill_no, values in grouped.items()
+    ]
+
+    return JsonResponse({
+        'serial_numbers': serials,
+        'grouped_by_bill': grouped_by_bill
+    })
 
 
 # def get_serial_numbers(request):
@@ -6233,14 +6387,92 @@ class SaleDeleteView(LoginRequiredMixin, View):
     template_name = "sales/delete_sale.html"
     login_url = '/index/'
 
+    @staticmethod
+    def _party_display_name(party_obj):
+        if not party_obj:
+            return ""
+        for attr in ("name", "Comp_name", "Consumer", "company_name", "full_name"):
+            value = getattr(party_obj, attr, None)
+            if value:
+                return str(value)
+        first_name = (getattr(party_obj, "first_name", "") or "").strip()
+        last_name = (getattr(party_obj, "last_name", "") or "").strip()
+        full_name = f"{first_name} {last_name}".strip()
+        if full_name:
+            return full_name
+        return str(party_obj)
+
+    def _linked_final_sale_refs_for_sale_bill(self, sale_bill):
+        linked_final_bills = []
+        if sale_bill.final_salebill_id:
+            linked_final_bills.append(sale_bill.final_salebill)
+
+        serial_linked_bills = (
+            PurchaseSerial.objects.filter(sales_billno=sale_bill, final_salebill__isnull=False)
+            .select_related("final_salebill__customer", "final_salebill__vendor")
+            .values_list("final_salebill_id", flat=True)
+            .distinct()
+        )
+        if serial_linked_bills:
+            linked_final_bills.extend(
+                FinalSale.objects.filter(billno__in=serial_linked_bills)
+                .select_related("customer", "vendor")
+                .order_by("billno")
+            )
+
+        final_bill_refs = []
+        seen_final_billnos = set()
+        for final_bill in linked_final_bills:
+            if not final_bill or final_bill.billno in seen_final_billnos:
+                continue
+            seen_final_billnos.add(final_bill.billno)
+            party = final_bill.customer or final_bill.vendor
+            party_name = self._party_display_name(party)
+            final_bill_refs.append(
+                f"{final_bill.billno} ({party_name})" if party_name else f"{final_bill.billno}"
+            )
+        return final_bill_refs
+
     def get(self, request, *args, **kwargs):
         # Display the confirmation page
         sale_bill = get_object_or_404(SaleBill, pk=kwargs['pk'])
+        final_bill_refs = self._linked_final_sale_refs_for_sale_bill(sale_bill)
+        if final_bill_refs:
+            error_message = "\n".join(
+                [
+                    f"Cannot delete Sale Bill {sale_bill.billno}.",
+                    "This bill is already used in Final Sale Bill:",
+                    f"Final Sale Bills: {', '.join(final_bill_refs)}",
+                ]
+            )
+            messages.error(request, error_message)
+            return redirect('/transactions/sales')
         return render(request, self.template_name, {'sale_bill': sale_bill})
 
     def post(self, request, *args, **kwargs):
         # Perform the deletion and stock update
         sale_bill = get_object_or_404(SaleBill, pk=kwargs['pk'])
+
+        final_bill_refs = self._linked_final_sale_refs_for_sale_bill(sale_bill)
+
+        if final_bill_refs:
+            error_message = "\n".join(
+                [
+                    f"Cannot delete Sale Bill {sale_bill.billno}.",
+                    "This bill is already used in Final Sale Bill:",
+                    f"Final Sale Bills: {', '.join(final_bill_refs)}",
+                ]
+            )
+            messages.error(request, error_message)
+            return render(
+                request,
+                self.template_name,
+                {
+                    "sale_bill": sale_bill,
+                    "delete_error_message": error_message,
+                },
+            )
+
         sale_items = SaleItem.objects.filter(billno=sale_bill.billno)
 
         # Restore stock quantities
@@ -6316,6 +6548,18 @@ class PurchaseBillView(LoginRequiredMixin, View):
 
 
 
+def _sale_bill_for_display(billno):
+    """
+    Return one SaleBill for this bill number. If the DB has duplicate rows with the
+    same billno (e.g. sequence/PK drift), prefer the most recently created/updated row.
+    """
+    return (
+        SaleBill.objects.filter(billno=billno)
+        .order_by("-time", "-update_time", "-billno")
+        .first()
+    )
+
+
 class SaleBillView(LoginRequiredMixin, View):
     model = SaleBill
     template_name = "bill/sale_bill.html"
@@ -6323,24 +6567,33 @@ class SaleBillView(LoginRequiredMixin, View):
     login_url = '/index/'
 
     def get(self, request, billno):
-        items = SaleItem.objects.filter(billno=billno)
+        bill = _sale_bill_for_display(billno)
+        if bill is None:
+            messages.error(request, "Sale bill not found.")
+            return redirect('some-other-view-name')  # Redirect to a fallback view
+
+        items = SaleItem.objects.filter(billno=bill)
 
         # For each item, retrieve the related serial numbers from PurchaseSerial
         for item in items:
-            item.serials = PurchaseSerial.objects.filter(stock=item.stock, sales_billno=billno, return_bill=None)
+            item.serials = PurchaseSerial.objects.filter(
+                stock=item.stock, sales_billno=bill, return_bill=None
+            )
 
-        try:
-             context = {
-                    'bill': SaleBill.objects.get(billno=billno),
-                    'items': items,
-                    'billdetails': SaleBillDetails.objects.get(billno=billno),
-                    'bill_base': self.bill_base,
+        billdetails = (
+            SaleBillDetails.objects.filter(billno=bill).order_by("-id").first()
+        )
+        if billdetails is None:
+            messages.error(request, "Sale bill details not found.")
+            return redirect('some-other-view-name')
 
-             }
-             return render(request, self.template_name, context)
-        except SaleBill.DoesNotExist:
-            messages.error(request, "Sale bill not found.")
-            return redirect('some-other-view-name')  # Redirect to a fallback view
+        context = {
+            "bill": bill,
+            "items": items,
+            "billdetails": billdetails,
+            "bill_base": self.bill_base,
+        }
+        return render(request, self.template_name, context)
 
 #
 # # used to display the sale bill object
@@ -6359,28 +6612,41 @@ class SaleBillView(LoginRequiredMixin, View):
 #         return render(request, self.template_name, context)
 
     def post(self, request, billno):
+        bill = _sale_bill_for_display(billno)
+        if bill is None:
+            messages.error(request, "Sale bill not found.")
+            return redirect("some-other-view-name")
+
         form = SaleDetailsForm(request.POST)
         if form.is_valid():
-            billdetailsobj = SaleBillDetails.objects.get(billno=billno)
+            billdetailsobj = (
+                SaleBillDetails.objects.filter(billno=bill).order_by("-id").first()
+            )
+            if billdetailsobj:
+                billdetailsobj.eway = request.POST.get("eway")
+                billdetailsobj.veh = request.POST.get("veh")
+                billdetailsobj.destination = request.POST.get("destination")
+                billdetailsobj.po = request.POST.get("po")
+                billdetailsobj.cgst = request.POST.get("cgst")
+                billdetailsobj.sgst = request.POST.get("sgst")
+                billdetailsobj.igst = request.POST.get("igst")
+                billdetailsobj.cess = request.POST.get("cess")
+                billdetailsobj.tcs = request.POST.get("tcs")
+                billdetailsobj.total = request.POST.get("total")
 
-            billdetailsobj.eway = request.POST.get("eway")
-            billdetailsobj.veh = request.POST.get("veh")
-            billdetailsobj.destination = request.POST.get("destination")
-            billdetailsobj.po = request.POST.get("po")
-            billdetailsobj.cgst = request.POST.get("cgst")
-            billdetailsobj.sgst = request.POST.get("sgst")
-            billdetailsobj.igst = request.POST.get("igst")
-            billdetailsobj.cess = request.POST.get("cess")
-            billdetailsobj.tcs = request.POST.get("tcs")
-            billdetailsobj.total = request.POST.get("total")
+                billdetailsobj.save()
+                messages.success(
+                    request, "Bill details have been modified successfully"
+                )
 
-            billdetailsobj.save()
-            messages.success(request, "Bill details have been modified successfully")
+        billdetails = (
+            SaleBillDetails.objects.filter(billno=bill).order_by("-id").first()
+        )
         context = {
-            'bill': SaleBill.objects.get(billno=billno),
-            'items': SaleItem.objects.filter(billno=billno),
-            'billdetails': SaleBillDetails.objects.get(billno=billno),
-            'bill_base': self.bill_base,
+            "bill": bill,
+            "items": SaleItem.objects.filter(billno=bill),
+            "billdetails": billdetails,
+            "bill_base": self.bill_base,
         }
         return render(request, self.template_name, context)
 
@@ -6459,24 +6725,32 @@ class SaleBillView_bill(LoginRequiredMixin, View):
         login_url = '/index/'
 
         def get(self, request, billno):
-            items = SaleItem.objects.filter(billno=billno)
-
-            # For each item, retrieve the related serial numbers from PurchaseSerial
-            for item in items:
-                item.serials = PurchaseSerial.objects.filter(stock=item.stock, sales_billno=billno)
-
-            try:
-                context = {
-                    'bill': SaleBill.objects.get(billno=billno),
-                    'items': items,
-                    'billdetails': SaleBillDetails.objects.get(billno=billno),
-                    'bill_base': self.bill_base,
-                    # 'item.serials': item.serials,
-                }
-                return render(request, self.template_name, context)
-            except SaleBill.DoesNotExist:
+            bill = _sale_bill_for_display(billno)
+            if bill is None:
                 messages.error(request, "Sale bill not found.")
-                return redirect('some-other-view-name')  # Redirect to a fallback view
+                return redirect("some-other-view-name")
+
+            items = SaleItem.objects.filter(billno=bill)
+
+            for item in items:
+                item.serials = PurchaseSerial.objects.filter(
+                    stock=item.stock, sales_billno=bill
+                )
+
+            billdetails = (
+                SaleBillDetails.objects.filter(billno=bill).order_by("-id").first()
+            )
+            if billdetails is None:
+                messages.error(request, "Sale bill details not found.")
+                return redirect("some-other-view-name")
+
+            context = {
+                "bill": bill,
+                "items": items,
+                "billdetails": billdetails,
+                "bill_base": self.bill_base,
+            }
+            return render(request, self.template_name, context)
 
         #
         # # used to display the sale bill object
@@ -6495,28 +6769,41 @@ class SaleBillView_bill(LoginRequiredMixin, View):
         #         return render(request, self.template_name, context)
 
         def post(self, request, billno):
+            bill = _sale_bill_for_display(billno)
+            if bill is None:
+                messages.error(request, "Sale bill not found.")
+                return redirect("some-other-view-name")
+
             form = SaleDetailsForm(request.POST)
             if form.is_valid():
-                billdetailsobj = SaleBillDetails.objects.get(billno=billno)
+                billdetailsobj = (
+                    SaleBillDetails.objects.filter(billno=bill).order_by("-id").first()
+                )
+                if billdetailsobj:
+                    billdetailsobj.eway = request.POST.get("eway")
+                    billdetailsobj.veh = request.POST.get("veh")
+                    billdetailsobj.destination = request.POST.get("destination")
+                    billdetailsobj.po = request.POST.get("po")
+                    billdetailsobj.cgst = request.POST.get("cgst")
+                    billdetailsobj.sgst = request.POST.get("sgst")
+                    billdetailsobj.igst = request.POST.get("igst")
+                    billdetailsobj.cess = request.POST.get("cess")
+                    billdetailsobj.tcs = request.POST.get("tcs")
+                    billdetailsobj.total = request.POST.get("total")
 
-                billdetailsobj.eway = request.POST.get("eway")
-                billdetailsobj.veh = request.POST.get("veh")
-                billdetailsobj.destination = request.POST.get("destination")
-                billdetailsobj.po = request.POST.get("po")
-                billdetailsobj.cgst = request.POST.get("cgst")
-                billdetailsobj.sgst = request.POST.get("sgst")
-                billdetailsobj.igst = request.POST.get("igst")
-                billdetailsobj.cess = request.POST.get("cess")
-                billdetailsobj.tcs = request.POST.get("tcs")
-                billdetailsobj.total = request.POST.get("total")
+                    billdetailsobj.save()
+                    messages.success(
+                        request, "Bill details have been modified successfully"
+                    )
 
-                billdetailsobj.save()
-                messages.success(request, "Bill details have been modified successfully")
+            billdetails = (
+                SaleBillDetails.objects.filter(billno=bill).order_by("-id").first()
+            )
             context = {
-                'bill': SaleBill.objects.get(billno=billno),
-                'items': SaleItem.objects.filter(billno=billno),
-                'billdetails': SaleBillDetails.objects.get(billno=billno),
-                'bill_base': self.bill_base,
+                "bill": bill,
+                "items": SaleItem.objects.filter(billno=bill),
+                "billdetails": billdetails,
+                "bill_base": self.bill_base,
             }
             return render(request, self.template_name, context)
 
@@ -6575,8 +6862,8 @@ from .models import SaleBill, SaleItem, SaleBillDetails
 #         sale_bill_details = None
 #
 #     # Fetch categories, subcategories, and stocks
-#     categories = Category.objects.filter(status=True)
-#     subcategories = SubCategory.objects.filter(status=True)
+#     categories = Category.objects.active_only()
+#     subcategories = SubCategory.objects.active_only()
 #     stocks = Stock.objects.all()
 #
 #     context = {
@@ -6677,12 +6964,24 @@ def get_serial_numbers_edit(request):
     serial_numbers = [
         {
             'serialNo': serial['serialNo'],  # Ensure 'serialNo' field is used
-            'checked': serial['sales_billno'] == sales_billno  # Check if the sales_billno matches the current bill
+            'checked': serial['sales_billno'] == sales_billno,  # Check if the sales_billno matches the current bill
+            'billno': serial['billno__billno'],
         }
-        for serial in serials.values('serialNo', 'sales_billno')  # Fetch necessary fields
+        for serial in serials.values('serialNo', 'sales_billno', 'billno__billno')  # Fetch necessary fields
     ]
 
-    return JsonResponse({'serial_numbers': serial_numbers})
+    grouped = {}
+    for row in serial_numbers:
+        bill_no = str(row.get('billno') or 'N/A')
+        grouped.setdefault(bill_no, 0)
+        grouped[bill_no] += 1
+
+    grouped_by_bill = [
+        {'billno': bill_no, 'serial_count': count}
+        for bill_no, count in grouped.items()
+    ]
+
+    return JsonResponse({'serial_numbers': serial_numbers, 'grouped_by_bill': grouped_by_bill})
 
 
 @login_required(login_url='user-login')
@@ -7047,9 +7346,9 @@ def edit_sale_view(request, pk):
         sale_bill_details = None
 
     existing_stock_ids = sale_items.values_list('stock_id', flat=True)
-    categories = Category.objects.filter(status=True)
-    subcategories = SubCategory.objects.filter(status=True)
-    stocks = Stock.objects.filter(is_deleted=False)
+    categories = Category.objects.active_only()
+    subcategories = SubCategory.objects.active_only()
+    stocks = Stock.objects.for_forms_dropdown()
 
     context = {
         'sale_bill': sale_bill,
@@ -7172,8 +7471,8 @@ def edit_sale_view(request, pk):
 #         purchase_bill_details = None
 #
 #     existing_stock_ids = purchase_items.values_list('stock_id', flat=True)
-#     categories = Category.objects.filter(status=True)
-#     subcategories = SubCategory.objects.filter(status=True)
+#     categories = Category.objects.active_only()
+#     subcategories = SubCategory.objects.active_only()
 #     stocks = Stock.objects.filter(is_deleted=False)
 #
 #     context = {
@@ -7310,8 +7609,8 @@ def edit_sale_view(request, pk):
 #     except PurchaseBillDetails.DoesNotExist:
 #         purchase_bill_details = None
 #
-#     categories = Category.objects.filter(status=True)
-#     subcategories = SubCategory.objects.filter(status=True)
+#     categories = Category.objects.active_only()
+#     subcategories = SubCategory.objects.active_only()
 #     stocks = Stock.objects.filter(is_deleted=False)
 #
 #     context = {
@@ -7490,8 +7789,8 @@ def purchase_edit_view(request, pk):
     except PurchaseBillDetails.DoesNotExist:
         purchase_bill_details = None
 
-    categories = Category.objects.filter(status=True)
-    subcategories = SubCategory.objects.filter(status=True)
+    categories = Category.objects.active_only()
+    subcategories = SubCategory.objects.active_only()
     stocks = Stock.objects.filter(is_deleted=False)
 
     context = {
@@ -7947,8 +8246,8 @@ def purchase_edit_view(request, pk):
 #     except SaleBillDetails.DoesNotExist:
 #         sale_bill_details = None
 #     existing_stock_ids = sale_items.values_list('stock_id', flat=True)
-#     categories = Category.objects.filter(status=True)
-#     subcategories = SubCategory.objects.filter(status=True)
+#     categories = Category.objects.active_only()
+#     subcategories = SubCategory.objects.active_only()
 #     # stocks = Stock.objects.all()
 #     stocks = Stock.objects.filter(is_deleted=False)  # Initial stock list
 #
@@ -8111,8 +8410,8 @@ def return_sale_view(request, pk):
         final_bill_details = None
 
     existing_stock_ids = sale_items.values_list('stock_id', flat=True)
-    categories = Category.objects.filter(status=True)
-    subcategories = SubCategory.objects.filter(status=True)
+    categories = Category.objects.active_only()
+    subcategories = SubCategory.objects.active_only()
     stocks = Stock.objects.filter(is_deleted=False)
 
     context = {
@@ -8271,8 +8570,8 @@ def return_sale_view(request, pk):
 #         final_bill_details = None
 #
 #     existing_stock_ids = sale_items.values_list('stock_id', flat=True)
-#     categories = Category.objects.filter(status=True)
-#     subcategories = SubCategory.objects.filter(status=True)
+#     categories = Category.objects.active_only()
+#     subcategories = SubCategory.objects.active_only()
 #     stocks = Stock.objects.filter(is_deleted=False)
 #
 #     context = {
@@ -8419,9 +8718,15 @@ def finalsale_return(request, pk):
     # Filter sale items based on the selected categories
     sale_items = FinalSaleItem.objects.filter(final_bill=sale_bill, stock__category__in=categories)
 
-    # For each item, retrieve the related serial numbers from PurchaseSerial
+    # For each item, retrieve related serial numbers and safe category labels.
+    # Using safe resolvers avoids MultipleObjectsReturned from legacy duplicate
+    # category/subcategory rows when templates access FK descriptors.
     for item in sale_items:
         item.serials = PurchaseSerial.objects.filter(stock=item.stock, final_salebill=pk, return_bill=None)
+        safe_category = category_for_fk_id(item.stock.category_id)
+        safe_subcategory = subcategory_for_fk_id(item.stock.subcategory_id)
+        item.safe_category_name = safe_category.name if safe_category else ""
+        item.safe_subcategory_name = safe_subcategory.name if safe_subcategory else ""
 
     # Fetch the final bill details, if they exist
     try:
@@ -8431,8 +8736,8 @@ def finalsale_return(request, pk):
 
     # Existing stock IDs and other necessary data
     existing_stock_ids = sale_items.values_list('stock_id', flat=True)
-    categories = Category.objects.filter(status=True)
-    subcategories = SubCategory.objects.filter(status=True)
+    categories = Category.objects.active_only()
+    subcategories = SubCategory.objects.active_only()
     stocks = Stock.objects.filter(is_deleted=False)
 
     # Prepare context for rendering the template
@@ -8447,6 +8752,74 @@ def finalsale_return(request, pk):
     }
 
     if request.method == "POST":
+        def _clean_serials_map(post_data):
+            serial_map = {}
+            for key, raw_value in post_data.items():
+                if not key.startswith("serials-"):
+                    continue
+                stock_key = key.split("-", 1)[1].strip()
+                if not stock_key:
+                    continue
+                values = [
+                    s.strip()
+                    for s in (raw_value or "").split(",")
+                    if s and s.strip()
+                ]
+                serial_map[stock_key] = values
+            return serial_map
+
+        serials_data = _clean_serials_map(request.POST)
+
+        # Validate serial reduction before any write:
+        # if current return qty is reduced for a serialized stock, user must remove
+        # exactly same count of corresponding serial numbers.
+        serial_errors = []
+        for item in sale_items:
+            current_return_raw = request.POST.get(f'current_quantity_{item.pk}')
+            current_return_qty = Decimal(current_return_raw or 0)
+            if current_return_qty <= 0:
+                continue
+
+            active_serial_qs = PurchaseSerial.objects.filter(
+                stock=item.stock,
+                final_salebill=sale_bill.billno,
+                return_bill=None,
+            ).exclude(serialNo__isnull=True).exclude(serialNo='')
+
+            if not active_serial_qs.exists():
+                continue
+
+            if current_return_qty != current_return_qty.to_integral_value():
+                serial_errors.append(
+                    f"{item.stock.name}: return quantity must be whole number for serialized stock."
+                )
+                continue
+
+            required_removed = int(current_return_qty)
+            selected_serials = serials_data.get(str(item.stock_id), [])
+            selected_set = {s for s in selected_serials if s}
+            available_set = set(active_serial_qs.values_list("serialNo", flat=True))
+
+            if len(selected_set) != required_removed:
+                serial_errors.append(
+                    f"{item.stock.name}: expected {required_removed} serial(s), got {len(selected_set)}."
+                )
+                continue
+
+            invalid_serials = selected_set - available_set
+            if invalid_serials:
+                serial_errors.append(
+                    f"{item.stock.name}: invalid serial selection."
+                )
+
+        if serial_errors:
+            messages.error(
+                request,
+                "Please remove the serial numbers first before saving."
+            )
+            for err in serial_errors:
+                messages.error(request, err)
+            return render(request, 'return/finalsales_return.html', context)
 
         sale_bill.return_date = timezone.now()
         sale_bill.return_bill = True
@@ -8538,11 +8911,6 @@ def finalsale_return(request, pk):
         #     # ---- End duplication logic ----
 
         # Step 3: Handle serial numbers and stock updates
-        serials_data = {
-            key.split('-')[1]: value.split(',')
-            for key, value in request.POST.items() if key.startswith('serials-')
-        }
-
         for stock_id, serial_numbers in serials_data.items():
             # First update the existing records to mark them as returned
             PurchaseSerial.objects.filter(
@@ -8755,8 +9123,8 @@ def finalsale_return(request, pk):
 #
 #     # Existing stock IDs and other necessary data
 #     existing_stock_ids = sale_items.values_list('stock_id', flat=True)
-#     categories = Category.objects.filter(status=True)
-#     subcategories = SubCategory.objects.filter(status=True)
+#     categories = Category.objects.active_only()
+#     subcategories = SubCategory.objects.active_only()
 #     stocks = Stock.objects.filter(is_deleted=False)
 #
 #     # Prepare context for rendering the template
@@ -8785,8 +9153,8 @@ def finalsale_return(request, pk):
 #         return_bill_details = None
 #
 #     existing_stock_ids = sale_items.values_list('stock_id', flat=True)
-#     categories = Category.objects.filter(status=True)
-#     subcategories = SubCategory.objects.filter(status=True)
+#     categories = Category.objects.active_only()
+#     subcategories = SubCategory.objects.active_only()
 #     stocks = Stock.objects.filter(is_deleted=False)
 #
 #     context = {
@@ -8992,8 +9360,8 @@ def finalsale_return(request, pk):
 #         return_bill_details = None
 #
 #     existing_stock_ids = sale_items.values_list('stock_id', flat=True)
-#     categories = Category.objects.filter(status=True)
-#     subcategories = SubCategory.objects.filter(status=True)
+#     categories = Category.objects.active_only()
+#     subcategories = SubCategory.objects.active_only()
 #     stocks = Stock.objects.filter(is_deleted=False)
 #
 #     context = {
@@ -9119,8 +9487,8 @@ def return_view_edit(request, pk):
         return_bill_details = None
 
     existing_stock_ids = sale_items.values_list('stock_id', flat=True)
-    categories = Category.objects.filter(status=True)
-    subcategories = SubCategory.objects.filter(status=True)
+    categories = Category.objects.active_only()
+    subcategories = SubCategory.objects.active_only()
     stocks = Stock.objects.filter(is_deleted=False)
 
     context = {
@@ -9145,6 +9513,75 @@ def return_view_edit(request, pk):
 
         sale_bill_obj = related_sales.first()
 
+        # Parse selected serials from form once.
+        serials_data = {}
+        for key, value in request.POST.items():
+            if key.startswith('serials-'):
+                stock_key = key.split('-', 1)[1].strip()
+                if stock_key:
+                    serials_data[stock_key] = [
+                        s.strip() for s in (value or '').split(',') if s and s.strip()
+                    ]
+
+        # Validate serial reduction before writes.
+        serial_errors = []
+        for item in sale_items:
+            current_return_qty = Decimal(request.POST.get(f'return_quantity_{item.pk}', 0) or 0)
+            if current_return_qty <= 0:
+                continue
+
+            available_qs = PurchaseSerial.objects.filter(
+                stock=item.stock,
+                final_salebill=final_bill.billno,
+            ).filter(
+                Q(return_bill__isnull=True) | Q(return_bill=sale_bill)
+            ).exclude(serialNo__isnull=True).exclude(serialNo='')
+
+            if not available_qs.exists():
+                continue
+
+            if current_return_qty != current_return_qty.to_integral_value():
+                serial_errors.append(
+                    f"{item.stock.name}: return quantity must be whole number for serialized stock."
+                )
+                continue
+
+            required_removed = int(current_return_qty)
+            selected_serials = serials_data.get(str(item.stock_id), [])
+            selected_set = {s for s in selected_serials if s}
+
+            # If user didn't reopen serial modal during edit, fallback to already
+            # assigned serials for this same return bill.
+            if not selected_set:
+                selected_set = set(
+                    PurchaseSerial.objects.filter(
+                        stock=item.stock,
+                        final_salebill=final_bill.billno,
+                        return_bill=sale_bill
+                    ).exclude(serialNo__isnull=True).exclude(serialNo='')
+                    .values_list("serialNo", flat=True)
+                )
+
+            available_set = set(available_qs.values_list("serialNo", flat=True))
+            if len(selected_set) != required_removed:
+                serial_errors.append(
+                    f"{item.stock.name}: expected {required_removed} serial(s), got {len(selected_set)}."
+                )
+                continue
+
+            invalid_serials = selected_set - available_set
+            if invalid_serials:
+                serial_errors.append(f"{item.stock.name}: invalid serial selection.")
+
+        if serial_errors:
+            messages.error(
+                request,
+                "Please remove the serial numbers first before saving."
+            )
+            for err in serial_errors:
+                messages.error(request, err)
+            return render(request, 'return/return_edit.html', context)
+
         with transaction.atomic():  # Use transaction to ensure data consistency
             # Step 1: Update the ReturnSale record
             sale_bill.final_bill = final_bill
@@ -9162,11 +9599,6 @@ def return_view_edit(request, pk):
                 return_bill_details.save()
 
             # Step 3: Handle serial numbers and stock updates
-            serials_data = {
-                key.split('-')[1]: value.split(',')
-                for key, value in request.POST.items() if key.startswith('serials-')
-            }
-
             for stock_id, serial_numbers in serials_data.items():
                 # PurchaseSerial.objects.filter(stock_id=stock_id).update(sales_billno=None, final_salebill=None, return_bill=sale_bill)
                 PurchaseSerial.objects.filter(stock_id=stock_id).update(sales_billno=sale_bill_obj, final_salebill=final_bill, return_bill=None)
@@ -9219,8 +9651,8 @@ def return_view_edit(request, pk):
 #             final_bill_details = None
 #
 #         existing_stock_ids = sale_items.values_list('stock_id', flat=True)
-#         categories = Category.objects.filter(status=True)
-#         subcategories = SubCategory.objects.filter(status=True)
+#         categories = Category.objects.active_only()
+#         subcategories = SubCategory.objects.active_only()
 #         stocks = Stock.objects.filter(is_deleted=False)
 #
 #         # Context for rendering the page
@@ -9512,8 +9944,8 @@ def return_sale_view_edit(request, pk):
         final_bill_details = None
 
     existing_stock_ids = sale_items.values_list('stock_id', flat=True)
-    categories = Category.objects.filter(status=True)
-    subcategories = SubCategory.objects.filter(status=True)
+    categories = Category.objects.active_only()
+    subcategories = SubCategory.objects.active_only()
     stocks = Stock.objects.filter(is_deleted=False)
 
     context = {
@@ -9715,26 +10147,101 @@ def merge_sales_bill(request):
 #     return JsonResponse({'bills': response})
 
 
+def _format_bill_time_for_json(tm):
+    """SaleBill.time may be datetime, date, str (legacy/raw DB), or None."""
+    if tm is None:
+        return ""
+    if isinstance(tm, datetime):
+        return tm.strftime("%Y-%m-%d %H:%M:%S")
+    if isinstance(tm, date):
+        return tm.strftime("%Y-%m-%d")
+    if isinstance(tm, str):
+        return tm.strip()
+    if hasattr(tm, "strftime"):
+        try:
+            return tm.strftime("%Y-%m-%d %H:%M:%S")
+        except (TypeError, ValueError):
+            return str(tm)
+    return str(tm)
+
+
+def _open_sale_bills_queryset_with_item_total(**filter_kwargs):
+    """
+    SaleBills matching filter_kwargs with total_calc = sum(SaleItem.totalprice).
+    Uses a correlated Subquery so PostgreSQL does not require GROUP BY on all
+    SaleBill columns when ordering by time (annotate(Sum(...)) + order_by breaks PG).
+    """
+    total_subq = (
+        SaleItem.objects.filter(billno_id=OuterRef("pk"))
+        .values("billno_id")
+        .annotate(_t=Sum("totalprice"))
+        .values("_t")[:1]
+    )
+    return (
+        SaleBill.objects.filter(**filter_kwargs)
+        .annotate(
+            total_calc=Coalesce(
+                Subquery(total_subq, output_field=IntegerField()),
+                Value(0),
+            ),
+        )
+        .order_by("-time", "-billno")
+    )
+
+
 @login_required(login_url='user-login')
 def get_customer_bills(request):
-    customer_id = request.GET.get('customer_id')
-    vendor_id = request.GET.get('vendor_id')
-    # bills = SaleBill.objects.filter(Cust_id=customer_id)
-    if customer_id:
-      bills = SaleBill.objects.filter(Cust_id=customer_id, final_salebill__isnull=True)
-    elif vendor_id:
-        bills = SaleBill.objects.filter(Vend_id_id=vendor_id, final_salebill__isnull=True)
-    data = {
-        "bills": [
-            {
-                "billno": bill.billno,
-                "time": bill.time.strftime('%Y-%m-%d %H:%M:%S'),
-                "total": bill.get_total_price(),
-            }
-            for bill in bills
-        ]
-    }
-    return JsonResponse(data)
+    """
+    JSON list of open SaleBills (no FinalSale yet) for a customer or vendor.
+    Hardened: valid IDs, default queryset, null-safe time, totals via subquery Sum.
+    """
+    bills = SaleBill.objects.none()
+    customer_id = (request.GET.get("customer_id") or "").strip()
+    vendor_id = (request.GET.get("vendor_id") or "").strip()
+
+    try:
+        if customer_id:
+            cid = int(customer_id)
+            bills = _open_sale_bills_queryset_with_item_total(
+                Cust_id_id=cid,
+                final_salebill_id__isnull=True,
+            )
+        elif vendor_id:
+            vid = int(vendor_id)
+            bills = _open_sale_bills_queryset_with_item_total(
+                Vend_id_id=vid,
+                final_salebill_id__isnull=True,
+            )
+
+        payload = []
+        for bill in bills:
+            time_str = _format_bill_time_for_json(bill.time)
+            total = getattr(bill, "total_calc", None)
+            if total is None:
+                total = 0
+            try:
+                total = int(total)
+            except (TypeError, ValueError):
+                try:
+                    total = float(total)
+                except (TypeError, ValueError):
+                    total = 0
+            payload.append(
+                {"billno": bill.billno, "time": time_str, "total": total}
+            )
+
+        return JsonResponse({"bills": payload})
+    except (TypeError, ValueError):
+        return JsonResponse(
+            {"bills": [], "error": "Invalid customer_id or vendor_id"},
+            status=400,
+        )
+    except Exception:
+        logger.exception("get_customer_bills")
+        return JsonResponse(
+            {"bills": [], "error": "Could not load bills"},
+            status=500,
+        )
 #
 # @login_required(login_url='user-login')
 # def get_vendor_bills(request):
@@ -10009,9 +10516,19 @@ def edit_final_sale(request, billno):
 
     bills_data = []
     for bill in all_bills:
+        bill_time = bill.time
+        if isinstance(bill_time, datetime):
+            time_display = bill_time.strftime('%Y-%m-%d %H:%M:%S')
+        elif isinstance(bill_time, date):
+            time_display = bill_time.strftime('%Y-%m-%d 00:00:00')
+        elif bill_time:
+            time_display = str(bill_time)
+        else:
+            time_display = ""
+
         bills_data.append({
             "billno": bill.billno,
-            "time": bill.time.strftime('%Y-%m-%d %H:%M:%S'),
+            "time": time_display,
             "total": bill.get_total_price(),
             "is_merged": bill.final_salebill == final_sale,  # Checked if it is already part of the current final sale
         })
@@ -10152,7 +10669,149 @@ def update_final_bill(request):
 #         return redirect('finalsales-list')  # Replace 'finalsale-list' with the name of your list view
 
 
-from django.urls import reverse
+def cleanup_purchase_serials_before_return_sale_delete(return_sale):
+    """
+    Before deleting a ReturnSale row, detach PurchaseSerial rows and remove orphan
+    duplicates (same stock + serial, all sales_billno/final_salebill/return_bill NULL).
+    Keeps the linked row and clears only return_bill on it.
+    """
+    if return_sale is None:
+        return
+    linked = list(
+        PurchaseSerial.objects.filter(return_bill=return_sale).only(
+            "id", "stock_id", "serialNo"
+        )
+    )
+    for ps in linked:
+        key = (ps.serialNo or "").strip()
+        orphan_ids = []
+        if key:
+            for cand in PurchaseSerial.objects.filter(stock_id=ps.stock_id).exclude(
+                pk=ps.pk
+            ).only("id", "serialNo", "sales_billno_id", "final_salebill_id", "return_bill_id"):
+                if (cand.serialNo or "").strip() != key:
+                    continue
+                if (
+                    cand.sales_billno_id is None
+                    and cand.final_salebill_id is None
+                    and cand.return_bill_id is None
+                ):
+                    orphan_ids.append(cand.pk)
+        if orphan_ids:
+            PurchaseSerial.objects.filter(pk__in=orphan_ids).delete()
+        PurchaseSerial.objects.filter(pk=ps.pk).update(return_bill=None)
+
+
+def restore_finalsaleitem_quantities_before_return_sale_delete(return_sale):
+    """
+    Before deleting a ReturnSale row, roll back FinalSaleItem quantities
+    using the quantities stored on that return bill's ReturnSaleItem rows.
+    """
+    if return_sale is None:
+        return
+    return_items = ReturnSaleItem.objects.filter(return_bill=return_sale).select_related(
+        "final_bill", "stock"
+    )
+    for ret_item in return_items:
+        if not ret_item.final_bill_id:
+            continue
+        fs_item = FinalSaleItem.objects.filter(
+            final_bill=ret_item.final_bill, stock=ret_item.stock
+        ).first()
+        if not fs_item:
+            continue
+        returned_qty = ret_item.r_quantity or Decimal("0")
+        current_r_qty = fs_item.r_quantity or Decimal("0")
+        current_final_qty = (
+            fs_item.final_quantity
+            if fs_item.final_quantity is not None
+            else (fs_item.total_quantity or Decimal("0"))
+        )
+        new_r_qty = current_r_qty - returned_qty
+        if new_r_qty < Decimal("0"):
+            new_r_qty = Decimal("0")
+        fs_item.r_quantity = new_r_qty
+        fs_item.final_quantity = current_final_qty + returned_qty
+        fs_item.save(update_fields=["r_quantity", "final_quantity"])
+
+
+def refresh_final_sale_return_flag(final_sale):
+    """Clear FinalSale.return_bill when no active return bills remain."""
+    if final_sale is None:
+        return
+    if not ReturnSale.objects.filter(
+        final_bill_id=final_sale.pk, is_deleted=False
+    ).exists():
+        FinalSale.objects.filter(pk=final_sale.pk).update(
+            return_bill=False,
+            return_date=None,
+        )
+
+
+@login_required
+@require_GET
+def final_sale_return_bills_for_delete(request, pk):
+    """JSON list of return bills linked to a final sale (for delete flow modal)."""
+    final_sale = get_object_or_404(FinalSale, pk=pk)
+    rows = list(
+        ReturnSale.objects.filter(final_bill=final_sale, is_deleted=False)
+        .order_by("billno")
+        .values("billno", "time")
+    )
+    payload = [
+        {"billno": r["billno"], "date": as_bill_date(r["time"])}
+        for r in rows
+    ]
+    return JsonResponse({"returns": payload, "final_billno": final_sale.billno})
+
+
+@login_required
+@require_POST
+def final_sale_delete_return_bills(request, pk):
+    """Delete all non-deleted return bills for a final sale; fix PurchaseSerial rows; then client redirects to final delete."""
+    final_sale = get_object_or_404(FinalSale, pk=pk)
+    returns = list(
+        ReturnSale.objects.filter(final_bill=final_sale, is_deleted=False).order_by(
+            "billno"
+        )
+    )
+    redir = reverse("delete-final-sale", kwargs={"pk": pk})
+    if not returns:
+        return JsonResponse({"success": True, "redirect": redir})
+    with transaction.atomic():
+        for r in returns:
+            restore_finalsaleitem_quantities_before_return_sale_delete(r)
+            cleanup_purchase_serials_before_return_sale_delete(r)
+            r.delete()
+        refresh_final_sale_return_flag(final_sale)
+    return JsonResponse({"success": True, "redirect": redir})
+
+
+class ReturnSaleDeleteView(LoginRequiredMixin, View):
+    """Delete one return bill with the same PurchaseSerial rules as bulk final-sale delete."""
+
+    template_name = "return/delete_return_sale.html"
+    login_url = "/index/"
+
+    def get(self, request, *args, **kwargs):
+        return_sale = get_object_or_404(ReturnSale, pk=kwargs["pk"])
+        return render(
+            request,
+            self.template_name,
+            {"return_sale": return_sale},
+        )
+
+    def post(self, request, *args, **kwargs):
+        return_sale = get_object_or_404(ReturnSale, pk=kwargs["pk"])
+        final_bill = return_sale.final_bill
+        with transaction.atomic():
+            restore_finalsaleitem_quantities_before_return_sale_delete(return_sale)
+            cleanup_purchase_serials_before_return_sale_delete(return_sale)
+            return_sale.delete()
+            refresh_final_sale_return_flag(final_bill)
+        messages.success(request, "Return bill deleted successfully.")
+        return redirect(reverse("returnsales-list"))
+
 
 class FinalSaleDeleteView(LoginRequiredMixin, View):
     template_name = "sales/delete_final_sale.html"  # Template for confirmation
@@ -10161,11 +10820,27 @@ class FinalSaleDeleteView(LoginRequiredMixin, View):
     def get(self, request, *args, **kwargs):
         # Display the confirmation page
         final_sale = get_object_or_404(FinalSale, pk=kwargs['pk'])
-        return render(request, self.template_name, {'final_sale': final_sale})
+        blocking_returns = ReturnSale.objects.filter(
+            final_bill=final_sale, is_deleted=False
+        ).exists()
+        return render(
+            request,
+            self.template_name,
+            {
+                'final_sale': final_sale,
+                'blocking_returns': blocking_returns,
+            },
+        )
 
     def post(self, request, *args, **kwargs):
         # Perform the deletion and stock update
         final_sale = get_object_or_404(FinalSale, pk=kwargs['pk'])
+        if ReturnSale.objects.filter(final_bill=final_sale, is_deleted=False).exists():
+            messages.error(
+                request,
+                "A Return Bill is still linked to this Final Bill. Delete the related Return Bill(s) first.",
+            )
+            return redirect(reverse("finalsales-list"))
         final_sale_items = FinalSaleItem.objects.filter(final_bill=final_sale)
 
         # # Step 1: Restore stock quantities from FinalSaleItems
@@ -10246,7 +10921,51 @@ class FinalSaleBillView(LoginRequiredMixin, View):
 
         # For each item, retrieve the related serial numbers from PurchaseSerial
         for item in items:
-            item.serials = PurchaseSerial.objects.filter(stock=item.stock, final_salebill=billno, return_bill=None)
+            # Criteria 1: return_bill IS NULL (active link)
+            serials_return_null = (
+                PurchaseSerial.objects
+                .filter(
+                    stock=item.stock,
+                    final_salebill=billno,
+                    sales_billno__isnull=False,
+                    final_salebill__isnull=False,
+                    return_bill__isnull=True,
+                )
+                .exclude(serialNo__isnull=True)
+                .exclude(serialNo='')
+                .order_by('serialNo', 'id')
+            )
+
+            # Criteria 2: return_bill IS NOT NULL (duplicate same serial case)
+            serials_return_not_null = (
+                PurchaseSerial.objects
+                .filter(
+                    stock=item.stock,
+                    final_salebill=billno,
+                    sales_billno__isnull=False,
+                    final_salebill__isnull=False,
+                    return_bill__isnull=False,
+                )
+                .exclude(serialNo__isnull=True)
+                .exclude(serialNo='')
+                .order_by('serialNo', 'id')
+            )
+
+            # If same serial exists in both criteria, prefer return_bill IS NOT NULL row.
+            serial_choice = {}
+            for serial_obj in serials_return_not_null:
+                serial_choice[(serial_obj.serialNo or '').strip()] = serial_obj.id
+            for serial_obj in serials_return_null:
+                key = (serial_obj.serialNo or '').strip()
+                if key and key not in serial_choice:
+                    serial_choice[key] = serial_obj.id
+
+            selected_ids = list(serial_choice.values())
+            item.serials = (
+                PurchaseSerial.objects
+                .filter(id__in=selected_ids)
+                .order_by('serialNo', 'id')
+            )
 
         # Filter SaleBill records based on the final_salebill (billno in this case)
         sale_bills = SaleBill.objects.filter(final_salebill=billno)
@@ -10287,8 +11006,12 @@ class FinalReturnBillView(LoginRequiredMixin, View):
     login_url = '/index/'
 
     def get(self, request, billno):
-        # Fetch items from FinalSaleItem based on the final bill number
-        items = FinalSaleItem.objects.filter(final_bill=billno)
+        # Show only returned items on Final Return Bill (hide r_quantity=0/null).
+        items = FinalSaleItem.objects.filter(
+            final_bill=billno,
+            r_quantity__isnull=False,
+            r_quantity__gt=0,
+        )
 
 
 
@@ -10552,27 +11275,37 @@ class ReturnSaleView(LoginRequiredMixin, ListView):
             # No filtering based on user type; show all records.
             pass
 
-        # Date filter logic
+        # Date filter logic (safe for legacy schemas where `time` may be text-like)
         filter_value = self.request.GET.get("filter", "All")
         today = timezone.now().replace(hour=0, minute=0, second=0, microsecond=0)
         start_date, end_date = None, None
+        table_name = ReturnSale._meta.db_table
+
+        def _apply_text_date_between(qs, start_dt, end_dt):
+            # Avoid ORM __date/__month transforms that generate AT TIME ZONE on PostgreSQL.
+            return qs.extra(
+                where=[
+                    f"substring(COALESCE({table_name}.time::text, ''), 1, 10) BETWEEN %s AND %s"
+                ],
+                params=[start_dt.strftime("%Y-%m-%d"), end_dt.strftime("%Y-%m-%d")],
+            )
 
         if filter_value == "Today":
             start_date = today
             end_date = today
-            queryset = queryset.filter(time__date=today)
+            queryset = _apply_text_date_between(queryset, start_date, end_date)
         elif filter_value == "Last7Days":
             start_date = today - timedelta(days=7)
             end_date = today
-            queryset = queryset.filter(time__gte=start_date)
+            queryset = _apply_text_date_between(queryset, start_date, end_date)
         elif filter_value == "Last30Days":
             start_date = today - timedelta(days=30)
             end_date = today
-            queryset = queryset.filter(time__gte=start_date)
+            queryset = _apply_text_date_between(queryset, start_date, end_date)
         elif filter_value == "ThisMonth":
             start_date = today.replace(day=1)
             end_date = today
-            queryset = queryset.filter(time__month=start_date.month)
+            queryset = _apply_text_date_between(queryset, start_date, end_date)
         elif filter_value == "Custom":
             start_date_str = self.request.GET.get("start_date")
             end_date_str = self.request.GET.get("end_date")
@@ -10581,10 +11314,11 @@ class ReturnSaleView(LoginRequiredMixin, ListView):
             end_date = parse_date(end_date_str) if end_date_str else None
 
             if start_date and end_date:
-                queryset = queryset.filter(time__date__range=[start_date, end_date])
+                queryset = _apply_text_date_between(queryset, start_date, end_date)
             else:
                 queryset = queryset.none()
 
+        queryset = _scope_dc_list_queryset_for_associate(self.request, queryset)
         return queryset
 
     def get_context_data(self, **kwargs):
@@ -11231,51 +11965,152 @@ from .forms import SerialSearchForm
 #
 #     return render(request, 'purchases/search_serial.html', {'form': form, 'results': results})
 from django.shortcuts import render
+from django.utils.dateparse import parse_date, parse_datetime
+from django.utils.formats import date_format
 from .models import PurchaseSerial, PurchaseBillDetails, SaleBillDetails, ReturnBillDetails
 from .forms import SerialSearchForm
+
+# Indian display: dd/mm/yyyy (slashes)
+_SEARCH_SERIAL_DATE_FMT = "d/m/Y"
+
+
+def _search_serial_format_indian(val):
+    """
+    Show dates as dd/mm/yyyy. Accepts date, datetime, or common string forms (e.g. YYYY-MM-DD).
+    Unparseable strings are returned as-is (stripped).
+    """
+    if val is None or val == "":
+        return ""
+    if hasattr(val, "strftime") and not isinstance(val, str):
+        try:
+            return date_format(val, _SEARCH_SERIAL_DATE_FMT)
+        except (TypeError, ValueError, AttributeError):
+            return str(val)[:19]
+    if isinstance(val, str):
+        s = val.strip()
+        if not s:
+            return ""
+        parsed = parse_datetime(s)
+        if parsed is not None:
+            return date_format(parsed, _SEARCH_SERIAL_DATE_FMT)
+        d = parse_date(s)
+        if d is not None:
+            return date_format(d, _SEARCH_SERIAL_DATE_FMT)
+        return s
+    try:
+        return date_format(val, _SEARCH_SERIAL_DATE_FMT)
+    except (TypeError, ValueError, AttributeError):
+        return str(val)[:19]
+
+
+def _search_serial_purchase_date_str(details, bill):
+    """
+    Purchase form stores bill_date in PurchaseBillDetails.tcs (see PurchaseCreateView).
+    Fallback: PurchaseBill.time; then cgst (some legacy saves used different fields).
+    """
+    if details:
+        tcs = (details.tcs or "").strip()
+        if tcs:
+            out = _search_serial_format_indian(tcs)
+            return out if out else "N/A"
+    if bill is not None:
+        bt = getattr(bill, "time", None)
+        if bt:
+            out = _search_serial_format_indian(bt)
+            return out if out else "N/A"
+    if details:
+        cgst = (details.cgst or "").strip()
+        if cgst:
+            out = _search_serial_format_indian(cgst)
+            return out if out else "N/A"
+    return "N/A"
+
+
+def _search_serial_dt_str(dt):
+    if dt is None or dt == "":
+        return "N/A"
+    out = _search_serial_format_indian(dt)
+    return out if out else "N/A"
+
 
 def search_serial(request):
     results = None
     if request.method == 'GET':
         form = SerialSearchForm(request.GET)
         if form.is_valid():
-            serial_no = form.cleaned_data['serial_no']
-            results = PurchaseSerial.objects.filter(serialNo__iexact=serial_no)
+            serial_no = form.cleaned_data["serial_no"]
+            results = (
+                PurchaseSerial.objects.filter(serialNo__iexact=serial_no)
+                .select_related(
+                    "billno",
+                    "billno__supplier",
+                    "stock",
+                    "sales_billno",
+                    "final_salebill",
+                    "return_bill",
+                )
+            )
             for r in results:
-                # Purchase Bill Details
-                try:
-                    r.purchase_bill_details = PurchaseBillDetails.objects.get(billno=r.billno)
-                except PurchaseBillDetails.DoesNotExist:
-                    r.purchase_bill_details = None
+                r.purchase_bill_details = (
+                    PurchaseBillDetails.objects.filter(billno=r.billno).order_by("id").first()
+                )
 
-                # Sale Bill Details
                 if r.sales_billno:
-                    try:
-                        r.sale_bill_details = SaleBillDetails.objects.get(billno=r.sales_billno)
-                    except SaleBillDetails.DoesNotExist:
-                        r.sale_bill_details = None
+                    r.sale_bill_details = (
+                        SaleBillDetails.objects.filter(billno=r.sales_billno)
+                        .order_by("id")
+                        .first()
+                    )
                 else:
                     r.sale_bill_details = None
 
-                # # Final Sale Bill Details
-                # if r.final_salebill:
-                #     try:
-                #         r.final_sale_bill_details = FinalSaleBillDetails.objects.get(billno=r.final_salebill)
-                #     except FinalSaleBillDetails.DoesNotExist:
-                #         r.final_sale_bill_details = None
-                # else:
-                #     r.final_sale_bill_details = None
-
-                # Return Sale Bill Details
                 if r.return_bill:
-                    try:
-                        r.return_sale_bill_details = ReturnBillDetails.objects.get(billno=r.return_bill)
-                    except ReturnBillDetails.DoesNotExist:
-                        r.return_sale_bill_details = None
+                    r.return_sale_bill_details = (
+                        ReturnBillDetails.objects.filter(billno=r.return_bill)
+                        .order_by("id")
+                        .first()
+                    )
                 else:
                     r.return_sale_bill_details = None
+
+                r.purchase_date_display = _search_serial_purchase_date_str(
+                    r.purchase_bill_details, r.billno
+                )
+                if r.sales_billno:
+                    st = r.sales_billno.time
+                    if not st and r.sale_bill_details:
+                        raw = (
+                            (getattr(r.sale_bill_details, "tcs", None) or "")
+                            or (getattr(r.sale_bill_details, "cgst", None) or "")
+                        ).strip()
+                        r.sale_date_display = (
+                            _search_serial_format_indian(raw) if raw else "N/A"
+                        ) or "N/A"
+                    else:
+                        r.sale_date_display = _search_serial_dt_str(st)
+                else:
+                    r.sale_date_display = "N/A"
+                if r.return_bill:
+                    rt = r.return_bill.time
+                    if not rt and r.return_sale_bill_details:
+                        raw = (
+                            (getattr(r.return_sale_bill_details, "tcs", None) or "")
+                            or (getattr(r.return_sale_bill_details, "cgst", None) or "")
+                        ).strip()
+                        r.return_date_display = (
+                            _search_serial_format_indian(raw) if raw else "N/A"
+                        ) or "N/A"
+                    else:
+                        r.return_date_display = _search_serial_dt_str(rt)
+                else:
+                    r.return_date_display = "N/A"
+                if r.final_salebill:
+                    ft = r.final_salebill.time
+                    r.final_sale_date_display = _search_serial_dt_str(ft)
+                else:
+                    r.final_sale_date_display = "N/A"
 
     else:
         form = SerialSearchForm()
 
-    return render(request, 'purchases/search_serial.html', {'form': form, 'results': results})
+    return render(request, "purchases/search_serial.html", {"form": form, "results": results})

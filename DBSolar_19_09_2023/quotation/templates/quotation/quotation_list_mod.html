@@ -1,0 +1,277 @@
+{% extends 'partials/base.html' %}
+{% load static %}
+{% block title %}Quotations — DB SOLAR{% endblock %}
+
+{% block content %}
+<meta name="csrf-token" content="{{ csrf_token }}">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+<style>
+  /* Professional compact layout */
+  .page-header { padding: 1rem 0; border-bottom: 1px solid #e9ecef; margin-bottom: 1rem; }
+  .toolbar .btn { min-width: 44px; }
+  .table-sm th, .table-sm td { padding: .45rem .6rem; vertical-align: middle; }
+  .badge-status { font-size: .75rem; padding: .35em .5em; }
+  .card-compact { box-shadow: 0 2px 6px rgba(15,20,25,.06); border: 0; }
+  .muted-small { font-size: .85rem; color:#6c757d; }
+  @media (max-width: 767px) { .toolbar .row > * { margin-bottom: .5rem } }
+</style>
+
+<div class="container-fluid my-3">
+  <div class="page-header d-flex align-items-center justify-content-between">
+    <div>
+      <h3 class="mb-0">Quotations</h3>
+      <div class="muted-small">Manage quotations — review, confirm, convert to consumer</div>
+    </div>
+    <div class="text-end">
+      <a href="{% url 'quotation-create' %}" class="btn btn-outline-primary me-2">New Quotation</a>
+      <a href="#" id="exportCsv" class="btn btn-outline-secondary">Export CSV</a>
+    </div>
+  </div>
+
+  <div class="card card-compact mb-3">
+    <div class="card-body">
+      <div class="toolbar mb-3">
+        <div class="row g-2">
+          <div class="col-md-4 col-sm-12">
+            <input id="qSearch" class="form-control" placeholder="Search quotation no, consumer, city..." />
+          </div>
+          <div class="col-md-3 col-sm-6">
+            <select id="filterType" class="form-select">
+              <option value="">All Consumer Types</option>
+              <option>Residential</option>
+              <option>Commercial</option>
+              <option>Industrial</option>
+              <option>Government</option>
+            </select>
+          </div>
+          <div class="col-md-3 col-sm-6">
+            <select id="filterProject" class="form-select">
+              <option value="">All Project Types</option>
+              <option>Rooftop</option>
+              <option>Ground Mount PV</option>
+              <option>Water Pump</option>
+              <option>Street Light</option>
+            </select>
+          </div>
+          <div class="col-md-2 col-sm-12 text-end">
+            <button id="applyFilters" class="btn btn-primary">Apply</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="table-responsive">
+        <table class="table table-hover table-sm align-middle">
+          <thead class="table-light">
+            <tr>
+              <th>#</th>
+              <th>Quotation No</th>
+              <th>Consumer</th>
+              <th>Type</th>
+              <th>Project</th>
+              <th class="text-end">Capacity (kW)</th>
+              <th>PO / Date</th>
+              <th>Status</th>
+              <th class="text-center">Action</th>
+            </tr>
+          </thead>
+          <tbody id="quotationTableBody">
+            {% for q in quotations %}
+            <tr data-quotation-id="{{ q.pk }}">
+              <td>{{ forloop.counter }}</td>
+              <td>
+                <div class="fw-semibold">{{ q.quotation_no }}</div>
+                <div class="muted-small">{{ q.created_at|date:"d-m-Y" }}</div>
+              </td>
+              <td>
+                <div>{{ q.consumer_name }}</div>
+                <div class="muted-small">{{ q.consumer_state }} • {{ q.consumer_address2 }}</div>
+              </td>
+              <td>{{ q.consumer_type }}</td>
+              <td>{{ q.project_type }}</td>
+              <td class="text-end">{{ q.plant_capacity_kw }}</td>
+              <td>
+                <div>{{ q.po_order_no }}</div>
+                <div class="muted-small">{{ q.po_date|default:"-" }}</div>
+              </td>
+              <td>
+                {% if q.is_confirmed %}
+                  <span class="badge bg-success badge-status">Confirmed</span>
+                {% else %}
+                  <span class="badge bg-secondary badge-status">Draft</span>
+                {% endif %}
+              </td>
+              <td class="text-center">
+                <div class="btn-group btn-group-sm" role="group" aria-label="actions">
+                  <a href="{% url 'quotation-detail' q.pk %}" class="btn btn-outline-primary" title="View">View</a>
+                  {% if q.is_confirmed %}
+                    <button class="btn btn-success convert-btn" data-id="{{ q.pk }}" data-type="{{ q.consumer_type }}">Convert</button>
+                  {% else %}
+                    <button class="btn btn-secondary" disabled>Convert</button>
+                  {% endif %}
+                </div>
+              </td>
+            </tr>
+            {% empty %}
+            <tr>
+              <td colspan="9" class="text-center text-muted">No quotations found.</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      <div class="d-flex justify-content-between align-items-center mt-3">
+        <div class="muted-small">
+          {% if quotations %}
+            Showing {{ quotations.start_index }} - {{ quotations.end_index }} of {{ quotations.paginator.count }}
+          {% endif %}
+        </div>
+        <nav>
+          <ul class="pagination pagination-sm mb-0">
+            {% if quotations.has_previous %}
+            <li class="page-item"><a class="page-link" href="?page={{ quotations.previous_page_number }}">Prev</a></li>
+            {% else %}
+            <li class="page-item disabled"><span class="page-link">Prev</span></li>
+            {% endif %}
+            {% for p in quotations.paginator.page_range %}
+              <li class="page-item {% if p == quotations.number %}active{% endif %}">
+                <a class="page-link" href="?page={{ p }}">{{ p }}</a>
+              </li>
+            {% endfor %}
+            {% if quotations.has_next %}
+            <li class="page-item"><a class="page-link" href="?page={{ quotations.next_page_number }}">Next</a></li>
+            {% else %}
+            <li class="page-item disabled"><span class="page-link">Next</span></li>
+            {% endif %}
+          </ul>
+        </nav>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Convert modal -->
+<div class="modal fade" id="convertModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-md modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Convert Quotation</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <p id="convertModalText">Convert this confirmed quotation to a consumer record?</p>
+        <div id="convertError" class="text-danger small d-none"></div>
+      </div>
+      <div class="modal-footer">
+        <button id="confirmConvert" type="button" class="btn btn-primary">Proceed</button>
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+(function(){
+  const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '';
+
+  const searchInput = document.getElementById('qSearch');
+  const filterType = document.getElementById('filterType');
+  const filterProject = document.getElementById('filterProject');
+  const applyBtn = document.getElementById('applyFilters');
+
+  function matches(row, text, type, project) {
+    text = (text || '').toLowerCase();
+    const cells = row.textContent.toLowerCase();
+    const typeMatch = !type || cells.indexOf(type.toLowerCase()) !== -1;
+    const projectMatch = !project || cells.indexOf(project.toLowerCase()) !== -1;
+    return (!text || cells.indexOf(text) !== -1) && typeMatch && projectMatch;
+  }
+
+  applyBtn.addEventListener('click', function(){
+    const text = searchInput.value.trim();
+    const type = filterType.value;
+    const project = filterProject.value;
+    document.querySelectorAll('#quotationTableBody tr').forEach(r => {
+      r.style.display = matches(r, text, type, project) ? '' : 'none';
+    });
+  });
+
+  let convertTargetId = null;
+  const convertModalEl = document.getElementById('convertModal');
+  const convertModal = new bootstrap.Modal(convertModalEl);
+  const convertText = document.getElementById('convertModalText');
+  const convertError = document.getElementById('convertError');
+  const confirmConvertBtn = document.getElementById('confirmConvert');
+
+  document.querySelectorAll('.convert-btn').forEach(btn => {
+    btn.addEventListener('click', function(){
+      convertTargetId = this.dataset.id;
+      convertText.textContent = `Convert quotation #${convertTargetId} to a consumer?`;
+      convertError.classList.add('d-none');
+      convertModal.show();
+    });
+  });
+
+  confirmConvertBtn.addEventListener('click', async function(){
+    if (!convertTargetId) return;
+    confirmConvertBtn.disabled = true;
+    convertError.classList.add('d-none');
+    try {
+      const resp = await fetch('/quotation/get-quotation-details/' + encodeURIComponent(convertTargetId) + '/');
+      if (!resp.ok) throw new Error('Failed to fetch quotation');
+      const data = await resp.json();
+      await fetch('/quotation/store-quotation-data/', {
+        method:'POST',
+        headers:{'Content-Type':'application/json','X-CSRFToken': csrfToken},
+        body: JSON.stringify({data: data, quotation_id: convertTargetId})
+      });
+      const map = {
+        'Residential': '/customer/Cust_emp/',
+        'Commercial': '/customer/Comm_Cust/',
+        'Industrial': '/customer/Comp_Cust/',
+        'Government': '/customer/Govt_Cust/'
+      };
+      const dest = map[data.consumer_type] || '/customer/Cust_emp/';
+      const url = new URL(dest, window.location.origin);
+      url.searchParams.set('from_quotation','1');
+      url.searchParams.set('quotation_id', convertTargetId);
+      window.location.href = url.toString();
+    } catch (err) {
+      convertError.textContent = (err.message || 'Conversion failed.');
+      convertError.classList.remove('d-none');
+      console.error(err);
+    } finally {
+      confirmConvertBtn.disabled = false;
+    }
+  });
+
+  document.getElementById('exportCsv').addEventListener('click', function(e){
+    e.preventDefault();
+    const rows = [['Quotation No','Consumer','Type','Project','Capacity(kW)','PO','PO Date','Status']];
+    document.querySelectorAll('#quotationTableBody tr').forEach(tr => {
+      if (tr.style.display === 'none') return;
+      const cols = Array.from(tr.children);
+      rows.push([
+        cols[1]?.innerText.trim(),
+        cols[2]?.innerText.trim(),
+        cols[3]?.innerText.trim(),
+        cols[4]?.innerText.trim(),
+        cols[5]?.innerText.trim(),
+        cols[6]?.innerText.split('\\n')[0].trim(),
+        cols[6]?.innerText.split('\\n')[1]?.trim() || '',
+        cols[7]?.innerText.trim()
+      ]);
+    });
+    const csv = rows.map(r => r.map(c => '"' + String(c).replace(/"/g,'""') + '"').join(',')).join('\\n');
+    const blob = new Blob([csv], {type:'text/csv'});
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'quotations_export.csv';
+    document.body.appendChild(a); a.click(); a.remove();
+  });
+})();
+</script>
+
+{% endblock %}
+

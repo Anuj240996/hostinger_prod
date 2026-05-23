@@ -66,6 +66,156 @@
         transform: translateX(100%); /* Move the box out of the viewport to the right */
         opacity: 0;
     }
+
+    /* Same segmented tab design as Site Inspection Details page */
+    .site-inspection-mode-toolbar { margin: 12px 0 16px; }
+    .site-inspection-segmented-wrap { width: 100%; }
+    .site-inspection-segmented {
+        display: flex; width: 100%; background: #D9EDE9; border-radius: 8px; padding: 4px; gap: 3px;
+        box-sizing: border-box; border: 1px solid rgba(0, 137, 123, 0.2);
+    }
+    .site-inspection-segmented .site-inspection-segment {
+        flex: 1 1 0; min-width: 0; margin: 0; border: none; background: transparent; color: #00897B;
+        font-weight: 500; font-size: 14px; padding: 10px 8px; border-radius: 6px; cursor: pointer;
+        transition: background 0.2s ease, color 0.2s ease; white-space: nowrap;
+        display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+        -webkit-tap-highlight-color: transparent;
+    }
+    .site-inspection-segmented .site-inspection-segment:hover:not(.active) {
+        color: #00695c; background: rgba(0, 137, 123, 0.1);
+    }
+    .site-inspection-segmented .site-inspection-segment:focus { outline: none; }
+    .site-inspection-segmented .site-inspection-segment:focus-visible {
+        box-shadow: 0 0 0 2px #fff, 0 0 0 4px #00897B;
+    }
+    .site-inspection-segmented .site-inspection-segment.active::before {
+        content: "\2713"; font-size: 1.05em; font-weight: 700; line-height: 1; flex-shrink: 0;
+    }
+    .site-inspection-segmented .site-inspection-segment.active {
+        background: #00897B; color: #fff; font-weight: 700;
+    }
+
+    /* Forms & submit layout — Site Inspection Details theme (teal, bordered fields) */
+    .inventory-manage-wrap .modal-content {
+        border-radius: 8px;
+        border: 1px solid rgba(0, 137, 123, 0.22);
+        overflow: hidden;
+    }
+    .inventory-manage-wrap .modal-header {
+        background: #D9EDE9;
+        border-bottom: 1px solid rgba(0, 137, 123, 0.28);
+    }
+    .inventory-manage-wrap .modal-header .modal-title {
+        font-weight: 700;
+        color: #00897B;
+    }
+    .inventory-manage-wrap .modal-header .close {
+        color: #00897B;
+        opacity: 0.9;
+        text-shadow: none;
+    }
+    .inventory-manage-wrap .modal-header .close:hover {
+        color: #004d40;
+        opacity: 1;
+    }
+    .inventory-manage-wrap .modal-body {
+        padding: 1.25rem 1.5rem;
+    }
+    .inventory-manage-wrap .modal-body form label,
+    .inventory-manage-wrap .modal-body .form-group label,
+    .inventory-manage-wrap .modal-body .checkbox-label {
+        font-weight: 500;
+        color: #37474f;
+    }
+    .inventory-manage-wrap .modal-body input[type="text"],
+    .inventory-manage-wrap .modal-body input[type="number"],
+    .inventory-manage-wrap .modal-body input[type="email"],
+    .inventory-manage-wrap .modal-body textarea,
+    .inventory-manage-wrap .modal-body select,
+    .inventory-manage-wrap .modal-body .form-control {
+        width: 100%;
+        max-width: 100%;
+        padding: 8px 10px;
+        box-sizing: border-box;
+        border: 2px solid #ccc;
+        border-radius: 6px;
+        transition: border-color 0.25s ease, box-shadow 0.2s ease;
+    }
+    .inventory-manage-wrap .modal-body input[type="text"]:hover,
+    .inventory-manage-wrap .modal-body input[type="number"]:hover,
+    .inventory-manage-wrap .modal-body textarea:hover,
+    .inventory-manage-wrap .modal-body select:hover,
+    .inventory-manage-wrap .modal-body .form-control:hover {
+        border-color: #ff9800;
+    }
+    .inventory-manage-wrap .modal-body input[type="text"]:focus,
+    .inventory-manage-wrap .modal-body input[type="number"]:focus,
+    .inventory-manage-wrap .modal-body textarea:focus,
+    .inventory-manage-wrap .modal-body select:focus,
+    .inventory-manage-wrap .modal-body .form-control:focus {
+        border-color: #00897B;
+        outline: none;
+        box-shadow: 0 0 0 3px rgba(0, 137, 123, 0.18);
+    }
+    .inventory-manage-wrap .modal-body form p {
+        margin-bottom: 1rem;
+    }
+    .inventory-manage-wrap .modal-footer {
+        border-top: 1px solid rgba(0, 137, 123, 0.15);
+        background: #fafcfc;
+        justify-content: center;
+        padding: 1rem 1.25rem;
+    }
+    .inventory-manage-wrap .inventory-form-actions {
+        margin-top: 1.25rem;
+        padding-top: 1rem;
+        border-top: 1px solid #e0e0e0;
+        text-align: center;
+    }
+    .inventory-manage-wrap .btn-inventory-submit {
+        display: inline-block;
+        min-width: 170px;
+        padding: 10px 26px;
+        font-weight: 600;
+        font-size: 15px;
+        line-height: 1.4;
+        color: #fff !important;
+        background: #00897B;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        transition: background 0.2s ease, box-shadow 0.2s ease;
+        box-shadow: 0 2px 5px rgba(0, 137, 123, 0.28);
+    }
+    .inventory-manage-wrap .btn-inventory-submit:hover {
+        background: #00695c;
+        color: #fff !important;
+        box-shadow: 0 4px 10px rgba(0, 137, 123, 0.35);
+    }
+    .inventory-manage-wrap .btn-inventory-submit:focus {
+        outline: none;
+        box-shadow: 0 0 0 2px #fff, 0 0 0 4px #00897B;
+    }
+    .inventory-manage-wrap .btn-inventory-open {
+        padding: 8px 18px;
+        font-weight: 600;
+        font-size: 14px;
+        color: #fff !important;
+        background: #00897B;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        transition: background 0.2s ease, box-shadow 0.2s ease;
+        box-shadow: 0 2px 4px rgba(0, 137, 123, 0.22);
+    }
+    .inventory-manage-wrap .btn-inventory-open:hover {
+        background: #00695c;
+        color: #fff !important;
+    }
+    .inventory-manage-wrap .btn-inventory-open:focus {
+        outline: none;
+        box-shadow: 0 0 0 2px #fff, 0 0 0 4px #00897B;
+    }
 </style>
 <script>
     // Function to hide the message box with a scroll effect
@@ -81,13 +231,74 @@
         setTimeout(hideMessageBox, 3000);
     };
 
+    function showProductDeleteErrorModal(messageText) {
+        var modalBody = document.getElementById('productDeleteErrorModalBody');
+        if (modalBody) {
+            modalBody.textContent = messageText || 'Delete is not allowed for this record.';
+        }
+        if (window.jQuery && $('#productDeleteErrorModal').modal) {
+            $('#productDeleteErrorModal').modal('show');
+        } else if (modalBody) {
+            alert(modalBody.textContent);
+        }
+    }
+
+    function precheckDeleteAndSubmit(event, entity, recordId, formId, confirmText) {
+        event.preventDefault();
+        fetch('/product/precheck-delete/' + encodeURIComponent(entity) + '/' + encodeURIComponent(recordId) + '/')
+            .then(function(response) { return response.json(); })
+            .then(function(data) {
+                if (data && data.blocked) {
+                    showProductDeleteErrorModal(data.message);
+                    return;
+                }
+                if (confirm(confirmText)) {
+                    var form = document.getElementById(formId);
+                    if (form) {
+                        form.submit();
+                    }
+                }
+            })
+            .catch(function() {
+                showProductDeleteErrorModal('Could not verify delete usage right now. Please try again.');
+            });
+    }
+
 </script>
 
+
+<!-- Shared delete-block modal -->
+<div class="modal fade" id="productDeleteErrorModal" tabindex="-1" role="dialog" aria-labelledby="productDeleteErrorModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title" id="productDeleteErrorModalLabel">Delete Not Allowed</h5>
+                <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body" id="productDeleteErrorModalBody" style="white-space: pre-line; color: #212529;"></div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
 
 <!-- Success and Error Messages -->
 {% if messages %}
     {% for message in messages %}
-        <div id="message-box" class="alert {% if message.tags == 'error' %}alert-error{% elif message.tags == 'success' %}alert-success{% endif %}" role="alert">
+        {% if message.tags == 'error' %}
+            <script>
+                document.addEventListener('DOMContentLoaded', function () {
+                    showProductDeleteErrorModal("{{ message|escapejs }}");
+                });
+            </script>
+        {% endif %}
+    {% endfor %}
+    {% for message in messages %}
+        {% if message.tags != 'error' %}
+        <div id="message-box" class="alert {% if message.tags == 'success' %}alert-success{% endif %}" role="alert">
             <div class="message-header">
                 <strong>{{ message.tags|title }}</strong>
                 <button type="button" class="close" onclick="hideMessageBox();" style="width: 10px; size: 50px;">&times;</button>
@@ -96,26 +307,31 @@
                 {{ message }}
             </div>
         </div>
+        {% endif %}
     {% endfor %}
 {% endif %}
 
 
-<form>
+{# Use a div — not <form> — so modal inner forms are valid HTML (no nested forms). #}
+<div class="inventory-manage-wrap">
     <h3>Manage Inventory</h3>
     <div class="tabs">
-        <ul class="tab-links">
-            <li><a href="#" data-tab="categories" style="width: 150px; text-align: center;">Categories</a></li>&nbsp;&nbsp;
-            <li><a href="#" data-tab="subcategories" style="width: 150px; text-align: center;">SubCategories</a></li>&nbsp;&nbsp;
-            <li><a href="#" data-tab="products" style="width: 150px; text-align: center;">Products</a></li>&nbsp;&nbsp;
-            <li><a href="#" data-tab="brands" style="width: 150px; text-align: center;">Brands</a></li>&nbsp;&nbsp;
-            <li><a href="#" data-tab="units" style="width: 150px; text-align: center;">Units</a></li>&nbsp;&nbsp;
-<!--            <li><a href="#" data-tab="suppliers">Suppliers</a></li>-->
-        </ul>
+        <div class="d-flex align-items-end justify-content-center row site-inspection-mode-toolbar mx-0">
+            <div class="col-12 col-sm-11 site-inspection-segmented-wrap">
+                <div class="site-inspection-segmented" role="tablist" aria-label="Inventory sections">
+                    <button type="button" class="site-inspection-segment active" data-tab="categories" aria-current="page">Categories</button>
+                    <button type="button" class="site-inspection-segment" data-tab="subcategories">SubCategories</button>
+                    <button type="button" class="site-inspection-segment" data-tab="products">Products</button>
+                    <button type="button" class="site-inspection-segment" data-tab="brands">Brands</button>
+                    <button type="button" class="site-inspection-segment" data-tab="units">Units</button>
+                </div>
+            </div>
+        </div>
         <div class="tab-content">
             <!-- Categories Tab -->
             <div id="categoriesList" class="list-content">
                 <h3>Categories</h3>
-                <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#categoryModal">Add Category</button>
+                <button type="button" class="btn btn-inventory-open" data-toggle="modal" data-target="#categoryModal">Add Category</button>
                 <br><br>
 
                 <table id="yourDataTable" class="table table-hover table-center table.dataTable.table-sm mb-0 datatable table.sm">
@@ -133,7 +349,7 @@
                     <tbody align="center">
                         {% for category in categories %}
                         <tr>
-                            <td>{{ forloop.counter }}</td>
+                            <td>{{ forloop.revcounter }}</td>
                             <td>{{ category.id }}</td>
                             <td class="text-capitalize">{{ category.name }}</td>
                             <td>{{ category.short_name }}</td>
@@ -143,7 +359,7 @@
 <!--                                    <img src="path/to/your/image.png" alt="Edit" class="btn btn-warning btn-sm">-->
                                       <i class="fas fa-pen"></i>
                                 </a>&nbsp;&nbsp;&nbsp;
-                                <a href="#" onclick="if (confirm('Are you sure you want to delete this Category?')) { event.preventDefault(); document.getElementById('delete-category-{{ category.id }}').submit(); }" style="color: red;">
+                                <a href="#" onclick="precheckDeleteAndSubmit(event, 'category', {{ category.id }}, 'delete-category-{{ category.id }}', 'Are you sure you want to delete this Category?')" style="color: red;">
                                     <i class="fas fa-trash"></i>
                                 </a>
                                 <form id="delete-category-{{ category.id }}" method="post" action="{% url 'delete_category' category.id %}" style="display: none;">
@@ -158,7 +374,7 @@
             <!-- SubCategories Tab -->
             <div id="subcategoriesList" class="list-content" style="display: none;">
                 <h3>SubCategories</h3>
-                <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#subcategoryModal">Add SubCategory</button>
+                <button type="button" class="btn btn-inventory-open" data-toggle="modal" data-target="#subcategoryModal">Add SubCategory</button>
 <!--                <table id="subcategoriesTable" class="table table-hover table-center table.dataTable.table-sm mb-0 datatable table.sm" width="100%">-->
                 <br><br>
                 <table id="subcategoriesTable" class="table table-hover table-center table.dataTable.table-sm mb-0 datatable table.sm">
@@ -176,10 +392,10 @@
                     <tbody align="center">
                         {% for subcategory in subcategories %}
                         <tr>
-                            <td>{{ forloop.counter }}</td>
+                            <td>{{ forloop.revcounter }}</td>
                             <td>{{ subcategory.id }}</td>
                             <td class="text-capitalize">{{ subcategory.name }}</td>
-                            <td class="text-capitalize">{{ subcategory.category.name }}</td>
+                            <td class="text-capitalize">{% if subcategory.safe_category %}{{ subcategory.safe_category.name }}{% else %}—{% endif %}</td>
                             <td>{{ subcategory.short_name }}</td>
                             <td>{{ subcategory.status|yesno:"Active,Inactive" }}</td>
                             <td>
@@ -187,7 +403,7 @@
                                       <i class="fas fa-pen"></i>
                                 </a>&nbsp;&nbsp;&nbsp;
                                    <!-- SubCategory Delete Link -->
-                                <a href="#" onclick="if (confirm('Are you sure you want to delete this subcategory?')) { event.preventDefault(); document.getElementById('delete-subcategory-{{ subcategory.id }}').submit(); }" style="color: red;">
+                                <a href="#" onclick="precheckDeleteAndSubmit(event, 'subcategory', {{ subcategory.id }}, 'delete-subcategory-{{ subcategory.id }}', 'Are you sure you want to delete this subcategory?')" style="color: red;">
                                       <i class="fas fa-trash"></i>
                                 </a>
                                 <form id="delete-subcategory-{{ subcategory.id }}" method="post" action="{% url 'delete_subcategory' subcategory.id %}" style="display: none;">
@@ -203,7 +419,7 @@
             <!-- Products Tab -->
             <div id="productsList" class="list-content" style="display: none;">
                 <h4>Products</h4>
-                <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#productModal">Add Product</button>
+                <button type="button" class="btn btn-inventory-open" data-toggle="modal" data-target="#productModal">Add Product</button>
                 <br><br>
 <!--                <table id="productsTable" class="table table-hover table-center table-sm mb-0">-->
                 <table id="productTable" class="table table-hover table-center table.dataTable.table-sm mb-0 datatable table.sm">
@@ -225,10 +441,10 @@
                     <tbody align="center">
                         {% for product in products %}
                         <tr>
-                            <td>{{ forloop.counter }}</td>
+                            <td>{{ forloop.revcounter }}</td>
                             <td>{{ product.id }}</td>
                             <td class="text-capitalize">{{ product.name }}</td>
-                            <td class="text-capitalize">{{ product.category.name }}</td>
+                            <td class="text-capitalize">{% if product.safe_category %}{{ product.safe_category.name }}{% else %}—{% endif %}</td>
                             <td class="text-capitalize">{{ product.subcategory.name }}</td>
                             <td class="text-capitalize">{{ product.purchase.name }}</td>
                             <td class="text-capitalize">{{ product.sales.name }}</td>
@@ -239,7 +455,7 @@
                                 <a href="#" data-toggle="modal" data-target="#editProductModal" data-id="{{ product.id }}">
                                       <i class="fas fa-pen"></i>
                                 </a>&nbsp;&nbsp;&nbsp;
-                                <a href="#" onclick="if (confirm('Are you sure you want to delete this Product?')) { event.preventDefault(); document.getElementById('delete-product-{{ product.id }}').submit(); }" style="color: red;">
+                                <a href="#" onclick="precheckDeleteAndSubmit(event, 'product', {{ product.id }}, 'delete-product-{{ product.id }}', 'Are you sure you want to delete this Product?')" style="color: red;">
                                     <i class="fas fa-trash"></i>
                                 </a>
                                 <form id="delete-product-{{ product.id }}" method="post" action="{% url 'delete_product' product.id %}" style="display: none;">
@@ -257,7 +473,7 @@
             <!-- Brands Tab -->
             <div id="brandsList" class="list-content" style="display: none;">
                 <h4>Brands</h4>
-                <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#brandModal">Add Brand</button>
+                <button type="button" class="btn btn-inventory-open" data-toggle="modal" data-target="#brandModal">Add Brand</button>
                 <br><br>
 <!--                <table id="brandsTable" class="table table-hover table-center table-sm mb-0">-->
                 <table id="brandsTable" class="table table-hover table-center table.dataTable.table-sm mb-0 datatable table.sm">
@@ -273,7 +489,7 @@
                     <tbody align="center">
                         {% for brand in brands %}
                         <tr>
-                            <td>{{ forloop.counter }}</td>
+                            <td>{{ forloop.revcounter }}</td>
                             <td>{{ brand.id }}</td>
                             <td class="text-capitalize">{{ brand.name }}</td>
                             <td>{{ brand.status|yesno:"Active,Inactive" }}</td>
@@ -281,7 +497,7 @@
                                 <a href="#" data-toggle="modal" data-target="#editBrandModal" data-id="{{ brand.id }}">
                                       <i class="fas fa-pen"></i>
                                 </a>&nbsp;&nbsp;&nbsp;
-                                <a href="#" onclick="if (confirm('Are you sure you want to delete this Brand?')) { event.preventDefault(); document.getElementById('delete-brand-{{ brand.id }}').submit(); }" style="color: red;">
+                                <a href="#" onclick="precheckDeleteAndSubmit(event, 'brand', {{ brand.id }}, 'delete-brand-{{ brand.id }}', 'Are you sure you want to delete this Brand?')" style="color: red;">
                                     <i class="fas fa-trash"></i>
                                 </a>
                                 <form id="delete-brand-{{ brand.id }}" method="post" action="{% url 'delete_brand' brand.id %}" style="display: none;">
@@ -296,7 +512,7 @@
             <!-- Units Tab -->
             <div id="unitsList" class="list-content" style="display: none;">
                 <h4>Units</h4>
-                <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#unitModal">Add Unit</button>
+                <button type="button" class="btn btn-inventory-open" data-toggle="modal" data-target="#unitModal">Add Unit</button>
                 <br><br>
 <!--                <table id="unitsTable" class="table table-hover table-center table-sm mb-0">-->
                 <table id="unitsTable" class="table table-hover table-center table.dataTable.table-sm mb-0 datatable table.sm">
@@ -312,7 +528,7 @@
                     <tbody align="center">
                         {% for unit in units %}
                         <tr>
-                            <td>{{ forloop.counter }}</td>
+                            <td>{{ forloop.revcounter }}</td>
                             <td>{{ unit.id }}</td>
                             <td class="text-capitalize">{{ unit.name }}</td>
                             <td>{{ unit.short_name }}</td>
@@ -320,7 +536,7 @@
                                 <a href="#" data-toggle="modal" data-target="#editUnitModal" data-id="{{ unit.id }}">
                                       <i class="fas fa-pen"></i>
                                 </a>&nbsp;&nbsp;&nbsp;
-                                <a href="#" onclick="if (confirm('Are you sure you want to delete this Unit?')) { event.preventDefault(); document.getElementById('delete-unit-{{ unit.id }}').submit(); }" style="color: red;">
+                                <a href="#" onclick="precheckDeleteAndSubmit(event, 'unit', {{ unit.id }}, 'delete-unit-{{ unit.id }}', 'Are you sure you want to delete this Unit?')" style="color: red;">
                                     <i class="fas fa-trash"></i>
                                 </a>
                                 <form id="delete-unit-{{ unit.id }}" method="post" action="{% url 'delete_unit' unit.id %}" style="display: none;">
@@ -335,12 +551,13 @@
             <!-- Suppliers Tab -->
             <div id="suppliersList" class="list-content" style="display: none;">
                 <h3>Suppliers</h3>
-                <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#supplierModal">Add Supplier</button>
+                <button type="button" class="btn btn-inventory-open" data-toggle="modal" data-target="#supplierModal">Add Supplier</button>
                 <br><br>
                 <ul>
                     <table id="supplierTable" class="table table-hover table-center table.dataTable.table-sm mb-0 datatable table.sm">
                     <thead class="table-success" align="center">
                         <tr>
+                            <th>Sr No</th>
                             <th>Supplier_id</th>
                             <th>Supplier Name</th>
                             <th>Contact Person</th>
@@ -358,6 +575,7 @@
                     <tbody align="center">
                         {% for supplier in suppliers %}
                         <tr>
+                            <td>{{ forloop.revcounter }}</td>
                             <td>{{ supplier.supplier_id }}</td>
                             <td class="text-capitalize">{{ supplier.supplier_name }}</td>
                             <td class="text-capitalize">{{ supplier.contact_person }}</td>
@@ -401,8 +619,9 @@
                     <form method="post">
                         {% csrf_token %}
                         {{ category_form.as_p }}
-                        <br>
-                        <button type="submit" name="add_category" class="btn btn-primary">Add Category</button>
+                        <div class="inventory-form-actions">
+                            <button type="submit" name="add_category" class="btn-inventory-submit">Add Category</button>
+                        </div>
                     </form>
                 </div>
             </div>
@@ -421,8 +640,9 @@
                     <form method="post">
                         {% csrf_token %}
                         {{ subcategory_form.as_p }}
-                        <br>
-                        <button type="submit" name="add_subcategory" class="btn btn-primary">Add SubCategory</button>
+                        <div class="inventory-form-actions">
+                            <button type="submit" name="add_subcategory" class="btn-inventory-submit">Add SubCategory</button>
+                        </div>
                     </form>
                 </div>
             </div>
@@ -512,7 +732,9 @@
                         </div>
                      </div>
 
-                        <button type="submit" name="add_product">Add Product</button>
+                        <div class="inventory-form-actions">
+                            <button type="submit" name="add_product" class="btn-inventory-submit">Add Product</button>
+                        </div>
                     </form>
                 </div>
             </div>
@@ -531,8 +753,9 @@
                     <form method="post">
                         {% csrf_token %}
                         {{ brand_form.as_p }}
-                        <br>
-                        <button type="submit" name="add_brand" class="btn btn-primary">Add Brand</button>
+                        <div class="inventory-form-actions">
+                            <button type="submit" name="add_brand" class="btn-inventory-submit">Add Brand</button>
+                        </div>
                     </form>
                 </div>
             </div>
@@ -551,7 +774,9 @@
                     <form method="post">
                         {% csrf_token %}
                         {{ unit_form.as_p }}
-                        <button type="submit" name="add_unit" class="btn btn-primary">Add Unit</button>
+                        <div class="inventory-form-actions">
+                            <button type="submit" name="add_unit" class="btn-inventory-submit">Add Unit</button>
+                        </div>
                     </form>
                 </div>
             </div>
@@ -570,8 +795,9 @@
                     <form method="post">
                         {% csrf_token %}
                         {{ supplier_form.as_p }}
-                        <br>
-                        <button type="submit" name="add_supplier" class="btn btn-primary">Add Supplier</button>
+                        <div class="inventory-form-actions">
+                            <button type="submit" name="add_supplier" class="btn-inventory-submit">Add Supplier</button>
+                        </div>
                     </form>
                 </div>
             </div>
@@ -604,7 +830,9 @@
                                {{ category_form.as_p }}
                         </div>
                     </div>
-                        <button type="submit" name="edit_category">Edit Category</button>
+                        <div class="inventory-form-actions">
+                            <button type="submit" name="edit_category" class="btn-inventory-submit">Update Category</button>
+                        </div>
                     </form>
                 </div>
                 </div>
@@ -681,8 +909,7 @@
                                 </div>
 
                                 <div class="modal-footer">
-<!--                                    <button type="button" name="edit_subcategory" class="btn btn-secondary" data-dismiss="modal">Close</button>-->
-                                    <button type="submit" class="btn btn-primary">Save changes</button>
+                                    <button type="submit" class="btn-inventory-submit">Save changes</button>
                                 </div>
                             </form>
                         </div>
@@ -786,8 +1013,7 @@
                                 </div>
 
                                 <div class="modal-footer">
-<!--                                    <button type="button" name="edit_supplier" class="btn btn-secondary" data-dismiss="modal">Close</button>-->
-                                    <button type="submit" class="btn btn-primary">Save changes</button>
+                                    <button type="submit" class="btn-inventory-submit">Save changes</button>
                                 </div>
                             </form>
                     </div>
@@ -820,9 +1046,9 @@
                                {{ brand_form.as_p }}
                         </div>
                     </div>
-
-
-                        <button type="submit" name="edit_brand">Edit Brand</button>
+                        <div class="inventory-form-actions">
+                            <button type="submit" name="edit_brand" class="btn-inventory-submit">Update Brand</button>
+                        </div>
                     </form>
                 </div>
             </div>
@@ -847,7 +1073,9 @@
                         {{ unit_form.as_p }}
                         </div>
                         </div>
-                        <button type="submit" name="edit_unit">Edit Unit</button>
+                        <div class="inventory-form-actions">
+                            <button type="submit" name="edit_unit" class="btn-inventory-submit">Update Unit</button>
+                        </div>
                     </form>
                 </div>
             </div>
@@ -946,15 +1174,14 @@
                                 </div>
 
                                 <div class="modal-footer">
-<!--                                    <button type="button" name="edit_supplier" class="btn btn-secondary" data-dismiss="modal">Close</button>-->
-                                    <button type="submit" class="btn btn-primary">Save changes</button>
+                                    <button type="submit" class="btn-inventory-submit">Save changes</button>
                                 </div>
                             </form>
                     </div>
                 </div>
             </div>
          </div>
-</form>
+</div>
 <!--<script>-->
 <!--    document.addEventListener('DOMContentLoaded', function () {-->
 <!--    // Tab switching-->
@@ -1105,12 +1332,21 @@
 <!--</script>-->
 <script>
     document.addEventListener('DOMContentLoaded', function () {
-        // Tab switching
-        const tabLinks = document.querySelectorAll('.tab-links a');
+        const tabButtons = document.querySelectorAll('.site-inspection-segment[data-tab]');
         const tabContents = document.querySelectorAll('.list-content');
+        const activeTabKey = localStorage.getItem('activeTab') || 'categories';
 
-        // Retrieve the last active tab from localStorage
-        const activeTab = localStorage.getItem('activeTab') || 'categories';
+        function setActiveInventorySegment(tabKey) {
+            tabButtons.forEach(function (btn) {
+                var isActive = btn.getAttribute('data-tab') === tabKey;
+                btn.classList.toggle('active', isActive);
+                if (isActive) {
+                    btn.setAttribute('aria-current', 'page');
+                } else {
+                    btn.removeAttribute('aria-current');
+                }
+            });
+        }
 
         // Function to initialize DataTables
         function initializeDataTables() {
@@ -1143,49 +1379,37 @@
             });
         }
 
-        // Function to handle tab clicks
         function handleTabClick(tabId) {
-            // Hide all tabs
-            tabContents.forEach(content => content.style.display = 'none');
+            tabContents.forEach(function (content) {
+                content.style.display = 'none';
+            });
+            var panel = document.getElementById(tabId);
+            if (panel) {
+                panel.style.display = 'block';
+            }
+            var key = tabId.replace(/List$/, '');
+            setActiveInventorySegment(key);
 
-            // Show the clicked tab
-            document.getElementById(tabId).style.display = 'block';
-
-            // Initialize DataTables for the visible tab
             initializeDataTables();
 
-            // Adjust and redraw DataTables
-            $(document.getElementById(tabId)).find('table').each(function() {
-                if ($.fn.DataTable.isDataTable(this)) {
-                    $(this).DataTable().columns.adjust().draw(); // Adjust columns and redraw DataTable
-                }
-            });
+            if (panel) {
+                $(panel).find('table').each(function () {
+                    if ($.fn.DataTable.isDataTable(this)) {
+                        $(this).DataTable().columns.adjust().draw();
+                    }
+                });
+            }
         }
 
-        // Display the active tab
-        handleTabClick(activeTab + 'List');
+        handleTabClick(activeTabKey + 'List');
 
-        tabLinks.forEach(link => {
-            link.addEventListener('click', function (e) {
+        tabButtons.forEach(function (btn) {
+            btn.addEventListener('click', function (e) {
                 e.preventDefault();
-                const targetTab = this.getAttribute('data-tab');
-
-                // Save the active tab to localStorage
+                var targetTab = btn.getAttribute('data-tab');
                 localStorage.setItem('activeTab', targetTab);
-
-                // Handle tab click
                 handleTabClick(targetTab + 'List');
             });
-        });
-    });
-
-    $(document).ready(function () {
-        $('#productTable').DataTable({
-            paging: true,
-            searching: true,
-            ordering: true,
-            info: true,
-            order: [[2, 'desc']] // Default ordering by the second column (index 1) in descending order
         });
     });
 </script>
@@ -1254,44 +1478,13 @@
         display: inline-block;
     }
 
-    .tab-links:after {
-        display: block;
-        clear: both;
-        content: '';
-    }
-
-    .tab-links li {
-        margin: 0 5px;
-        float: left;
-        list-style: none;
-    }
-
-    .tab-links a {
-        padding: 9px 15px;
-        display: inline-block;
-        border-radius: 3px 3px 0 0;
-        background: #7FB5DA;
-        font-size: 16px;
-        font-weight: 600;
-        color: #fff;
-        transition: all linear 0.15s;
-    }
-
-    .tab-links a:hover {
-        background: #a7cce5;
-        text-decoration: none;
-    }
-
-    .tab-links .active a {
+    .inventory-manage-wrap .tab-content {
+        padding: 18px;
+        border-radius: 8px;
+        border: 1px solid rgba(0, 137, 123, 0.18);
+        box-shadow: 0 2px 8px rgba(0, 137, 123, 0.08);
         background: #fff;
-        color: #4c4c4c;
-    }
-
-    .tab-content {
-        padding: 15px;
-        border-radius: 3px;
-        box-shadow: 0px 1px 1px rgba(0, 0, 0, 0.15);
-        background: #fff;
+        margin-top: 4px;
     }
 
     .tab {

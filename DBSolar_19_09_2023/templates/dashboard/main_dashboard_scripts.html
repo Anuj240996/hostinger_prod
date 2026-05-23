@@ -1,0 +1,48 @@
+<script>
+    function checkpassword() {
+        if (document.changepassword.newpassword.value != document.changepassword.confirmpassword.value) {
+            alert('New Password and Confirm Password field does not Match');
+            document.changepassword.confirmpassword.focus();
+            return false;
+        }
+        return true;
+    }
+</script>
+
+{% if error == "no" %}
+<script>
+    alert('Password updated successfully');
+    window.location = ('{% url 'user-login' %}');
+</script>
+{% endif %}
+{% if error == "yes" %}
+<script>
+    alert('Something went wrong , try again later');
+</script>
+{% endif %}
+{% if error == "not" %}
+<script>
+    alert('Your current password is wrong');
+</script>
+{% endif %}
+
+<script>
+(function () {
+    function showPasswordModalIfNeeded() {
+        if ({{ password_check|lower }}) {
+            var el = document.getElementById('changePasswordModal');
+            if (!el) return;
+            if (window.jQuery && jQuery.fn.modal) {
+                jQuery(el).modal('show');
+            } else if (window.bootstrap && bootstrap.Modal) {
+                bootstrap.Modal.getOrCreateInstance(el).show();
+            }
+        }
+    }
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', showPasswordModalIfNeeded);
+    } else {
+        showPasswordModalIfNeeded();
+    }
+})();
+</script>

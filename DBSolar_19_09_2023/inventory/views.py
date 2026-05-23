@@ -46,8 +46,8 @@
 
 #     def get_context_data(self, **kwargs):
 #         context = super().get_context_data(**kwargs)
-#         context['categories'] = Category.objects.filter(status=1)
-#         context['subcategories'] = SubCategory.objects.filter(status=1)
+#         context['categories'] = Category.objects.active_only()
+#         context['subcategories'] = SubCategory.objects.active_only()
 #         return context
 
 # #
@@ -258,8 +258,8 @@
 # #
 # #     def get_context_data(self, **kwargs):
 # #         context = super().get_context_data(**kwargs)
-# #         context['categories'] = Category.objects.filter(status=1)
-# #         context['subcategories'] = SubCategory.objects.filter(status=1)
+# #         context['categories'] = Category.objects.active_only()
+# #         context['subcategories'] = SubCategory.objects.active_only()
 # #         return context
 # #
 # #     # View to fetch stocks based on different filter criteria
@@ -353,7 +353,7 @@
 
 #     def get_context_data(self, **kwargs):
 #         context = super().get_context_data(**kwargs)
-#         context['categories'] = Category.objects.filter(status=1)
+#         context['categories'] = Category.objects.active_only()
 #         return context
 
 # # @require_GET
@@ -467,7 +467,7 @@
 # @require_GET
 # def get_subcategories1(request):
 #     category_id = request.GET.get('category_id')
-#     subcategories = SubCategory.objects.filter(category_id=category_id, status=1)
+#     subcategories = SubCategory.objects.active_only().filter(category_id=category_id)
 #     subcategory_data = [{'id': subcat.id, 'name': subcat.name} for subcat in subcategories]
 #     return JsonResponse(subcategory_data, safe=False)
 
@@ -1200,6 +1200,7 @@ from django.contrib import messages
 
 from product.models import Product, SubCategory, Category
 from .models import Stock, FavoriteList, FavoriteListStock
+from transactions.models import PurchaseItem, SaleItem, FinalSaleItem, ReturnSaleItem, PurchaseSerial
 from .forms import StockForm
 from django_filters.views import FilterView
 from .filters import StockFilter
@@ -1231,8 +1232,8 @@ class StockListView(ListView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['categories'] = Category.objects.filter(status=1)
-        context['subcategories'] = SubCategory.objects.filter(status=1)
+        context['categories'] = Category.objects.active_only()
+        context['subcategories'] = SubCategory.objects.active_only()
         return context
 
 #
@@ -1273,9 +1274,9 @@ def get_stocks_by_all(request, filter_type):
             'quantity': stock.quantity,
             'status': stock.status,
             'stock_alert': stock.stock_alert,
-            'category': stock.category.short_name,
-            'subcategory': stock.subcategory.short_name,
-            'purchase': stock.purchase.short_name,
+            'category': (stock.safe_category.short_name or '') if stock.safe_category else '',
+            'subcategory': (stock.safe_subcategory.short_name or '') if stock.safe_subcategory else '',
+            'purchase': (stock.safe_purchase.short_name or '') if stock.safe_purchase else '',
         })
     return JsonResponse(stock_list, safe=False)
 
@@ -1307,9 +1308,9 @@ def get_stocks_by_filter(request, filter_type, category_id=None, subcategory_id=
         'quantity': stock.quantity,
         'status': stock.status,
         'stock_alert': stock.stock_alert,
-        'category': stock.category.short_name,
-        'subcategory': stock.subcategory.short_name,
-        'purchase': stock.purchase.short_name,
+        'category': (stock.safe_category.short_name or '') if stock.safe_category else '',
+        'subcategory': (stock.safe_subcategory.short_name or '') if stock.safe_subcategory else '',
+        'purchase': (stock.safe_purchase.short_name or '') if stock.safe_purchase else '',
     } for stock in stocks]
 
     return JsonResponse(stock_list, safe=False)
@@ -1377,12 +1378,179 @@ class StockDeleteView(View):  # view class to delete stock
     template_name = "delete_stock.html"  # 'delete_stock.html' used as the template
     success_message = "Stock has been deleted successfully"  # displays message when form is submitted
 
+    @staticmethod
+    def _party_display_name(party_obj):
+        if not party_obj:
+            return ""
+        for attr in ("name", "Comp_name", "Consumer", "company_name", "full_name"):
+            value = getattr(party_obj, attr, None)
+            if value:
+                return str(value)
+        first_name = (getattr(party_obj, "first_name", "") or "").strip()
+        last_name = (getattr(party_obj, "last_name", "") or "").strip()
+        full_name = f"{first_name} {last_name}".strip()
+        if full_name:
+            return full_name
+        return str(party_obj)
+
+    @staticmethod
+    def _format_bill_refs(items, bill_attr, party_attr):
+        refs = []
+        for item in items:
+            bill_obj = getattr(item, bill_attr, None)
+            if not bill_obj:
+                continue
+
+            bill_no = getattr(bill_obj, "billno", "")
+            party_obj = getattr(bill_obj, party_attr, None)
+            party_name = getattr(party_obj, "name", "") if party_obj else ""
+
+            if party_name:
+                refs.append(f"{bill_no} ({party_name})")
+            else:
+                refs.append(f"{bill_no}")
+
+        return refs
+
+    def _build_stock_usage_error(self, stock):
+        purchase_items = (
+            PurchaseItem.objects.filter(stock=stock)
+            .select_related("billno__supplier")
+            .order_by("billno__billno")
+            .distinct()
+        )
+        sale_bill_items = (
+            SaleItem.objects.filter(stock=stock)
+            .select_related("billno__Cust_id", "billno__Vend_id")
+            .order_by("billno__billno")
+            .distinct()
+        )
+        final_sale_items = (
+            FinalSaleItem.objects.filter(stock=stock)
+            .select_related("final_bill__customer", "final_bill__vendor")
+            .order_by("final_bill__billno")
+            .distinct()
+        )
+        return_items = (
+            ReturnSaleItem.objects.filter(stock=stock)
+            .select_related("return_bill__customer", "return_bill__vendor")
+            .order_by("return_bill__billno")
+            .distinct()
+        )
+        serial_items = (
+            PurchaseSerial.objects.filter(stock=stock)
+            .select_related(
+                "billno__supplier",
+                "sales_billno__Cust_id",
+                "sales_billno__Vend_id",
+                "final_salebill__customer",
+                "final_salebill__vendor",
+                "return_bill__customer",
+                "return_bill__vendor",
+            )
+            .order_by("billno__billno")
+            .distinct()
+        )
+
+        purchase_refs = self._format_bill_refs(purchase_items, "billno", "supplier")
+        sale_bill_refs = []
+        for item in sale_bill_items:
+            sale_bill = item.billno
+            if not sale_bill:
+                continue
+            party = sale_bill.Cust_id or sale_bill.Vend_id
+            if party:
+                party_name = self._party_display_name(party)
+                sale_bill_refs.append(f"{sale_bill.billno} ({party_name})" if party_name else f"{sale_bill.billno}")
+            else:
+                sale_bill_refs.append(f"{sale_bill.billno}")
+
+        final_sale_refs = []
+        for item in final_sale_items:
+            final_bill = item.final_bill
+            if not final_bill:
+                continue
+            party = final_bill.customer or final_bill.vendor
+            if party:
+                party_name = self._party_display_name(party)
+                final_sale_refs.append(f"{final_bill.billno} ({party_name})" if party_name else f"{final_bill.billno}")
+            else:
+                final_sale_refs.append(f"{final_bill.billno}")
+
+        return_refs = []
+        for item in return_items:
+            return_bill = item.return_bill
+            if not return_bill:
+                continue
+            party = return_bill.customer or return_bill.vendor
+            if party:
+                party_name = self._party_display_name(party)
+                return_refs.append(f"{return_bill.billno} ({party_name})" if party_name else f"{return_bill.billno}")
+            else:
+                return_refs.append(f"{return_bill.billno}")
+
+        serial_sale_refs = []
+        serial_final_refs = []
+        serial_return_refs = []
+        for serial in serial_items:
+            if serial.sales_billno_id:
+                cust = serial.sales_billno.Cust_id or serial.sales_billno.Vend_id
+                cust_name = self._party_display_name(cust)
+                serial_sale_refs.append(
+                    f"{serial.sales_billno.billno} ({cust_name})" if cust_name else f"{serial.sales_billno.billno}"
+                )
+            if serial.final_salebill_id:
+                party = serial.final_salebill.customer or serial.final_salebill.vendor
+                party_name = self._party_display_name(party)
+                serial_final_refs.append(
+                    f"{serial.final_salebill.billno} ({party_name})" if party_name else f"{serial.final_salebill.billno}"
+                )
+            if serial.return_bill_id:
+                party = serial.return_bill.customer or serial.return_bill.vendor
+                party_name = self._party_display_name(party)
+                serial_return_refs.append(
+                    f"{serial.return_bill.billno} ({party_name})" if party_name else f"{serial.return_bill.billno}"
+                )
+
+        sale_refs = list(dict.fromkeys(sale_bill_refs + final_sale_refs + serial_sale_refs + serial_final_refs))
+        return_refs = list(dict.fromkeys(return_refs + serial_return_refs))
+        purchase_refs = list(dict.fromkeys(purchase_refs))
+
+        if not (purchase_refs or sale_refs or return_refs):
+            return ""
+
+        usage_parts = []
+        if purchase_refs:
+            usage_parts.append(f"Purchase Bills: {', '.join(purchase_refs)}")
+        if sale_refs:
+            usage_parts.append(f"Sale Bills: {', '.join(sale_refs)}")
+        if return_refs:
+            usage_parts.append(f"Return Bills: {', '.join(return_refs)}")
+
+        return "\n".join(
+            [
+                f'Cannot delete stock "{stock.name}".',
+                "This stock is already used in the following bills:",
+                *usage_parts,
+                "Please use Stock Active/Deactive only.",
+            ]
+        )
+
     def get(self, request, pk):
         stock = get_object_or_404(Stock, pk=pk)
+        usage_error = self._build_stock_usage_error(stock)
+        if usage_error:
+            messages.error(request, usage_error)
+            return redirect('inventory')
         return render(request, self.template_name, {'object': stock})
 
     def post(self, request, pk):
         stock = get_object_or_404(Stock, pk=pk)
+        usage_error = self._build_stock_usage_error(stock)
+        if usage_error:
+            messages.error(request, usage_error)
+            return redirect('inventory')
+
         stock.is_deleted = True
         stock.save()
         messages.success(request, self.success_message)
@@ -1443,8 +1611,8 @@ from django.db import IntegrityError
 #
 #     def get_context_data(self, **kwargs):
 #         context = super().get_context_data(**kwargs)
-#         context['categories'] = Category.objects.filter(status=1)
-#         context['subcategories'] = SubCategory.objects.filter(status=1)
+#         context['categories'] = Category.objects.active_only()
+#         context['subcategories'] = SubCategory.objects.active_only()
 #         return context
 #
 #     # View to fetch stocks based on different filter criteria
@@ -1538,7 +1706,7 @@ class StockListView1(ListView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['categories'] = Category.objects.filter(status=1)
+        context["categories"] = Category.objects.active_only().order_by("name", "id")
         return context
 
 
@@ -1670,10 +1838,11 @@ def get_stocks_all(request):
     stocks_data = [
         {
             'id': stock.id,
-            'category': stock.category.name,
-            'subcategory': stock.subcategory.name,
+            'category': stock.safe_category.name if stock.safe_category else '',
+            'subcategory': stock.safe_subcategory.name if stock.safe_subcategory else '',
             'name': stock.name,
             'quantity': stock.quantity,
+            'sales_unit': stock.safe_sales.short_name if stock.safe_sales else '',
             'status': stock.status,
         }
         for stock in stocks
@@ -1686,9 +1855,11 @@ def get_stocks_all(request):
 
 @require_GET
 def get_subcategories1(request):
-    category_id = request.GET.get('category_id')
-    subcategories = SubCategory.objects.filter(category_id=category_id, status=1)
-    subcategory_data = [{'id': subcat.id, 'name': subcat.name} for subcat in subcategories]
+    category_id = request.GET.get("category_id")
+    qs = SubCategory.objects.active_only().order_by("name", "id")
+    if category_id and str(category_id) != "all":
+        qs = qs.filter(category_id=category_id)
+    subcategory_data = [{"id": subcat.id, "name": subcat.name} for subcat in qs]
     return JsonResponse(subcategory_data, safe=False)
 
 
@@ -1707,10 +1878,11 @@ def get_subcategories(request, category_id):
 
 
 from django.shortcuts import render
-from .models import FavoriteList, Stock
+from .models import FavoriteList, Stock, FavoriteListStock
 from django.http import JsonResponse
 from django.views.generic import ListView
-
+from django.db.models import Count, IntegerField, OuterRef, Subquery
+from django.db.models.functions import Coalesce
 
 
 # View to display all favorite lists and their associated stock
@@ -1718,13 +1890,23 @@ class FavoriteListView(ListView):
     model = FavoriteList
     template_name = 'favorite_list.html'
 
+    def get_queryset(self):
+        # Subquery avoids PostgreSQL GROUP BY errors from Count() + join on this schema.
+        stock_cnt = (
+            FavoriteListStock.objects.filter(favorite_list_id=OuterRef('pk'))
+            .values('favorite_list_id')
+            .annotate(_n=Count('id'))
+            .values('_n')[:1]
+        )
+        return (
+            FavoriteList.objects.annotate(
+                stock_count=Coalesce(Subquery(stock_cnt, output_field=IntegerField()), 0)
+            )
+            .order_by('-created_at', '-id')
+        )
+
     def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        # Get the stocks for each favorite list
-        for favorite_list in context['object_list']:
-            favorite_list_stocks = favorite_list.stocks.all()  # Fetch related stocks
-            context['favorite_list_stocks'] = favorite_list_stocks  # Add to context
-        return context
+        return super().get_context_data(**kwargs)
 
 
 from django.http import JsonResponse
@@ -1877,7 +2059,8 @@ import json
 
 
 from django.shortcuts import render, get_object_or_404, redirect
-from .models import FavoriteList, Stock, Category, SubCategory
+from django.contrib import messages
+from .models import FavoriteList, Stock, Category, SubCategory, FavoriteListStock
 
 def edit_favorite_list(request, favorite_id):
     favorite_list = get_object_or_404(FavoriteList, id=favorite_id)
@@ -1892,11 +2075,36 @@ def edit_favorite_list(request, favorite_id):
     if request.method == 'POST':
         stock_ids = request.POST.getlist('stock_ids[]')
         quantities = request.POST.getlist('quantities[]')
+        save_action = (request.POST.get('save_action') or 'update').strip()
 
-        # Clear old rows
+        if save_action == 'save_as':
+            new_name = (request.POST.get('new_list_name') or '').strip()
+            if not new_name:
+                messages.error(request, 'Please enter a name for the new favorite list.')
+                return redirect('edit_favorite_list', favorite_id=favorite_id)
+            if FavoriteList.objects.filter(name=new_name).exists():
+                messages.error(
+                    request,
+                    'A favorite list with that name already exists. Choose a different name.',
+                )
+                return redirect('edit_favorite_list', favorite_id=favorite_id)
+            new_list = FavoriteList.objects.create(name=new_name)
+            for stock_id, qty in zip(stock_ids, quantities):
+                stock = Stock.objects.get(id=stock_id)
+                FavoriteListStock.objects.create(
+                    favorite_list=new_list,
+                    stock=stock,
+                    quantity=int(qty),
+                )
+            messages.success(
+                request,
+                f'New list "{new_name}" was saved. The original list "{favorite_list.name}" was not changed.',
+            )
+            return redirect('favorite_list_view')
+
+        # Default: update current list in place
         FavoriteListStock.objects.filter(favorite_list=favorite_list).delete()
 
-        # Add updated rows
         for stock_id, qty in zip(stock_ids, quantities):
             stock = Stock.objects.get(id=stock_id)
             FavoriteListStock.objects.create(
@@ -1905,12 +2113,15 @@ def edit_favorite_list(request, favorite_id):
                 quantity=int(qty)
             )
 
+        messages.success(request, f'"{favorite_list.name}" was updated successfully.')
         return redirect('favorite_list_view')
 
     # existing_stocks = favorite_list.stocks.select_related('category', 'subcategory').all()
-    existing_stocks = FavoriteListStock.objects.filter(
-        favorite_list=favorite_list
-    ).select_related('stock__category', 'stock__subcategory')
+    existing_stocks = (
+        FavoriteListStock.objects.filter(favorite_list=favorite_list)
+        .select_related("stock")
+        .order_by("stock__name", "id")
+    )
 
     all_categories = Category.objects.all()
     all_subcategories = SubCategory.objects.all()
@@ -1935,7 +2146,12 @@ def get_stocks_edit(request):
     subcategory_id = request.GET.get('subcategory_id')
     # stocks = Stock.objects.filter(subcategory_id=subcategory_id).values('id', 'name')
     # stocks = Stock.objects.filter(subcategory_id=subcategory_id, is_deleted=False).values('id', 'name')
-    stocks = Stock.objects.filter(subcategory_id=subcategory_id, is_deleted=False, status=True).values('id', 'name', 'gst')
+    stocks = Stock.objects.filter(subcategory_id=subcategory_id, is_deleted=False, status=True).values(
+        'id',
+        'name',
+        'gst',
+        'sales__short_name',
+    )
     return JsonResponse({'stocks': list(stocks)})
 
 # def get_stocks_edit(request):

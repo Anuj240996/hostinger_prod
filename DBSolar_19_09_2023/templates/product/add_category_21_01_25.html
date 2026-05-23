@@ -66,6 +66,34 @@
         transform: translateX(100%); /* Move the box out of the viewport to the right */
         opacity: 0;
     }
+
+    /* Same segmented tab design as Site Inspection Details page */
+    .site-inspection-mode-toolbar { margin: 12px 0 16px; }
+    .site-inspection-segmented-wrap { width: 100%; }
+    .site-inspection-segmented {
+        display: flex; width: 100%; background: #D9EDE9; border-radius: 8px; padding: 4px; gap: 3px;
+        box-sizing: border-box; border: 1px solid rgba(0, 137, 123, 0.2);
+    }
+    .site-inspection-segmented .site-inspection-segment {
+        flex: 1 1 0; min-width: 0; margin: 0; border: none; background: transparent; color: #00897B;
+        font-weight: 500; font-size: 14px; padding: 10px 8px; border-radius: 6px; cursor: pointer;
+        transition: background 0.2s ease, color 0.2s ease; white-space: nowrap;
+        display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+        -webkit-tap-highlight-color: transparent;
+    }
+    .site-inspection-segmented .site-inspection-segment:hover:not(.active) {
+        color: #00695c; background: rgba(0, 137, 123, 0.1);
+    }
+    .site-inspection-segmented .site-inspection-segment:focus { outline: none; }
+    .site-inspection-segmented .site-inspection-segment:focus-visible {
+        box-shadow: 0 0 0 2px #fff, 0 0 0 4px #00897B;
+    }
+    .site-inspection-segmented .site-inspection-segment.active::before {
+        content: "\2713"; font-size: 1.05em; font-weight: 700; line-height: 1; flex-shrink: 0;
+    }
+    .site-inspection-segmented .site-inspection-segment.active {
+        background: #00897B; color: #fff; font-weight: 700;
+    }
 </style>
 <script>
     // Function to hide the message box with a scroll effect
@@ -103,14 +131,17 @@
 <form>
     <h3>Manage Inventory</h3>
     <div class="tabs">
-        <ul class="tab-links">
-            <li><a href="#" data-tab="categories" style="width: 150px; text-align: center;">Categories</a></li>&nbsp;&nbsp;
-            <li><a href="#" data-tab="subcategories" style="width: 150px; text-align: center;">SubCategories</a></li>&nbsp;&nbsp;
-            <li><a href="#" data-tab="products" style="width: 150px; text-align: center;">Products</a></li>&nbsp;&nbsp;
-            <li><a href="#" data-tab="brands" style="width: 150px; text-align: center;">Brands</a></li>&nbsp;&nbsp;
-            <li><a href="#" data-tab="units" style="width: 150px; text-align: center;">Units</a></li>&nbsp;&nbsp;
-<!--            <li><a href="#" data-tab="suppliers">Suppliers</a></li>-->
-        </ul>
+        <div class="d-flex align-items-end justify-content-center row site-inspection-mode-toolbar mx-0">
+            <div class="col-12 col-sm-11 site-inspection-segmented-wrap">
+                <div class="site-inspection-segmented" role="tablist" aria-label="Inventory sections">
+                    <button type="button" class="site-inspection-segment active" data-tab="categories" aria-current="page">Categories</button>
+                    <button type="button" class="site-inspection-segment" data-tab="subcategories">SubCategories</button>
+                    <button type="button" class="site-inspection-segment" data-tab="products">Products</button>
+                    <button type="button" class="site-inspection-segment" data-tab="brands">Brands</button>
+                    <button type="button" class="site-inspection-segment" data-tab="units">Units</button>
+                </div>
+            </div>
+        </div>
         <div class="tab-content">
             <!-- Categories Tab -->
             <div id="categoriesList" class="list-content">
@@ -133,7 +164,7 @@
                     <tbody align="center">
                         {% for category in categories %}
                         <tr>
-                            <td>{{ forloop.counter }}</td>
+                            <td>{{ forloop.revcounter }}</td>
                             <td>{{ category.id }}</td>
                             <td class="text-capitalize">{{ category.name }}</td>
                             <td>{{ category.short_name }}</td>
@@ -176,10 +207,10 @@
                     <tbody align="center">
                         {% for subcategory in subcategories %}
                         <tr>
-                            <td>{{ forloop.counter }}</td>
+                            <td>{{ forloop.revcounter }}</td>
                             <td>{{ subcategory.id }}</td>
                             <td class="text-capitalize">{{ subcategory.name }}</td>
-                            <td class="text-capitalize">{{ subcategory.category.name }}</td>
+                            <td class="text-capitalize">{% if subcategory.safe_category %}{{ subcategory.safe_category.name }}{% else %}—{% endif %}</td>
                             <td>{{ subcategory.short_name }}</td>
                             <td>{{ subcategory.status|yesno:"Active,Inactive" }}</td>
                             <td>
@@ -225,10 +256,10 @@
                     <tbody align="center">
                         {% for product in products %}
                         <tr>
-                            <td>{{ forloop.counter }}</td>
+                            <td>{{ forloop.revcounter }}</td>
                             <td>{{ product.id }}</td>
                             <td class="text-capitalize">{{ product.name }}</td>
-                            <td class="text-capitalize">{{ product.category.name }}</td>
+                            <td class="text-capitalize">{% if product.safe_category %}{{ product.safe_category.name }}{% else %}—{% endif %}</td>
                             <td class="text-capitalize">{{ product.subcategory.name }}</td>
                             <td class="text-capitalize">{{ product.purchase.name }}</td>
                             <td class="text-capitalize">{{ product.sales.name }}</td>
@@ -273,7 +304,7 @@
                     <tbody align="center">
                         {% for brand in brands %}
                         <tr>
-                            <td>{{ forloop.counter }}</td>
+                            <td>{{ forloop.revcounter }}</td>
                             <td>{{ brand.id }}</td>
                             <td class="text-capitalize">{{ brand.name }}</td>
                             <td>{{ brand.status|yesno:"Active,Inactive" }}</td>
@@ -312,7 +343,7 @@
                     <tbody align="center">
                         {% for unit in units %}
                         <tr>
-                            <td>{{ forloop.counter }}</td>
+                            <td>{{ forloop.revcounter }}</td>
                             <td>{{ unit.id }}</td>
                             <td class="text-capitalize">{{ unit.name }}</td>
                             <td>{{ unit.short_name }}</td>
@@ -341,6 +372,7 @@
                     <table id="supplierTable" class="table table-hover table-center table.dataTable.table-sm mb-0 datatable table.sm">
                     <thead class="table-success" align="center">
                         <tr>
+                            <th>Sr No</th>
                             <th>Supplier_id</th>
                             <th>Supplier Name</th>
                             <th>Contact Person</th>
@@ -358,6 +390,7 @@
                     <tbody align="center">
                         {% for supplier in suppliers %}
                         <tr>
+                            <td>{{ forloop.revcounter }}</td>
                             <td>{{ supplier.supplier_id }}</td>
                             <td class="text-capitalize">{{ supplier.supplier_name }}</td>
                             <td class="text-capitalize">{{ supplier.contact_person }}</td>
@@ -1003,12 +1036,21 @@
 <!--</script>-->
 <script>
     document.addEventListener('DOMContentLoaded', function () {
-        // Tab switching
-        const tabLinks = document.querySelectorAll('.tab-links a');
+        const tabButtons = document.querySelectorAll('.site-inspection-segment[data-tab]');
         const tabContents = document.querySelectorAll('.list-content');
+        const activeTabKey = localStorage.getItem('activeTab') || 'categories';
 
-        // Retrieve the last active tab from localStorage
-        const activeTab = localStorage.getItem('activeTab') || 'categories';
+        function setActiveInventorySegment(tabKey) {
+            tabButtons.forEach(function (btn) {
+                var isActive = btn.getAttribute('data-tab') === tabKey;
+                btn.classList.toggle('active', isActive);
+                if (isActive) {
+                    btn.setAttribute('aria-current', 'page');
+                } else {
+                    btn.removeAttribute('aria-current');
+                }
+            });
+        }
 
         // Function to initialize DataTables
         function initializeDataTables() {
@@ -1035,42 +1077,41 @@
                         orderable: false // Disable sorting for the Sr No. column (zero-based)
                     }],
                     autoWidth: false, // Ensure automatic column width adjustment
-                    responsive: true // Enable responsive layout
+                    responsive: true, // Enable responsive layout
+                    order: [[1, 'desc']]
                 });
             });
         }
 
-        // Function to handle tab clicks
         function handleTabClick(tabId) {
-            // Hide all tabs
-            tabContents.forEach(content => content.style.display = 'none');
+            tabContents.forEach(function (content) {
+                content.style.display = 'none';
+            });
+            var panel = document.getElementById(tabId);
+            if (panel) {
+                panel.style.display = 'block';
+            }
+            var key = tabId.replace(/List$/, '');
+            setActiveInventorySegment(key);
 
-            // Show the clicked tab
-            document.getElementById(tabId).style.display = 'block';
-
-            // Initialize DataTables for the visible tab
             initializeDataTables();
 
-            // Adjust and redraw DataTables
-            $(document.getElementById(tabId)).find('table').each(function() {
-                if ($.fn.DataTable.isDataTable(this)) {
-                    $(this).DataTable().columns.adjust().draw(); // Adjust columns and redraw DataTable
-                }
-            });
+            if (panel) {
+                $(panel).find('table').each(function () {
+                    if ($.fn.DataTable.isDataTable(this)) {
+                        $(this).DataTable().columns.adjust().draw();
+                    }
+                });
+            }
         }
 
-        // Display the active tab
-        handleTabClick(activeTab + 'List');
+        handleTabClick(activeTabKey + 'List');
 
-        tabLinks.forEach(link => {
-            link.addEventListener('click', function (e) {
+        tabButtons.forEach(function (btn) {
+            btn.addEventListener('click', function (e) {
                 e.preventDefault();
-                const targetTab = this.getAttribute('data-tab');
-
-                // Save the active tab to localStorage
+                var targetTab = btn.getAttribute('data-tab');
                 localStorage.setItem('activeTab', targetTab);
-
-                // Handle tab click
                 handleTabClick(targetTab + 'List');
             });
         });
@@ -1139,39 +1180,6 @@
     .tabs {
         width: 100%;
         display: inline-block;
-    }
-
-    .tab-links:after {
-        display: block;
-        clear: both;
-        content: '';
-    }
-
-    .tab-links li {
-        margin: 0 5px;
-        float: left;
-        list-style: none;
-    }
-
-    .tab-links a {
-        padding: 9px 15px;
-        display: inline-block;
-        border-radius: 3px 3px 0 0;
-        background: #7FB5DA;
-        font-size: 16px;
-        font-weight: 600;
-        color: #fff;
-        transition: all linear 0.15s;
-    }
-
-    .tab-links a:hover {
-        background: #a7cce5;
-        text-decoration: none;
-    }
-
-    .tab-links .active a {
-        background: #fff;
-        color: #4c4c4c;
     }
 
     .tab-content {

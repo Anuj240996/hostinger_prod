@@ -1,0 +1,18 @@
+{% extends 'control_panel/base.html' %}
+
+{% block panel_content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">Delete Organization</h1>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <p>Are you sure you want to delete "{{ object.username }}"?</p>
+        <form method="post">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-danger">Yes, delete</button>
+            <a href="{% url 'control_panel:organizations' %}" class="btn btn-secondary">Cancel</a>
+        </form>
+    </div>
+</div>
+{% endblock %}

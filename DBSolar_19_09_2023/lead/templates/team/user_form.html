@@ -1,0 +1,87 @@
+{% extends 'base.html' %}
+{% load crispy_forms_tags %}
+
+{% block title %}{% if is_update %}Edit User{% else %}Add User{% endif %}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-8 offset-md-2">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="mb-0">{% if is_update %}Edit User{% else %}Create New User{% endif %}</h4>
+                </div>
+                <div class="card-body">
+                    {% if remaining_slots is not None and not is_update %}
+                    <div class="alert alert-info">
+                        <strong>Remaining user slots:</strong> {{ remaining_slots }}
+                    </div>
+                    {% endif %}
+                    <form method="post" novalidate>
+                        {% csrf_token %}
+                        <h5 class="mb-3">Basic Information</h5>
+                        <div class="row">
+                            <div class="col-md-6">{{ form.first_name|as_crispy_field }}</div>
+                            <div class="col-md-6">{{ form.last_name|as_crispy_field }}</div>
+                            <div class="col-md-6">{{ form.email|as_crispy_field }}</div>
+                            <div class="col-md-6">{{ form.phone|as_crispy_field }}</div>
+                            <div class="col-md-6">{{ form.title|as_crispy_field }}</div>
+                            <div class="col-md-6">{{ form.department|as_crispy_field }}</div>
+                        </div>
+
+                        <h5 class="mt-4 mb-3">Role & Access</h5>
+                        <div class="row">
+                            <div class="col-md-6">{{ form.role|as_crispy_field }}</div>
+                            <div class="col-md-6">{{ form.is_active|as_crispy_field }}</div>
+                        </div>
+
+                        {% if not is_update %}
+                        <h5 class="mt-4 mb-3">Account Settings</h5>
+                        <div class="row">
+                            <div class="col-12">{{ form.password_option|as_crispy_field }}</div>
+                            <div class="col-md-6" id="password-field">{{ form.password|as_crispy_field }}</div>
+                            <div class="col-md-6" id="confirm-password-field">{{ form.confirm_password|as_crispy_field }}</div>
+                            <div class="col-12">{{ form.send_welcome_email|as_crispy_field }}</div>
+                        </div>
+                        {% endif %}
+
+                        <div class="mt-4">
+                            <button type="submit" class="btn btn-primary">
+                                {% if is_update %}Update User{% else %}Create User{% endif %}
+                            </button>
+                            <a href="{% url 'team:user_list' %}" class="btn btn-secondary">Cancel</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if not is_update %}
+<script>
+    // Show/hide password fields based on password_option selection
+    document.addEventListener('DOMContentLoaded', function() {
+        var passwordOption = document.querySelectorAll('input[name="password_option"]');
+        var passwordField = document.getElementById('password-field');
+        var confirmField = document.getElementById('confirm-password-field');
+
+        function togglePasswordFields() {
+            var selected = document.querySelector('input[name="password_option"]:checked').value;
+            if (selected === 'manual') {
+                passwordField.style.display = 'block';
+                confirmField.style.display = 'block';
+            } else {
+                passwordField.style.display = 'none';
+                confirmField.style.display = 'none';
+            }
+        }
+
+        passwordOption.forEach(function(radio) {
+            radio.addEventListener('change', togglePasswordFields);
+        });
+        togglePasswordFields(); // initial state
+    });
+</script>
+{% endif %}
+{% endblock %}

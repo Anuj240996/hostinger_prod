@@ -30,13 +30,37 @@
         </ul>
     {% endif %}
 
+    <!-- TEMPORARY DEBUG SECTION - REMOVE LATER -->
+    <div style="background-color: #f0f0f0; padding: 10px; margin-bottom: 10px; border: 1px solid #ccc;">
+        <h4>Debug Information - Commercial Conversion:</h4>
+        <p>From Quotation: {{ from_quotation|default:'false' }}</p>
+        <p>Project Type: {{ project_type|default:'Not set' }}</p>
+        <p>Plant Capacity: {{ Plant_Capacity|default:'Not set' }}</p>
+        <p>Phase: {{ phase|default:'Not set' }}</p>
+        <p>PO Order: {{ po_order|default:'Not set' }}</p>
+        <p>PO Date: {{ po_date|default:'Not set' }}</p>
+        <p>Farm Name: {{ Comp_name|default:'Not set' }}</p>
+        <p>First Name: {{ first_name|default:'Not set' }}</p>
+        <p>Middle Name: {{ middle_name|default:'Not set' }}</p>
+        <p>Last Name: {{ last_name|default:'Not set' }}</p>
+        <p>Address: {{ Address|default:'Not set' }}</p>
+        <p>City: {{ city_name|default:'Not set' }}</p>
+        <p>State: {{ state|default:'Not set' }}</p>
+        <p>Email: {{ email|default:'Not set' }}</p>
+        <p>Phone: {{ phone|default:'Not set' }}</p>
+        <p>Consumer No: {{ Consumer|default:'Not set' }}</p>
+    </div>
+    <!-- END DEBUG SECTION -->
+
     <div class="testbox">
-<!--    <form method="post" name="Cust_Form" onfocus="frm_onfocus(this)" hx-post="" hx-target="body">-->
     <form method="post" name="Cust_Form" onfocus="frm_onfocus(this)" onsubmit="return validateForm()" hx-post="" hx-target="body">
 
         {% csrf_token %}
-<!--                 <div class="banner d-flex flex-column align-items-center">-->
-         <div style=" position: relative;
+
+        <!-- Hidden field to track if coming from quotation -->
+        <input type="hidden" name="from_quotation" value="{{ from_quotation|default:'false' }}">
+
+        <div style=" position: relative;
       height: 100px;
       background-image:url('{% static 'images/img2.jpg' %}');
       background-size: cover;
@@ -45,23 +69,21 @@
       align-item1s: center;
       text-align: center;" alt="Logo">
                 <h2 class="banner-text">Commercial Consumer Registration</h2>
-
-
             </div><br>
 
          <div class="form-group">
                            <label for="project_type">Select Project Type</label>
-<!--                           <select class="form-control" id="project_type" name="project_type" onchange="updateForm()">-->
                            <select class="form-control" id="project_type" name="project_type" onchange="updateForm()" required>
                               <option value="">--- Select Project Type ---</option>
-                              <option value="Rooftop">Rooftop</option>
-                              <option value="Ground Mount PV">Ground Mount PV</option>
-                              <option value="Street Light">Street Light</option>
-                              <option value="Water Pump">Water Pump</option>
-                              <option value="Hi-Mas">Hi-Mas</option>
-                              <option value="Other">Other</option>
+                              <option value="Rooftop" {% if project_type == 'Rooftop' %}selected{% endif %}>Rooftop</option>
+                              <option value="Ground Mount PV" {% if project_type == 'Ground Mount PV' %}selected{% endif %}>Ground Mount PV</option>
+                              <option value="Street Light" {% if project_type == 'Street Light' %}selected{% endif %}>Street Light</option>
+                              <option value="Water Pump" {% if project_type == 'Water Pump' %}selected{% endif %}>Water Pump</option>
+                              <option value="Hi-Mas" {% if project_type == 'Hi-Mas' %}selected{% endif %}>Hi-Mas</option>
+                              <option value="Other" {% if project_type == 'Other' %}selected{% endif %}>Other</option>
                            </select>
          </div>
+
         <script>
             function updateForm() {
                 var projectType = document.getElementById("project_type").value;
@@ -175,7 +197,10 @@
                     });
                 }
             }
-
+             // Call updateForm when page loads to set initial state based on existing data
+            document.addEventListener('DOMContentLoaded', function() {
+                updateForm();
+            });
         </script>
 
 <fieldset>
@@ -184,10 +209,13 @@
                 <div class="col-md-4 item1">
                     <label for="Plant_Capacity">Plant Capacity<span>*</span></label>
                     <div class="input-group">
-                        <input id="Plant_Capacity" class="text-capitalize form-control" type="number" placeholder="Plant Capacity"name="Plant_Capacity" onfocus="txt_onfocus(this)" onchange="txt_onchange(this)" value="{{ Plant_Capacity }}" min="0" required/>
-<!--                        <span class="input-group-text" style="color:black; background: white;border:0;align:left">Kw</span>-->
+                          <input id="Plant_Capacity" class="text-capitalize form-control" type="number"
+                               placeholder="Plant Capacity" name="Plant_Capacity" step="0.01"
+                               onfocus="txt_onfocus(this)" onchange="txt_onchange(this)"
+                               value="{% if Plant_Capacity %}{{ Plant_Capacity|floatformat:0 }}{% endif %}"
+                               min="0" required/>
+<!--                        <input id="Plant_Capacity" class="text-capitalize form-control" type="number" placeholder="Plant Capacity" name="Plant_Capacity" onfocus="txt_onfocus(this)" onchange="txt_onchange(this)" value="{{ Plant_Capacity|default:'' }}" min="0" required/>-->
                         <span class="input-group-text" style="color:#495057;border:0;align:left">Kw</span>
-
                     </div>
                 </div>
 
@@ -203,12 +231,12 @@
                 </div>
                 <div class="col-md-4 mb-3 item1">
                     <label class="col-form-label" for="po_order">PO Order No<span>*</span></label>
-                    <input id="po_order" type="text" class="text-capitalize form-control" name="po_order" placeholder="PO Order No" onfocus="txt_onfocus(this)" onchange="txt_onchange(this)" value="{{ po_order }}" onblur="pink" required/>
+                    <input id="po_order" type="text" class="text-capitalize form-control" name="po_order" placeholder="PO Order No" onfocus="txt_onfocus(this)" onchange="txt_onchange(this)" value="{{ po_order|default:'' }}" required/>
                 </div>
 
                 <div class="col-md-4 mb-3 item1">
                     <label class="col-form-label" for="po_date">PO Date<span>*</span></label>
-                    <input id="po_date" class="text-capitalize form-control" type="Date" name="po_date" placeholder="PO Date" onfocus="txt_onfocus(this)" onchange="txt_onchange(this)" value="{{ po_date }}" required/>
+                    <input id="po_date" class="text-capitalize form-control" type="Date" name="po_date" placeholder="PO Date" onfocus="txt_onfocus(this)" onchange="txt_onchange(this)" value="{{ po_date|default:'' }}" required/>
                 </div>
                  <div class="col-md-8 mb-3 item1">
                     <label class="col-form-label" for="advance_status">Advance Amount<span style="color:red;">*</span></label>
@@ -224,9 +252,7 @@
                         Not Paid
                       </label>
                     </div>
-
                 </div>
-
             </div>
          </fieldset>
 
@@ -235,68 +261,87 @@
             <div class="row mb-1">
                 <div class="col-md-12 item1">
                     <label for="Comp_name">Farm Name<span>*</span></label>
-                    <input id="Comp_name" type="text" class="text-capitalize form-control" name="Comp_name" placeholder="Farm name" onfocus="txt_onfocus(this)" onchange="txt_onchange(this)" onblur="checkCompanyName(this)" required/>
+                    <input id="Comp_name" type="text" class="text-capitalize form-control" name="Comp_name" placeholder="Farm name" onfocus="txt_onfocus(this)" onchange="txt_onchange(this)" onblur="checkCompanyName(this)" value="{{ Comp_name|default:'' }}" required/>
                     <div class="error-message" id="comp-name-error"></div>
                 </div>
             </div>
              <div class="row mb-1">
         <div class="col-md-4 item1">
             <label for="first_name"> First Name<span>*</span></label>
-            <input id="first_name" class="text-capitalize form-control" type="text" name="first_name" placeholder="First Name" onfocus="txt_onfocus(this)" onchange="txt_onchange(this)" value="{{ first_name }}" required/>
+            <input id="first_name" class="text-capitalize form-control" type="text" name="first_name" placeholder="First Name" onfocus="txt_onfocus(this)" onchange="txt_onchange(this)" value="{{ first_name|default:'' }}" required/>
            </div>
 
            <div class="col-md-4 item1">
              <label for="middle_name"> Middle Name<span>*</span></label>
-             <input id="middle_name" type="text" name="middle_name" class="text-capitalize form-control" placeholder="Middle Name" onfocus="txt_onfocus(this)" onchange="txt_onchange(this)" value="{{ middle_name }}" required/>
+             <input id="middle_name" type="text" name="middle_name" class="text-capitalize form-control" placeholder="Middle Name" onfocus="txt_onfocus(this)" onchange="txt_onchange(this)" value="{{ middle_name|default:'' }}" required/>
            </div>
-
-
 
            <div class="col-md-4 item1">
              <label for="last_name"> Last Name<span>*</span></label>
-             <input id="last_name" type="text" name="last_name" class="text-capitalize form-control" placeholder="Last Name" onfocus="txt_onfocus(this)" onchange="txt_onchange(this)" value="{{ last_name }}" required/>
+             <input id="last_name" type="text" name="last_name" class="text-capitalize form-control" placeholder="Last Name" onfocus="txt_onfocus(this)" onchange="txt_onchange(this)" value="{{ last_name|default:'' }}" required/>
            </div>
         </div>
         <div class="row mb-1">
            <div class="col-md-4 item1">
              <label for="Address">Address<span>*</span></label>
-             <input id="Address" type="text" name="Address" class="text-capitalize form-control" placeholder="Address" onfocus="txt_onfocus(this)" onchange="txt_onchange(this)" value="{{ Address }}" required/>
+             <input id="Address" type="text" name="Address" class="text-capitalize form-control" placeholder="Address" onfocus="txt_onfocus(this)" onchange="txt_onchange(this)" value="{{ Address|default:'' }}" required/>
            </div>
 
-             <div class="col-md-4 item1">
-                 <label for="city-select"> City<span>*</span></label>
+<!--             <div class="col-md-4 item1">-->
+<!--                 <label for="city-select"> City<span>*</span></label>-->
+<!--                <select name="city_name" id="city-select" onchange="handleCitySelection()" class="form-control">-->
+<!--                  <option value="" disabled selected>select City</option>-->
+<!--                   {% for city in cities %}-->
+<!--                    <option value="{{ city }}" {% if city_name == city %}selected{% endif %}>{{ city }}</option>-->
+<!--                   {% endfor %}-->
+<!--                   <option value="Other" {% if city_name == "Other" %}selected{% endif %}>Other</option>-->
+<!--                </select>-->
+<!--                <input type="text" name="new_city_name" id="new-city-textbox" placeholder="Enter a new city" style="display: none;" class="text-capitalize form-control" value="{{ city_name|default:'' }}">-->
+<!--               </div>-->
+            <div class="col-md-4 item1">
+                <label for="city-select"> City<span>*</span></label>
                 <select name="city_name" id="city-select" onchange="handleCitySelection()" class="form-control">
-                  <option value="" disabled selected>select City</option>
-                   {% for city in cities %}
-                    <option value="{{ city }}">{{ city }}</option>
-                   {% endfor %}
-                   <option value="Other">Other</option>
+                    <option value="" disabled {% if not city_name %}selected{% endif %}>select City</option>
+                    {% for city in cities %}
+                        <option value="{{ city }}"
+                                {% if city_name == city %}selected{% endif %}>
+                            {{ city }}
+                        </option>
+                    {% endfor %}
+                    <option value="Other"
+                            {% if city_name and city_name != "Other" and city_name not in cities %}selected{% endif %}>
+                        Other
+                    </option>
                 </select>
-                <input type="text" name="new_city_name" id="new-city-textbox" placeholder="Enter a new city" style="display: none;" class="text-capitalize form-control">
-               </div>
 
+                <input type="text" name="new_city_name" id="new-city-textbox"
+                       placeholder="Enter a new city"
+                       style="display: {% if city_name and city_name != "Other" and city_name not in cities %}block{% else %}none{% endif %};"
+                       value="{% if city_name and city_name != "Other" and city_name not in cities %}{{ city_name }}{% endif %}"
+                       class="text-capitalize form-control">
+            </div>
 
            <div class="col-md-4 item1">
             <label for="state">State<span>*</span></label>
-            <input id="state" type="text" name="state" class="text-capitalize form-control" placeholder="State" onfocus="txt_onfocus(this)" onchange="txt_onchange(this)" value="{{ state }}" required/>
+            <input id="state" type="text" name="state" class="text-capitalize form-control" placeholder="State" onfocus="txt_onfocus(this)" onchange="txt_onchange(this)" value="{{ state|default:'' }}" required/>
           </div>
         </div>
         <div class="row mb-1">
             <div class="col-md-4 item1">
                 <label for="Pincode">Pincode<span>*</span></label>
-                <input id="Pincode" type="tel" name="Pincode" class="text-capitalize form-control" maxlength="6" placeholder="Pincode" onfocus="txt_onfocus(this)" onchange="txt_onchange(this)" onblur="validatePincode(this)" value="{{ Pincode }}" required/>
+                <input id="Pincode" type="tel" name="Pincode" class="text-capitalize form-control" maxlength="6" placeholder="Pincode" onfocus="txt_onfocus(this)" onchange="txt_onchange(this)" onblur="validatePincode(this)" value="{{ Pincode|default:'' }}" required/>
                 <div class="error-message" id="pincode-error"></div>
             </div>
 
            <div class="col-md-4 item1">
             <label for="email">Email Address<span>*</span></label>
-            <input id="email" type="email" name="email" class="form-control" placeholder="Email" onfocus="txt_onfocus(this)" onchange="txt_onchange(this)" onblur="validateEmail(this)" value="{{ email }}" required/>
+            <input id="email" type="email" name="email" class="form-control" placeholder="Email" onfocus="txt_onfocus(this)" onchange="txt_onchange(this)" onblur="validateEmail(this)" value="{{ email|default:'' }}" required/>
             <div class="error-message" id="email-error"></div>
            </div>
 
             <div class="col-md-4 item1">
                 <label for="phone">Phone<span>*</span></label>
-                <input id="phone" type="tel" name="phone" class="text-capitalize form-control" minlength="10" maxlength="10" placeholder="Phone" onfocus="txt_onfocus(this)" onchange="txt_onchange(this)" onblur="validatePhone(this)" value="{{ phone }}" required/>
+                <input id="phone" type="tel" name="phone" class="text-capitalize form-control" minlength="10" maxlength="10" placeholder="Phone" onfocus="txt_onfocus(this)" onchange="txt_onchange(this)" onblur="validatePhone(this)" value="{{ phone|default:'' }}" required/>
                 <div class="error-message" id="phone-error"></div>
             </div>
         </div>
@@ -307,21 +352,19 @@
             <div class="row mb-1">
            <div class="col-md-4 item1">
             <label for="Consumer">Consumer Number(MSEDCL)<span>*</span></label>
-            <input id="Consumer" type="number" name="Consumer" class="text-capitalize form-control" placeholder="Consumer number" onfocus="txt_onfocus(this)" onchange="txt_onchange(this)" value="{{ Consumer }}" min="0" required/>
+            <input id="Consumer" type="number" name="Consumer" class="text-capitalize form-control" placeholder="Consumer number" onfocus="txt_onfocus(this)" onchange="txt_onchange(this)" value="{{ Consumer|default:'' }}" min="0" required/>
            </div>
            <div class="col-md-4 item1">
                 <label for="Bill_unit">Current Load Sanction<span>*</span></label>
                  <div class="input-group">
-                <input id="Bill_unit" class="text-capitalize form-control" type="number" name="Bill_unit" placeholder="Current Load Sanction" onfocus="txt_onfocus(this)" onchange="txt_onchange(this)" value="{{ Bill_unit }}" min="0" required/>
-<!--                 <span class="input-group-text" style="color:black; background: white;border:0;align:left">Kw</span>-->
+                <input id="Bill_unit" class="text-capitalize form-control" type="number" name="Bill_unit" placeholder="Current Load Sanction" onfocus="txt_onfocus(this)" onchange="txt_onchange(this)" value="{{ Bill_unit|default:'' }}" min="0" required/>
                  <span class="input-group-text" style="color:#495057;border:0;align:left">Kw</span>
                 </div>
                  </div>
                <div class="col-md-4 item1">
                 <label for="loadsancution">Final Load Sanction<span>*</span></label>
                 <div class="input-group">
-                <input id="loadsancution" type="number" name="loadsancution" class="text-capitalize form-control" placeholder="Additional Load Sanction" onfocus="txt_onfocus(this)" onchange="txt_onchange(this)" value="{{ loadsancution }}" min="0" required/>
-<!--                <span class="input-group-text" style="color:black; background: white;border:0;align:left">Kw</span>-->
+                <input id="loadsancution" type="number" name="loadsancution" class="text-capitalize form-control" placeholder="Additional Load Sanction" onfocus="txt_onfocus(this)" onchange="txt_onchange(this)" value="{{ loadsancution|default:'' }}" min="0" required/>
                 <span class="input-group-text" style="color:#495057;border:0;align:left">Kw</span>
                 </div>
                </div>
@@ -329,18 +372,15 @@
         </fieldset>
         <fieldset>
             <legend style="color: darkblue;">Consumer Solar Project Details</legend>
-<!--               <fieldset style="border: 0;">-->
                 <div class="highlighted-row mb-1">
-
                <div class="col-md-4 item3">
-
                 <label for="solar_comp">Solar Module Make<span style="color: red;">*</span></label>
-                <input id="solar_comp" class="text-capitalize form-control" type="text" class="text-capitalize" name="solar_comp" placeholder="Solar Panel Company" onfocus="txt_onfocus(this)" onchange="txt_onchange(this)" value="{{ solar_comp }}" required/>
+                <input id="solar_comp" class="text-capitalize form-control" type="text" name="solar_comp" placeholder="Solar Panel Company" onfocus="txt_onfocus(this)" onchange="txt_onchange(this)" value="{{ solar_comp|default:'' }}" required/>
                </div>
                 <div class="col-md-4 item3">
                 <label for="qunt_solarpanel">Solar Module Quantity<span style="color: red;">*</span></label>
                 <div class="input-group">
-                <input id="qunt_solarpanel" type="number" name="qunt_solar" class="text-capitalize form-control" placeholder="Solar Module Quantity" onfocus="txt_onfocus(this)" onchange="txt_onchange(this)" value="{{ Ups_Soft }}" min="0" required/>
+                <input id="qunt_solarpanel" type="number" name="qunt_solar" class="text-capitalize form-control" placeholder="Solar Module Quantity" onfocus="txt_onfocus(this)" onchange="txt_onchange(this)" value="{{ qunt_solar|default:'' }}" min="0" required/>
                  <span class="input-group-text">Nos.</span>
                </div>
                </div>
@@ -348,72 +388,82 @@
                 <div class="col-md-4 item2">
                 <label for="sol_comp">Solar Module Warranty<span style="color: red;">*</span></label>
                 <div class="input-group">
-                <input id="sol_warranty" class="text-capitalize form-control" type="number" class="text-capitalize" name="sol_warranty" placeholder="Solar Panel Warranty" onfocus="txt_onfocus(this)" onchange="txt_onchange(this)" value="{{ sol_warranty }}" min="0" required/>
+                <input id="sol_warranty" class="text-capitalize form-control" type="number" name="sol_warranty" placeholder="Solar Panel Warranty" onfocus="txt_onfocus(this)" onchange="txt_onchange(this)" value="{{ sol_warranty|default:'' }}" min="0" required/>
                  <span class="input-group-text">Year</span>
                </div>
                </div>
                 </div>
-<!--             </fieldset>-->
-<!--            <fieldset style="border: 0;">-->
                     <div class="highlighted-row mb-1">
                    <div class="col-md-4 item3">
                     <label for="UPSC">Inverter Make<span style="color: red;">*</span></label>
-                    <input id="UPSC" type="text" name="UPSC" class="text-capitalize form-control" placeholder="Inverter Company" onfocus="txt_onfocus(this)" onchange="txt_onchange(this)" value="{{ UPSC }}" required="">
+                    <input id="UPSC" type="text" name="UPSC" class="text-capitalize form-control" placeholder="Inverter Company" onfocus="txt_onfocus(this)" onchange="txt_onchange(this)" value="{{ UPSC|default:'' }}" required="">
                   </div>
                              <div class="col-md-4 item3">
                     <label for="qunt_inverter">Inverter Quantity<span style="color: red;">*</span></label>
                     <div class="input-group">
-                    <input id="qunt_inverter" type="number" name="qunt_inv" class="text-capitalize form-control" placeholder="Inverter Quantity" onfocus="txt_onfocus(this)" onchange="txt_onchange(this)" value="{{ Ups_Soft }}" min="0" required/>
+                    <input id="qunt_inverter" type="number" name="qunt_inv" class="text-capitalize form-control" placeholder="Inverter Quantity" onfocus="txt_onfocus(this)" onchange="txt_onchange(this)" value="{{ qunt_inv|default:'' }}" min="0" required/>
                     <span class="input-group-text">Nos.</span>
                     </div>
                    </div>
                          <div class="col-md-4 item2">
                     <label for="inv_warranty">Inverter Warranty<span style="color: red;">*</span></label>
                     <div class="input-group">
-                    <input id="inv_warranty" type="number" name="inv_warranty" class="text-capitalize form-control" placeholder="Inverter Warranty" onfocus="txt_onfocus(this)" onchange="txt_onchange(this)" value="{{ inv_warranty }}" min="0" required="">
+                    <input id="inv_warranty" type="number" name="inv_warranty" class="text-capitalize form-control" placeholder="Inverter Warranty" onfocus="txt_onfocus(this)" onchange="txt_onchange(this)" value="{{ inv_warranty|default:'' }}" min="0" required="">
                      <span class="input-group-text">Year</span>
                      </div>
                   </div>
                     </div>
-<!--            </fieldset>-->
-<!--            <fieldset id="waterpump2"  style="display: none; border: 0;">-->
                 <div class="highlighted-row mb-1" style="display: none;" id="waterpump2">
                 <div id="waterpump" style="display: none;" class="col-md-4 item3">
                     <label for="pump_make_label" id="pump_make_label">Solar Water Pump Make<span style="color: red;">*</span></label>
-                    <input id="pump_make" type="text" name="solar_pump" class="text-capitalize form-control" placeholder="Solar Water Pump Make" onfocus="txt_onfocus(this)" onchange="txt_onchange(this)" value="{{ pump_make }}">
+                    <input id="pump_make" type="text" name="solar_pump" class="text-capitalize form-control" placeholder="Solar Water Pump Make" onfocus="txt_onfocus(this)" onchange="txt_onchange(this)" value="{{ solar_pump|default:'' }}">
                 </div>
 
                 <div id="waterpump1" style="display: none;" class="col-md-4 item3">
                     <label for="pump_qunt_label" id="pump_qunt_label">Solar Water Pump Quantity<span style="color: red;">*</span></label>
                     <div class="input-group">
-                    <input id="pump_qunt" type="number" name="pump_qunt" class="text-capitalize form-control" placeholder="Solar Water Pump Quantity" onfocus="txt_onfocus(this)" onchange="txt_onchange(this)" value="{{ pump_qunt }}" min="0">
+                    <input id="pump_qunt" type="number" name="pump_qunt" class="text-capitalize form-control" placeholder="Solar Water Pump Quantity" onfocus="txt_onfocus(this)" onchange="txt_onchange(this)" value="{{ pump_qunt|default:'' }}" min="0">
                       <span class="input-group-text">Nos.</span>
                     </div>
                 </div>
                  <div class="col-md-4 item2" id="pumpwarranty" style="display: none;">
                     <label for="pump_warranty" id="pump_warranty_label">Solar Water Pump Warranty<span style="color: red;">*</span></label>
                     <div class="input-group">
-                    <input id="pump_warranty" type="number" name="pump_warranty" class="text-capitalize form-control" placeholder="Solar Water Pump Warranty" onfocus="txt_onfocus(this)" onchange="txt_onchange(this)" value="{{ pump_warranty }}" min="0">
+                    <input id="pump_warranty" type="number" name="pump_warranty" class="text-capitalize form-control" placeholder="Solar Water Pump Warranty" onfocus="txt_onfocus(this)" onchange="txt_onchange(this)" value="{{ pump_warranty|default:'' }}" min="0">
                       <span class="input-group-text">Year</span>
                    </div>
                 </div>
                 </div>
-<!--            </fieldset>-->
-<!--            <fieldset style="border: 0;">-->
                     <div class="highlighted-row mb-1">
                    <div class="col-md-4 item3">
                     <label for="Ups_Soft">Inverter Online Software<span style="color: red;">*</span></label>
-                    <input id="Ups_Soft" type="text" name="Ups_Soft" class="text-capitalize form-control" placeholder="Inverter Software" onfocus="txt_onfocus(this)" onchange="txt_onchange(this)" value="{{ Ups_Soft }}" required/>
+                    <input id="Ups_Soft" type="text" name="Ups_Soft" class="text-capitalize form-control" placeholder="Inverter Software" onfocus="txt_onfocus(this)" onchange="txt_onchange(this)" value="{{ Ups_Soft|default:'' }}" required/>
                    </div>
                          <div class="col-md-4 item2">
                     <label for="com_warranty">O & M Warranty<span style="color: red;">*</span></label>
                     <div class="input-group">
-                    <input id="com_warranty" type="number" name="com_warranty" class="text-capitalize form-control" placeholder="O & M Warranty" onfocus="txt_onfocus(this)" onchange="txt_onchange(this)" value="{{ com_warranty }}" min="0" required/>
+                    <input id="com_warranty" type="number" name="com_warranty" class="text-capitalize form-control" placeholder="O & M Warranty" onfocus="txt_onfocus(this)" onchange="txt_onchange(this)" value="{{ com_warranty|default:'' }}" min="0" required/>
                       <span class="input-group-text">Year</span>
                      </div>
                    </div>
-                   <div class="col-md-4 item3">
-                     <label for="Engineer_Assigned">Engineer Assigned<span style="color: red;">*</span></label>
+                  </div>
+        </fieldset>
+
+        <fieldset>
+            <legend style="color: darkblue;">Assign Solar Project</legend>
+            <div class="highlighted-row mb-1">
+                <div class="col-md-6 item3">
+                    <label for="Associate_Assigned">Associate Assigned<span style="color: red;">*</span></label>
+                    <select id="Associate_Assigned" name="Associate_Assigned" class="form-control" required>
+                        <option value="" disabled selected>Select Associate</option>
+                        {% for associate in associates %}
+                            <option value="{{ associate.id }}">{{ associate.first_name }} {{ associate.last_name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="col-md-6 item3">
+                    <label for="Engineer_Assigned">Engineer Assigned<span style="color: red;">*</span></label>
                     <select id="Engineer_Assigned" name="Engineer_Assigned" class="form-control" required>
                         <option value="" disabled selected>Select Engineer</option>
                         {% for engineer in engineers %}
@@ -421,8 +471,8 @@
                         {% endfor %}
                         <option value="1">Other</option>
                     </select>
-                  </div>
-                  </div>
+                </div>
+            </div>
         </fieldset>
 
 <style>
@@ -432,17 +482,14 @@
         align-items: center; /* Center vertically */
         padding: 8px 15px; /* Add padding for better spacing */
         border-radius: 10px; /* Rounded corners */
-        // margin: 5px; /* Prevents overlapping with fieldset border */
     }
 
     /* Highlighted row with background color, padding, and border */
     .highlighted {
-        // background-color: #a5a9d9 !important; /* Light pink */
         background-color: #518988 !important; /* Light pink */
         padding: 10px; /* Space inside */
         border: 2px solid #372c7d; /* Red border */
         border-radius: 10px; /* Matches fieldset */
-        // margin: 5px; /* Keeps it inside the fieldset */
     }
 
     /* Ensure the fieldset has padding and rounded corners */
@@ -452,7 +499,6 @@
         padding: 15px; /* Ensure spacing inside fieldset */
         border-radius: 10px; /* Rounded corners */
     }
-
 
     /* When the fieldset is NOT active, reset row styles */
     fieldset:not(.active-fieldset) .highlighted-row {
@@ -476,6 +522,15 @@
                 row.classList.add("highlighted");
             });
         });
+
+        // Handle city selection when page loads
+        handleCitySelection();
+
+        // Auto-update form if project type is set
+        const projectType = document.getElementById("project_type").value;
+        if (projectType) {
+            updateForm();
+        }
     });
 </script>
 
@@ -483,11 +538,9 @@
             <legend style="color: darkblue;">Consumer Account Details</legend>
             <div class="row mb-1">
              <div class="col-md-6 item1">
-<!--            <div class="col-md-4 item1">-->
                 <label for="username">Username<span>*</span></label>
                 <input id="username" type="text" name="username" class="form-control" placeholder="Username" onfocus="txt_onfocus(this)" onchange="txt_onchange(this)" onblur="checkUsername(this)" required/>
                 <div class="error-message" id="username-error"></div>
-<!--            </div>-->
         </div>
             <div class="col-md-6 item1">
               <label for="username">Password</label>
@@ -502,7 +555,6 @@
 
 <div class="row mb-1">
          <div class="btn-block col-md-4">
-<!--            <button type="submit"  value="{{Comm_Cust}}">Submit </button>-->
               <button type="submit"  value="{{Comm_Cust}}" style="width: 80%; height: 110%;">Save & New</button>
          </div>
     <br><br>
@@ -598,52 +650,51 @@
         });
     }
 
+    function validatePincode(input) {
+        const pincode = input.value;
+        const pincodeError = document.getElementById('pincode-error');
 
-  function validatePincode(input) {
-    const pincode = input.value;
-    const pincodeError = document.getElementById('pincode-error');
-
-    if (pincode.length !== 6 || isNaN(pincode)) {
-        if (!/^\d{0,6}$/.test(pincode)) {
-            // Check if input contains non-numeric characters
-            pincodeError.textContent = 'Please enter a 6-digit numeric pincode.';
-            input.classList.add('error-border'); // Add error border class
-            input.focus();
-            input.value = pincode.replace(/[^0-9]/g, '').slice(0, 6); // Remove non-numeric characters
+        if (pincode.length !== 6 || isNaN(pincode)) {
+            if (!/^\d{0,6}$/.test(pincode)) {
+                // Check if input contains non-numeric characters
+                pincodeError.textContent = 'Please enter a 6-digit numeric pincode.';
+                input.classList.add('error-border'); // Add error border class
+                input.focus();
+                input.value = pincode.replace(/[^0-9]/g, '').slice(0, 6); // Remove non-numeric characters
+            } else {
+                pincodeError.textContent = 'Please enter a 6-digit numeric pincode.';
+                input.classList.add('error-border'); // Add error border class
+                input.focus();
+            }
         } else {
-            pincodeError.textContent = 'Please enter a 6-digit numeric pincode.';
-            input.classList.add('error-border'); // Add error border class
-            input.focus();
+            pincodeError.textContent = ''; // Clear error message
+            input.classList.remove('error-border'); // Remove error border class
         }
-    } else {
-        pincodeError.textContent = ''; // Clear error message
-        input.classList.remove('error-border'); // Remove error border class
     }
-}
 
-function validatePhone(input) {
-    const phone = input.value;
-    const phoneError = document.getElementById('phone-error');
+    function validatePhone(input) {
+        const phone = input.value;
+        const phoneError = document.getElementById('phone-error');
 
-    if (phone.length !== 10 || isNaN(phone)) {
-        if (!/^\d{0,10}$/.test(phone)) {
-            // Check if input contains non-numeric characters
-            phoneError.textContent = 'Please enter a 10-digit numeric phone number.';
-            input.classList.add('error-border'); // Add error border class
-            input.focus();
-            input.value = phone.replace(/[^0-9]/g, '').slice(0, 10); // Remove non-numeric characters
+        if (phone.length !== 10 || isNaN(phone)) {
+            if (!/^\d{0,10}$/.test(phone)) {
+                // Check if input contains non-numeric characters
+                phoneError.textContent = 'Please enter a 10-digit numeric phone number.';
+                input.classList.add('error-border'); // Add error border class
+                input.focus();
+                input.value = phone.replace(/[^0-9]/g, '').slice(0, 10); // Remove non-numeric characters
+            } else {
+                phoneError.textContent = 'Please enter a 10-digit numeric phone number.';
+                input.classList.add('error-border'); // Add error border class
+                input.focus();
+            }
         } else {
-            phoneError.textContent = 'Please enter a 10-digit numeric phone number.';
-            input.classList.add('error-border'); // Add error border class
-            input.focus();
+            phoneError.textContent = ''; // Clear error message
+            input.classList.remove('error-border'); // Remove error border class
         }
-    } else {
-        phoneError.textContent = ''; // Clear error message
-        input.classList.remove('error-border'); // Remove error border class
     }
-}
 
-function validateEmail(input) {
+    function validateEmail(input) {
         const email = input.value;
         const emailError = document.getElementById('email-error');
 
@@ -664,35 +715,33 @@ function validateEmail(input) {
 
 <script>
     function validateForm() {
-    const pincodeInput = document.getElementById('Pincode');
-    const phoneInput = document.getElementById('phone');
-    const compNameInput = document.getElementById('Comp_name');
-    const usernameInput = document.getElementById('username');
+        const pincodeInput = document.getElementById('Pincode');
+        const phoneInput = document.getElementById('phone');
+        const compNameInput = document.getElementById('Comp_name');
+        const usernameInput = document.getElementById('username');
 
-    // Run pincode and phone validation
-    validatePincode(pincodeInput);
-    validatePhone(phoneInput);
-    checkCompanyName(compNameInput);
-    checkUsername(usernameInput);
+        // Run pincode and phone validation
+        validatePincode(pincodeInput);
+        validatePhone(phoneInput);
+        checkCompanyName(compNameInput);
+        checkUsername(usernameInput);
 
-    // Check if there are any error messages
-    const pincodeError = document.getElementById('pincode-error');
-    const phoneError = document.getElementById('phone-error');
-    const compNameError = document.getElementById('comp-name-error');
-    const usernameError = document.getElementById('username-error');
+        // Check if there are any error messages
+        const pincodeError = document.getElementById('pincode-error');
+        const phoneError = document.getElementById('phone-error');
+        const compNameError = document.getElementById('comp-name-error');
+        const usernameError = document.getElementById('username-error');
 
+        if (pincodeError.textContent || phoneError.textContent || compNameError.textContent || usernameError.textContent) {
+            // Return false to prevent form submission if there are errors
+            return false;
+        }
 
-    if (pincodeError.textContent || phoneError.textContent || compNameError.textContent || usernameError.textContent) {
-        // Return false to prevent form submission if there are errors
-        return false;
+        // Form is valid, allow submission
+        return true;
     }
-
-
-    // Form is valid, allow submission
-    return true;
-}
-
 </script>
+
 <script>
     // Get a reference to the "Save and Redirect" button
     const saveAndRedirectButton = document.getElementById('saveAndRedirect');
@@ -704,16 +753,17 @@ function validateEmail(input) {
             document.Cust_Form.submit();
 
             // Redirect to the specified URL after the form submission
-             alert('New Customer enrolled Successfully');
+            alert('New Customer enrolled Successfully');
             window.location.href = '{% url 'customer-cust' %}';
 
-              // Reload the page after a short delay (e.g., 1000 milliseconds or 1 second)
+            // Reload the page after a short delay (e.g., 1000 milliseconds or 1 second)
             setTimeout(function () {
                 location.reload();
             }, 1000); // Adjust the delay as needed
-          }
+        }
     });
 </script>
+
 <script>
     // JavaScript function to toggle the "active-fieldset" class
     function toggleActiveFieldset(fieldset) {
@@ -735,17 +785,22 @@ function validateEmail(input) {
         });
     });
 </script>
- <script>
-        function handleCitySelection() {
-            var select = document.getElementById("city-select");
-            var textBox = document.getElementById("new-city-textbox");
 
-            if (select.value === "Other") {
-                textBox.style.display = "block";
-            } else {
-                textBox.style.display = "none";
-            }
+<script>
+    function handleCitySelection() {
+        var select = document.getElementById("city-select");
+        var textBox = document.getElementById("new-city-textbox");
+
+        if (select.value === "Other") {
+            textBox.style.display = "block";
+        } else {
+            textBox.style.display = "none";
         }
-    </script>
+    }
+    // Call handleCitySelection on page load if city is "Other"
+        document.addEventListener('DOMContentLoaded', function() {
+            handleCitySelection();
+    });
+</script>
 
 {% endblock %}

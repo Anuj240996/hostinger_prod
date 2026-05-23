@@ -1,0 +1,76 @@
+{% extends 'base.html' %}
+{% load crispy_forms_tags %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<style>
+/* Survey create/edit: force responsive two-column rows (theme styles sometimes flatten `.form-row`). */
+.survey-form .survey-form-grid .row {
+    display: flex;
+    flex-wrap: wrap;
+}
+.survey-form .survey-form-grid .row > [class*="col-md-6"] {
+    flex: 0 0 50%;
+    max-width: 50%;
+}
+@media (max-width: 767.98px) {
+    .survey-form .survey-form-grid .row > [class*="col-md-6"] {
+        flex: 0 0 100%;
+        max-width: 100%;
+    }
+}
+/* Match text inputs and dropdowns (same height/width as theme .form-control). */
+.survey-form select.custom-select,
+.survey-form select.form-control,
+.survey-form input.form-control:not([type="checkbox"]):not([type="radio"]) {
+    height: 40px;
+    min-height: 40px;
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+    font-size: 15px;
+    line-height: 1.5;
+    padding-top: 0.375rem;
+    padding-bottom: 0.375rem;
+}
+.survey-form textarea.form-control {
+    height: auto;
+    min-height: 96px;
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+    font-size: 15px;
+}
+.survey-form .input-group .form-control {
+    height: 40px;
+    min-height: 40px;
+}
+</style>
+<div class="survey-form survey-form-grid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>{{ title }}</h2>
+        <a href="{% url 'survey_list' %}" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left me-2"></i>Back to Surveys
+        </a>
+    </div>
+
+    <div class="card">
+        <div class="card-body">
+            <form method="post" novalidate>
+                {% csrf_token %}
+                {% crispy form %}
+
+                <div class="mt-4">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save me-2"></i>Save Survey
+                    </button>
+                    <a href="{% url 'survey_list' %}" class="btn btn-outline-secondary">
+                        Cancel
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

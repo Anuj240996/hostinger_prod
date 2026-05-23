@@ -1,0 +1,850 @@
+{% extends 'base.html' %}
+{% load humanize %}
+{% load humanize indian_numbers %}
+
+
+{% block title %}Leads - Solar CRM{% endblock %}
+
+{% block content %}
+<style>
+    .leads-page .lead-row-title {
+        font-weight: 600;
+        margin-bottom: 5px;
+    }
+
+    .leads-page .lead-row-subtitle {
+        font-size: 12px;
+        color: #6c757d;
+    }
+
+    .leads-view-toggle .btn.active {
+        background-color: var(--bs-primary);
+        border-color: var(--bs-primary);
+        color: #fff;
+    }
+
+    /* Card view: horizontal filters + full-width board */
+    .leads-page--cards .leads-layout-row {
+        flex-direction: column;
+    }
+
+    .leads-page--cards .leads-filters-col {
+        flex: 0 0 100%;
+        max-width: 100%;
+        width: 100%;
+    }
+
+    .leads-page--cards .leads-content-col {
+        flex: 0 0 100%;
+        max-width: 100%;
+        width: 100%;
+    }
+
+    .leads-page--cards .filter-panel .card-body {
+        padding: 1rem 1.25rem;
+    }
+
+    .leads-page--cards #filter-form {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: flex-end;
+        gap: 0.75rem 1rem;
+    }
+
+    .leads-page--cards #filter-form .filter-field {
+        flex: 1 1 140px;
+        min-width: 130px;
+        margin-bottom: 0 !important;
+    }
+
+    .leads-page--cards #filter-form .filter-actions {
+        flex: 0 0 auto;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        margin-bottom: 0 !important;
+    }
+
+    .leads-page--cards .filter-stage-field {
+        display: none !important;
+    }
+
+    .leads-page--cards .leads-list-pagination {
+        display: none !important;
+    }
+
+    /* Stage columns: horizontal board, cards stacked vertically in each column */
+    .lead-stage-board {
+        display: flex;
+        flex-direction: row;
+        align-items: flex-start;
+        gap: 1rem;
+        overflow-x: auto;
+        padding: 1rem;
+        min-height: 420px;
+    }
+
+    .lead-stage-column {
+        flex: 0 0 260px;
+        min-width: 260px;
+        max-height: calc(100vh - 260px);
+        background: #f8f9fa;
+        border-radius: 10px;
+        display: flex;
+        flex-direction: column;
+        border-top: 3px solid #dee2e6;
+    }
+
+    .lead-stage-column.stage-new { border-top-color: #0d6efd; }
+    .lead-stage-column.stage-survey { border-top-color: #ffc107; }
+    .lead-stage-column.stage-quote { border-top-color: #0dcaf0; }
+    .lead-stage-column.stage-won { border-top-color: #198754; }
+    .lead-stage-column.stage-lost { border-top-color: #dc3545; }
+
+    .lead-stage-column-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.5rem 0.65rem;
+        border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+        border-radius: 10px 10px 0 0;
+    }
+
+    .lead-stage-column.stage-new .lead-stage-column-header {
+        background: rgba(13, 110, 253, 0.18);
+        color: #084298;
+    }
+    .lead-stage-column.stage-survey .lead-stage-column-header {
+        background: rgba(255, 193, 7, 0.35);
+        color: #664d03;
+    }
+    .lead-stage-column.stage-quote .lead-stage-column-header {
+        background: rgba(13, 202, 240, 0.22);
+        color: #055160;
+    }
+    .lead-stage-column.stage-won .lead-stage-column-header {
+        background: rgba(25, 135, 84, 0.2);
+        color: #0a3622;
+    }
+    .lead-stage-column.stage-lost .lead-stage-column-header {
+        background: rgba(220, 53, 69, 0.18);
+        color: #842029;
+    }
+
+    .lead-stage-column-header h6 {
+        margin: 0;
+        font-weight: 600;
+        font-size: 0.82rem;
+        color: inherit;
+    }
+
+    .lead-stage-count {
+        background: #fff;
+        border: 1px solid rgba(0, 0, 0, 0.1);
+        border-radius: 999px;
+        min-width: 1.5rem;
+        text-align: center;
+        font-size: 0.7rem;
+        font-weight: 600;
+        padding: 0.1rem 0.4rem;
+        color: #212529;
+    }
+
+    .lead-stage-column-cards {
+        flex: 1;
+        overflow-y: auto;
+        padding: 0.65rem;
+        display: flex;
+        flex-direction: column;
+        gap: 0.65rem;
+    }
+
+    .lead-item-card {
+        border: 1px solid #e9ecef;
+        border-left-width: 4px;
+        border-radius: 8px;
+        padding: 0.65rem 0.75rem;
+        background: #fff;
+        font-size: 0.8rem;
+        transition: box-shadow 0.15s ease, border-color 0.15s ease;
+        cursor: pointer;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .lead-item-card.stage-new {
+        border-color: rgba(13, 110, 253, 0.35);
+        border-left-color: #0d6efd;
+    }
+    .lead-item-card.stage-qualified {
+        border-color: rgba(25, 135, 84, 0.35);
+        border-left-color: #198754;
+    }
+    .lead-item-card.stage-survey {
+        border-color: rgba(255, 193, 7, 0.45);
+        border-left-color: #ffc107;
+    }
+    .lead-item-card.stage-quote {
+        border-color: rgba(13, 202, 240, 0.4);
+        border-left-color: #0dcaf0;
+    }
+    .lead-item-card.stage-negotiation {
+        border-color: rgba(253, 126, 20, 0.4);
+        border-left-color: #fd7e14;
+    }
+    .lead-item-card.stage-won {
+        border-color: rgba(25, 135, 84, 0.35);
+        border-left-color: #198754;
+    }
+    .lead-item-card.stage-lost {
+        border-color: rgba(220, 53, 69, 0.35);
+        border-left-color: #dc3545;
+    }
+
+    .lead-item-card:hover {
+        box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
+    }
+    .lead-item-card.stage-new:hover { border-color: #0d6efd; }
+    .lead-item-card.stage-qualified:hover { border-color: #198754; }
+    .lead-item-card.stage-survey:hover { border-color: #ffc107; }
+    .lead-item-card.stage-quote:hover { border-color: #0dcaf0; }
+    .lead-item-card.stage-negotiation:hover { border-color: #fd7e14; }
+    .lead-item-card.stage-won:hover { border-color: #198754; }
+    .lead-item-card.stage-lost:hover { border-color: #dc3545; }
+
+    .lead-item-card .lead-card-head {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 0.35rem;
+        margin-bottom: 0.45rem;
+    }
+
+    .lead-item-card .lead-card-name {
+        font-weight: 600;
+        font-size: 0.88rem;
+        margin: 0;
+        line-height: 1.25;
+    }
+
+    .lead-item-card .lead-card-phone {
+        font-size: 0.72rem;
+        color: #6c757d;
+        margin-top: 0.1rem;
+    }
+
+    .lead-item-card .lead-card-meta {
+        display: flex;
+        align-items: baseline;
+        gap: 0.35rem;
+        font-size: 0.72rem;
+        color: #495057;
+        margin-bottom: 0.2rem;
+        line-height: 1.35;
+    }
+
+    .lead-item-card .lead-card-meta > i,
+    .lead-item-card .lead-card-meta > .lead-card-meta-icon {
+        width: 0.85rem;
+        flex-shrink: 0;
+        text-align: center;
+        font-size: 0.68rem;
+        color: #6c757d;
+        line-height: 1;
+    }
+
+    .lead-item-card .lead-card-meta > .lead-card-meta-text {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .lead-item-card .lead-card-meta-icon--inr {
+        font-weight: 700;
+        font-size: 0.72rem;
+        font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+        line-height: 1;
+    }
+
+    .lead-item-card .lead-card-meta-icon--inr.lead-card-meta-icon--quote {
+        color: #198754;
+    }
+
+    .lead-item-card .lead-quote-price__amount {
+        font-weight: 700;
+        color: #198754;
+        font-variant-numeric: tabular-nums;
+        letter-spacing: 0.01em;
+    }
+
+    .lead-item-card .lead-quote-price__suffix {
+        font-weight: 600;
+        color: #198754;
+    }
+
+    .lead-item-card.stage-lost .lead-card-meta-icon--quote,
+    .lead-item-card.stage-lost .lead-quote-price__amount,
+    .lead-item-card.stage-lost .lead-quote-price__suffix {
+        color: #6c757d;
+    }
+
+    .lead-item-card .lead-card-meta-icon--inr.lead-card-meta-icon--monthly {
+        color: #0d6efd;
+    }
+
+    .lead-item-card .lead-monthly-charge__amount {
+        font-weight: 700;
+        color: #0d6efd;
+        font-variant-numeric: tabular-nums;
+        letter-spacing: 0.01em;
+    }
+
+    .lead-item-card .lead-monthly-charge__suffix {
+        font-weight: 600;
+        color: #0d6efd;
+    }
+
+    .badge.lead-status-survey-pending {
+        background-color: #f59e0b;
+        color: #212529;
+    }
+    .badge.lead-status-survey-scheduled {
+        background-color: #0dcaf0;
+        color: #212529;
+    }
+    .badge.lead-status-survey-completed {
+        background-color: #198754;
+        color: #fff;
+    }
+    .badge.lead-status-survey-cancelled {
+        background-color: #6c757d;
+        color: #fff;
+    }
+    .badge.lead-status-quote-draft {
+        background-color: #6c757d;
+        color: #fff;
+    }
+    .badge.lead-status-quote-sent {
+        background-color: #0dcaf0;
+        color: #212529;
+    }
+    .badge.lead-status-quote-revised {
+        background-color: #fd7e14;
+        color: #fff;
+    }
+    .badge.lead-status-quote-approved {
+        background-color: #198754;
+        color: #fff;
+    }
+    .badge.lead-status-quote-converted {
+        background-color: #6f42c1;
+        color: #fff;
+    }
+    .badge.lead-status-quote-rejected {
+        background-color: #dc3545;
+        color: #fff;
+    }
+    .lead-item-card .badge {
+        font-size: 0.65rem;
+        padding: 0.2em 0.45em;
+    }
+
+    .lead-item-card .lead-card-actions {
+        margin-top: auto;
+        padding-top: 0.45rem;
+        border-top: 1px solid #e9ecef;
+        display: flex;
+        justify-content: flex-end;
+        align-items: center;
+        gap: 0.25rem;
+    }
+
+    .lead-item-card .lead-card-action {
+        flex: 0 0 auto;
+        min-width: 1.65rem;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0.3rem 0.15rem;
+        border: none;
+        border-radius: 4px;
+        background: transparent;
+        font-size: 0.82rem;
+        line-height: 1;
+        text-decoration: none;
+        cursor: pointer;
+        transition: color 0.15s ease, background 0.15s ease;
+    }
+
+    .lead-item-card .lead-card-action--call {
+        color: #0d6efd;
+    }
+    .lead-item-card .lead-card-action--call:hover {
+        color: #fff;
+        background: #0d6efd;
+    }
+
+    .lead-item-card .lead-card-action--whatsapp {
+        color: #25d366;
+    }
+    .lead-item-card .lead-card-action--whatsapp:hover {
+        color: #fff;
+        background: #25d366;
+    }
+
+    .lead-item-card .lead-card-action--email {
+        color: #0dcaf0;
+    }
+    .lead-item-card .lead-card-action--email:hover {
+        color: #fff;
+        background: #0dcaf0;
+    }
+
+    .lead-item-card .lead-card-action--view {
+        color: #6f42c1;
+    }
+    .lead-item-card .lead-card-action--view:hover {
+        color: #fff;
+        background: #6f42c1;
+    }
+
+    .lead-item-card .lead-card-action--edit {
+        color: #fd7e14;
+    }
+    .lead-item-card .lead-card-action--edit:hover {
+        color: #fff;
+        background: #fd7e14;
+    }
+
+    .lead-item-card .lead-card-action.is-disabled {
+        color: #ced4da;
+        background: transparent !important;
+        pointer-events: none;
+        cursor: default;
+    }
+
+    .leads-page .leads-view-panel.d-none {
+        display: none !important;
+    }
+</style>
+<div class="leads-page" id="leads-page-root">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>Leads Management</h2>
+        <a href="{% url 'lead_create' %}" class="btn btn-primary">
+            <i class="fas fa-plus me-2"></i>Add New Lead
+        </a>
+    </div>
+    
+    <div class="row leads-layout-row">
+        <!-- Filters -->
+        <div class="col-md-3 leads-filters-col">
+            <div class="card filter-panel">
+                <div class="card-header">
+                    <h5 class="mb-0">Filters</h5>
+                </div>
+                <div class="card-body">
+                    <form method="get" id="filter-form">
+                        <div class="mb-3 filter-field">
+                            <label class="form-label">Date Range</label>
+                            <select name="date_range" class="form-select" onchange="this.form.submit()">
+                                <option value="">All Time</option>
+                                <option value="today" {% if request.GET.date_range == 'today' %}selected{% endif %}>Today</option>
+                                <option value="yesterday" {% if request.GET.date_range == 'yesterday' %}selected{% endif %}>Yesterday</option>
+                                <option value="this_week" {% if request.GET.date_range == 'this_week' %}selected{% endif %}>This Week</option>
+                                <option value="this_month" {% if request.GET.date_range == 'this_month' %}selected{% endif %}>This Month</option>
+                            </select>
+                        </div>
+                        
+                        <div class="mb-3 filter-field">
+                            <label class="form-label">Sales Person</label>
+                            <select name="assigned_to" class="form-select" onchange="this.form.submit()">
+                                <option value="">All</option>
+                                {% for user in sales_users %}
+                                <option value="{{ user.id }}" {% if request.GET.assigned_to|stringformat:"s" == user.id|stringformat:"s" %}selected{% endif %}>
+                                    {{ user.get_full_name|default:user.username }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <!-- Lead Source -->
+                        <div class="mb-3 filter-field">
+                            <label class="form-label">Lead Source</label>
+                            <select name="source" class="form-select" onchange="this.form.submit()">
+                                <option value="">All</option>
+                                {% for source in lead_sources %}
+                                <option value="{{ source.id }}" {% if request.GET.source|stringformat:"s" == source.id|stringformat:"s" %}selected{% endif %}>
+                                    {{ source.name }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <!-- Stage -->
+                        <div class="mb-3 filter-field filter-stage-field">
+                            <label class="form-label">Stage</label>
+                            <select name="stage" class="form-select" onchange="this.form.submit()">
+                                <option value="">All</option>
+                                {% for stage_value, stage_label in stage_choices %}
+                                <option value="{{ stage_value }}" {% if request.GET.stage == stage_value %}selected{% endif %}>
+                                    {{ stage_label }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <!-- Area/City -->
+                        <div class="mb-3 filter-field">
+                            <label class="form-label">City/Area</label>
+                            <input type="text" name="city" class="form-control" value="{{ request.GET.city }}" placeholder="Enter city">
+                        </div>
+                        
+                        <!-- Score -->
+                        <div class="mb-3 filter-field">
+                            <label class="form-label">Lead Score</label>
+                            <select name="score" class="form-select" onchange="this.form.submit()">
+                                <option value="">All</option>
+                                <option value="high" {% if request.GET.score == 'high' %}selected{% endif %}>High</option>
+                                <option value="medium" {% if request.GET.score == 'medium' %}selected{% endif %}>Medium</option>
+                                <option value="low" {% if request.GET.score == 'low' %}selected{% endif %}>Low</option>
+                            </select>
+                        </div>
+                        
+                        <div class="mb-3 filter-actions">
+                            <button type="submit" class="btn btn-primary">Apply Filters</button>
+                            <a href="{% url 'lead_list' %}" class="btn btn-outline-secondary">Clear Filters</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Right Panel - Lead List -->
+        <div class="col-md-9 leads-content-col">
+            <div class="card">
+                <div class="card-header">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">Leads ({{ page_obj.paginator.count }} total)</h5>
+                        <div class="d-flex align-items-center gap-2 flex-wrap justify-content-end">
+                            <div class="btn-group btn-group-sm leads-view-toggle" role="group" aria-label="Lead list view">
+                                <button type="button" class="btn btn-outline-secondary active" id="leads-view-list" title="Table view" aria-pressed="true">
+                                    <i class="fas fa-list"></i>
+                                </button>
+                                <button type="button" class="btn btn-outline-secondary" id="leads-view-cards" title="Card view" aria-pressed="false">
+                                    <i class="fas fa-th-large"></i>
+                                </button>
+                            </div>
+                            <a href="{% url 'lead_export' %}?{{ request.GET.urlencode }}" class="btn btn-outline-secondary btn-sm">
+                                <i class="fas fa-download me-1"></i>Export
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body p-0">
+                    <div id="leads-table-view" class="leads-view-panel">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="bg-light">
+                                <tr>
+                                    <th colspan="3">Name</th>
+<!--                                    <th>Phone</th>-->
+                                    <th>Location</th>
+                                    <th>Electricity Bill</th>
+                                    <th>Property Type</th>
+                                    <th>Score</th>
+                                    <th>Stage</th>
+                                    <th>Assigned To</th>
+                                    <th>Next Follow-up</th>
+                                    <th>Created Date</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for lead in leads %}
+                                <tr class="clickable-row" data-href="/new-lead/leads/{{ lead.id }}/">
+<!--                                    <td colspan="3">-->
+<!--                                        <strong>{{ lead.name }}<br><small>{{ lead.phone }}</small></strong>-->
+<!--                                    </td>-->
+                                    <td colspan="3">
+     <div class="lead-row-title">{{ lead.name }}</div>
+                            <div class="lead-row-subtitle">{{ lead.phone }}</div>
+</td>
+<!--                                    <td>{{ lead.phone }}</td>-->
+                                    <td>{{ lead.city }}</td>
+                                    <td>{{ lead.electricity_bill|default:'-'|indian_currency }}</td>
+                                    <td>{{ lead.get_property_type_display }}</td>
+                                    <td>
+                                        <span class="badge score-{{ lead.score }}">
+                                            {{ lead.get_score_display }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        {% include 'leads/_lead_list_status_badge.html' %}
+                                    </td>
+                                    <td>{{ lead.assigned_to.get_full_name|default:'Unassigned' }}</td>
+                                    <td>
+                                        {% if lead.next_followup %}
+                                        <small>{{ lead.next_followup|date:'d M Y' }}</small>
+                                        {% if lead.next_followup < now %}
+                                        <span class="badge bg-danger">Overdue</span>
+                                        {% endif %}
+                                        {% else %}
+                                        -
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ lead.created|date:'d M Y' }}</td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm">
+                                            <a href="/new-lead/leads/{{ lead.id }}/" class="btn btn-outline-primary">
+                                                <i class="fas fa-eye"></i>
+                                            </a>
+                                            <a href="/new-lead/leads/{{ lead.id }}/edit/" class="btn btn-outline-secondary">
+                                                <i class="fas fa-edit"></i>
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="11" class="text-center py-4">
+                                        <i class="fas fa-users fa-3x text-muted mb-3"></i>
+                                        <p class="text-muted">No leads found</p>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    </div>
+
+                    <div id="leads-card-view" class="leads-view-panel d-none">
+                        <div class="lead-stage-board">
+                            {% for column in board_columns %}
+                            <section class="lead-stage-column stage-{{ column.key }}" aria-label="{{ column.label }}">
+                                <div class="lead-stage-column-header">
+                                    <h6>{{ column.label }}</h6>
+                                    <span class="lead-stage-count">{{ column.count }}</span>
+                                </div>
+                                <div class="lead-stage-column-cards">
+                                    {% for lead in column.leads %}
+                                    <article class="lead-item-card stage-{{ lead.stage }}" data-href="{% url 'lead_detail' lead.id %}" tabindex="0" role="link">
+                                        <div class="lead-card-head">
+                                            <div>
+                                                <p class="lead-card-name mb-0">{{ lead.name }}</p>
+                                                <div class="lead-card-phone">{{ lead.phone }}</div>
+                                            </div>
+                                            <div class="d-flex flex-column align-items-end gap-1">
+                                            <span class="badge score-{{ lead.score }}">{{ lead.get_score_display }}</span>
+                                            {% include 'leads/_lead_list_status_badge.html' %}
+                                            </div>
+                                        </div>
+                                        <p class="lead-card-meta mb-1">
+                                            <i class="fas fa-map-marker-alt" aria-hidden="true"></i>
+                                            <span class="lead-card-meta-text">{{ lead.city|default:"—" }}</span>
+                                        </p>
+                                        {% if not column.show_quotation_price %}
+                                        {% if lead.electricity_bill %}
+                                        <p class="lead-card-meta mb-1">
+                                            <span class="lead-card-meta-icon lead-card-meta-icon--inr lead-card-meta-icon--monthly" aria-hidden="true">&#8377;</span>
+                                            <span class="lead-card-meta-text lead-card-monthly-charge">
+                                                <span class="lead-monthly-charge__amount">{{ lead.electricity_bill|indian_number }}</span><span class="lead-monthly-charge__suffix">/monthly</span>
+                                            </span>
+                                        </p>
+                                        {% endif %}
+                                        {% if lead.monthly_consumption %}
+                                        <p class="lead-card-meta mb-1">
+                                            <i class="fas fa-bolt" aria-hidden="true"></i>
+                                            <span class="lead-card-meta-text">{{ lead.monthly_consumption }} units/month</span>
+                                        </p>
+                                        {% endif %}
+                                        {% endif %}
+                                        <p class="lead-card-meta mb-1">
+                                            <i class="fas fa-user" aria-hidden="true"></i>
+                                            <span class="lead-card-meta-text">{{ lead.assigned_to.get_full_name|default:'Unassigned' }}</span>
+                                        </p>
+                                        {% if column.show_quotation_price %}
+                                        <p class="lead-card-meta lead-card-quote-price mb-1">
+                                            {% if lead.board_quotation_price is not None %}
+                                            <span class="lead-card-meta-icon lead-card-meta-icon--inr lead-card-meta-icon--quote" aria-hidden="true">&#8377;</span>
+                                            <span class="lead-card-meta-text">
+                                                <span class="lead-quote-price__amount">{{ lead.board_quotation_price|indian_number }}</span><span class="lead-quote-price__suffix">/-</span>
+                                            </span>
+                                            {% else %}
+                                            <span class="lead-card-meta-icon" aria-hidden="true"></span>
+                                            <span class="lead-card-meta-text text-muted fw-normal">No quote</span>
+                                            {% endif %}
+                                        </p>
+                                        {% endif %}
+                                        <p class="lead-card-meta mb-0">
+                                            <i class="fas fa-calendar" aria-hidden="true"></i>
+                                            <span class="lead-card-meta-text">
+                                            {% if lead.next_followup %}
+                                                {{ lead.next_followup|date:'d M Y' }}
+                                                {% if lead.next_followup < now %}<span class="badge bg-danger ms-1">Overdue</span>{% endif %}
+                                            {% else %}—{% endif %}
+                                            </span>
+                                        </p>
+                                        <div class="lead-card-actions" onclick="event.stopPropagation();">
+                                            <a href="tel:{{ lead.phone }}" class="lead-card-action lead-card-action--call" title="Call" aria-label="Call">
+                                                <i class="fas fa-phone"></i>
+                                            </a>
+                                            {% if column.key != 'new' and column.key != 'survey' and column.key != 'lost' %}
+                                            <a href="https://wa.me/{{ lead.phone|cut:' '|cut:'-'|cut:'('|cut:')'|cut:'+' }}" class="lead-card-action lead-card-action--whatsapp" title="WhatsApp" aria-label="WhatsApp" target="_blank" rel="noopener">
+                                                <i class="fab fa-whatsapp"></i>
+                                            </a>
+                                            {% if lead.email %}
+                                            <a href="mailto:{{ lead.email }}" class="lead-card-action lead-card-action--email" title="Email" aria-label="Email">
+                                                <i class="fas fa-envelope"></i>
+                                            </a>
+                                            {% else %}
+                                            <span class="lead-card-action lead-card-action--email is-disabled" title="No email"><i class="fas fa-envelope"></i></span>
+                                            {% endif %}
+                                            {% endif %}
+                                            <a href="{% url 'lead_detail' lead.id %}" class="lead-card-action lead-card-action--view" title="View" aria-label="View">
+                                                <i class="fas fa-eye"></i>
+                                            </a>
+                                            <a href="{% url 'lead_edit' lead.id %}" class="lead-card-action lead-card-action--edit" title="Edit" aria-label="Edit">
+                                                <i class="fas fa-edit"></i>
+                                            </a>
+                                        </div>
+                                    </article>
+                                    {% empty %}
+                                    <p class="text-muted small text-center py-3 mb-0">No leads</p>
+                                    {% endfor %}
+                                </div>
+                            </section>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Pagination -->
+                {% if page_obj.paginator.num_pages > 1 %}
+                <div class="card-footer leads-list-pagination">
+                    <nav>
+                        <ul class="pagination justify-content-center mb-0">
+                            {% if page_obj.has_previous %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page=1{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">
+                                    <i class="fas fa-angle-double-left"></i>
+                                </a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">
+                                    <i class="fas fa-angle-left"></i>
+                                </a>
+                            </li>
+                            {% endif %}
+                            
+                            {% for num in page_obj.paginator.page_range %}
+                                {% if page_obj.number == num %}
+                                <li class="page-item active">
+                                    <span class="page-link">{{ num }}</span>
+                                </li>
+                                {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ num }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">{{ num }}</a>
+                                </li>
+                                {% endif %}
+                            {% endfor %}
+                            
+                            {% if page_obj.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.next_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">
+                                    <i class="fas fa-angle-right"></i>
+                                </a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">
+                                    <i class="fas fa-angle-double-right"></i>
+                                </a>
+                            </li>
+                            {% endif %}
+                        </ul>
+                    </nav>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+(function () {
+    var STORAGE_KEY = 'crmLeadsListView';
+    var listBtn = document.getElementById('leads-view-list');
+    var cardsBtn = document.getElementById('leads-view-cards');
+    var tableView = document.getElementById('leads-table-view');
+    var cardView = document.getElementById('leads-card-view');
+
+    var pageRoot = document.getElementById('leads-page-root');
+
+    var stageFilterField = pageRoot ? pageRoot.querySelector('.filter-stage-field') : null;
+    var stageFilterSelect = stageFilterField ? stageFilterField.querySelector('select[name="stage"]') : null;
+
+    function stripUrlFilterParam(paramName) {
+        var params = new URLSearchParams(window.location.search);
+        if (!params.has(paramName)) return false;
+        params.delete(paramName);
+        var qs = params.toString();
+        window.location.replace(window.location.pathname + (qs ? '?' + qs : ''));
+        return true;
+    }
+
+    function setView(mode) {
+        var isCards = mode === 'cards';
+        if (isCards && stripUrlFilterParam('stage')) return;
+        if (pageRoot) pageRoot.classList.toggle('leads-page--cards', isCards);
+        if (tableView) tableView.classList.toggle('d-none', isCards);
+        if (cardView) cardView.classList.toggle('d-none', !isCards);
+        if (stageFilterField) {
+            stageFilterField.classList.toggle('d-none', isCards);
+            stageFilterField.setAttribute('aria-hidden', isCards ? 'true' : 'false');
+        }
+        if (isCards && stageFilterSelect) {
+            stageFilterSelect.value = '';
+        }
+        if (listBtn) {
+            listBtn.classList.toggle('active', !isCards);
+            listBtn.setAttribute('aria-pressed', !isCards ? 'true' : 'false');
+        }
+        if (cardsBtn) {
+            cardsBtn.classList.toggle('active', isCards);
+            cardsBtn.setAttribute('aria-pressed', isCards ? 'true' : 'false');
+        }
+        try { localStorage.setItem(STORAGE_KEY, mode); } catch (e) {}
+    }
+
+    var saved = 'list';
+    try { saved = localStorage.getItem(STORAGE_KEY) || 'list'; } catch (e) {}
+    setView(saved === 'cards' ? 'cards' : 'list');
+
+    if (listBtn) listBtn.addEventListener('click', function () { setView('list'); });
+    if (cardsBtn) cardsBtn.addEventListener('click', function () { setView('cards'); });
+
+    document.querySelectorAll('.clickable-row').forEach(function (row) {
+        row.addEventListener('click', function (e) {
+            if (!e.target.closest('.btn-group')) {
+                window.location = this.dataset.href;
+            }
+        });
+    });
+
+    document.querySelectorAll('.lead-item-card').forEach(function (card) {
+        card.addEventListener('click', function (e) {
+            if (!e.target.closest('.lead-card-actions') && !e.target.closest('.btn-group')) {
+                window.location = this.dataset.href;
+            }
+        });
+        card.addEventListener('keydown', function (e) {
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                if (!e.target.closest('.btn-group')) {
+                    window.location = this.dataset.href;
+                }
+            }
+        });
+    });
+})();
+</script>
+{% endblock %}

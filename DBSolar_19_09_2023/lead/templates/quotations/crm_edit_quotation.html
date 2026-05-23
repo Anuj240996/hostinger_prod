@@ -1,0 +1,9 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load number_filters %}
+{% block title %}Edit Quotation{% endblock %}
+{% block content %}
+<div class="container-fluid py-3">
+    {% include 'quotation/edit_quotation_inner.html' %}
+</div>
+{% endblock %}

@@ -1,0 +1,121 @@
+{% extends 'base.html' %}
+{% load crispy_forms_tags %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<style>
+  /* Monthly consumption + Assigned to: same row, aligned with columns above */
+  .lead-form .lead-property-assign-row {
+    align-items: flex-start;
+    margin-bottom: 1rem;
+  }
+  .lead-form .lead-property-assign-row > [class*="col-"] > .form-group {
+    margin-bottom: 0;
+  }
+  .lead-form .lead-property-assign-row > [class*="col-"] label {
+    display: block;
+    margin-bottom: 0.35rem;
+    font-weight: 500;
+  }
+  .lead-form .lead-property-assign-row > [class*="col-"] .form-control,
+  .lead-form .lead-property-assign-row > [class*="col-"] select {
+    width: 100%;
+  }
+</style>
+<div class="lead-form">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>{{ title }}</h2>
+        <a href="{% if lead %}{% url 'lead_detail' lead.id %}{% else %}{% url 'lead_list' %}{% endif %}" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left me-2"></i>Back
+        </a>
+    </div>
+
+    <div class="card">
+        <div class="card-body">
+            <form method="post" novalidate>
+                {% csrf_token %}
+
+                <div class="row">
+                    <div class="col-md-6">
+                        <h5 class="mb-3">Basic Information</h5>
+                        {{ form.name|as_crispy_field }}
+                        {{ form.phone|as_crispy_field }}
+                        {{ form.email|as_crispy_field }}
+                        {{ form.alternate_phone|as_crispy_field }}
+                    </div>
+
+                    <div class="col-md-6">
+                        <h5 class="mb-3">Location</h5>
+                        {{ form.address|as_crispy_field }}
+                        {{ form.city|as_crispy_field }}
+                        {{ form.state|as_crispy_field }}
+                        {{ form.pincode|as_crispy_field }}
+                    </div>
+                </div>
+
+                <hr>
+
+                <div class="row">
+                    <div class="col-md-6">
+                        <h5 class="mb-3">Property Details</h5>
+                        {{ form.property_type|as_crispy_field }}
+                        {{ form.roof_type|as_crispy_field }}
+                        {{ form.electricity_bill|as_crispy_field }}
+                    </div>
+
+                    <div class="col-md-6">
+                        <h5 class="mb-3">Lead Details</h5>
+                        {{ form.source|as_crispy_field }}
+                        {{ form.campaign|as_crispy_field }}
+                        {{ form.score|as_crispy_field }}
+                    </div>
+                </div>
+
+                <div class="row lead-property-assign-row mt-1">
+                    <div class="col-md-6">
+                        {{ form.monthly_consumption|as_crispy_field }}
+                    </div>
+                    <div class="col-md-6">
+                        {{ form.assigned_to|as_crispy_field }}
+                    </div>
+                </div>
+
+                <hr>
+
+                <div class="row">
+                    <div class="col-md-6">
+                        <h5 class="mb-3">Financial Information</h5>
+                        {{ form.budget|as_crispy_field }}
+                        {{ form.estimated_value|as_crispy_field }}
+                    </div>
+
+                    <div class="col-md-6">
+                        <h5 class="mb-3">Schedule</h5>
+                        {{ form.next_followup|as_crispy_field }}
+                    </div>
+                </div>
+
+                <hr>
+
+                <div class="row">
+                    <div class="col-12">
+                        <h5 class="mb-3">Notes</h5>
+                        {{ form.notes|as_crispy_field }}
+                        {{ form.internal_notes|as_crispy_field }}
+                    </div>
+                </div>
+
+                <div class="mt-4 pt-3 border-top">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save me-2"></i>Save Lead
+                    </button>
+                    <a href="{% if lead %}{% url 'lead_detail' lead.id %}{% else %}{% url 'lead_list' %}{% endif %}" class="btn btn-outline-secondary">
+                        Cancel
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

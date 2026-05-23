@@ -1,5 +1,8 @@
 from django.contrib.auth.views import LoginView
 from django.shortcuts import render, redirect
+from django.views.decorators.csrf import ensure_csrf_cookie
+from django.views.decorators.cache import never_cache
+from django.utils.decorators import method_decorator
 
 from django.contrib.auth import get_user, logout, login
 #from django.contrib.auth.forms import UserCreationForm
@@ -24,7 +27,17 @@ from .models import *
 # Create your views here.
 
 from django.contrib.auth.decorators import login_required
-from user.permissions import has_portal_access
+from user.permissions import has_portal_access, has_nav_url_access
+
+
+@method_decorator([never_cache, ensure_csrf_cookie], name="dispatch")
+class StableLoginView(LoginView):
+    """
+    Login view with anti-cache headers and guaranteed CSRF cookie emission.
+    Helps avoid stale-token POST failures across tabs/retries.
+    """
+    template_name = "user/login.html"
+    authentication_form = UserLoginForm
 
 
 @login_required(login_url="user-login")
@@ -43,13 +56,24 @@ def post_login_redirect(request):
     if hasattr(u, "vendor_account") and has_portal_access(u, "vendor"):
         return redirect("user:vendor-dashboard")
 
-    # Portal preference order (works for staff + non-staff users)
-    if has_portal_access(u, "staff"):
-        return redirect("dashboard-index1")
-    if has_portal_access(u, "admin"):
-        return redirect("dashboard-index")
-    if has_portal_access(u, "customer"):
-        return redirect("customer-view_all")
+    # Default landing follows Portal Access order below (do not short-circuit associates to
+    # Consumer Dashboard—that ignored complaint_dashboard when both portals were granted).
+
+    portal_to_url = [
+        ("staff", "dashboard-index1"),
+        ("complaint_dashboard", "firereport-dashboard"),
+        ("stock_dashboard", "home"),
+        ("admin", "dashboard-index"),
+        ("customer", "customer-view_all"),
+    ]
+
+    for portal_name, url_name in portal_to_url:
+        if has_portal_access(u, portal_name) and has_nav_url_access(u, url_name):
+            return redirect(url_name)
+
+    for url_name in ("dashboard-index1", "firereport-dashboard", "home", "customer-view_all"):
+        if has_nav_url_access(u, url_name):
+            return redirect(url_name)
 
     return redirect("user:no_access")
 
@@ -530,8 +554,9 @@ def add(request):
         if form.is_valid():
             user = form.save(commit=False)
             user.set_password(request.POST.get('password1'))
-
-            user.is_staff = True
+            is_associate = form.cleaned_data.get('is_associate')
+            # Associate users must be staff as requested.
+            user.is_staff = True if is_associate else form.cleaned_data.get('is_staff', True)
             user.is_active = True
             user.save()
 
@@ -543,6 +568,9 @@ def add(request):
                 # If 'is_superuser' is checked, also add to the 'Admin' group
                 admin_group = Group.objects.get(name='Admin')
                 user.groups.add(admin_group)
+            if is_associate:
+                associate_group, _ = Group.objects.get_or_create(name='Associate')
+                user.groups.add(associate_group)
 
             username = form.cleaned_data.get('username')
             messages.success(request, f'{username} Account Created Successfully!!')
@@ -741,6 +769,7 @@ def profile_update(request,pk):
     user1 = User.objects.get(id=pk)
     # print(user1)
     employee = Profile.objects.get(customer_id=user1)
+    is_associate_user = user1.groups.filter(name='Associate').exists()
     # print(user1)
     if request.method == "POST":
         fn = request.POST['firstname']
@@ -793,6 +822,10 @@ def profile_update(request,pk):
             employee.department = dept
         if desig:
             employee.designation = desig
+        # Associate users must persist Associate values in DB.
+        if is_associate_user:
+            employee.department = 'Associate'
+            employee.designation = 'Associate'
         if bg:
             employee.bg = bg
         if yop:

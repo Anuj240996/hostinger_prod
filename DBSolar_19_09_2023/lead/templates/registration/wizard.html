@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Register Your Organization | Solar CRM</title>
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Inter', sans-serif;
+        }
+        .wizard-container {
+            max-width: 800px;
+            width: 100%;
+            margin: 2rem;
+        }
+        .card {
+            border-radius: 15px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+        }
+        .progress {
+            height: 8px;
+            border-radius: 4px;
+        }
+        .step-indicator {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 2rem;
+        }
+        .step-item {
+            flex: 1;
+            text-align: center;
+            color: #aaa;
+            font-size: 0.9rem;
+        }
+        .step-item.active {
+            color: #667eea;
+            font-weight: 600;
+        }
+        .step-item.completed {
+            color: #28a745;
+        }
+    </style>
+</head>
+<body>
+    <div class="wizard-container">
+        <div class="card">
+            <div class="card-body p-5">
+                <h2 class="text-center mb-4">Register Your Organization</h2>
+
+                <!-- Progress Bar -->
+                <div class="step-indicator">
+                    {% for name in progress.step_names %}
+                        <div class="step-item {% if forloop.counter0 < progress.current %}completed{% elif forloop.counter0 == progress.current|add:'-1' %}active{% endif %}">
+                            <i class="fas fa-{% if forloop.counter0 < progress.current|add:'-1' %}check-circle{% else %}circle{% endif %}"></i>
+                            {{ name }}
+                        </div>
+                    {% endfor %}
+                </div>
+                <div class="progress mb-4">
+                    <div class="progress-bar bg-success" role="progressbar" style="width: {{ progress.percent }}%;" aria-valuenow="{{ progress.percent }}" aria-valuemin="0" aria-valuemax="100"></div>
+                </div>
+                <form method="post" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    {{ wizard.management_form }}
+                    {% block step_content %}{% endblock %}
+
+
+                    <div class="d-flex justify-content-between mt-4">
+                        {% if wizard.steps.prev %}
+                            <button type="submit" name="wizard_goto_step" value="{{ wizard.steps.prev }}" class="btn btn-outline-secondary">
+                                <i class="fas fa-arrow-left me-2"></i>Previous
+                            </button>
+                        {% else %}
+                            <div></div>
+                        {% endif %}
+
+                        <button type="submit" class="btn btn-primary">
+                            {% if wizard.steps.current == wizard.steps.last %}Register{% else %}Next <i class="fas fa-arrow-right ms-2"></i>{% endif %}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

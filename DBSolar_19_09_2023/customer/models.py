@@ -88,7 +88,22 @@ class Customer(models.Model):
     #new_customer = models.ForeignKey(User, on_delete=models.CASCADE, null=True)
     new_customer = models.ForeignKey(User, on_delete=models.CASCADE, null=True, related_name='new_customer_customers', db_column='new_customer_id')
     Engg_Assign = models.ForeignKey(User, on_delete=models.CASCADE, null=True, related_name='engg_assign_customers', db_column='engg_assign_id')
-    Cust_id = models.IntegerField(primary_key=True, null=False, default=uuid.uuid4(), db_column='cust_id')
+    # Associate assigned for solar project (separate from engineer assignment)
+    Assoc_Assign = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='assoc_assign_customers',
+        db_column='assoc_assign_id'
+    )
+    # Cust_id = models.IntegerField(primary_key=True, null=False, default=uuid.uuid4(), db_column='cust_id')
+
+    Cust_id = models.BigAutoField(
+        primary_key=True,
+        db_column='cust_id'
+    )
+
     Comp_name = models.CharField(max_length=200, null=True, db_column='comp_name')
     Consumer = models.CharField(max_length=100, null=True, db_column='consumer')
     current_load = models.IntegerField(default=0, null=True)
@@ -386,6 +401,37 @@ class InspectionDetail(models.Model):
     overall_Details = models.TextField(blank=True, null=True, db_column='overall_details')
     info_Correct = models.BooleanField(default=False, db_column='info_correct')
 
+    def submission_time_display(self):
+        """Report submission time as dd/mm/yyyy HH:mm in project TIME_ZONE (templates / PDF)."""
+        from datetime import date, datetime
+        from django.utils import timezone as dj_tz
+        from django.utils.dateparse import parse_date, parse_datetime
+
+        raw = self.created_at
+        if raw is None or raw == "":
+            return "—"
+
+        # DB/driver may return str for some column types — never pass str to is_naive/localtime
+        if isinstance(raw, datetime):
+            dt = raw
+        elif isinstance(raw, date):
+            return raw.strftime("%d/%m/%Y")
+        elif isinstance(raw, str):
+            s = raw.strip()
+            dt = parse_datetime(s)
+            if dt is None and " " in s and "T" not in s:
+                dt = parse_datetime(s.replace(" ", "T", 1))
+            if dt is None:
+                d = parse_date(s[:10]) if len(s) >= 10 else parse_date(s)
+                if d:
+                    return d.strftime("%d/%m/%Y")
+                return s
+        else:
+            return str(raw)
+
+        if dj_tz.is_naive(dt):
+            dt = dj_tz.make_aware(dt, dj_tz.get_default_timezone())
+        return dj_tz.localtime(dt).strftime("%d/%m/%Y %H:%M")
 
     def __str__(self):
         return self.company_name
@@ -406,5 +452,5 @@ class Result(models.Model):
 
     def __str__(self):
         return self.consumer
-
+# CRM integration removed — leads moved to a separate app.
 

@@ -3,7 +3,6 @@
 {% load static %}
 {% load group_filters %}
 {% block content %}
- <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@mdi/font/css/materialdesignicons.min.css">
 <style>
     /* Add this style to customize checkbox size */
     .toggle-status {
@@ -24,6 +23,15 @@
     .toggle-status.unchecked {
         border-color: #dc3545;
         background-color: #dc3545;
+    }
+
+    /* Full Name is the primary identity column — give it more horizontal space */
+    #yourDataTable .col-emp-full-name.col-primary-name-field {
+        min-width: 240px;
+        max-width: 420px;
+        white-space: normal !important;
+        word-break: break-word;
+        line-height: 1.25;
     }
 </style>
 
@@ -121,20 +129,15 @@
                   <li class="breadcrumb-item active">Employee</li>
                </ul>
             </div>
-           <!-- Add these buttons inside the col-auto div -->
-<div class="col-auto text-right float-right ml-auto">
-    <div class="dt-buttons btn-group flex-wrap">
-<!--       <a href="#" class="btn btn-outline-primary mr-2" name="download" id="download-pdf"><i class="fas fa-download"></i>Download</a>-->
-       <a id="generate-pdf-all" href="#" class="btn btn-primary" type="button" title="PDF"><i class="fas fa-file-pdf fs-4" style="font-size: 1.1rem;"></i></a>
-        <a id="generate-excel-all" href="#" class="btn btn-primary" title="Excel"><i class="mdi mdi-microsoft-excel" style="font-size: 18px;"></i></a>
-        <a id="copy-table" href="#" class="btn btn-primary" title="Print"><i class="fas fa-solid fa-copy"></i></a>
-        <a id="generate-print-all" href="#" class="btn btn-primary" title="Print"><i class="fas fa-solid fa-print"></i></a>
-
-         <a href="{% url 'user-add' %}" class="btn btn-primary"  title="New User"><i class="fas fa-plus"></i></a>
-<!--       <button class="btn btn-outline-primary mr-2" id="generate-pdf"><i class="fas fa-file-pdf"></i> Generate PDF</button>-->
-<!--       <button class="btn btn-outline-primary" id="generate-excel"><i class="fas fa-file-excel"></i> Generate Excel</button>-->
-    </div>
-</div>
+            <div class="col-auto text-right float-right ml-auto">
+                <div class="dt-buttons btn-group flex-wrap mb-2 mb-md-0 mr-md-2 d-inline-flex align-items-center justify-content-end">
+                    <a href="#" class="btn btn-primary" onclick="employeeListGeneratePDF(); return false;" title="PDF"><i class="fas fa-file-pdf" style="font-size: 1.05rem;"></i></a>
+                    <a href="#" class="btn btn-primary" onclick="employeeListGenerateExcel(); return false;" title="Excel"><i class="fas fa-file-excel" style="font-size: 1.05rem;"></i></a>
+                    <a href="#" class="btn btn-primary" onclick="employeeListCopyToClipboard(); return false;" title="Copy"><i class="fas fa-copy"></i></a>
+                    <a href="#" class="btn btn-primary" onclick="employeeListPrintTable(); return false;" title="Print"><i class="fas fa-print"></i></a>
+                    <a href="{% url 'user-add' %}" class="btn btn-primary" title="New User"><i class="fas fa-plus mr-1"></i> </a>
+                </div>
+            </div>
 
          </div>
       </div>
@@ -144,14 +147,14 @@
                <div class="card-body">
                      {% if customer %}
                      <div class="table-responsive">
-                     <table id="yourDataTable" class="table table-hover table-center table.dataTable.table-sm mb-0 datatable table.sm">
+                     <table id="yourDataTable" class="table table-hover table-center table.dataTable.table-sm mb-0 datatable table.sm dt-compact-cols dt-tools-minimal">
                         <thead class="table-success">
                            <tr>
 <!--                              <th scope="col">Sr No.</th>-->
                               <th scope="col">Sr No.</th>
                               <th scope="col">Staff ID</th>
                               <th scope="col">Username</th>
-                              <th scope="col">Full Name</th>
+                              <th scope="col" class="col-emp-full-name col-primary-name-field">Full Name</th>
                               <th scope="col">Phone</th>
                               <th scope="col">Email</th>
                               <th scope="col">Department</th>
@@ -170,7 +173,7 @@
                               <td>{{forloop.counter}}</td>
                               <td>DB_{{ customer.id }}</td>
                               <td>{{ customer.username }}</td>
-                              <td class="table-avatar">
+                              <td class="table-avatar col-emp-full-name col-primary-name-field">
 
                                       <a href="{% url 'user-profile-updatepage' customer.id %}" class="avatar avatar-sm mr-2"><img class="avatar-img rounded-circle" src="{{ customer.profile.image.url }}" alt=""></a>
                                       <a href="{% url 'user-profile-updatepage' customer.id %}" class="text-capitalize">{{ customer.first_name }} {{ customer.last_name }}</a>
@@ -223,9 +226,6 @@
       </div>
    </div>
 </div>
-
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.4.0/jspdf.umd.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/exceljs/dist/exceljs.min.js"></script>
 
 <!-- Update the modal content to include fields for reactivation -->
 <div class="modal fade" id="deactivateModal" tabindex="-1" role="dialog" aria-labelledby="deactivateModalLabel" aria-hidden="true">
@@ -399,323 +399,39 @@ document.querySelectorAll('.toggle-status').forEach(function(checkbox) {
     });
 </script>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.4.0/jspdf.umd.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/exceljs/dist/exceljs.min.js"></script>
-
-<script src="https://rawgit.com/eKoopmans/html2pdf/master/dist/html2pdf.bundle.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/exceljs/dist/exceljs.min.js"></script>
-
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.9.2/html2pdf.bundle.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/exceljs/dist/exceljs.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/clipboard@2.0.8/dist/clipboard.min.js"></script>
-
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.10/jspdf.plugin.autotable.min.js"></script>
-
-
 <script>
-document.addEventListener("DOMContentLoaded", function() {
-    let dataTable = $('#yourDataTable').DataTable();
-    if ($.fn.dataTable.isDataTable('#yourDataTable')) {
-        dataTable.destroy();
+document.addEventListener('DOMContentLoaded', function () {
+    if (typeof window.jQuery === 'undefined' || typeof window.jQuery.fn.dataTable === 'undefined') {
+        return;
     }
-
-    dataTable = $('#yourDataTable').DataTable({
-        scrollX: true,
-        scrollCollapse: true,
-        fixedHeader: {
-            header: true,
-            footer: false
-        },
-//        dom: 'Blfrtip',
-//        buttons: [
-//            'copy', 'csv', 'excel', 'pdf',
- //       ],
-    });
-
-
-
-    // Add the buttons to the pagination area
-    $('#yourDataTable_paginate').append(`
-        <button class="btn btn-outline-primary mr-2" id="generate-csv-all"><i class="fas fa-file-csv"></i> Generate CSV All</button>
-        <button class="btn btn-outline-primary mr-2" id="generate-excel-all"><i class="fas fa-file-excel"></i> Generate Excel All</button>
-        <button class="btn btn-outline-primary" id="generate-pdf-all"><i class="fas fa-file-pdf"></i> Generate PDF All</button>
-    `);
-
-    document.getElementById('generate-csv-all').addEventListener('click', function (event) {
-        event.preventDefault();
-        generateCSVAll();
-    });
-
-    document.getElementById('generate-excel-all').addEventListener('click', function (event) {
-        event.preventDefault();
-        generateExcelAll();
-    });
-
-    document.getElementById('generate-pdf-all').addEventListener('click', function (event) {
-        event.preventDefault();
-        generatePDFAll();
-    });
-
-       document.getElementById('generate-print-all').addEventListener('click', function (event) {
-        event.preventDefault();
-        printTable();
-    });
-
-        document.getElementById('copy-table').addEventListener('click', function (event) {
-        event.preventDefault();
-        copyTableToClipboard();
-    });
-
-
-
-function copyTableToClipboard() {
-    const table = $('#yourDataTable').DataTable();
-
-    // Order the DataTable by the "Sr No." column
-    table.order([0, 'asc']).draw();
-
-    const clipboard = new ClipboardJS('#copy-table', {
-        text: function () {
-            let text = '';
-
-            // Copy table header
-            text += getTableHeaders().join('\t') + '\n';
-
-            // Copy filtered table body with reindexed "Sr No."
-            let serialNumber = 1;
-            table.rows({ search: 'applied' }).data().each(function (row) {
-              if (row[0] !== 'Action') { // Skip the "Action" column
-                row[0] = serialNumber++; // Reassign sequential "Sr No." values
-                row.forEach(function (cell) {
-                    // Extract text content without HTML tags
-                    const cellText = document.createElement('div');
-                    cellText.innerHTML = cell;
-                    text += cellText.textContent.trim() + '\t';
-                });
-                text += '\n';
-              }
-            });
-
-            return text;
+    window.jQuery(function ($) {
+        if (!$.fn.dataTable.isDataTable('#yourDataTable')) {
+            return;
         }
-    });
-
-    clipboard.on('success', function (e) {
-        alert('Filtered table content copied to clipboard!');
-        e.clearSelection();
-    });
-
-    clipboard.on('error', function (e) {
-        console.error('Error copying to clipboard:', e.action);
-    });
-}
-
-function getTableHeaders() {
-    const headerCells = document.querySelectorAll('#yourDataTable thead th');
-    return Array.from(headerCells).map(cell => cell.innerText);
-}
-
-
-
-function generateCSVAll(filename = 'generated_csv_all.csv') {
-    const csvContent = [];
-    const headerRow = [];
-    $('#yourDataTable thead th').each(function () {
-        headerRow.push($(this).text());
-    });
-    csvContent.push(headerRow.join(','));
-
-    // Add data rows for all pages
-    for (let i = 0; i < dataTable.page.info().pages; i++) {
-        dataTable.page(i).draw('page');
-        const dataRows = [];
-        $('#yourDataTable tbody tr').each(function () {
-            const rowData = [];
-            $(this).find('td').each(function () {
-                if ($(this).hasClass('table-avatar')) {
-                    // Extract text from the <a> elements within the .table-avatar cell
-                    rowData.push($(this).find('a').text().trim());
-                } else {
-                    rowData.push($(this).text());
-                }
+        var dt = $('#yourDataTable').DataTable();
+        var renumber = function () {
+            dt.column(0, { search: 'applied', order: 'applied' }).nodes().each(function (cell, i) {
+                cell.innerHTML = i + 1;
             });
-            dataRows.push(rowData.join(','));
-        });
-        csvContent.push(dataRows.join('\n'));
-    }
-
-    // Save the CSV file
-    const blob = new Blob([csvContent.join('\n')], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    link.href = window.URL.createObjectURL(blob);
-    link.download = filename;
-    link.click();
-}
-
-
-function generateExcelAll(filename = 'generated_excel_all.xlsx') {
-    const workbook = new ExcelJS.Workbook();
-    const worksheet = workbook.addWorksheet('Sheet 1');
-
-// Add header row
-        const headerRow = worksheet.addRow([
-            'Sr No.',
-            'Staff ID',
-            'Username',
-            'Full Name',
-            'Phone',
-            'Email',
-            'Department',
-        ]);
-
-    // Add header row
-//    const headerRow = [];
-//    $('#yourDataTable thead th').each(function () {
-//        headerRow.push($(this).text());
-//    });
-//    worksheet.addRow(headerRow);
-
-    // Add data rows for all pages
-    for (let i = 0; i < dataTable.page.info().pages; i++) {
-        dataTable.page(i).draw('page');
-        $('#yourDataTable tbody tr').each(function () {
-            const rowData = [];
-            $(this).find('td').each(function () {
-                if ($(this).hasClass('table-avatar')) {
-                    // Extract text from the <a> elements within the .table-avatar cell
-                    rowData.push($(this).find('a').text().trim());
-                } else {
-                    rowData.push($(this).text());
-                }
-            });
-            worksheet.addRow(rowData);
-        });
-    }
-
-    // Save the Excel file
-    workbook.xlsx.writeBuffer().then(data => {
-        const blob = new Blob([data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-        const link = document.createElement('a');
-        link.href = window.URL.createObjectURL(blob);
-        link.download = filename;
-        link.click();
+        };
+        dt.on('order.dt search.dt draw.dt', renumber);
+        renumber();
     });
-}
-
-
-function printTable() {
-    // Open a new window and print the table content
-    const printWindow = window.open('', '_blank');
-    printWindow.document.write('<html><head><title>Print</title></head><body>');
-    //printWindow.document.write('<style>@media print { table { width: 100%; } } </style>');
-    printWindow.document.write('<style>@media print { table { width: 100%; border-collapse: collapse; } th, td { border: 1px solid black; padding: 8px; } } </style>');
-
-
-
-    // Customize the heading for the print view
-    printWindow.document.write('<h1>Employee List</h1>');
-
-
-    printWindow.document.write('<table>');
-
-
-    // Add header row
-    printWindow.document.write('<thead><tr>');
-    $('#yourDataTable thead th').each(function () {
-        if ($(this).text() !== 'Action') {
-            printWindow.document.write('<th>' + $(this).text() + '</th>');
-        }
-    });
-    printWindow.document.write('</tr></thead>');
-
-    // Add data rows for all pages
-    for (let i = 0; i < dataTable.page.info().pages; i++) {
-        dataTable.page(i).draw('page');
-        $('#yourDataTable tbody tr').each(function () {
-            printWindow.document.write('<tr>');
-            $(this).find('td').each(function () {
-
-                if ($(this).hasClass('table-avatar')) {
-                    // Extract text from the <a> elements within the .table-avatar cell
-                    printWindow.document.write('<td>' + $(this).find('a').text().trim() + '</td>');
-                } else if ($(this).hasClass('action-column')) {
-                    // Exclude content for the "Action" column
-                    printWindow.document.write('<td border=0></td>');
-                } else {
-                    printWindow.document.write('<td>' + $(this).text() + '</td>');
-                }
-            });
-            printWindow.document.write('</tr>');
-        });
-    }
-
-    printWindow.document.write('</table>');
-    printWindow.document.write('</body></html>');
-    printWindow.document.close();
-    printWindow.print();
-}
-
-
-
-
-function generatePDFAll(filename = 'generated_pdf_all.pdf') {
-    const pdf = new jsPDF();
-    const pdfContent = [];
-
-    // Add header row
-    const headerRow = [];
-    $('#yourDataTable thead th').each(function () {
-        headerRow.push($(this).text());
-    });
-    pdfContent.push(headerRow);
-
-    // Add data rows for all pages
-    for (let i = 0; i < dataTable.page.info().pages; i++) {
-        dataTable.page(i).draw('page');
-        $('#yourDataTable tbody tr').each(function () {
-            const rowData = [];
-            $(this).find('td').each(function () {
-                if ($(this).hasClass('table-avatar')) {
-                    // Extract text from the <a> elements within the .table-avatar cell
-                    rowData.push($(this).find('a').text().trim());
-                } else {
-                    rowData.push($(this).text());
-                }
-            });
-            pdfContent.push(rowData);
-        });
-    }
-
-    // Generate PDF
-    pdf.autoTable({
-        head: [headerRow],
-        body: pdfContent.slice(1),
-    });
-
-    // Save the PDF file
-    if (filename) {
-        pdf.save(filename);
-    } else {
-        const pdfDataUri = pdf.output('datauristring');
-        const tab = window.open();
-        tab.document.write('<iframe width="100%" height="100%" src="' + pdfDataUri + '" frameborder="0" allowfullscreen></iframe>');
-    }
-}
-
-
-     $('#yourDataTable tbody tr').each(function(index) {
-        $(this).find('td:first').text(index + 1);
-    });
-
-      dataTable.on('order.dt search.dt', function() {
-        dataTable.column(0, { search: 'applied', order: 'applied' }).nodes().each(function(cell, i) {
-            cell.innerHTML = i + 1;
-        });
-    }).draw();
-
-
 });
 </script>
 
+<script>window.LIST_PAGE_EXPORT_LOGO_PATH = "{% static 'images/db_logo_200.png' %}";</script>
+<script src="{% static 'js/list_page_export.js' %}"></script>
+<script>
+    ListPageExport.register({
+        apiPrefix: 'employeeList',
+        pdfFilename: 'employee_list.pdf',
+        excelFilename: 'employee_list.xlsx',
+        excelSheetName: 'EmployeeList',
+        printDocumentTitle: 'Employee List',
+        pdfCaption: 'Employee List',
+        pdfMergeNamePhoneColumns: true
+    });
+</script>
 
 {% endblock %}

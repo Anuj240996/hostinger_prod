@@ -158,7 +158,7 @@
                      <li>
                         <span class="title-span"><b>Designation</b>  </span>
                         <span> : </span>
-                        <span class="info-span ml-3 text-capitalize">{{ employee.designation }} - {{ employee.department }}</span>
+                        <span class="info-span ml-3 text-capitalize">{{ employee.designation|default:"Associate" }} - {{ employee.department|default:"Associate" }}</span>
                      </li>
                      <li>
                         <span class="title-span"><b>Date Of Birth</b> </span>
@@ -180,12 +180,12 @@
                         <span class="title-span"><b>Department</b> </span>
                         <span> : </span>
 
-                        <span class="info-span ml-3 text-capitalize">{{ employee.department }}</span>
+                        <span class="info-span ml-3 text-capitalize">{{ employee.department|default:"Associate" }}</span>
                      </li>
                      <li>
                         <span class="title-span"><b>Designation</b> </span>
                         <span> : </span>
-                        <span class="info-span ml-3 text-capitalize">{{ employee.designation }}</span>
+                        <span class="info-span ml-3 text-capitalize">{{ employee.designation|default:"Associate" }}</span>
                      </li>
                      <li>
                         <span class="title-span"><b>Date Of Joining</b> </span>

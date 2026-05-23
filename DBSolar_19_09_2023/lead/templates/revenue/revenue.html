@@ -1,0 +1,319 @@
+{% extends 'base.html' %}
+{% load humanize %}
+{% load humanize indian_numbers %}
+{% block title %}Revenue Dashboard - Solar CRM{% endblock %}
+
+{% block content %}
+<div class="revenue-page">
+    <h2 class="mb-4">Revenue Dashboard</h2>
+
+    <!-- Top KPI Cards -->
+    <div class="row g-4 mb-4">
+        <div class="col-md-3">
+            <div class="card bg-primary text-white">
+                <div class="card-body">
+                    <h6 class="text-white-50">Total Revenue (This Month)</h6>
+                    <h3>{{ total_revenue|default:0|indian_currency }}</h3>
+                    <small><i class="fas fa-arrow-up me-1"></i>{{ revenue_growth|default:0 }}% vs last month</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <h6 class="text-white-50">Revenue Closed</h6>
+                    <h3>{{ total_revenue|default:0|indian_currency }}</h3>
+                    <small>{{ closed_deals|default:0 }} deals</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-warning text-white">
+                <div class="card-body">
+                    <h6 class="text-white-50">Pending Revenue</h6>
+                    <h3>{{ pending_revenue|default:0|indian_currency }}</h3>
+                    <small>{{ pending_deals|default:0 }} pending deals</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-info text-white">
+                <div class="card-body">
+                    <h6 class="text-white-50">Forecast Revenue</h6>
+                    <h3>{{ forecast_revenue|default:0|indian_currency }}</h3>
+                    <small>Next 3 months</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4 mb-4">
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body">
+                    <h6 class="text-muted">Average Deal Size</h6>
+                    <h4>{{ avg_deal_size|default:0|indian_currency }}</h4>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body">
+                    <h6 class="text-muted">Average Closing Time</h6>
+                    <h4>{{ avg_closing_days|default:0 }} days</h4>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body">
+                    <h6 class="text-muted">Win Rate</h6>
+                    <h4>{{ win_rate|default:0 }}%</h4>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body">
+                    <h6 class="text-muted">Active Deals</h6>
+                    <h4>{{ active_deals|default:0 }}</h4>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts Row -->
+    <div class="row g-4 mb-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Revenue by Sales Person</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="revenueBySalesPerson" height="300"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Revenue by Lead Source</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="revenueBySource" height="300"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4 mb-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Revenue by Campaign</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="revenueByCampaign" height="300"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Conversion Ratio by Stage</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="conversionByStage" height="300"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Revenue Records (includes pending) -->
+    <div class="card">
+        <div class="card-header">
+            <h5 class="mb-0">Recent Revenue Records</h5>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="bg-light">
+                        <tr>
+                            <th>Lead</th>
+                            <th>Sales Person</th>
+                            <th>Amount</th>
+                            <th>Date</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for deal in recent_deals %}
+                        <tr>
+                            <td>
+                                <a href="{% url 'lead_detail' deal.lead.id %}">{{ deal.lead.name }}</a>
+                            </td>
+                            <td>{{ deal.lead.assigned_to.get_full_name|default:'-' }}</td>
+                            <td><strong>{{ deal.amount|indian_currency }}</strong></td>
+                            <td>{{ deal.date|date:'d M Y' }}</td>
+                            <td>
+                                {% if deal.payment_status == 'paid' %}
+                                <span class="badge bg-success">Paid</span>
+                                {% else %}
+                                <span class="badge bg-warning">Pending</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if deal.payment_status != 'paid' %}
+                                <form method="post" action="{% url 'mark_revenue_paid' deal.id %}" style="display:inline;">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-sm btn-success" onclick="return confirm('Mark this revenue as paid?')">
+                                        <i class="fas fa-check-circle"></i> Mark Paid
+                                    </button>
+                                </form>
+                                {% else %}
+                                <span class="text-muted">-</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="6" class="text-center py-4">
+                                <p class="text-muted mb-0">No revenue records yet.</p>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Revenue by Sales Person Chart
+    const salesCtx = document.getElementById('revenueBySalesPerson').getContext('2d');
+    new Chart(salesCtx, {
+        type: 'bar',
+        data: {
+            labels: {{ sales_labels|safe }},
+            datasets: [{
+                label: 'Revenue',
+                data: {{ sales_data|safe }},
+                backgroundColor: 'rgba(40, 167, 69, 0.2)',
+                borderColor: 'rgba(40, 167, 69, 1)',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        callback: function(value) {
+                            return '₹' + value.toLocaleString();
+                        }
+                    }
+                }
+            }
+        }
+    });
+
+    // Revenue by Source Chart
+    const sourceCtx = document.getElementById('revenueBySource').getContext('2d');
+    new Chart(sourceCtx, {
+        type: 'pie',
+        data: {
+            labels: {{ source_labels|safe }},
+            datasets: [{
+                data: {{ source_data|safe }},
+                backgroundColor: [
+                    'rgba(255, 99, 132, 0.2)',
+                    'rgba(54, 162, 235, 0.2)',
+                    'rgba(255, 206, 86, 0.2)',
+                    'rgba(75, 192, 192, 0.2)',
+                    'rgba(153, 102, 255, 0.2)'
+                ],
+                borderColor: [
+                    'rgba(255, 99, 132, 1)',
+                    'rgba(54, 162, 235, 1)',
+                    'rgba(255, 206, 86, 1)',
+                    'rgba(75, 192, 192, 1)',
+                    'rgba(153, 102, 255, 1)'
+                ],
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false
+        }
+    });
+
+    // Revenue by Campaign Chart
+    const campaignCtx = document.getElementById('revenueByCampaign').getContext('2d');
+    new Chart(campaignCtx, {
+        type: 'bar',
+        data: {
+            labels: {{ campaign_labels|safe }},
+            datasets: [{
+                label: 'Revenue',
+                data: {{ campaign_data|safe }},
+                backgroundColor: 'rgba(255, 193, 7, 0.2)',
+                borderColor: 'rgba(255, 193, 7, 1)',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        callback: function(value) {
+                            return '₹' + value.toLocaleString();
+                        }
+                    }
+                }
+            }
+        }
+    });
+
+    // Conversion by Stage Chart
+    const conversionCtx = document.getElementById('conversionByStage').getContext('2d');
+    new Chart(conversionCtx, {
+        type: 'line',
+        data: {
+            labels: ['New', 'Qualified', 'Survey', 'Quote', 'Negotiation', 'Won'],
+            datasets: [{
+                label: 'Conversion Rate',
+                data: {{ conversion_data|safe }},
+                borderColor: 'rgba(13, 110, 253, 1)',
+                backgroundColor: 'rgba(13, 110, 253, 0.1)',
+                tension: 0.4,
+                fill: true
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    max: 100,
+                    ticks: {
+                        callback: function(value) {
+                            return value + '%';
+                        }
+                    }
+                }
+            }
+        }
+    });
+</script>
+{% endblock %}

@@ -8,6 +8,14 @@
   <meta charset="utf-8">
   <title>Quotation</title>
   <style>
+    @font-face {
+      font-family: "RupeeUnicode";
+      src: url("file:///C:/Windows/Fonts/arialuni.ttf");
+    }
+    @font-face {
+      font-family: "RupeeUnicodeFallback";
+      src: url("file:///C:/Windows/Fonts/Nirmala.ttf");
+    }
     @page {
       size: A4;
       margin: 150px 30px 70px 30px; /* top, right, bottom, left */
@@ -67,6 +75,9 @@
     .bold { font-weight: bold; }
     .red { color: red; font-weight: bold; }
     .space-top { margin-top: 12px; }
+    .rupee-symbol {
+      font-family: RupeeUnicode, RupeeUnicodeFallback, DejaVu Sans, Arial, sans-serif;
+    }
 
     /* Offer Table Layout */
     .offer-table th:nth-child(1), .offer-table td:nth-child(1) { width: 8%; text-align: center; }
@@ -337,15 +348,16 @@
   <tr>
     <td colspan="2" class="left bold indent-left" style="vertical-align: middle; padding-top: 2px; padding-bottom: 2px; padding-bottom: 0px">Net Amount – INR – <span colspan="2" style="font-weight:regular;">{{ amount_words }}</span></td>
     <td class="right bold" style="text-align: right; padding-right: 20px; vertical-align: middle; padding-top: 2px; padding-bottom: 2px; padding-bottom: 0px;font-size: 15px;">
-       <i class="fas fa-rupee-sign"></i>{{ quotation.final_amount|indian_format_with_decimals }}
+       <span class="rupee-symbol">₹</span> {{ quotation.final_amount|indian_format_with_decimals }}
     </td>
   </tr>
 </table>
 {% if quotation.consumer_type == 'Residential' %}
-<div style="text-align: left; margin-left: 2px; padding: 0px; background-color: yellow; font-weight:regular; margin-top: 5px;">
-  <b>Note -</b> Subsidy will be provided to consumer <b>Rs. 78,000/-</b> from CENTRAL GOVERNMENT
+<div style="text-align: left; margin-left: 2px; padding: 0px; background-color: yellow; font-weight:regular; margin-top: 10px;">
+  <b>Note-</b>Exact subsidy depends on your electricity load approval. Maximum up to <span class="rupee-symbol">₹</span> 78,000 is available. Final eligible subsidy shall be decided by MNRE / DISCOM after approval.
   in consumer's Bank A/C directly.
 </div>
+
 {% endif %}
 
 <!-- Attached Sample Quotation PDF -->
@@ -641,30 +653,17 @@
 </div>
   <table class="no-border">
     <tr style="border: none; margin-left: 14px;">
-      <td>  <b style="font-size: 20px;">Contact Person: </b><br>
-<!--           <div style="margin-left: 30px; font-weight: bold; font-size: 15px;">Mr.{{ quotation.employee_name }}<br>-->
-<!--            7588540555-->
-<!--             </div>-->
+      <td style="line-height:1.0; padding-top:0; padding-bottom: 8px;">  <b style="font-size: 20px;">Contact Person: </b>
         {# quotation_pdf_template.html #}
-<!--        <h3>Representatives</h3>-->
-        {% if quotation.representative_names %}
-          {# Display from stored order in representative_names (already formatted with numbers and order) #}
-          {# representative_names is stored as: "1. Name - Contact\n2. Name - Contact\n..." #}
-          {# linebreaksbr converts \n to <br> tags for proper display #}
-          <div style="margin-left: 20px; line-height: 1.6;">
-            {{ quotation.representative_names|linebreaksbr }}
-          </div>
-        {% elif representatives %}
-          {# Fallback to representatives queryset if representative_names not available #}
+        {% if representatives %}
+          <ul style="margin: 5px 0 0 30px; padding-left: 12px; line-height: 1.5; font-size: 14px;">
           {% for rep in representatives %}
-            <div style="margin-left: 20px; margin-bottom: 2px;">
-              <b>{{ forloop.counter }}. {{ rep.name }}{% if rep.contact %} - {{ rep.contact }}{% endif %}</b>
-            </div>
+            <li style="margin:0; padding:0;">{{ rep.name }}{% if rep.contact %}-{{ rep.contact }}{% endif %}</li> 
           {% endfor %}
+          </ul>
         {% else %}
           <p>No representatives selected.</p>
         {% endif %}
-
       </td>
       <td><div style="font-size: 16px; fon; margin-left: 20px; text-align: center;">
   <b>With Regards,</b>

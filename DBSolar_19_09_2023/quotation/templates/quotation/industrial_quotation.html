@@ -818,28 +818,17 @@
   </div>
   <table class="no-border">
     <tr style="border: none; margin-left: 14px;">
-      <td>  <b style="font-size: 20px;">Contact Person: </b>
-<!--           <div style="margin-left: 30px; font-weight: bold; font-size: 15px;">Mr.{{ quotation.employee_name }}<br>-->
-<!--            7588540555-->
-<!--             </div>-->
+      <td style="line-height:1.0; padding-top:0; padding-bottom: 8px;">  <b style="font-size: 20px;">Contact Person: </b>
         {# quotation_pdf_template.html #}
-<!--        <h3>Representatives</h3>-->
         {% if representatives %}
-<!--          <ol>-->
+          <ul style="margin: 5px 0 0 30px; padding-left: 12px; line-height: 1.5; font-size: 15px;">
           {% for rep in representatives %}
-<!--            <li style="margin-left: 20px;">-->
-<!--        <span style="margin-left: 20px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{{ forloop.counter }}. {{ rep.name }}{% if rep.contact %} - {{ rep.contact }}{% endif %}<br></span>-->
-        <div style="margin-left: 20px; margin-bottom: 2px;">
-          <b>{{ forloop.counter }}. {{ rep.name }}{% if rep.contact %} - {{ rep.contact }}{% endif %}</b>
-        </div>
-
-<!--            </li>-->
+            <li style="margin:0; padding:0;">{{ rep.name }}{% if rep.contact %}-{{ rep.contact }}{% endif %}</li> 
           {% endfor %}
-<!--          </ol>-->
+          </ul>
         {% else %}
           <p>No representatives selected.</p>
         {% endif %}
-
       </td>
       <td><div style="font-size: 16px; fon; margin-left: 20px; text-align: center;">
   <b>With Regards,</b>

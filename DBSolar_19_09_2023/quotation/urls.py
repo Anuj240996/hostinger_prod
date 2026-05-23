@@ -34,6 +34,14 @@ app_name = 'quotation'
 
 urlpatterns = [
     path('quotations/', views.quotation_list, name='quotation_list'),
+    path("confirm/<int:pk>/", views.confirm_quotation, name="confirm_quotation"),
+
+    # New URLs for convert consumer functionality
+    path('check-confirmed/<int:pk>/', views.check_quotation_confirmed, name='check_quotation_confirmed'),
+    path('get-quotation-details/<int:pk>/', views.get_quotation_details, name='get_quotation_details'),
+    path('store-quotation-data/', views.store_quotation_data, name='store_quotation_data'),
+
+    # path('confirm/<int:quotation_id>/', views.confirm_quotation, name='confirm_quotation'),
     path('quotation/new/', views.create_quotation, name='create_quotation'),
     path('add_other_item/', views.add_other_item_api, name='add_other_item_api'),
 
@@ -46,6 +54,7 @@ urlpatterns = [
     # path('inverter-company/new/', views.create_inverter_company, name='create_inverter_company'),
     path('api/add-panel-company/', views.add_panel_company_api, name='add_panel_company_api'),
     path('api/add-inverter-company/', views.add_inverter_company_api, name='add_inverter_company_api'),
+    path('api/surveys-for-lead/', views.surveys_for_lead_api, name='surveys_for_lead_api'),
     path('add-representative-api/', views.add_representative_api, name='add_representative_api'),
     path('update-representative-api/', views.update_representative_api, name='update_representative_api'),
     # NEW: Add plant capacity API

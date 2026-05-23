@@ -24,6 +24,26 @@
     margin-left: 10px;
     width: 180px;
 }
+
+#otherDetailsFieldset #na_other_row .form-check.form-switch .form-check-input {
+    width: 2.5em;
+    height: 1.25em;
+    margin-right: 0.75rem;
+    cursor: pointer;
+}
+#otherDetailsFieldset #na_other_row .form-check.form-switch .form-check-label {
+    cursor: pointer;
+    padding-left: 0;
+}
+
+#proposedSystemFieldset .form-check.form-switch,
+#otherDetailsFieldset #na_other_row .form-check.form-switch {
+    padding-left: 3em;
+}
+#proposedSystemFieldset .form-check.form-switch .form-check-input,
+#otherDetailsFieldset #na_other_row .form-check.form-switch .form-check-input {
+    margin-left: -3em;
+}
 </style>
 <style>
 /* -------- Fieldset Active / Inactive -------- */
@@ -33,6 +53,9 @@ fieldset {
     border-radius: 10px;
     padding: 15px;
     transition: all 0.3s ease;
+    box-sizing: border-box;
+    width: 100%;
+    max-width: 100%;
 }
 
 /* Active Fieldset */
@@ -823,10 +846,17 @@ document.addEventListener("DOMContentLoaded", function () {
       <legend>Other Details</legend>
 
       <strong>Select Required Items:</strong><br>
-        <label class="checkbox-label inv-item item1">
-            <input type="checkbox" id="na_other_checkbox">
-            N.A.
-        </label>
+        <div id="na_other_row" class="mb-3">
+                <div class="form-check form-switch">
+                    <input class="form-check-input" type="checkbox" role="switch" id="na_other_checkbox" autocomplete="off">
+                    <label class="form-check-label fw-bold text-danger" for="na_other_checkbox">
+                        Mark as Not Applicable (N.A.)
+                    </label>
+                    <small class="form-text text-muted d-block mt-1 ms-1">
+                        Toggle on if none of the optional items below apply to this quotation.
+                    </small>
+                </div>
+        </div>
 
 <div id="other-items-checkboxes" class="inv-item item1">
       {% for item in form.other_items %}
@@ -1385,6 +1415,7 @@ document.addEventListener("DOMContentLoaded", function () {
 document.addEventListener("DOMContentLoaded", function () {
 
     const naCheckbox = document.getElementById("na_other_checkbox");
+    const naOtherRow = document.getElementById("na_other_row");
     const otherCheckboxWrapper = document.getElementById("other-items-checkboxes");
     const otherCheckboxes = otherCheckboxWrapper.querySelectorAll('input[type="checkbox"]');
     const addOtherBtn = document.getElementById("openOtherBtn");
@@ -1403,11 +1434,9 @@ document.addEventListener("DOMContentLoaded", function () {
             const anyChecked = Array.from(otherCheckboxes).some(x => x.checked);
 
             if (anyChecked) {
-                // Instead of disabling → HIDE NA checkbox
-                naCheckbox.parentElement.style.display = "none";
+                if (naOtherRow) naOtherRow.style.display = "none";
             } else {
-                // Show NA checkbox again
-                naCheckbox.parentElement.style.display = "inline-block";
+                if (naOtherRow) naOtherRow.style.display = "";
             }
         });
     });

@@ -217,15 +217,17 @@
                         var csrfToken = $('input[name="csrfmiddlewaretoken"]').val();
 
                         $.ajax({
-                            url: '/customer/MSEB/',
+                            url: '{% url "customer-complete_MSEB" %}',
                             type: 'POST',
+                            dataType: 'json',
                             headers: {
-                                'X-CSRFToken': csrfToken // Include CSRF token in headers
+                                'X-CSRFToken': csrfToken,
+                                'X-Requested-With': 'XMLHttpRequest'
                             },
                             data: {
                                 cust_id: $("#Comp_name").val(),
                                 fieldName: fieldName,
-                                isChecked: isChecked,
+                                isChecked: isChecked ? 'true' : 'false',
                                 createdAt: completionDate // Use completion date provided by the user
                             },
                             success: function(response) {

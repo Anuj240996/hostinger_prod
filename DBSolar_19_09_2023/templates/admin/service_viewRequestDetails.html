@@ -1,0 +1,665 @@
+{% extends 'partials/base.html' %}
+{% load static %}
+{% load firereport_dt %}
+{% block content %}
+
+<style>
+  .image-container {
+    position: relative;
+    display: inline-block;
+  }
+  .company-symbol-overlap {
+    position: absolute;
+    bottom: 0;
+    right: 3px;
+    max-width: 30%;
+    height: 35%;
+    z-index: 1;
+  }
+  .service-report-header {
+    border: 1px solid #dee2e6;
+    border-radius: 6px;
+    padding: 10px 14px;
+    margin-bottom: 12px;
+    background: #f8f9fa;
+  }
+  .service-report-header img {
+    width: 56px;
+    height: 56px;
+    object-fit: contain;
+    margin-right: 10px;
+  }
+  .service-report-fieldset {
+    border: 1px solid #cfd6dc;
+    border-radius: 6px;
+    padding: 10px 12px;
+    margin-bottom: 12px;
+  }
+  .service-report-fieldset legend {
+    width: auto;
+    font-size: 0.95rem;
+    font-weight: 700;
+    padding: 0 6px;
+    margin-bottom: 0;
+  }
+  .service-report-fieldset:focus-within:not([disabled]) {
+    background: #ffe6f0;
+    border-color: #f2a6c6;
+    transition: background-color 0.2s ease, border-color 0.2s ease;
+  }
+  .service-report-fieldset[disabled] {
+    background: #eef1f4;
+    border-color: #b8c2cc;
+    opacity: 1;
+  }
+  .service-report-fieldset[disabled] input,
+  .service-report-fieldset[disabled] select,
+  .service-report-fieldset[disabled] textarea {
+    background-color: #e2e6ea !important;
+    color: #495057 !important;
+    cursor: not-allowed;
+  }
+  .mini-label {
+    font-size: 0.8rem;
+    color: #6c757d;
+    margin-bottom: 4px;
+  }
+</style>
+
+<section class="content">
+  <div class="content-header">
+    <div class="container-fluid">
+      <div class="row mb-2">
+        <div class="col-sm-6">
+          <h1 class="m-0">View Request Details</h1>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="container-fluid">
+    <div class="row">
+      <div class="col-md-12">
+        <div class="card card-primary">
+          <div class="card-header">
+            <h3 class="card-title">View Service Details</h3>
+          </div>
+
+          <div class="card-body" style="background-color: #98a8aa">
+            <div class="row">
+              <div class="col-12">
+                <table class="table table-bordered table-striped table-framebordered" style="background-color: white;">
+                  <tr>
+                    <th style="text-align: left; color: blue;" colspan="2"><h5>&nbsp;&nbsp;Consumer Information (Reported by)</h5></th>
+                  </tr>
+                  <tr>
+                    <th style="width: 45px;">&nbsp;&nbsp;Service No.</th>
+                    <td style="width: 155px;">SRV / {{ service_request.id }}</td>
+                  </tr>
+                  <tr>
+                    <th style="width: 45px;">&nbsp;&nbsp;Full Name</th>
+                    <td style="width: 155px;">{{ service_request.FullName|upper }}</td>
+                  </tr>
+                  <tr>
+                    <th style="width: 45px;">&nbsp;&nbsp;Contact Number</th>
+                    <td style="width: 155px;">{{ service_request.MobileNumber }}</td>
+                  </tr>
+                  <tr>
+                    <th style="width: 45px;">&nbsp;&nbsp;Location</th>
+                    <td style="width: 155px;" class="text-capitalize">{{ service_request.Location }}</td>
+                  </tr>
+                  <tr>
+                    <th style="width: 45px;">&nbsp;&nbsp;Message</th>
+                    <td style="width: 155px;" class="text-capitalize">{{ service_request.Message }}</td>
+                  </tr>
+                  <tr>
+                    <th style="width: 45px;">&nbsp;&nbsp;Reporting Time</th>
+                    <td>{{ service_request.Postingdate|indian_dt }}</td>
+                  </tr>
+                  <tr>
+                    <th style="width: 45px;">&nbsp;&nbsp;Current Status</th>
+                    <td>{{ service_request.Status }}</td>
+                  </tr>
+                </table>
+              </div>
+            </div>
+
+            <hr>
+
+            {% if not service_request.AssignTo %}
+            <h3 align="center" style="text-align: center; color: red;">Not Assigned Yet</h3>
+            {% else %}
+            <div class="row">
+              <div class="col-12">
+                <table class="table table-bordered table-striped" style="background-color: white">
+                  <tr>
+                    <th style="text-align: left; color: red;" colspan="3"><h5>&nbsp;&nbsp;Engineers Assigned Details</h5></th>
+                  </tr>
+                  <tr>
+                    <th style="text-align: center; width: 250px" rowspan="5">
+                      <div class="image-container">
+                        <img class="img-thumbnail ml-2" height="150" width="200" src="{{ service_request.AssignTo.profile.image.url }}" alt="profile-image">
+                        <img src="{% static '/images/dblogosmall.png' %}" alt="Company Symbol" class="company-symbol-overlap">
+                      </div>
+                    </th>
+                  </tr>
+                  <tr>
+                    <th style="width: 300px">&nbsp;&nbsp;Engineers Name</th>
+                    <td class="text-capitalize">{{ service_request.AssignTo.first_name }} {{ service_request.AssignTo.last_name }}</td>
+                  </tr>
+                  <tr>
+                    <th style="width: 300px">&nbsp;&nbsp;Employee ID & Designation</th>
+                    <td class="text-capitalize">DB / {{ service_request.AssignTo.id }} - {{ service_request.AssignTo.profile.designation }}</td>
+                  </tr>
+                  <tr>
+                    <th style="width: 300px">&nbsp;&nbsp;Contact No.</th>
+                    <td>{{ service_request.AssignTo.profile.workphone }}</td>
+                  </tr>
+                  <tr>
+                    <th style="width: 300px">&nbsp;&nbsp;Engineers Address</th>
+                    <td class="text-capitalize">{{ service_request.AssignTo.profile.address }}</td>
+                  </tr>
+                  <tr>
+                    <th></th>
+                    <th style="width: 300px">&nbsp;&nbsp;Assigned Time</th>
+                    <td>{{ service_request.AssignedTime|indian_dt }}</td>
+                  </tr>
+                </table>
+              </div>
+            </div>
+            {% endif %}
+
+            <hr>
+            {% if service_history %}
+            <table class="table table-bordered table-striped" style="background-color: white">
+              <tr align="left" style="color: red;">
+                <th colspan="4"><h5>&nbsp;&nbsp;&nbsp;Request Track History</h5></th>
+              </tr>
+              <tr style="background-color: #b3bebe;">
+                <th class="text-center">#</th>
+                <th>Action Taken</th>
+                <th>Status</th>
+                <th>Remark Date</th>
+              </tr>
+              {% for i in service_history %}
+              <tr>
+                <td class="text-center">{{ forloop.counter }}</td>
+                <td class="text-capitalize">{{ i.remark }}</td>
+                <td class="text-capitalize">{{ i.status }}</td>
+                <td>{{ i.postingDate|indian_dt }}</td>
+              </tr>
+              {% endfor %}
+            </table>
+            {% else %}
+            <h4 align="center" style="color:red">No Tracking history found</h4>
+            {% endif %}
+            <br>
+
+            {% if service_request.Status == 'Assigned' %}
+            <form method="post" action="{% url 'firereport-service-mark-in-process' service_request.id %}" class="d-inline">
+              {% csrf_token %}
+              <button type="submit" class="btn btn-warning btn-sm">Start Work (In Process)</button>
+            </form>
+            {% endif %}
+
+            {% if service_request.Status != 'Completed' and service_request.Status == 'In Process' %}
+            <button type="button" class="btn btn-primary btn-sm" data-toggle="modal" data-target="#serviceReportModal">Service Report</button>
+            {% endif %}
+
+            <div class="modal fade" id="serviceReportModal" tabindex="-1" role="dialog" aria-labelledby="serviceReportModalLabel" aria-hidden="true">
+              <div class="modal-dialog modal-xl" role="document" style="max-width: 92%;">
+                <div class="modal-content">
+                  <div class="modal-header">
+                    <h5 class="modal-title" id="serviceReportModalLabel">Service Report</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                      <span aria-hidden="true">&times;</span>
+                    </button>
+                  </div>
+                  <div class="modal-body">
+                    <form id="serviceReportForm" method="post" action="{% url 'firereport-service-mark-completed' service_request.id %}" novalidate>
+                      {% csrf_token %}
+                      <div class="service-report-header d-flex align-items-center">
+                        <img src="{% static '/images/dblogosmall.png' %}" alt="Company Logo">
+                        <div>
+                          <h5 class="mb-0"><b>DB Solar</b></h5>
+                          <div class="text-muted" style="font-size: 0.85rem;">Solar Service Report Form</div>
+                          <div class="text-muted" style="font-size: 0.8rem;">Service No: SRV / {{ service_request.id }}</div>
+                        </div>
+                        <div class="ml-auto row" style="min-width: 300px;">
+                          <div class="col-6">
+                            <label class="mini-label">Date</label>
+                            <input type="date" name="report_date" class="form-control form-control-sm" value="{{ service_report.report_date|date:'Y-m-d'|default:report_date_default }}">
+                          </div>
+                          <div class="col-6">
+                            <label class="mini-label">Time</label>
+                            <input type="time" name="report_time" class="form-control form-control-sm" value="{{ service_report.report_time|time:'H:i'|default:report_time_default }}">
+                          </div>
+                        </div>
+                      </div>
+
+                      <fieldset id="consumerDetailsFieldset" class="service-report-fieldset" disabled>
+                        <legend>Consumer Details</legend>
+                        <div class="row">
+                          
+                          <div class="col-md-4">
+                            <label>Name</label>
+                            <input type="text" name="consumer_name" class="form-control form-control-sm" value="{{ service_report.consumer_name|default:service_request.FullName }}">
+                          </div>
+                          <div class="col-md-4">
+                            <label>Address</label>
+                            <input type="text" name="consumer_address" class="form-control form-control-sm" value="{{ service_report.consumer_address|default:customer.Address }}">
+                          </div>
+                          <div class="col-md-4">
+                            <label>Phone</label>
+                            <input type="text" name="consumer_phone" class="form-control form-control-sm" value="{{ service_report.consumer_phone|default:service_request.MobileNumber }}">
+                          </div>
+                        </div>
+                      </fieldset>
+
+                      <fieldset id="projectDetailsFieldset" class="service-report-fieldset" disabled>
+                        <legend>Project Details</legend>
+                        <div class="row">
+                          <div class="col-md-4">
+                            <label>Plant Capacity</label>
+                            <div class="input-group input-group-sm">
+                              <input type="text" name="plant_capacity" class="form-control" value="{{ service_report.plant_capacity|default:plant_capacity_default }}">
+                              <div class="input-group-append"><span class="input-group-text">kW</span></div>
+                            </div>
+                          </div>
+                          <div class="col-md-4">
+                            <label>Load Sanction</label>
+                            <div class="input-group input-group-sm">
+                              <input type="text" name="load_sanction" class="form-control" value="{{ service_report.load_sanction|default:load_sanction_default }}">
+                              <div class="input-group-append"><span class="input-group-text">kW</span></div>
+                            </div>
+                          </div>
+                          <div class="col-md-4">
+                            <label>Phase</label>
+                            <select name="phase_type" id="phaseType" class="form-control form-control-sm">
+                              <option value="single" {% if service_report.phase_type == 'single' or customer.phase == 1 or not service_report and not customer.phase %}selected{% endif %}>Single Phase</option>
+                              <option value="three" {% if service_report.phase_type == 'three' or customer.phase == 3 %}selected{% endif %}>Three Phase</option>
+                            </select>
+                          </div>
+                        </div>
+                        <div class="row mt-2">
+                          <div class="col-md-4">
+                            <label>Solar Module Make</label>
+                            <input type="text" name="solar_module_make" class="form-control form-control-sm" value="{{ service_report.solar_module_make|default:solar_make_default }}">
+                          </div>
+                          <div class="col-md-4">
+                            <label>Solar Capacity</label>
+                            <div class="input-group input-group-sm">
+                              <input type="text" name="solar_module_capacity" class="form-control" value="{{ service_report.solar_module_capacity|default:solar_capacity_default }}">
+                              <div class="input-group-append"><span class="input-group-text">kW</span></div>
+                            </div>
+                          </div>
+                          <div class="col-md-4">
+                            <label>Solar Quantity</label>
+                            <div class="input-group input-group-sm">
+                              <input type="text" name="solar_module_quantity" class="form-control" value="{{ service_report.solar_module_quantity|default:solar_qty_default }}">
+                              <div class="input-group-append"><span class="input-group-text">Nos.</span></div>
+                            </div>
+                          </div>
+                        </div>
+                        <div class="row mt-2">
+                          <div class="col-md-3">
+                            <label>Inverter Make</label>
+                            <input type="text" name="inverter_make" class="form-control form-control-sm" value="{{ service_report.inverter_make|default:inverter_make_default }}">
+                          </div>
+                          <div class="col-md-3">
+                            <label>Inverter Capacity</label>
+                            <div class="input-group input-group-sm">
+                              <input type="text" name="inverter_capacity" class="form-control" value="{{ service_report.inverter_capacity|default:inverter_capacity_default }}">
+                              <div class="input-group-append"><span class="input-group-text">kW</span></div>
+                            </div>
+                          </div>
+                          <div class="col-md-3">
+                            <label>Inverter Quantity</label>
+                            <div class="input-group input-group-sm">
+                              <input type="text" name="inverter_quantity" class="form-control" value="{{ service_report.inverter_quantity|default:inverter_qty_default }}">
+                              <div class="input-group-append"><span class="input-group-text">Nos.</span></div>
+                            </div>
+                          </div>
+                          <div class="col-md-3">
+                            <label>Inverter Serial No.</label>
+                            <input type="text" name="inverter_serial_no" class="form-control form-control-sm" value="{{ inverter_serial_default }}">
+                          </div>
+                        </div>
+                      </fieldset>
+
+                      <fieldset class="service-report-fieldset">
+                        <legend>AC Side Details</legend>
+                        <div class="table-responsive">
+                          <table class="table table-bordered table-sm mb-0">
+                            <thead>
+                              <tr>
+                                <th>Phase</th>
+                                <th>Voltage</th>
+                                <th>Current</th>
+                              </tr>
+                            </thead>
+                            <tbody id="acSingleBody">
+                              <tr>
+                                <td>Single</td>
+                                <td><input type="text" name="ac_voltage_rn" class="form-control form-control-sm" value="{{ service_report.ac_voltage_rn|default:'' }}"></td>
+                                <td><input type="text" name="ac_current_r" class="form-control form-control-sm" value="{{ service_report.ac_current_r|default:'' }}"></td>
+                              </tr>
+                            </tbody>
+                            <tbody id="acThreeBody">
+                              <tr>
+                                <td>R-N</td>
+                                <td><input type="text" name="ac_voltage_rn" class="form-control form-control-sm" value="{{ service_report.ac_voltage_rn|default:'' }}"></td>
+                                <td><input type="text" name="ac_current_r" class="form-control form-control-sm" value="{{ service_report.ac_current_r|default:'' }}"></td>
+                              </tr>
+                              <tr>
+                                <td>Y-N</td>
+                                <td><input type="text" name="ac_voltage_yn" class="form-control form-control-sm" value="{{ service_report.ac_voltage_yn|default:'' }}"></td>
+                                <td><input type="text" name="ac_current_y" class="form-control form-control-sm" value="{{ service_report.ac_current_y|default:'' }}"></td>
+                              </tr>
+                              <tr>
+                                <td>B-N</td>
+                                <td><input type="text" name="ac_voltage_bn" class="form-control form-control-sm" value="{{ service_report.ac_voltage_bn|default:'' }}"></td>
+                                <td><input type="text" name="ac_current_b" class="form-control form-control-sm" value="{{ service_report.ac_current_b|default:'' }}"></td>
+                              </tr>
+                            </tbody>
+                          </table>
+                        </div>
+                      </fieldset>
+
+                      <fieldset class="service-report-fieldset">
+                        <legend>DC Side</legend>
+                        <div class="table-responsive">
+                          <table class="table table-bordered table-sm mb-1" id="dcTable">
+                            <thead>
+                              <tr>
+                                <th>MPPT</th>
+                                <th>String</th>
+                                <th>Voltage</th>
+                                <th>Current</th>
+                                <th style="width: 70px;">
+                                  <button type="button" id="addDcRow" class="btn btn-sm btn-outline-primary"><i class="fa fa-plus"></i></button>
+                                </th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {% for row in dc_rows %}
+                              <tr>
+                                <td><input type="text" name="dc_mppt[]" class="form-control form-control-sm" value="{{ row.mppt }}"></td>
+                                <td><input type="text" name="dc_string[]" class="form-control form-control-sm" value="{{ row.string }}"></td>
+                                <td><input type="text" name="dc_voltage[]" class="form-control form-control-sm" value="{{ row.voltage }}"></td>
+                                <td><input type="text" name="dc_current[]" class="form-control form-control-sm" value="{{ row.current }}"></td>
+                                <td class="text-center"><button type="button" class="btn btn-sm btn-outline-danger removeDcRow">&times;</button></td>
+                              </tr>
+                              {% endfor %}
+                            </tbody>
+                          </table>
+                        </div>
+                      </fieldset>
+
+                      <fieldset class="service-report-fieldset">
+                        <legend>ACDB Box</legend>
+                        <div class="row">
+                          <div class="col-md-4"><label>PN</label><input type="text" name="acdb_pn" class="form-control form-control-sm" value="{{ service_report.acdb_pn|default:'' }}"></div>
+                          <div class="col-md-4"><label>NE</label><input type="text" name="acdb_ne" class="form-control form-control-sm" value="{{ service_report.acdb_ne|default:'' }}"></div>
+                          <div class="col-md-4"><label>PE</label><input type="text" name="acdb_pn2" class="form-control form-control-sm" value="{{ service_report.acdb_pn2|default:'' }}"></div>
+                        </div>
+                      </fieldset>
+
+                      <fieldset class="service-report-fieldset">
+                        <legend>Generation</legend>
+                        <div class="row">
+                          <div class="col-md-3"><label>Today</label><input type="text" name="generation_today" class="form-control form-control-sm" value="{{ service_report.generation_today|default:'' }}"></div>
+                          <div class="col-md-3"><label>Yesterday</label><input type="text" name="generation_yesterday" class="form-control form-control-sm" value="{{ service_report.generation_yesterday|default:'' }}"></div>
+                          <div class="col-md-3"><label>Monthly</label><input type="text" name="generation_monthly" class="form-control form-control-sm" value="{{ service_report.generation_monthly|default:'' }}"></div>
+                          <div class="col-md-3"><label>Yearly</label><input type="text" name="generation_yearly" class="form-control form-control-sm" value="{{ service_report.generation_yearly|default:'' }}"></div>
+                        </div>
+                      </fieldset>
+
+                      <fieldset class="service-report-fieldset">
+                        <legend>Remark</legend>
+                        <div class="row">
+                          <div class="col-md-8">
+                            <label>Select Saved Remark(s)</label>
+                            <div id="remarkOptionsBox" class="border rounded p-2" style="max-height: 120px; overflow-y: auto;">
+                              {% for r in remark_options %}
+                              <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="selected_remark_ids" value="{{ r.id }}" id="remark{{ r.id }}" {% if r.remark in selected_remark_texts %}checked{% endif %}>
+                                <label class="form-check-label" for="remark{{ r.id }}">{{ r.remark }}</label>
+                              </div>
+                              {% empty %}
+                              <small class="text-muted">No saved remarks yet.</small>
+                              {% endfor %}
+                            </div>
+                          </div>
+                          <div class="col-md-4">
+                            <label>Add New Remark</label>
+                            <div class="input-group input-group-sm">
+                              <input type="text" name="new_remark" class="form-control" maxlength="250" placeholder="Add reusable remark">
+                              <div class="input-group-append">
+                                <button type="button" id="addRemarkBtn" class="btn btn-outline-primary">Add</button>
+                              </div>
+                            </div>
+                            <small class="text-muted">Click Add to include in saved remark list with checkbox.</small>
+                          </div>
+                        </div>
+                      </fieldset>
+
+                      <fieldset class="service-report-fieldset">
+                        <legend>Import & Export Details</legend>
+                        <div class="row">
+                          <div class="col-md-4"><label>Import</label><input type="text" name="import_units" class="form-control form-control-sm" value="{{ service_report.import_units|default:'' }}"></div>
+                          <div class="col-md-4"><label>Export</label><input type="text" name="export_units" class="form-control form-control-sm" value="{{ service_report.export_units|default:'' }}"></div>
+                          <div class="col-md-4"><label>Generation Meter</label><input type="text" name="meter_generation_units" class="form-control form-control-sm" value="{{ service_report.meter_generation_units|default:'' }}"></div>
+                        </div>
+                      </fieldset>
+
+                      <fieldset class="service-report-fieldset">
+                        <legend>Signatures</legend>
+                        <div class="row">
+                          <div class="col-md-4">
+                            <label>Consumer Sign & Name</label>
+                            <input type="text" name="consumer_sign_name" class="form-control form-control-sm" value="{{ service_report.consumer_sign_name|default:service_request.FullName }}">
+                          </div>
+                          <div class="col-md-3">
+                            <label>Engg Name</label>
+                            <input type="text" name="engg_sign_name" class="form-control form-control-sm" value="{{ service_report.engg_sign_name|default:service_request.AssignTo.get_full_name }}">
+                          </div>
+                          <div class="col-md-2">
+                            <label>Engg ID</label>
+                            <input type="text" name="engg_id" class="form-control form-control-sm" value="{{ service_report.engg_id|default:service_request.AssignTo.id }}">
+                          </div>
+                          <div class="col-md-3">
+                            <label>Date</label>
+                            <input type="date" name="engg_sign_date" class="form-control form-control-sm" value="{{ service_report.engg_sign_date|date:'Y-m-d'|default:report_date_default }}">
+                          </div>
+                        </div>
+                      </fieldset>
+
+                      <div class="modal-footer">
+                        <button type="submit" class="btn btn-primary">Submit</button>
+                      </div>
+                    </form>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+<script>
+  (function() {
+    var phaseSelect = document.getElementById('phaseType');
+    var acSingleBody = document.getElementById('acSingleBody');
+    var acThreeBody = document.getElementById('acThreeBody');
+    function syncAcRows() {
+      if (!phaseSelect || !acSingleBody || !acThreeBody) return;
+      var isThree = phaseSelect.value === 'three';
+      acSingleBody.style.display = isThree ? 'none' : '';
+      acThreeBody.style.display = isThree ? '' : 'none';
+      // Prevent duplicate POST values from hidden AC section
+      acSingleBody.querySelectorAll('input, select, textarea').forEach(function(el) {
+        el.disabled = isThree;
+      });
+      acThreeBody.querySelectorAll('input, select, textarea').forEach(function(el) {
+        el.disabled = !isThree;
+      });
+    }
+    if (phaseSelect) {
+      phaseSelect.addEventListener('change', syncAcRows);
+      syncAcRows();
+    }
+
+    var addDcRowBtn = document.getElementById('addDcRow');
+    var dcTable = document.getElementById('dcTable');
+    if (addDcRowBtn && dcTable) {
+      addDcRowBtn.addEventListener('click', function() {
+        var tbody = dcTable.querySelector('tbody');
+        if (!tbody) return;
+        var tr = document.createElement('tr');
+        tr.innerHTML =
+          '<td><input type="text" name="dc_mppt[]" class="form-control form-control-sm"></td>' +
+          '<td><input type="text" name="dc_string[]" class="form-control form-control-sm"></td>' +
+          '<td><input type="text" name="dc_voltage[]" class="form-control form-control-sm"></td>' +
+          '<td><input type="text" name="dc_current[]" class="form-control form-control-sm"></td>' +
+          '<td class="text-center"><button type="button" class="btn btn-sm btn-outline-danger removeDcRow">&times;</button></td>';
+        tbody.appendChild(tr);
+      });
+    }
+    if (dcTable) {
+      dcTable.addEventListener('click', function(e) {
+        var btn = e.target.closest('.removeDcRow');
+        if (!btn) return;
+        var row = btn.closest('tr');
+        var tbody = dcTable.querySelector('tbody');
+        if (!row || !tbody) return;
+        if (tbody.querySelectorAll('tr').length <= 1) return;
+        row.remove();
+      });
+    }
+
+    var addRemarkBtn = document.getElementById('addRemarkBtn');
+    if (addRemarkBtn) {
+      addRemarkBtn.addEventListener('click', function() {
+        var input = document.querySelector('input[name="new_remark"]');
+        var box = document.getElementById('remarkOptionsBox');
+        if (!input || !box) return;
+        var remarkText = (input.value || '').trim();
+        if (!remarkText) {
+          alert('Please enter remark text.');
+          return;
+        }
+        var formData = new FormData();
+        formData.append('remark', remarkText);
+        var form = addRemarkBtn.closest('form');
+        var csrf = form ? form.querySelector('input[name="csrfmiddlewaretoken"]') : null;
+        formData.append('csrfmiddlewaretoken', csrf ? csrf.value : '');
+        fetch("{% url 'firereport-service-add-remark-api' %}", {
+          method: 'POST',
+          body: formData
+        }).then(function(res) { return res.json(); })
+          .then(function(data) {
+            if (!data.ok) {
+              alert(data.error || 'Unable to add remark.');
+              return;
+            }
+            var existing = document.getElementById('remark' + data.id);
+            if (!existing) {
+              var wrapper = document.createElement('div');
+              wrapper.className = 'form-check';
+              wrapper.innerHTML =
+                '<input class="form-check-input" type="checkbox" name="selected_remark_ids" value="' + data.id + '" id="remark' + data.id + '" checked>' +
+                '<label class="form-check-label" for="remark' + data.id + '">' + data.remark + '</label>';
+              box.appendChild(wrapper);
+            } else {
+              existing.checked = true;
+            }
+            input.value = '';
+          }).catch(function() {
+            alert('Unable to add remark right now.');
+          });
+      });
+    }
+
+    var serviceReportForm = document.getElementById('serviceReportForm');
+    if (serviceReportForm) {
+      serviceReportForm.addEventListener('submit', function(e) {
+        // Ensure disabled fieldset values are still posted to backend
+        serviceReportForm.querySelectorAll('input.__mirror_disabled').forEach(function(el) { el.remove(); });
+        serviceReportForm.querySelectorAll('#consumerDetailsFieldset [name], #projectDetailsFieldset [name]').forEach(function(el) {
+          if (!el.name || !el.disabled) return;
+          var mirror = document.createElement('input');
+          mirror.type = 'hidden';
+          mirror.name = el.name;
+          mirror.value = el.value || '';
+          mirror.className = '__mirror_disabled';
+          serviceReportForm.appendChild(mirror);
+        });
+
+        var hasError = false;
+        var firstInvalid = null;
+
+        serviceReportForm.querySelectorAll('.is-invalid').forEach(function(el) {
+          el.classList.remove('is-invalid');
+        });
+
+        var requiredNames = [
+          'report_date', 'report_time',
+          'acdb_pn', 'acdb_ne', 'acdb_pn2',
+          'generation_today', 'generation_yesterday', 'generation_monthly', 'generation_yearly',
+          'import_units', 'export_units', 'meter_generation_units',
+          'consumer_sign_name', 'engg_sign_name', 'engg_id', 'engg_sign_date'
+        ];
+
+        var phaseField = serviceReportForm.querySelector('[name="phase_type"]');
+        var phaseValue = phaseField ? (phaseField.value || '').toLowerCase() : 'single';
+        if (phaseValue === 'three') {
+          requiredNames = requiredNames.concat(['ac_voltage_rn', 'ac_voltage_yn', 'ac_voltage_bn', 'ac_current_r', 'ac_current_y', 'ac_current_b']);
+        } else {
+          requiredNames = requiredNames.concat(['ac_voltage_rn', 'ac_current_r']);
+        }
+
+        requiredNames.forEach(function(name) {
+          var el = serviceReportForm.querySelector('[name="' + name + '"]');
+          if (!el || el.disabled) return;
+          var val = (el.value || '').trim();
+          if (!val) {
+            hasError = true;
+            el.classList.add('is-invalid');
+            if (!firstInvalid) firstInvalid = el;
+          }
+        });
+
+        var checkedRemarks = serviceReportForm.querySelectorAll('input[name="selected_remark_ids"]:checked').length;
+        var remarkBox = document.getElementById('remarkOptionsBox');
+        if (checkedRemarks === 0) {
+          hasError = true;
+          if (remarkBox) {
+            remarkBox.classList.add('is-invalid');
+            if (!firstInvalid) firstInvalid = remarkBox;
+          }
+        } else if (remarkBox) {
+          remarkBox.classList.remove('is-invalid');
+        }
+
+        if (hasError) {
+          e.preventDefault();
+          alert('Please fill all required fields before submitting the service report.');
+          if (firstInvalid && typeof firstInvalid.focus === 'function') firstInvalid.focus();
+          return false;
+        }
+
+        var ok = confirm('Are you sure you want to submit and save this Service Report?');
+        if (!ok) {
+          e.preventDefault();
+          return false;
+        }
+      });
+    }
+
+  })();
+</script>
+{% endblock %}

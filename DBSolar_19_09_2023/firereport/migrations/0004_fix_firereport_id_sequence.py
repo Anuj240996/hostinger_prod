@@ -19,20 +19,6 @@ def fix_firereport_id_sequence(apps, schema_editor):
     seq = "firereport_firereport_id_seq"
 
     with conn.cursor() as cursor:
-        # Check if column is an identity column (PostgreSQL 10+)
-        cursor.execute(
-            """
-            SELECT is_identity, identity_generation
-            FROM information_schema.columns
-            WHERE table_name = %s AND column_name = 'id'
-            """,
-            [table],
-        )
-        row = cursor.fetchone()
-        if row and row[0] == 'YES':
-            # Column is already an identity column, skip migration
-            return
-
         # If default is already set, do nothing.
         cursor.execute(
             """
@@ -58,16 +44,9 @@ def fix_firereport_id_sequence(apps, schema_editor):
         else:
             cursor.execute(f"SELECT setval(%s, %s, true)", [seq, max_id])
 
-        # Set default only if column is not an identity column
-        # (Do NOT run ALTER SEQUENCE ... OWNED BY here; if it fails,
+        # Set default. (Do NOT run ALTER SEQUENCE ... OWNED BY here; if it fails,
         # PostgreSQL aborts the whole transaction even if we catch the exception.)
-        try:
-            cursor.execute(f'ALTER TABLE "{table}" ALTER COLUMN "id" SET DEFAULT nextval(%s)', [seq])
-        except Exception as e:
-            # If it fails (e.g., identity column), that's okay - skip it
-            if "identity column" in str(e).lower():
-                return
-            raise
+        cursor.execute(f'ALTER TABLE "{table}" ALTER COLUMN "id" SET DEFAULT nextval(%s)', [seq])
 
 
 class Migration(migrations.Migration):

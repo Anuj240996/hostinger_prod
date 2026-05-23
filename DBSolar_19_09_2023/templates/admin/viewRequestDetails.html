@@ -179,6 +179,7 @@
                         {% endif %}
                         <br>
 
+                        {% if not firereport_associate_readonly %}
                         {% if not firereport.AssignTo %}
                         <div class="form-group">
                             <button type="button" class="btn btn-primary btn-sm" data-toggle="modal"
@@ -281,7 +282,7 @@
                                                 </tr>
                                             </table>
                                             <div class="modal-footer">
-                                                <button type="submit" name="submit" class="btn btn-primary">Submit
+                                                <button type="submit" id="take-action-submit-btn" name="submit" class="btn btn-primary">Submit
                                                 </button>
                                             </div>
                                         </form>
@@ -302,6 +303,7 @@
                                 {% endif %}
                             </div>
                         </div>
+                        {% endif %}
                     </div>
                 </div>
             </div>
@@ -347,6 +349,11 @@ $(document).ready(function() {
                 return false;
             }
             
+            var submitBtn = document.getElementById('take-action-submit-btn');
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.textContent = 'Submitting...';
+            }
             console.log('Form validation passed, submitting...');
         });
     } else {

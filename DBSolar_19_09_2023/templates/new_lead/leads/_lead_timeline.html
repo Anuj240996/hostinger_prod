@@ -1,0 +1,47 @@
+<div class="card qc-timeline-card shadow-sm h-100">
+    <div class="card-body p-4">
+        <h5 class="qc-timeline-heading mb-1">Timeline</h5>
+        {% if lead_is_locked %}
+        <p class="text-muted small mb-3 qc-add-activity-disabled">
+            <i class="fas fa-lock me-1"></i>Add Activity (disabled — estimate converted)
+        </p>
+        {% else %}
+        <button type="button" class="btn btn-link btn-sm qc-add-activity p-0 mb-3" data-bs-toggle="modal" data-bs-target="#addActivityModal">
+            <i class="fas fa-plus-circle me-1"></i>Add Activity
+        </button>
+        {% endif %}
+
+        <div class="qc-timeline-scroll">
+            {% if timeline_entries %}
+            <ul class="qc-timeline list-unstyled mb-0">
+                {% for entry in timeline_entries %}
+                <li class="qc-timeline-item">
+                    <span class="qc-timeline-icon" style="background-color: {{ entry.icon_color }};">
+                        <i class="fas {{ entry.icon_class }}"></i>
+                    </span>
+                    <div class="qc-timeline-body">
+                        <div class="qc-timeline-date">{{ entry.created|date:"d M, Y g:i A" }}</div>
+                        <div class="qc-timeline-title">{{ entry.title }}</div>
+                        {% if entry.description %}
+                        <div class="qc-timeline-text">{{ entry.description|linebreaksbr }}</div>
+                        {% endif %}
+                        {% for line in entry.extra_lines %}
+                        <div class="qc-timeline-text">{{ line }}</div>
+                        {% endfor %}
+                        <div class="qc-timeline-by">@ by {{ entry.user_name }}</div>
+                    </div>
+                </li>
+                {% endfor %}
+            </ul>
+            {% else %}
+            <div class="text-center py-5 text-muted">
+                <i class="fas fa-stream fa-2x mb-3 opacity-50"></i>
+                <p class="mb-0">No timeline activity yet</p>
+                {% if not lead_is_locked %}
+                <button type="button" class="btn btn-link btn-sm mt-2" data-bs-toggle="modal" data-bs-target="#addActivityModal">Add first activity</button>
+                {% endif %}
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>

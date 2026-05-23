@@ -6,19 +6,45 @@
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
       <title>Selected Checkbox Values</title>
       <style>
+         /*
+          * Top margin reserves space for letterhead. Logo + company lines are drawn on every page in Python (PyMuPDF).
+          */
+         @page {
+            size: a4 portrait;
+            margin-top: 112pt;
+            margin-left: 12pt;
+            margin-right: 12pt;
+            margin-bottom: 18pt;
+         }
+         .row,
+         .container-fluid,
+         .card-body,
+         .table-responsive,
+         .col-md-12,
+         .mx-auto {
+            display: block !important;
+            float: none !important;
+            width: 100% !important;
+            max-width: 100% !important;
+            margin-left: 0 !important;
+            margin-right: 0 !important;
+         }
          body {
          font-family: Arial, sans-serif;
          font-size: 12px;
+         margin: 0;
+         padding: 0;
          }
          .table-container {
          margin: 0 auto;
-         width: 80%;
+         width: 100%;
          }
          .table-heading {
          text-align: center;
-         margin-bottom: 2px;
-         margin-top: 1px;
-         padding: 5px;
+        margin: 8px 0 6px 0;
+         padding: 4px 0 2px 0;
+         font-size: 13px;
+         font-weight: bold;
          }
          table {
          width: 100%;
@@ -37,12 +63,15 @@
          background-color: #f2f2f2;
          }
          .compartment {
-         flex: 1;
-         overflow: auto;
+         display: block !important;
+         flex: none !important;
+         overflow: visible !important;
          border: 1px solid #ccc;
          padding: 15px;
          }
-         img {
+         /* Barcode cell images */
+         table.table img,
+         table tbody img {
          width: 80px;
          height: 50px;
          }
@@ -58,12 +87,6 @@
       <div class="container-fluid">
          <div class="card-body">
             <div class="row mt-1">
-               <img src="{% static 'images/dblogo2001.png' %}" alt="DB Logo" style="width: 450px; height: 40px;">
-               <img src="{% static 'images/DB SOLAR PNG LOGO 3 (6).png' %}" alt="Logo" width="100%">
-              <img src="data:image/png;base64,{{ image_base64 }}" alt="Image">
-              <img src="{{ image_url }}" style="width: 450px; height: 40px;">
-
-
                <div class="compartment">
                   <table class="table">
                      <tr>
@@ -86,10 +109,8 @@
                {% if solar_items %}
                <div class="col-md-12 mx-auto table-container">
                   <div class="table-responsive">
-                     <!--                   <img src="static/dblogo200.png">-->
-                     <caption>
-                        <h3 class="table-heading">Solar Panel Items</h3>
-                     </caption>
+                     <!-- Section title must not use <caption> here (invalid unless direct child of <table>) — xhtml2pdf drew it above letterhead -->
+                     <h3 class="table-heading">Solar Panel Items</h3>
                      <div class="compartment">
                         <table class="table">
                            <tr>
@@ -111,7 +132,7 @@
                         </table>
                      </div>
                      <br>
-                     <table>
+                     <table repeat="1">
                         <thead>
                           {% if selected_no == "barcode" %}
                             <tr>
@@ -193,9 +214,7 @@
                {% if inverter_items %}
                <div class="col-md-12 mx-auto table-container">
                   <div class="table-responsive">
-                     <caption>
-                        <h3 class="table-heading">Inverter Items</h3>
-                     </caption>
+                     <h3 class="table-heading">Inverter Items</h3>
                       <div class="compartment">
                         <table class="table">
                            <tr>
@@ -217,7 +236,7 @@
                      </div>
                      <br>
                      {% if inverter_panel_total_quantity == 1 %}
-                     <table>
+                     <table repeat="1">
                         <thead>
                           {% if selected_no == "barcode" %}
                               <tr>
@@ -267,7 +286,7 @@
                         </tbody>
                      </table>
                      {% elif inverter_panel_total_quantity > 1 %}
-                     <table>
+                     <table repeat="1">
                         <thead>
                            {% if selected_no == "barcode" %}
                            <tr>

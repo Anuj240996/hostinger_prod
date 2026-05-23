@@ -23,6 +23,7 @@
                 </div>
 
                 {{ form.is_staff|as_crispy_field }}
+                {{ form.is_associate|as_crispy_field }}
                 {{ form.is_superuser|as_crispy_field }}
 
                 <a href="{% url 'user-profile-update' user.id %}"> <input class="btn btn-success" type="submit" value="Register"> </a>
@@ -37,4 +38,20 @@
         background-color: #f1f1f1; /* Change this to the desired color */
     }
 </style>
+<script>
+    (function () {
+        const associate = document.getElementById('id_is_associate');
+        const staff = document.getElementById('id_is_staff');
+        if (!associate || !staff) return;
+
+        function syncStaffWithAssociate() {
+            if (associate.checked) {
+                staff.checked = true;
+            }
+        }
+
+        associate.addEventListener('change', syncStaffWithAssociate);
+        syncStaffWithAssociate();
+    })();
+</script>
 {% endblock %}

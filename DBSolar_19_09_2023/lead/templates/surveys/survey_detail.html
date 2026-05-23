@@ -1,0 +1,336 @@
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block title %}Survey Details - {{ survey.lead.name }}{% endblock %}
+
+{% block content %}
+<div class="survey-detail">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="mb-1">Site Survey: {{ survey.lead.name }}</h2>
+            <div>
+                <span class="badge {% if survey.status == 'completed' %}bg-success{% elif survey.status == 'scheduled' %}bg-primary{% else %}bg-danger{% endif %} me-2">
+                    {{ survey.get_status_display }}
+                </span>
+                <span class="badge bg-info">{{ survey.scheduled_date|date:'d M Y, h:i A' }}</span>
+            </div>
+        </div>
+        <div class="btn-group">
+            <a href="{% url 'survey_edit' survey.id %}" class="btn btn-outline-primary">
+                <i class="fas fa-edit me-2"></i>Edit
+            </a>
+<!--            {% if survey.status == 'completed' and not survey.has_quotation %}-->
+<!--            <button class="btn btn-success" onclick="generateQuotation()">-->
+<!--                <i class="fas fa-file-invoice me-2"></i>Generate Quotation-->
+<!--            </button>-->
+<!--            {% endif %}-->
+            <!-- In the button group, replace the "Generate Quotation" button -->
+            {% if survey.status == 'completed' and not survey.has_quotation %}
+            <a href="{% url 'quotation_create' %}?survey={{ survey.id }}" class="btn btn-success">
+                <i class="fas fa-file-invoice me-2"></i>Generate Quotation
+            </a>
+            {% endif %}
+            <a href="{% url 'survey_list' %}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left me-2"></i>Back
+            </a>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Left Column - Survey Details -->
+        <div class="col-md-8">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Survey Information</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6 class="text-muted mb-3">Technical Details</h6>
+                            <table class="table table-borderless">
+                                <tr>
+                                    <td width="40%">Recommended Size:</td>
+                                    <td><strong>{{ survey.recommended_size|default:'-' }} kW</strong></td>
+                                </tr>
+                                <tr>
+                                    <td>Panel Count:</td>
+                                    <td>{{ survey.panel_count|default:'-' }}</td>
+                                </tr>
+                                <tr>
+                                    <td>Inverter Capacity:</td>
+                                    <td>{{ survey.inverter_capacity|default:'-' }} kW</td>
+                                </tr>
+                                <tr>
+                                    <td>Estimated Generation:</td>
+                                    <td>{{ survey.estimated_generation|default:'-' }} kWh/day</td>
+                                </tr>
+                                <tr>
+                                    <td>Roof Area Required:</td>
+                                    <td>{{ survey.roof_area_required|default:'-' }} sq.ft</td>
+                                </tr>
+                            </table>
+                        </div>
+                        <div class="col-md-6">
+                            <h6 class="text-muted mb-3">Feasibility Analysis</h6>
+                            <div class="mb-3">
+                                <label class="form-label">Feasibility Score</label>
+                                <div class="progress" style="height: 25px;">
+                                    {% if survey.feasibility == 'high' %}
+                                    <div class="progress-bar bg-success" style="width: 100%">High</div>
+                                    {% elif survey.feasibility == 'medium' %}
+                                    <div class="progress-bar bg-warning" style="width: 66%">Medium</div>
+                                    {% elif survey.feasibility == 'low' %}
+                                    <div class="progress-bar bg-danger" style="width: 33%">Low</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label">Shadow Analysis</label>
+                                <div class="p-3 bg-light rounded">
+                                    {% if survey.has_shadow_issues %}
+                                    <span class="text-danger">
+                                        <i class="fas fa-exclamation-triangle me-2"></i>Shadow issues detected
+                                    </span>
+                                    {% else %}
+                                    <span class="text-success">
+                                        <i class="fas fa-check-circle me-2"></i>No shadow issues
+                                    </span>
+                                    {% endif %}
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label">Structural Feasibility</label>
+                                <div>
+                                    {% if survey.structural_feasible %}
+                                    <span class="badge bg-success">Feasible</span>
+                                    {% else %}
+                                    <span class="badge bg-danger">Not Feasible</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <hr>
+
+                    <div class="row">
+                        <div class="col-12">
+                            <h6 class="text-muted mb-3">Technical Notes</h6>
+                            <div class="p-3 bg-light rounded">
+                                {{ survey.technical_notes|linebreaks|default:'No technical notes added' }}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Roof Images -->
+            {% if survey.roof_images.exists %}
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Roof Images</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        {% for image in survey.roof_images.all %}
+                        <div class="col-md-4">
+                            <div class="position-relative">
+                                <img src="{{ image.image.url }}" class="img-fluid rounded" alt="Roof Image">
+                                {% if image.is_primary %}
+                                <span class="badge bg-primary position-absolute top-0 end-0 m-2">Primary</span>
+                                {% endif %}
+                            </div>
+                            {% if image.caption %}
+                            <small class="text-muted d-block mt-1">{{ image.caption }}</small>
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Right Column - Lead Info & Actions -->
+        <div class="col-md-4">
+            <!-- Lead Information -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Lead Information</h5>
+                </div>
+                <div class="card-body">
+                    <table class="table table-sm table-borderless">
+                        <tr>
+                            <td>Name:</td>
+                            <td><strong>{{ survey.lead.name }}</strong></td>
+                        </tr>
+                        <tr>
+                            <td>Phone:</td>
+                            <td>{{ survey.lead.phone }}</td>
+                        </tr>
+                        <tr>
+                            <td>Email:</td>
+                            <td>{{ survey.lead.email|default:'-' }}</td>
+                        </tr>
+                        <tr>
+                            <td>Address:</td>
+                            <td>{{ survey.lead.address|truncatechars:50 }}</td>
+                        </tr>
+                        <tr>
+                            <td>Property Type:</td>
+                            <td>{{ survey.lead.get_property_type_display }}</td>
+                        </tr>
+                        <tr>
+                            <td>Roof Type:</td>
+                            <td>{{ survey.lead.get_roof_type_display }}</td>
+                        </tr>
+                        <tr>
+                            <td>Monthly Bill:</td>
+                            <td>₹{{ survey.lead.electricity_bill|default:'0'|intcomma }}</td>
+                        </tr>
+                    </table>
+
+                    <a href="{% url 'lead_detail' survey.lead.id %}" class="btn btn-outline-primary btn-sm w-100">
+                        <i class="fas fa-external-link-alt me-2"></i>View Full Lead Details
+                    </a>
+                </div>
+            </div>
+
+            <!-- Survey Timeline -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Timeline</h5>
+                </div>
+                <div class="card-body">
+                    <div class="timeline">
+                        {% for entry in survey_timeline_entries %}
+                        <div class="timeline-item">
+                            <div class="timeline-marker {{ entry.marker_class }}">
+                                <i class="fas {{ entry.icon_class }}"></i>
+                            </div>
+                            <div class="timeline-content">
+                                <h6 class="mb-1">{{ entry.title }}</h6>
+                                <p class="mb-0">{{ entry.created|date:'d M Y, h:i A' }}</p>
+                                {% if entry.subtitle %}
+                                <p class="mb-0 small text-primary">{{ entry.subtitle }}</p>
+                                {% endif %}
+                                {% if entry.user_name %}
+                                <small class="text-muted">by {{ entry.user_name }}</small>
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% empty %}
+                        <p class="text-muted small mb-0">No timeline events yet.</p>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Quick Actions</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        {% if survey.status != 'completed' and survey.status != 'cancelled' %}
+                        <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#rescheduleSurveyModal">
+                            <i class="fas fa-calendar-alt me-2"></i>Reschedule
+                        </button>
+                        <form method="post" action="{% url 'survey_complete' survey.id %}" onsubmit="return confirm('Mark this survey as complete?');">
+                            {% csrf_token %}
+                            <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                            <button type="submit" class="btn btn-outline-success w-100">
+                                <i class="fas fa-check-circle me-2"></i>Mark Complete
+                            </button>
+                        </form>
+                        <form method="post" action="{% url 'survey_cancel' survey.id %}" onsubmit="return confirm('Are you sure you want to cancel this survey?');">
+                            {% csrf_token %}
+                            <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                            <button type="submit" class="btn btn-outline-danger w-100">
+                                <i class="fas fa-times-circle me-2"></i>Cancel Survey
+                            </button>
+                        </form>
+                        {% else %}
+                        <p class="text-muted small mb-0">No quick actions for {{ survey.get_status_display|lower }} surveys.</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if survey.status != 'completed' and survey.status != 'cancelled' %}
+<div class="modal fade" id="rescheduleSurveyModal" tabindex="-1" aria-labelledby="rescheduleSurveyModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="post" action="{% url 'survey_reschedule' survey.id %}">
+                {% csrf_token %}
+                <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="rescheduleSurveyModalLabel">Reschedule Survey</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <label class="form-label" for="reschedule_scheduled_date">New scheduled date & time</label>
+                    <input type="datetime-local" class="form-control" id="reschedule_scheduled_date" name="scheduled_date"
+                           value="{{ survey.scheduled_date|date:'Y-m-d' }}T{{ survey.scheduled_date|time:'H:i' }}" required>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="submit" class="btn btn-primary">Save reschedule</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<style>
+    .timeline {
+        position: relative;
+        padding-left: 30px;
+    }
+
+    .timeline-item {
+        position: relative;
+        padding-bottom: 20px;
+    }
+
+    .timeline-marker {
+        position: absolute;
+        left: -30px;
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 14px;
+    }
+
+    .timeline-content {
+        padding-left: 15px;
+    }
+
+    .timeline-item:not(:last-child)::before {
+        content: '';
+        position: absolute;
+        left: -15px;
+        top: 30px;
+        bottom: 0;
+        width: 2px;
+        background: #e9ecef;
+    }
+</style>
+
+<script>
+    function generateQuotation() {
+        window.location.href = "{% url 'quotation_create' %}?survey={{ survey.id }}";
+    }
+</script>
+{% endblock %}

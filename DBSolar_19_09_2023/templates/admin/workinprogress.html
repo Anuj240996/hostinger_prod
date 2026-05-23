@@ -41,11 +41,10 @@
                   <!-- Add these buttons inside the col-auto div -->
 <div class="col-auto text-right float-right ml-auto">
     <div class="dt-buttons btn-group flex-wrap">
-<!--       <a href="#" class="btn btn-outline-primary mr-2" name="download" id="download-pdf"><i class="fas fa-download"></i>Download</a>-->
-       <a id="generate-pdf-all" href="#" class="btn btn-primary" type="button" title="PDF"><i class="fas fa-file-pdf fs-4" style="font-size: 1.1rem;"></i></a>
-        <a id="generate-excel-all" href="#" class="btn btn-primary" title="Excel"><i class="mdi mdi-microsoft-excel" style="font-size: 18px;"></i></a>
-        <a id="copy-table" href="#" class="btn btn-primary" title="Print"><i class="fas fa-solid fa-copy"></i></a>
-        <a id="generate-print-all" href="#" class="btn btn-primary" title="Print"><i class="fas fa-solid fa-print"></i></a>
+        <a href="#" class="btn btn-primary" onclick="firereportWorkInProgressGeneratePDF(); return false;" title="PDF"><i class="fas fa-file-pdf" style="font-size: 1.05rem;"></i></a>
+        <a href="#" class="btn btn-primary" onclick="firereportWorkInProgressGenerateExcel(); return false;" title="Excel"><i class="mdi mdi-microsoft-excel" style="font-size: 18px;"></i></a>
+        <a href="#" class="btn btn-primary" onclick="firereportWorkInProgressCopyToClipboard(); return false;" title="Copy"><i class="fas fa-copy"></i></a>
+        <a href="#" class="btn btn-primary" onclick="firereportWorkInProgressPrintTable(); return false;" title="Print"><i class="fas fa-print"></i></a>
 
 <!--         <a href="{% url 'user-add' %}" class="btn btn-primary"  title="New User"><i class="fas fa-plus"></i></a>-->
 <!--       <button class="btn btn-outline-primary mr-2" id="generate-pdf"><i class="fas fa-file-pdf"></i> Generate PDF</button>-->
@@ -114,7 +113,7 @@
    <div class="row">
       <div class="card-body border" style="background-color: gray">
          <!-- Modify your table to use filtered_firereport -->
-         <table id="yourDataTable" class="table table-bordered table-striped datatable table.sm" style="background-color: white" >
+         <table id="yourDataTable" class="table table-bordered table-striped datatable table.sm dt-compact-cols dt-tools-minimal" style="background-color: white" >
             <thead>
                <tr class="text-center">
                   <th>Sr No.</th>
@@ -126,7 +125,7 @@
                   <th>Reporting Time</th>
                   <th>Status</th>
                   <th>Update Date</th>
-                  {% if user.is_superuser %}
+                  {% if user.is_staff %}
                   <th>Assign Engg</th>
                   {% endif %}
                   <th>Action</th>
@@ -134,7 +133,7 @@
             </thead>
 
             <tbody>
-               {% if user.is_authenticated and user.is_staff and user.is_superuser %}
+               {% if user.is_authenticated and user.is_staff %}
                {% for i in filtered_firereport %}
                <tr>
                   <td class="text-center">{{forloop.counter}}</td>
@@ -142,12 +141,10 @@
                   <td>{{i.FullName}}</td>
                   <td>{{i.MobileNumber}}</td>
                   <td>{{i.Location}}</td>
-                  <!--                                    <td>{{i.firereport.Message}}</td>-->
-                  <td>{{ i.Postingdate|indian_dt }}</td>
+                  <td data-order="{{ i.Postingdate|date:'Y-m-d H:i:s' }}">{{ i.Postingdate|indian_dt }}</td>
                   <td>{{i.Status}}</td>
-<!--                  <td>{{ i.firetequesthistory_set.first.postingDate|date:"d-m-y h:i A" }}</td>-->
-                  <td>{{ i.UpdationDate|indian_dt }}</td>
-                  <td class="text-capitalize">{{i.AssignTo.first_name}} {{i.AssignTo.last_name}}</td>
+                  <td data-order="{{ i.UpdationDate|date:'Y-m-d H:i:s' }}">{{ i.UpdationDate|indian_dt }}</td>
+                  <td class="text-capitalize">{% if i.AssignTo %}{{i.AssignTo.first_name}} {{i.AssignTo.last_name}}{% else %}-{% endif %}</td>
                   <td class="text-center">
                      <div class="btn-group">
                         <a class="btn btn-primary" href="{% url 'firereport-viewRequestDetails' i.id %}"><i class="fa fa-eye"></i></a> &nbsp;&nbsp;
@@ -157,41 +154,6 @@
                   </td>
                </tr>
                {% endfor %}
-               {% else %}
-               {% for i in filtered_firereport %}
-               {% if i.AssignTo == user %}
-               <tr>
-                  <td class="text-center">{{forloop.counter}}</td>
-                  <td class="text-center">{{i.id}}</td>
-                  <td>{{i.FullName}}</td>
-                  <td>{{i.MobileNumber}}</td>
-                  <td>{{i.Location}}</td>
-                  <!--                                    <td>{{i.Message}}</td>-->
-                  <td>{{ i.Postingdate|indian_dt }}</td>
-                  <td>{{i.Status}}</td>
-                  <!--                                    <td>{{i.firetequesthistory.postingDate|date:"d-m-y h:i A"}}</td>-->
-<!--                  <td>{{ i.firetequesthistory_set.first.postingDate|date:"d-m-y h:i A" }}</td>-->
-                  <td>{{ i.UpdationDate|indian_dt }}</td>
-                  <!--                                    <td class="text-capitalize">{{i.AssignTo.first_name}} {{i.AssignTo.last_name}}</td>-->
-                  <td class="text-center">
-                     <div class="btn-group">
-                        <a class="btn btn-primary" href="{% url 'firereport-viewRequestDetails' i.id %}"><i class="fa fa-eye"></i></a> &nbsp;&nbsp;
-                        <!--                                            <a class="btn btn-danger" onclick="return confirm('Are you sure to Delete ?')" href="{% url 'firereport-deleteRequest' i.id %}"><i-->
-                        <!--                                                class="fa fa-trash-alt"></i></a>-->
-                     </div>
-                  </td>
-               </tr>
-               {% if i.AssignTo != user %}
-               <tr class="text-center">
-                  <td colspan="8" class="text-center">
-                     <h1>No customers found.</h1>
-                  </td>
-               </tr>
-               {% endif %}
-               {% endif %}
-
-               {% endfor %}
-
                {% endif %}
             </tbody>
          </table>
@@ -245,316 +207,54 @@
 <!--</script>-->
 
 <script>
-document.addEventListener("DOMContentLoaded", function() {
-    let dataTable = $('#yourDataTable').DataTable();
-    if ($.fn.dataTable.isDataTable('#yourDataTable')) {
-        dataTable.destroy();
-    }
-
-    dataTable = $('#yourDataTable').DataTable({
-        scrollX: true,
-        scrollCollapse: true,
-        fixedHeader: {
-            header: true,
-            footer: false
-        },
-
-        columnDefs: [
-           { targets: 0, orderable: false } // Disable sorting for the Sr No. column (zero-based)
-        ]
-
-
-//        dom: 'Blfrtip',
-//        buttons: [
-//            'copy', 'csv', 'excel', 'pdf',
- //       ],
-    });
-
-
-
-    // Add the buttons to the pagination area
-    $('#yourDataTable_paginate').append(`
-        <button class="btn btn-outline-primary mr-2" id="generate-csv-all"><i class="fas fa-file-csv"></i> Generate CSV All</button>
-        <button class="btn btn-outline-primary mr-2" id="generate-excel-all"><i class="fas fa-file-excel"></i> Generate Excel All</button>
-        <button class="btn btn-outline-primary" id="generate-pdf-all"><i class="fas fa-file-pdf"></i> Generate PDF All</button>
-    `);
-
-    document.getElementById('generate-csv-all').addEventListener('click', function (event) {
-        event.preventDefault();
-        generateCSVAll();
-    });
-
-    document.getElementById('generate-excel-all').addEventListener('click', function (event) {
-        event.preventDefault();
-        generateExcelAll();
-    });
-
-    document.getElementById('generate-pdf-all').addEventListener('click', function (event) {
-        event.preventDefault();
-        generatePDFAll();
-    });
-
-       document.getElementById('generate-print-all').addEventListener('click', function (event) {
-        event.preventDefault();
-        printTable();
-    });
-
-        document.getElementById('copy-table').addEventListener('click', function (event) {
-        event.preventDefault();
-        copyTableToClipboard();
-    });
-
-
-
-function copyTableToClipboard() {
-    const table = $('#yourDataTable').DataTable();
-
-    // Order the DataTable by the "Sr No." column
-    table.order([0, 'asc']).draw();
-
-    const clipboard = new ClipboardJS('#copy-table', {
-        text: function () {
-            let text = '';
-
-            // Copy table header
-            text += getTableHeaders().join('\t') + '\n';
-
-            // Copy filtered table body with reindexed "Sr No."
-            let serialNumber = 1;
-            table.rows({ search: 'applied' }).data().each(function (row) {
-              if (row[0] !== 'Action') { // Skip the "Action" column
-                row[0] = serialNumber++; // Reassign sequential "Sr No." values
-                row.forEach(function (cell) {
-                    // Extract text content without HTML tags
-                    const cellText = document.createElement('div');
-                    cellText.innerHTML = cell;
-                    text += cellText.textContent.trim() + '\t';
-                });
-                text += '\n';
-              }
-            });
-
-            return text;
+$(function () {
+    function firereportComplaintTableSetup() {
+        var $t = $('#yourDataTable');
+        if (!$t.length || !$.fn.dataTable || !$.fn.dataTable.isDataTable($t)) {
+            return;
         }
-    });
-
-    clipboard.on('success', function (e) {
-        alert('Filtered table content copied to clipboard!');
-        e.clearSelection();
-    });
-
-    clipboard.on('error', function (e) {
-        console.error('Error copying to clipboard:', e.action);
-    });
-}
-
-function getTableHeaders() {
-    const headerCells = document.querySelectorAll('#yourDataTable thead th');
-    return Array.from(headerCells).map(cell => cell.innerText);
-}
-
-
-
-function generateCSVAll(filename = 'generated_csv_all.csv') {
-    const csvContent = [];
-    const headerRow = [];
-    $('#yourDataTable thead th').each(function () {
-        headerRow.push($(this).text());
-    });
-    csvContent.push(headerRow.join(','));
-
-    // Add data rows for all pages
-    for (let i = 0; i < dataTable.page.info().pages; i++) {
-        dataTable.page(i).draw('page');
-        const dataRows = [];
-        $('#yourDataTable tbody tr').each(function () {
-            const rowData = [];
-            $(this).find('td').each(function () {
-                if ($(this).hasClass('table-avatar')) {
-                    // Extract text from the <a> elements within the .table-avatar cell
-                    rowData.push($(this).find('a').text().trim());
-                } else {
-                    rowData.push($(this).text());
-                }
+        var dt = $t.DataTable();
+        dt.page.len(10).draw(false);
+        try { dt.column(0).orderable(false); } catch (e) {}
+        // Default sort by Update Date (desc)
+        try {
+            var updateCol = -1;
+            $t.find('thead th').each(function (i) {
+                var txt = ($(this).text() || '').trim().toLowerCase();
+                if (txt === 'update date') { updateCol = i; }
             });
-            dataRows.push(rowData.join(','));
-        });
-        csvContent.push(dataRows.join('\n'));
-    }
-
-    // Save the CSV file
-    const blob = new Blob([csvContent.join('\n')], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    link.href = window.URL.createObjectURL(blob);
-    link.download = filename;
-    link.click();
-}
-
-
-function generateExcelAll(filename = 'generated_excel_all.xlsx') {
-    const workbook = new ExcelJS.Workbook();
-    const worksheet = workbook.addWorksheet('Sheet 1');
-
-// Add header row
-//        const headerRow = worksheet.addRow([
-//            'Sr No.',
-//            'Staff ID',
-//            'Username',
-//            'Full Name',
-//            'Phone',
-//            'Email',
-//            'Department',
-//        ]);
-
-    // Add header row
-    const headerRow = [];
-    $('#yourDataTable thead th').each(function () {
-        headerRow.push($(this).text());
-    });
-    worksheet.addRow(headerRow);
-
-    // Add data rows for all pages
-    for (let i = 0; i < dataTable.page.info().pages; i++) {
-        dataTable.page(i).draw('page');
-        $('#yourDataTable tbody tr').each(function () {
-            const rowData = [];
-            $(this).find('td').each(function () {
-                if ($(this).hasClass('table-avatar')) {
-                    // Extract text from the <a> elements within the .table-avatar cell
-                    rowData.push($(this).find('a').text().trim());
-                } else {
-                    rowData.push($(this).text());
-                }
-            });
-            worksheet.addRow(rowData);
-        });
-    }
-
-    // Save the Excel file
-    workbook.xlsx.writeBuffer().then(data => {
-        const blob = new Blob([data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-        const link = document.createElement('a');
-        link.href = window.URL.createObjectURL(blob);
-        link.download = filename;
-        link.click();
-    });
-}
-
-
-function printTable() {
-    // Open a new window and print the table content
-    const printWindow = window.open('', '_blank');
-    printWindow.document.write('<html><head><title>Print</title></head><body>');
-    //printWindow.document.write('<style>@media print { table { width: 100%; } } </style>');
-    printWindow.document.write('<style>@media print { table { width: 100%; border-collapse: collapse; } th, td { border: 1px solid black; padding: 5px; } } </style>');
-
-
-    // Customize the heading for the print view
-    printWindow.document.write('<h1>Complaint Work Initiated Report</h1>');
-
-    printWindow.document.write('<table>');
-
-
-<!--    // Add header row-->
-<!--    printWindow.document.write('<thead><tr>');-->
-<!--    $('#yourDataTable thead th').each(function () {-->
-<!--        printWindow.document.write('<th>' + $(this).text() + '</th>');-->
-<!--    });-->
-    // Add header row
-    printWindow.document.write('<thead><tr>');
-    $('#yourDataTable thead th').each(function () {
-        if ($(this).text() !== 'Action') {
-            printWindow.document.write('<th>' + $(this).text() + '</th>');
+            if (updateCol >= 0) { dt.order([updateCol, 'desc']).draw(false); }
+        } catch (e) {}
+        if (typeof window.attachGlobalDatatableTools === 'function') {
+            window.attachGlobalDatatableTools(dt);
         }
-    });
-    printWindow.document.write('</tr></thead>');
-
-    // Add data rows for all pages
-    for (let i = 0; i < dataTable.page.info().pages; i++) {
-        dataTable.page(i).draw('page');
-        $('#yourDataTable tbody tr').each(function () {
-            printWindow.document.write('<tr>');
-            $(this).find('td').each(function () {
-
-                if ($(this).hasClass('table-avatar')) {
-                    // Extract text from the <a> elements within the .table-avatar cell
-                    printWindow.document.write('<td>' + $(this).find('a').text().trim() + '</td>');
-                } else {
-                    printWindow.document.write('<td>' + $(this).text() + '</td>');
-                }
+        dt.off('order.dt.firereportSr search.dt.firereportSr');
+        dt.on('order.dt.firereportSr search.dt.firereportSr', function () {
+            dt.column(0, { search: 'applied', order: 'applied' }).nodes().each(function (cell, i) {
+                cell.innerHTML = i + 1;
             });
-            printWindow.document.write('</tr>');
         });
-    }
-
-    printWindow.document.write('</table>');
-    printWindow.document.write('</body></html>');
-    printWindow.document.close();
-    printWindow.print();
-}
-
-
-
-
-function generatePDFAll(filename = 'generated_pdf_all.pdf') {
-    const pdf = new jsPDF();
-    const pdfContent = [];
-
-    // Add header row
-    const headerRow = [];
-    $('#yourDataTable thead th').each(function () {
-        headerRow.push($(this).text());
-    });
-    pdfContent.push(headerRow);
-
-    // Add data rows for all pages
-    for (let i = 0; i < dataTable.page.info().pages; i++) {
-        dataTable.page(i).draw('page');
-        $('#yourDataTable tbody tr').each(function () {
-            const rowData = [];
-            $(this).find('td').each(function () {
-                if ($(this).hasClass('table-avatar')) {
-                    // Extract text from the <a> elements within the .table-avatar cell
-                    rowData.push($(this).find('a').text().trim());
-                } else {
-                    rowData.push($(this).text());
-                }
-            });
-            pdfContent.push(rowData);
-        });
-    }
-
-    // Generate PDF
-    pdf.autoTable({
-        head: [headerRow],
-        body: pdfContent.slice(1),
-    });
-
-    // Save the PDF file
-    if (filename) {
-        pdf.save(filename);
-    } else {
-        const pdfDataUri = pdf.output('datauristring');
-        const tab = window.open();
-        tab.document.write('<iframe width="100%" height="100%" src="' + pdfDataUri + '" frameborder="0" allowfullscreen></iframe>');
-    }
-}
-
-
-     $('#yourDataTable tbody tr').each(function(index) {
-        $(this).find('td:first').text(index + 1);
-    });
-
-      dataTable.on('order.dt search.dt', function() {
-        dataTable.column(0, { search: 'applied', order: 'applied' }).nodes().each(function(cell, i) {
+        dt.column(0, { search: 'applied', order: 'applied' }).nodes().each(function (cell, i) {
             cell.innerHTML = i + 1;
         });
-    }).draw();
-
-
+    }
+    firereportComplaintTableSetup();
+    $(window).on('load', firereportComplaintTableSetup);
 });
 </script>
-
+<script>window.LIST_PAGE_EXPORT_LOGO_PATH = "{% static 'images/db_logo_200.png' %}";</script>
+<script src="{% static 'js/list_page_export.js' %}"></script>
+<script>
+    ListPageExport.register({
+        apiPrefix: 'firereportWorkInProgress',
+        pdfFilename: 'work_in_progress.pdf',
+        excelFilename: 'work_in_progress.xlsx',
+        excelSheetName: 'WorkInProgress',
+        printDocumentTitle: 'Work In Progress',
+        pdfCaption: 'Work In Progress List',
+        pdfMergeNamePhoneColumns: true
+    });
+</script>
 
 {% endblock %}
 

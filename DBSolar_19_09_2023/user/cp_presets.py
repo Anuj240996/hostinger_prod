@@ -57,10 +57,10 @@ PRESETS: List[CPPreset] = [
         perms={
             "dashboard": _ops("view"),
             "customer": _ops("view", "edit"),
-            "quotation": _ops("add", "view"),
             "inventory": _ops("view", "add", "edit"),
             "transactions": _ops("view", "add", "edit"),
             "firereport": _ops("view", "add"),
+            "services": _ops("view", "add", "edit"),
             "barcode": _ops("view"),
         },
     ),

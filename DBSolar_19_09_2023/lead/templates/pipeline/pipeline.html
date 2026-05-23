@@ -1,0 +1,679 @@
+{% extends 'base.html' %}
+{% load humanize %}
+{% load humanize indian_numbers %}
+{% block title %}Pipeline - Solar CRM{% endblock %}
+{% block extra_css %}
+<style>
+    .kanban-board {
+        display: flex;
+        gap: 10px;
+        overflow-x: auto;
+        padding: 12px 0;
+        min-height: calc(100vh - 200px);
+    }
+
+    .kanban-column {
+        flex: 0 0 220px;
+        min-width: 220px;
+        max-width: 220px;
+        background: #f8f9fa;
+        border-radius: 10px;
+        padding: 8px;
+    }
+
+    .column-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 10px;
+        padding: 0.45rem 0.55rem;
+        border-radius: 10px;
+        border-bottom: none;
+    }
+
+    .column-header.new-leads {
+        background: rgba(13, 110, 253, 0.18);
+        color: #084298;
+    }
+    .column-header.qualified {
+        background: rgba(25, 135, 84, 0.2);
+        color: #0a3622;
+    }
+    .column-header.survey-done {
+        background: rgba(255, 193, 7, 0.35);
+        color: #664d03;
+    }
+    .column-header.quote-sent {
+        background: rgba(13, 202, 240, 0.22);
+        color: #055160;
+    }
+    .column-header.negotiation {
+        background: rgba(253, 126, 20, 0.22);
+        color: #653208;
+    }
+    .column-header.won {
+        background: rgba(25, 135, 84, 0.28);
+        color: #0a3622;
+    }
+    .column-header.lost {
+        background: rgba(220, 53, 69, 0.18);
+        color: #842029;
+    }
+
+    .column-title {
+        font-weight: 600;
+        font-size: 0.78rem;
+        line-height: 1.25;
+    }
+
+    .column-count {
+        background: rgba(255, 255, 255, 0.75);
+        color: inherit;
+        padding: 0.1rem 0.4rem;
+        border-radius: 20px;
+        font-size: 0.72rem;
+        font-weight: 700;
+        min-width: 1.25rem;
+        text-align: center;
+        flex-shrink: 0;
+    }
+
+    .kanban-cards {
+        min-height: 420px;
+    }
+
+    .kanban-card {
+        background: white;
+        border-radius: 8px;
+        padding: 10px;
+        margin-bottom: 10px;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        cursor: move;
+        transition: all 0.3s;
+        border-left: 4px solid transparent;
+    }
+
+    .kanban-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    }
+
+    .kanban-card[data-card-href] {
+        cursor: pointer;
+    }
+
+    .kanban-card.new-leads { border-left-color: #0d6efd; }
+    .kanban-card.qualified { border-left-color: #198754; }
+    .kanban-card.survey-done { border-left-color: #ffc107; }
+    .kanban-card.quote-sent { border-left-color: #0dcaf0; }
+    .kanban-card.negotiation { border-left-color: #fd7e14; }
+    .kanban-card.won { border-left-color: #198754; }
+    .kanban-card.lost { border-left-color: #dc3545; }
+
+    .card-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: start;
+        gap: 0.35rem;
+        margin-bottom: 6px;
+    }
+
+    .card-title {
+        font-weight: 600;
+        font-size: 0.82rem;
+        margin-bottom: 2px;
+        line-height: 1.25;
+    }
+
+    .card-subtitle {
+        font-size: 0.68rem;
+        color: #6c757d;
+    }
+
+    .card-badge {
+        padding: 2px 6px;
+        border-radius: 20px;
+        font-size: 0.62rem;
+        font-weight: 600;
+        flex-shrink: 0;
+    }
+
+    .card-badge.high { background: #6f42c1; color: white; }
+    .card-badge.medium { background: #fd7e14; color: white; }
+    .card-badge.low { background: #6c757d; color: white; }
+
+    .card-details {
+        margin: 6px 0;
+        font-size: 0.7rem;
+        line-height: 1.35;
+    }
+
+    .card-details-row {
+        display: flex;
+        align-items: baseline;
+        gap: 0.35rem;
+        margin-bottom: 0.25rem;
+        line-height: 1.35;
+    }
+
+    .card-details-row:last-child {
+        margin-bottom: 0;
+    }
+
+    .card-details-icon {
+        width: 0.85rem;
+        min-width: 0.85rem;
+        flex-shrink: 0;
+        text-align: center;
+        font-size: 0.68rem;
+        color: #6c757d;
+        line-height: 1.35;
+        align-self: baseline;
+    }
+
+    .card-details-icon--inr {
+        font-weight: 700;
+        font-size: 0.72rem;
+        font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+        line-height: 1.35;
+    }
+
+    .card-details-icon--inr.card-details-icon--monthly {
+        color: #0d6efd;
+    }
+
+    .card-details-text {
+        flex: 1;
+        min-width: 0;
+        display: inline-flex;
+        align-items: baseline;
+        flex-wrap: nowrap;
+        line-height: 1.35;
+    }
+
+    .card-details > div:not(.card-details-row) i {
+        width: 14px;
+        font-size: 0.65rem;
+        color: #6c757d;
+    }
+
+    .card-footer {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: space-between;
+        align-items: center;
+        gap: 0.25rem;
+        margin-top: 6px;
+        padding-top: 6px;
+        border-top: 1px solid #eee;
+        font-size: 0.65rem;
+    }
+
+    .card-footer span {
+        max-width: 100%;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .lead-monthly-charge .lead-monthly-charge__amount {
+        font-weight: 700;
+        color: #0d6efd;
+        font-variant-numeric: tabular-nums;
+        letter-spacing: 0.01em;
+    }
+
+    .lead-monthly-charge .lead-monthly-charge__suffix {
+        font-weight: 600;
+        color: #0d6efd;
+    }
+
+    .lead-monthly-units .card-details-text {
+        color: #495057;
+        display: block;
+    }
+
+    .card-details-icon--inr.card-details-icon--quote {
+        color: #198754;
+    }
+
+    .lead-quote-price__amount {
+        font-weight: 700;
+        color: #198754;
+        font-variant-numeric: tabular-nums;
+        letter-spacing: 0.01em;
+    }
+
+    .lead-quote-price__suffix {
+        font-weight: 600;
+        color: #198754;
+    }
+
+    .kanban-card.lost .card-details-icon--quote,
+    .kanban-card.lost .lead-quote-price__amount,
+    .kanban-card.lost .lead-quote-price__suffix {
+        color: #6c757d;
+    }
+
+    .drag-over {
+        background: rgba(13, 110, 253, 0.05);
+        border: 2px dashed #0d6efd;
+    }
+
+    .pipeline-filters {
+        background: white;
+        border-radius: 12px;
+        padding: 15px;
+        margin-bottom: 20px;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+    }
+
+    .pipeline-status-badge {
+        padding: 2px 6px;
+        border-radius: 20px;
+        font-size: 0.58rem;
+        font-weight: 600;
+        line-height: 1.2;
+        white-space: nowrap;
+        max-width: 110px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .pipeline-badge-survey-pending { background: #f59e0b; color: #212529; }
+    .pipeline-badge-survey-scheduled { background: #0dcaf0; color: #212529; }
+    .pipeline-badge-survey-completed { background: #198754; color: #fff; }
+    .pipeline-badge-survey-cancelled { background: #6c757d; color: #fff; }
+
+    .pipeline-badge-quote-draft { background: #6c757d; color: #fff; }
+    .pipeline-badge-quote-sent { background: #0dcaf0; color: #212529; }
+    .pipeline-badge-quote-revised { background: #fd7e14; color: #fff; }
+    .pipeline-badge-quote-approved { background: #198754; color: #fff; }
+    .pipeline-badge-quote-converted { background: #6f42c1; color: #fff; }
+    .pipeline-badge-quote-rejected { background: #dc3545; color: #fff; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="pipeline-page">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>Sales Pipeline</h2>
+        <div class="btn-group">
+            <button class="btn btn-outline-primary" onclick="refreshPipeline()">
+                <i class="fas fa-sync-alt me-2"></i>Refresh
+            </button>
+            <button class="btn btn-outline-secondary" onclick="exportPipeline()">
+                <i class="fas fa-download me-2"></i>Export
+            </button>
+        </div>
+    </div>
+
+    <!-- Pipeline Filters -->
+    <div class="pipeline-filters">
+        <div class="row g-3">
+            <div class="col-md-3">
+                <label class="form-label">Assigned To</label>
+                <select class="form-select" id="filterAssigned">
+                    <option value="">All</option>
+                    {% for user in sales_users %}
+                    <option value="{{ user.id }}" {% if request.GET.assigned_to|stringformat:"s" == user.id|stringformat:"s" %}selected{% endif %}>{{ user.get_full_name|default:user.username }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Lead Source</label>
+                <select class="form-select" id="filterSource">
+                    <option value="">All</option>
+                    {% for source in lead_sources %}
+                    <option value="{{ source.id }}">{{ source.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Date Range</label>
+                <select class="form-select" id="filterDate">
+                    <option value="">All Time</option>
+                    <option value="today">Today</option>
+                    <option value="week">This Week</option>
+                    <option value="month">This Month</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">&nbsp;</label>
+                <button class="btn btn-primary w-100" onclick="applyFilters()">
+                    <i class="fas fa-filter me-2"></i>Apply Filters
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Kanban Board -->
+    <div class="kanban-board" id="kanbanBoard">
+        <!-- New Leads Column -->
+        <div class="kanban-column" data-stage="new">
+            <div class="column-header new-leads">
+                <span class="column-title">🆕 New Leads</span>
+                <span class="column-count">{{ pipeline_counts.new|default:0 }}</span>
+            </div>
+            <div class="kanban-cards" id="column-new" ondrop="drop(event)" ondragover="allowDrop(event)">
+                {% for lead in pipeline_data.new %}
+                {% include 'pipeline/partials/kanban_card_open.html' with card_class='new-leads' %}
+                    <div class="card-header">
+                        <div>
+                            <div class="card-title">{{ lead.name }}</div>
+                            <div class="card-subtitle">{{ lead.phone }}</div>
+                        </div>
+                        {% include 'pipeline/partials/card_header_badges.html' %}
+                    </div>
+                    <div class="card-details">
+                        {% include 'shared/lead_monthly_usage.html' %}
+                        <div class="card-details-row"><i class="fas fa-map-marker-alt card-details-icon" aria-hidden="true"></i><span class="card-details-text">{{ lead.city }}</span></div>
+                    </div>
+                    <div class="card-footer">
+                        <span><i class="fas fa-user me-1"></i>{{ lead.assigned_to.get_full_name|default:'Unassigned' }}</span>
+                    </div>
+                </div>
+                {% empty %}
+                <div class="text-muted text-center py-4">No leads</div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Qualified Column -->
+        <div class="kanban-column" data-stage="qualified">
+            <div class="column-header qualified">
+                <span class="column-title">✓ Qualified</span>
+                <span class="column-count">{{ pipeline_counts.qualified|default:0 }}</span>
+            </div>
+            <div class="kanban-cards" id="column-qualified" ondrop="drop(event)" ondragover="allowDrop(event)">
+                {% for lead in pipeline_data.qualified %}
+                {% include 'pipeline/partials/kanban_card_open.html' with card_class='qualified' %}
+                    <div class="card-header">
+                        <div>
+                            <div class="card-title">{{ lead.name }}</div>
+                            <div class="card-subtitle">{{ lead.phone }}</div>
+                        </div>
+                        {% include 'pipeline/partials/card_header_badges.html' %}
+                    </div>
+                    <div class="card-details">
+                        {% include 'shared/lead_monthly_usage.html' %}
+                        <div class="card-details-row"><i class="fas fa-map-marker-alt card-details-icon" aria-hidden="true"></i><span class="card-details-text">{{ lead.city }}</span></div>
+                    </div>
+                    <div class="card-footer">
+                        <span><i class="fas fa-user me-1"></i>{{ lead.assigned_to.get_full_name|default:'Unassigned' }}</span>
+                    </div>
+                </div>
+                {% empty %}
+                <div class="text-muted text-center py-4">No leads</div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Survey Done Column -->
+        <div class="kanban-column" data-stage="survey">
+            <div class="column-header survey-done">
+                <span class="column-title">🔍 Survey</span>
+                <span class="column-count">{{ pipeline_counts.survey|default:0 }}</span>
+            </div>
+            <div class="kanban-cards" id="column-survey" ondrop="drop(event)" ondragover="allowDrop(event)">
+                {% for lead in pipeline_data.survey %}
+                {% include 'pipeline/partials/kanban_card_open.html' with card_class='survey-done' %}
+                    <div class="card-header">
+                        <div>
+                            <div class="card-title">{{ lead.name }}</div>
+                            <div class="card-subtitle">{{ lead.phone }}</div>
+                        </div>
+                        {% include 'pipeline/partials/card_header_badges.html' %}
+                    </div>
+                    <div class="card-details">
+                        {% include 'shared/lead_monthly_usage.html' %}
+                        <div class="card-details-row"><i class="fas fa-map-marker-alt card-details-icon" aria-hidden="true"></i><span class="card-details-text">{{ lead.city }}</span></div>
+                    </div>
+                    <div class="card-footer">
+                        <span><i class="fas fa-user me-1"></i>{{ lead.assigned_to.get_full_name|default:'Unassigned' }}</span>
+                    </div>
+                </div>
+                {% empty %}
+                <div class="text-muted text-center py-4">No leads</div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Quote Sent Column -->
+        <div class="kanban-column" data-stage="quote">
+            <div class="column-header quote-sent">
+                <span class="column-title">📄 Quotation</span>
+                <span class="column-count">{{ pipeline_counts.quote|default:0 }}</span>
+            </div>
+            <div class="kanban-cards" id="column-quote" ondrop="drop(event)" ondragover="allowDrop(event)">
+                {% for lead in pipeline_data.quote %}
+                {% include 'pipeline/partials/kanban_card_open.html' with card_class='quote-sent' %}
+                    <div class="card-header">
+                        <div>
+                            <div class="card-title">{{ lead.name }}</div>
+                            <div class="card-subtitle">{{ lead.phone }}</div>
+                        </div>
+                        {% include 'pipeline/partials/card_header_badges.html' %}
+                    </div>
+                    <div class="card-details">
+                        <div class="card-details-row"><i class="fas fa-map-marker-alt card-details-icon" aria-hidden="true"></i><span class="card-details-text">{{ lead.city }}</span></div>
+                        {% include 'pipeline/partials/card_erp_quotation_amount.html' %}
+                    </div>
+                    <div class="card-footer">
+                        <span><i class="fas fa-user me-1"></i>{{ lead.assigned_to.get_full_name|default:'Unassigned' }}</span>
+                    </div>
+                </div>
+                {% empty %}
+                <div class="text-muted text-center py-4">No leads</div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Negotiation Column -->
+        <div class="kanban-column" data-stage="negotiation">
+            <div class="column-header negotiation">
+                <span class="column-title">🤝 Negotiation</span>
+                <span class="column-count">{{ pipeline_counts.negotiation|default:0 }}</span>
+            </div>
+            <div class="kanban-cards" id="column-negotiation" ondrop="drop(event)" ondragover="allowDrop(event)">
+                {% for lead in pipeline_data.negotiation %}
+                {% include 'pipeline/partials/kanban_card_open.html' with card_class='negotiation' %}
+                    <div class="card-header">
+                        <div>
+                            <div class="card-title">{{ lead.name }}</div>
+                            <div class="card-subtitle">{{ lead.phone }}</div>
+                        </div>
+                        {% include 'pipeline/partials/card_header_badges.html' %}
+                    </div>
+                    <div class="card-details">
+                        <div class="card-details-row"><i class="fas fa-map-marker-alt card-details-icon" aria-hidden="true"></i><span class="card-details-text">{{ lead.city }}</span></div>
+                        {% include 'pipeline/partials/card_erp_quotation_amount.html' %}
+                    </div>
+                    <div class="card-footer">
+                        <span><i class="fas fa-user me-1"></i>{{ lead.assigned_to.get_full_name|default:'Unassigned' }}</span>
+                    </div>
+                </div>
+                {% empty %}
+                <div class="text-muted text-center py-4">No leads</div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Won Column -->
+        <div class="kanban-column" data-stage="won">
+            <div class="column-header won">
+                <span class="column-title">🏆 Won</span>
+                <span class="column-count">{{ pipeline_counts.won|default:0 }}</span>
+            </div>
+            <div class="kanban-cards" id="column-won" ondrop="drop(event)" ondragover="allowDrop(event)">
+                {% for lead in pipeline_data.won %}
+                {% include 'pipeline/partials/kanban_card_open.html' with card_class='won' %}
+                    <div class="card-header">
+                        <div>
+                            <div class="card-title">{{ lead.name }}</div>
+                            <div class="card-subtitle">{{ lead.phone }}</div>
+                        </div>
+                        {% include 'pipeline/partials/card_header_badges.html' %}
+                    </div>
+                    <div class="card-details">
+                        <div class="card-details-row"><i class="fas fa-map-marker-alt card-details-icon" aria-hidden="true"></i><span class="card-details-text">{{ lead.city }}</span></div>
+                        {% include 'pipeline/partials/card_erp_quotation_amount.html' %}
+                    </div>
+                    <div class="card-footer">
+                        <span><i class="fas fa-user me-1"></i>{{ lead.assigned_to.get_full_name|default:'Unassigned' }}</span>
+                    </div>
+                </div>
+                {% empty %}
+                <div class="text-muted text-center py-4">No leads</div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Lost Column -->
+        <div class="kanban-column" data-stage="lost">
+            <div class="column-header lost">
+                <span class="column-title">❌ Lost</span>
+                <span class="column-count">{{ pipeline_counts.lost|default:0 }}</span>
+            </div>
+            <div class="kanban-cards" id="column-lost" ondrop="drop(event)" ondragover="allowDrop(event)">
+                {% for lead in pipeline_data.lost %}
+                {% include 'pipeline/partials/kanban_card_open.html' with card_class='lost' %}
+                    <div class="card-header">
+                        <div>
+                            <div class="card-title">{{ lead.name }}</div>
+                            <div class="card-subtitle">{{ lead.phone }}</div>
+                        </div>
+                        {% include 'pipeline/partials/card_header_badges.html' %}
+                    </div>
+                    <div class="card-details">
+                        <div class="card-details-row"><i class="fas fa-map-marker-alt card-details-icon" aria-hidden="true"></i><span class="card-details-text">{{ lead.city }}</span></div>
+                        {% include 'pipeline/partials/card_erp_quotation_amount.html' %}
+                        <div><small class="text-danger">Lost: {{ lead.lost_reason }}</small></div>
+                    </div>
+                    <div class="card-footer">
+                        <span><i class="fas fa-user me-1"></i>{{ lead.assigned_to.get_full_name|default:'Unassigned' }}</span>
+                        <span><i class="fas fa-calendar me-1"></i>{{ lead.lost_at|date:'d M' }}</span>
+                    </div>
+                </div>
+                {% empty %}
+                <div class="text-muted text-center py-4">No leads</div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function allowDrop(ev) {
+        ev.preventDefault();
+        ev.target.classList.add('drag-over');
+    }
+
+    function drag(ev) {
+        ev.dataTransfer.setData("text", ev.target.getAttribute('data-lead-id'));
+        ev.dataTransfer.setData("stage", ev.target.getAttribute('data-stage'));
+    }
+
+    function drop(ev) {
+        ev.preventDefault();
+        ev.target.classList.remove('drag-over');
+
+        var leadId = ev.dataTransfer.getData("text");
+        var oldStage = ev.dataTransfer.getData("stage");
+        var newStage = ev.target.closest('.kanban-column').getAttribute('data-stage');
+
+        if (oldStage === newStage) return;
+
+        // Update lead stage via AJAX
+        fetch(`/new-lead/leads/${leadId}/update-stage/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            body: `stage=${newStage}`
+        })
+        .then(response => {
+            if (response.ok) {
+                // Move the card to new column
+                var card = document.querySelector(`[data-lead-id="${leadId}"]`);
+                var newColumn = document.getElementById(`column-${newStage}`);
+                if (newColumn) {
+                    card.setAttribute('data-stage', newStage);
+                    card.className = card.className.replace(oldStage, newStage);
+                    newColumn.appendChild(card);
+
+                    // Update column counts
+                    updateColumnCounts();
+
+                    // Show success message
+                    showNotification('Success', 'Lead stage updated', 'success');
+                }
+            } else {
+                showNotification('Error', 'Failed to update stage', 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showNotification('Error', 'Failed to update stage', 'error');
+        });
+    }
+
+    function updateColumnCounts() {
+        document.querySelectorAll('.kanban-column').forEach(column => {
+            var stage = column.getAttribute('data-stage');
+            var count = column.querySelectorAll('.kanban-card').length;
+            column.querySelector('.column-count').textContent = count;
+        });
+    }
+
+    function applyFilters() {
+        var assigned = document.getElementById('filterAssigned').value;
+        var source = document.getElementById('filterSource').value;
+        var date = document.getElementById('filterDate').value;
+
+        // Reload page with filters
+        window.location.href = `?assigned_to=${assigned}&source=${source}&date_range=${date}`;
+    }
+
+    function refreshPipeline() {
+        location.reload();
+    }
+
+    function exportPipeline() {
+        window.location.href = '{% url "pipeline_export" %}';
+    }
+
+    // Remove drag-over class when leaving
+    document.querySelectorAll('.kanban-cards').forEach(column => {
+        column.addEventListener('dragleave', function(e) {
+            this.classList.remove('drag-over');
+        });
+    });
+
+    // Click card → open survey / quotation / lead detail for that column
+    (function () {
+        var dragActive = false;
+        document.querySelectorAll('.kanban-card[data-card-href]').forEach(function (card) {
+            card.addEventListener('dragstart', function () {
+                dragActive = true;
+            });
+            card.addEventListener('dragend', function () {
+                window.setTimeout(function () { dragActive = false; }, 50);
+            });
+            card.addEventListener('click', function (e) {
+                if (dragActive) return;
+                var href = card.getAttribute('data-card-href');
+                if (href) window.location.href = href;
+            });
+            card.addEventListener('keydown', function (e) {
+                if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    var href = card.getAttribute('data-card-href');
+                    if (href) window.location.href = href;
+                }
+            });
+        });
+    })();
+</script>
+{% endblock %}

@@ -1,0 +1,42 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load indian_filters %}
+
+{% block title %}Create Quotation{% endblock %}
+{% block content %}
+<div class="container-fluid py-3">
+  {# Full form is shown only after Generate Quotation preflight (same as list → modal → redirect with query params) #}
+  <div id="crmQuotationFormShell" class="d-none">
+    {% include 'quotation/create_quotation_body.html' %}
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function () {
+  function hasPreflightQuery() {
+    var p = new URLSearchParams(window.location.search);
+    return (p.get('consumer_no') || '').trim() && (p.get('consumer_type') || '').trim();
+  }
+  function run() {
+    var shell = document.getElementById('crmQuotationFormShell');
+    var modalEl = document.getElementById('crmGenerateQuotationModal');
+    if (!shell) return;
+    if (hasPreflightQuery()) {
+      shell.classList.remove('d-none');
+      return;
+    }
+    shell.classList.add('d-none');
+    if (modalEl && window.bootstrap && window.bootstrap.Modal) {
+      window.bootstrap.Modal.getOrCreateInstance(modalEl).show();
+    }
+  }
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', run);
+  } else {
+    run();
+  }
+})();
+</script>
+{% endblock %}

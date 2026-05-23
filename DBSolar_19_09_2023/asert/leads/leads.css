@@ -1,0 +1,10 @@
+.card-compact { box-shadow: 0 6px 18px rgba(15,20,25,.06); border-radius: .5rem; }
+.timeline-item { border-left: 3px solid #e9ecef; padding: 8px 12px; margin-bottom: 10px; background:#fff; border-radius:6px; box-shadow:0 1px 4px rgba(0,0,0,0.03); }
+.timeline-item .time { font-size:0.8rem; color:#6c757d; }
+.timeline-item .body { margin-top:4px; }
+.muted-small { color:#6c757d; font-size:0.9rem; }
+.card p { margin:0; }
+.lead-list .list-group-item { display:flex; justify-content:space-between; align-items:center; }
+.lead-list .badge { font-size:0.85rem; }
+.container .card { background: #fdfdfd; }
+

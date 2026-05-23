@@ -1,0 +1,152 @@
+{% extends 'control_panel/base.html' %}
+{% load humanize %}
+
+{% block panel_content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">{{ org.legal_name }} – Organization Details</h1>
+    <div>
+        <a href="{% url 'control_panel:organization_limits' org.id %}" class="btn btn-outline-primary">Edit Limits</a>
+        <a href="{% url 'control_panel:organizations' %}" class="btn btn-outline-secondary">Back</a>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Basic Info -->
+    <div class="col-md-6">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">Basic Information</h5>
+            </div>
+            <div class="card-body">
+                <table class="table table-sm">
+                    <tr><th>Legal Name</th><td>{{ org.legal_name }}</td></tr>
+                    <tr><th>Trade Name</th><td>{{ org.trade_name|default:"-" }}</td></tr>
+                    <tr><th>Subdomain</th><td>{{ org.subdomain }}</td></tr>
+                    <tr><th>Business Type</th><td>{{ org.get_business_type_display }}</td></tr>
+                    <tr><th>Industry</th><td>{{ org.industry|default:"-" }}</td></tr>
+                    <tr><th>GST Number</th><td>{{ org.gst_number|default:"-" }}</td></tr>
+                    <tr><th>PAN / Tax ID</th><td>{{ org.pan_tax_id|default:"-" }}</td></tr>
+                    <tr><th>Registration Number</th><td>{{ org.registration_number|default:"-" }}</td></tr>
+                    <tr><th>Status</th><td>{% if org.is_active %}<span class="badge bg-success">Active</span>{% else %}<span class="badge bg-secondary">Inactive</span>{% endif %}</td></tr>
+                    <tr><th>Timezone</th><td>{{ org.timezone }}</td></tr>
+                    <tr><th>Currency</th><td>{{ org.currency }}</td></tr>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Subscription Info -->
+    <div class="col-md-6">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">Subscription</h5>
+            </div>
+            <div class="card-body">
+                {% if subscription %}
+                <table class="table table-sm">
+                    <tr><th>Plan</th><td>{{ subscription.plan.name }}</td></tr>
+                    <tr><th>Start Date</th><td>{{ subscription.start_date|date:"d M Y" }}</td></tr>
+                    <tr><th>End Date</th><td>{{ subscription.end_date|date:"d M Y" }}</td></tr>
+                    <tr><th>Status</th><td>{{ subscription.get_status_display }}</td></tr>
+                    <tr><th>Days Left</th><td>{{ subscription.end_date|timeuntil }}</td></tr>
+                </table>
+                {% else %}
+                <p class="text-muted">No active subscription.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Limits & Usage -->
+    <div class="col-md-12">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">Limits & Usage</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <table class="table table-sm">
+                            <tr><th>Max Users</th><td>{{ org.max_users }}</td></tr>
+                            <tr><th>Max Leads</th><td>{{ org.leads_limit }}</td></tr>
+                            <tr><th>Max Quotations</th><td>{{ org.quotations_limit }}</td></tr>
+                            <tr><th>Storage Limit (MB)</th><td>{{ org.max_storage_mb }}</td></tr>
+                            <tr><th>API Rate Limit</th><td>{{ org.api_rate_limit }} req/min</td></tr>
+                        </table>
+                    </div>
+                    <div class="col-md-6">
+                        <table class="table table-sm">
+                            <tr><th>Current Users</th><td>{{ total_users }} / {{ org.max_users }}</td></tr>
+                            <tr><th>Current Leads</th><td>{{ total_leads|intcomma }} / {{ org.leads_limit }}</td></tr>
+                            <tr><th>Current Quotations</th><td>{{ total_quotations|intcomma }} / {{ org.quotations_limit }}</td></tr>
+                            <tr><th>Storage Used</th><td>{{ storage_used|default:"0" }} MB / {{ org.max_storage_mb }} MB</td></tr>
+                            <tr><th>API Calls (last 24h)</th><td>{{ api_calls_last_day|default:"0" }}</td></tr>
+                        </table>
+                    </div>
+                </div>
+                {% if total_users > org.max_users or total_leads > org.leads_limit or total_quotations > org.quotations_limit %}
+                <div class="alert alert-warning mt-2">
+                    <i class="fas fa-exclamation-triangle me-2"></i> Some limits have been exceeded!
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Feature Flags -->
+<div class="card mb-4">
+    <div class="card-header">
+        <h5 class="mb-0">Feature Flags</h5>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            {% for of in features %}
+            <div class="col-md-3">
+                <div class="d-flex justify-content-between">
+                    <span>{{ of.feature.codename }}</span>
+                    {% if of.enabled %}
+                    <span class="badge bg-success">Enabled</span>
+                    {% else %}
+                    <span class="badge bg-secondary">Disabled</span>
+                    {% endif %}
+                </div>
+            </div>
+            {% empty %}
+            <p class="text-muted">No features assigned.</p>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<!-- Recent Activity Logs -->
+<div class="card">
+    <div class="card-header">
+        <h5 class="mb-0">Recent Activity Logs</h5>
+    </div>
+    <div class="card-body p-0">
+        <table class="table table-hover mb-0">
+            <thead>
+                <tr>
+                    <th>Time</th>
+                    <th>User</th>
+                    <th>Action</th>
+                    <th>Details</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for log in recent_activity %}
+                <tr>
+                    <td>{{ log.timestamp|date:"d M Y H:i" }}</td>
+                    <td>{% if log.user %}{{ log.user.get_full_name|default:log.user.username }}{% else %}System{% endif %}</td>
+                    <td>{{ log.get_action_display }}</td>
+                    <td>{{ log.object_repr }}</td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="4" class="text-center">No activity logs.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

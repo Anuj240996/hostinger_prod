@@ -1,0 +1,9 @@
+{% load indian_numbers %}
+{% if lead.pipeline_quotation_amount is not None %}
+<div class="card-details-row lead-card-quote-price">
+    <span class="card-details-icon card-details-icon--inr card-details-icon--quote" aria-hidden="true">&#8377;</span>
+    <span class="card-details-text">
+        <span class="lead-quote-price__amount">{{ lead.pipeline_quotation_amount|indian_number }}</span><span class="lead-quote-price__suffix">/-</span>
+    </span>
+</div>
+{% endif %}

@@ -128,6 +128,7 @@
                             {% endif %}
 
                             {% if firereport.AssignTo != null %}
+                            {% if not firereport_associate_readonly %}
 
 <!--                            <h3 align="center" style="text-align: center; color: red;"> Not Re-Assigned Yet </h3>-->
                              <div class="form-group">
@@ -137,6 +138,7 @@
                             </button>
 
                         </div>
+                            {% endif %}
                             {% else %}
                         <div class="row">
                             <div class="col-12">
@@ -223,6 +225,7 @@
 <!--                        </button>-->
 <!--                        {% endif %}-->
 
+                            {% if not firereport_associate_readonly %}
                             <div class="modal fade" id="myModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
                                 <div class="modal-dialog" role="document">
                                     <div class="modal-content">
@@ -339,6 +342,7 @@
                                 {% endif %}
                             </div>
                         </div>
+                            {% endif %}
                     </div>
                 </div>
             </div>
@@ -348,6 +352,7 @@
 </section>
 
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+{% if not firereport_associate_readonly %}
 <script>
 $(document).ready(function() {
     var allUsers = [
@@ -393,5 +398,6 @@ $(document).ready(function() {
     $('#department').change();
 });
 </script>
+{% endif %}
 
 {% endblock %}

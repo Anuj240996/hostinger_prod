@@ -2,6 +2,7 @@ from django.contrib.auth import logout
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.models import User
 from customer.models import Customer, MSEB
+from customer.staff_access import customer_queryset_for_request, is_associate_staff
 from firereport.models import Firereport
 from user.models import Profile
 from user.views import profile
@@ -100,6 +101,8 @@ def Administration(request):
 
 @login_required(login_url='user-login')
 def index1(request):
+    if is_associate_staff(request.user) and not request.user.is_superuser:
+        return redirect('customer-view_all')
     # customer = User.objects.filter(groups=2, is_staff=True)
     customer = User.objects.filter(groups=2, is_staff=True, is_active=True).exclude(Q(first_name='') | Q(last_name=''))
     customer_count = customer.count()
@@ -146,15 +149,12 @@ from datetime import timedelta
 from django.utils import timezone
 
 
-@login_required(login_url='user-login')
-
-
-@login_required(login_url='user-login')
-def index(request):
-    error = None  # Initialize the error variable
+def build_main_dashboard_context(request):
+    """Shared context for /index/ and CRM main dashboard (same logic and counts)."""
+    error = None
     customers = User.objects.filter(groups__id=2)
     customer_count = customers.count()
-    customer_list = Customer.objects.all()
+    customer_list = customer_queryset_for_request(request.user)
     customer1_count = customer_list.count()
     firereports = Firereport.objects.all()
     firereport_count = firereports.count()
@@ -191,8 +191,8 @@ def index(request):
     # Initialize total warranty count
     total_warranty_quantity = 0
 
-    # Retrieve all Customer objects
-    customers = Customer.objects.all()
+    # Warranty counts only for customers this user may see (same scope as customer_list)
+    customers = customer_list
 
     for customer in customers:
         # Retrieve corresponding MSEB data for each customer
@@ -246,8 +246,24 @@ def index(request):
 
         # Additional context for warranty calculations
         'total_warranty_quantity': total_warranty_quantity,
+        'total_leads': 0,
+        'total_quotations': 0,
     }
-    return render(request, 'dashboard/index.html', context)
+    try:
+        from apps.core.views import build_crm_dashboard_context
+        crm_ctx = build_crm_dashboard_context(request)
+        context['total_leads'] = crm_ctx.get('total_leads', 0)
+        context['total_quotations'] = crm_ctx.get('total_quotations', 0)
+    except Exception:
+        pass
+    return context
+
+
+@login_required(login_url='user-login')
+def index(request):
+    if is_associate_staff(request.user) and not request.user.is_superuser:
+        return redirect('customer-view_all')
+    return render(request, 'dashboard/index.html', build_main_dashboard_context(request))
 
 
 
@@ -504,7 +520,7 @@ def staff_Send_Notification(request):
 
 def consumer_Send_Notification(request):
     staff = User.objects.filter(is_active=True, is_staff=False, is_superuser=False)
-    customer = Customer.objects.all()
+    customer = customer_queryset_for_request(request.user)
     profile = Profile.objects.all()
     see_notification = staff_Notification.objects.filter(staff_id_id__is_active=True, staff_id_id__is_staff=False).order_by('-is_current', '-created_at')[:10]
     count1 = staff_Notification.objects.filter(staff_id=request.user.id, status=False).count()

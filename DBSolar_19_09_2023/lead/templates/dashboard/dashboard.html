@@ -1,0 +1,252 @@
+{% extends 'base.html' %}
+{% load humanize indian_numbers %}
+
+{% block title %}CRM Dashboard - Solar CRM{% endblock %}
+
+{% block extra_css %}
+{% include 'dashboard/legacy_kpi_card_styles.html' %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<style>
+    #heatmap { height: 400px; background: #f0f0f0; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="dashboard crm-legacy-kpi-cards">
+    <!-- KPI Cards — same design as Main Dashboard; grid positions unchanged -->
+    <div class="row g-4 mb-4">
+        <div class="col-md-3 d-flex">
+            <div class="card bg-two w-100 my-card shadow">
+                <a class="text-decoration-none text-dark kpi-card-link" href="{% url 'lead_list' %}">
+                <div class="card-body">
+                    <div class="db-widgets d-flex justify-content-between align-items-center">
+                        <div class="db-icon"><i class="fas fa-users"></i></div>
+                        <div class="db-info text-end">
+                            <h3>{{ total_leads|intcomma }}</h3>
+                            <h6>Total Leads</h6>
+                            <small class="text-success"><i class="fas fa-arrow-up"></i> {{ new_leads_month|intcomma }} new this month · {{ leads_growth|floatformat:1 }}% vs last month</small>
+                        </div>
+                    </div>
+                </div>
+                </a>
+            </div>
+        </div>
+        <div class="col-md-3 d-flex">
+            <div class="card bg-three w-100 my-card shadow">
+                <a class="text-decoration-none text-dark kpi-card-link" href="{% url 'lead_list' %}?date_range=today">
+                <div class="card-body">
+                    <div class="db-widgets d-flex justify-content-between align-items-center">
+                        <div class="db-icon"><i class="fas fa-user-plus"></i></div>
+                        <div class="db-info text-end">
+                            <h3>{{ new_leads_today|intcomma }}</h3>
+                            <h6>New Leads (Today)</h6>
+                            <small class="text-info"><i class="fas fa-clock"></i> Last 24 hours</small>
+                        </div>
+                    </div>
+                </div>
+                </a>
+            </div>
+        </div>
+        <div class="col-md-3 d-flex">
+            <div class="card bg-four w-100 my-card shadow">
+                <a class="text-decoration-none text-dark kpi-card-link" href="{% url 'lead_list' %}?stage=won&amp;date_range=this_month">
+                <div class="card-body">
+                    <div class="db-widgets d-flex justify-content-between align-items-center">
+                        <div class="db-icon"><i class="fas fa-percent"></i></div>
+                        <div class="db-info text-end">
+                            <h3>{{ conversion_rate }}%</h3>
+                            <h6>Win rate (this month)</h6>
+                            <small class="text-muted">{{ won_mtd|default:0 }} won of {{ new_leads_month }} new this month · {{ won_count }} won overall{% if conversion_change %} · {{ conversion_change|floatformat:1 }} pts vs last month{% endif %}</small>
+                        </div>
+                    </div>
+                </div>
+                </a>
+            </div>
+        </div>
+        <div class="col-md-3 d-flex">
+            <div class="card bg-one w-100 my-card shadow">
+                <a class="text-decoration-none text-dark kpi-card-link" href="{% url 'revenue' %}">
+                <div class="card-body">
+                    <div class="db-widgets d-flex justify-content-between align-items-center">
+                        <div class="db-icon"><i class="fas fa-rupee-sign"></i></div>
+                        <div class="db-info text-end">
+                            <h3>{{ revenue_closed|indian_currency }}</h3>
+                            <h6>Revenue Closed (paid)</h6>
+                            <small class="text-muted">{% if revenue_growth %}<i class="fas fa-arrow-up"></i> {{ revenue_growth|floatformat:1 }}% vs last month{% else %}This month{% endif %}</small>
+                        </div>
+                    </div>
+                </div>
+                </a>
+            </div>
+        </div>
+    </div>
+    <div class="row g-4 mb-4">
+        <div class="col-md-3 d-flex">
+            <div class="card bg-five w-100 my-card shadow">
+                <a class="text-decoration-none text-dark kpi-card-link" href="{% url 'pipeline' %}">
+                <div class="card-body">
+                    <div class="db-widgets d-flex justify-content-between align-items-center">
+                        <div class="db-icon"><i class="fas fa-chart-pie"></i></div>
+                        <div class="db-info text-end">
+                            <h3>{{ forecast_revenue|indian_currency }}</h3>
+                            <h6>Forecast Revenue</h6>
+                            <small class="text-primary"><i class="fas fa-chart-line"></i> Weighted pipeline</small>
+                        </div>
+                    </div>
+                </div>
+                </a>
+            </div>
+        </div>
+        <div class="col-md-3 d-flex">
+            <div class="card bg-six w-100 my-card shadow">
+                <a class="text-decoration-none text-dark kpi-card-link" href="{% url 'lead_list' %}?followup=due_today">
+                <div class="card-body">
+                    <div class="db-widgets d-flex justify-content-between align-items-center">
+                        <div class="db-icon"><i class="fas fa-calendar-check"></i></div>
+                        <div class="db-info text-end">
+                            <h3>{{ followups_due }}</h3>
+                            <h6>Follow-ups Due Today</h6>
+                            <small class="text-danger"><i class="fas fa-exclamation-circle"></i> {{ overdue_followups }} overdue</small>
+                        </div>
+                    </div>
+                </div>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts Row -->
+    <div class="row g-4 mb-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header"><h5 class="mb-0">Pipeline Funnel</h5></div>
+                <div class="card-body"><canvas id="pipelineFunnel" height="300"></canvas></div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header"><h5 class="mb-0">Revenue Forecast</h5></div>
+                <div class="card-body"><canvas id="revenueForecast" height="300"></canvas></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Heatmap & Top Performers -->
+    <div class="row g-4">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header"><h5 class="mb-0">Lead Distribution by Location</h5></div>
+                <div class="card-body">
+                    <div id="heatmap"></div>
+                    <noscript>JavaScript required</noscript>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header"><h5 class="mb-0">Top Performing Sales Executives</h5></div>
+                <div class="card-body">
+                    <div class="list-group">
+                        {% for exec in top_performers %}
+                        <div class="list-group-item border-0 ps-0">
+                            <div class="d-flex justify-content-between">
+                                <div>
+                                    <h6 class="mb-0">{{ exec.name }}</h6>
+                                    <small>{{ exec.deals_closed }} deal{{ exec.deals_closed|pluralize }} closed</small>
+                                </div>
+                                <span class="badge bg-success">{{ exec.total_revenue|indian_currency }}</span>
+                            </div>
+                        </div>
+                        {% empty %}<p class="text-muted text-center">No data</p>{% endfor %}
+                    </div>
+                </div>
+            </div>
+            <div class="card mt-4">
+                <div class="card-header"><h5 class="mb-0">Recent Activities</h5></div>
+                <div class="card-body">
+                    {% for activity in recent_activities %}
+                    <div class="d-flex mb-3">
+                        <div class="me-3">{% if activity.activity_type == 'call' %}<i class="fas fa-phone text-primary"></i>{% elif activity.activity_type == 'whatsapp' %}<i class="fab fa-whatsapp text-success"></i>{% elif activity.activity_type == 'email' %}<i class="fas fa-envelope text-info"></i>{% else %}<i class="fas fa-sticky-note text-warning"></i>{% endif %}</div>
+                        <div>
+                            <p class="mb-0">{{ activity.description|truncatechars:50 }}</p>
+                            <small class="text-muted">{{ activity.created|timesince }} ago by {{ activity.user.get_full_name|default:activity.user.username }}</small>
+                        </div>
+                    </div>
+                    {% empty %}<p class="text-muted text-center">No recent activities</p>{% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    const funnelCtx = document.getElementById('pipelineFunnel').getContext('2d');
+    new Chart(funnelCtx, {
+        type: 'bar',
+        data: {
+            labels: ['Lead', 'Qualified', 'Survey', 'Quote', 'Won'],
+            datasets: [{
+                label: 'Number of Leads',
+                data: [{{ funnel_data.lead }}, {{ funnel_data.qualified }}, {{ funnel_data.survey }}, {{ funnel_data.quote }}, {{ funnel_data.won }}],
+                backgroundColor: ['rgba(54,162,235,0.5)','rgba(75,192,192,0.5)','rgba(255,206,86,0.5)','rgba(153,102,255,0.5)','rgba(40,167,69,0.5)'],
+                borderColor: ['rgba(54,162,235,1)','rgba(75,192,192,1)','rgba(255,206,86,1)','rgba(153,102,255,1)','rgba(40,167,69,1)'],
+                borderWidth: 1
+            }]
+        },
+        options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true } } }
+    });
+
+    const forecastCtx = document.getElementById('revenueForecast').getContext('2d');
+    new Chart(forecastCtx, {
+        type: 'line',
+        data: {
+            labels: {{ forecast_months|safe }},
+            datasets: [{
+                label: 'Forecasted Revenue',
+                data: {{ forecast_values|safe }},
+                borderColor: 'rgba(40,167,69,1)',
+                backgroundColor: 'rgba(40,167,69,0.1)',
+                tension: 0.4,
+                fill: true
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: { callback: v => '₹' + v.toLocaleString('en-IN') }
+                }
+            }
+        }
+    });
+</script>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        var mapContainer = document.getElementById('heatmap');
+        if (!mapContainer) { return; }
+
+        var map = L.map('heatmap').setView([20.5937, 78.9629], 5);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; OpenStreetMap contributors'
+        }).addTo(map);
+
+        var heatData = {{ heatmap_points|safe }};
+        if (heatData && heatData.length > 0) {
+            var latLngs = heatData.map(p => [p[0], p[1]]);
+            map.fitBounds(L.latLngBounds(latLngs), { padding: [50, 50] });
+            L.heatLayer(heatData, { radius: 25, blur: 15, maxZoom: 17 }).addTo(map);
+        } else {
+            L.popup().setLatLng([20.5937, 78.9629]).setContent('No location data').openOn(map);
+        }
+    });
+</script>
+{% endblock %}

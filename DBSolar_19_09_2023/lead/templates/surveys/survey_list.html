@@ -1,0 +1,612 @@
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block title %}Site Surveys - Solar CRM{% endblock %}
+
+{% block content %}
+<style>
+    .surveys-view-toggle .btn.active {
+        background-color: var(--bs-primary);
+        border-color: var(--bs-primary);
+        color: #fff;
+    }
+
+    .surveys-page--cards .filter-status-field {
+        display: none !important;
+    }
+
+    .surveys-page--cards #surveys-card-view {
+        width: 100%;
+    }
+
+    /* Kanban board — same structure as /new-lead/leads/ card view */
+    .survey-stage-board {
+        display: flex;
+        flex-direction: row;
+        align-items: flex-start;
+        gap: 1rem;
+        width: 100%;
+        padding: 1rem;
+        min-height: 420px;
+        box-sizing: border-box;
+        background: #fff;
+    }
+
+    .survey-stage-column {
+        flex: 1 1 0;
+        min-width: 0;
+        max-height: calc(100vh - 260px);
+        background: #f8f9fa;
+        border-radius: 10px;
+        display: flex;
+        flex-direction: column;
+        border-top: 3px solid #dee2e6;
+        overflow: hidden;
+    }
+
+    @media (max-width: 992px) {
+        .survey-stage-board {
+            overflow-x: auto;
+        }
+        .survey-stage-column {
+            flex: 0 0 260px;
+            min-width: 260px;
+        }
+    }
+
+    .survey-stage-column.status-scheduled { border-top-color: #0d6efd; }
+    .survey-stage-column.status-in_progress { border-top-color: #fd7e14; }
+    .survey-stage-column.status-completed { border-top-color: #198754; }
+    .survey-stage-column.status-cancelled { border-top-color: #dc3545; }
+
+    .survey-stage-column-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.5rem 0.65rem;
+        border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+        border-radius: 10px 10px 0 0;
+    }
+
+    .survey-stage-column.status-scheduled .survey-stage-column-header {
+        background: rgba(13, 110, 253, 0.18);
+        color: #084298;
+    }
+    .survey-stage-column.status-in_progress .survey-stage-column-header {
+        background: rgba(253, 126, 20, 0.22);
+        color: #653208;
+    }
+    .survey-stage-column.status-completed .survey-stage-column-header {
+        background: rgba(25, 135, 84, 0.2);
+        color: #0a3622;
+    }
+    .survey-stage-column.status-cancelled .survey-stage-column-header {
+        background: rgba(220, 53, 69, 0.18);
+        color: #842029;
+    }
+
+    .survey-stage-column-header h6 {
+        margin: 0;
+        font-weight: 600;
+        font-size: 0.82rem;
+        color: inherit;
+    }
+
+    .survey-stage-count {
+        background: #fff;
+        border: 1px solid rgba(0, 0, 0, 0.1);
+        border-radius: 999px;
+        min-width: 1.5rem;
+        text-align: center;
+        font-size: 0.7rem;
+        font-weight: 600;
+        padding: 0.1rem 0.4rem;
+        color: #212529;
+    }
+
+    .survey-stage-column-cards {
+        flex: 1;
+        overflow-y: auto;
+        padding: 0.65rem;
+        display: flex;
+        flex-direction: column;
+        gap: 0.65rem;
+        background: #f8f9fa;
+        min-height: 80px;
+    }
+
+    .survey-item-card {
+        border: 1px solid #e9ecef;
+        border-left-width: 4px;
+        border-radius: 8px;
+        padding: 0.65rem 0.75rem;
+        background: #fff;
+        font-size: 0.8rem;
+        width: 100%;
+        max-width: 100%;
+        box-sizing: border-box;
+        transition: box-shadow 0.15s ease, border-color 0.15s ease;
+        cursor: pointer;
+        display: flex;
+        flex-direction: column;
+        flex-shrink: 0;
+    }
+
+    .survey-item-card.status-scheduled {
+        border-color: rgba(13, 110, 253, 0.35);
+        border-left-color: #0d6efd;
+    }
+    .survey-item-card.status-in_progress {
+        border-color: rgba(253, 126, 20, 0.4);
+        border-left-color: #fd7e14;
+    }
+    .survey-item-card.status-completed {
+        border-color: rgba(25, 135, 84, 0.35);
+        border-left-color: #198754;
+    }
+    .survey-item-card.status-cancelled {
+        border-color: rgba(220, 53, 69, 0.35);
+        border-left-color: #dc3545;
+    }
+
+    .survey-item-card:hover {
+        box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
+    }
+
+    .survey-item-card .survey-card-head {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 0.35rem;
+        margin-bottom: 0.45rem;
+    }
+
+    .survey-item-card .survey-card-name {
+        font-weight: 600;
+        font-size: 0.88rem;
+        margin: 0;
+        line-height: 1.25;
+    }
+
+    .survey-item-card .survey-card-phone {
+        font-size: 0.72rem;
+        color: #6c757d;
+        margin-top: 0.1rem;
+    }
+
+    .survey-item-card .survey-card-meta {
+        display: flex;
+        align-items: center;
+        gap: 0.35rem;
+        font-size: 0.72rem;
+        color: #495057;
+        margin-bottom: 0.2rem;
+        line-height: 1.35;
+    }
+
+    .survey-item-card .survey-card-meta > i {
+        width: 0.85rem;
+        min-width: 0.85rem;
+        flex-shrink: 0;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        font-size: 0.68rem;
+        color: #6c757d;
+        line-height: 1;
+    }
+
+    .survey-item-card .survey-card-meta > span {
+        flex: 1;
+        min-width: 0;
+        line-height: 1.35;
+    }
+
+    .survey-item-card .badge {
+        font-size: 0.65rem;
+        padding: 0.2em 0.45em;
+    }
+
+    .survey-item-card .survey-card-actions {
+        margin-top: auto;
+        padding-top: 0.45rem;
+        border-top: 1px solid #e9ecef;
+        display: flex;
+        justify-content: flex-end;
+        align-items: center;
+        gap: 0.25rem;
+    }
+
+    .survey-item-card .survey-card-action {
+        flex: 0 0 auto;
+        min-width: 1.65rem;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0.3rem 0.15rem;
+        border: none;
+        border-radius: 4px;
+        background: transparent;
+        font-size: 0.82rem;
+        line-height: 1;
+        text-decoration: none;
+        cursor: pointer;
+        transition: color 0.15s ease, background 0.15s ease;
+    }
+
+    .survey-item-card .survey-card-action--call {
+        color: #0d6efd;
+    }
+    .survey-item-card .survey-card-action--call:hover {
+        color: #fff;
+        background: #0d6efd;
+    }
+
+    .survey-item-card .survey-card-action--view {
+        color: #6f42c1;
+    }
+    .survey-item-card .survey-card-action--view:hover {
+        color: #fff;
+        background: #6f42c1;
+    }
+
+    .survey-item-card .survey-card-action--edit {
+        color: #fd7e14;
+    }
+    .survey-item-card .survey-card-action--edit:hover {
+        color: #fff;
+        background: #fd7e14;
+    }
+
+    .survey-item-card .survey-card-action--quote {
+        color: #198754;
+    }
+    .survey-item-card .survey-card-action--quote:hover {
+        color: #fff;
+        background: #198754;
+    }
+
+    .surveys-page .surveys-view-panel.d-none {
+        display: none !important;
+    }
+</style>
+
+<div class="surveys-page" id="surveys-page-root">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>Site Surveys</h2>
+        <a href="{% url 'survey_create' %}" class="btn btn-primary">
+            <i class="fas fa-plus me-2"></i>Schedule New Survey
+        </a>
+    </div>
+
+    <!-- Filters -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="get" class="row g-3" id="survey-filter-form">
+                <div class="col-md-3 filter-status-field">
+                    <label class="form-label">Status</label>
+                    <select name="status" class="form-select">
+                        <option value="">All</option>
+                        <option value="scheduled" {% if request.GET.status == 'scheduled' %}selected{% endif %}>Scheduled</option>
+                        <option value="in_progress" {% if request.GET.status == 'in_progress' %}selected{% endif %}>In Progress</option>
+                        <option value="completed" {% if request.GET.status == 'completed' %}selected{% endif %}>Completed</option>
+                        <option value="cancelled" {% if request.GET.status == 'cancelled' %}selected{% endif %}>Cancelled</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Engineer</label>
+                    <select name="engineer" class="form-select">
+                        <option value="">All</option>
+                        {% for engineer in engineers %}
+                        <option value="{{ engineer.id }}" {% if request.GET.engineer == engineer.id|stringformat:"s" %}selected{% endif %}>{{ engineer.get_full_name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">From Date</label>
+                    <input type="date" name="from_date" class="form-control" value="{{ request.GET.from_date }}">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">To Date</label>
+                    <input type="date" name="to_date" class="form-control" value="{{ request.GET.to_date }}">
+                </div>
+                <div class="col-12">
+                    <button type="submit" class="btn btn-primary">Apply Filters</button>
+                    <a href="{% url 'survey_list' %}" class="btn btn-outline-secondary">Clear</a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Survey List -->
+    <div class="card">
+        <div class="card-header">
+            <div class="d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Surveys ({{ surveys.count }} total)</h5>
+                <div class="btn-group btn-group-sm surveys-view-toggle" role="group" aria-label="Survey list view">
+                    <button type="button" class="btn btn-outline-secondary active" id="surveys-view-list" title="Table view" aria-pressed="true">
+                        <i class="fas fa-list"></i>
+                    </button>
+                    <button type="button" class="btn btn-outline-secondary" id="surveys-view-cards" title="Card view" aria-pressed="false">
+                        <i class="fas fa-th-large"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+        <div class="card-body p-0">
+            <div id="surveys-table-view" class="surveys-view-panel">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="bg-light">
+                            <tr>
+                                <th>Lead Name</th>
+                                <th>Engineer</th>
+                                <th>Scheduled Date</th>
+                                <th>Feasibility</th>
+                                <th>System Size</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for survey in surveys %}
+                            <tr class="clickable-row" data-href="{% url 'survey_detail' survey.id %}">
+                                <td>
+                                    <a href="{% url 'lead_detail' survey.lead.id %}" class="text-decoration-none" onclick="event.stopPropagation();">
+                                        <strong>{{ survey.lead.name }}</strong>
+                                    </a>
+                                    <br>
+                                    <small class="text-muted">{{ survey.lead.phone }}</small>
+                                </td>
+                                <td>{{ survey.engineer.get_full_name|default:'Not Assigned' }}</td>
+                                <td>
+                                    {{ survey.scheduled_date|date:'d M Y, h:i A' }}
+                                    {% if survey.is_today %}
+                                    <span class="badge bg-warning">Today</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if survey.feasibility == 'high' %}
+                                    <span class="badge bg-success">High</span>
+                                    {% elif survey.feasibility == 'medium' %}
+                                    <span class="badge bg-warning">Medium</span>
+                                    {% elif survey.feasibility == 'low' %}
+                                    <span class="badge bg-danger">Low</span>
+                                    {% else %}
+                                    -
+                                    {% endif %}
+                                </td>
+                                <td>{{ survey.recommended_size|default:'-' }} kW</td>
+                                <td>
+                                    {% if survey.status == 'completed' %}
+                                    <span class="badge bg-success">Completed</span>
+                                    {% elif survey.status == 'scheduled' %}
+                                    <span class="badge bg-primary">Scheduled</span>
+                                    {% elif survey.status == 'in_progress' %}
+                                    <span class="badge bg-warning text-dark">In Progress</span>
+                                    {% elif survey.status == 'cancelled' %}
+                                    <span class="badge bg-danger">Cancelled</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <div class="btn-group btn-group-sm" onclick="event.stopPropagation();">
+                                        <a href="{% url 'survey_detail' survey.id %}" class="btn btn-outline-primary" title="View">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                        {% if survey.status != 'completed' and survey.status != 'cancelled' %}
+                                        <a href="{% url 'survey_edit' survey.id %}" class="btn btn-outline-secondary" title="Reschedule / Edit">
+                                            <i class="fas fa-calendar-alt"></i>
+                                        </a>
+                                        <form method="post" action="{% url 'survey_complete' survey.id %}" class="d-inline" onsubmit="return confirm('Mark survey for {{ survey.lead.name }} as complete?');">
+                                            {% csrf_token %}
+                                            <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                                            <button type="submit" class="btn btn-outline-success" title="Mark complete">
+                                                <i class="fas fa-check"></i>
+                                            </button>
+                                        </form>
+                                        <form method="post" action="{% url 'survey_cancel' survey.id %}" class="d-inline" onsubmit="return confirm('Cancel survey for {{ survey.lead.name }}?');">
+                                            {% csrf_token %}
+                                            <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                                            <button type="submit" class="btn btn-outline-danger" title="Cancel survey">
+                                                <i class="fas fa-times"></i>
+                                            </button>
+                                        </form>
+                                        {% else %}
+                                        <a href="{% url 'survey_edit' survey.id %}" class="btn btn-outline-secondary" title="Edit">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                        {% endif %}
+                                        {% if survey.status == 'completed' %}
+                                        <a href="{% url 'quotation_create' %}?survey={{ survey.id }}" class="btn btn-outline-success btn-sm" title="Generate Quotation">
+                                            <i class="fas fa-file-invoice"></i>
+                                        </a>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="7" class="text-center py-5">
+                                    <i class="fas fa-hard-hat fa-3x text-muted mb-3"></i>
+                                    <p class="text-muted">No surveys found</p>
+                                    <a href="{% url 'survey_create' %}" class="btn btn-primary btn-sm">
+                                        Schedule First Survey
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div id="surveys-card-view" class="surveys-view-panel d-none">
+                <div class="survey-stage-board">
+                    {% for column in board_columns %}
+                    <section class="survey-stage-column status-{{ column.key }}" aria-label="{{ column.label }}">
+                        <div class="survey-stage-column-header">
+                            <h6>{{ column.label }}</h6>
+                            <span class="survey-stage-count">{{ column.count }}</span>
+                        </div>
+                        <div class="survey-stage-column-cards">
+                            {% for survey in column.surveys %}
+                            <article class="survey-item-card status-{{ survey.status }}" data-href="{% url 'survey_detail' survey.id %}" tabindex="0" role="link">
+                                <div class="survey-card-head">
+                                    <div>
+                                        <p class="survey-card-name mb-0">{{ survey.lead.name }}</p>
+                                        <div class="survey-card-phone">{{ survey.lead.phone }}</div>
+                                    </div>
+                                    {% if survey.feasibility == 'high' %}
+                                    <span class="badge bg-success">High</span>
+                                    {% elif survey.feasibility == 'medium' %}
+                                    <span class="badge bg-warning text-dark">Medium</span>
+                                    {% elif survey.feasibility == 'low' %}
+                                    <span class="badge bg-danger">Low</span>
+                                    {% endif %}
+                                </div>
+                                <p class="survey-card-meta mb-1">
+                                    <i class="fas fa-user" aria-hidden="true"></i>
+                                    <span>{{ survey.engineer.get_full_name|default:'Not Assigned' }}</span>
+                                </p>
+                                <p class="survey-card-meta mb-1">
+                                    <i class="fas fa-calendar" aria-hidden="true"></i>
+                                    <span>
+                                        {{ survey.scheduled_date|date:'d M Y, h:i A' }}
+                                        {% if survey.is_today %}<span class="badge bg-warning text-dark ms-1">Today</span>{% endif %}
+                                    </span>
+                                </p>
+                                {% if survey.recommended_size %}
+                                <p class="survey-card-meta mb-0">
+                                    <i class="fas fa-solar-panel" aria-hidden="true"></i>
+                                    <span>{{ survey.recommended_size }} kW</span>
+                                </p>
+                                {% endif %}
+                                <div class="survey-card-actions" onclick="event.stopPropagation();">
+                                    {% if survey.lead.phone %}
+                                    <a href="tel:{{ survey.lead.phone }}" class="survey-card-action survey-card-action--call" title="Call" aria-label="Call">
+                                        <i class="fas fa-phone"></i>
+                                    </a>
+                                    {% endif %}
+                                    <a href="{% url 'survey_detail' survey.id %}" class="survey-card-action survey-card-action--view" title="View" aria-label="View">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                    {% if survey.status != 'completed' and survey.status != 'cancelled' %}
+                                    <a href="{% url 'survey_edit' survey.id %}" class="survey-card-action survey-card-action--edit" title="Reschedule" aria-label="Reschedule">
+                                        <i class="fas fa-calendar-alt"></i>
+                                    </a>
+                                    <form method="post" action="{% url 'survey_complete' survey.id %}" class="d-inline" onsubmit="return confirm('Mark this survey complete?');">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                                        <button type="submit" class="survey-card-action survey-card-action--quote border-0 bg-transparent p-0" title="Complete" aria-label="Complete">
+                                            <i class="fas fa-check"></i>
+                                        </button>
+                                    </form>
+                                    <form method="post" action="{% url 'survey_cancel' survey.id %}" class="d-inline" onsubmit="return confirm('Cancel this survey?');">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                                        <button type="submit" class="survey-card-action survey-card-action--edit border-0 bg-transparent p-0" title="Cancel" aria-label="Cancel" style="color:#dc3545;">
+                                            <i class="fas fa-times"></i>
+                                        </button>
+                                    </form>
+                                    {% else %}
+                                    <a href="{% url 'survey_edit' survey.id %}" class="survey-card-action survey-card-action--edit" title="Edit" aria-label="Edit">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    {% endif %}
+                                    {% if survey.status == 'completed' %}
+                                    <a href="{% url 'quotation_create' %}?survey={{ survey.id }}" class="survey-card-action survey-card-action--quote" title="Generate Quotation" aria-label="Generate Quotation">
+                                        <i class="fas fa-file-invoice"></i>
+                                    </a>
+                                    {% endif %}
+                                </div>
+                            </article>
+                            {% empty %}
+                            <p class="text-muted small text-center py-3 mb-0">No surveys</p>
+                            {% endfor %}
+                        </div>
+                    </section>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+(function () {
+    var STORAGE_KEY = 'crmSurveysListView';
+    var listBtn = document.getElementById('surveys-view-list');
+    var cardsBtn = document.getElementById('surveys-view-cards');
+    var tableView = document.getElementById('surveys-table-view');
+    var cardView = document.getElementById('surveys-card-view');
+    var pageRoot = document.getElementById('surveys-page-root');
+    var statusFilterField = pageRoot ? pageRoot.querySelector('.filter-status-field') : null;
+    var statusFilterSelect = statusFilterField ? statusFilterField.querySelector('select[name="status"]') : null;
+
+    function stripUrlFilterParam(paramName) {
+        var params = new URLSearchParams(window.location.search);
+        if (!params.has(paramName)) return false;
+        params.delete(paramName);
+        var qs = params.toString();
+        window.location.replace(window.location.pathname + (qs ? '?' + qs : ''));
+        return true;
+    }
+
+    function setView(mode) {
+        var isCards = mode === 'cards';
+        if (isCards && stripUrlFilterParam('status')) return;
+        if (pageRoot) pageRoot.classList.toggle('surveys-page--cards', isCards);
+        if (tableView) tableView.classList.toggle('d-none', isCards);
+        if (cardView) cardView.classList.toggle('d-none', !isCards);
+        if (statusFilterField) {
+            statusFilterField.classList.toggle('d-none', isCards);
+            statusFilterField.setAttribute('aria-hidden', isCards ? 'true' : 'false');
+        }
+        if (isCards && statusFilterSelect) {
+            statusFilterSelect.value = '';
+        }
+        if (listBtn) {
+            listBtn.classList.toggle('active', !isCards);
+            listBtn.setAttribute('aria-pressed', !isCards ? 'true' : 'false');
+        }
+        if (cardsBtn) {
+            cardsBtn.classList.toggle('active', isCards);
+            cardsBtn.setAttribute('aria-pressed', isCards ? 'true' : 'false');
+        }
+        try { localStorage.setItem(STORAGE_KEY, mode); } catch (e) {}
+    }
+
+    var saved = 'list';
+    try { saved = localStorage.getItem(STORAGE_KEY) || 'list'; } catch (e) {}
+    setView(saved === 'cards' ? 'cards' : 'list');
+
+    if (listBtn) listBtn.addEventListener('click', function () { setView('list'); });
+    if (cardsBtn) cardsBtn.addEventListener('click', function () { setView('cards'); });
+
+    document.querySelectorAll('.clickable-row').forEach(function (row) {
+        row.addEventListener('click', function (e) {
+            if (!e.target.closest('.btn-group') && !e.target.closest('a') && !e.target.closest('form') && !e.target.closest('button')) {
+                window.location = this.dataset.href;
+            }
+        });
+    });
+
+    document.querySelectorAll('.survey-item-card').forEach(function (card) {
+        card.addEventListener('click', function (e) {
+            if (!e.target.closest('.survey-card-actions') && !e.target.closest('.btn-group') && !e.target.closest('form') && !e.target.closest('button')) {
+                window.location = this.dataset.href;
+            }
+        });
+        card.addEventListener('keydown', function (e) {
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                if (!e.target.closest('.survey-card-actions')) {
+                    window.location = this.dataset.href;
+                }
+            }
+        });
+    });
+})();
+</script>
+{% endblock %}

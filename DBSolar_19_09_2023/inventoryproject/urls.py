@@ -85,24 +85,31 @@ Including another URLconf
 """
 from django.contrib import admin
 from user.forms import UserLoginForm
-from django.urls import path, include
+from django.urls import path, include, re_path
 from django.contrib.auth import views as auth_views
 from user import views as user_views
 from dashboard import views as dashboard_views
 from django.conf import settings
 from django.conf.urls.static import static
-from django.urls import include, path
 from user.views import *
 from django.contrib.auth import views as auth_views
 from django.views.decorators.cache import never_cache
 
 from user.views import profile
 from rest_framework_simplejwt.views import TokenObtainPairView
+from django.views.generic import RedirectView
+
+from inventoryproject.legacy_redirects import redirect_legacy_leads_path
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('', include('dashboard.urls')),
     path('quotation/', include('quotation.urls')),
+    # Legacy /leads/* URLs → integrated CRM (old leads app removed)
+    path('leads/create/', RedirectView.as_view(url='/new-lead/leads/create/', permanent=False), name='lead_create'),
+    path('leads/', RedirectView.as_view(url='/new-lead/leads/', permanent=False)),
+    re_path(r'^leads/(?P<subpath>.+)/$', redirect_legacy_leads_path),
+    path('new-lead/', include('crm.urls')),
     path('customer/', include('customer.urls')),
     path('firereport/', include('firereport.urls')),
    #path('photos/', include('photos.urls')),
@@ -141,64 +148,8 @@ urlpatterns = [
     path('api/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
 
 ]
-# Serve static files directly from directories
-# Since WhiteNoise is disabled, we serve files directly from static/, asert/, and staticfiles/
-from django.contrib.staticfiles.urls import staticfiles_urlpatterns
-from django.views.static import serve as static_serve
-from django.urls import re_path
-from django.http import Http404
-from pathlib import Path
-from urllib.parse import unquote
-import logging
-
-logger = logging.getLogger(__name__)
-
-def serve_static_fallback(request, path):
-    """
-    Custom view to serve static files from multiple directories.
-    Checks in order: static/, asert/, staticfiles/ (collected)
-    This ensures files are accessible regardless of collectstatic status.
-    """
-    base_dir = settings.BASE_DIR
-
-    # Normalise the requested path:
-    # - Decode URL-encoded characters
-    # - Strip any leading slashes to avoid creating absolute paths,
-    #   which can happen if templates incorrectly use {% static '/images/...' %}
-    rel_path = unquote(path).lstrip('/')
-
-    # Try static/ first (most common location)
-    static_path = base_dir / 'static' / rel_path
-    if static_path.exists() and static_path.is_file():
-        logger.debug(f"Serving {path} from static/")
-        return static_serve(request, rel_path, document_root=str(base_dir / 'static'), show_indexes=False)
-    
-    # Try asert/ second (alternative location)
-    asert_path = base_dir / 'asert' / rel_path
-    if asert_path.exists() and asert_path.is_file():
-        logger.debug(f"Serving {path} from asert/")
-        return static_serve(request, rel_path, document_root=str(base_dir / 'asert'), show_indexes=False)
-    
-    # Try staticfiles/ third (collected files)
-    staticfiles_path = Path(settings.STATIC_ROOT) / rel_path
-    if staticfiles_path.exists() and staticfiles_path.is_file():
-        logger.debug(f"Serving {path} from staticfiles/")
-        return static_serve(request, rel_path, document_root=str(settings.STATIC_ROOT), show_indexes=False)
-    
-    # File not found - log for debugging
-    logger.warning(f"Static file '{path}' not found in static/, asert/, or staticfiles/")
-    raise Http404(f"Static file '{path}' not found")
-
-# Serve media files (always needed)
-urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
-
-# Add explicit static file serving - this is the PRIMARY method now (WhiteNoise disabled)
-# This ensures files in static/ and asert/ are always accessible
-urlpatterns += [
-    re_path(r'^static/(?P<path>.*)$', serve_static_fallback),
-]
-
-# Add staticfiles_urlpatterns for development
-# This helps Django's static file finder locate files
 if settings.DEBUG:
-    urlpatterns += staticfiles_urlpatterns()
+    urlpatterns += static(settings.MEDIA_URL,
+                          document_root=settings.MEDIA_ROOT)
+urlpatterns += static(settings.MEDIA_URL,
+                      document_root=settings.MEDIA_ROOT)

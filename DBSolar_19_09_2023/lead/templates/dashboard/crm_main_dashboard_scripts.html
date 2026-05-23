@@ -1,0 +1,51 @@
+{# /index/ password modal only — base.html provides jQuery, Bootstrap 5, main.js, sidebar. #}
+<script>
+    function checkpassword() {
+        if (document.changepassword.newpassword.value !== document.changepassword.confirmpassword.value) {
+            alert('New Password and Confirm Password field does not Match');
+            document.changepassword.confirmpassword.focus();
+            return false;
+        }
+        return true;
+    }
+</script>
+
+{% if error == "no" %}
+<script>
+    alert('Password updated successfully');
+    window.location = '{% url "login" %}';
+</script>
+{% endif %}
+{% if error == "yes" %}
+<script>
+    alert('Something went wrong , try again later');
+</script>
+{% endif %}
+{% if error == "not" %}
+<script>
+    alert('Your current password is wrong');
+</script>
+{% endif %}
+
+<script>
+(function () {
+    function showPasswordModalIfNeeded() {
+        {% if not password_check %}
+        return;
+        {% endif %}
+        var el = document.getElementById('changePasswordModal');
+        if (!el || !window.bootstrap || !bootstrap.Modal) {
+            return;
+        }
+        bootstrap.Modal.getOrCreateInstance(el, {
+            backdrop: 'static',
+            keyboard: false
+        }).show();
+    }
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', showPasswordModalIfNeeded);
+    } else {
+        showPasswordModalIfNeeded();
+    }
+})();
+</script>

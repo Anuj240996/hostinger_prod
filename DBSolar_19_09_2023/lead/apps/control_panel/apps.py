@@ -1,0 +1,10 @@
+from django.apps import AppConfig
+
+class ControlPanelConfig(AppConfig):
+    default_auto_field = 'django.db.models.BigAutoField'
+    name = 'apps.control_panel'
+    verbose_name = 'Control Panel'
+
+    def ready(self):
+        from .signals import connect_signals
+        connect_signals()

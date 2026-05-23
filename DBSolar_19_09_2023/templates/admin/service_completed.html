@@ -1,0 +1,63 @@
+{% extends 'partials/base.html' %}
+{% load static %}
+{% load firereport_dt %}
+{% block content %}
+<section class="content">
+  <div class="page-header">
+    <div class="row">
+      <div class="col-sm-6">
+        <h1 class="m-0 page-title text-capitalize">Services - Completed Requests</h1>
+      </div>
+    </div>
+  </div>
+
+  <div class="card card-primary">
+    <div class="card-header">
+      <h3 class="card-title">Completed Service Requests</h3>
+    </div>
+    <div class="card-body border" style="background-color: gray">
+      <div class="table-responsive">
+        <table class="table table-bordered table-striped datatable table.sm dt-compact-cols dt-tools-minimal" style="background-color: white">
+          <thead>
+            <tr class="text-center">
+              <th>Sr No</th>
+              <th>Request No</th>
+              <th>Name</th>
+              <th>Mobile Number</th>
+              <th>Location</th>
+              <th>Message</th>
+              <th>Assigned To</th>
+              <th>Completed Date</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for i in service_requests %}
+            <tr>
+              <td class="text-center">{{ forloop.counter }}</td>
+              <td class="text-center">{{ i.id }}</td>
+              <td>{{ i.FullName }}</td>
+              <td>{{ i.MobileNumber }}</td>
+              <td>{{ i.Location }}</td>
+              <td>{{ i.Message }}</td>
+              <td class="text-capitalize">{% if i.AssignTo %}{{ i.AssignTo.first_name }} {{ i.AssignTo.last_name }}{% else %}-{% endif %}</td>
+              <td>{{ i.complete_date|indian_dt }}</td>
+              <td class="text-center">
+                <a class="btn btn-primary btn-sm" href="{% url 'firereport-service-viewRequestDetails' i.id %}">
+                  <i class="fa fa-eye"></i> 
+                </a>
+                <a class="btn btn-danger btn-sm ml-1" href="/firereport/services/report-pdf/{{ i.id }}">
+                  <i class="fa fa-file-pdf"></i>
+                </a>
+              </td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="9" class="text-center">No completed service requests found.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}

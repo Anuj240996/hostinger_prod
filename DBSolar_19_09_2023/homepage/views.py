@@ -111,5 +111,7 @@ def filter_stock(request):
 
 class GetSubcategoriesView(View):
     def get(self, request, category_id):
-        subcategories = SubCategory.objects.filter(category_id=category_id, status=True).values('id', 'name', 'category_id')
+        subcategories = SubCategory.objects.active_only().filter(
+            category_id=category_id
+        ).values("id", "name", "category_id")
         return JsonResponse(list(subcategories), safe=False)

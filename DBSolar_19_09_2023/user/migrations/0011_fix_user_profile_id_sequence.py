@@ -13,19 +13,6 @@ def fix_user_profile_id_sequence(apps, schema_editor):
         return
 
     with schema_editor.connection.cursor() as cursor:
-        # Check if column is an identity column (PostgreSQL 10+)
-        cursor.execute(
-            """
-            SELECT is_identity
-            FROM information_schema.columns
-            WHERE table_name = 'user_profile' AND column_name = 'id'
-            """
-        )
-        row = cursor.fetchone()
-        if row and row[0] == 'YES':
-            # Column is already an identity column, skip migration
-            return
-
         cursor.execute(
             """
             DO $$
@@ -42,14 +29,9 @@ def fix_user_profile_id_sequence(apps, schema_editor):
             $$;
             """
         )
-        try:
-            cursor.execute(
-                "ALTER TABLE user_profile ALTER COLUMN id SET DEFAULT nextval('user_profile_id_seq');"
-            )
-        except Exception as e:
-            if "identity column" in str(e).lower():
-                return
-            raise
+        cursor.execute(
+            "ALTER TABLE user_profile ALTER COLUMN id SET DEFAULT nextval('user_profile_id_seq');"
+        )
         cursor.execute(
             "SELECT setval('user_profile_id_seq', COALESCE((SELECT MAX(id) FROM user_profile), 1), true);"
         )

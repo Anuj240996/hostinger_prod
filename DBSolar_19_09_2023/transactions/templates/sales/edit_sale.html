@@ -57,8 +57,8 @@
 <!--                    <td class="sr-no">{{ forloop.counter }}</td>-->
 <!--&lt;!&ndash;                    <td>{{ stock.category.name }}</td>&ndash;&gt;-->
 <!--&lt;!&ndash;                    <td>{{ stock.subcategory.name }}</td>&ndash;&gt;-->
-<!--                    <td>{{ item.stock.category.name }}</td>-->
-<!--                    <td>{{ item.stock.subcategory.name }}</td>-->
+<!--                    <td>{% if item.stock.safe_category %}{{ item.stock.safe_category.name }}{% endif %}</td>-->
+<!--                    <td>{% if item.stock.safe_subcategory %}{{ item.stock.safe_subcategory.name }}{% endif %}</td>-->
 <!--                    <td align="left">{{ item.stock.name }}</td>-->
 <!--                     <td>-->
 <!--                        <span>{{ item.stock.quantity }}</span> &lt;!&ndash; Available stock quantity &ndash;&gt;-->
@@ -275,8 +275,8 @@
 <!--                {% for item in sale_items %}-->
 <!--                <tr data-id="{{ item.id }}">-->
 <!--                    <td class="sr-no">{{ forloop.counter }}</td>-->
-<!--                    <td>{{ item.stock.category.name }}</td>-->
-<!--                    <td>{{ item.stock.subcategory.name }}</td>-->
+<!--                    <td>{% if item.stock.safe_category %}{{ item.stock.safe_category.name }}{% endif %}</td>-->
+<!--                    <td>{% if item.stock.safe_subcategory %}{{ item.stock.safe_subcategory.name }}{% endif %}</td>-->
 <!--                    <td align="left">{{ item.stock.name }}</td>-->
 <!--                    <td>{{ item.stock.quantity }}</td> &lt;!&ndash; Display available stock quantity &ndash;&gt;-->
 <!--                    <td>-->
@@ -635,8 +635,8 @@
                     {% for item in sale_items %}
                     <tr data-id="{{ item.id }}">
                         <td class="sr-no">{{ forloop.counter }}</td>
-                        <td>{{ item.stock.category.name }}</td>
-                        <td>{{ item.stock.subcategory.name }}</td>
+                        <td>{% if item.stock.safe_category %}{{ item.stock.safe_category.name }}{% endif %}</td>
+                        <td>{% if item.stock.safe_subcategory %}{{ item.stock.safe_subcategory.name }}{% endif %}</td>
 <!--                        <td align="left">{{ item.stock.name }}</td>-->
 
                         <td>
@@ -782,8 +782,8 @@
 <!--                {% for item in sale_items %}-->
 <!--                <tr data-id="{{ item.id }}">-->
 <!--                    <td class="sr-no">{{ forloop.counter }}</td>-->
-<!--                    <td>{{ item.stock.category.name }}</td>-->
-<!--                    <td>{{ item.stock.subcategory.name }}</td>-->
+<!--                    <td>{% if item.stock.safe_category %}{{ item.stock.safe_category.name }}{% endif %}</td>-->
+<!--                    <td>{% if item.stock.safe_subcategory %}{{ item.stock.safe_subcategory.name }}{% endif %}</td>-->
 <!--                    <td align="left">{{ item.stock.name }}</td>-->
 <!--                    <td>{{ item.stock.quantity }}</td> &lt;!&ndash; Display available stock quantity &ndash;&gt;-->
 <!--                    <td>-->
@@ -866,6 +866,34 @@
 
 
 <!-- Modal for Serial Numbers -->
+<style>
+    #serialNumberModal .modal-dialog { max-width: 500px; transition: max-width 0.2s ease; }
+    #serialNumberModal .modal-dialog.modal-wide { max-width: 680px; }
+    #serialNumberModal .serial-modal-body { max-height: 70vh; overflow-y: auto; }
+    .serial-modal-topbar { display: flex; justify-content: flex-end; align-items: center; gap: 8px; margin-bottom: 12px; }
+    .serial-actions { display: flex; align-items: center; gap: 6px; flex-wrap: nowrap; justify-content: flex-end; }
+    #selectedSerialCount { font-size: 12px; color: #0f5132; background: #d1e7dd; border: 1px solid #badbcc; border-radius: 999px; padding: 2px 10px; white-space: nowrap; }
+    #purchase-bill-container.bill-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 10px; }
+    #purchase-bill-container.bill-grid.single-card { grid-template-columns: 1fr; }
+    .purchase-bill-card { border: 1px solid #d0d5dd; border-left-width: 5px; border-radius: 10px; cursor: pointer; transition: transform 0.15s ease, box-shadow 0.15s ease; }
+    .purchase-bill-card:hover { transform: translateY(-1px); box-shadow: 0 6px 16px rgba(16, 24, 40, 0.12); }
+    .purchase-bill-card .pb-title { font-weight: 700; font-size: 14px; line-height: 1.1; }
+    .purchase-bill-card .pb-count { display: block; margin-top: 0; font-size: 11px; line-height: 1.1; opacity: 0.9; }
+    .bill-theme-1 { background: #eff8ff; border-left-color: #2e90fa; }
+    .bill-theme-2 { background: #f5f3ff; border-left-color: #7a5af8; }
+    .bill-theme-3 { background: #ecfdf3; border-left-color: #12b76a; }
+    .bill-theme-4 { background: #fff6ed; border-left-color: #f79009; }
+    .bill-theme-5 { background: #fff1f3; border-left-color: #ee46bc; }
+    .bill-theme-6 { background: #f9fafb; border-left-color: #667085; }
+    #serial-number-container {
+        display: grid; grid-auto-flow: column; grid-template-rows: repeat(10, minmax(18px, auto));
+        grid-auto-columns: minmax(105px, max-content); row-gap: 2px; column-gap: 12px; overflow-x: auto;
+        padding-bottom: 4px; justify-content: start; justify-items: start; text-align: left;
+    }
+    #serial-number-container .form-check { display: inline-flex; align-items: center; justify-content: flex-start; gap: 2px; margin: 0; min-height: 22px; text-align: left; }
+    #serial-number-container .form-check-input { position: static; margin: 0 6px 0 0; transform: scale(1.12); transform-origin: center; }
+    #serial-number-container .form-check-label { margin: 0; line-height: 1.2; font-size: 14px; text-align: left; }
+</style>
 <div class="modal fade" id="serialNumberModal" tabindex="-1" role="dialog" aria-labelledby="serialNumberModalLabel" aria-hidden="true">
     <div class="modal-dialog" role="document">
         <div class="modal-content">
@@ -875,8 +903,17 @@
                     <span aria-hidden="true">&times;</span>
                 </button>
             </div>
-            <div class="modal-body">
+            <div class="modal-body serial-modal-body">
                 <form id="serialNumberForm">
+                    <div class="serial-modal-topbar">
+                        <div class="serial-actions">
+                            <span id="selectedSerialCount">Selected: 0 / 0</span>
+                            <button type="button" class="btn btn-sm btn-outline-primary" id="selectAllSerialsBtn">Select All</button>
+                            <button type="button" class="btn btn-sm btn-outline-secondary" id="clearAllSerials">Clear All</button>
+                        </div>
+                    </div>
+                    <div id="purchase-bill-container" class="mb-3 bill-grid"></div>
+                    <hr>
                     <div id="serial-number-container">
                         <!-- Checkboxes will be dynamically added here -->
                     </div>
@@ -1557,6 +1594,50 @@
     $(document).ready(function () {
         var selectedStockId;
         var selectedSerialNumbers = {};
+        var selectedQty = 0;
+
+        function getCheckedCount() {
+            return $('#serial-number-container input[type="checkbox"]:checked').length;
+        }
+
+        function renderPurchaseBillCards(groupedSerials) {
+            var $billContainer = $('#purchase-bill-container');
+            var $modalDialog = $('#serialNumberModal .modal-dialog');
+            $billContainer.empty().removeClass('single-card');
+            $modalDialog.removeClass('modal-wide');
+            if (!groupedSerials || !groupedSerials.length) {
+                $billContainer.append('<div class="text-muted small">No active serial numbers found.</div>');
+                return;
+            }
+            if (groupedSerials.length === 1) {
+                $billContainer.addClass('single-card');
+            } else if (groupedSerials.length > 4) {
+                $modalDialog.addClass('modal-wide');
+            }
+            groupedSerials.forEach(function (group, index) {
+                var themeClass = 'bill-theme-' + ((index % 6) + 1);
+                var card = `<div class="card purchase-bill-card ${themeClass}" data-billno="${group.billno}">
+                    <div class="card-body py-2 px-3">
+                        <span class="pb-title">P.B. ${group.billno}</span>
+                        <small class="pb-count">${group.serial_count} serial no.</small>
+                    </div>
+                </div>`;
+                $billContainer.append(card);
+            });
+        }
+
+        function enforceSelectionLimit(quantity) {
+            var checkedCount = getCheckedCount();
+            var $all = $('#serial-number-container input[type="checkbox"]');
+            if (checkedCount >= quantity && quantity > 0) {
+                $all.not(':checked').prop('disabled', true);
+            } else {
+                $all.prop('disabled', false);
+            }
+            var total = $all.length;
+            $('#selectedSerialCount').text('Selected: ' + checkedCount + ' / ' + Math.min(quantity, total));
+            $('#selectAllSerialsBtn').text(total > 0 && checkedCount === total ? 'Unselect All' : 'Select All');
+        }
 
         $(document).on('click', '.stockName', function (e) {
             e.preventDefault();
@@ -1566,6 +1647,7 @@
 <!--            var quantity = parseInt(stockRow.find('input[name*="quantity"]').val()) || 0;-->
             var quantityInput = stockRow.find('.quantity-input');
             var quantity = parseInt(quantityInput.val()) || 0;
+            selectedQty = quantity;
 
             // Fetch serial numbers for selected stock
             $.ajax({
@@ -1577,17 +1659,21 @@
                 success: function (data) {
                     console.log('Serial Numbers:', data.serial_numbers);
                     var serialNumbers = data.serial_numbers;
+                    var groupedSerials = data.grouped_by_bill || [];
                     $('#serial-number-container').empty();
+                    $('#purchase-bill-container').empty();
 
                     serialNumbers.forEach(function (serial) {
                         var isChecked = serial.checked ? 'checked' : '';
+                        var billNo = serial.billno || 'N/A';
                         var checkbox = `
                             <div class="form-check">
-                                <input class="form-check-input" type="checkbox" value="${serial.serialNo}" id="serialNo-${serial.serialNo}" ${isChecked}>
+                                <input class="form-check-input" type="checkbox" value="${serial.serialNo}" id="serialNo-${serial.serialNo}" data-billno="${billNo}" ${isChecked}>
                                 <label class="form-check-label" for="serialNo-${serial.serialNo}">${serial.serialNo}</label>
                             </div>`;
                         $('#serial-number-container').append(checkbox);
                     });
+                    renderPurchaseBillCards(groupedSerials);
                     console.log('Initial Quantity:', quantity);
                     initialValidation(quantity);
                     $('#serialNumberModal').modal('show');
@@ -1612,6 +1698,7 @@
             }
 
             updateCheckboxState(quantity);
+            enforceSelectionLimit(quantity);
         }
 
         function enableUncheckedCheckboxes() {
@@ -1638,8 +1725,37 @@
                 } else {
                     enableUncheckedCheckboxes();
                 }
+                enforceSelectionLimit(quantity);
             });
         }
+
+        $('#selectAllSerialsBtn').on('click', function () {
+            var $all = $('#serial-number-container input[type="checkbox"]');
+            var total = $all.length;
+            var checked = getCheckedCount();
+            var shouldSelect = !(total > 0 && checked === total);
+            if (shouldSelect) {
+                var remaining = Math.max(0, selectedQty - checked);
+                $all.filter(':enabled').not(':checked').slice(0, remaining).prop('checked', true);
+            } else {
+                $all.prop('checked', false).prop('disabled', false);
+            }
+            enforceSelectionLimit(selectedQty);
+        });
+
+        $('#clearAllSerials').on('click', function () {
+            $('#serial-number-container input[type="checkbox"]').prop('checked', false).prop('disabled', false);
+            enforceSelectionLimit(selectedQty);
+        });
+
+        $(document).on('click', '.purchase-bill-card', function () {
+            var billNo = $(this).data('billno');
+            if (!billNo) return;
+            var $target = $('#serial-number-container input[type="checkbox"][data-billno="' + billNo + '"]');
+            var remaining = Math.max(0, selectedQty - getCheckedCount());
+            $target.filter(':enabled').not(':checked').slice(0, remaining).prop('checked', true);
+            enforceSelectionLimit(selectedQty);
+        });
 
         $('#saveSerialNumbers').on('click', function () {
             var checkedSerials = $('#serial-number-container input[type="checkbox"]:checked').map(function () {
@@ -1926,7 +2042,6 @@
       </div>
       <div class="modal-body">
         <form id="modalForm">
-
             <div class="toggle-container" style="display: flex; justify-content: center; align-items: center; width: 100%;">
                 <div id="currentBillLabel" class="toggle-label" style="display: flex; flex-direction: column; align-items: center; margin-right: 20px; width: 180px;">
                     <span style="line-height: 1.5;">Current Bill</span>
@@ -1937,56 +2052,57 @@
                     <span class="checkmark" id="checkPrevious" style="margin-left: 30px; line-height: 1.5;">✔</span>
                 </div>
             </div>
+            <br>
+            <fieldset>
+                <div class="toggle-container" style="display: flex; justify-content: center; align-items: center; width: 100%;">
+                    <div class="form-group" id="previousBillField" style="display: flex; flex-direction: column; margin-right: 20px; width: 180px;">
+                        <label for="eway_no">Prev. Delivery Challan No <span style="color: red;">*</span></label>
+                        <input type="text" id="eway_no" name="eway_no" class="form-control" value="{{ sale_bill_details.eway }}">
+                    </div>
+                    <div class="form-group" id="previousDateField" style="display: flex; flex-direction: column; width: 180px;">
+                        <label for="bill_date">Prev. Bill Date <span style="color: red;">*</span></label>
+                        <input type="date" id="bill_date" name="bill_date" class="form-control" value="{{ sale_bill_details.tcs }}">
+                    </div>
+                </div>
 
-          <!-- Previous Bill and Previous Date Fields -->
-          <div class="form-group" id="previousBillField">
-            <label for="eway_no">Prev. Delivery Challan No <span style="color: red;">*</span></label>
-            <input type="text" id="eway_no" name="eway_no" class="form-control" value="{{ sale_bill_details.eway }}">
-          </div>
-          <div class="form-group" id="previousDateField">
-            <label for="bill_date">Prev. Bill Date <span style="color: red;">*</span></label>
-            <input type="date" id="bill_date" name="bill_date" class="form-control" value="{{ sale_bill_details.tcs }}">
-          </div>
+                <div class="toggle-container" style="display: flex; justify-content: center; align-items: center; width: 100%;">
+                    <div class="form-group" style="display: flex; flex-direction: column; margin-right: 20px; width: 180px;">
+                        <label for="po_no">PO No</label>
+                        <input type="text" id="po_no" name="po_no" class="form-control" value="{{ sale_bill_details.po }}" required>
+                    </div>
+                    <div class="form-group" style="display: flex; flex-direction: column; width: 180px;">
+                        <label for="po_date">PO Date</label>
+                        <input type="date" id="po_date" name="po_date" class="form-control" value="{{ sale_bill_details.cgst }}" required>
+                    </div>
+                </div>
 
-          <div class="form-group">
-            <label for="veh_no">Vehicle No</label>
-            <input type="text" id="veh_no" name="veh_no" class="form-control" value="{{ sale_bill_details.veh }}">
-          </div>
-          <div class="form-group">
-            <label for="arrange">Arrange By <span style="color: red;">*</span></label>
-            <input type="text" id="arrange" name="arrange" class="form-control" value="{{ sale_bill_details.sgst }}" required>
-          </div>
-            <div class="form-group">
-            <label for="handby">Handled By <span style="color: red;">*</span></label>
-            <input type="text" id="handby" name="handby" class="form-control" value="{{ sale_bill_details.igst }}" required>
-          </div>
-<!--          <div class="form-group">-->
-<!--            <label for="destination">Source <span style="color: red;">*</span></label>-->
-<!--            <select id="destination" name="destination" class="form-control" value="{{ sale_bill_details.destination }}" required>-->
-<!--              <option value="" disabled selected></option>-->
-<!--              <option value="Warehouse" {% if billdetails.destination == "Warehouse" %}selected{% endif %}>Warehouse</option>-->
-<!--              <option value="Office" {% if billdetails.destination == "Office" %}selected{% endif %}>Office</option>-->
-<!--              <option value="Vendor" {% if billdetails.destination == "Vendor" %}selected{% endif %}>Vendor</option>-->
-<!--            </select>-->
-<!--          </div>-->
-            <div class="form-group">
-              <label for="destination">Source <span style="color: red;">*</span></label>
-              <select id="destination" name="destination" class="form-control" required>
-                <option value="" disabled {% if not sale_bill_details.destination %}selected{% endif %}></option>
-                <option value="Warehouse" {% if sale_bill_details.destination == "Warehouse" %}selected{% endif %}>Warehouse</option>
-                <option value="Office" {% if sale_bill_details.destination == "Office" %}selected{% endif %}>Office</option>
-                <option value="Vendor" {% if sale_bill_details.destination == "Vendor" %}selected{% endif %}>Vendor</option>
-              </select>
-            </div>
+                <div class="toggle-container" style="display: flex; justify-content: center; align-items: center; width: 100%;">
+                    <div class="form-group" style="display: flex; flex-direction: column; margin-right: 20px; width: 180px;">
+                        <label for="veh_no">Vehicle No</label>
+                        <input type="text" id="veh_no" name="veh_no" class="form-control" value="{{ sale_bill_details.veh }}">
+                    </div>
+                    <div class="form-group" style="display: flex; flex-direction: column; width: 180px;">
+                        <label for="arrange">Arrange By <span style="color: red;">*</span></label>
+                        <input type="text" id="arrange" name="arrange" class="form-control" value="{{ sale_bill_details.sgst }}" required>
+                    </div>
+                </div>
 
-          <div class="form-group">
-            <label for="po_no">PO No</label>
-            <input type="text" id="po_no" name="po_no" class="form-control" value="{{ sale_bill_details.po }}" required>
-          </div>
-          <div class="form-group">
-            <label for="po_date">PO Date</label>
-            <input type="date" id="po_date" name="po_date" class="form-control" value="{{ sale_bill_details.cgst }}" required>
-          </div>
+                <div class="toggle-container" style="display: flex; justify-content: center; align-items: center; width: 100%;">
+                    <div class="form-group" style="display: flex; flex-direction: column; margin-right: 20px; width: 180px;">
+                        <label for="handby">Handled By <span style="color: red;">*</span></label>
+                        <input type="text" id="handby" name="handby" class="form-control" value="{{ sale_bill_details.igst }}" required>
+                    </div>
+                    <div class="form-group" style="display: flex; flex-direction: column; width: 180px;">
+                        <label for="destination">Source <span style="color: red;">*</span></label>
+                        <select id="destination" name="destination" class="form-control" required>
+                            <option value="" disabled {% if not sale_bill_details.destination %}selected{% endif %}></option>
+                            <option value="Warehouse" {% if sale_bill_details.destination == "Warehouse" %}selected{% endif %}>Warehouse</option>
+                            <option value="Office" {% if sale_bill_details.destination == "Office" %}selected{% endif %}>Office</option>
+                            <option value="Vendor" {% if sale_bill_details.destination == "Vendor" %}selected{% endif %}>Vendor</option>
+                        </select>
+                    </div>
+                </div>
+            </fieldset>
         </form>
       </div>
       <div class="modal-footer">
@@ -2760,6 +2876,25 @@ $(document).ready(function() {
     }
     .custom-flex input {
         margin-right: 10px; /* Add some space between the input and the image */
+    }
+    /* Confirmation modal field focus background behavior */
+    #confirmationModal .form-control,
+    #confirmationModal select.form-control {
+        background-color: #ffffff;
+        transition: background-color 0.2s ease-in-out;
+    }
+    #confirmationModal .form-control:focus,
+    #confirmationModal select.form-control:focus,
+    #confirmationModal input[type="date"]:focus {
+        background-color: #ffe6ee !important;
+    }
+    #confirmationModal input[type="date"]:focus::-webkit-datetime-edit,
+    #confirmationModal input[type="date"]:focus::-webkit-date-and-time-value {
+        background-color: #ffe6ee !important;
+    }
+    #confirmationModal .form-control:not(:focus),
+    #confirmationModal select.form-control:not(:focus) {
+        background-color: #ffffff;
     }
 </style>
 <style>

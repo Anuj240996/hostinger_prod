@@ -18,6 +18,7 @@ from .models import (
     CPNavItem,
     CPUserNavAccess,
 )
+from .permission_map import DASHBOARD_SUBMODULE_URL_NAMES
 
 
 @dataclass(frozen=True)
@@ -82,23 +83,34 @@ def has_nav_url_access(user, url_name: str) -> bool:
     """
     Per-page/submodule access check.
 
-    Backward compatible behavior:
-    - If the user has *no* CP nav grants configured yet, return True (do not hide menus).
-    - Once any nav grants exist for the user, enforce nav-item grants for mapped url_names.
-    - Unmapped url_names are allowed (so existing pages don't disappear unexpectedly).
+    The four Dashboard landing URLs (staff / consumer / complaint / stock) are allowed
+    only when the matching item is explicitly granted under Control Panel
+    Models & Sub-models — not from Portal access alone.
+
+    Other URLs: legacy behavior (open if no nav rows yet; else enforce nav grants).
     """
     if not user or isinstance(user, AnonymousUser) or not getattr(user, "is_authenticated", False):
         return False
     if getattr(user, "is_superuser", False):
         return True
 
-    # If the admin hasn't configured nav permissions at all for this user yet,
-    # don't hide menus (legacy behavior).
+    if url_name in DASHBOARD_SUBMODULE_URL_NAMES:
+        if not CPUserNavAccess.objects.filter(user=user).exists():
+            return False
+        nav_ids = list(
+            CPNavItem.objects.filter(url_name=url_name, is_active=True).values_list("id", flat=True)
+        )
+        if not nav_ids:
+            return False
+        return CPUserNavAccess.objects.filter(
+            user=user,
+            nav_item_id__in=nav_ids,
+            granted=True,
+        ).exists()
+
     if not CPUserNavAccess.objects.filter(user=user).exists():
         return True
 
-    # Multiple nav items can share the same url_name (e.g. "Search" appears under
-    # different sections). Allow if user has access to ANY matching nav item.
     nav_ids = list(
         CPNavItem.objects.filter(url_name=url_name, is_active=True).values_list("id", flat=True)
     )

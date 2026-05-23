@@ -10,17 +10,28 @@
         </ul>
     {% endif %}
 
-     <div class="col-md-12">
+<div class="col-md-12 meter-mode-toolbar">
+    <div class="meter-segmented-wrap">
+        <div class="meter-segmented" id="meterSegmentedControl" role="group" aria-label="Meter module sections">
+            <button type="button" class="meter-segment active" data-target="meter-add-section" aria-current="page">Add Meter</button>
+            <button type="button" class="meter-segment" data-target="meter-view-section">View Meter</button>
+            <button type="button" class="meter-segment" data-target="meter-delete-section">Delete Meters</button>
+            <button type="button" class="meter-segment" data-target="meter-search-section">Search</button>
+        </div>
+    </div>
+</div>
+
+<section id="meter-add-section" class="meter-main-section active">
+     <div class="col-md-12 consumer-meters-page meters-page-compact">
          <!-- general form elements -->
          <div class="card card-primary">
             <div class="card-header">
                <h3>Consumer Meters Details</h3>
             </div>
-<br>
-<div style="text-align: center">
-        <button id="metersButton">Meters</button>&nbsp;&nbsp;&nbsp;
-        <button id="generationMetersButton">Generation Meter</button>&nbsp;&nbsp;&nbsp;
-        <br><br>
+<div class="meters-form-stack meters-page-top-actions" style="text-align: center">
+        <button type="button" id="metersButton">Meters</button>&nbsp;&nbsp;&nbsp;
+        <button type="button" id="generationMetersButton">Generation Meter</button>&nbsp;&nbsp;&nbsp;
+        <br>
 
         <div id="generationMeterRadioButton" style="display: none;">
             <label class="checkbox-label">
@@ -32,295 +43,596 @@
         </div>
     </div>
 
-    <div id="comp_name_dropdown" class="form-group row" style="display: none;">
-        <div class="col-sm-11">
-            <label for="Comp_name"><b>Select Company Name:</b></label>
-            <select class="form-control text-capitalize" name="Comp_name" id="Comp_name" required>
-                <option value=""></option>
-                <!-- Options will be populated by JavaScript -->
-            </select>
-        </div>
-    </div>
-
     <script>
-        function filterCompNames(meterType) {
-            fetch(`/customer/filter-comp-names/?meter_type=${meterType}`)
-                .then(response => response.json())
-                .then(data => {
-                    const compNameDropdown = document.getElementById('Comp_name');
-                    compNameDropdown.innerHTML = '<option value=""></option>'; // Clear existing options
+        function fillCompanySelect(selectEl, data) {
+            if (!selectEl) return;
+            selectEl.innerHTML = '<option value="">— Select company —</option>';
+            data.comp_names.forEach(function (row) {
+                var cust_id = row[0], comp_name = row[1], city = row[2];
+                var option = document.createElement('option');
+                option.value = comp_name;
+                option.textContent = comp_name + ', ' + city + ' (ID- ' + cust_id + ')';
+                selectEl.appendChild(option);
+            });
+        }
 
-                    data.comp_names.forEach(([cust_id, comp_name, city]) => {
-                        const option = document.createElement('option');
-                        option.value = comp_name;
-                        //option.textContent = `${comp_name} &nbsp;&nbsp;&nbsp;&nbsp; (ID - ${cust_id})`;
-                        option.innerHTML = `${comp_name}  , &nbsp;${city} &nbsp;&nbsp;&nbsp;&nbsp; (ID- ${cust_id})`;
-                        //console.log(option.textContent); // Outputs: sai (ID- 2001)
-                        compNameDropdown.appendChild(option);
-                    });
+        function filterCompNames(meterType) {
+            var url = '/customer/filter-comp-names/?meter_type=' + encodeURIComponent(meterType);
+            fetch(url, { credentials: 'same-origin' })
+                .then(function (response) {
+                    return response.json();
                 })
-                .catch(error => console.error('Error:', error));
+                .then(function (data) {
+                    fillCompanySelect(document.getElementById('Comp_name_meters'), data);
+                    fillCompanySelect(document.getElementById('Comp_name_generation'), data);
+                })
+                .catch(function (error) {
+                    console.error('Error loading company names:', error);
+                });
         }
 
         document.addEventListener('DOMContentLoaded', function() {
-            document.getElementById('metersButton').addEventListener('click', function() {
-                document.getElementById('generationMeterRadioButton').style.display = 'none';
-                document.getElementById('comp_name_dropdown').style.display = 'block';
+            var metersForm = document.getElementById('metersForm');
+            var generationMeterTab = document.getElementById('generationMeterTab');
+            var metersBtn = document.getElementById('metersButton');
+            var genMetersBtn = document.getElementById('generationMetersButton');
+            var genRadioWrap = document.getElementById('generationMeterRadioButton');
 
-                metersForm.style.display = 'block';
+            if (metersBtn) metersBtn.addEventListener('click', function() {
+                if (genRadioWrap) genRadioWrap.style.display = 'none';
+                if (metersForm) metersForm.style.display = 'block';
+                if (generationMeterTab) generationMeterTab.style.display = 'none';
+                openTab('metersTab');
                 filterCompNames('meters');
             });
 
-            document.getElementById('generationMetersButton').addEventListener('click', function() {
-                document.getElementById('generationMeterRadioButton').style.display = 'block';
-                document.getElementById('comp_name_dropdown').style.display = 'block';
-                metersForm.style.display = 'none';
+            if (genMetersBtn) genMetersBtn.addEventListener('click', function() {
+                if (genRadioWrap) genRadioWrap.style.display = 'block';
+                if (metersForm) metersForm.style.display = 'none';
+                if (generationMeterTab) generationMeterTab.style.display = 'block';
+                openTab('generationMeterTab');
                 filterCompNames('generation');
+                // Default to "Generation Meter" (not Generation + CT)
+                var genOnly = document.querySelector('input[name="meter_type"][value="generation"]');
+                if (genOnly) {
+                    genOnly.checked = true;
+                    genOnly.dispatchEvent(new Event('change', { bubbles: true }));
+                }
+                toggleGenerationCTFields();
             });
         });
     </script>
-
-<script>
-   // JavaScript function to update the selected company name across forms
-   function updateSelectedCompName() {
-       const selectedCompName = document.getElementById('Comp_name').value;
-       document.querySelectorAll('.compNameDropdown').forEach(function (dropdown) {
-           dropdown.value = selectedCompName;
-       });
-   }
-
-   // Event listener for company name dropdown change
-   document.getElementById('Comp_name').addEventListener('change', updateSelectedCompName);
-
-   // Initial state
-   document.addEventListener('DOMContentLoaded', function () {
-       updateSelectedCompName();
-       openTab('metersTab'); // Set the default tab
-   });
-</script>
 <!-- Meters Tab -->
 <div id="metersTab" class="tab-content">
    <form id="metersForm" action="{% url 'save_meters' %}" method="post" name="metersForm" style="display: none;">
       {% csrf_token %}
-      <!-- Add hidden input for selected company name -->
-      <input type="hidden" name="selected_company" id="selectedCompany">
-      <!-- Generation CT Form Fields -->
-      <div>
-         <fieldset>
-            <h3>Meters Details</h3>
+      <div class="meters-form-stack">
+      <div class="form-group meters-company-row">
+            <label for="Comp_name_meters"><b>Select company name</b> <span class="text-danger">*</span></label>
+            <select class="form-control text-capitalize" name="Comp_name" id="Comp_name_meters" required>
+               <option value="">— Select company —</option>
+            </select>
+            <small class="text-danger" id="err_comp_meters" style="display:none;">Please select a company name.</small>
+      </div>
+      <fieldset>
+            <h3 class="meters-section-heading">Meters Details</h3>
             <div class="checkbox-column">
                <label for="meters">Meters:</label><br>
-               <!--               <input class="checkbox-input" type="radio" name="meters" value="True" required> NetMeter-->
-               <!--               <input class="checkbox-input" type="radio" name="meters" value="False" required> ABT Meter-->
                <label class="checkbox-label"><input type="radio" class="checkbox-input" name="meters" value="Net Meter" required> Net Meter</label>
                <label class="checkbox-label"><input type="radio" class="checkbox-input" name="meters" value="ABT Meter" required> ABT Meter</label><br>
             </div>
-            <table>
+            <table class="meters-fields-table">
                <tr>
-                  <td style="width: 350px">
-                     <!-- Meters Form Fields -->
+                  <td>
                      <label for="make">Make:</label>
-                     <input type="hidden" name="Comp_name" class="compNameDropdown" required>
-                     <input type="text" class="form-control" name="make" height="100px" required>
+                     <input type="text" class="form-control" name="make" required>
                   </td>
-                  <td style="width: 350px">
+                  <td>
                      <label for="capacity">Capacity:</label>
                      <input type="text" class="form-control" name="capacity" required>
                   </td>
-                  <td style="width: 350px">
+                  <td>
                      <label for="serial_no">Serial No:</label>
                      <input type="text" class="form-control" name="serial_no" required>
                   </td>
                </tr>
             </table>
-         </fieldset>
-         <div class="label">
+      </fieldset>
+      <div class="label">
             <fieldset>
-               <h3>Transformer Details</h3>
-               <!-- Transformer Details Fields -->
+               <h3 class="meters-section-heading">Transformer Details</h3>
               {% csrf_token %}
-     <div class="form-group row">
-        <div class="col-sm-12">
+               <div class="form-group meters-tight-field">
                <label for="transformer_type">Transformer Type:</label>
-               <select name="transformer_type" class="form-control" required>
+               <select name="transformer_type" id="transformer_type" class="form-control" required>
                   <option value="CT">CT</option>
                   <option value="Cubical">Cubical</option>
                   <option value="None">None</option>
                </select>
-        </div>
-    </div>
-
-
+               </div>
                <div class="transformerFieldsContainer">
-                  <table>
+                  <table class="meters-fields-table">
                      <tr>
-                        <td style="width: 350px">
-                           <!-- Meters Form Fields -->
-                           <label id="transformer_make" for="transformer_make">Make:</label>
-                           <input type="text" class="form-control" name="transformer_make" id="transformer_make">
+                        <td>
+                           <label for="transformer_make_input">Make:</label>
+                           <input type="text" class="form-control" name="transformer_make" id="transformer_make_input">
                         </td>
-                        <td style="width: 350px">
-                           <label for="transformer_capacity" id="transformer_capacity">Capacity:</label>
-                           <input type="text" class="form-control" name="transformer_capacity" id="transformer_capacity">
+                        <td>
+                           <label for="transformer_capacity_input">Capacity:</label>
+                           <input type="text" class="form-control" name="transformer_capacity" id="transformer_capacity_input">
                         </td>
-                        <td style="width: 350px">
-                           <label for="transformer_serial_number" id="transformer_serial_number">Serial No:</label>
-                           <input type="text" class="form-control" name="transformer_serial_number" id="transformer_serial_number">
+                        <td>
+                           <label for="transformer_serial_input">Serial No:</label>
+                           <input type="text" class="form-control" name="transformer_serial_number" id="transformer_serial_input">
                         </td>
                      </tr>
                   </table>
                </div>
-<!--         </div>-->
           </fieldset>
-         </div>
       </div>
-      <div class="form-group" align="center">
+      </div>
+      <div class="form-group meters-save-row" align="center">
       <button type="submit">Save</button>
       </div>
    </form>
 </div>
 
 <!-- Generation Meter Tab -->
-<div id="generationMeterTab" class="tab-content" style="display: None;">
+<div id="generationMeterTab" class="tab-content" style="display: none;">
    <form id="generationMeterForm" action="{% url 'save_generation_meter' %}" method="post">
       {% csrf_token %}
-      <input type="hidden" name="row_count" id="generationMeterRowCount" value="1"> <!-- Add this line -->
-      <h3>Generation Meter Details</h3>
-      <div class="row-container">
-         <div class="row">
-            <fieldset class="styled-fieldset"> <!-- Moved <fieldset> here -->
-               <table align="center" style="margin: 0 auto;">
+      <div class="meters-form-stack">
+      <div class="form-group meters-company-row">
+            <label for="Comp_name_generation"><b>Select company name</b> <span class="text-danger">*</span></label>
+            <select class="form-control text-capitalize" name="Comp_name" id="Comp_name_generation" required>
+               <option value="">— Select company —</option>
+            </select>
+            <small class="text-danger" id="err_comp_generation" style="display:none;">Please select a company name.</small>
+      </div>
+      <input type="hidden" name="row_count" id="generationMeterRowCount" value="1">
+      <h3 class="meters-section-heading">Generation Meter Details</h3>
+      <div class="generation-meter-rows-section">
+      <div class="row-container" id="generationMeterRowsWrapper">
+         <div class="generation-meter-row">
+            <fieldset class="styled-fieldset">
+               <table class="meters-fields-table">
                   <tr>
-                     <td style="width: 350px">
+                     <td>
                         <label for="make">Generation Make:</label>
-                        <input type="hidden" name="Comp_name" class="compNameDropdown" required>
                         <input type="text" class="form-control" name="make" required>
                      </td>
-                     <td style="width: 350px">
+                     <td>
                         <label for="capacity">Generation Capacity:</label>
                         <input type="text" class="form-control" name="capacity" required>
                      </td>
-                     <td style="width: 350px">
+                     <td>
                         <label for="serial_no">Generation Serial No:</label>
                         <input type="text" class="form-control" name="serial_no" required>
                      </td>
                   </tr>
-                  <!-- Additional fields for Generation CT Meter -->
-                  <tr id="generationCTFields" style="display: none;">
-                     <td style="width: 350px">
+                  <tr class="generation-ct-row" style="display: none;">
+                     <td>
                         <label for="ct_make">CT Make:</label>
                         <input type="text" class="form-control" name="CT_make">
                      </td>
-                     <td style="width: 350px">
+                     <td>
                         <label for="ct_capacity">CT Capacity:</label>
                         <input type="text" class="form-control" name="CT_capacity">
                      </td>
-                     <td style="width: 350px">
+                     <td>
                         <label for="ct_serial_no">CT Serial No:</label>
                         <input type="text" class="form-control" name="CT_serial_no">
                      </td>
                   </tr>
                </table>
-            </fieldset> <!-- Moved </fieldset> here -->
-            <button id="addGenerationMeterRow" type="button" onclick="addGenerationMeterRow()" style="height: 45px; width: 110px; text-align"> + </button>
+            </fieldset>
          </div>
       </div>
-      <br>
-      <div class="form-group" align="center">
+      <div class="generation-meter-add-row-bar">
+         <button type="button" id="addGenerationMeterRow" style="height: 45px; width: 110px; text-align: center;"> + </button>
+      </div>
+      </div>
+      </div>
+      <div class="form-group meters-save-row" align="center">
          <button type="submit">Save</button>
       </div>
    </form>
 </div>
          </div>
      </div>
+</section>
+
+
+<section id="meter-view-section" class="col-md-12 meter-main-section">
+    <div class="meter-frame-card">
+        <div class="page-header">
+            <div class="row">
+                <div class="col-sm-12">
+                    <h3 class="page-title text-capitalize">Show Meters Details of Company</h3>
+                </div>
+            </div>
+        </div>
+        <form method="post" action="{% url 'customer-meters' %}" id="mergedViewForm">
+            {% csrf_token %}
+            <input type="hidden" name="merged_action" value="view_preview">
+            <div class="form-group row">
+                <div class="col-sm-9">
+                    <label for="view_comp_name">Select Company Name:</label>
+                    <select class="form-control text-capitalize" name="view_comp_name" id="view_comp_name" onchange="updateViewCustomerId()">
+                        <option value=""></option>
+                        {% for comp_name, customer_id, city in view_comp_names %}
+                            <option value="{{ comp_name }}" data-customer-id="{{ customer_id }}" {% if comp_name == selected_view_comp_name %}selected{% endif %}>
+                                {{ comp_name }}, {{ city }} ({{ customer_id }})
+                            </option>
+                        {% endfor %}
+                    </select>
+                    <input type="hidden" name="view_customer_id" id="view_customer_id" value="{{ selected_view_customer_id|default:'' }}">
+                </div>
+                <div class="col-sm-2"><br><button type="submit"><i class="nav-icon fa fa-eye" aria-hidden="true"></i> Preview</button></div>
+            </div>
+        
+
+        {% if selected_view_comp_name %}
+        <div class="col-auto text-right float-right ml-auto view-export-toolbar" id="viewExportToolbar" style="margin-right: 25px;">
+            <div class="dt-buttons btn-group flex-wrap">
+                <a href="#" class="btn btn-primary" id="viewExportPdfBtn" title="PDF"><i class="fas fa-file-pdf" style="font-size: 1.05rem;"></i></a>
+                <a href="#" class="btn btn-primary" id="viewExportExcelBtn" title="Excel"><i class="fa fa-file-excel" style="font-size: 1.05rem;"></i></a>
+                <a href="#" class="btn btn-primary" id="viewExportCopyBtn" title="Copy"><i class="fas fa-copy"></i></a>
+                <a href="#" class="btn btn-primary" id="viewExportPrintBtn" title="Print"><i class="fas fa-print"></i></a>
+            </div>
+        </div>
+        <br>
+        <br>
+            <div class="alert alert-info" style="margin-top:10px;">
+                <b>Selected Company:</b> {{ selected_view_comp_name }}
+                {% if selected_view_customer_id %} &nbsp; <b>Customer ID:</b> {{ selected_view_customer_id }}{% endif %}
+            </div>
+           
+
+            {% if view_meters_records %}
+            <fieldset>
+                <legend style="color: blue;">Meters Details</legend>
+                <table class="highlight-on-check">
+                    <thead>
+                        <tr>
+                            <th style="width: 80px;">Sr No</th>
+                            <th style="width: 220px;">Meter Type</th>
+                            <th>Make</th>
+                            <th style="width: 180px;">Capacity</th>
+                            <th>Serial Number</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    {% for record in view_meters_records %}
+                        <tr><td>{{ forloop.counter }}</td><td>{{ record.meter_type }}</td><td>{{ record.make }}</td><td>{{ record.capacity }}</td><td>{{ record.serial_no }}</td></tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </fieldset>
+            {% endif %}
+
+            {% if view_meters_records and view_meters_records.0.transformer_type != "None" %}
+            <fieldset>
+                <legend style="color: blue;">{{ view_meters_records.0.transformer_type }} Meter Details</legend>
+                <table class="highlight-on-check">
+                    <thead>
+                        <tr>
+                            <th style="width: 80px;">Sr No</th>
+                            <th style="width: 180px;">Type</th>
+                            <th>Make</th>
+                            <th style="width: 180px;">Capacity</th>
+                            <th>Serial Number</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    {% for record in view_meters_records %}
+                        <tr>
+                            <td>{{ forloop.counter }}</td>
+                            <td>{{ record.transformer_type }}</td>
+                            <td>{{ record.transformer_make }}</td>
+                            <td>{{ record.transformer_capacity }}</td>
+                            <td>{{ record.transformer_serial_number }}</td>
+                        </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </fieldset>
+            {% endif %}
+
+            {% if view_generation_meter_records %}
+            <fieldset>
+                {% if view_generation_meter_records.0.CT_make %}
+                    <legend style="color: blue;">Generation With CT Meters</legend>
+                {% else %}
+                    <legend style="color: blue;">Generation Meters</legend>
+                {% endif %}
+                <table class="highlight-on-check">
+                    <thead>
+                        <tr>
+                            <th style="width: 80px;">Sr No</th>
+                            <th>Generation Meter Make</th>
+                            <th style="width: 180px;">Generation Meter Capacity</th>
+                            <th>Generation Meter Serial Number</th>
+                            {% if view_generation_meter_records.0.CT_make %}
+                            <th>CT Make</th>
+                            <th style="width: 180px;">CT Capacity</th>
+                            <th>CT Serial Number</th>
+                            {% endif %}
+                        </tr>
+                    </thead>
+                    <tbody>
+                    {% for record in view_generation_meter_records %}
+                        <tr>
+                            <td>{{ forloop.counter }}</td>
+                            <td>{{ record.make }}</td>
+                            <td>{{ record.capacity }}</td>
+                            <td>{{ record.serial_no }}</td>
+                            {% if view_generation_meter_records.0.CT_make %}
+                            <td>{{ record.CT_make }}</td>
+                            <td>{{ record.CT_capacity }}</td>
+                            <td>{{ record.CT_serial_no }}</td>
+                            {% endif %}
+                        </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </fieldset>
+            {% endif %}
+            {% if view_generation_ct_records %}
+            <fieldset>
+                <legend style="color: blue;">Generation CT Details</legend>
+                <table class="highlight-on-check">
+                    <thead><tr><th>Sr No</th><th>Type</th><th>Make</th><th>Capacity</th><th>Serial Number</th></tr></thead>
+                    <tbody>
+                    {% for record in view_generation_ct_records %}
+                        <tr><td>{{ forloop.counter }}</td><td>{{ record.ct_type }}</td><td>{{ record.make }}</td><td>{{ record.capacity }}</td><td>{{ record.serial_no }}</td></tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </fieldset>
+            {% endif %}
+            {% if not view_meters_records and not view_generation_meter_records and not view_generation_ct_records %}
+            <p class="text-danger mb-0">No meter records found for the selected company.</p>
+            {% endif %}
+        {% endif %}
+    </form>
+    </div>
+</section>
+
+<section id="meter-delete-section" class="col-md-12 meter-main-section">
+    <div class="meter-frame-card">
+        <div class="page-header">
+            <div class="row"><div class="col-sm-12"><h3 class="page-title text-capitalize">Delete Meters Details of Company</h3></div></div>
+        </div>
+        <form method="post" action="{% url 'customer-meters' %}" id="mergedDeleteForm">
+            {% csrf_token %}
+            <input type="hidden" name="merged_action" value="delete_preview">
+            <div class="form-group row">
+                <div class="col-sm-10">
+                    <label for="delete_comp_name">Select Company Name:</label>
+                    <select class="form-control" name="delete_comp_name" id="delete_comp_name">
+                        <option value=""></option>
+                        {% for comp_name in delete_comp_names %}
+                            <option value="{{ comp_name }}" {% if comp_name == selected_delete_comp_name %}selected{% endif %}>{{ comp_name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-sm-2"><br><button type="submit"><i class="nav-icon fa fa-eye" aria-hidden="true"></i> Preview</button></div>
+            </div>
+
+            {% if selected_delete_comp_name %}
+                {% if delete_meters_records %}
+                <fieldset>
+                    <legend>Meters</legend>
+                    <table class="highlight-on-check">
+                        <thead><tr><th>Sr No</th><th>Meter Type</th><th>Make</th><th>Capacity</th><th>Serial Number</th><th>Delete</th></tr></thead>
+                        <tbody>
+                        {% for record in delete_meters_records %}
+                            <tr>
+                                <td>{{ forloop.counter }}</td><td>{{ record.meter_type }}</td><td>{{ record.make }}</td><td>{{ record.capacity }}</td><td>{{ record.serial_no }}</td>
+                                <td><input type="checkbox" class="checkbox-input" name="meters_to_delete" value="{{ record.id }}"></td>
+                            </tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </fieldset>
+                {% endif %}
+                {% if delete_generation_meter_records %}
+                <fieldset>
+                    <legend>Generation Meters</legend>
+                    <table class="highlight-on-check">
+                        <thead><tr><th>Sr No</th><th>Make</th><th>Capacity</th><th>Serial Number</th><th>Delete</th></tr></thead>
+                        <tbody>
+                        {% for record in delete_generation_meter_records %}
+                            <tr><td>{{ forloop.counter }}</td><td>{{ record.make }}</td><td>{{ record.capacity }}</td><td>{{ record.serial_no }}</td><td><input type="checkbox" class="checkbox-input" name="generation_meters_to_delete" value="{{ record.id }}"></td></tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </fieldset>
+                {% endif %}
+                <div class="form-group" align="center">
+                    <button type="submit" name="action" value="delete" style="width: 220px;">Delete Selected Records</button>
+                </div>
+            {% endif %}
+        </form>
+    </div>
+</section>
+
+<section id="meter-search-section" class="col-md-12 meter-main-section">
+    <div class="meter-frame-card">
+        <div class="col-md-12">
+            <div class="card card-primary">
+                <div class="card-header"><h3>Upload Serial Number</h3></div>
+                <form method="post" action="{% url 'customer-meters' %}" id="mergedSearchForm">
+                    {% csrf_token %}
+                    <input type="hidden" name="merged_action" value="search_preview">
+                    <label for="barcode_value">Enter Serial No:</label>
+                    <input type="text" name="barcode_value" value="{{ search_barcode_value|default:'' }}" required><br><br>
+                    <input type="submit" value="Search">
+                </form>
+            </div>
+        </div>
+        <div class="col-md-12">
+            <div class="card card-primary">
+                <div class="card-header"><h3>Uploaded Serial No. Information</h3></div>
+                <div class="card-header">
+                    <table>
+                        {% if search_meters or search_generation_meter %}
+                            <tr><th colspan="2"><h3>Serial No. Details:</h3></th></tr>
+                            {% if search_meters %}
+                                {% if search_matched_field == 'serial_no' %}
+                                    <tr><th><b>Serial No. :</b></th><td>{{ search_meters.serial_no }}</td></tr>
+                                    <tr><th><b>Capacity :</b></th><td class="text-capitalize">{{ search_meters.capacity }}</td></tr>
+                                    <tr><th><b>Meters Company :</b></th><td class="text-capitalize">{{ search_meters.make }}</td></tr>
+                                    <tr><th><b>Meter Type :</b></th><td class="text-capitalize">{{ search_meters.meter_type }}</td></tr>
+                                {% elif search_matched_field == 'transformer_serial_number' %}
+                                    <tr><th><b>Transformer Serial No. :</b></th><td>{{ search_meters.transformer_serial_number }}</td></tr>
+                                    <tr><th><b>Transformer Capacity :</b></th><td class="text-capitalize">{{ search_meters.transformer_capacity }}</td></tr>
+                                    <tr><th><b>Transformer Company :</b></th><td class="text-capitalize">{{ search_meters.transformer_make }}</td></tr>
+                                    <tr><th><b>Transformer Type :</b></th><td class="text-capitalize">{{ search_meters.transformer_type }}</td></tr>
+                                {% endif %}
+                            {% elif search_generation_meter %}
+                                {% if search_matched_field == 'serial_no' %}
+                                    <tr><th><b>Generation Meter Serial No. :</b></th><td>{{ search_generation_meter.serial_no }}</td></tr>
+                                    <tr><th><b>Generation Meter Capacity :</b></th><td class="text-capitalize">{{ search_generation_meter.capacity }}</td></tr>
+                                    <tr><th><b>Generation Meter Company :</b></th><td class="text-capitalize">{{ search_generation_meter.make }}</td></tr>
+                                {% elif search_matched_field == 'CT_serial_no' %}
+                                    <tr><th><b>Generation CT Serial No. :</b></th><td>{{ search_generation_meter.CT_serial_no }}</td></tr>
+                                    <tr><th><b>Generation CT Capacity :</b></th><td class="text-capitalize">{{ search_generation_meter.CT_capacity }}</td></tr>
+                                    <tr><th><b>Generation CT Meter Company :</b></th><td class="text-capitalize">{{ search_generation_meter.CT_make }}</td></tr>
+                                {% endif %}
+                            {% endif %}
+                            {% if search_customer %}
+                                <tr><th colspan="2"><h3>Consumer Details:</h3></th></tr>
+                                <tr><th><b>Company Name :</b></th><td class="text-capitalize">{{ search_customer.Comp_name }}</td></tr>
+                                <tr><th><b>Address :</b></th><td class="text-capitalize">{{ search_customer.Address }}</td></tr>
+                                <tr><th><b>Plant Capacity :</b></th><td class="text-capitalize">{{ search_customer.Plant_Capacity }} Kw</td></tr>
+                                <tr><th><b>Customer Type :</b></th><td class="text-capitalize">{{ search_customer.Cust_type }}</td></tr>
+                                <tr><th><b>City :</b></th><td class="text-capitalize">{{ search_customer.City }}</td></tr>
+                                <tr><th><b>Email :</b></th><td>{{ search_customer.email }}</td></tr>
+                                <tr><th><b>Contact No. :</b></th><td class="text-capitalize">{{ search_customer.phone }}</td></tr>
+                                <tr><th><b>State :</b></th><td class="text-capitalize">{{ search_customer.state }}</td></tr>
+                            {% endif %}
+                        {% elif search_attempted %}
+                            <tr><th colspan="2"><p>No results found for the given serial number.</p></th></tr>
+                        {% endif %}
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
 
 <script>
-   // Function to toggle visibility of Generation CT fields
    function toggleGenerationCTFields() {
-      const generationCTFields = document.getElementById('generationCTFields');
-      const generationType = document.querySelector('input[name="meter_type"]:checked').value;
-      generationCTFields.style.display = (generationType === 'generation_ct') ? 'table-row' : 'none';
+      var checked = document.querySelector('input[name="meter_type"]:checked');
+      var show = checked && checked.value === 'generation_ct';
+      var wrapper = document.getElementById('generationMeterRowsWrapper');
+      if (!wrapper) return;
+      wrapper.querySelectorAll('tr.generation-ct-row').forEach(function (tr) {
+         tr.style.display = show ? 'table-row' : 'none';
+      });
    }
 
-   // Event listener for radio button change
-   document.querySelectorAll('input[name="meter_type"]').forEach(function(radio) {
-      radio.addEventListener('change', toggleGenerationCTFields);
-   });
+   /** When switching Generation Meter <-> Generation + CT, drop extra rows and clear the first row. */
+   function resetGenerationMeterRowsOnTypeChange() {
+      var wrapper = document.getElementById('generationMeterRowsWrapper');
+      if (!wrapper) return;
+      var rows = wrapper.querySelectorAll('.generation-meter-row');
+      for (var i = 1; i < rows.length; i++) {
+         rows[i].remove();
+      }
+      var first = wrapper.querySelector('.generation-meter-row');
+      if (first) {
+         first.querySelectorAll('input[type="text"]').forEach(function (inp) {
+            inp.value = '';
+            var base = inp.name.replace(/_\d+$/, '');
+            inp.name = base;
+         });
+      }
+      var cnt = document.getElementById('generationMeterRowCount');
+      if (cnt) cnt.value = '1';
+   }
 
-   // Initial state
-   document.addEventListener('DOMContentLoaded', function() {
-      toggleGenerationCTFields(); // Set initial visibility
-      openTab('metersTab'); // Set the default tab
+   function wireGenerationMeterTypeRadios() {
+      document.querySelectorAll('input[name="meter_type"]').forEach(function (radio) {
+         radio.addEventListener('change', function () {
+            resetGenerationMeterRowsOnTypeChange();
+            toggleGenerationCTFields();
+            if (typeof toggleGenerationMeterForm === 'function') {
+               toggleGenerationMeterForm();
+            }
+         });
+      });
+   }
+
+   document.addEventListener('DOMContentLoaded', function () {
+      wireGenerationMeterTypeRadios();
+      toggleGenerationCTFields();
+      openTab('metersTab');
    });
 </script>
 
 <script>
-   // JavaScript functions to handle tab switching and dynamic row addition
    function openTab(tabName) {
-       const tabs = document.querySelectorAll('.tab-content');
-       tabs.forEach(tab => {
-           tab.style.display = 'none';
-       });
-
-       const selectedTab = document.getElementById(tabName);
-       selectedTab.style.display = 'block';
+       var tabs = document.querySelectorAll('.tab-content');
+       tabs.forEach(function (tab) { tab.style.display = 'none'; });
+       var selectedTab = document.getElementById(tabName);
+       if (selectedTab) selectedTab.style.display = 'block';
    }
 
-   // JavaScript functions to handle tab switching and dynamic row addition
-   function openTab(tabName) {
-    const tabs = document.querySelectorAll('.tab-content');
-    tabs.forEach(tab => {
-        tab.style.display = 'none';
-    });
-
-    const selectedTab = document.getElementById(tabName);
-    selectedTab.style.display = 'block';
-   }
-
-   let generationMeterRowCounter = 0;
    let generationCTRowCounter = 0;
+
+   /** Clone a data row; + button stays fixed below #generationMeterRowsWrapper. */
+   function addGenerationMeterRow() {
+      var wrapper = document.getElementById('generationMeterRowsWrapper');
+      if (!wrapper) return;
+      var first = wrapper.querySelector('.generation-meter-row');
+      if (!first) return;
+      var idx = wrapper.querySelectorAll('.generation-meter-row').length;
+      var clone = first.cloneNode(true);
+      clone.querySelectorAll('input[type="text"], input[type="number"]').forEach(function (input) {
+         var base = input.name.replace(/_\d+$/, '');
+         input.name = base + '_' + idx;
+         input.value = '';
+      });
+      wrapper.appendChild(clone);
+      var cnt = document.getElementById('generationMeterRowCount');
+      if (cnt) cnt.value = String(wrapper.querySelectorAll('.generation-meter-row').length);
+      toggleGenerationCTFields();
+   }
 
    function addRow(containerId, addButtonId, counterId, counter) {
     const container = document.getElementById(containerId);
+    if (!container || containerId === 'generationMeterForm') return;
     const rowContainer = container.querySelector(".row-container");
     const clone = rowContainer.querySelector(".row").cloneNode(true);
 
-    // Remove the "Add Row" button from the cloned row
     const addRowButton = clone.querySelector("button");
     if (addRowButton) {
         addRowButton.remove();
     }
 
-    // Get the current row index
     const currentIndex = counter;
 
-    // Clear input values in the cloned row
     const inputFields = clone.querySelectorAll('input[type="text"], input[type="number"]');
     inputFields.forEach(function (input) {
         const originalName = input.name;
         input.name = `${originalName}_${currentIndex}`;
-        input.value = ''; // Clear the input values
+        input.value = '';
     });
 
-    // Append the cloned row
     rowContainer.appendChild(clone);
 
-    // Update the row counter
     const rowCount = rowContainer.childElementCount;
     document.getElementById(counterId).value = rowCount;
 
-    // Show the "Add Row" button at the end of the current row
     const newRow = rowContainer.lastElementChild;
     const addRowButtonContainer = document.createElement("div");
     addRowButtonContainer.className = "add-row-container";
-    addRowButtonContainer.appendChild(document.getElementById(addButtonId));
+    var btn = document.getElementById(addButtonId);
+    if (btn) addRowButtonContainer.appendChild(btn);
     newRow.appendChild(addRowButtonContainer);
-   }
-
-
-   function addGenerationMeterRow() {
-    generationMeterRowCounter++;
-    addRow("generationMeterForm", "addGenerationMeterRow", "generationMeterRowCount", generationMeterRowCounter);
    }
 
    function addGenerationCTRow() {
@@ -329,8 +641,10 @@
    }
 
    // Event listeners for adding rows
-   document.getElementById("addGenerationMeterRow").addEventListener("click", addGenerationMeterRow);
-   document.getElementById("addGenerationCTRow").addEventListener("click", addGenerationCTRow);
+   var addGenMeterBtn = document.getElementById("addGenerationMeterRow");
+   if (addGenMeterBtn) addGenMeterBtn.addEventListener("click", addGenerationMeterRow);
+   var addGenCTBtn = document.getElementById("addGenerationCTRow");
+   if (addGenCTBtn) addGenCTBtn.addEventListener("click", addGenerationCTRow);
 
    // Initial state
    document.addEventListener('DOMContentLoaded', function () {
@@ -401,8 +715,10 @@
            });
        });
 
-       const transformerTypeDropdown = document.querySelector('select[name="transformer_type"]');
-       transformerTypeDropdown.addEventListener('change', updateTransformerFields);
+      const transformerTypeDropdown = document.querySelector('select[name="transformer_type"]');
+      if (transformerTypeDropdown) {
+          transformerTypeDropdown.addEventListener('change', updateTransformerFields);
+      }
 
        updateTransformerFields(); // Call to set the initial state
    });
@@ -411,6 +727,7 @@
    // checkbox checked than hide textbox
    function updateGenerationCTFields() {
        const checkbox = document.getElementById('requiredCheckbox');
+       if (!checkbox) return;
        const makeLabel = document.getElementById('makeLabel');
        const capacityLabel = document.getElementById('capacityLabel');
        const serialNoLabel = document.getElementById('serialNoLabel');
@@ -418,47 +735,78 @@
        const capacityInput = document.getElementById('capacity');
        const serialNoInput = document.getElementById('serial_no');
        const addRowButton = document.getElementById('addGenerationCTRow');
+       const submitBtn = document.getElementById('submit');
 
        if (checkbox.checked) {
            // Show the labels, input fields, and addRow button
-           makeLabel.style.display = 'block';
-           capacityLabel.style.display = 'block';
-           serialNoLabel.style.display = 'block';
-           makeInput.style.display = 'block';
-           capacityInput.style.display = 'block';
-           serialNoInput.style.display = 'block';
-           addRowButton.style.display = 'block';
-           submit.style.display = 'block';
+           if (makeLabel) makeLabel.style.display = 'block';
+           if (capacityLabel) capacityLabel.style.display = 'block';
+           if (serialNoLabel) serialNoLabel.style.display = 'block';
+           if (makeInput) makeInput.style.display = 'block';
+           if (capacityInput) capacityInput.style.display = 'block';
+           if (serialNoInput) serialNoInput.style.display = 'block';
+           if (addRowButton) addRowButton.style.display = 'block';
+           if (submitBtn) submitBtn.style.display = 'block';
        } else {
            // Hide the labels, input fields, and addRow button
-           makeLabel.style.display = 'none';
-           capacityLabel.style.display = 'none';
-           serialNoLabel.style.display = 'none';
-           makeInput.style.display = 'none';
-           capacityInput.style.display = 'none';
-           serialNoInput.style.display = 'none';
-           addRowButton.style.display = 'none';
-           submit.style.display = 'none';
+           if (makeLabel) makeLabel.style.display = 'none';
+           if (capacityLabel) capacityLabel.style.display = 'none';
+           if (serialNoLabel) serialNoLabel.style.display = 'none';
+           if (makeInput) makeInput.style.display = 'none';
+           if (capacityInput) capacityInput.style.display = 'none';
+           if (serialNoInput) serialNoInput.style.display = 'none';
+           if (addRowButton) addRowButton.style.display = 'none';
+           if (submitBtn) submitBtn.style.display = 'none';
        }
    }
 
    document.addEventListener('DOMContentLoaded', function () {
        const checkbox = document.getElementById('requiredCheckbox');
+       if (!checkbox) return;
        checkbox.addEventListener('change', updateGenerationCTFields);
        updateGenerationCTFields(); // Call to set the initial state
    });
 </script>
 <script>
-   // Set the selected company value in the hidden input field
-   function setSelectedCompany() {
-      const selectedCompanyInput = document.getElementById('selectedCompany');
-      const companyNameDropdown = document.getElementById('Comp_name');
-      selectedCompanyInput.value = companyNameDropdown.value;
-   }
-
-   // Add an event listener to call setSelectedCompany before form submission
-   document.getElementById('metersForm').addEventListener('submit', function() {
-      setSelectedCompany();
+   document.addEventListener('DOMContentLoaded', function () {
+      var metersForm = document.getElementById('metersForm');
+      if (metersForm) {
+         metersForm.addEventListener('submit', function (e) {
+            var sel = document.getElementById('Comp_name_meters');
+            var err = document.getElementById('err_comp_meters');
+            if (!sel || !sel.value) {
+               e.preventDefault();
+               if (err) err.style.display = 'block';
+               if (sel) sel.focus();
+               return false;
+            }
+            if (err) err.style.display = 'none';
+         });
+         var selM = document.getElementById('Comp_name_meters');
+         if (selM) selM.addEventListener('change', function () {
+            var err = document.getElementById('err_comp_meters');
+            if (err) err.style.display = 'none';
+         });
+      }
+      var genForm = document.getElementById('generationMeterForm');
+      if (genForm) {
+         genForm.addEventListener('submit', function (e) {
+            var sel = document.getElementById('Comp_name_generation');
+            var err = document.getElementById('err_comp_generation');
+            if (!sel || !sel.value) {
+               e.preventDefault();
+               if (err) err.style.display = 'block';
+               if (sel) sel.focus();
+               return false;
+            }
+            if (err) err.style.display = 'none';
+         });
+         var selG = document.getElementById('Comp_name_generation');
+         if (selG) selG.addEventListener('change', function () {
+            var err = document.getElementById('err_comp_generation');
+            if (err) err.style.display = 'none';
+         });
+      }
    });
 </script>
 <style>
@@ -479,6 +827,12 @@
     margin-top: 10px;
     margin-bottom: 10px;
 }
+.consumer-meters-page .meters-form-stack .styled-fieldset {
+    margin-left: 0;
+    margin-right: 0;
+    width: 100%;
+    max-width: 100%;
+}
 /* CSS to style the radio buttons */
 .radio-label {
     display: inline-block;
@@ -489,7 +843,512 @@
     margin-right: 5px; /* Adjust as needed */
 }
 
+/* Tighter vertical rhythm: less gap between form blocks and Save */
+.meters-page-compact .card.card-primary {
+    margin-bottom: 0.5rem;
+}
+.meters-page-compact .card-header {
+    padding-top: 0.5rem;
+    padding-bottom: 0.5rem;
+}
+.meters-page-top-actions {
+    padding-top: 6px;
+    padding-bottom: 4px;
+}
+.consumer-meters-page .meters-section-heading {
+    margin-top: 0.25rem;
+    margin-bottom: 0.35rem;
+    font-size: 1.15rem;
+}
+.consumer-meters-page .meters-company-row {
+    margin-bottom: 6px !important;
+}
+.consumer-meters-page .meters-tight-field {
+    margin-bottom: 6px !important;
+}
+.consumer-meters-page .meters-save-row {
+    margin-top: 4px;
+    margin-bottom: 6px !important;
+}
+.consumer-meters-page #metersForm,
+.consumer-meters-page #generationMeterForm {
+    margin-bottom: 0;
+}
+
+/* One column width for toolbar, company row, fieldsets, and tables */
+.consumer-meters-page .meters-form-stack {
+    max-width: 1050px;
+    width: 100%;
+    margin-left: auto;
+    margin-right: auto;
+    padding-left: 12px;
+    padding-right: 12px;
+    box-sizing: border-box;
+    text-align: left;
+}
+.consumer-meters-page .meters-form-stack .form-group {
+    align-items: stretch;
+    width: 100%;
+    max-width: 100%;
+}
+.consumer-meters-page .meters-company-row label {
+    display: block;
+    margin-bottom: 4px;
+}
+.consumer-meters-page .meters-form-stack .form-control,
+.consumer-meters-page .meters-form-stack select.form-control {
+    width: 100%;
+    max-width: 100%;
+    display: block;
+    box-sizing: border-box;
+}
+.consumer-meters-page table.meters-fields-table {
+    width: 100%;
+    table-layout: fixed;
+    border-collapse: collapse;
+}
+.consumer-meters-page table.meters-fields-table td {
+    width: 33.33%;
+    vertical-align: top;
+    padding: 0 8px 6px 0;
+    box-sizing: border-box;
+}
+.consumer-meters-page table.meters-fields-table td:last-child {
+    padding-right: 0;
+}
+.consumer-meters-page table.meters-fields-table label {
+    display: block;
+    margin-bottom: 4px;
+}
+@media (max-width: 768px) {
+    .consumer-meters-page table.meters-fields-table td {
+        width: 100% !important;
+        display: block;
+        padding-right: 0;
+    }
+}
+
+/* Generation meter: + row button bottom-right under the table block */
+.generation-meter-rows-section {
+    width: 100%;
+    max-width: 100%;
+}
+.generation-meter-add-row-bar {
+    text-align: right;
+    margin-top: 10px;
+    margin-bottom: 8px;
+    padding-right: 4px;
+}
+
+/* Match Cust_emp.html: active fieldset = #d3dbec + dark blue border (when a control inside has focus) */
+.consumer-meters-page .meters-form-stack fieldset {
+    background-color: #ffffff;
+    border: 2px solid blue;
+    transition: all 0.3s ease;
+    padding: 15px;
+    border-radius: 10px;
+    margin-bottom: 12px;
+    overflow: hidden;
+    position: relative;
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+}
+.consumer-meters-page .meters-form-stack fieldset:focus-within {
+    background-color: #d3dbec;
+    border: 2px solid darkblue;
+}
+
 </style>
+<style>
+/* MSEB-like segmented control */
+.meter-mode-toolbar { margin: 12px 0 16px; }
+.meter-mode-toolbar .meter-segmented-wrap { width: 100%; }
+.meter-segmented {
+    display: flex;
+    align-items: stretch;
+    width: 100%;
+    background: #D9EDE9;
+    border-radius: 8px;
+    padding: 4px;
+    gap: 3px;
+    box-sizing: border-box;
+    border: 1px solid rgba(0, 137, 123, 0.2);
+}
+.meter-segmented .meter-segment {
+    flex: 1 1 0;
+    min-width: 0;
+    margin: 0;
+    border: none;
+    background: transparent;
+    color: #00897B;
+    font-weight: 500;
+    font-size: 14px;
+    line-height: 1.25;
+    padding: 10px 8px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background 0.2s ease, color 0.2s ease, font-weight 0.15s ease;
+    white-space: nowrap;
+    text-align: center;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+}
+.meter-segmented .meter-segment.active::before {
+    content: "\2713";
+    font-size: 1.05em;
+    font-weight: 700;
+    line-height: 1;
+    flex-shrink: 0;
+}
+.meter-segmented .meter-segment.active {
+    background: #00897B;
+    color: #fff;
+    font-weight: 700;
+}
+.meter-main-section { display: none; }
+.meter-main-section.active { display: block; }
+.meter-frame-card {
+    border: 1px solid #e3e7ef;
+    border-radius: 8px;
+    background: #fff;
+    padding: 6px;
+    min-height: calc(100vh - 100px);
+    height: calc(100vh - 100px);
+}
+.meter-frame {
+    width: 100%;
+    min-height: calc(100vh - 190px);
+    height: calc(100vh - 190px);
+    border: 0;
+    display: block;
+}
+.meter-embed-host {
+    min-height: calc(100vh - 190px);
+    height: calc(100vh - 190px);
+    overflow: auto;
+    width: 100%;
+}
+.meter-embed-host > * {
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+}
+/* Match legacy display/delete/search template table look */
+#meter-view-section table,
+#meter-delete-section table,
+#meter-search-section table {
+    width: 100%;
+    border-collapse: collapse;
+}
+#meter-view-section th, #meter-view-section td,
+#meter-delete-section th, #meter-delete-section td,
+#meter-search-section th, #meter-search-section td {
+    border: 1px solid #dddddd;
+    text-align: center;
+    padding: 8px;
+    vertical-align: middle;
+}
+#meter-view-section th,
+#meter-delete-section th,
+#meter-search-section th {
+    background-color: lightgray;
+}
+#meter-view-section .form-group,
+#meter-delete-section .form-group {
+    margin-bottom: 10px;
+}
+#meter-view-section form + .alert,
+#meter-view-section form + fieldset,
+#meter-view-section form + .text-danger {
+    margin-top: 10px;
+}
+#meter-view-section fieldset {
+    margin-top: 10px;
+}
+#meter-view-section legend {
+    font-size: 18px;
+    margin-bottom: 8px;
+}
+#meter-view-section .view-export-toolbar {
+    margin: 10px 0 8px;
+}
+#meter-delete-section .highlighted-row {
+    background-color: #cb6843;
+}
+#meter-delete-section .checkbox-input {
+    margin: 0 auto;
+    display: block;
+}
+#meter-search-section .card-header table th,
+#meter-search-section .card-header table td {
+    text-align: left;
+}
+#meter-search-section .card-header table th {
+    width: 35%;
+}
+</style>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    var segments = document.querySelectorAll('.meter-segment');
+    var sections = document.querySelectorAll('.meter-main-section');
+    var meterTabStorageKey = 'meterMergedActiveTab';
+    function activate(targetId) {
+        sections.forEach(function (section) {
+            section.classList.toggle('active', section.id === targetId);
+        });
+        segments.forEach(function (btn) {
+            var on = btn.getAttribute('data-target') === targetId;
+            btn.classList.toggle('active', on);
+            if (on) btn.setAttribute('aria-current', 'page');
+            else btn.removeAttribute('aria-current');
+        });
+        try { sessionStorage.setItem(meterTabStorageKey, targetId); } catch (e) { /* ignore */ }
+    }
+    segments.forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            activate(btn.getAttribute('data-target'));
+        });
+    });
+    try {
+        var savedTab = sessionStorage.getItem(meterTabStorageKey);
+        var serverTab = '{{ active_meter_tab|default:"meter-add-section"|escapejs }}';
+        if (serverTab && document.getElementById(serverTab)) {
+            activate(serverTab);
+        } else
+        if (savedTab && document.getElementById(savedTab)) {
+            activate(savedTab);
+        } else {
+            activate('meter-add-section');
+        }
+    } catch (e2) {
+        activate('meter-add-section');
+    }
+});
+</script>
+<script>
+function updateViewCustomerId() {
+    var compNameSelect = document.getElementById('view_comp_name');
+    var customerIdInput = document.getElementById('view_customer_id');
+    if (!compNameSelect || !customerIdInput) return;
+    var selectedOption = compNameSelect.options[compNameSelect.selectedIndex];
+    if (!selectedOption) return;
+    customerIdInput.value = selectedOption.getAttribute('data-customer-id') || '';
+}
+
+document.addEventListener('DOMContentLoaded', function () {
+    updateViewCustomerId();
+
+    function getViewExportSections() {
+        var blocks = [];
+        var section = document.getElementById('meter-view-section');
+        if (!section) return blocks;
+        section.querySelectorAll('fieldset').forEach(function (fs) {
+            var table = fs.querySelector('table');
+            if (!table) return;
+            var legendNode = fs.querySelector('legend');
+            var title = legendNode ? legendNode.textContent.trim() : 'Details';
+            var headers = [];
+            table.querySelectorAll('thead th').forEach(function (th) {
+                headers.push((th.textContent || '').replace(/\s+/g, ' ').trim());
+            });
+            var rows = [];
+            table.querySelectorAll('tbody tr').forEach(function (tr) {
+                var row = [];
+                tr.querySelectorAll('td').forEach(function (td) {
+                    row.push((td.textContent || '').replace(/\s+/g, ' ').trim());
+                });
+                if (row.length) rows.push(row);
+            });
+            if (headers.length && rows.length) {
+                blocks.push({ title: title, headers: headers, rows: rows, table: table });
+            }
+        });
+        return blocks;
+    }
+
+    function copyViewTables() {
+        var blocks = getViewExportSections();
+        if (!blocks.length) { alert('No table data available to copy.'); return; }
+        var out = [];
+        blocks.forEach(function (b) {
+            out.push(b.title);
+            out.push(b.headers.join('\t'));
+            b.rows.forEach(function (r) { out.push(r.join('\t')); });
+            out.push('');
+        });
+        navigator.clipboard.writeText(out.join('\n')).then(function () {
+            alert('All view tables copied to clipboard.');
+        }).catch(function () {
+            alert('Unable to copy now.');
+        });
+    }
+
+    function excelViewTables() {
+        if (typeof XLSX === 'undefined') { alert('Excel library not loaded.'); return; }
+        var blocks = getViewExportSections();
+        if (!blocks.length) { alert('No table data available for Excel.'); return; }
+        var aoa = [];
+        blocks.forEach(function (b) {
+            aoa.push([b.title]);
+            aoa.push(b.headers);
+            b.rows.forEach(function (r) { aoa.push(r); });
+            aoa.push([]);
+        });
+        var ws = XLSX.utils.aoa_to_sheet(aoa);
+        var wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, 'Meter Report');
+        XLSX.writeFile(wb, 'meter_details_report.xlsx');
+    }
+
+    function printViewTables() {
+        var blocks = getViewExportSections();
+        if (!blocks.length) { alert('No table data available to print.'); return; }
+        var logoUrl = window.location.origin + '/static/images/db_logo_200.png';
+        var companyName = 'DB SOLAR';
+        var companyAddress = 'DB Solar - Paithan, Maharashtra, India';
+        var clientName = '';
+        var companySelect = document.getElementById('view_comp_name');
+        if (companySelect && companySelect.selectedIndex >= 0) {
+            clientName = (companySelect.options[companySelect.selectedIndex].textContent || '').trim();
+        }
+        var heading = 'Meter Details Report';
+        var html = '';
+        blocks.forEach(function (b) {
+            html += '<h3 style="margin:12px 0 6px;">' + b.title + '</h3>';
+            html += b.table.outerHTML;
+        });
+        var w = window.open('', '_blank');
+        if (!w) { alert('Popup blocked.'); return; }
+        w.document.write('<html><head><title>Meter Details Report</title><style>body{font-family:Arial,sans-serif;padding:16px}table{width:100%;border-collapse:collapse;margin-bottom:10px}th,td{border:1px solid #000;padding:6px;text-align:center}th{background:#efefef}.report-head{display:flex;align-items:center;gap:14px;border:1px solid #111;padding:10px;margin-bottom:10px}.report-head img{width:80px;height:auto}.report-title h1{font-size:22px;margin:0 0 4px}.report-title p{margin:0 0 2px}.client-line{margin:8px 0 12px;font-weight:700}</style></head><body><div class="report-head"><img src="' + logoUrl + '" alt="Logo"><div class="report-title"><h1>' + companyName + '</h1><p>' + companyAddress + '</p><p>' + heading + '</p></div></div><div class="client-line">Client Name: ' + (clientName || '-') + '</div>' + html + '</body></html>');
+        w.document.close();
+        w.focus();
+        setTimeout(function () { w.print(); }, 250);
+    }
+
+    function pdfViewTables() {
+        if (typeof jsPDF === 'undefined' && !(window.jspdf && window.jspdf.jsPDF)) {
+            alert('PDF library not loaded.');
+            return;
+        }
+        var blocks = getViewExportSections();
+        if (!blocks.length) { alert('No table data available for PDF.'); return; }
+        var PDFCtor = (window.jspdf && window.jspdf.jsPDF) ? window.jspdf.jsPDF : jsPDF;
+        var pdf = new PDFCtor({ orientation: 'landscape' });
+        var y = 14;
+        var logoUrl = window.location.origin + '/static/images/db_logo_200.png';
+        var companyName = 'DB SOLAR';
+        var companyAddress = 'DB Solar - Paithan, Maharashtra, India';
+        var reportTitle = 'Meter Details Report';
+        var clientName = '';
+        var companySelect = document.getElementById('view_comp_name');
+        if (companySelect && companySelect.selectedIndex >= 0) {
+            clientName = (companySelect.options[companySelect.selectedIndex].textContent || '').trim();
+        }
+        function drawPdfBody(startY) {
+            var localY = startY;
+            blocks.forEach(function (b, idx) {
+                if (idx > 0) localY += 4;
+                pdf.setFontSize(11);
+                pdf.text(b.title, 14, localY);
+                localY += 2;
+                var body = b.rows;
+                if (pdf.autoTable) {
+                    pdf.autoTable({
+                        startY: localY + 2,
+                        head: [b.headers],
+                        body: body,
+                        theme: 'grid',
+                        styles: { fontSize: 8 },
+                        headStyles: { fillColor: [230, 230, 230], textColor: 20 }
+                    });
+                    localY = pdf.lastAutoTable.finalY + 6;
+                } else if (window.jspdf && typeof window.jspdf.autoTable === 'function') {
+                    window.jspdf.autoTable(pdf, {
+                        startY: localY + 2,
+                        head: [b.headers],
+                        body: body,
+                        theme: 'grid',
+                        styles: { fontSize: 8 },
+                        headStyles: { fillColor: [230, 230, 230], textColor: 20 }
+                    });
+                    localY = pdf.lastAutoTable.finalY + 6;
+                }
+                if (localY > 180 && idx < blocks.length - 1) {
+                    pdf.addPage();
+                    localY = 14;
+                }
+            });
+        }
+        function drawPdfHeaderAndBody() {
+            pdf.setFontSize(16);
+            pdf.text(companyName, 46, y + 2);
+            pdf.setFontSize(10);
+            pdf.text(companyAddress, 46, y + 8);
+            pdf.setLineWidth(0.5);
+            pdf.line(14, y + 24, 283, y + 24);
+            pdf.setFontSize(11);
+            pdf.text('Client Name: ' + (clientName || '-'), 14, y + 30);
+            drawPdfBody(y + 36);
+            pdf.save('meter_details_report.pdf');
+        }
+        try {
+            if (typeof pdf.addImage === 'function') {
+                var img = new Image();
+                img.crossOrigin = 'anonymous';
+                img.onload = function () {
+                    try { pdf.addImage(img, 'PNG', 14, y - 2, 24, 24); } catch (e) { /* ignore image error */ }
+                    drawPdfHeaderAndBody();
+                };
+                img.onerror = function () { drawPdfHeaderAndBody(); };
+                img.src = logoUrl;
+            } else {
+                drawPdfHeaderAndBody();
+            }
+        } catch (err) {
+            drawPdfHeaderAndBody();
+        }
+    }
+
+    var copyBtn = document.getElementById('viewExportCopyBtn');
+    var excelBtn = document.getElementById('viewExportExcelBtn');
+    var pdfBtn = document.getElementById('viewExportPdfBtn');
+    var printBtn = document.getElementById('viewExportPrintBtn');
+    if (copyBtn) copyBtn.addEventListener('click', function (e) { e.preventDefault(); copyViewTables(); });
+    if (excelBtn) excelBtn.addEventListener('click', function (e) { e.preventDefault(); excelViewTables(); });
+    if (pdfBtn) pdfBtn.addEventListener('click', function (e) { e.preventDefault(); pdfViewTables(); });
+    if (printBtn) printBtn.addEventListener('click', function (e) { e.preventDefault(); printViewTables(); });
+
+    var deleteForm = document.getElementById('mergedDeleteForm');
+    if (deleteForm) {
+        deleteForm.addEventListener('submit', function (e) {
+            var submitter = e.submitter;
+            if (submitter && submitter.name === 'action' && submitter.value === 'delete') {
+                var ok = window.confirm('Are you sure you want to delete selected records?');
+                if (!ok) {
+                    e.preventDefault();
+                    return false;
+                }
+            }
+        });
+    }
+
+    var checks = document.querySelectorAll('#meter-delete-section .checkbox-input');
+    checks.forEach(function (cb) {
+        cb.addEventListener('change', function () {
+            var row = cb.closest('tr');
+            if (!row) return;
+            row.classList.toggle('highlighted-row', !!cb.checked);
+        });
+        if (cb.checked) {
+            var row = cb.closest('tr');
+            if (row) row.classList.add('highlighted-row');
+        }
+    });
+});
+</script>
 <script>
    function toggleGenerationMeter() {
        const generationMeterRadioButton = document.getElementById('generationMeterRadioButton');
@@ -505,21 +1364,11 @@
 
    function toggleGenerationMeterForm() {
        const generationMeterForm = document.getElementById('generationMeterTab');
-       const generationMeterRadioButton = document.querySelector('input[name="meter_type"][value="generation"]:checked');
        const metersForm = document.getElementById('metersTab');
-       if (generationMeterRadioButton) {
-           generationMeterForm.style.display = 'block';
-           metersForm.style.display = 'None';
-       } else {
-           generationMeterForm.style.display = 'block';
-           metersForm.style.display = 'None';
-       }
+       if (!generationMeterForm || !metersForm) return;
+       generationMeterForm.style.display = 'block';
+       metersForm.style.display = 'none';
    }
-
-   // Event listener for radio button change
-   document.querySelectorAll('input[name="meter_type"]').forEach(function(radio) {
-      radio.addEventListener('change', toggleGenerationMeterForm);
-   });
 </script>
 
 {% endblock %}

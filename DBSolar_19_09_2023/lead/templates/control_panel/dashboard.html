@@ -1,0 +1,248 @@
+{% extends 'control_panel/base.html' %}
+{% load humanize %}
+
+{% block panel_content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">Control Panel Dashboard</h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <!-- Organization selector dropdown -->
+        <div class="dropdown me-2">
+            <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                {% if selected_org %}
+                    Viewing: {{ selected_org.legal_name }}
+                {% else %}
+                    All Organizations
+                {% endif %}
+            </button>
+            <ul class="dropdown-menu">
+                <li><a class="dropdown-item" href="{% url 'control_panel:clear_organization_context' %}">All Organizations</a></li>
+                <li><hr class="dropdown-divider"></li>
+                {% for org in organizations %}
+                    <li><a class="dropdown-item" href="{% url 'control_panel:switch_organization' org.id %}?next={{ request.path }}">{{ org.legal_name }}</a></li>
+                {% endfor %}
+            </ul>
+        </div>
+        <a href="{% url 'dashboard' %}" class="btn btn-primary">
+            <i class="fas fa-external-link-alt me-2"></i>Go to CRM
+        </a>
+    </div>
+</div>
+
+<!-- KPI Cards (same as before) -->
+<div class="row g-4 mb-4">
+    <div class="col-md-3">
+        <div class="card text-white bg-primary">
+            <div class="card-body">
+                <h5 class="card-title">Organizations</h5>
+                <h2>{{ total_orgs }}</h2>
+                <small>{{ active_orgs }} active, {{ suspended_orgs }} suspended</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-white bg-success">
+            <div class="card-body">
+                <h5 class="card-title">Users</h5>
+                <h2>{{ total_users }}</h2>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-white bg-info">
+            <div class="card-body">
+                <h5 class="card-title">Total Leads</h5>
+                <h2>{{ total_leads|intcomma }}</h2>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-white bg-warning">
+            <div class="card-body">
+                <h5 class="card-title">Leads Today</h5>
+                <h2>{{ lead_stats.leads_today|intcomma }}</h2>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- TASK 1: Expiring Subscriptions Block -->
+<div class="card mb-4">
+    <div class="card-header">
+        <h5 class="mb-0">Subscriptions Expiring in Next 7 Days</h5>
+    </div>
+    <div class="card-body p-0">
+        <table class="table table-hover mb-0">
+            <thead>
+                <tr>
+                    <th>Organization</th>
+                    <th>Plan</th>
+                    <th>Expiry Date</th>
+                    <th>Days Left</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for sub in expiring_subs %}
+                <tr>
+                    <td>{{ sub.organization.legal_name }}</td>
+                    <td>{{ sub.plan.name }}</td>
+                    <td>{{ sub.end_date|date:"d M Y" }}</td>
+                    <td>{{ sub.end_date|timeuntil }}</td>
+                    <td>
+                        <a href="{% url 'control_panel:organization_detail' sub.organization.id %}" class="btn btn-sm btn-outline-primary">View</a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="5" class="text-center">No expiring subscriptions.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- TASK 2: Expired Subscriptions Block -->
+<div class="card mb-4">
+    <div class="card-header">
+        <h5 class="mb-0">Expired Subscriptions</h5>
+    </div>
+    <div class="card-body p-0">
+        <table class="table table-hover mb-0">
+            <thead>
+                <tr>
+                    <th>Organization</th>
+                    <th>Plan</th>
+                    <th>Expired On</th>
+                    <th>Status</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for sub in expired_subs %}
+                <tr>
+                    <td>{{ sub.organization.legal_name }}</td>
+                    <td>{{ sub.plan.name }}</td>
+                    <td>{{ sub.end_date|date:"d M Y" }}</td>
+                    <td>
+                        {% if sub.organization.is_active %}
+                            <span class="badge bg-warning">Active (Expired)</span>
+                        {% else %}
+                            <span class="badge bg-secondary">Suspended</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <a href="{% url 'control_panel:organization_detail' sub.organization.id %}" class="btn btn-sm btn-outline-primary">View</a>
+                        <!-- Optionally add Suspend/Renew buttons -->
+                    </td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="5" class="text-center">No expired subscriptions.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- TASK 5: Lead Activity Block -->
+<div class="row mb-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Top Organizations by Leads</h5>
+            </div>
+            <div class="card-body p-0">
+                <table class="table table-hover mb-0">
+                    <thead>
+                        <tr>
+                            <th>Organization</th>
+                            <th>Lead Count</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for org in lead_stats.top_orgs %}
+                        <tr>
+                            <td>{{ org.organization__legal_name }}</td>
+                            <td>{{ org.lead_count }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="2" class="text-center">No leads yet.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Recent Leads</h5>
+            </div>
+            <div class="card-body p-0">
+                <table class="table table-hover mb-0">
+                    <thead>
+                        <tr>
+                            <th>Lead Name</th>
+                            <th>Organization</th>
+                            <th>Created</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for lead in lead_stats.recent_leads %}
+                        <tr>
+                            <td>{{ lead.name }}</td>
+                            <td>{{ lead.organization.legal_name }}</td>
+                            <td>{{ lead.created|timesince }} ago</td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="3" class="text-center">No recent leads.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- TASK 4: Conditional Organization Block -->
+{% if not selected_org %}
+<div class="card">
+    <div class="card-header">
+        <h5 class="mb-0">Recent Organizations</h5>
+    </div>
+    <div class="card-body p-0">
+        <table class="table table-hover mb-0">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Subdomain</th>
+                    <th>Created</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for org in recent_orgs %}
+                <tr>
+                    <td>{{ org.legal_name }}</td>
+                    <td>{{ org.subdomain }}</td>
+                    <td>{{ org.created_at|date:"d M Y" }}</td>
+                    <td>
+                        {% if org.is_active %}
+                        <span class="badge bg-success">Active</span>
+                        {% else %}
+                        <span class="badge bg-secondary">Inactive</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <a href="{% url 'control_panel:organization_detail' org.id %}" class="btn btn-sm btn-outline-primary">View Details</a>
+                        <a href="{% url 'control_panel:organization_limits' org.id %}" class="btn btn-sm btn-outline-info">Limits</a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="5" class="text-center">No organizations yet.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

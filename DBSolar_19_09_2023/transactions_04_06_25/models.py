@@ -96,13 +96,16 @@ class Vendor(models.Model):
             # Loop until a unique supplier_id is generated
             unique_vendor_id = False
             suffix = 101
+            prefix = (self.category.short_name or "").upper()
+            if prefix in {"OTHER", "OTHERS"}:
+                prefix = "DLR"
             while not unique_vendor_id:
                 last_vendor = Vendor.objects.filter(category=self.category).order_by('id').last()
                 if last_vendor:
                     last_id = int(last_vendor.vendor_id.split('-')[1])
-                    proposed_vendor_id = f"{self.category.short_name.upper()}-{last_id + 1}"
+                    proposed_vendor_id = f"{prefix}-{last_id + 1}"
                 else:
-                    proposed_vendor_id = f"{self.category.short_name.upper()}-{suffix}"
+                    proposed_vendor_id = f"{prefix}-{suffix}"
 
                 # Check if this supplier_id already exists
                 if not Vendor.objects.filter(vendor_id=proposed_vendor_id).exists():

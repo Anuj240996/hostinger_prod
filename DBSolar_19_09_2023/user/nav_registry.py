@@ -1,7 +1,44 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Iterable, List, Optional
+from typing import Iterable, List, Optional, Set
+
+
+# Staff sidebar "Dashboard" submenu: these CP nav keys follow Portal Access (same matrix as base.html).
+DASHBOARD_NAV_KEYS: frozenset = frozenset(
+    {
+        "staff.dashboard.staff",
+        "staff.dashboard.consumer",
+        "staff.dashboard.complaint",
+        "staff.dashboard.stock",
+    }
+)
+
+# Permissions Manager (Vendor category): do not offer Staff Dashboard under Models & Sub-models.
+NAV_KEY_HIDDEN_FOR_VENDOR_PERMISSIONS = "staff.dashboard.staff"
+
+# Which dashboard nav keys are granted when each portal is enabled (Control Panel → Portal access).
+PORTAL_TO_DASHBOARD_NAV_KEYS = {
+    "staff": (
+        "staff.dashboard.staff",
+        "staff.dashboard.complaint",
+        "staff.dashboard.stock",
+    ),
+    "customer": (
+        "staff.dashboard.consumer",
+        "staff.dashboard.complaint",
+    ),
+    "complaint_dashboard": ("staff.dashboard.complaint",),
+    "stock_dashboard": ("staff.dashboard.stock",),
+}
+
+
+def nav_keys_for_granted_portals(portal_names: Iterable[str]) -> Set[str]:
+    """Union of dashboard nav keys implied by the given portal names."""
+    out: Set[str] = set()
+    for name in portal_names:
+        out.update(PORTAL_TO_DASHBOARD_NAV_KEYS.get(name, ()))
+    return out
 
 
 @dataclass(frozen=True)
@@ -45,12 +82,6 @@ def staff_nav_specs() -> List[NavSpec]:
     specs += [
         n("staff.employee.add", "Employee", "Add Employee", "user-add"),
         n("staff.employee.list", "Employee", "Employee List", "dashboard-customers"),
-    ]
-
-    # Quotation
-    specs += [
-        n("staff.quotation.new", "Quotation", "New Quotation", "quotation:create_quotation"),
-        n("staff.quotation.list", "Quotation", "Quotation List", "quotation:quotation_list"),
     ]
 
     # Consumer
@@ -143,6 +174,13 @@ def staff_nav_specs() -> List[NavSpec]:
         n("staff.complaint.reassign", "Complaint", "Re-Assign Request", "firereport-reassignRequest"),
         n("staff.complaint.report", "Complaint", "All Report", "firereport-dateReport"),
         n("staff.complaint.search", "Complaint", "Search", "firereport-search"),
+    ]
+
+    # Services
+    specs += [
+        n("staff.services.assigned", "Services", "Assigned Request", "firereport-service-assigned"),
+        n("staff.services.in_process", "Services", "Requests In Process", "firereport-service-in-process"),
+        n("staff.services.completed", "Services", "Completed Requests", "firereport-service-completed"),
     ]
 
     # New Task

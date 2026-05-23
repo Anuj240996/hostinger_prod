@@ -1,0 +1,14 @@
+{% extends 'registration/wizard.html' %}
+{% load crispy_forms_tags %}
+
+{% block step_content %}
+<h4 class="mb-3">Step 4: Branding & Documents</h4>
+<div class="row">
+    <div class="col-md-6 mb-3">{{ form.logo|as_crispy_field }}</div>
+    <div class="col-md-6 mb-3">{{ form.digital_signature|as_crispy_field }}</div>
+    <div class="col-md-6 mb-3">{{ form.company_stamp|as_crispy_field }}</div>
+    <div class="col-md-6 mb-3">{{ form.primary_color|as_crispy_field }}</div>
+    <div class="col-md-6 mb-3">{{ form.secondary_color|as_crispy_field }}</div>
+</div>
+<p class="text-muted small">Upload PNG, JPG (max 2MB each).</p>
+{% endblock %}

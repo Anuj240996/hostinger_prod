@@ -8,7 +8,7 @@ from django.db import models
 
 from customer.models import Customer
 from inventory.models import Stock
-from product.models import Category, Unit
+from product.models import Category, Unit, category_for_fk_id, _next_primary_key
 
 
 # contains suppliers
@@ -29,26 +29,48 @@ class Supplier(models.Model):
     post_code = models.CharField(max_length=10, null=True)
     status = models.BooleanField(default=True, null=True)
 
+    @property
+    def safe_category(self):
+        """Avoid MultipleObjectsReturned when DB has duplicate Category rows for same id."""
+        return category_for_fk_id(self.category_id)
+
     def save(self, *args, **kwargs):
-        # Check if the supplier exists and retrieve the previous category
-        if self.pk:
-            previous_supplier = Supplier.objects.get(pk=self.pk)
-            previous_category = previous_supplier.category
+        # Next id = max(existing id) + 1 (same as Category); avoids broken/out-of-sync PG sequences
+        if self._state.adding:
+            self.pk = _next_primary_key(Supplier)
+
+        # Check if the supplier exists and retrieve the previous category (safe for corrupt Category rows)
+        if self.pk and Supplier.objects.filter(pk=self.pk).exists():
+            previous_supplier = Supplier.objects.filter(pk=self.pk).first()
+            previous_category = (
+                category_for_fk_id(previous_supplier.category_id)
+                if previous_supplier
+                else None
+            )
         else:
             previous_category = None
 
+        current_category = category_for_fk_id(self.category_id)
+        category_changed = current_category != previous_category
+
         # Generate supplier_id if it's a new record or if the category has changed
-        if not self.supplier_id or self.category != previous_category:
+        is_new_row = not Supplier.objects.filter(pk=self.pk).exists() if self.pk else True
+        if current_category and (is_new_row or not self.supplier_id or category_changed):
             # Loop until a unique supplier_id is generated
             unique_supplier_id = False
             suffix = 101
+            cat_short = (current_category.short_name or "CAT").upper()
             while not unique_supplier_id:
-                last_supplier = Supplier.objects.filter(category=self.category).order_by('id').last()
+                last_supplier = (
+                    Supplier.objects.filter(category_id=self.category_id)
+                    .order_by("id")
+                    .last()
+                )
                 if last_supplier:
-                    last_id = int(last_supplier.supplier_id.split('-')[1])
-                    proposed_supplier_id = f"{self.category.short_name.upper()}-{last_id + 1}"
+                    last_id = int(last_supplier.supplier_id.split("-")[1])
+                    proposed_supplier_id = f"{cat_short}-{last_id + 1}"
                 else:
-                    proposed_supplier_id = f"{self.category.short_name.upper()}-{suffix}"
+                    proposed_supplier_id = f"{cat_short}-{suffix}"
 
                 # Check if this supplier_id already exists
                 if not Supplier.objects.filter(supplier_id=proposed_supplier_id).exists():
@@ -83,28 +105,50 @@ class Vendor(models.Model):
     post_code = models.CharField(max_length=10, null=True)
     status = models.BooleanField(default=True, null=True)
 
+    @property
+    def safe_category(self):
+        """Avoid MultipleObjectsReturned when DB has duplicate Category rows for same id."""
+        return category_for_fk_id(self.category_id)
+
     def save(self, *args, **kwargs):
-        # Check if the vendor exists and retrieve the previous category
-        if self.pk:
-            previous_vendor = Vendor.objects.get(pk=self.pk)
-            previous_category = previous_vendor.category
+        # Next id = max(existing id) + 1 (same as Category); avoids broken/out-of-sync PG sequences
+        if self._state.adding:
+            self.pk = _next_primary_key(Vendor)
+
+        if self.pk and Vendor.objects.filter(pk=self.pk).exists():
+            previous_vendor = Vendor.objects.filter(pk=self.pk).first()
+            previous_category = (
+                category_for_fk_id(previous_vendor.category_id)
+                if previous_vendor
+                else None
+            )
         else:
             previous_category = None
 
-        # Generate supplier_id if it's a new record or if the category has changed
-        if not self.vendor_id or self.category != previous_category:
-            # Loop until a unique supplier_id is generated
+        current_category = category_for_fk_id(self.category_id)
+        category_changed = current_category != previous_category
+
+        is_new_row = not Vendor.objects.filter(pk=self.pk).exists() if self.pk else True
+        if current_category and (is_new_row or not self.vendor_id or category_changed):
             unique_vendor_id = False
             suffix = 101
+            prefix = (current_category.short_name or "").upper()
+            # Backward/legacy fix:
+            # Some categories generate "OTHER-..." IDs, but this should be "DLR-..."
+            if prefix in {"OTHER", "OTHERS"}:
+                prefix = "DLR"
             while not unique_vendor_id:
-                last_vendor = Vendor.objects.filter(category=self.category).order_by('id').last()
+                last_vendor = (
+                    Vendor.objects.filter(category_id=self.category_id)
+                    .order_by("id")
+                    .last()
+                )
                 if last_vendor:
-                    last_id = int(last_vendor.vendor_id.split('-')[1])
-                    proposed_vendor_id = f"{self.category.short_name.upper()}-{last_id + 1}"
+                    last_id = int(last_vendor.vendor_id.split("-")[1])
+                    proposed_vendor_id = f"{prefix}-{last_id + 1}"
                 else:
-                    proposed_vendor_id = f"{self.category.short_name.upper()}-{suffix}"
+                    proposed_vendor_id = f"{prefix}-{suffix}"
 
-                # Check if this supplier_id already exists
                 if not Vendor.objects.filter(vendor_id=proposed_vendor_id).exists():
                     self.vendor_id = proposed_vendor_id
                     unique_vendor_id = True
@@ -128,7 +172,8 @@ class PurchaseBill(models.Model):
         return "Bill no: " + str(self.billno)
 
     def get_items_list(self):
-        return PurchaseItem.objects.filter(billno=self)
+        # Keep display/export order stable as entered in bill rows.
+        return PurchaseItem.objects.filter(billno=self).order_by('id')
 
     def get_total_price(self):
         purchaseitems = PurchaseItem.objects.filter(billno=self)
@@ -151,7 +196,13 @@ class PurchaseBill(models.Model):
         return purchase_po.po
 
     def get_serialNo_list(self):
-        return PurchaseSerial.objects.filter(billno=self)
+        # Preserve entered serial sequence and skip empty serial placeholders.
+        return (
+            PurchaseSerial.objects
+            .filter(billno=self, serialNo__isnull=False)
+            .exclude(serialNo='')
+            .order_by('id')
+        )
 
 
 # contains the purchase stocks made
@@ -207,6 +258,51 @@ class FinalSale(models.Model):
     # return_bill = models.BooleanField(default=False, unique=True)
     return_bill = models.BooleanField(default=False)
     return_date = models.DateTimeField(null=True)
+
+    # PostgreSQL: distinct from SaleBill lock (avoid deadlock if both touched in one txn)
+    _FINAL_BILLNO_PG_LOCK = 9_123_450_124
+
+    def save(self, *args, **kwargs):
+        """
+        New rows get billno = MAX(billno)+1 when the column has no working sequence
+        DEFAULT (common after MySQL migration) — avoids NULL billno NOT NULL errors.
+        """
+        from django.db import connection, transaction
+        from django.db.models import Max
+
+        is_insert = self._state.adding
+        if is_insert and self.billno is None:
+
+            def _take_next_billno():
+                with connection.cursor() as cursor:
+                    if connection.vendor == "postgresql":
+                        cursor.execute(
+                            "SELECT pg_advisory_xact_lock(%s);",
+                            [FinalSale._FINAL_BILLNO_PG_LOCK],
+                        )
+                m = FinalSale.objects.aggregate(_m=Max("billno"))["_m"]
+                self.billno = (m or 0) + 1
+
+            if connection.in_atomic_block:
+                _take_next_billno()
+            else:
+                with transaction.atomic():
+                    _take_next_billno()
+
+        super().save(*args, **kwargs)
+
+        if is_insert and connection.vendor == "postgresql":
+            with connection.cursor() as cursor:
+                cursor.execute(
+                    "SELECT pg_get_serial_sequence(%s, %s);",
+                    ["transactions_finalsale", "billno"],
+                )
+                row = cursor.fetchone()
+                if row and row[0]:
+                    cursor.execute(
+                        "SELECT setval(%s::regclass, %s);",
+                        [row[0], self.billno],
+                    )
 
     def __str__(self):
         return f"Final Bill No: {self.billno}"
@@ -286,6 +382,49 @@ class ReturnSale(models.Model):
     # return_bill = models.BooleanField(default=False, unique=True)
     # update_date = models.DateTimeField(null=True)
 
+    _RETURN_BILLNO_PG_LOCK = 9_123_450_125
+
+    def save(self, *args, **kwargs):
+        """
+        New rows get billno = MAX(billno)+1 when PostgreSQL has no DEFAULT nextval on billno
+        (legacy / MySQL migration) — avoids NULL billno NOT NULL errors.
+        """
+        from django.db import connection, transaction
+        from django.db.models import Max
+
+        is_insert = self._state.adding
+        if is_insert and self.billno is None:
+
+            def _take_next_billno():
+                with connection.cursor() as cursor:
+                    if connection.vendor == "postgresql":
+                        cursor.execute(
+                            "SELECT pg_advisory_xact_lock(%s);",
+                            [ReturnSale._RETURN_BILLNO_PG_LOCK],
+                        )
+                m = ReturnSale.objects.aggregate(_m=Max("billno"))["_m"]
+                self.billno = (m or 0) + 1
+
+            if connection.in_atomic_block:
+                _take_next_billno()
+            else:
+                with transaction.atomic():
+                    _take_next_billno()
+
+        super().save(*args, **kwargs)
+
+        if is_insert and connection.vendor == "postgresql":
+            with connection.cursor() as cursor:
+                cursor.execute(
+                    "SELECT pg_get_serial_sequence(%s, %s);",
+                    ["transactions_returnsale", "billno"],
+                )
+                row = cursor.fetchone()
+                if row and row[0]:
+                    cursor.execute(
+                        "SELECT setval(%s::regclass, %s);",
+                        [row[0], self.billno],
+                    )
 
     def __str__(self):
         return f"Return Bill No: {self.billno}"
@@ -370,6 +509,52 @@ class SaleBill(models.Model):
     # final_salebill = models.ForeignKey(FinalSale, on_delete=models.SET_NULL, null=True, blank=True)
     update_time = models.DateTimeField(null=True)
     is_deleted = models.BooleanField(default=False)
+
+    # Stable advisory lock key for PostgreSQL (must not clash with other locks in the project)
+    _BILLNO_PG_LOCK = 9_123_450_123
+
+    def save(self, *args, **kwargs):
+        """
+        Ensure new bills get billno = MAX(billno)+1 so numbering stays consecutive even when
+        the PostgreSQL sequence is behind real data (imports, sequence fixes, duplicates).
+        """
+        from django.db import connection, transaction
+        from django.db.models import Max
+
+        is_insert = self._state.adding
+        if is_insert and self.billno is None:
+
+            def _take_next_billno():
+                with connection.cursor() as cursor:
+                    if connection.vendor == "postgresql":
+                        cursor.execute(
+                            "SELECT pg_advisory_xact_lock(%s);",
+                            [SaleBill._BILLNO_PG_LOCK],
+                        )
+                m = SaleBill.objects.aggregate(_m=Max("billno"))["_m"]
+                self.billno = (m or 0) + 1
+
+            if connection.in_atomic_block:
+                _take_next_billno()
+            else:
+                with transaction.atomic():
+                    _take_next_billno()
+
+        super().save(*args, **kwargs)
+
+        # Keep PG sequence aligned so raw SQL / other tools see a sane nextval
+        if is_insert and connection.vendor == "postgresql":
+            with connection.cursor() as cursor:
+                cursor.execute(
+                    "SELECT pg_get_serial_sequence(%s, %s);",
+                    ["transactions_salebill", "billno"],
+                )
+                row = cursor.fetchone()
+                if row and row[0]:
+                    cursor.execute(
+                        "SELECT setval(%s::regclass, %s);",
+                        [row[0], self.billno],
+                    )
 
     def __str__(self):
         return "Bill no: " + str(self.billno)

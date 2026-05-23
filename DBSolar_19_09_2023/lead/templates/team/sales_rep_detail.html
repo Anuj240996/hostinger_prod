@@ -1,0 +1,207 @@
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block title %}{{ rep.get_full_name|default:rep.username }} - Sales Rep Details{% endblock %}
+
+{% block content %}
+<div class="sales-rep-detail">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>{{ rep.get_full_name|default:rep.username }}</h2>
+        <a href="{% url 'team:team' %}" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left me-2"></i>Back to Team
+        </a>
+    </div>
+
+    <div class="row">
+        <div class="col-md-4">
+            <!-- Profile Card -->
+            <div class="card mb-4">
+                <div class="card-body text-center">
+                    <div class="avatar-circle bg-primary text-white mx-auto mb-3">
+                        {{ rep.get_full_name|default:rep.username|slice:":1"|upper }}
+                    </div>
+                    <h4>{{ rep.get_full_name|default:rep.username }}</h4>
+                    <p class="text-muted">{{ rep.email }}</p>
+                    <p class="text-muted"><small>Member since: {{ rep.date_joined|date:'M Y' }}</small></p>
+                </div>
+            </div>
+
+            <!-- Quick Stats Card -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Quick Stats</h5>
+                </div>
+                <div class="card-body">
+                    <ul class="list-group list-group-flush">
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            <span><i class="fas fa-users text-primary me-2"></i>Total Leads</span>
+                            <span class="badge bg-primary rounded-pill">{{ total_leads }}</span>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            <span><i class="fas fa-trophy text-success me-2"></i>Won Deals</span>
+                            <span class="badge bg-success rounded-pill">{{ won_leads }}</span>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            <span><i class="fas fa-rupee-sign text-info me-2"></i>Total Revenue</span>
+                            <span class="badge bg-info rounded-pill">₹{{ total_revenue|intcomma }}</span>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            <span><i class="fas fa-chart-line text-warning me-2"></i>Conversion Rate</span>
+                            <span class="badge bg-warning rounded-pill">
+                                {% widthratio won_leads total_leads 100 %}%
+                            </span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-8">
+            <!-- Performance Chart -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Monthly Performance (Last 6 Months)</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="performanceChart" height="300"></canvas>
+                </div>
+            </div>
+
+            <!-- Recent Activities -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Recent Activities</h5>
+                </div>
+                <div class="card-body">
+                    {% if recent_activities %}
+                        <div class="timeline">
+                            {% for activity in recent_activities %}
+                            <div class="timeline-item">
+                                <div class="timeline-marker">
+                                    <i class="fas {{ activity.icon }}"></i>
+                                </div>
+                                <div class="timeline-content">
+                                    <div class="d-flex justify-content-between">
+                                        <h6 class="mb-1">{{ activity.type }}</h6>
+                                        <small class="text-muted">{{ activity.created }}</small>
+                                    </div>
+                                    <p class="mb-1">{{ activity.description }}</p>
+                                    <small class="text-muted">
+                                        <i class="fas fa-user me-1"></i>{{ activity.lead_name }}
+                                    </small>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <p class="text-muted text-center py-4">
+                            <i class="fas fa-history fa-3x mb-3"></i><br>
+                            No recent activities found
+                        </p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .avatar-circle {
+        width: 100px;
+        height: 100px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 40px;
+        font-weight: 600;
+    }
+
+    .timeline {
+        position: relative;
+        padding: 20px 0;
+    }
+
+    .timeline-item {
+        position: relative;
+        padding-left: 50px;
+        margin-bottom: 20px;
+    }
+
+    .timeline-marker {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        background: #e9ecef;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #6c757d;
+    }
+
+    .timeline-content {
+        padding: 10px 15px;
+        background: #f8f9fa;
+        border-radius: 8px;
+    }
+
+    .timeline-item:not(:last-child)::before {
+        content: '';
+        position: absolute;
+        left: 18px;
+        top: 36px;
+        bottom: -20px;
+        width: 2px;
+        background: #e9ecef;
+    }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const ctx = document.getElementById('performanceChart').getContext('2d');
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: {{ months|safe }},
+                datasets: [{
+                    label: 'Revenue (₹)',
+                    data: {{ revenue_data|safe }},
+                    borderColor: 'rgb(75, 192, 192)',
+                    backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                    tension: 0.1,
+                    fill: true
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return '₹' + context.raw.toLocaleString('en-IN');
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function(value) {
+                                return '₹' + value.toLocaleString('en-IN');
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    });
+</script>
+{% endblock %}

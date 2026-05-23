@@ -1,0 +1,6 @@
+<div class="d-flex flex-column align-items-end gap-1 flex-shrink-0">
+    <span class="card-badge {{ lead.score }}">{{ lead.get_score_display }}</span>
+    {% if lead.pipeline_status_label %}
+    <span class="pipeline-status-badge {{ lead.pipeline_status_badge_class }}">{{ lead.pipeline_status_label }}</span>
+    {% endif %}
+</div>

@@ -1,0 +1,15 @@
+{% load indian_numbers %}
+{% if lead.electricity_bill %}
+<div class="card-details-row lead-monthly-charge">
+    <span class="card-details-icon card-details-icon--inr card-details-icon--monthly" aria-hidden="true">&#8377;</span>
+    <span class="card-details-text">
+        <span class="lead-monthly-charge__amount">{{ lead.electricity_bill|indian_number }}</span><span class="lead-monthly-charge__suffix">/monthly</span>
+    </span>
+</div>
+{% endif %}
+{% if lead.monthly_consumption %}
+<div class="card-details-row lead-monthly-units">
+    <i class="fas fa-bolt card-details-icon" aria-hidden="true"></i>
+    <span class="card-details-text">{{ lead.monthly_consumption }} units/month</span>
+</div>
+{% endif %}

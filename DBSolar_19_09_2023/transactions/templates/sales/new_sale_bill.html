@@ -96,7 +96,29 @@
     <!-- Container for dynamically added form rows -->
     <div id="stockitem">
         <div class="panel-body">
-
+            <div id="stock-table-header-row" class="row align-items-end" style="display: none;">
+                <div class="form-group mb-1 col-md-1 text-center">
+                    <label class="panel-body-text" style="text-align: center; font-weight: bold;">Sr No</label>
+                </div>
+                <div class="form-group mb-1 col-md-4 text-center">
+                    <label class="panel-body-text" style="text-align: center; font-weight: bold;">Stock</label>
+                </div>
+                <div class="form-group mb-1 col-md-1 text-center">
+                    <label class="panel-body-text" style="text-align: center; font-weight: bold;">Avb.Qunt.</label>
+                </div>
+                <div class="form-group mb-1 col-md-2 text-center">
+                    <label class="panel-body-text" style="text-align: center; font-weight: bold;">Quantity</label>
+                </div>
+                <div class="form-group mb-1 quantity-container col-md-2 text-center">
+                    <label class="panel-body-text" style="text-align: center; font-weight: bold;">Rate</label>
+                </div>
+                <div class="form-group mb-1 gst-container col-md-1 text-center" style="display: none;">
+                    <label class="panel-body-text" id="gst_label" style="text-align: center; font-weight: bold;">GST</label>
+                </div>
+                <div class="form-group mb-1 col-md-2 text-center">
+                    <label class="panel-body-text" style="text-align: center; font-weight: bold;">Total</label>
+                </div>
+            </div>
         </div>
     </div>
            <div style="width: 100%; display: flex; justify-content: flex-end;">
@@ -328,6 +350,25 @@
     }
     .custom-flex input {
         margin-right: 10px; /* Add some space between the input and the image */
+    }
+    /* Confirmation modal field focus background behavior */
+    #confirmationModal .form-control,
+    #confirmationModal select.form-control {
+        background-color: #ffffff;
+        transition: background-color 0.2s ease-in-out;
+    }
+    #confirmationModal .form-control:focus,
+    #confirmationModal select.form-control:focus,
+    #confirmationModal input[type="date"]:focus {
+        background-color: #ffe6ee !important;
+    }
+    #confirmationModal input[type="date"]:focus::-webkit-datetime-edit,
+    #confirmationModal input[type="date"]:focus::-webkit-date-and-time-value {
+        background-color: #ffe6ee !important;
+    }
+    #confirmationModal .form-control:not(:focus),
+    #confirmationModal select.form-control:not(:focus) {
+        background-color: #ffffff;
     }
     /* Styling for toggle button */
         .switch {
@@ -1092,11 +1133,9 @@ $(document).ready(function() {
                     var newRow = `<div class="row form-row">
                         <input type="hidden" name="form-${total}-DELETE" id="id_form-${total}-DELETE">
                         <div class="form-group col-md-1 text-center">
-                            ${total === 0 ? '<label class="panel-body-text" style="text-align: center; font-weight: bold;">Sr No</label>' : ''}
                             <span class="form-control-plaintext">${serialNo}</span>
                         </div>
                         <div class="form-group col-md-4 text-center">
-                            ${total === 0 ? '<label class="panel-body-text" style="text-align: center; font-weight: bold;">Stock</label>' : ''}
                             <div style="display: flex; flex-direction: column; align-items: center;">
                                 <a href="#" class="stockName text-capitalize form-control-plaintext">${stockName}</a>
                                 <input type="hidden" name="form-${total}-stock" value="${stockId}">
@@ -1106,14 +1145,12 @@ $(document).ready(function() {
                             </div>
                         </div>
                         <div class="form-group col-md-1 text-center">
-                            ${total === 0 ? '<label class="panel-body-text" style="text-align: center; font-weight: bold;">Avb.Qunt.</label>' : ''}
                             <div class="d-flex justify-content-center align-items-center mt-1">
                                 <input type="hidden" class="form-control stock-quantity" value="${stockQuantity}" readonly>
                                 <span class="badge ${badgeClass}">${stockQuantity} <small>${purchase}</small></span>
                             </div>
                         </div>
                         <div class="form-group col-md-2 text-center">
-                            ${total === 0 ? '<label class="panel-body-text" style="text-align: center; font-weight: bold;">Quantity</label>' : ''}
                             <div class="input-group">
                                 <input type="number" class="form-control quantity" style="text-align: center;" name="form-${total}-quantity" value="1">
                                 <div class="input-group-append">
@@ -1123,18 +1160,15 @@ $(document).ready(function() {
                             <div class="warning-message" style="color: red; display: none;">Quantity exceeds available stock!</div>
                         </div>
                         <div class="form-group quantity-container col-md-2 text-center">
-                            ${total === 0 ? '<label class="panel-body-text" style="text-align: center; font-weight: bold;">Rate</label>' : ''}
                             <input type="text" class="form-control price" name="form-${total}-perprice" required>
                         </div>
                          <div class="form-group gst-container col-md-1 text-center" style="display: none;">
-                            ${total === 0 ? '<label class="panel-body-text" id="gst_label" style="text-align: center; font-weight: bold;">GST</label>' : ''}
                             <div class="d-flex justify-content-center align-items-center mt-1">
                                 <input type="hidden" class="form-control gst" value="${stockgst}" readonly>
                                 <span class="badge gst_badge" style="font-size: 1rem;" style="text-align: center;"> ${parseFloat(stockgst).toString().replace(/\.00$/, '')}%</span>
                             </div>
                         </div>
                         <div class="form-group col-md-2 text-center">
-                            ${total === 0 ? '<label class="panel-body-text" style="text-align: center; font-weight: bold;">Total</label>' : ''}
                             <div class="custom-flex">
                                 <input type="text" style="text-align: right;" class="textinput form-control totalprice me-2" value="${stockPrice}" readonly>
                                 <img src="{% static 'images/letter-x (1).png' %}" class="remove-form-row" alt="Remove" style="cursor: pointer; width: 15px; height: 15px;">
@@ -1143,6 +1177,7 @@ $(document).ready(function() {
                     </div>`;
 
                     $('#stockitem .panel-body').append(newRow);
+                    $('#stock-table-header-row').show();
                     total++;
                     $('#id_form-TOTAL_FORMS').val(total);
                     selectedStock.remove();
@@ -1231,6 +1266,7 @@ $(document).ready(function() {
         deleteForm('form', $(this));
 
         if ($('#stockitem .form-row').length === 0) {
+            $('#stock-table-header-row').hide();
             $('#fieldset-container').hide();
         }
         updateGSTValues(); // Update GST values after deletion

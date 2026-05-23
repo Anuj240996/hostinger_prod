@@ -1,0 +1,867 @@
+{% extends 'base.html' %}
+{% load humanize indian_numbers %}
+
+{% block title %}Quotation #{{ quotation.quotation_no|default:quotation.pk }} — Details{% endblock %}
+
+{% block content %}
+<div class="quotation-detail">
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+        <h2 class="mb-0">Quotation #{{ quotation.quotation_no|default:quotation.pk }}</h2>
+        <div class="d-flex align-items-center gap-2 flex-wrap">
+            <span class="badge {% if quotation.status == 'approved' %}bg-success{% elif quotation.status == 'converted' %}bg-primary{% elif quotation.status == 'sent' %}bg-primary{% elif quotation.status == 'draft' %}bg-secondary{% elif quotation.status == 'rejected' %}bg-danger{% elif quotation.status == 'viewed' %}bg-info text-dark{% elif quotation.status == 'negotiating' %}bg-warning text-dark{% elif quotation.status == 'expired' %}bg-dark{% else %}bg-light text-dark{% endif %}">
+                {{ quotation.get_status_display }}
+            </span>
+            <span class="text-muted">Version {{ quotation.version }}</span>
+        </div>
+    </div>
+
+    {% if not quotation_detail_actions_allowed %}
+    <p class="text-muted small mb-3 mb-md-2"><i class="fas fa-lock me-1"></i>Older revision — open the latest quotation in this quote family to edit, send, approve, or revise. PDF is still available below.</p>
+    {% elif quotation_detail_actions_allowed and quotation.status == 'rejected' %}
+    <p class="text-muted small mb-3 mb-md-2"><i class="fas fa-ban me-1"></i>This quotation is rejected — only PDF and back to list are available.</p>
+    {% elif quotation_detail_actions_allowed and quotation.status == 'approved' %}
+    <p class="text-muted small mb-3 mb-md-2"><i class="fas fa-check-circle me-1"></i>This quotation is approved — PDF, Convert Consumer, and back to list are available.</p>
+    {% elif quotation_detail_actions_allowed and quotation.status == 'converted' %}
+    <p class="text-muted small mb-3 mb-md-2"><i class="fas fa-user-check me-1"></i>This quotation is converted — only PDF and back to list are available.</p>
+    {% endif %}
+
+    <div class="d-flex flex-wrap gap-2 mb-4 align-items-center">
+        {% if quotation_detail_actions_allowed and quotation.status != 'rejected' and quotation.status != 'approved' and quotation.status != 'converted' %}
+        <a href="{% url 'quotation_edit' quotation.pk %}" class="btn btn-outline-primary">
+            <i class="fas fa-edit me-2"></i>Edit
+        </a>
+        {% if quotation.status == 'sent' or quotation.status == 'viewed' or quotation.status == 'negotiating' %}
+        <a href="{% url 'quotation_revise' quotation.pk %}" class="btn btn-outline-warning"
+           onclick="return confirm('Open revise quotation to create a new revision from this one?');">
+            <i class="fas fa-copy me-2"></i>Revise
+        </a>
+        {% endif %}
+        {% if quotation.status == 'draft' %}
+        <form method="post" action="{% url 'quotation_send' quotation.pk %}" class="d-inline m-0">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-outline-success">
+                <i class="fas fa-paper-plane me-2"></i>Send
+            </button>
+        </form>
+        {% endif %}
+        {% if quotation.status == 'sent' or quotation.status == 'negotiating' or quotation.status == 'viewed' %}
+        <button type="button" id="openLeadApproveModal" class="btn btn-outline-success">
+            <i class="fas fa-check-circle me-2"></i>Approve
+        </button>
+        <button type="button" id="openLeadRejectModal" class="btn btn-outline-danger">
+                <i class="fas fa-times-circle me-2"></i>Reject
+            </button>
+        {% endif %}
+        {% endif %}
+        <button type="button" id="openLeadQuotationPdfModal" class="btn btn-outline-danger">
+            <i class="fas fa-file-pdf me-2"></i>PDF
+        </button>
+        {% if quotation_detail_actions_allowed and quotation.status == 'approved' %}
+        <button type="button" id="openLeadConvertConsumer" class="btn btn-outline-primary" data-id="{{ quotation.pk }}">
+            <i class="fas fa-user-plus me-2"></i>Convert Consumer
+        </button>
+        {% endif %}
+        <a href="{% url 'quotation_list' %}" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left me-2"></i>Back to List
+        </a>
+    </div>
+
+    {# Same PDF choice modal as create quotation (quotation/create_quotation_body.html) — opens ERP PDF URLs #}
+    <div id="leadQuotationPdfModal" style="display:none; position:fixed; z-index:99999; left:0; top:0; right:0; bottom:0; background:rgba(0,0,0,0.5); align-items:center; justify-content:center;">
+        <div style="background:white; margin:auto; padding:30px; border-radius:10px; max-width:500px; box-shadow:0 6px 18px rgba(0,0,0,0.3);">
+            <h3 style="color:#1e41d1;">Generate PDF</h3>
+            <p style="margin-bottom:20px;">Choose a template for PDF generation:</p>
+            <div style="display:flex; gap:15px; margin-bottom:25px; flex-wrap:wrap;">
+                <button type="button" id="leadPdfRegularBtn" class="pdf-option-btn" style="flex:1; min-width:140px; padding:15px; background:#4a6cf7; color:white; border:none; border-radius:5px; cursor:pointer;">
+                    <strong>Regular Quotation</strong><br>
+                    <small>Standard template</small>
+                </button>
+                <button type="button" id="leadPdfIndustrialBtn" class="pdf-option-btn" style="flex:1; min-width:140px; padding:15px; background:#1e41d1; color:white; border:none; border-radius:5px; cursor:pointer;">
+                    <strong>Industrial Quotation</strong><br>
+                    <small>Industrial template</small>
+                </button>
+            </div>
+            <div style="text-align:right;">
+                <button type="button" id="closeLeadQuotationPdfModal" style="padding:8px 20px; background:#6c757d; color:white; border:none; border-radius:4px;">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    {# Approve quotation — same confirmation modal structure as quotation list Confirm flow #}
+    <div id="leadApproveQuotationModal" style="display:none; position:fixed; z-index:99999; left:0; top:0; right:0; bottom:0; background:rgba(0,0,0,0.5); align-items:center; justify-content:center;">
+        <div style="background:white; margin:auto; padding:24px; border-radius:10px; max-width:760px; width:94%; box-shadow:0 6px 18px rgba(0,0,0,0.3);">
+            <h4 class="mb-3 text-success"><i class="fas fa-check-circle me-2"></i>Quotation Confirmation</h4>
+            <form method="post" action="{% url 'quotation_approve' quotation.pk %}" id="leadApproveQuotationForm">
+                {% csrf_token %}
+                <div class="mb-2"><b>Customer:</b> {{ quotation.consumer_name|default:"—" }}</div>
+                <div class="mb-2"><b>Plant Capacity:</b> {% if quotation.plant_capacity_kw %}{{ quotation.plant_capacity_kw }}{% else %}—{% endif %}</div>
+                <div class="mb-2"><b>Quotation No:</b> {{ quotation.quotation_no|default:"—" }}</div>
+                <div class="mb-2"><b>Date:</b> {{ dates_created_display|default:"—" }}</div>
+                <div class="mb-3"><b>Final Amount:</b> ₹ {{ quotation.final_amount|intcomma }}</div>
+                <hr>
+                <div class="row g-2">
+                    <div class="col-md-6">
+                        <label for="approve_payment_type" class="form-label">Payment Type</label>
+                        <select name="payment_type" id="approve_payment_type" class="form-control" required>
+                            <option value="">Select</option>
+                            <option {% if quotation.payment_type == 'Full Payment' %}selected{% endif %}>Full Payment</option>
+                            <option {% if quotation.payment_type == 'Part Payment' %}selected{% endif %}>Part Payment</option>
+                            <option {% if quotation.payment_type == 'Part payment & remaning payment after subsidy' %}selected{% endif %}>Part payment & remaning payment after subsidy</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label for="approve_payment_mode" class="form-label">Payment Mode</label>
+                        <select name="payment_mode" id="approve_payment_mode" class="form-control" required>
+                            <option value="">Select</option>
+                            <option {% if quotation.payment_mode == 'Net Banking' %}selected{% endif %}>Net Banking</option>
+                            <option {% if quotation.payment_mode == 'UPI' %}selected{% endif %}>UPI</option>
+                            <option {% if quotation.payment_mode == 'Cash' %}selected{% endif %}>Cash</option>
+                            <option {% if quotation.payment_mode == 'Hybrid' %}selected{% endif %}>Hybrid</option>
+                            <option {% if quotation.payment_mode == 'Check' %}selected{% endif %}>Check</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="row mt-2 {% if quotation.payment_mode != 'Hybrid' %}d-none{% endif %}" id="approveHybridBox">
+                    <div class="col-md-6">
+                        <label for="approve_hybrid_mode" class="form-label">Hybrid Mode</label>
+                        <select name="hybrid_mode" id="approve_hybrid_mode" class="form-control">
+                            <option {% if quotation.hybrid_mode == 'UPI + Cash' %}selected{% endif %}>UPI + Cash</option>
+                            <option {% if quotation.hybrid_mode == 'UPI + Net Banking' %}selected{% endif %}>UPI + Net Banking</option>
+                            <option {% if quotation.hybrid_mode == 'UPI + BANK CHECK' %}selected{% endif %}>UPI + BANK CHECK</option>
+                        </select>
+                    </div>
+                </div>
+                <hr>
+                <div class="row g-2 mb-3">
+                    <div class="col-md-6">
+                        <label for="approve_po_order_no" class="form-label">PO Order No (Optional)</label>
+                        <input type="text" name="po_order_no" id="approve_po_order_no" class="form-control" value="{{ quotation.po_order_no|default:'' }}">
+                    </div>
+                    <div class="col-md-6">
+                        <label for="approve_po_date" class="form-label">PO Date (Optional)</label>
+                        <input type="date" name="po_date" id="approve_po_date" class="form-control" value="{% if quotation.po_date %}{{ quotation.po_date|date:'Y-m-d' }}{% endif %}">
+                    </div>
+                </div>
+                <div class="d-flex justify-content-end gap-2 flex-wrap">
+                    <button type="button" class="btn btn-secondary" id="closeLeadApproveQuotationModal">Cancel</button>
+                    <button type="submit" class="btn btn-success"><i class="fas fa-check me-1"></i>Save</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    {# Reject quotation — reason required #}
+    <div id="leadRejectQuotationModal" style="display:none; position:fixed; z-index:99999; left:0; top:0; right:0; bottom:0; background:rgba(0,0,0,0.5); align-items:center; justify-content:center;">
+        <div style="background:white; margin:auto; padding:24px; border-radius:10px; max-width:520px; width:92%; box-shadow:0 6px 18px rgba(0,0,0,0.3);">
+            <h4 class="mb-3 text-danger"><i class="fas fa-times-circle me-2"></i>Reject quotation</h4>
+            <p class="text-muted small mb-3">A reason is required. It will be saved and shown in the reject history below.</p>
+            <form method="post" action="{% url 'quotation_reject' quotation.pk %}" id="leadRejectQuotationForm">
+                {% csrf_token %}
+                <div class="mb-3">
+                    <label for="reject_reason" class="form-label">Reason for rejection</label>
+                    <textarea class="form-control" id="reject_reason" name="reject_reason" rows="4" required maxlength="2000" placeholder="Enter why this quotation is rejected…"></textarea>
+                </div>
+                <div class="d-flex justify-content-end gap-2 flex-wrap">
+                    <button type="button" class="btn btn-secondary" id="closeLeadRejectQuotationModal">Cancel</button>
+                    <button type="submit" class="btn btn-danger"><i class="fas fa-check me-1"></i>Submit rejection</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card mb-4">
+                <div class="card-header"><h5 class="mb-0">Consumer information</h5></div>
+                <div class="card-body">
+                    <table class="table table-sm table-borderless mb-0">
+                        <tbody>
+                            <tr>
+                                <th class="text-muted align-top w-25">Title</th>
+                                <td class="align-top">{{ quotation.get_title_display|default:"—" }}</td>
+                                <th class="text-muted align-top w-25 ps-3">Customer name</th>
+                                <td class="align-top">{{ quotation.consumer_name|default:"—" }}</td>
+                            </tr>
+                            <tr>
+                                <th class="text-muted align-top">Phone</th>
+                                <td class="align-top">{{ quotation.consumer_mobile|default:"—" }}</td>
+                                <th class="text-muted align-top ps-3">Email</th>
+                                <td class="align-top">{{ quotation.consumer_email|default:"—" }}</td>
+                            </tr>
+                            <tr>
+                                <th class="text-muted align-top">Address</th>
+                                <td class="align-top">{{ quotation.consumer_address1|default:"—" }}</td>
+                                <th class="text-muted align-top ps-3">City</th>
+                                <td class="align-top">{{ quotation.consumer_address2|default:"—" }}</td>
+                            </tr>
+                            <tr>
+                                <th class="text-muted align-top">State</th>
+                                <td class="align-top">{{ quotation.consumer_state|default:"—" }}</td>
+                                <th class="text-muted align-top ps-3">Project type</th>
+                                <td class="align-top">{{ quotation.project_type|default:"—" }}</td>
+                            </tr>
+                            <tr>
+                                <th class="text-muted align-top">Consumer no.</th>
+                                <td class="align-top">{{ quotation.consumer_no|default:"—" }}</td>
+                                <th class="text-muted align-top ps-3">Consumer type</th>
+                                <td class="align-top">{{ quotation.get_consumer_type_display|default:"—" }}</td>
+                            </tr>
+                            <tr>
+                                <th class="text-muted align-top">CRM lead</th>
+                                <td class="align-top" colspan="3">
+                                    {% if quotation.lead %}
+                                    <a href="{% url 'lead_detail' quotation.lead.id %}">{{ quotation.lead.name }}</a>
+                                    {% if quotation.lead.electricity_bill is not None %}
+                                    <span class="text-muted small d-block mt-1">Lead monthly bill: ₹{{ quotation.lead.electricity_bill|intcomma }}</span>
+                                    {% endif %}
+                                    {% else %}
+                                    —
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    {% if quotation.survey %}
+                    <a href="{% url 'survey_detail' quotation.survey.pk %}" class="btn btn-sm btn-outline-info mt-2">
+                        <i class="fas fa-hard-hat me-2"></i>View survey
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="card mb-4">
+                <div class="card-header"><h5 class="mb-0">Plant Details</h5></div>
+                <div class="card-body">
+                    <table class="table table-sm table-borderless mb-0">
+                        <tbody>
+                            <tr>
+                                <th class="text-muted align-top w-25">Plant capacity</th>
+                                <td class="align-top">{% if quotation.plant_capacity_kw %}{{ quotation.plant_capacity_kw.capacity }} kW{% else %}—{% endif %}</td>
+                                <th class="text-muted align-top w-25 ps-3">Structure</th>
+                                <td class="align-top">{{ quotation.structure_type|default:"—" }}</td>
+                            </tr>
+                            <tr>
+                                <th class="text-muted align-top">Representative</th>
+                                <td class="align-top" colspan="3">{{ quotation.employee_name|default:"—" }}</td>
+                            </tr>
+                            <tr>
+                                <th class="text-muted align-top">Electricity rate</th>
+                                <td class="align-top" colspan="3">₹{{ quotation.electricity_unit_rate|default:"—" }}/kWh</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="card mb-4">
+                <div class="card-header"><h5 class="mb-0">System Details</h5></div>
+                <div class="card-body">
+                    <table class="table table-sm table-borderless mb-0">
+                        <tbody>
+                            <tr>
+                                <th class="text-muted align-top w-25">Solar type</th>
+                                <td class="align-top">{{ quotation.panel_type|default:"—" }}</td>
+                                <th class="text-muted align-top w-25 ps-3">Inverter phase</th>
+                                <td class="align-top">{{ quotation.get_inv_phase_display }}</td>
+                            </tr>
+                            <tr>
+                                <th class="text-muted align-top">Solar module</th>
+                                <td class="align-top">{% if quotation.panel_company_names %}{{ quotation.panel_company_names|truncatewords:50 }}{% else %}{{ quotation.panel_type|default:"—" }}{% endif %}</td>
+                                <th class="text-muted align-top ps-3">Inverter name</th>
+                                <td class="align-top">{{ quotation.inverter_company_names|default:"—"|truncatewords:40 }}</td>
+                            </tr>
+                            <tr>
+                                <th class="text-muted align-top">Panel qty</th>
+                                <td class="align-top">{{ quotation.panel_qty }} Nos.</td>
+                                <th class="text-muted align-top ps-3">Inverter qty</th>
+                                <td class="align-top">{{ quotation.inverter_qty }} Nos.</td>
+                            </tr>
+                            <tr>
+                                <th class="text-muted align-top">Panel wattage</th>
+                                <td class="align-top">{{ quotation.panel_capacity_watt|default:"—" }} kW</td>
+                                <th class="text-muted align-top ps-3">Inverter wattage</th>
+                                <td class="align-top">{{ quotation.inv_capacity_kw }} kW</td>
+                            </tr>
+                            <tr>
+                                <th class="text-muted align-top">Panel warranty</th>
+                                <td class="align-top">
+                                    {% if quotation.panel_manufacturing_warranty or quotation.panel_performance_warranty %}
+                                    MFG: {{ quotation.panel_manufacturing_warranty|default:"—" }}; Performance: {{ quotation.panel_performance_warranty|default:"—" }}
+                                    {% else %}—{% endif %} Year
+                                </td>
+                                <th class="text-muted align-top ps-3">Inverter warranty</th>
+                                <td class="align-top">{{ quotation.inverter_warranty|default:"—" }} Year</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="card mb-4">
+                <div class="card-header"><h5 class="mb-0">Cost Breakdown</h5></div>
+                <div class="card-body">
+                    <table class="table table-sm">
+                        <tr><th>Net amount</th><td class="text-end">{{ quotation.net_amount|indian_currency }}</td></tr>
+                        <tr><th>Special discount</th><td class="text-end">{{ quotation.special_discount|indian_currency }}</td></tr>
+                        <tr><th>Discount %</th><td class="text-end">{% if quotation.discount_percentage is not None %}{{ quotation.discount_percentage }}%{% else %}—{% endif %}</td></tr>
+                        <tr><th>GST 5% amount</th><td class="text-end">{{ quotation.gst_5_amount|indian_currency }}</td></tr>
+                        <tr><th>GST 18% amount</th><td class="text-end">{{ quotation.gst_18_amount|indian_currency }}</td></tr>
+                        <tr class="table-active"><th>Final amount</th><td class="text-end fw-bold">{{ quotation.final_amount|indian_currency }}</td></tr>
+                    </table>
+                </div>
+            </div>
+
+            <div class="card mb-4">
+                <div class="card-header"><h5 class="mb-0">Financial analysis</h5></div>
+                <div class="card-body">
+                    <div class="row text-center mb-4">
+                        <div class="col-md-3">
+                            <div class="p-3 bg-light rounded">
+                                <h6 class="text-muted small mb-1">Yearly saving</h6>
+                                <h3 class="text-success mb-0">₹{{ payback.yearly_saving|floatformat:0|intcomma }}</h3>
+                                <small class="text-muted">Rs/Year</small>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="p-3 bg-light rounded">
+                                <h6 class="text-muted small mb-1">Payback</h6>
+                                <h3 class="mb-0">{{ payback.payback_period }}</h3>
+                                <small class="text-muted">Years</small>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="p-3 bg-light rounded">
+                                <h6 class="text-muted small mb-1">Investment</h6>
+                                <h3 class="mb-0">₹{{ payback.investment_cost|floatformat:0|intcomma }}</h3>
+                                <small class="text-muted">Rs/System</small>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="p-3 bg-light rounded">
+                                <h6 class="text-muted small mb-1">After subsidy</h6>
+                                <h3 class="mb-0">₹{{ payback.after_subsidy_amount|floatformat:0|intcomma }}</h3>
+                                <small class="text-muted">Rs/System</small>
+                            </div>
+                        </div>
+                    </div>
+                    <table class="table table-sm table-bordered mb-0">
+                        <tbody>
+                            <tr><th class="w-50">Plant capacity</th><td class="text-center">{{ payback.plant_capacity_kw|floatformat:2 }}</td><td class="text-center">kW</td></tr>
+                            <tr><th>No. of units generated per year (approx.)</th><td class="text-center">{{ payback.units_generated_per_year|floatformat:0|intcomma }}</td><td class="text-center">Approx units</td></tr>
+                            <tr><th>Electricity per unit cost</th><td class="text-center">{{ payback.unit_rate|floatformat:2 }}</td><td class="text-center">Rs/Unit</td></tr>
+                            <tr><th>Yearly saving</th><td class="text-center">{{ payback.yearly_saving|floatformat:0|intcomma }}</td><td class="text-center">Rs/Year</td></tr>
+                            <tr><th>Investment cost</th><td class="text-center">{{ payback.investment_cost|floatformat:0|intcomma }}</td><td class="text-center">Rs/System</td></tr>
+                            <tr><th>Subsidy</th><td class="text-center">{{ payback.subsidy_amount|floatformat:0|intcomma }}</td><td class="text-center">Rs</td></tr>
+                            <tr><th>Total amount after subsidy</th><td class="text-center">{{ payback.after_subsidy_amount|floatformat:0|intcomma }}</td><td class="text-center">Rs/System</td></tr>
+                            <tr class="table-active"><th>Payback period</th><td class="text-center fw-bold">{{ payback.payback_period }}</td><td class="text-center">Years</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            {% if quotation.payment_type or quotation.payment_mode or quotation.po_order_no %}
+            <div class="card mb-4">
+                <div class="card-header"><h5 class="mb-0">Payment &amp; PO</h5></div>
+                <div class="card-body">
+                    <table class="table table-sm table-borderless mb-0">
+                        <tr><th class="w-25">Payment type</th><td>{{ quotation.payment_type|default:"—" }}</td></tr>
+                        <tr><th>Payment mode</th><td>{{ quotation.payment_mode|default:"—" }}</td></tr>
+                        <tr><th>Hybrid mode</th><td>{{ quotation.hybrid_mode|default:"—" }}</td></tr>
+                        <tr><th>PO no.</th><td>{{ quotation.po_order_no|default:"—" }}</td></tr>
+                        <tr><th>PO date</th><td>{{ quotation.po_date|default:"—" }}</td></tr>
+                    </table>
+                </div>
+            </div>
+            {% endif %}
+
+            {% if quotation.other_details %}
+            <div class="card mb-4">
+                <div class="card-header"><h5 class="mb-0">Other details</h5></div>
+                <div class="card-body"><pre class="mb-0 small" style="white-space:pre-wrap;">{{ quotation.other_details }}</pre></div>
+            </div>
+            {% endif %}
+            {% if quotation.terms_conditions_text %}
+            <div class="card mb-4">
+                <div class="card-header"><h5 class="mb-0">Terms (cached)</h5></div>
+                <div class="card-body">{{ quotation.terms_conditions_text|linebreaks }}</div>
+            </div>
+            {% endif %}
+            {% if quotation.representative_names %}
+            <div class="card mb-4">
+                <div class="card-header"><h5 class="mb-0">Representatives</h5></div>
+                <div class="card-body">{{ quotation.representative_names|linebreaks }}</div>
+            </div>
+            {% endif %}
+        </div>
+
+        <div class="col-md-4">
+            <div class="card mb-4">
+                <div class="card-header"><h5 class="mb-0">Dates</h5></div>
+                <div class="card-body">
+                    <ul class="list-group list-group-flush">
+                        <li class="list-group-item d-flex justify-content-between">
+                            <span>Created:</span>
+                            <span>{% if dates_created_display %}{{ dates_created_display|date:'d M Y' }}{% else %}—{% endif %}</span>
+                        </li>
+                        {% if quotation.sent_date %}
+                        <li class="list-group-item d-flex justify-content-between">
+                            <span>Sent:</span>
+                            <span>{{ quotation.sent_date|date:'d M Y' }}</span>
+                        </li>
+                        {% endif %}
+                        {% if quotation.approved_date %}
+                        <li class="list-group-item d-flex justify-content-between">
+                            <span>Approved:</span>
+                            <span>{{ quotation.approved_date|date:'d M Y' }}</span>
+                        </li>
+                        {% endif %}
+                        {% if dates_converted_display or quotation.status == 'converted' %}
+                        <li class="list-group-item d-flex justify-content-between">
+                            <span>Converted:</span>
+                            <span>{% if dates_converted_display %}{{ dates_converted_display|date:'d M Y' }}{% else %}—{% endif %}</span>
+                        </li>
+                        {% endif %}
+                        {% if dates_rejected_display or quotation.status == 'rejected' %}
+                        <li class="list-group-item d-flex justify-content-between">
+                            <span>Rejected:</span>
+                            <span>{% if dates_rejected_display %}{{ dates_rejected_display|date:'d M Y' }}{% else %}—{% endif %}</span>
+                        </li>
+                        {% endif %}
+                        <li class="list-group-item d-flex justify-content-between">
+                            <span>Valid Until:</span>
+                            <span>{% if dates_valid_until_display %}{{ dates_valid_until_display|date:'d M Y' }}{% else %}—{% endif %}</span>
+                        </li>
+                    </ul>
+                    {% if quotation_family_cards %}
+                    <hr class="my-3">
+                    <details class="quote-family-history-details w-100" style="max-width:100%;">
+                        <summary class="small fw-semibold text-primary" style="cursor:pointer;">Show details — quote family history</summary>
+                        <p class="small text-muted mt-2 mb-0">{% if quotation_family_cards|length == 1 %}Single card fills full row width;{% else %}Two cards per row;{% endif %} created/sent sit in the white body area below the title.</p>
+                        <div class="row row-cols-1 {% if quotation_family_cards|length == 1 %}row-cols-sm-1{% else %}row-cols-sm-2{% endif %} g-2 mt-2 mx-0 w-100 align-items-start">
+                            {% for card in quotation_family_cards %}
+                            <div class="col px-1 min-w-0">
+                                <div class="card quote-family-card w-100 shadow-sm border position-relative quote-family-card-hover small border-start border-4 {% cycle 'border-primary' 'border-success' 'border-info' 'border-warning' 'border-secondary' 'border-danger' %} {% if card.is_current %}quote-family-card-active{% endif %}">
+                                    <div class="card-header py-1 px-2 d-flex justify-content-between align-items-start flex-wrap gap-1 position-relative z-1 border-0 {% cycle 'bg-primary' 'bg-success' 'bg-info' 'bg-warning' 'bg-secondary' 'bg-danger' %} bg-opacity-10">
+                                        <div class="min-w-0 pe-1 flex-grow-1">
+                                            <div class="fw-semibold mb-0">{{ card.title }}</div>
+                                            <div class="mt-1 lh-sm">
+                                                <span class="badge rounded-pill bg-secondary">{{ card.badge }}</span>
+                                                <span class="text-muted font-monospace small d-inline-block text-break">{{ card.quotation_no }}</span>
+                                            </div>
+                                        </div>
+                                        <div class="text-end flex-shrink-0">
+                                            {% if card.status %}
+                                                {% if card.status == 'Approved' %}
+                                                <span class="badge rounded-pill bg-success">{{ card.status }}</span>
+                                                {% elif card.status == 'Converted' %}
+                                                <span class="badge rounded-pill bg-primary">{{ card.status }}</span>
+                                                {% elif card.status == 'Sent' %}
+                                                <span class="badge rounded-pill bg-primary">{{ card.status }}</span>
+                                                {% elif card.status == 'Rejected' %}
+                                                <span class="badge rounded-pill bg-danger">{{ card.status }}</span>
+                                                {% elif card.status == 'Viewed' %}
+                                                <span class="badge rounded-pill bg-info text-dark">{{ card.status }}</span>
+                                                {% elif card.status == 'Negotiating' %}
+                                                <span class="badge rounded-pill bg-warning text-dark">{{ card.status }}</span>
+                                                {% elif card.status == 'Draft' %}
+                                                <span class="badge rounded-pill bg-secondary">{{ card.status }}</span>
+                                                {% elif card.status == 'Expired' %}
+                                                <span class="badge rounded-pill bg-dark">{{ card.status }}</span>
+                                                {% else %}
+                                                <span class="badge rounded-pill bg-light text-dark border">{{ card.status }}</span>
+                                                {% endif %}
+                                            {% endif %}
+                                            {% if card.is_current %}<span class="badge rounded-pill bg-primary ms-1">Viewing</span>{% endif %}
+                                        </div>
+                                    </div>
+                                    <div class="card-body p-0 bg-white position-relative z-1">
+                                        <div class="quote-family-dates px-2 pt-1 pb-1 border-bottom border-light">
+                                            {% for item in card.items %}
+                                                {% if item.label == 'Created' %}
+                                                <div class="quote-family-date-row d-flex align-items-baseline justify-content-between gap-1">
+                                                    <span class="text-secondary flex-shrink-0">Created</span>
+                                                    <span class="text-end text-break min-w-0 text-dark quote-family-date-val">{% if item.date %}{{ item.date|date:'d M Y' }}{% else %}—{% endif %}</span>
+                                                </div>
+                                                {% elif item.label == 'Sent' %}
+                                                <div class="quote-family-date-row d-flex align-items-baseline justify-content-between gap-1">
+                                                    <span class="text-secondary flex-shrink-0">Sent</span>
+                                                    <span class="text-end text-break min-w-0 text-dark quote-family-date-val">{% if item.date %}{{ item.date|date:'d M Y' }}{% else %}—{% endif %}</span>
+                                                </div>
+                                                {% elif item.label == 'Approved' %}
+                                                <div class="quote-family-date-row d-flex align-items-baseline justify-content-between gap-1">
+                                                    <span class="text-secondary flex-shrink-0">Approved</span>
+                                                    <span class="text-end text-break min-w-0 text-dark quote-family-date-val">{% if item.date %}{{ item.date|date:'d M Y' }}{% else %}—{% endif %}</span>
+                                                </div>
+                                                {% elif item.label == 'Converted' %}
+                                                <div class="quote-family-date-row d-flex align-items-baseline justify-content-between gap-1">
+                                                    <span class="text-secondary flex-shrink-0">Converted</span>
+                                                    <span class="text-end text-break min-w-0 text-dark quote-family-date-val">{% if item.date %}{{ item.date|date:'d M Y' }}{% else %}—{% endif %}</span>
+                                                </div>
+                                                {% elif item.label == 'Rejected' %}
+                                                <div class="quote-family-date-row d-flex align-items-baseline justify-content-between gap-1">
+                                                    <span class="text-secondary flex-shrink-0">Rejected</span>
+                                                    <span class="text-end text-break min-w-0 text-dark quote-family-date-val">{% if item.date %}{{ item.date|date:'d M Y' }}{% else %}—{% endif %}</span>
+                                                </div>
+                                                {% endif %}
+                                            {% endfor %}
+                                        </div>
+                                        <div class="px-2 pt-1 pb-1 bg-white">
+                                            <table class="table table-sm table-borderless mb-0 w-100" style="table-layout:fixed;">
+                                                <tbody>
+                                                    {% for item in card.items %}
+                                                    {% if item.label != 'Created' and item.label != 'Sent' and item.label != 'Approved' and item.label != 'Converted' and item.label != 'Rejected' %}
+                                                    <tr>
+                                                        <th class="text-muted pe-1 align-top" style="width:42%;word-wrap:break-word;">{{ item.label }}</th>
+                                                        <td class="text-break" style="word-wrap:break-word;">
+                                                            {% if item.date %}
+                                                                {% if item.date_is_dateonly %}{{ item.date|date:'d M Y' }}{% else %}{{ item.date|date:'d M Y, H:i' }}{% endif %}
+                                                            {% else %}—{% endif %}
+                                                        </td>
+                                                    </tr>
+                                                    {% endif %}
+                                                    {% endfor %}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                    <a href="{% url 'quotation_detail' card.pk %}" class="stretched-link" aria-label="Open quotation {{ card.quotation_no }}"></a>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        <style>
+                        .quote-family-card { overflow: hidden; max-width: 100%; }
+                        .quote-family-card-active { box-shadow: 0 0 0 2px var(--bs-primary) !important; }
+                        .quote-family-card-hover { transition: box-shadow .15s ease; }
+                        .quote-family-card-hover:hover { box-shadow: 0 .25rem .75rem rgba(0,0,0,.1) !important; }
+                        .quote-family-history-details .z-1 { z-index: 1; position: relative; }
+                        .quote-family-dates { font-size: 0.7rem; line-height: 1.15; }
+                        .quote-family-date-row { padding: 0; margin: 0; }
+                        .quote-family-date-row + .quote-family-date-row { margin-top: 0.1rem; }
+                        .quote-family-date-val { font-size: 0.68rem; font-weight: 500; }
+                        </style>
+                    </details>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="card mb-4">
+                <div class="card-header"><h5 class="mb-0">Approval Status</h5></div>
+                <div class="card-body">
+                    {% if quotation.status == 'rejected' %}
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>Customer Approval:</span>
+                        <span class="badge bg-danger">Rejected</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>Internal Approval:</span>
+                        <span class="badge bg-danger">Rejected</span>
+                    </div>
+                    {% else %}
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>Customer Approval:</span>
+                        {% if quotation.customer_approval %}
+                        <span class="badge bg-success">Approved</span>
+                        {% else %}
+                        <span class="badge bg-warning text-dark">Pending</span>
+                        {% endif %}
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        <span>Internal Approval:</span>
+                        {% if quotation.internal_approval %}
+                        <span class="badge bg-success">Approved</span>
+                        {% else %}
+                        <span class="badge bg-warning text-dark">Pending</span>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                    {% if quotation.approved_by %}
+                    <hr>
+                    <small class="text-muted">Approved by: {{ quotation.approved_by.get_full_name|default:quotation.approved_by.username }}</small>
+                    {% endif %}
+                    {% if quotation.created_by %}
+                    <hr class="my-2">
+                    <small class="text-muted">Created by {{ quotation.created_by.get_full_name|default:quotation.created_by.username }}</small>
+                    {% endif %}
+                    {% if quotation.assigned_associate %}
+                    <br><small class="text-muted">Associate: {{ quotation.assigned_associate.get_full_name|default:quotation.assigned_associate.username }}</small>
+                    {% endif %}
+                    {% if quotation.organization %}
+                    <hr class="my-2">
+                    <small class="text-muted">Organization: {{ quotation.organization.legal_name }}</small>
+                    {% endif %}
+                    {% if rejection_history_records %}
+                    <hr class="my-3">
+                    <h6 class="mb-2">Reject reasons</h6>
+                    <div class="d-grid gap-2">
+                        {% for rec in rejection_history_records %}
+                        <div class="border rounded p-2 approval-history-card approval-history-card-{{ forloop.counter0|divisibleby:2|yesno:'even,odd' }}">
+                            <div class="d-flex justify-content-between align-items-start flex-wrap gap-2">
+                                <div class="small text-muted">{{ rec.created_at|date:'d M Y, H:i' }}</div>
+                                <span class="badge bg-danger">Rejected</span>
+                            </div>
+                            <div class="small mt-2">
+                                <strong>Reason:</strong><br>
+                                {% if rec.reason %}{{ rec.reason|linebreaksbr }}{% else %}—{% endif %}
+                            </div>
+                            <div class="small mt-1">
+                                <strong>Rejected by:</strong>
+                                {% if rec.rejected_by %}{{ rec.rejected_by.get_full_name|default:rec.rejected_by.username }}{% else %}—{% endif %}
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            {% if approval_history_records %}
+            <div class="card mb-4">
+                <div class="card-header"><h5 class="mb-0">Approval History</h5></div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        {% for rec in approval_history_records %}
+                        <div class="border rounded p-2 approval-history-card approval-history-card-{{ forloop.counter0|divisibleby:2|yesno:'even,odd' }}">
+                            <div class="d-flex justify-content-between align-items-start flex-wrap gap-2">
+                                <div class="small text-muted">{{ rec.created_at|date:'d M Y, H:i' }}</div>
+                                <span class="badge bg-success">
+                                    {% if rec.status_snapshot %}{{ rec.status_snapshot|title }}{% else %}Approved{% endif %}
+                                </span>
+                            </div>
+                            <div class="small mt-2">
+                                <strong>Payment:</strong>
+                                {{ rec.payment_type_snapshot|default:"—" }} / {{ rec.payment_mode_snapshot|default:"—" }}
+                                {% if rec.hybrid_mode_snapshot %}<br><span class="text-muted">Hybrid: {{ rec.hybrid_mode_snapshot }}</span>{% endif %}
+                            </div>
+                            <div class="small mt-1">
+                                <strong>PO:</strong>
+                                {% if rec.po_order_no_snapshot %}{{ rec.po_order_no_snapshot }}{% else %}—{% endif %}
+                                {% if rec.po_date_snapshot %}<span class="text-muted"> ({{ rec.po_date_snapshot|date:'d M Y' }})</span>{% endif %}
+                            </div>
+                            <div class="small mt-1">
+                                <strong>Approved by:</strong>
+                                {% if rec.approved_by %}{{ rec.approved_by.get_full_name|default:rec.approved_by.username }}{% else %}—{% endif %}
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            {% if conversion_history_records %}
+            <div class="card mb-4">
+                <div class="card-header"><h5 class="mb-0">Convert Consumer History</h5></div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        {% for rec in conversion_history_records %}
+                        <div class="border rounded p-2 approval-history-card approval-history-card-{{ forloop.counter0|divisibleby:2|yesno:'even,odd' }}">
+                            <div class="d-flex justify-content-between align-items-start flex-wrap gap-2">
+                                <div class="small text-muted">{{ rec.created_at|date:'d M Y, H:i' }}</div>
+                                <span class="badge bg-primary">Converted</span>
+                            </div>
+                            <div class="small mt-1">
+                                <strong>Converted by:</strong>
+                                {% if rec.converted_by %}{{ rec.converted_by.get_full_name|default:rec.converted_by.username }}{% else %}—{% endif %}
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<style>
+.pdf-option-btn:hover {
+    opacity: 0.9;
+    transform: translateY(-2px);
+    transition: all 0.3s ease;
+}
+.approval-history-card-even {
+    background: #eef6ff;
+    border-color: #cfe2ff !important;
+}
+.approval-history-card-odd {
+    background: #f3fff5;
+    border-color: #cdeed3 !important;
+}
+</style>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    function getCSRFTokenFromCookie() {
+        var name = 'csrftoken=';
+        var decodedCookie = decodeURIComponent(document.cookie || '');
+        var ca = decodedCookie.split(';');
+        for (var i = 0; i < ca.length; i++) {
+            var c = ca[i].trim();
+            if (c.indexOf(name) === 0) {
+                return c.substring(name.length, c.length);
+            }
+        }
+        return '';
+    }
+
+    var modal = document.getElementById('leadQuotationPdfModal');
+    var openBtn = document.getElementById('openLeadQuotationPdfModal');
+    var closeBtn = document.getElementById('closeLeadQuotationPdfModal');
+    var regularBtn = document.getElementById('leadPdfRegularBtn');
+    var industrialBtn = document.getElementById('leadPdfIndustrialBtn');
+    /* Same endpoints as create quotation body after save: /quotation/<id>/pdf/ and industrial_pdf */
+    var regularPdfUrl = "{% url 'quotation:quotation_pdf' quotation.pk %}";
+    var industrialPdfUrl = "{% url 'quotation:industrial_quotation_pdf' quotation.pk %}";
+    if (modal && openBtn) {
+        openBtn.addEventListener('click', function () {
+            modal.style.display = 'flex';
+        });
+        if (closeBtn) closeBtn.addEventListener('click', function () {
+            modal.style.display = 'none';
+        });
+        modal.addEventListener('click', function (e) {
+            if (e.target === modal) modal.style.display = 'none';
+        });
+        if (regularBtn) regularBtn.addEventListener('click', function () {
+            window.open(regularPdfUrl, '_blank');
+            modal.style.display = 'none';
+        });
+        if (industrialBtn) industrialBtn.addEventListener('click', function () {
+            window.open(industrialPdfUrl, '_blank');
+            modal.style.display = 'none';
+        });
+    }
+
+    var approveModal = document.getElementById('leadApproveQuotationModal');
+    var approveOpen = document.getElementById('openLeadApproveModal');
+    var approveClose = document.getElementById('closeLeadApproveQuotationModal');
+    function openApproveModal() {
+        if (!approveModal) return;
+        approveModal.style.display = 'flex';
+    }
+    function closeApproveModal() {
+        if (approveModal) approveModal.style.display = 'none';
+    }
+    if (approveOpen) approveOpen.addEventListener('click', openApproveModal);
+    if (approveClose) approveClose.addEventListener('click', closeApproveModal);
+    if (approveModal) approveModal.addEventListener('click', function (e) {
+        if (e.target === approveModal) closeApproveModal();
+    });
+
+    var approveForm = document.getElementById('leadApproveQuotationForm');
+    var approvePaymentMode = document.getElementById('approve_payment_mode');
+    var approveHybridBox = document.getElementById('approveHybridBox');
+    function syncApproveHybridVisibility() {
+        if (!approvePaymentMode || !approveHybridBox) return;
+        approveHybridBox.classList.toggle('d-none', approvePaymentMode.value !== 'Hybrid');
+    }
+    if (approveForm) {
+        approveForm.addEventListener('submit', function (e) {
+            // Modal itself is the confirmation UI (same flow as quotation list confirm modal).
+        });
+    }
+    if (approvePaymentMode) {
+        approvePaymentMode.addEventListener('change', syncApproveHybridVisibility);
+        syncApproveHybridVisibility();
+    }
+
+    var convertBtn = document.getElementById('openLeadConvertConsumer');
+    if (convertBtn) {
+        convertBtn.addEventListener('click', async function () {
+            var quotationId = this.getAttribute('data-id');
+            if (!quotationId) return;
+            if (!window.confirm('Convert this approved quotation to consumer? Click OK to continue or Cancel to stay on this page.')) {
+                return;
+            }
+            convertBtn.disabled = true;
+            try {
+                var markResp = await fetch("{% url 'quotation_mark_converted' quotation.pk %}", {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': getCSRFTokenFromCookie()
+                    }
+                });
+                if (!markResp.ok) {
+                    throw new Error('Failed to update quotation as converted.');
+                }
+                var resp = await fetch('/quotation/get-quotation-details/' + encodeURIComponent(quotationId) + '/');
+                if (!resp.ok) throw new Error('Failed to fetch quotation details');
+                var data = await resp.json();
+
+                fetch('/quotation/store-quotation-data/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': getCSRFTokenFromCookie()
+                    },
+                    body: JSON.stringify({ data: data, quotation_id: quotationId })
+                }).catch(function () {});
+
+                var map = {
+                    'Residential': '/customer/Cust_emp/',
+                    'Commercial': '/customer/Comm_Cust/',
+                    'Industrial': '/customer/Comp_Cust/',
+                    'Government': '/customer/Govt_Cust/'
+                };
+                var dest = map[data.consumer_type] || '/customer/Cust_emp/';
+                var url = new URL(dest, window.location.origin);
+                url.searchParams.set('from_quotation', '1');
+                url.searchParams.set('quotation_id', quotationId);
+                var fields = ['consumer_type', 'project_type', 'plant_capacity', 'phase', 'consumer_no', 'consumer_full_name', 'first_name', 'middle_name', 'last_name', 'address', 'city', 'state', 'email', 'phone', 'po_order_no', 'po_date', 'comp_name'];
+                fields.forEach(function (k) {
+                    if (data[k] !== undefined && data[k] !== null) {
+                        url.searchParams.set(k, String(data[k]));
+                    }
+                });
+                window.location.href = url.toString();
+            } catch (err) {
+                alert((err && err.message) ? err.message : 'Convert consumer failed.');
+                convertBtn.disabled = false;
+            }
+        });
+    }
+
+    var rejModal = document.getElementById('leadRejectQuotationModal');
+    var rejOpenSent = document.getElementById('openLeadRejectModal');
+    var rejOpenApr = document.getElementById('openLeadRejectModalApproved');
+    var rejClose = document.getElementById('closeLeadRejectQuotationModal');
+    function openRejectModal() {
+        if (!rejModal) return;
+        var ta = document.getElementById('reject_reason');
+        if (ta) {
+            ta.value = '';
+        }
+        rejModal.style.display = 'flex';
+        if (ta) {
+            ta.focus();
+        }
+    }
+    function closeRejectModal() {
+        if (rejModal) rejModal.style.display = 'none';
+    }
+    if (rejOpenSent) rejOpenSent.addEventListener('click', openRejectModal);
+    if (rejOpenApr) rejOpenApr.addEventListener('click', openRejectModal);
+    if (rejClose) rejClose.addEventListener('click', closeRejectModal);
+    if (rejModal) rejModal.addEventListener('click', function (e) {
+        if (e.target === rejModal) closeRejectModal();
+    });
+
+    var rejForm = document.getElementById('leadRejectQuotationForm');
+    if (rejForm) {
+        rejForm.addEventListener('submit', function (e) {
+            e.preventDefault();
+            var ta = document.getElementById('reject_reason');
+            if (!ta || !ta.value.trim()) {
+                return;
+            }
+            if (!window.confirm('Reject this quotation permanently? Click OK to confirm or Cancel to leave the quotation unchanged (not rejected).')) {
+                return;
+            }
+            rejForm.submit();
+        });
+    }
+});
+</script>
+{% endblock %}

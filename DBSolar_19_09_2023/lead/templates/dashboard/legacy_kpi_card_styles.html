@@ -1,0 +1,102 @@
+<style>
+    /* Shared /index/ KPI card colours — override Bootstrap .card white background. */
+    .crm-legacy-kpi-cards .card.my-card {
+        border: 0;
+        border-radius: 10px;
+        transition: transform 0.15s ease, box-shadow 0.15s ease;
+    }
+    .crm-legacy-kpi-cards .card.my-card .kpi-card-link {
+        display: block;
+        color: inherit;
+        height: 100%;
+    }
+    .crm-legacy-kpi-cards .card.my-card .kpi-card-link:hover {
+        color: inherit;
+    }
+    .crm-legacy-kpi-cards .card.my-card:has(.kpi-card-link) {
+        cursor: pointer;
+    }
+    .crm-legacy-kpi-cards .card.my-card .card-body {
+        background-color: transparent !important;
+    }
+    .crm-legacy-kpi-cards .card.my-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12) !important;
+    }
+
+    .crm-legacy-kpi-cards .card.my-card.bg-one {
+        background-color: rgb(253 187 56 / 0.5) !important;
+        border: 1px solid #fdbb38 !important;
+        border-radius: 30px 0;
+    }
+    .crm-legacy-kpi-cards .card.my-card.bg-two {
+        background-color: rgb(25 175 251 / 0.2) !important;
+        border: 1px solid #19affb !important;
+        border-radius: 30px 0;
+    }
+    .crm-legacy-kpi-cards .card.my-card.bg-three {
+        background-color: rgb(244 104 65 / 0.2) !important;
+        border: 1px solid #f46841 !important;
+        border-radius: 30px 0;
+    }
+    .crm-legacy-kpi-cards .card.my-card.bg-four {
+        background-color: rgb(110 107 250 / 0.2) !important;
+        border: 1px solid #6e6bfa !important;
+        border-radius: 30px 0;
+    }
+    .crm-legacy-kpi-cards .card.my-card.bg-five {
+        background-color: rgb(40 167 69 / 0.2) !important;
+        border: 1px solid #28a745 !important;
+        border-radius: 30px 0;
+    }
+    .crm-legacy-kpi-cards .card.my-card.bg-six {
+        background-color: rgb(232 62 140 / 0.2) !important;
+        border: 1px solid #e83e8c !important;
+        border-radius: 30px 0;
+    }
+
+    .crm-legacy-kpi-cards .db-icon {
+        font-size: 25px;
+        width: 60px;
+        height: 60px;
+        padding: 13px 21px;
+        border-radius: 10px;
+        color: #fff !important;
+        margin-right: 20px;
+        flex-shrink: 0;
+    }
+    .crm-legacy-kpi-cards .card.bg-one .db-icon { background-color: #fdbb38 !important; }
+    .crm-legacy-kpi-cards .card.bg-two .db-icon { background-color: #19affb !important; padding: 13px 15px; }
+    .crm-legacy-kpi-cards .card.bg-three .db-icon { background-color: #f46841 !important; }
+    .crm-legacy-kpi-cards .card.bg-four .db-icon { background-color: #6e6bfa !important; }
+    .crm-legacy-kpi-cards .card.bg-five .db-icon { background-color: #28a745 !important; }
+    .crm-legacy-kpi-cards .card.bg-six .db-icon { background-color: #e83e8c !important; }
+
+    .crm-legacy-kpi-cards .db-widgets {
+        gap: 0.75rem;
+        width: 100%;
+    }
+    .crm-legacy-kpi-cards .db-info {
+        flex: 1 1 auto;
+        min-width: 0;
+        text-align: right;
+    }
+    .crm-legacy-kpi-cards .db-info h3 {
+        font-size: clamp(1.15rem, 2.2vw, 1.65rem);
+        font-weight: 600;
+        color: #333;
+        margin-bottom: 0.25rem;
+        line-height: 1.2;
+        word-break: break-word;
+    }
+    .crm-legacy-kpi-cards .db-info h6 {
+        margin: 0;
+        font-weight: 500;
+        color: #555;
+    }
+    .crm-legacy-kpi-cards .db-info small {
+        display: block;
+        margin-top: 0.25rem;
+        font-size: 0.8rem;
+    }
+</style>

@@ -4,54 +4,6 @@ import quotation.models
 from django.db import migrations
 
 
-def convert_boolean_to_bitvarying(apps, schema_editor):
-    """
-    Convert system_na from boolean to bit varying(1) if needed.
-    Handles the case where column is already boolean.
-    """
-    if schema_editor.connection.vendor != 'postgresql':
-        return
-    
-    table = 'quotation_quotation'
-    column = 'system_na'
-    
-    with schema_editor.connection.cursor() as cursor:
-        # Check current column type
-        cursor.execute("""
-            SELECT data_type, udt_name
-            FROM information_schema.columns
-            WHERE table_name = %s AND column_name = %s
-        """, [table, column])
-        
-        row = cursor.fetchone()
-        if not row:
-            return
-        
-        current_type = row[0]  # data_type
-        udt_name = row[1]      # udt_name
-        
-        # If already bit varying, skip
-        if 'bit' in current_type.lower() or 'bit' in udt_name.lower():
-            return
-        
-        # If it's boolean, convert to bit varying
-        if current_type == 'boolean' or udt_name == 'bool':
-            try:
-                # Convert: boolean -> text -> bit varying
-                # First convert to text
-                cursor.execute(f'ALTER TABLE "{table}" ALTER COLUMN "{column}" TYPE text USING CASE WHEN "{column}" THEN \'1\' ELSE \'0\' END')
-                # Then convert to bit varying
-                cursor.execute(f'ALTER TABLE "{table}" ALTER COLUMN "{column}" TYPE bit varying(1) USING "{column}"::bit(1)')
-            except Exception as e:
-                # If conversion fails, try direct conversion
-                if 'cannot cast' in str(e).lower():
-                    # Try alternative: convert via integer
-                    cursor.execute(f'ALTER TABLE "{table}" ALTER COLUMN "{column}" TYPE integer USING CASE WHEN "{column}" THEN 1 ELSE 0 END')
-                    cursor.execute(f'ALTER TABLE "{table}" ALTER COLUMN "{column}" TYPE bit varying(1) USING ("{column}"::text)::bit(1)')
-                else:
-                    raise
-
-
 class Migration(migrations.Migration):
 
     dependencies = [
@@ -59,7 +11,6 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.RunPython(convert_boolean_to_bitvarying, reverse_code=migrations.RunPython.noop),
         migrations.AlterField(
             model_name='quotation',
             name='system_na',

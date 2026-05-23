@@ -1,0 +1,15 @@
+{% extends 'registration/wizard.html' %}
+{% load crispy_forms_tags %}
+
+{% block step_content %}
+<h4 class="mb-3">Step 3: Contact & Billing</h4>
+<div class="row">
+    <div class="col-md-6 mb-3">{{ form.official_email|as_crispy_field }}</div>
+    <div class="col-md-6 mb-3">{{ form.phone|as_crispy_field }}</div>
+    <div class="col-md-6 mb-3">{{ form.alternate_phone|as_crispy_field }}</div>
+    <div class="col-md-6 mb-3">{{ form.billing_email|as_crispy_field }}</div>
+    <div class="col-md-6 mb-3">{{ form.website|as_crispy_field }}</div>
+    <div class="col-md-6 mb-3">{{ form.timezone|as_crispy_field }}</div>
+    <div class="col-md-6 mb-3">{{ form.currency|as_crispy_field }}</div>
+</div>
+{% endblock %}

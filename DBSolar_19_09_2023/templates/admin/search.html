@@ -45,39 +45,22 @@
                   {% csrf_token %}
                   <div class="row mb-1">
                      <div class="col-md-12">
-<!--                        <div class="question">-->
-<!--                           {% if user.is_superuser %}-->
-<!--                           <label>Search Staff / Consumer</label><br>-->
-<!--                           {% ifequal search_by 'staff' %}-->
-<!--                           <input type="radio" name="search_by" value="staff" id="radio_1" checked>-->
-<!--                           {% else %}-->
-<!--                           <input type="radio" name="search_by" value="staff" id="radio_1">-->
-<!--                           {% endifequal %}-->
-<!--                           <label for="radio_1" class="radio"><span><b>Search by Staff</b></span></label>-->
-<!--                           {% endif %}-->
-<!--                           {% ifequal search_by 'consumer' %}-->
-<!--                           <input type="radio" name="search_by" value="consumer" id="radio_2" checked>-->
-<!--                           {% else %}-->
-<!--                           <input type="radio" name="search_by" value="consumer" id="radio_2">-->
-<!--                           {% endifequal %}-->
-<!--                           <label for="radio_2" class="radio"><span><b>Search by Consumer</b></span></label>-->
-<!--                        </div>-->
                         <!--                        <div class="question">-->
                           <div class="checkbox-column">
                            {% if user.is_superuser %}
                            <label>Search Staff / Consumer</label><br>
-                           {% ifequal search_by 'staff' %}
+                           {% if search_by == 'staff' %}
                               <label class="checkbox-label"><input type="radio" class="checkbox-input" name="search_by" value="staff" id="radio_1" checked><b>Search by Staff</b></label>
                            {% else %}
                                <label class="checkbox-label"><input type="radio" class="checkbox-input" name="search_by" value="staff" id="radio_1"><b>Search by Staff</b></label>
-                           {% endifequal %}
+                           {% endif %}
 <!--                           <label for="radio_1"><span><b>Search by Staff</b></span></label>-->
                            {% endif %}
-                           {% ifequal search_by 'consumer' %}
+                           {% if search_by == 'consumer' %}
                                <label class="checkbox-label"><input type="radio" class="checkbox-input" name="search_by" value="consumer" id="radio_2" checked><b>Search by Consumer</b></label>
                            {% else %}
                                <label class="checkbox-label"><input type="radio" class="checkbox-input" name="search_by" value="consumer" id="radio_2"><b>Search by Consumer</b></label>
-                           {% endifequal %}
+                           {% endif %}
 <!--                           <label for="radio_2"><span><b>Search by Consumer</b></span></label>-->
 <!--                          </div>-->
                           </div>
@@ -172,7 +155,7 @@
                            </tr>
                         </thead>
                         <tbody>
-                           {% if user.is_authenticated and user.is_staff and user.is_superuser %}
+                           {% if user.is_authenticated and user.is_staff %}
                            {% for i in firereport %}
                            <tr>
                               <td>{{forloop.counter}}</td>
@@ -181,20 +164,7 @@
                               <td>{{i.MobileNumber}}</td>
                               <td>{{i.Location}}</td>
                               <td>{{i.Postingdate}}</td>
-                              <td>{{i.AssignTo.first_name}} {{i.AssignTo.last_name}}</td>
-                              <!--                                {% if i.Status == 'Request Completed' %}-->
-                              <!--                                     <td class="text-center"><a class="btn btn-success btn-center" href="{% url 'firereport-viewRequestDetails' i.id %}"><i class="fa fa-eye"></i> &nbsp;Completed</a></td>-->
-                              <!--                                    {% elif i.Status == 'Assigned' %}-->
-                              <!--                                        <td class="text-center"><a class="btn btn-info" href="{% url 'firereport-viewRequestDetails' i.id %}"> <i class="fa fa-eye"></i> &nbsp;&nbsp;Assigned&nbsp;&nbsp; </a></td>-->
-                              <!--                                    {% elif i.Status == 'Work in Progress' %}-->
-                              <!--                                        <td class="text-center"><a class="btn btn-warning" href="{% url 'firereport-viewRequestDetails' i.id %}"><i class="fa fa-eye"></i> Work Progress </a></td>-->
-                              <!--                                    {% elif i.Status == 'Team On the Way' %}-->
-                              <!--                                        <td class="text-center"><a class="btn btn-primary" href="{% url 'firereport-viewRequestDetails' i.id %}"> <i class="fa fa-eye"></i> On the Way </a></td>-->
-                              <!--                                    {% else %}-->
-                              <!--                                        <td class="text-center"><a class="btn btn-danger" href="{% url 'firereport-viewRequestDetails' i.id %}"> <i class="fa fa-eye"></i> &nbsp;Not Assign </a></td>-->
-                              <!--                                    {% endif %}-->
-                              <!--                                <td><a class="btn btn-primary" href="{% url 'firereport-viewRequestDetails' i.id %}"><i-->
-                              <!--                                        class="fa fa-eye"></i></a></td>-->
+                              <td>{% if i.AssignTo %}{{i.AssignTo.first_name}} {{i.AssignTo.last_name}}{% else %}-{% endif %}</td>
                               {% if i.Status == 'Request Completed' %}
                               <td class="text-center"><a class="badge success badge-center" href="{% url 'firereport-viewRequestDetails' i.id %}"><i class="fa fa-eye"></i> &nbsp;Completed</a></td>
                               {% elif i.Status == 'Assigned' %}
@@ -208,45 +178,7 @@
                               {% endif %}
                            </tr>
                            {% endfor %}
-                           {% else %}
-                           {% for i in firereport %}
-                           {% if i.AssignTo == user %}
-                           <tr>
-                              <td>{{forloop.counter}}</td>
-                              <td>{{i.id}}</td>
-                              <td>{{i.FullName}}</td>
-                              <td>{{i.MobileNumber}}</td>
-                              <td>{{i.Location}}</td>
-                              <td>{{i.Postingdate}}</td>
-                              <td>{{i.AssignTo.first_name}} {{i.AssignTo.last_name}}</td>
-                              <!--                                {% if i.Status == 'Request Completed' %}-->
-                              <!--                                     <td class="text-center"><a class="btn btn-success btn-center" href="{% url 'firereport-viewRequestDetails' i.id %}"><i class="fa fa-eye"></i> &nbsp;Completed</a></td>-->
-                              <!--                                    {% elif i.Status == 'Assigned' %}-->
-                              <!--                                        <td class="text-center"><a class="btn btn-info" href="{% url 'firereport-viewRequestDetails' i.id %}"> <i class="fa fa-eye"></i> &nbsp;&nbsp;Assigned&nbsp;&nbsp; </a></td>-->
-                              <!--                                    {% elif i.Status == 'Work in Progress' %}-->
-                              <!--                                        <td class="text-center"><a class="btn btn-warning" href="{% url 'firereport-viewRequestDetails' i.id %}"><i class="fa fa-eye"></i> Work Progress </a></td>-->
-                              <!--                                    {% elif i.Status == 'Team On the Way' %}-->
-                              <!--                                        <td class="text-center"><a class="btn btn-primary" href="{% url 'firereport-viewRequestDetails' i.id %}"> <i class="fa fa-eye"></i> On the Way </a></td>-->
-                              <!--                                    {% else %}-->
-                              <!--                                        <td class="text-center"><a class="btn btn-danger" href="{% url 'firereport-viewRequestDetails' i.id %}"> <i class="fa fa-eye"></i> &nbsp;Not Assign </a></td>-->
-                              <!--                                    {% endif %}-->
-                              <!--                                <td><a class="btn btn-primary" href="{% url 'firereport-viewRequestDetails' i.id %}"><i-->
-                              <!--                                        class="fa fa-eye"></i></a></td>-->
-                              {% if i.Status == 'Request Completed' %}
-                              <td class="text-center"><a class="badge success badge-center" href="{% url 'firereport-viewRequestDetails' i.id %}"><i class="fa fa-eye"></i> &nbsp;Completed</a></td>
-                              {% elif i.Status == 'Assigned' %}
-                              <td class="text-center"><a class="badge info" href="{% url 'firereport-viewRequestDetails' i.id %}"> <i class="fa fa-eye"></i> &nbsp;&nbsp;Assigned&nbsp;&nbsp; </a></td>
-                              {% elif i.Status == 'Work in Progress' %}
-                              <td class="text-center"><a class="badge warning" href="{% url 'firereport-viewRequestDetails' i.id %}"><i class="fa fa-eye"></i> Work Initiated </a></td>
-                              {% elif i.Status == 'In Progress' %}
-                              <td class="text-center"><a class="badge default" href="{% url 'firereport-viewRequestDetails' i.id %}"> <i class="fa fa-eye"></i> In Progress </a></td>
-                              {% else %}
-                              <td class="text-center"><a class="badge danger" href="{% url 'firereport-viewRequestDetails' i.id %}"> <i class="fa fa-eye"></i> &nbsp;New Request </a></td>
-                              {% endif %}
-                           </tr>
                            {% endif %}
-                           {% endfor %}
-                           {% endif%}
                         </tbody>
                      </table>
                   </div>

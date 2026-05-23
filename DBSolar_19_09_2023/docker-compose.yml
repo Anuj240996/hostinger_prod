@@ -1,18 +1,20 @@
 version: '3.8'
 
+# Version 2 local/staging compose — separate DB from production V1
 services:
   web:
     build: .
     ports:
-      - "8000:8000"
+      - "8001:8000"
     environment:
       - DEBUG=False
+      - DATABASE_URL=postgres://heramb:Heramb2023@db:5432/solar_db_v2
       - DB_HOST=db
       - DB_PORT=5432
-      - DB_NAME=solar_db
+      - DB_NAME=solar_db_v2
       - DB_USER=heramb
       - DB_PASSWORD=Heramb2023
-      - SECRET_KEY=@ujr-e&a%8m%6!z(+ka16+(sm6cug(h6noe%#p%=6%d2nz5t+#
+      - SECRET_KEY=change-me-for-v2-staging
       - ALLOWED_HOSTS=localhost,127.0.0.1
     volumes:
       - ./media:/app/media
@@ -24,7 +26,7 @@ services:
   db:
     image: postgres:15-alpine
     environment:
-      - POSTGRES_DB=solar_db
+      - POSTGRES_DB=solar_db_v2
       - POSTGRES_USER=heramb
       - POSTGRES_PASSWORD=Heramb2023
     volumes:

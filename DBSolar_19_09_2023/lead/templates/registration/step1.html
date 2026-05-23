@@ -1,0 +1,15 @@
+{% extends 'registration/wizard.html' %}
+{% load crispy_forms_tags %}
+
+{% block step_content %}
+<h4 class="mb-3">Step 1: Business Details</h4>
+<div class="row">
+    <div class="col-md-6 mb-3">{{ form.legal_name|as_crispy_field }}</div>
+    <div class="col-md-6 mb-3">{{ form.trade_name|as_crispy_field }}</div>
+    <div class="col-md-6 mb-3">{{ form.business_type|as_crispy_field }}</div>
+    <div class="col-md-6 mb-3">{{ form.industry|as_crispy_field }}</div>
+    <div class="col-md-6 mb-3">{{ form.gst_number|as_crispy_field }}</div>
+    <div class="col-md-6 mb-3">{{ form.pan_tax_id|as_crispy_field }}</div>
+    <div class="col-12 mb-3">{{ form.registration_number|as_crispy_field }}</div>
+</div>
+{% endblock %}

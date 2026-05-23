@@ -2,7 +2,18 @@
 {% load static %}
 {% load widget_tweaks %}
 {% block title %}Edit Favorite List{% endblock %}
-{% block content %}
+ {% block content %}
+
+{% if messages %}
+<div class="container mt-2">
+    {% for message in messages %}
+    <div class="alert {% if message.tags == 'error' %}alert-danger{% elif message.tags == 'success' %}alert-success{% else %}alert-info{% endif %} alert-dismissible fade show" role="alert">
+        {{ message }}
+        <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
 
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@mdi/font/css/materialdesignicons.min.css">
 <script type="text/javascript" src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
@@ -266,11 +277,13 @@
 <form method="post" action="{% url 'edit_favorite_list' favorite_list.id %}" id="favoriteForm">
         <h1 align="center" class="text-capitilize">Favorite List - {{ favorite_list.name }}</h1>
     {% csrf_token %}
+    <input type="hidden" name="save_action" id="saveActionInput" value="update">
+    <input type="hidden" name="new_list_name" id="newListNameInput" value="">
 <fieldset>
     <div class="table-responsive">
 <!--        <table id="yourDataTable" class="table table-hover table-center table.dataTable.table-sm mb-0 datatable table.sm" style="width: 100%;">-->
     <!-- Table for selected stocks with Sr No, Category, SubCategory, and Stock columns -->
-    <table id="favoriteTable" class="table table-hover table-center table.dataTable.table-sm mb-0 datatable table.sm" style="width: 100%;">
+    <table id="favoriteTable" class="table table-hover table-center table-sm table-bordered mb-0" style="width: 100%;">
         <thead class="thead-dark align-middle" align="center">
 
             <tr>
@@ -306,20 +319,27 @@
             {% for fav_stock in favorite_records %}
             <tr data-id="{{ fav_stock.stock.id }}">
                 <td class="sr-no">{{ forloop.counter }}</td>
-                <td>{{ fav_stock.stock.category.name }}</td>
-                <td>{{ fav_stock.stock.subcategory.name }}</td>
+                <td>{% if fav_stock.stock.safe_category %}{{ fav_stock.stock.safe_category.name }}{% else %}—{% endif %}</td>
+                <td>{% if fav_stock.stock.safe_subcategory %}{{ fav_stock.stock.safe_subcategory.name }}{% else %}—{% endif %}</td>
                 <td align="left" style="padding-left: 80px;">{{ fav_stock.stock.name }}</td>
 
                 <!-- Editable quantity field -->
                 <td>
-                    <input type="number" name="quantities[]" value="{{ fav_stock.quantity }}"
-                           min="1" class="form-control" style="width:100px;" required>
+                    <div class="input-group" style="max-width: 150px; margin: 0 auto;">
+                        <input type="number" name="quantities[]" value="{{ fav_stock.quantity }}"
+                               min="1" class="form-control" required>
+                        <div class="input-group-append">
+                        <span class="input-group-text unit-short-label" style="min-width: 42px; justify-content: center;">
+                            {% if fav_stock.stock.safe_sales %}{{ fav_stock.stock.safe_sales.short_name }}{% endif %}
+                        </span>
+                        </div>
+                    </div>
                 </td>
 
                 <td>
-                    <button type="button" class="removeRow" data-stock-id="{{ fav_stock.stock.id }}">Remove</button>
+                    <img src="{% static 'images/letter-x (1).png' %}" class="removeRow" data-stock-id="{{ fav_stock.stock.id }}" alt="Remove" style="cursor: pointer; width: 15px; height: 15px;">
+                    <input type="hidden" name="stock_ids[]" value="{{ fav_stock.stock.id }}">
                 </td>
-                <input type="hidden" name="stock_ids[]" value="{{ fav_stock.stock.id }}">
             </tr>
             {% endfor %}
         </tbody>
@@ -376,8 +396,9 @@
 </fieldset>
     <br>
     <div align="center">
-<button type="submit">Save Changes</button>&nbsp;&nbsp;&nbsp;
-<a href="{% url 'favorite_list_view' %}"><button type="button">Go Back</button></a>
+<button type="button" class="btn btn-success" id="btnSaveChanges">Save Changes</button>&nbsp;&nbsp;&nbsp;
+<button type="button" class="btn btn-primary" id="btnSaveAs" title="Create a new list with the same stocks and quantities">Save As…</button>&nbsp;&nbsp;&nbsp;
+<a href="{% url 'favorite_list_view' %}"><button type="button" class="btn btn-secondary">Go Back</button></a>
 </div>
 </form>
 
@@ -557,6 +578,7 @@
                                 const option = document.createElement('option');
                                 option.value = stock.id;
                                 option.textContent = stock.name;
+                                option.setAttribute('data-sales-unit', stock.sales__short_name || '');
                                 stockSelect.appendChild(option);
                             }
                         });
@@ -572,7 +594,9 @@
         // Add selected stock to the table and remove it from the dropdown
         document.getElementById('addRow').addEventListener('click', function() {
             const stockId = stockSelect.value;
-            const stockName = stockSelect.options[stockSelect.selectedIndex].text;
+            const selectedStockOption = stockSelect.options[stockSelect.selectedIndex];
+            const stockName = selectedStockOption.text;
+            const salesUnitShortName = selectedStockOption.getAttribute('data-sales-unit') || '';
             const categoryText = categorySelect.options[categorySelect.selectedIndex].text;
             const subcategoryText = subcategorySelect.options[subcategorySelect.selectedIndex].text;
 
@@ -587,10 +611,17 @@
                 <td>${subcategoryText}</td>
                 <td align="left" style="padding-left: 80px;">${stockName}</td>
                 <td>
-                    <input type="number" name="quantities[]" value="1" min="1" class="form-control" style="width:100px;" required>
+                    <div class="input-group" style="max-width: 150px; margin: 0 auto;">
+                        <input type="number" name="quantities[]" value="1" min="1" class="form-control" required>
+                        <div class="input-group-append">
+                            <span class="input-group-text unit-short-label" style="min-width: 42px; justify-content: center;">${salesUnitShortName}</span>
+                        </div>
+                    </div>
                 </td>
-                <td><button type="button" class="removeRow" data-stock-id="${stockId}">Remove</button></td>
-                <input type="hidden" name="stock_ids[]" value="${stockId}" />
+                <td>
+                    <img src="{% static 'images/letter-x (1).png' %}" class="removeRow" data-stock-id="${stockId}" alt="Remove" style="cursor: pointer; width: 15px; height: 15px;">
+                    <input type="hidden" name="stock_ids[]" value="${stockId}">
+                </td>
             `;
 
             tableBody.appendChild(row);
@@ -649,40 +680,39 @@
 
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        // Confirmation dialog for form submission
-        const form = document.getElementById('favoriteForm');
-        const submitBtn = document.getElementById('submitBtn');
+        var form = document.getElementById('favoriteForm');
+        var saveActionInput = document.getElementById('saveActionInput');
+        var newListNameInput = document.getElementById('newListNameInput');
 
-        form.addEventListener('submit', function(event) {
-            event.preventDefault(); // Prevent form from submitting immediately
-
-            // Show confirmation dialog
-            const userConfirmed = confirm('Are you sure you want to save the changes?');
-            if (userConfirmed) {
-                // Display the success message in an alert box
-               alert("**" + "{{ favorite_list.name|upper }}" + "** List Records Update successfully!");
-
-
-                form.submit();
-                // After alert is closed, redirect the user to the favorite_list view
-                // window.location.href = "{% url 'favorite_list_view' %}";  // Redirect to the favorite list page
+        document.getElementById('btnSaveChanges').addEventListener('click', function() {
+            saveActionInput.value = 'update';
+            newListNameInput.value = '';
+            if (!confirm('Save changes to "{{ favorite_list.name|escapejs }}"?')) {
+                return;
             }
+            form.submit();
+        });
+
+        document.getElementById('btnSaveAs').addEventListener('click', function() {
+            var defaultName = '{{ favorite_list.name|escapejs }}' + ' (copy)';
+            var name = window.prompt('Enter a name for the new favorite list:', defaultName);
+            if (name === null) {
+                return;
+            }
+            name = name.trim();
+            if (!name) {
+                alert('Name is required.');
+                return;
+            }
+            if (!confirm('Create a new list named "' + name + '" with the current rows and quantities? The list you are editing will not be changed until you click Save Changes.')) {
+                return;
+            }
+            saveActionInput.value = 'save_as';
+            newListNameInput.value = name;
+            form.submit();
         });
     });
 </script>
-<script>
-     $(document).ready(function() {
-        // Initialize DataTables
-        var table = $('#favoriteTable').DataTable();
-        $('#favoriteTable').DataTable({
-            destroy: true,  // Destroy any existing instance before reinitializing
-            paging: true,      // Enable pagination
-            searching: true,   // Enable search bar
-            ordering: true,    // Enable column ordering
-            info: true,        // Show table info
-            lengthChange: true // Allow users to change how many records are shown per page
-        });
-     });
-</script>
+{# DataTables removed: it duplicated init, broke form rows/hidden stock_ids[], and hid rows incorrectly. #}
 {% endblock %}
 

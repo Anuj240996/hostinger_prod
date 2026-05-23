@@ -1,0 +1,141 @@
+{% extends 'base.html' %}
+{% load crispy_forms_tags %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="quotation-form">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>{{ title }}</h2>
+        <a href="{% url 'quotation_list' %}" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left me-2"></i>Back to Quotations
+        </a>
+    </div>
+
+    <p class="text-muted small">
+        For a <strong>new</strong> quotation with the full ERP form and PDF modal (same as <code>/quotation/quotation/new/</code>), use
+        <a href="#" data-bs-toggle="modal" data-bs-target="#crmGenerateQuotationModal">Create quotation (full form)</a>
+        — it opens here under CRM without leaving the app.
+    </p>
+
+    <div class="card">
+        <div class="card-body">
+            {{ survey_lead_rows|json_script:"survey-lead-data" }}
+            <form method="post" novalidate id="leadQuotationForm">
+                {% csrf_token %}
+
+                <p class="text-muted small mb-3">
+                    Choose <strong>Lead name</strong> and optional <strong>Survey</strong> for this CRM quotation record.
+                </p>
+
+                <div class="row g-3 mb-3">
+                    <div class="col-md-6">{{ form.lead|as_crispy_field }}</div>
+                    <div class="col-md-6">{{ form.survey|as_crispy_field }}</div>
+                </div>
+
+                {% for field in form %}
+                    {% if field.name != 'lead' and field.name != 'survey' %}
+                        {{ field|as_crispy_field }}
+                    {% endif %}
+                {% endfor %}
+
+                <div class="mt-4">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save me-2"></i>Save Quotation
+                    </button>
+                    <a href="{% url 'quotation_list' %}" class="btn btn-outline-secondary">
+                        Cancel
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+var SURVEYS_FOR_LEAD_URL = "{% url 'quotation:surveys_for_lead_api' %}";
+document.addEventListener('DOMContentLoaded', function () {
+    var dataEl = document.getElementById('survey-lead-data');
+    var rows = [];
+    if (dataEl) {
+        try {
+            rows = JSON.parse(dataEl.textContent);
+        } catch (e) {
+            rows = [];
+        }
+    }
+    var leadSel = document.getElementById('id_lead');
+    var surveySel = document.getElementById('id_survey');
+    if (!leadSel || !surveySel) return;
+    var initialSurvey = surveySel.value;
+
+    function fallbackItems(lid) {
+        return rows.filter(function (r) {
+            return String(r.lead_id) === String(lid);
+        }).map(function (r) {
+            return { id: String(r.id), label: 'Survey #' + r.id };
+        });
+    }
+
+    async function refillSurveys() {
+        var lid = leadSel.value;
+        var cur = surveySel.value;
+        surveySel.innerHTML = '';
+        var optEmpty = document.createElement('option');
+        optEmpty.value = '';
+
+        if (!lid) {
+            optEmpty.textContent = 'Select a lead first';
+            surveySel.appendChild(optEmpty);
+            surveySel.disabled = true;
+            return;
+        }
+
+        surveySel.disabled = false;
+
+        function finish(items) {
+            if (!items.length) {
+                optEmpty.textContent = 'No survey with completion date for this lead';
+                surveySel.appendChild(optEmpty);
+                return;
+            }
+            optEmpty.textContent = 'Select a survey (optional)';
+            surveySel.appendChild(optEmpty);
+            items.forEach(function (item) {
+                var o = document.createElement('option');
+                o.value = String(item.id);
+                o.textContent = item.label || ('Survey #' + item.id);
+                surveySel.appendChild(o);
+            });
+            var opts = [].slice.call(surveySel.options);
+            var curStr = String(cur);
+            var initStr = String(initialSurvey);
+            if (curStr && opts.some(function (o) { return o.value === curStr; })) {
+                surveySel.value = curStr;
+            } else if (initStr && opts.some(function (o) { return o.value === initStr; })) {
+                surveySel.value = initStr;
+            }
+        }
+
+        if (typeof SURVEYS_FOR_LEAD_URL === 'string' && SURVEYS_FOR_LEAD_URL) {
+            try {
+                var sep = SURVEYS_FOR_LEAD_URL.indexOf('?') >= 0 ? '&' : '?';
+                var res = await fetch(SURVEYS_FOR_LEAD_URL + sep + 'lead_id=' + encodeURIComponent(lid), {
+                    credentials: 'same-origin',
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                });
+                if (res.ok) {
+                    var data = await res.json();
+                    finish(data.surveys || []);
+                    return;
+                }
+            } catch (e) {}
+        }
+        finish(fallbackItems(lid));
+    }
+
+    leadSel.addEventListener('change', refillSurveys);
+    refillSurveys();
+});
+</script>
+{% endblock %}

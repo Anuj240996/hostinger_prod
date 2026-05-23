@@ -2,7 +2,7 @@
 {% load static %}
 {% block content %}
 
-<div class="content container-fluid">
+<div class="content container-fluid complaint-staff-dashboard">
                <div class="page-header">
                   <div class="row">
                      <div class="col-sm-12">
@@ -14,8 +14,8 @@
                   </div>
                </div>
 
-               <div class="row">
-                  <div class="col-xl-4 col-sm-6 col-12 d-flex">
+               <div class="row db-dashboard-cards">
+                  <div class="col-xl-4 col-lg-4 col-md-6 col-12 d-flex mb-3">
                   <div class="card bg-two w-100  my-card shadow">
                         <a href="{% url 'firereport-assignRequest' %}">
                         <div class="card-body">
@@ -33,7 +33,7 @@
                      </div>
 
                   </div>
-                  <div class="col-xl-4 col-sm-6 col-12 d-flex">
+                  <div class="col-xl-4 col-lg-4 col-md-6 col-12 d-flex mb-3">
                       <div class="card bg-three w-100  my-card shadow">
                         <a href="{% url 'firereport-teamontheway' %}">
                         <div class="card-body">
@@ -51,7 +51,7 @@
                      </div>
 
                   </div>
-                  <div class="col-xl-4 col-sm-6 col-12 d-flex">
+                  <div class="col-xl-4 col-lg-4 col-md-6 col-12 d-flex mb-3">
                     <div class="card bg-four w-100  my-card shadow">
                         <a href="{% url 'firereport-workinprogress' %}">
                         <div class="card-body">
@@ -69,8 +69,8 @@
                      </div>
                   </div>
                </div>
-               <div class="row">
-                  <div class="col-xl-4 col-sm-6 col-12 d-flex">
+               <div class="row db-dashboard-cards">
+                  <div class="col-xl-4 col-lg-4 col-md-6 col-12 d-flex mb-3">
                     <div class="card bg-four w-100  my-card shadow">
                       <a href="{% url 'firereport-completeRequest' %}">
                         <div class="card-body">
@@ -87,7 +87,7 @@
                      </a>
                      </div>
                   </div>
-                  <div class="col-xl-4 col-sm-6 col-12 d-flex">
+                  <div class="col-xl-4 col-lg-4 col-md-6 col-12 d-flex mb-3">
                     <div class="card bg-four w-100  my-card shadow">
                         <a href="{% url 'firereport-allRequest' %}">
                         <div class="card-body">

@@ -90,19 +90,21 @@
                         {% endfor %}
                       </div>
 
-                      <!-- Vendor -->
+                      <!-- Vendor (includes Associate staff for portal / sidebar / dashboard CP) -->
                       <div class="cp-target-group" data-category="vendor">
-                        {% for va in vendor_accounts %}
-                          <div class="custom-control custom-checkbox cp-target-item" data-search="{{ va.user.username }} {{ va.vendor.name }} {{ va.vendor.vendor_id }} {{ va.vendor.email }}">
-                            <input type="checkbox" class="custom-control-input target-checkbox" id="t_vendor_{{ va.user.id }}" name="targets" value="{{ va.user.id }}"
-                                   {% for su in selected_users %}{% if su.id == va.user.id %}checked{% endif %}{% endfor %}>
-                            <label class="custom-control-label" for="t_vendor_{{ va.user.id }}">
-                              <strong>{{ va.vendor.name }}</strong>
-                              <small class="text-muted">— login: {{ va.user.username }}</small>
+                        {% for t in vendor_permission_targets %}
+                          <div class="custom-control custom-checkbox cp-target-item" data-search="{{ t.user.username }} {{ t.title }} {{ t.vend_id }} {% if t.vendor_account %}{{ t.vendor_account.vendor.email }}{% endif %}">
+                            <input type="checkbox" class="custom-control-input target-checkbox" id="t_vendor_{{ t.user.id }}" name="targets" value="{{ t.user.id }}"
+                                   {% for su in selected_users %}{% if su.id == t.user.id %}checked{% endif %}{% endfor %}>
+                            <label class="custom-control-label" for="t_vendor_{{ t.user.id }}">
+                              <span class="text-monospace font-weight-bold">{{ t.vend_id }}</span>
+                              {% if t.is_associate_only %}<span class="badge badge-info ml-1">Associate</span>{% endif %}
+                              — <strong>{{ t.title }}</strong>
+                              <small class="text-muted d-block">login: {{ t.user.username }}</small>
                             </label>
                           </div>
                         {% empty %}
-                          <div class="text-muted">No vendor accounts linked yet. Create vendor logins from Control Panel Home.</div>
+                          <div class="text-muted">No vendor or associate targets. Create vendor logins from Control Panel Home.</div>
                         {% endfor %}
                       </div>
 
@@ -167,14 +169,16 @@
             <div class="card mb-3 border">
               <div class="card-header bg-light">
                 <strong><i class="fas fa-columns"></i> Portal access</strong>
-                <small class="text-muted">Controls which dashboard/portal the user can enter</small>
+                <small class="text-muted d-block">Controls which dashboard/portal the user can enter.</small>
+                <small class="text-muted d-block">Only one option may be on at a time (switches behave like a radio group; you can turn all off).</small>
               </div>
               <div class="card-body">
                 <div class="row">
                   {% for p in portals %}
-                    <div class="col-md-3">
+                    <div class="col-md-3 mb-2">
                       <div class="custom-control custom-switch">
                         <input type="checkbox" class="custom-control-input portal-checkbox" id="portal_{{ p.name }}" name="portal_{{ p.name }}"
+                          data-portal-radio-group="portal_access"
                           {% if single_user %}
                             {% if current_portal_grants|get_item:p.name %}checked{% endif %}
                           {% else %}
@@ -216,9 +220,10 @@
                     </thead>
                     <tbody>
                       {% for m in modules %}
+                        {% if m.name != 'product' %}
                         <tr>
                           <td class="align-middle">
-                            <strong>{{ m.display_name }}</strong>
+                            <strong>{% if m.name == 'customer' %}Consumer{% elif m.name == 'firereport' %}Complaint{% elif m.name == 'barcode' %}Product Details{% else %}{{ m.display_name }}{% endif %}</strong>
                             <br><small class="text-muted">{{ m.name }}</small>
                           </td>
                           {% for op in operations %}
@@ -242,6 +247,7 @@
                             </td>
                           {% endfor %}
                         </tr>
+                        {% endif %}
                       {% endfor %}
                     </tbody>
                   </table>
@@ -391,6 +397,28 @@
       {% endfor %}
     };
 
+    var PORTAL_RADIO_GROUP_ACCESS = "portal_access";
+
+    function normalizePortalRadioGroup(groupId) {
+      if (!groupId) return;
+      var cbs = Array.prototype.slice.call(document.querySelectorAll('.portal-checkbox[data-portal-radio-group="' + groupId + '"]'));
+      var checked = cbs.filter(function(c) { return c.checked; });
+      if (checked.length <= 1) return;
+      for (var i = 1; i < checked.length; i++) checked[i].checked = false;
+    }
+
+    function bindPortalRadioGroups() {
+      document.querySelectorAll('.portal-checkbox[data-portal-radio-group]').forEach(function(cb) {
+        cb.addEventListener('change', function() {
+          var g = this.getAttribute('data-portal-radio-group');
+          if (!g || !this.checked) return;
+          document.querySelectorAll('.portal-checkbox[data-portal-radio-group="' + g + '"]').forEach(function(other) {
+            if (other !== cb) other.checked = false;
+          });
+        });
+      });
+    }
+
     function setVisibleCategory(cat) {
       document.querySelectorAll(".cp-target-group").forEach(function(el) {
         el.style.display = (el.getAttribute("data-category") === cat) ? "block" : "none";
@@ -448,6 +476,7 @@
         var el = document.getElementById("portal_" + name);
         if (el) el.checked = true;
       });
+      normalizePortalRadioGroup(PORTAL_RADIO_GROUP_ACCESS);
 
       // perms
       clearAllPerms();
@@ -470,7 +499,35 @@
       filterTargets(currentSearchValue());
     }
 
+    function getActiveCategory() {
+      var active = document.querySelector("input[name='category']:checked");
+      return active ? active.value : "{{ selected_category|escapejs }}";
+    }
+
+    function getSelectedTargetIds() {
+      var ids = [];
+      document.querySelectorAll(".target-checkbox:checked").forEach(function(cb) {
+        if (cb && cb.value) ids.push(cb.value);
+      });
+      return ids;
+    }
+
+    function reloadSingleTargetIfNeeded() {
+      var ids = getSelectedTargetIds();
+      if (ids.length !== 1) return;
+      var category = getActiveCategory();
+
+      var params = new URLSearchParams();
+      params.set("category", category);
+      params.set("targets", ids[0]);
+
+      window.location.href = window.location.pathname + "?" + params.toString();
+    }
+
     // Init
+    bindPortalRadioGroups();
+    normalizePortalRadioGroup(PORTAL_RADIO_GROUP_ACCESS);
+
     var initialCategory = "{{ selected_category|escapejs }}";
     applyCategory(initialCategory);
 
@@ -526,6 +583,32 @@
     document.querySelectorAll("[data-bulk-op]").forEach(function(btn) {
       btn.addEventListener("click", function() { bulkOp(this.getAttribute("data-bulk-op")); });
     });
+
+    // When changing target checkboxes:
+    // - If exactly one user is selected and the URL has no `targets`, reload to fetch saved permissions.
+    // - If all users are unchecked (ids length == 0), reload back to the initial state (remove `targets`).
+    document.querySelectorAll(".target-checkbox").forEach(function(cb) {
+      cb.addEventListener("change", function() {
+        var ids = getSelectedTargetIds();
+        var category = getActiveCategory();
+        var params = new URLSearchParams(window.location.search);
+        var hasTargets = params.has("targets");
+
+        if (ids.length === 0) {
+          // Back to initial view: no selected targets.
+          params.delete("targets");
+          params.set("category", category);
+          params.set("reset", "1");
+          window.location.href = window.location.pathname + "?" + params.toString();
+          return;
+        }
+
+        if (ids.length === 1 && !hasTargets) {
+          reloadSingleTargetIfNeeded();
+        }
+      });
+    });
+
 
            // Nav (submodule) helpers
            document.querySelectorAll(".cp-nav-selectall").forEach(function(btn) {

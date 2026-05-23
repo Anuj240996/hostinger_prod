@@ -1,0 +1,3 @@
+<span class="badge {% if lead.list_status_badge_class %}{{ lead.list_status_badge_class }}{% else %}stage-{{ lead.stage|default:'new' }}{% endif %}">
+    {% if lead.list_status_label %}{{ lead.list_status_label }}{% elif lead.stage %}{{ lead.get_stage_display }}{% else %}New Lead{% endif %}
+</span>

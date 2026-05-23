@@ -1,0 +1,1279 @@
+{% extends 'base.html' %}
+{% load humanize %}
+{% load humanize indian_numbers %}
+{% load static %}
+
+{% block title %}Quotations - Solar CRM{% endblock %}
+
+{% block extra_css %}
+{% include 'dashboard/legacy_kpi_card_styles.html' %}
+<style>
+  html, body {
+    overflow-x: hidden;
+  }
+  .quotations-page {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: hidden;
+  }
+  .quotations-page .card,
+  .quotations-page .card-body {
+    min-width: 0;
+  }
+  .quotations-page .table-responsive {
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  #crmQuotationTable {
+    width: 100% !important;
+    table-layout: auto;
+  }
+  .previous-quotation {
+    background-color: #fde8ef;
+    font-size: 0.9rem;
+    color: #555;
+    border-left: 4px solid #dee2e6;
+  }
+  .previous-quotation td {
+    padding-top: 6px;
+    padding-bottom: 6px;
+  }
+
+  #crmQuotationTable .crm-lead-cell {
+    line-height: 1.35;
+  }
+
+  #crmQuotationTable .crm-quote-base-details-toggle {
+    display: block;
+    margin-top: 0.2rem;
+    font-size: 0.72rem;
+    font-weight: 500;
+    line-height: 1.3;
+    cursor: pointer;
+  }
+
+  .quotation-action-btn {
+    width: 72px;
+    padding-left: 6px;
+    padding-right: 6px;
+    text-align: center;
+    margin: 0 2px 4px 0;
+  }
+
+  /* Quotations KPI cards — text only (no icons) */
+  .quotations-page.crm-legacy-kpi-cards .card.my-card .card-body {
+    padding: 0.7rem 0.8rem;
+  }
+  .quotations-page.crm-legacy-kpi-cards .db-widgets {
+    justify-content: center;
+  }
+  .quotations-page.crm-legacy-kpi-cards .db-info {
+    text-align: center;
+    width: 100%;
+  }
+  .quotations-page.crm-legacy-kpi-cards .db-info h3 {
+    font-size: clamp(1rem, 1.75vw, 1.28rem);
+    margin-bottom: 0.25rem;
+    line-height: 1.2;
+  }
+  .quotations-page.crm-legacy-kpi-cards .db-info h6 {
+    font-size: 1rem;
+    font-weight: 500;
+    line-height: 1.35;
+    color: #444;
+  }
+
+  .quotations-view-toggle .btn.active {
+    background-color: var(--bs-primary);
+    border-color: var(--bs-primary);
+    color: #fff;
+  }
+
+  .quotations-page--cards .filter-status-field {
+    display: none !important;
+  }
+
+  .quotations-page--cards #quotations-card-view {
+    width: 100%;
+  }
+
+  .quotations-page--cards .quotations-list-toolbar,
+  .quotations-page--cards .quotations-list-pagination {
+    display: none !important;
+  }
+
+  .quotation-stage-board {
+    display: flex;
+    flex-direction: row;
+    align-items: flex-start;
+    gap: 1rem;
+    width: 100%;
+    padding: 1rem;
+    min-height: 420px;
+    box-sizing: border-box;
+    background: #fff;
+  }
+
+  .quotation-stage-column {
+    flex: 1 1 0;
+    min-width: 0;
+    max-height: calc(100vh - 260px);
+    background: #f8f9fa;
+    border-radius: 10px;
+    display: flex;
+    flex-direction: column;
+    border-top: 3px solid #dee2e6;
+    overflow: hidden;
+  }
+
+  @media (max-width: 992px) {
+    .quotation-stage-board {
+      overflow-x: auto;
+    }
+    .quotation-stage-column {
+      flex: 0 0 260px;
+      min-width: 260px;
+    }
+  }
+
+  .quotation-stage-column.status-pending { border-top-color: #fd7e14; }
+  .quotation-stage-column.status-approved { border-top-color: #198754; }
+  .quotation-stage-column.status-rejected { border-top-color: #dc3545; }
+  .quotation-stage-column.status-converted { border-top-color: #0d6efd; }
+
+  .quotation-stage-column-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.5rem 0.65rem;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+    border-radius: 10px 10px 0 0;
+  }
+
+  .quotation-stage-column.status-pending .quotation-stage-column-header {
+    background: rgba(253, 126, 20, 0.22);
+    color: #653208;
+  }
+  .quotation-stage-column.status-approved .quotation-stage-column-header {
+    background: rgba(25, 135, 84, 0.2);
+    color: #0a3622;
+  }
+  .quotation-stage-column.status-rejected .quotation-stage-column-header {
+    background: rgba(220, 53, 69, 0.18);
+    color: #842029;
+  }
+  .quotation-stage-column.status-converted .quotation-stage-column-header {
+    background: rgba(13, 110, 253, 0.18);
+    color: #084298;
+  }
+
+  .quotation-stage-column-header h6 {
+    margin: 0;
+    font-weight: 600;
+    font-size: 0.82rem;
+    color: inherit;
+  }
+
+  .quotation-stage-count {
+    background: #fff;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    border-radius: 999px;
+    min-width: 1.5rem;
+    text-align: center;
+    font-size: 0.7rem;
+    font-weight: 600;
+    padding: 0.1rem 0.4rem;
+    color: #212529;
+  }
+
+  .quotation-stage-column-cards {
+    flex: 1;
+    overflow-y: auto;
+    padding: 0.65rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.65rem;
+    background: #f8f9fa;
+    min-height: 80px;
+  }
+
+  .quotation-item-card {
+    border: 1px solid #e9ecef;
+    border-left-width: 4px;
+    border-radius: 8px;
+    padding: 0.65rem 0.75rem;
+    background: #fff;
+    font-size: 0.8rem;
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+    transition: box-shadow 0.15s ease, border-color 0.15s ease;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
+  }
+
+  .quotation-item-card.status-pending {
+    border-color: rgba(253, 126, 20, 0.4);
+    border-left-color: #fd7e14;
+  }
+  .quotation-item-card.status-approved {
+    border-color: rgba(25, 135, 84, 0.35);
+    border-left-color: #198754;
+  }
+  .quotation-item-card.status-rejected {
+    border-color: rgba(220, 53, 69, 0.35);
+    border-left-color: #dc3545;
+  }
+  .quotation-item-card.status-converted {
+    border-color: rgba(13, 110, 253, 0.35);
+    border-left-color: #0d6efd;
+  }
+
+  .quotation-item-card:hover {
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
+  }
+
+  .quotation-item-card .quotation-card-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 0.35rem;
+    margin-bottom: 0.45rem;
+  }
+
+  .quotation-item-card .quotation-card-quote-no {
+    font-weight: 600;
+    font-size: 0.88rem;
+    margin: 0;
+    line-height: 1.25;
+  }
+
+  .quotation-item-card .quotation-card-lead {
+    font-size: 0.72rem;
+    color: #6c757d;
+    margin-top: 0.1rem;
+  }
+
+  .quotation-item-card .quotation-card-meta {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-size: 0.72rem;
+    color: #495057;
+    margin-bottom: 0.2rem;
+    line-height: 1.35;
+  }
+
+  .quotation-item-card .quotation-card-meta > i {
+    width: 0.85rem;
+    min-width: 0.85rem;
+    flex-shrink: 0;
+    font-size: 0.68rem;
+    color: #6c757d;
+  }
+
+  .quotation-item-card .badge {
+    font-size: 0.65rem;
+    padding: 0.2em 0.45em;
+  }
+
+  .quotation-item-card .quotation-card-actions {
+    margin-top: auto;
+    padding-top: 0.45rem;
+    border-top: 1px solid #e9ecef;
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 0.25rem;
+  }
+
+  .quotation-item-card .quotation-card-action {
+    flex: 0 0 auto;
+    min-width: 1.65rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.3rem 0.15rem;
+    border: none;
+    border-radius: 4px;
+    background: transparent;
+    font-size: 0.82rem;
+    line-height: 1;
+    text-decoration: none;
+    cursor: pointer;
+    transition: color 0.15s ease, background 0.15s ease;
+  }
+
+  .quotation-item-card .quotation-card-action--view {
+    color: #6f42c1;
+  }
+  .quotation-item-card .quotation-card-action--view:hover {
+    color: #fff;
+    background: #6f42c1;
+  }
+
+  .quotation-item-card .quotation-card-action--pdf {
+    color: #dc3545;
+  }
+  .quotation-item-card .quotation-card-action--pdf:hover {
+    color: #fff;
+    background: #dc3545;
+  }
+
+  .quotation-item-card .quotation-card-action--edit {
+    color: #fd7e14;
+  }
+  .quotation-item-card .quotation-card-action--edit:hover {
+    color: #fff;
+    background: #fd7e14;
+  }
+
+  .quotations-page .quotations-view-panel.d-none {
+    display: none !important;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="quotations-page crm-legacy-kpi-cards" id="quotations-page-root">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>Quotations</h2>
+        <div class="d-flex align-items-center gap-2 flex-wrap justify-content-end">
+            <div class="dt-buttons btn-group flex-wrap">
+                <a href="#" class="btn btn-primary" onclick="crmQuotationListGeneratePDF(); return false;" title="PDF"><i class="fas fa-file-pdf" style="font-size: 1.05rem;"></i></a>
+                <a href="#" class="btn btn-primary" onclick="crmQuotationListGenerateExcel(); return false;" title="Excel"><i class="fas fa-file-excel" style="font-size: 1.05rem;"></i></a>
+                <a href="#" class="btn btn-primary" onclick="crmQuotationListCopyToClipboard(); return false;" title="Copy"><i class="fas fa-copy"></i></a>
+                <a href="#" class="btn btn-primary" onclick="crmQuotationListPrintTable(); return false;" title="Print"><i class="fas fa-print"></i></a>
+            </div>
+            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#crmGenerateQuotationModal" title="Generate Quotation">
+                <i class="fas fa-plus me-2"></i>Create Quotation
+            </button>
+        </div>
+    </div>
+
+    <div class="row g-3 mb-4">
+        <div class="col-xl-2 col-lg-4 col-sm-6 col-12 d-flex">
+            <div class="card bg-two w-100 my-card shadow">
+                <a class="text-decoration-none text-dark kpi-card-link" href="{% url 'quotation_list' %}">
+                    <div class="card-body">
+                        <div class="db-widgets d-flex justify-content-center align-items-center">
+                            <div class="db-info">
+                                <h3>{{ total_quotations|default:0 }}</h3>
+                                <h6>Total Quotations</h6>
+                            </div>
+                        </div>
+                    </div>
+                </a>
+            </div>
+        </div>
+        <div class="col-xl-2 col-lg-4 col-sm-6 col-12 d-flex">
+            <div class="card bg-three w-100 my-card shadow">
+                <a class="text-decoration-none text-dark kpi-card-link" href="{% url 'quotation_list' %}?status=pending">
+                    <div class="card-body">
+                        <div class="db-widgets d-flex justify-content-center align-items-center">
+                            <div class="db-info">
+                                <h3>{{ pending_count|default:0 }}</h3>
+                                <h6>Pending</h6>
+                            </div>
+                        </div>
+                    </div>
+                </a>
+            </div>
+        </div>
+        <div class="col-xl-2 col-lg-4 col-sm-6 col-12 d-flex">
+            <div class="card bg-five w-100 my-card shadow">
+                <a class="text-decoration-none text-dark kpi-card-link" href="{% url 'quotation_list' %}?status=approved">
+                    <div class="card-body">
+                        <div class="db-widgets d-flex justify-content-center align-items-center">
+                            <div class="db-info">
+                                <h3>{{ approved_count|default:0 }}</h3>
+                                <h6>Approved</h6>
+                            </div>
+                        </div>
+                    </div>
+                </a>
+            </div>
+        </div>
+        <div class="col-xl-2 col-lg-4 col-sm-6 col-12 d-flex">
+            <div class="card bg-four w-100 my-card shadow">
+                <a class="text-decoration-none text-dark kpi-card-link" href="{% url 'quotation_list' %}?status=converted">
+                    <div class="card-body">
+                        <div class="db-widgets d-flex justify-content-center align-items-center">
+                            <div class="db-info">
+                                <h3>{{ converted_count|default:0 }}</h3>
+                                <h6>Converted</h6>
+                            </div>
+                        </div>
+                    </div>
+                </a>
+            </div>
+        </div>
+        <div class="col-xl-2 col-lg-4 col-sm-6 col-12 d-flex">
+            <div class="card bg-six w-100 my-card shadow">
+                <a class="text-decoration-none text-dark kpi-card-link" href="{% url 'quotation_list' %}?status=rejected">
+                    <div class="card-body">
+                        <div class="db-widgets d-flex justify-content-center align-items-center">
+                            <div class="db-info">
+                                <h3>{{ rejected_count|default:0 }}</h3>
+                                <h6>Rejected</h6>
+                            </div>
+                        </div>
+                    </div>
+                </a>
+            </div>
+        </div>
+        <div class="col-xl-2 col-lg-4 col-sm-6 col-12 d-flex">
+            <div class="card bg-one w-100 my-card shadow">
+                <div class="card-body">
+                    <div class="db-widgets d-flex justify-content-between align-items-center">
+                        <div class="db-info">
+                            <h3>{{ total_value|default:0|indian_currency }}</h3>
+                            <h6>Converted Value</h6>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="get" class="row g-3">
+                <div class="col-md-3 filter-status-field">
+                    <label class="form-label">Status</label>
+                    <select name="status" class="form-select">
+                        <option value="">All</option>
+                        <option value="pending" {% if request.GET.status == 'pending' %}selected{% endif %}>Pending (all)</option>
+                        <option value="draft" {% if request.GET.status == 'draft' %}selected{% endif %}>Draft</option>
+                        <option value="sent" {% if request.GET.status == 'sent' %}selected{% endif %}>Sent</option>
+                        <option value="viewed" {% if request.GET.status == 'viewed' %}selected{% endif %}>Viewed</option>
+                        <option value="negotiating" {% if request.GET.status == 'negotiating' %}selected{% endif %}>Negotiating</option>
+                        <option value="approved" {% if request.GET.status == 'approved' %}selected{% endif %}>Approved</option>
+                        <option value="converted" {% if request.GET.status == 'converted' %}selected{% endif %}>Converted</option>
+                        <option value="rejected" {% if request.GET.status == 'rejected' %}selected{% endif %}>Rejected</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Sales Person</label>
+                    <select name="assigned_to" class="form-select" onchange="this.form.submit()">
+                        <option value="">All</option>
+                        {% for user in sales_users %}
+                        <option value="{{ user.id }}" {% if request.GET.assigned_to == user.id|stringformat:"s" %}selected{% endif %}>{{ user.get_full_name|default:user.username }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">From Date</label>
+                    <input type="date" name="from_date" class="form-control" value="{{ request.GET.from_date }}">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">To Date</label>
+                    <input type="date" name="to_date" class="form-control" value="{{ request.GET.to_date }}">
+                </div>
+                <div class="col-12">
+                    <button type="submit" class="btn btn-primary">Apply Filters</button>
+                    <a href="{% url 'quotation_list' %}" class="btn btn-outline-secondary">Clear</a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <div class="d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">
+                    <span class="quotations-list-count-label"
+                          data-list-count="{{ page_obj.paginator.count|default:quotations_latest_count }}"
+                          data-card-count="{{ quotations_latest_count }}">
+                        Quotations ({{ page_obj.paginator.count|default:quotations_latest_count }} total)
+                    </span>
+                </h5>
+                <div class="btn-group btn-group-sm quotations-view-toggle" role="group" aria-label="Quotation list view">
+                    <button type="button" class="btn btn-outline-secondary active" id="quotations-view-list" title="Table view" aria-pressed="true">
+                        <i class="fas fa-list"></i>
+                    </button>
+                    <button type="button" class="btn btn-outline-secondary" id="quotations-view-cards" title="Card view" aria-pressed="false">
+                        <i class="fas fa-th-large"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+        <div class="card-body p-0">
+            <div id="quotations-table-view" class="quotations-view-panel">
+            <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 px-3 py-3 border-bottom quotations-list-toolbar">
+                <div class="d-flex align-items-center gap-2 flex-wrap">
+                    <label for="crmRowsPerPage" class="mb-0 small text-muted">Show</label>
+                    <select id="crmRowsPerPage" class="form-select form-select-sm" style="width:auto;">
+                        <option value="10" {% if request.GET.per_page == '10' %}selected{% endif %}>10</option>
+                        <option value="20" {% if not request.GET.per_page or request.GET.per_page == '20' %}selected{% endif %}>20</option>
+                        <option value="50" {% if request.GET.per_page == '50' %}selected{% endif %}>50</option>
+                        <option value="all" {% if request.GET.per_page == 'all' %}selected{% endif %}>All</option>
+                    </select>
+                    <span class="small text-muted">rows</span>
+
+                    <div class="position-relative" id="crmColumnMenuWrap">
+                        <button type="button" class="btn btn-outline-secondary btn-sm" id="crmColumnToggleBtn">
+                            Columns
+                        </button>
+                        <div id="crmColumnMenu" class="card shadow-sm p-2" style="display:none; position:absolute; z-index:20; min-width:220px; top:38px; left:0;">
+                            <label class="form-check mb-1"><input class="form-check-input crm-col-toggle" type="checkbox" data-col="0" checked> <span class="form-check-label">Quote #</span></label>
+                            <label class="form-check mb-1"><input class="form-check-input crm-col-toggle" type="checkbox" data-col="1" checked> <span class="form-check-label">Lead</span></label>
+                            <label class="form-check mb-1"><input class="form-check-input crm-col-toggle" type="checkbox" data-col="2" checked> <span class="form-check-label">System Size</span></label>
+                            <label class="form-check mb-1"><input class="form-check-input crm-col-toggle" type="checkbox" data-col="3" checked> <span class="form-check-label">Total Cost</span></label>
+                            <label class="form-check mb-1"><input class="form-check-input crm-col-toggle" type="checkbox" data-col="4" checked> <span class="form-check-label">Status</span></label>
+                            <label class="form-check mb-1"><input class="form-check-input crm-col-toggle" type="checkbox" data-col="5" checked> <span class="form-check-label">Created By</span></label>
+                            <label class="form-check mb-1"><input class="form-check-input crm-col-toggle" type="checkbox" data-col="6" checked> <span class="form-check-label">Date</span></label>
+                            <label class="form-check mb-0"><input class="form-check-input crm-col-toggle" type="checkbox" data-col="7" checked> <span class="form-check-label">Actions</span></label>
+                        </div>
+                    </div>
+
+                    <button type="button" class="btn btn-outline-secondary btn-sm" id="crmRefreshTableBtn">
+                        Refresh
+                    </button>
+                </div>
+
+                <div>
+                    <input type="text" id="crmTableSearchInput" class="form-control form-control-sm" style="min-width:260px;" placeholder="Search all records..." value="{{ request.GET.q|default:'' }}">
+                </div>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0" id="crmQuotationTable">
+                    <thead class="bg-light">
+                        <tr>
+                            <th>Quote #</th>
+                            <th>Lead</th>
+                            <th>System Size</th>
+                            <th>Total Cost</th>
+                            <th>Status</th>
+                            <th>Created By</th>
+                            <th>Date</th>
+                            <th class="text-center">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="crmQuotationTableBody">
+                        {% for quote in quotations %}
+                        <tr class="crm-quotation-row{% if quote.crm_hide_non_latest_row %} previous-quotation{% endif %}"
+                            data-quote-base-group="{{ quote.crm_quote_base_group_id }}"
+                            data-latest="{% if quote.crm_is_latest_for_quote_base %}1{% else %}0{% endif %}"
+                            data-quotation-no="{{ quote.quotation_no|default:'' }}"
+                            data-confirmed="{% if quote.is_confirmed %}1{% else %}0{% endif %}"
+                            data-converted="{% if quote.convert_consumer %}1{% else %}0{% endif %}"
+                            data-revise="{% if quote.quotation_no and '_' in quote.quotation_no %}1{% else %}0{% endif %}"
+                            {% if quote.crm_hide_non_latest_row %}style="display:none"{% endif %}>
+                            <td class="fw-semibold">
+                                {{ quote.quotation_no|default:quote.id }}
+                                {% if quote.version > 1 %}
+                                <span class="badge bg-info">v{{ quote.version }}</span>
+                                {% endif %}
+                            </td>
+                            <td class="crm-lead-cell">
+                                {% if quote.lead %}
+                                <a href="{% url 'lead_detail' quote.lead.id %}" class="text-decoration-none">
+                                    {{ quote.lead.name }}
+                                </a>
+                                {% else %}
+                                <span class="text-muted">{{ quote.consumer_name|default:"—" }}</span>
+                                {% endif %}
+                                {% if quote.crm_is_latest_for_quote_base and quote.crm_has_multiple_quote_revisions %}
+                                <span class="text-primary crm-quote-base-details-toggle"
+                                      role="button"
+                                      tabindex="0"
+                                      data-group-id="{{ quote.crm_quote_base_group_id }}"
+                                      data-label="Details ({{ quote.crm_quote_previous_count }} previous)"
+                                      data-expanded="0">Details ({{ quote.crm_quote_previous_count }} previous)</span>
+                                {% endif %}
+                            </td>
+                            <td>{% if quote.plant_capacity_kw %}{{ quote.plant_capacity_kw.capacity }} kW{% elif quote.dc_capacity %}{{ quote.dc_capacity }} kWp{% else %}—{% endif %}</td>
+                            <td>{{ quote.final_amount|indian_currency }}</td>
+                            <td class="text-center">
+                                {% if quote.status == 'approved' %}
+                                <span class="badge bg-success">{{ quote.get_status_display }}</span>
+                                {% elif quote.status == 'converted' %}
+                                <span class="badge bg-primary">{{ quote.get_status_display }}</span>
+                                {% elif quote.status == 'sent' %}
+                                <span class="badge bg-primary">{{ quote.get_status_display }}</span>
+                                {% elif quote.status == 'draft' %}
+                                <span class="badge bg-secondary">{{ quote.get_status_display }}</span>
+                                {% elif quote.status == 'rejected' %}
+                                <span class="badge bg-danger">{{ quote.get_status_display }}</span>
+                                {% elif quote.status == 'viewed' %}
+                                <span class="badge bg-info">{{ quote.get_status_display }}</span>
+                                {% elif quote.status == 'negotiating' %}
+                                <span class="badge bg-warning text-dark">{{ quote.get_status_display }}</span>
+                                {% elif quote.status == 'expired' %}
+                                <span class="badge bg-dark">{{ quote.get_status_display }}</span>
+                                {% else %}
+                                <span class="badge bg-light text-dark">{{ quote.get_status_display|default:quote.status|default:"—" }}</span>
+                                {% endif %}
+                            </td>
+                            <td>{% if quote.created_by %}{{ quote.created_by.get_full_name|default:quote.created_by.username }}{% else %}—{% endif %}</td>
+                            <td>{{ quote.get_list_date_display }}</td>
+                            <td class="text-center text-nowrap">
+                                <div class="btn-group btn-group-sm" role="group" aria-label="{% if quote.crm_is_latest_for_quote_base %}Show PDF Edit{% else %}Show PDF{% endif %}">
+                                    <a href="{% url 'quotation_detail' quote.pk %}" class="btn btn-outline-primary" title="Show">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                    <button type="button"
+                                            class="btn btn-outline-danger openCrmPdfChoiceModal"
+                                            title="PDF"
+                                            data-quote-id="{{ quote.pk }}">
+                                        <i class="fas fa-file-pdf"></i>
+                                    </button>
+                                    {% if quote.crm_is_latest_for_quote_base and quote.status != 'approved' and quote.status != 'rejected' and quote.status != 'converted' %}
+                                    <a href="{% url 'quotation_edit' quote.pk %}" class="btn btn-outline-secondary" title="Edit">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    {% endif %}
+                                </div>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="8" class="text-center py-5">
+                                <i class="fas fa-file-invoice fa-3x text-muted mb-3"></i>
+                                <p class="text-muted">No quotations found</p>
+                                <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#crmGenerateQuotationModal">
+                                    Create First Quotation
+                                </button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% if page_obj and page_obj.paginator.num_pages > 1 %}
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 px-3 py-3 border-top quotations-list-pagination">
+                <small class="text-muted">
+                    Showing {{ page_obj.start_index }}–{{ page_obj.end_index }} of {{ page_obj.paginator.count }} records
+                    (Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }})
+                </small>
+                <nav aria-label="Quotation list pagination">
+                    <ul class="pagination pagination-sm mb-0">
+                        <li class="page-item {% if not page_obj.has_previous %}disabled{% endif %}">
+                            <a class="page-link" href="?{% if pagination_query %}{{ pagination_query }}&{% endif %}page=1">First</a>
+                        </li>
+                        <li class="page-item {% if not page_obj.has_previous %}disabled{% endif %}">
+                            <a class="page-link" href="?{% if pagination_query %}{{ pagination_query }}&{% endif %}page={% if page_obj.has_previous %}{{ page_obj.previous_page_number }}{% else %}1{% endif %}">Prev</a>
+                        </li>
+                        {% for num in page_obj.paginator.page_range %}
+                            {% if num == page_obj.number %}
+                            <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+                            {% elif num >= page_obj.number|add:'-2' and num <= page_obj.number|add:'2' %}
+                            <li class="page-item">
+                                <a class="page-link" href="?{% if pagination_query %}{{ pagination_query }}&{% endif %}page={{ num }}">{{ num }}</a>
+                            </li>
+                            {% endif %}
+                        {% endfor %}
+                        <li class="page-item {% if not page_obj.has_next %}disabled{% endif %}">
+                            <a class="page-link" href="?{% if pagination_query %}{{ pagination_query }}&{% endif %}page={% if page_obj.has_next %}{{ page_obj.next_page_number }}{% else %}{{ page_obj.paginator.num_pages }}{% endif %}">Next</a>
+                        </li>
+                        <li class="page-item {% if not page_obj.has_next %}disabled{% endif %}">
+                            <a class="page-link" href="?{% if pagination_query %}{{ pagination_query }}&{% endif %}page={{ page_obj.paginator.num_pages }}">Last</a>
+                        </li>
+                    </ul>
+                </nav>
+            </div>
+            {% endif %}
+            </div>
+
+            <div id="quotations-card-view" class="quotations-view-panel d-none">
+                <div class="quotation-stage-board">
+                    {% for column in board_columns %}
+                    <section class="quotation-stage-column status-{{ column.key }}" aria-label="{{ column.label }}">
+                        <div class="quotation-stage-column-header">
+                            <h6>{{ column.label }}</h6>
+                            <span class="quotation-stage-count">{{ column.count }}</span>
+                        </div>
+                        <div class="quotation-stage-column-cards">
+                            {% for quote in column.quotations %}
+                            <article class="quotation-item-card status-{{ column.key }}" data-href="{% url 'quotation_detail' quote.pk %}" tabindex="0" role="link">
+                                <div class="quotation-card-head">
+                                    <div>
+                                        <p class="quotation-card-quote-no mb-0">{{ quote.quotation_no|default:quote.id }}</p>
+                                        <div class="quotation-card-lead">
+                                            {% if quote.lead %}{{ quote.lead.name }}{% else %}{{ quote.consumer_name|default:"—" }}{% endif %}
+                                        </div>
+                                    </div>
+                                    {% if quote.status == 'approved' %}
+                                    <span class="badge bg-success">{{ quote.get_status_display }}</span>
+                                    {% elif quote.status == 'converted' %}
+                                    <span class="badge bg-primary">{{ quote.get_status_display }}</span>
+                                    {% elif quote.status == 'sent' %}
+                                    <span class="badge bg-primary">{{ quote.get_status_display }}</span>
+                                    {% elif quote.status == 'draft' %}
+                                    <span class="badge bg-secondary">{{ quote.get_status_display }}</span>
+                                    {% elif quote.status == 'rejected' %}
+                                    <span class="badge bg-danger">{{ quote.get_status_display }}</span>
+                                    {% elif quote.status == 'viewed' %}
+                                    <span class="badge bg-info">{{ quote.get_status_display }}</span>
+                                    {% elif quote.status == 'negotiating' %}
+                                    <span class="badge bg-warning text-dark">{{ quote.get_status_display }}</span>
+                                    {% elif quote.status == 'expired' %}
+                                    <span class="badge bg-dark">{{ quote.get_status_display }}</span>
+                                    {% else %}
+                                    <span class="badge bg-light text-dark">{{ quote.get_status_display|default:quote.status|default:"—" }}</span>
+                                    {% endif %}
+                                </div>
+                                <p class="quotation-card-meta mb-1">
+                                    <i class="fas fa-bolt" aria-hidden="true"></i>
+                                    <span>{% if quote.plant_capacity_kw %}{{ quote.plant_capacity_kw.capacity }} kW{% elif quote.dc_capacity %}{{ quote.dc_capacity }} kWp{% else %}—{% endif %}</span>
+                                </p>
+                                <p class="quotation-card-meta mb-1">
+                                    <i class="fas fa-rupee-sign" aria-hidden="true"></i>
+                                    <span>{{ quote.final_amount|indian_currency }}</span>
+                                </p>
+                                <p class="quotation-card-meta mb-0">
+                                    <i class="fas fa-calendar" aria-hidden="true"></i>
+                                    <span>{{ quote.get_list_date_display }}</span>
+                                </p>
+                                <div class="quotation-card-actions" onclick="event.stopPropagation();">
+                                    <a href="{% url 'quotation_detail' quote.pk %}" class="quotation-card-action quotation-card-action--view" title="View" aria-label="View">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                    <button type="button"
+                                            class="quotation-card-action quotation-card-action--pdf openCrmPdfChoiceModal"
+                                            title="PDF"
+                                            aria-label="PDF"
+                                            data-quote-id="{{ quote.pk }}">
+                                        <i class="fas fa-file-pdf"></i>
+                                    </button>
+                                    {% if quote.status != 'approved' and quote.status != 'rejected' and quote.status != 'converted' %}
+                                    <a href="{% url 'quotation_edit' quote.pk %}" class="quotation-card-action quotation-card-action--edit" title="Edit" aria-label="Edit">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    {% endif %}
+                                </div>
+                            </article>
+                            {% empty %}
+                            <p class="text-muted small text-center py-3 mb-0">No quotations</p>
+                            {% endfor %}
+                        </div>
+                    </section>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div style="position:absolute; left:-99999px; top:-99999px; width:1px; height:1px; overflow:hidden;">
+    <table id="crmQuotationExportTable" class="table table-sm">
+        <thead>
+            <tr>
+                <th>Quote #</th>
+                <th>Lead</th>
+                <th>System Size</th>
+                <th>Total Cost</th>
+                <th>Status</th>
+                <th>Created By</th>
+                <th>Date</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for quote in export_quotations %}
+            <tr>
+                <td>{{ quote.quotation_no|default:quote.id }}</td>
+                <td>
+                    {% if quote.lead %}
+                        {{ quote.lead.name }}
+                    {% else %}
+                        {{ quote.consumer_name|default:"—" }}
+                    {% endif %}
+                </td>
+                <td>{% if quote.plant_capacity_kw %}{{ quote.plant_capacity_kw.capacity }} kW{% elif quote.dc_capacity %}{{ quote.dc_capacity }} kWp{% else %}—{% endif %}</td>
+                <td>{{ quote.final_amount|indian_currency }}</td>
+                <td>{{ quote.get_status_display|default:quote.status|default:"—" }}</td>
+                <td>{% if quote.created_by %}{{ quote.created_by.get_full_name|default:quote.created_by.username }}{% else %}—{% endif %}</td>
+                <td>{{ quote.get_list_date_display }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<div id="crmQuotationPdfChoiceModal" style="display:none; position:fixed; z-index:99999; left:0; top:0; right:0; bottom:0; background:rgba(0,0,0,0.5); align-items:center; justify-content:center;">
+    <div style="background:white; margin:auto; padding:30px; border-radius:10px; max-width:500px; width:92%; box-shadow:0 6px 18px rgba(0,0,0,0.3);">
+        <h3 style="color:#1e41d1;">Generate PDF</h3>
+        <p style="margin-bottom:20px;">Choose a template for PDF generation:</p>
+        <div style="display:flex; gap:15px; margin-bottom:25px; flex-wrap:wrap;">
+            <button type="button" id="crmPdfRegularBtn" class="crm-pdf-option-btn" style="flex:1; min-width:140px; padding:15px; background:#4a6cf7; color:white; border:none; border-radius:5px; cursor:pointer;">
+                <strong>Regular Quotation</strong><br>
+                <small>Standard template</small>
+            </button>
+            <button type="button" id="crmPdfIndustrialBtn" class="crm-pdf-option-btn" style="flex:1; min-width:140px; padding:15px; background:#1e41d1; color:white; border:none; border-radius:5px; cursor:pointer;">
+                <strong>Industrial Quotation</strong><br>
+                <small>Industrial template</small>
+            </button>
+        </div>
+        <div style="text-align:right;">
+            <button type="button" id="closeCrmQuotationPdfChoiceModal" style="padding:8px 20px; background:#6c757d; color:white; border:none; border-radius:4px;">Cancel</button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<style>
+.crm-pdf-option-btn:hover {
+  opacity: 0.9;
+  transform: translateY(-2px);
+  transition: all 0.3s ease;
+}
+</style>
+<script>
+(function () {
+  var STORAGE_KEY = 'crmQuotationsListView';
+  var listBtn = document.getElementById('quotations-view-list');
+  var cardsBtn = document.getElementById('quotations-view-cards');
+  var tableView = document.getElementById('quotations-table-view');
+  var cardView = document.getElementById('quotations-card-view');
+  var pageRoot = document.getElementById('quotations-page-root');
+  var statusFilterField = pageRoot ? pageRoot.querySelector('.filter-status-field') : null;
+  var statusFilterSelect = statusFilterField ? statusFilterField.querySelector('select[name="status"]') : null;
+  var countLabel = document.querySelector('.quotations-list-count-label');
+
+  function stripUrlFilterParam(paramName) {
+    var params = new URLSearchParams(window.location.search);
+    if (!params.has(paramName)) return false;
+    params.delete(paramName);
+    var qs = params.toString();
+    window.location.replace(window.location.pathname + (qs ? '?' + qs : ''));
+    return true;
+  }
+
+  function updateCountLabel(isCards) {
+    if (!countLabel) return;
+    var n = isCards
+      ? (countLabel.getAttribute('data-card-count') || '0')
+      : (countLabel.getAttribute('data-list-count') || '0');
+    countLabel.textContent = 'Quotations (' + n + ' total)';
+  }
+
+  function bindQuotationItemCards() {
+    document.querySelectorAll('.quotation-item-card').forEach(function (card) {
+      if (card.dataset.boundQuotationCard === '1') return;
+      card.dataset.boundQuotationCard = '1';
+      card.addEventListener('click', function (e) {
+        if (!e.target.closest('.quotation-card-actions')) {
+          window.location = this.dataset.href;
+        }
+      });
+      card.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          if (!e.target.closest('.quotation-card-actions')) {
+            window.location = this.dataset.href;
+          }
+        }
+      });
+    });
+  }
+
+  function setView(mode) {
+    var isCards = mode === 'cards';
+    if (isCards && stripUrlFilterParam('status')) return;
+    if (pageRoot) pageRoot.classList.toggle('quotations-page--cards', isCards);
+    if (tableView) tableView.classList.toggle('d-none', isCards);
+    if (cardView) cardView.classList.toggle('d-none', !isCards);
+    if (statusFilterField) {
+      statusFilterField.classList.toggle('d-none', isCards);
+      statusFilterField.setAttribute('aria-hidden', isCards ? 'true' : 'false');
+    }
+    if (isCards && statusFilterSelect) {
+      statusFilterSelect.value = '';
+    }
+    if (listBtn) {
+      listBtn.classList.toggle('active', !isCards);
+      listBtn.setAttribute('aria-pressed', !isCards ? 'true' : 'false');
+    }
+    if (cardsBtn) {
+      cardsBtn.classList.toggle('active', isCards);
+      cardsBtn.setAttribute('aria-pressed', isCards ? 'true' : 'false');
+    }
+    updateCountLabel(isCards);
+    try { localStorage.setItem(STORAGE_KEY, mode); } catch (e) {}
+  }
+
+  var saved = 'list';
+  try { saved = localStorage.getItem(STORAGE_KEY) || 'list'; } catch (e) {}
+  bindQuotationItemCards();
+  setView(saved === 'cards' ? 'cards' : 'list');
+
+  if (listBtn) listBtn.addEventListener('click', function () { setView('list'); });
+  if (cardsBtn) cardsBtn.addEventListener('click', function () { setView('cards'); });
+})();
+</script>
+<script>
+(function () {
+  window.crmApplyListToolbarState = function () {};
+  window.crmApplyCurrentColumnSelections = function () {};
+  window.crmColumnVisibilityState = window.crmColumnVisibilityState || {};
+
+  window.initializeCrmQuotationPage = function initializeCrmQuotationPage() {
+    // Make this list a DataTable so exports work like the existing quotation list page.
+    if (window.jQuery && window.jQuery.fn && window.jQuery.fn.dataTable) {
+      var $ = window.jQuery;
+      if (!$.fn.dataTable.isDataTable('#crmQuotationTable')) {
+        $('#crmQuotationTable').DataTable({
+          paging: false, // server-side pagination already used
+          info: false,
+          searching: false,
+          ordering: true,
+          order: [],
+          columnDefs: [
+            { orderable: false, targets: [7] } // Actions column
+          ]
+        });
+      }
+      if (!$.fn.dataTable.isDataTable('#crmQuotationExportTable')) {
+        $('#crmQuotationExportTable').DataTable({
+          paging: false,
+          info: false,
+          searching: false,
+          ordering: true,
+          order: []
+        });
+      }
+    }
+
+    var pdfModal = document.getElementById('crmQuotationPdfChoiceModal');
+    var pdfCloseBtn = document.getElementById('closeCrmQuotationPdfChoiceModal');
+    var pdfRegularBtn = document.getElementById('crmPdfRegularBtn');
+    var pdfIndustrialBtn = document.getElementById('crmPdfIndustrialBtn');
+    var activeQuoteId = null;
+
+    document.querySelectorAll('.openCrmPdfChoiceModal').forEach(function (btn) {
+      if (btn.dataset.boundCrmPdfChoice === '1') return;
+      btn.dataset.boundCrmPdfChoice = '1';
+      btn.addEventListener('click', function () {
+        activeQuoteId = this.getAttribute('data-quote-id');
+        if (pdfModal) pdfModal.style.display = 'flex';
+      });
+    });
+
+    if (pdfCloseBtn) {
+      pdfCloseBtn.addEventListener('click', function () {
+        if (pdfModal) pdfModal.style.display = 'none';
+        activeQuoteId = null;
+      });
+    }
+    if (pdfModal) {
+      pdfModal.addEventListener('click', function (e) {
+        if (e.target === pdfModal) {
+          pdfModal.style.display = 'none';
+          activeQuoteId = null;
+        }
+      });
+    }
+    if (pdfRegularBtn) {
+      pdfRegularBtn.addEventListener('click', function () {
+        if (!activeQuoteId) return;
+        window.open('/quotation/' + encodeURIComponent(activeQuoteId) + '/pdf/', '_blank');
+        if (pdfModal) pdfModal.style.display = 'none';
+      });
+    }
+    if (pdfIndustrialBtn) {
+      pdfIndustrialBtn.addEventListener('click', function () {
+        if (!activeQuoteId) return;
+        window.open('/quotation/' + encodeURIComponent(activeQuoteId) + '/industrial_pdf/', '_blank');
+        if (pdfModal) pdfModal.style.display = 'none';
+      });
+    }
+
+    document.querySelectorAll('.crm-quote-base-details-toggle').forEach(function (el) {
+      if (el.dataset.boundCrmDetailsToggle === '1') return;
+      el.dataset.boundCrmDetailsToggle = '1';
+      el.addEventListener('click', function () {
+        crmToggleQuotationBaseDetails(this.getAttribute('data-group-id'), this);
+      });
+      el.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          crmToggleQuotationBaseDetails(this.getAttribute('data-group-id'), this);
+        }
+      });
+    });
+
+    (function attachCrmListToolbar() {
+      var rowsSelect = document.getElementById('crmRowsPerPage');
+      var searchInput = document.getElementById('crmTableSearchInput');
+      var refreshBtn = document.getElementById('crmRefreshTableBtn');
+      var table = document.getElementById('crmQuotationTable');
+      var columnToggleBtn = document.getElementById('crmColumnToggleBtn');
+      var columnMenu = document.getElementById('crmColumnMenu');
+      var columnMenuWrap = document.getElementById('crmColumnMenuWrap');
+      if (!table || !rowsSelect || !searchInput) return;
+      if (rowsSelect.dataset.toolbarBound === '1') return;
+      rowsSelect.dataset.toolbarBound = '1';
+
+      var bodyRows = Array.prototype.slice.call(table.querySelectorAll('tbody tr.crm-quotation-row'));
+      bodyRows.forEach(function (row) {
+        row.dataset.detailHidden = row.style.display === 'none' ? '1' : '0';
+      });
+
+      function applyRowsAndSearch() {}
+
+      function getCurrentTable() {
+        return document.getElementById('crmQuotationTable');
+      }
+
+      function applyCurrentColumnSelections() {
+        document.querySelectorAll('.crm-col-toggle').forEach(function (cb) {
+          var colIdx = parseInt(cb.getAttribute('data-col'), 10);
+          if (isNaN(colIdx)) return;
+          var key = String(colIdx);
+          if (Object.prototype.hasOwnProperty.call(window.crmColumnVisibilityState, key)) {
+            cb.checked = !!window.crmColumnVisibilityState[key];
+          } else {
+            window.crmColumnVisibilityState[key] = !!cb.checked;
+          }
+          setColumnVisible(colIdx, !!cb.checked);
+        });
+      }
+
+      function setColumnVisible(colIdx, visible) {
+        var selectors = ['#crmQuotationTable', '#crmQuotationExportTable'];
+        selectors.forEach(function (sel) {
+          // Apply DataTables runtime visibility when available.
+          if (window.jQuery && window.jQuery.fn && window.jQuery.fn.dataTable && window.jQuery.fn.dataTable.isDataTable(sel)) {
+            try {
+              var dt = window.jQuery(sel).DataTable();
+              dt.column(colIdx).visible(!!visible, false);
+              dt.columns.adjust().draw(false);
+              return;
+            } catch (e) {
+              // fallback below
+            }
+          }
+          var tableEl = document.querySelector(sel);
+          if (!tableEl) return;
+          var headRow = tableEl.querySelector('thead tr');
+          if (headRow && headRow.children[colIdx]) {
+            headRow.children[colIdx].style.display = visible ? '' : 'none';
+          }
+          tableEl.querySelectorAll('tbody tr').forEach(function (row) {
+            if (row.children && row.children[colIdx]) {
+              row.children[colIdx].style.display = visible ? '' : 'none';
+            }
+          });
+        });
+      }
+
+      function fetchAndReplaceTable(params, focusSearchAfterUpdate) {
+        var queryString = params.toString();
+        var targetUrl = window.location.pathname + (queryString ? ('?' + queryString) : '');
+        var fetchUrl = targetUrl + (targetUrl.indexOf('?') >= 0 ? '&' : '?') + '_refresh_ts=' + Date.now();
+        return fetch(fetchUrl, {
+            credentials: 'same-origin',
+            cache: 'no-store',
+            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+          })
+          .then(function (resp) { return resp.text(); })
+          .then(function (html) {
+            var parser = new DOMParser();
+            var doc = parser.parseFromString(html, 'text/html');
+            var newTableWrap = doc.querySelector('#crmQuotationTable') ? doc.querySelector('#crmQuotationTable').closest('.table-responsive') : null;
+            var oldTableWrap = document.querySelector('#crmQuotationTable') ? document.querySelector('#crmQuotationTable').closest('.table-responsive') : null;
+            var newExportWrap = doc.querySelector('#crmQuotationExportTable') ? doc.querySelector('#crmQuotationExportTable').parentElement : null;
+            var oldExportWrap = document.querySelector('#crmQuotationExportTable') ? document.querySelector('#crmQuotationExportTable').parentElement : null;
+            var newPagination = doc.querySelector('.d-flex.justify-content-between.align-items-center.flex-wrap.gap-2.px-3.py-3.border-top');
+            var oldPagination = document.querySelector('.d-flex.justify-content-between.align-items-center.flex-wrap.gap-2.px-3.py-3.border-top');
+
+            if (newTableWrap && oldTableWrap) oldTableWrap.outerHTML = newTableWrap.outerHTML;
+            if (newExportWrap && oldExportWrap) oldExportWrap.innerHTML = newExportWrap.innerHTML;
+            if (newPagination && oldPagination) oldPagination.outerHTML = newPagination.outerHTML;
+            applyCurrentColumnSelections();
+
+            if (focusSearchAfterUpdate) {
+              searchInput.focus();
+              var v = searchInput.value || '';
+              searchInput.setSelectionRange(v.length, v.length);
+            }
+            window.history.replaceState({}, '', targetUrl);
+            initializeCrmQuotationPage();
+            if (typeof window.crmApplyCurrentColumnSelections === 'function') {
+              window.crmApplyCurrentColumnSelections();
+            }
+            var tableCard = document.querySelector('#crmQuotationTable');
+            if (tableCard && tableCard.scrollIntoView) {
+              tableCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+          })
+          .catch(function () {
+            alert('Failed to refresh table. Please try again.');
+          });
+      }
+
+      rowsSelect.addEventListener('change', function () {
+        var params = new URLSearchParams(window.location.search || '');
+        params.set('per_page', rowsSelect.value || '20');
+        params.delete('page');
+        fetchAndReplaceTable(params, false);
+      });
+      if (searchInput) {
+        var searchDebounceTimer = null;
+        searchInput.addEventListener('input', function () {
+          if (searchDebounceTimer) {
+            clearTimeout(searchDebounceTimer);
+          }
+          searchDebounceTimer = setTimeout(function () {
+            var params = new URLSearchParams(window.location.search || '');
+            var val = (searchInput.value || '').trim();
+            if (val) {
+              params.set('q', val);
+            } else {
+              params.delete('q');
+            }
+            params.set('per_page', rowsSelect.value || '20');
+            params.delete('page'); // reset to first page on new search
+            fetchAndReplaceTable(params, true);
+          }, 350);
+        });
+      }
+      if (refreshBtn) {
+        refreshBtn.addEventListener('click', function () {
+          // Match full-page refresh behavior for columns: show all fields again.
+          window.crmColumnVisibilityState = {};
+          document.querySelectorAll('.crm-col-toggle').forEach(function (cb) {
+            cb.checked = true;
+          });
+
+          var params = new URLSearchParams(window.location.search || '');
+          params.set('per_page', rowsSelect.value || '20');
+          var qVal = (searchInput.value || '').trim();
+          if (qVal) {
+            params.set('q', qVal);
+          } else {
+            params.delete('q');
+          }
+          refreshBtn.disabled = true;
+          var oldText = refreshBtn.textContent;
+          refreshBtn.textContent = 'Refreshing...';
+          fetchAndReplaceTable(params, false).finally(function () {
+            refreshBtn.disabled = false;
+            refreshBtn.textContent = oldText || 'Refresh';
+          });
+        });
+      }
+
+      if (columnToggleBtn && columnMenu) {
+        columnToggleBtn.addEventListener('click', function (e) {
+          e.stopPropagation();
+          // Use the same customer-list column logic (DataTables column modal from script.js).
+          if (window.jQuery && window.jQuery.fn && window.jQuery.fn.dataTable && window.jQuery.fn.dataTable.isDataTable('#crmQuotationTable')) {
+            var wrap = window.jQuery('#crmQuotationTable').closest('.dataTables_wrapper');
+            var openBtn = wrap.find('.columnFilterOpenBtn').first();
+            if (openBtn.length) {
+              openBtn.trigger('click');
+              return;
+            }
+          }
+          // Fallback to local menu only if global DataTables modal is unavailable.
+          columnMenu.style.display = columnMenu.style.display === 'none' ? 'block' : 'none';
+        });
+        document.addEventListener('click', function (e) {
+          if (!columnMenuWrap || !columnMenuWrap.contains(e.target)) {
+            columnMenu.style.display = 'none';
+          }
+        });
+      }
+
+      document.querySelectorAll('.crm-col-toggle').forEach(function (cb) {
+        cb.addEventListener('change', function () {
+          var colIdx = parseInt(this.getAttribute('data-col'), 10);
+          if (isNaN(colIdx)) return;
+          window.crmColumnVisibilityState[String(colIdx)] = !!this.checked;
+          setColumnVisible(colIdx, !!this.checked);
+        });
+      });
+
+      window.crmApplyListToolbarState = applyRowsAndSearch;
+      window.crmApplyCurrentColumnSelections = applyCurrentColumnSelections;
+      applyCurrentColumnSelections();
+      applyRowsAndSearch();
+    })();
+  };
+
+  window.crmToggleQuotationBaseDetails = function (groupId, el) {
+    if (!groupId || !el) return;
+    var rows = document.querySelectorAll('tr.crm-quotation-row[data-quote-base-group="' + groupId + '"]');
+    var expanded = el.getAttribute('data-expanded') === '1';
+    rows.forEach(function (row) {
+      if (row.getAttribute('data-latest') === '0') {
+        row.style.display = expanded ? 'none' : '';
+        row.dataset.detailHidden = expanded ? '1' : '0';
+        row.classList.toggle('previous-quotation', !expanded);
+      }
+    });
+    if (expanded) {
+      el.textContent = el.getAttribute('data-label') || 'Details';
+      el.setAttribute('data-expanded', '0');
+    } else {
+      el.textContent = 'Hide details';
+      el.setAttribute('data-expanded', '1');
+    }
+    if (typeof window.crmApplyListToolbarState === 'function') {
+      window.crmApplyListToolbarState();
+    }
+  };
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initializeCrmQuotationPage);
+  } else {
+    initializeCrmQuotationPage();
+  }
+})();
+</script>
+
+<script>window.LIST_PAGE_EXPORT_LOGO_PATH = "{% static 'images/db_logo_200.png' %}";</script>
+<script src="https://cdn.datatables.net/1.13.8/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.8/js/dataTables.bootstrap5.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.0/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.4.0/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.16/jspdf.plugin.autotable.min.js"></script>
+<script src="{% static 'js/list_page_export.js' %}"></script>
+<script>
+  if (window.jQuery && window.jQuery.fn && window.jQuery.fn.dataTable) {
+    var $ = window.jQuery;
+    if (!$.fn.dataTable.isDataTable('#crmQuotationTable')) {
+      var crmDt = $('#crmQuotationTable').DataTable({
+        paging: false,
+        info: false,
+        searching: false,
+        ordering: true,
+        order: [],
+        columnDefs: [{ orderable: false, targets: [7] }]
+      });
+      if (typeof window.attachGlobalDatatableTools === 'function') {
+        window.attachGlobalDatatableTools(crmDt);
+      }
+    }
+    if (!$.fn.dataTable.isDataTable('#crmQuotationExportTable')) {
+      $('#crmQuotationExportTable').DataTable({
+        paging: false,
+        info: false,
+        searching: false,
+        ordering: true,
+        order: []
+      });
+    }
+  }
+
+  ListPageExport.register({
+    apiPrefix: 'crmQuotationList',
+    tableSelector: '#crmQuotationExportTable',
+    pdfFilename: 'crm_quotation_list.pdf',
+    excelFilename: 'crm_quotation_list.xlsx',
+    excelSheetName: 'CRMQuotationList',
+    printDocumentTitle: 'Quotation List',
+    pdfCaption: 'Quotation List',
+    pdfEmbedUnicodeFont: true,
+    excludeHeader: function (label) {
+      var h = (label || '').trim().toLowerCase();
+      return h === 'action' || h === 'actions';
+    }
+  });
+</script>
+{% endblock %}

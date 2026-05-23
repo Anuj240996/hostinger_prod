@@ -277,30 +277,48 @@
                             </div>
                         </div>
 
+                  </div>
+                  </fieldset>
 
-
-
-
-                        <!-- Engineer Assigned Dropdown -->
-                        <div class="col-sm-3 item1 project-detail-field">
+                   <div class="col-sm-12">
+                     <h5 class="p-2 text-danger" style="border-bottom : 2px solid orange">Assign Solar Project</h5>
+                   </div>
+                  <fieldset style="border-color: blue;">
+                      <legend style="color: darkblue;">Assign Solar Project</legend>
+                  <div class="form-row">
+                        <div class="col-sm-6 item1">
+                            <div class="form-group">
+                            <label for="Associate_Assigned"><b>Associate Assigned</b></label>
+                            <select id="Associate_Assigned" name="Associate_Assigned" class="form-control text-capitalize" required>
+                                {% if customer.Assoc_Assign %}
+                                    <option value="{{ customer.Assoc_Assign.id }}" selected>{{ customer.Assoc_Assign.first_name }} {{ customer.Assoc_Assign.last_name }}</option>
+                                {% else %}
+                                    <option value="" disabled selected>Select Associate</option>
+                                {% endif %}
+                                {% for associate in associates %}
+                                    {% if not customer.Assoc_Assign or customer.Assoc_Assign.id != associate.id %}
+                                        <option value="{{ associate.id }}">{{ associate.first_name }} {{ associate.last_name }}</option>
+                                    {% endif %}
+                                {% endfor %}
+                            </select>
+                            </div>
+                        </div>
+                        <div class="col-sm-6 item1">
+                            <div class="form-group">
                             <label for="Engineer_Assigned"><b>Engineer Assigned</b></label>
                             <select id="Engineer_Assigned" name="Engineer_Assigned" class="form-control text-capitalize" required>
                                 {% if customer.Engg_Assign %}
                                     <option value="{{ customer.Engg_Assign.id }}" selected>{{ customer.Engg_Assign.first_name }} {{ customer.Engg_Assign.last_name }}</option>
                                 {% endif %}
                                 {% for engineer in engineers %}
-                                    {% if customer.Engg_Assign.id != engineer.id %}
+                                    {% if not customer.Engg_Assign or customer.Engg_Assign.id != engineer.id %}
                                         <option value="{{ engineer.id }}">{{ engineer.first_name }} {{ engineer.last_name }}</option>
                                     {% endif %}
                                 {% endfor %}
                                 <option value="1">Other</option>
                             </select>
+                            </div>
                         </div>
-
-
-
-
-
                   </div>
                   </fieldset>
 

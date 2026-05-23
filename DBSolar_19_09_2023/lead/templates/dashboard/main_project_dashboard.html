@@ -1,0 +1,28 @@
+{% extends 'base.html' %}
+{% load static humanize %}
+
+{% block title %}Main Dashboard - Solar CRM{% endblock %}
+
+{% block extra_css %}
+{% include 'dashboard/legacy_kpi_card_styles.html' %}
+<style>
+    .main-dashboard-legacy {
+        padding: 0.25rem 0 1.5rem;
+    }
+    .main-dashboard-legacy .page-title {
+        font-weight: 600;
+        color: #333;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="main-dashboard-legacy crm-legacy-kpi-cards">
+    {% include 'dashboard/main_dashboard_body.html' %}
+    {% include 'dashboard/main_dashboard_crm_cards.html' %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{% include 'dashboard/crm_main_dashboard_scripts.html' %}
+{% endblock %}

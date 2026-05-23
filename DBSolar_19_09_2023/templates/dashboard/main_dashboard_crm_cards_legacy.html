@@ -1,0 +1,69 @@
+{% load humanize %}
+{# Lead / quotation KPIs for legacy /index/ — same card size as topside_main / staff dashboard #}
+{% if user.is_authenticated and user.is_staff and user.is_superuser %}
+<div class="row">
+    <div class="col-xl-3 col-sm-6 col-12 d-flex">
+        <div class="card bg-five w-100 my-card shadow">
+            <a class="text-decoration-none text-dark" href="{% url 'dashboard' %}">
+                <div class="card-body">
+                    <div class="db-widgets d-flex justify-content-between align-items-center">
+                        <div class="db-icon"><i class="fas fa-users"></i></div>
+                        <div class="db-info text-right">
+                            <h3>{{ total_leads|default:0|intcomma }}</h3>
+                            <h6>Total Leads</h6>
+                        </div>
+                    </div>
+                </div>
+            </a>
+        </div>
+    </div>
+    <div class="col-xl-3 col-sm-6 col-12 d-flex">
+        <div class="card bg-six w-100 my-card shadow">
+            <a class="text-decoration-none text-dark" href="{% url 'quotation_list' %}">
+                <div class="card-body">
+                    <div class="db-widgets d-flex justify-content-between align-items-center">
+                        <div class="db-icon"><i class="fas fa-file-invoice"></i></div>
+                        <div class="db-info text-right">
+                            <h3>{{ total_quotations|default:0|intcomma }}</h3>
+                            <h6>Total Quotations</h6>
+                        </div>
+                    </div>
+                </div>
+            </a>
+        </div>
+    </div>
+</div>
+{% elif user.is_authenticated and user.is_staff %}
+<div class="row">
+    <div class="col-xl-4 col-sm-6 col-12 d-flex">
+        <div class="card bg-five w-100 my-card shadow">
+            <a class="text-decoration-none text-dark" href="{% url 'dashboard' %}">
+                <div class="card-body">
+                    <div class="db-widgets d-flex justify-content-between align-items-center">
+                        <div class="db-icon"><i class="fas fa-users"></i></div>
+                        <div class="db-info">
+                            <h3>{{ total_leads|default:0|intcomma }}</h3>
+                            <h6>Total Leads</h6>
+                        </div>
+                    </div>
+                </div>
+            </a>
+        </div>
+    </div>
+    <div class="col-xl-4 col-sm-6 col-12 d-flex">
+        <div class="card bg-six w-100 my-card shadow">
+            <a class="text-decoration-none text-dark" href="{% url 'quotation_list' %}">
+                <div class="card-body">
+                    <div class="db-widgets d-flex justify-content-between align-items-center">
+                        <div class="db-icon"><i class="fas fa-file-invoice"></i></div>
+                        <div class="db-info">
+                            <h3>{{ total_quotations|default:0|intcomma }}</h3>
+                            <h6>Total Quotations</h6>
+                        </div>
+                    </div>
+                </div>
+            </a>
+        </div>
+    </div>
+</div>
+{% endif %}

@@ -1,8 +1,10 @@
 from django import forms
+from django.core.exceptions import ValidationError
 from django.forms import formset_factory, modelformset_factory
+from django.forms.models import ModelChoiceField
 
 from customer.models import Customer
-from product.models import Unit
+from product.models import Category, Unit
 from .models import (
     Supplier,
     Vendor,
@@ -14,6 +16,32 @@ from .models import (
     SaleBillDetails, FinalSale
 )
 from inventory.models import Stock
+
+
+class SafeCategoryModelChoiceField(ModelChoiceField):
+    """
+    Like ModelChoiceField but resolves with filter().first() so duplicate Category
+    rows (legacy DB) do not raise MultipleObjectsReturned from queryset.get().
+    """
+
+    def to_python(self, value):
+        if value in self.empty_values:
+            return None
+        self.validate_no_null_characters(value)
+        try:
+            key = self.to_field_name or "pk"
+            if isinstance(value, self.queryset.model):
+                return value
+            resolved = self.queryset.filter(**{key: value}).order_by("id").first()
+            if resolved is None:
+                raise self.queryset.model.DoesNotExist
+            return resolved
+        except (ValueError, TypeError, self.queryset.model.DoesNotExist):
+            raise ValidationError(
+                self.error_messages["invalid_choice"],
+                code="invalid_choice",
+                params={"value": value},
+            )
 
 
 # form used to select a supplier
@@ -31,7 +59,7 @@ class PurchaseItemForm(forms.ModelForm):
     purchase = forms.ModelChoiceField(queryset=Unit.objects.all(), required=True)  #
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields['stock'].queryset = Stock.objects.filter(is_deleted=False)
+        self.fields['stock'].queryset = Stock.objects.for_forms_dropdown()
         self.fields['stock'].widget.attrs.update({'class': 'textinput form-control setprice stock', 'required': 'true'})
         self.fields['quantity'].widget.attrs.update({'class': 'textinput form-control setprice quantity', 'min': '0', 'required': 'true'})
         self.fields['perprice'].widget.attrs.update({'class': 'textinput form-control setprice price', 'min': '0', 'required': 'true'})
@@ -60,6 +88,11 @@ class PurchaseDetailsForm(forms.ModelForm):
 
 # form used for supplier
 class SupplierForm(forms.ModelForm):
+    category = SafeCategoryModelChoiceField(
+        queryset=Category.objects.all().order_by("name", "id"),
+        required=True,
+    )
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         # self.fields['name'].widget.attrs.update({'class': 'textinput form-control', 'pattern' : '[a-zA-Z\s]{1,50}', 'title' : 'Alphabets and Spaces only'})
@@ -207,6 +240,11 @@ class SupplierForm(forms.ModelForm):
 #         }
 
 class VendorForm(forms.ModelForm):
+    category = SafeCategoryModelChoiceField(
+        queryset=Category.objects.all().order_by("name", "id"),
+        required=True,
+    )
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields['name'].widget.attrs.update({'class': 'textinput form-control', 'pattern': '[a-zA-Z\s]{1,50}', 'title': 'Alphabets and Spaces only'})
@@ -324,7 +362,7 @@ class SelectSaleForm(forms.ModelForm):
 class SaleItemForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields['stock'].queryset = Stock.objects.filter(is_deleted=False)
+        self.fields['stock'].queryset = Stock.objects.for_forms_dropdown()
         self.fields['stock'].widget.attrs.update({'class': 'textinput form-control setprice stock', 'required': 'true'})
         self.fields['quantity'].widget.attrs.update({'class': 'textinput form-control setprice quantity', 'min': '0', 'required': 'true'})
         # self.fields['perprice'].widget.attrs.update({'class': 'textinput form-control setprice price', 'min': '0', 'required': 'true'})
@@ -343,7 +381,7 @@ SaleItemFormset = formset_factory(SaleItemForm, extra=1)
 class SaleItemForm_bill(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields['stock'].queryset = Stock.objects.filter(is_deleted=False)
+        self.fields['stock'].queryset = Stock.objects.for_forms_dropdown()
         self.fields['stock'].widget.attrs.update({'class': 'textinput form-control setprice stock', 'required': 'true'})
         self.fields['quantity'].widget.attrs.update({'class': 'textinput form-control setprice quantity', 'min': '0', 'required': 'true'})
         self.fields['perprice'].widget.attrs.update({'class': 'textinput form-control setprice price', 'min': '0', 'required': 'true'})

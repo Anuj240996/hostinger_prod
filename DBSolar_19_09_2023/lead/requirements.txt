@@ -1,0 +1,35 @@
+# Django (latest stable compatible with Python 3.14)
+Django==5.1.6
+
+# Database - SQLite is built-in, no need for psycopg2
+# Forms
+django-crispy-forms==2.3
+crispy-bootstrap5==2024.10
+
+# Images
+Pillow==11.1.0
+
+# Environment variables
+python-decouple==3.8
+
+# Authentication
+django-allauth==65.4.1
+
+# HTMX integration
+django-htmx==1.19.0
+
+# Debug toolbar
+django-debug-toolbar==4.4.6
+
+# Charts and data
+plotly==5.24.1
+pandas==2.2.3
+
+# Excel export
+openpyxl==3.1.5
+
+# Filtering
+django-filter==24.3
+
+# For async support (optional)
+channels==4.2.0

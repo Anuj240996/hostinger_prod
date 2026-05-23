@@ -1,0 +1,10 @@
+# Django Settings
+SECRET_KEY=django-insecure-your-secret-key-here-change-this-in-production
+DEBUG=True
+ALLOWED_HOSTS=localhost,127.0.0.1
+
+# SQLite is used - no database credentials needed
+# Database file will be created as db.sqlite3 in the project root
+
+# Email (for development)
+EMAIL_BACKEND=django.core.mail.backends.console.EmailBackend

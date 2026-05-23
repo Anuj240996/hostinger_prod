@@ -42,14 +42,15 @@
                 <th>Stock Name</th>
                 <th>Serial No</th>
                 <th>Purchase Bill No</th>
+                <th>Purchase Date</th>
                 <th>Sale Bill No</th>
                 <th>Final Sale Bill</th>
                 <th>Return Bill</th>
             </tr>
 
             <tr align="center">
-                <td>{{ item.stock.category }}</td>
-                <td>{{ item.stock.subcategory }}</td>
+                <td>{% if item.stock.safe_category %}{{ item.stock.safe_category.name }}{% else %}N/A{% endif %}</td>
+                <td>{% if item.stock.safe_subcategory %}{{ item.stock.safe_subcategory.name }}{% else %}N/A{% endif %}</td>
                 <td>{{ item.stock.name }}</td>
                 <td>{{ item.serialNo }}</td>
                 <td>{{ item.billno.billno }} &nbsp;
@@ -57,6 +58,7 @@
                             <i class="fas fa-eye"></i>
                         </a>
                 </td>
+                <td>{{ item.purchase_date_display }}</td>
                  <td>
                     {% if item.sales_billno %}
                         {{ item.sales_billno.billno }} &nbsp;
@@ -111,7 +113,7 @@
             <tr><td><strong>Supplier Company Name</strong></td><td>{{ item.billno.supplier }}</td></tr>
             <tr><td><strong>Stock Name</strong></td><td>{{ item.stock.name }}</td></tr>
             <tr><td><strong>Serial No</strong></td><td>{{ item.serialNo }}</td></tr>
-            <tr><td><strong>Purchase Bill Date</strong></td><td>{{ item.billno.time|date:"d-m-Y"  }}</td></tr>
+            <tr><td><strong>Purchase Bill Date</strong></td><td>{{ item.purchase_date_display }}</td></tr>
             <tr><td><strong>Destination</strong></td>
                 <td>
                     {% if item.purchase_bill_details %}
@@ -138,7 +140,7 @@
             <tr><td><strong>Address</strong></td><td>{{ item.sales_billno.Cust_id.Address }}</td></tr>
             <tr><td><strong>Stock Name</strong></td><td>{{ item.stock.name }}</td></tr>
             <tr><td><strong>Serial No</strong></td><td>{{ item.serialNo }}</td></tr>
-            <tr><td><strong>Sale Bill Date</strong></td><td>{{ item.sales_billno.time|date:"d-m-Y"  }}</td></tr>
+            <tr><td><strong>Sale Bill Date</strong></td><td>{{ item.sale_date_display }}</td></tr>
             <tr><td><strong>Source</strong></td>
                 <td>
                      {% if item.sale_bill_details %}
@@ -164,7 +166,7 @@
             <tr><td><strong>Address</strong></td><td>{{ item.return_bill.customer.Address }}</td></tr>
             <tr><td><strong>Stock Name</strong></td><td>{{ item.stock.name }}</td></tr>
             <tr><td><strong>Serial No</strong></td><td>{{ item.serialNo }}</td></tr>
-            <tr><td><strong>Return Bill Date</strong></td><td>{{ item.return_bill.time|date:"d-m-Y"  }}</td></tr>
+            <tr><td><strong>Return Bill Date</strong></td><td>{{ item.return_date_display }}</td></tr>
             <tr><td><strong>Destination</strong></td>
                 <td>
                     {% if item.return_sale_bill_details %}
@@ -190,7 +192,7 @@
             <tr><td><strong>Address</strong></td><td>{{ item.final_salebill.customer.Address }}</td></tr>
             <tr><td><strong>Stock Name</strong></td><td>{{ item.stock.name }}</td></tr>
             <tr><td><strong>Serial No</strong></td><td>{{ item.serialNo }}</td></tr>
-            <tr><td><strong>Final Sale Bill Date</strong></td><td>{{ item.final_salebill.time|date:"d-m-Y"  }}</td></tr>
+            <tr><td><strong>Final Sale Bill Date</strong></td><td>{{ item.final_sale_date_display }}</td></tr>
             <tr><td><strong>Source</strong></td>
                 <td>
                      {% if item.sale_bill_details %}
