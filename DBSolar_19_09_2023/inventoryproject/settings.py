@@ -28,6 +28,18 @@ ALLOWED_HOSTS_ENV = os.environ.get(
 )
 ALLOWED_HOSTS = [host.strip() for host in ALLOWED_HOSTS_ENV.split(",") if host.strip()]
 
+# Optional: access via server IP (e.g. 72.60.98.248:8001) — set in EasyPanel env.
+_vps_ip = os.environ.get("VPS_PUBLIC_IP", "").strip()
+if _vps_ip and _vps_ip not in ALLOWED_HOSTS:
+    ALLOWED_HOSTS.append(_vps_ip)
+
+# Optional: serve under a subpath on the same domain (e.g. /v2). Requires reverse-proxy strip prefix.
+_script_name = os.environ.get("FORCE_SCRIPT_NAME", "").strip().rstrip("/")
+if _script_name:
+    FORCE_SCRIPT_NAME = _script_name
+    STATIC_URL = f"{_script_name}/static/"
+    MEDIA_URL = f"{_script_name}/media/"
+
 
 def _csrf_trusted_origins_from_env_or_hosts():
     """Django 4+ requires full URLs (https://host). Env may list bare hostnames."""

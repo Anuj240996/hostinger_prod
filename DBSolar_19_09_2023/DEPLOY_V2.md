@@ -58,13 +58,64 @@ EasyPanel’s proxy cannot connect to Gunicorn. Check in order:
 
 | Variable | Example / notes |
 |----------|-----------------|
-| `DATABASE_URL` | `postgres://USER:PASS@HOST:5432/solar_db_v2` — **use a new database** |
-| `SECRET_KEY` | New random string (not the same as V1 unless intentional) |
+| `DATABASE_URL` | `postgres://USER:PASS@HOST:5432/db_solar_v2` — **separate from V1** |
+| `SECRET_KEY` | New random string |
 | `DEBUG` | `False` |
-| `ALLOWED_HOSTS` | `v2.db-solar.co.in,www.db-solar.co.in` (your V2 hostnames) |
+| `ALLOWED_HOSTS` | `db-solar-db-solar-v2.fhibgf.easypanel.host,.easypanel.host,72.60.98.248,localhost` |
+| `VPS_PUBLIC_IP` | `72.60.98.248` (optional; adds IP to `ALLOWED_HOSTS`) |
+| `WEB_CONCURRENCY` | `1` (default; use `2` only if RAM allows) |
+| `CSRF_TRUSTED_ORIGINS` | **Leave unset** (or `https://db-solar-db-solar-v2.fhibgf.easypanel.host` only) |
 | `EMAIL_*` | Same pattern as V1 if email is required |
 
+**Do not set** `CSRF_TRUSTED_ORIGINS` to the same value as `ALLOWED_HOSTS`.
+
 `entrypoint.sh` requires **`DATABASE_URL`** (not only `DB_*`).
+
+### Health check (fixes “domain correct but page never loads”)
+
+In **db-solar-v2** → **Advanced / Health check** (if available):
+
+- **Path:** `/health/`
+- **Port:** `8000`
+- **Expected:** HTTP `200` with body `ok`
+
+If the probe hits `/` and gets `400 Disallowed Host`, EasyPanel marks the service down even though Gunicorn is running.
+
+### Same server IP as V1 (`72.60.98.248:8000`)
+
+V1 and V2 **cannot both use host port 8000**. Use two ports:
+
+| App | Host URL (example) | EasyPanel “Publish port” |
+|-----|------------------|-------------------------|
+| V1 (production) | `http://72.60.98.248:8000` | `8000` → container `8000` |
+| V2 (testing) | `http://72.60.98.248:8001` | `8001` → container `8000` |
+
+Steps for V2:
+
+1. **db-solar-v2** → **Ports** → add **public** mapping `8001` → `8000`.
+2. Env: `ALLOWED_HOSTS=72.60.98.248,db-solar-db-solar-v2.fhibgf.easypanel.host,.easypanel.host,localhost`  
+   Or set `VPS_PUBLIC_IP=72.60.98.248`.
+3. Open **`http://72.60.98.248:8001/`** (login page).
+
+HTTPS EasyPanel URL still works in parallel:  
+`https://db-solar-db-solar-v2.fhibgf.easypanel.host/`
+
+### “Same website” as production (`db-solar.co.in`)
+
+You **cannot** run V1 and V2 on the **same URL + same database** without replacing production.
+
+Safe options:
+
+1. **Subdomain (recommended):** `v2.db-solar.co.in` → DNS A record to `72.60.98.248` → add domain on **db-solar-v2** only. V1 stays on `www.db-solar.co.in`.
+2. **Same IP, different port:** `http://72.60.98.248:8001` (above).
+3. **Same domain, path `/v2/`:** requires reverse-proxy rules in EasyPanel **and** env `FORCE_SCRIPT_NAME=/v2` on V2 (advanced; test carefully).
+
+### High memory (~80%), low CPU (0%)
+
+- Normal if **no browser traffic** reaches the app (CPU idle).
+- This image is large (OpenCV, etc.). Default **`WEB_CONCURRENCY=1`** keeps one Gunicorn worker.
+- Ensure only **one** V2 replica in EasyPanel if memory is tight.
+- After opening the site, you should see `GET /` lines in logs and CPU may rise slightly.
 
 ### Database
 

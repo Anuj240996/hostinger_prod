@@ -52,11 +52,13 @@ RUN SECRET_KEY=build-collectstatic-only DEBUG=False \
 COPY entrypoint.sh /app/entrypoint.sh
 RUN chmod +x /app/entrypoint.sh
 
-# Expose port
+# Expose port (map host 8001→8000 in EasyPanel if V1 already uses host :8000)
 EXPOSE 8000
+
+ENV WEB_CONCURRENCY=1
 
 # Set entrypoint
 ENTRYPOINT ["/app/entrypoint.sh"]
 
-# Default command
-CMD ["gunicorn", "--bind", "0.0.0.0:8000", "--workers", "3", "--timeout", "120", "--access-logfile", "-", "--error-logfile", "-", "inventoryproject.wsgi:application"]
+# Default command (1 worker by default — lowers RAM on small VPS)
+CMD ["sh", "-c", "exec gunicorn --bind 0.0.0.0:8000 --workers ${WEB_CONCURRENCY:-1} --timeout 120 --access-logfile - --error-logfile - inventoryproject.wsgi:application"]

@@ -60,5 +60,6 @@ else
   echo "Static files present — skipping collectstatic (set RUN_COLLECTSTATIC=1 to force)."
 fi
 
-echo "=== Starting Gunicorn on 0.0.0.0:8000 ==="
+echo "=== Starting Gunicorn on 0.0.0.0:8000 (workers=${WEB_CONCURRENCY:-1}) ==="
+echo "Health probe: GET /health/ (configure EasyPanel health check to this path)"
 exec "$@"

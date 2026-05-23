@@ -100,8 +100,10 @@ from rest_framework_simplejwt.views import TokenObtainPairView
 from django.views.generic import RedirectView
 
 from inventoryproject.legacy_redirects import redirect_legacy_leads_path
+from inventoryproject.health_views import health_check
 
 urlpatterns = [
+    path("health/", health_check, name="health-check"),
     path('admin/', admin.site.urls),
     path('', include('dashboard.urls')),
     path('quotation/', include('quotation.urls')),
