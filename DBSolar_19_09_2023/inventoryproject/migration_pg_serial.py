@@ -23,6 +23,39 @@ def table_owner_rolname(cursor, table: str):
     return row[0] if row else None
 
 
+def column_udt_name(cursor, table: str, column: str) -> str | None:
+    cursor.execute(
+        """
+        SELECT c.udt_name
+        FROM information_schema.columns c
+        WHERE c.table_schema = 'public'
+          AND c.table_name = %s
+          AND c.column_name = %s
+        """,
+        [table, column],
+    )
+    row = cursor.fetchone()
+    return row[0] if row else None
+
+
+def convert_boolean_column_to_bit_varying(
+    cursor, table: str, column: str, *, max_length: int = 1
+) -> None:
+    """Fresh Django DBs use boolean; BitVaryingBooleanField needs bit varying on PostgreSQL."""
+    udt = column_udt_name(cursor, table, column)
+    if udt in ("varbit", "bit"):
+        return
+    if udt != "bool":
+        return
+    cursor.execute(
+        f"""
+        ALTER TABLE "{table}"
+        ALTER COLUMN "{column}" TYPE bit varying({max_length})
+        USING (CASE WHEN "{column}" THEN B'1' ELSE B'0' END)
+        """
+    )
+
+
 def is_pg_identity_column(cursor, table: str, column: str) -> bool:
     cursor.execute(
         """
