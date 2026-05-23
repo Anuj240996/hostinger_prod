@@ -54,11 +54,9 @@ done
 echo "Running database migrations..."
 echo "Note: If using existing db_solar database, migrations will only apply new changes"
 python manage.py migrate --noinput || {
-    echo "Warning: Some migrations failed, but continuing..."
-    echo "This is normal if database schema already matches Django models or has identity columns"
-    echo "Attempting to continue with fake migrations for problematic ones..."
-    # Try to fake apply remaining migrations if they're just schema conflicts
-    python manage.py migrate --fake --noinput || echo "Fake migration also failed, continuing anyway"
+    echo "ERROR: Database migrations failed. The app will not start until migrations succeed."
+    echo "For a fresh V2 database (db_solar_v2), drop and recreate the database, then redeploy."
+    exit 1
 }
 
 # Collect static files (gathers from static/ and asert/ into staticfiles/)
