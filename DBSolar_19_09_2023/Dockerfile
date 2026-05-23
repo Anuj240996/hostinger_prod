@@ -43,6 +43,11 @@ COPY . /app/
 # staticfiles is where collectstatic will gather all static files
 RUN mkdir -p /app/asert /app/static /app/staticfiles /app/media
 
+# Bake static files into the image so the container can start Gunicorn immediately.
+ENV DJANGO_SETTINGS_MODULE=inventoryproject.settings
+RUN SECRET_KEY=build-collectstatic-only DEBUG=False \
+    python manage.py collectstatic --noinput
+
 # Copy entrypoint script
 COPY entrypoint.sh /app/entrypoint.sh
 RUN chmod +x /app/entrypoint.sh

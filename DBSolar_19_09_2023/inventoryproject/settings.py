@@ -24,9 +24,21 @@ DEBUG = os.environ.get("DEBUG", "False").lower() == "true"
 
 ALLOWED_HOSTS_ENV = os.environ.get(
     "ALLOWED_HOSTS",
-    "www.db-solar.co.in,db-solar.co.in,localhost,127.0.0.1,testserver",
+    "www.db-solar.co.in,db-solar.co.in,localhost,127.0.0.1,testserver,.easypanel.host",
 )
 ALLOWED_HOSTS = [host.strip() for host in ALLOWED_HOSTS_ENV.split(",") if host.strip()]
+
+_csrf_origins = os.environ.get("CSRF_TRUSTED_ORIGINS", "").strip()
+if _csrf_origins:
+    CSRF_TRUSTED_ORIGINS = [
+        origin.strip() for origin in _csrf_origins.split(",") if origin.strip()
+    ]
+else:
+    CSRF_TRUSTED_ORIGINS = [
+        f"https://{host}"
+        for host in ALLOWED_HOSTS
+        if host and not host.startswith(".") and host not in ("localhost", "127.0.0.1", "testserver")
+    ]
 
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": [
@@ -81,6 +93,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
+    "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
@@ -160,7 +173,7 @@ STATICFILES_DIRS = [
 ]
 STATIC_ROOT = BASE_DIR / "staticfiles"
 
-WHITENOISE_USE_FINDERS = True
+WHITENOISE_USE_FINDERS = DEBUG
 WHITENOISE_AUTOREFRESH = DEBUG
 WHITENOISE_ROOT = STATIC_ROOT
 

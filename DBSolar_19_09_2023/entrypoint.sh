@@ -15,18 +15,10 @@ import psycopg2
 import os
 
 try:
-    # conn = psycopg2.connect(
-    #     host=os.environ.get('DB_HOST') or os.environ.get('POSTGRES_HOST', 'localhost'),
-    #     port=os.environ.get('DB_PORT') or os.environ.get('POSTGRES_PORT', '2700'),
-    #     user=os.environ.get('DB_USER') or os.environ.get('POSTGRES_USER', 'postgres'),
-    #     password=os.environ.get('DB_PASSWORD') or os.environ.get('POSTGRES_PASSWORD', ''),
-    #     dbname=os.environ.get('DB_NAME') or os.environ.get('POSTGRES_DB', 'db_solar'),
-    #     connect_timeout=5
-    # )
     conn = psycopg2.connect(
-    dsn=os.environ.get('DATABASE_URL'),
-    connect_timeout=5
-	  )
+        dsn=os.environ.get('DATABASE_URL'),
+        connect_timeout=5,
+    )
     conn.close()
     print('Database connection successful!')
     sys.exit(0)
@@ -50,36 +42,23 @@ except Exception as e:
   fi
 done
 
-# Run migrations (for existing database, this will only apply new migrations)
 echo "Running database migrations..."
-echo "Note: If using existing db_solar database, migrations will only apply new changes"
 python manage.py migrate --noinput || {
     echo "ERROR: Database migrations failed. The app will not start until migrations succeed."
     echo "For a fresh V2 database (db_solar_v2), drop and recreate the database, then redeploy."
     exit 1
 }
 
-# Collect static files (gathers from static/ and asert/ into staticfiles/)
-echo "Collecting static files..."
-python manage.py collectstatic --noinput --clear || {
-    echo "Warning: collectstatic failed, but continuing..."
-}
+# collectstatic runs at Docker build time. Re-run only when forced (e.g. after static changes).
+if [ "${RUN_COLLECTSTATIC:-0}" = "1" ]; then
+  echo "RUN_COLLECTSTATIC=1 — collecting static files..."
+  python manage.py collectstatic --noinput || echo "Warning: collectstatic failed, continuing..."
+elif [ ! -f /app/staticfiles/admin/css/base.css ]; then
+  echo "Static files missing — running collectstatic (no --clear)..."
+  python manage.py collectstatic --noinput || echo "Warning: collectstatic failed, continuing..."
+else
+  echo "Static files present — skipping collectstatic (set RUN_COLLECTSTATIC=1 to force)."
+fi
 
-# Verify static file directories exist and contain files
-echo "=== Verifying static file directories ==="
-echo "Checking /app/static/images/:"
-ls -la /app/static/images/dblogo*.png 2>/dev/null | head -5 || echo "No logo files in static/images"
-echo "Checking /app/asert/images/:"
-ls -la /app/asert/images/dblogo*.png 2>/dev/null | head -5 || echo "No logo files in asert/images"
-echo "Checking /app/staticfiles/ (collected files):"
-ls -la /app/staticfiles/ 2>/dev/null | head -5 || echo "Staticfiles directory empty"
-echo "Checking /app/media/:"
-ls -la /app/media/ 2>/dev/null | head -5 || echo "Media directory empty or not found"
-echo ""
-echo "=== Static file serving configuration ==="
-echo "WhiteNoise will serve files from STATIC_ROOT (staticfiles/) and STATICFILES_DIRS (static/, asert/)"
-echo "Files accessible at: /static/images/dblogo200.png, etc."
-
-# Execute the command
-echo "Starting application..."
+echo "=== Starting Gunicorn on 0.0.0.0:8000 ==="
 exec "$@"

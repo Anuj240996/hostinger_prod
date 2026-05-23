@@ -40,8 +40,19 @@ git push -u origin version-2
 2. **Source:** GitHub `Anuj240996/hostinger_prod`, branch **`version-2`**.
 3. **Build context / root:** `DBSolar_19_09_2023` (folder containing `Dockerfile`).
 4. **Build:** Dockerfile (auto-detected).
-5. **Port:** `8000` (internal).
-6. **Domain:** new subdomain (e.g. `v2.db-solar.co.in`) — not the live V1 domain until UAT passes.
+5. **Port:** `8000` (internal). EasyPanel “HTTP port” / target port must be **8000**, not 80.
+6. **Domain:** new subdomain (e.g. `v2.db-solar.co.in`) or EasyPanel `*.easypanel.host` URL.
+
+### Site shows “Service is not reachable”
+
+EasyPanel’s proxy cannot connect to Gunicorn. Check in order:
+
+1. **Service logs** — look for `=== Starting Gunicorn on 0.0.0.0:8000 ===`. If logs stop at `collectstatic`, redeploy after pulling latest `version-2` (static files are collected at **build** time now).
+2. **Port** — app listens on **8000** (`Dockerfile` / `CMD` gunicorn bind).
+3. **Container status** — not crash-looping (OOM during old `collectstatic --clear` was a common cause).
+4. **`ALLOWED_HOSTS`** — must include your hostname, e.g. `db-solar-db-solar-v2.fhibgf.easypanel.host` or `.easypanel.host` (default in settings includes `.easypanel.host`).
+5. **`CSRF_TRUSTED_ORIGINS`** (for HTTPS forms): `https://db-solar-db-solar-v2.fhibgf.easypanel.host`
+6. **Rebuild** the image after git push (not only restart) so Dockerfile `collectstatic` runs.
 
 ### Environment variables (V2 service)
 
