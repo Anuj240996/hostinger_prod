@@ -22,14 +22,32 @@ SECRET_KEY = os.environ.get(
 
 DEBUG = os.environ.get("DEBUG", "False").lower() == "true"
 
+def _normalize_allowed_host(entry: str) -> str:
+    """ALLOWED_HOSTS = hostnames only (no http://, no path, no trailing slash)."""
+    host = entry.strip()
+    for prefix in ("https://", "http://"):
+        if host.lower().startswith(prefix):
+            host = host[len(prefix) :]
+    host = host.split("/")[0].strip()
+    if host.endswith(":"):
+        host = host[:-1]
+    return host
+
+
 ALLOWED_HOSTS_ENV = os.environ.get(
     "ALLOWED_HOSTS",
-    "www.db-solar.co.in,db-solar.co.in,localhost,127.0.0.1,testserver,.easypanel.host",
+    "www.db-solar.co.in,db-solar.co.in,72.60.98.248,localhost,127.0.0.1,testserver,.easypanel.host",
 )
-ALLOWED_HOSTS = [host.strip() for host in ALLOWED_HOSTS_ENV.split(",") if host.strip()]
+ALLOWED_HOSTS = list(
+    dict.fromkeys(
+        _normalize_allowed_host(h)
+        for h in ALLOWED_HOSTS_ENV.split(",")
+        if h.strip()
+    )
+)
 
-# Optional: access via server IP (e.g. 72.60.98.248:8001) — set in EasyPanel env.
-_vps_ip = os.environ.get("VPS_PUBLIC_IP", "").strip()
+# Optional extra IP via env (same format rules as above).
+_vps_ip = _normalize_allowed_host(os.environ.get("VPS_PUBLIC_IP", ""))
 if _vps_ip and _vps_ip not in ALLOWED_HOSTS:
     ALLOWED_HOSTS.append(_vps_ip)
 
@@ -59,6 +77,10 @@ def _csrf_trusted_origins_from_env_or_hosts():
             continue
         if entry in ("localhost", "127.0.0.1", "testserver"):
             origins.append(f"http://{entry}")
+        elif entry.replace(".", "").isdigit() or entry.count(".") == 3:
+            # IPv4 — allow HTTP when accessed by IP (e.g. http://72.60.98.248/)
+            origins.append(f"http://{entry}")
+            origins.append(f"https://{entry}")
         else:
             origins.append(f"https://{entry}")
     return origins
