@@ -28,17 +28,28 @@ ALLOWED_HOSTS_ENV = os.environ.get(
 )
 ALLOWED_HOSTS = [host.strip() for host in ALLOWED_HOSTS_ENV.split(",") if host.strip()]
 
-_csrf_origins = os.environ.get("CSRF_TRUSTED_ORIGINS", "").strip()
-if _csrf_origins:
-    CSRF_TRUSTED_ORIGINS = [
-        origin.strip() for origin in _csrf_origins.split(",") if origin.strip()
-    ]
-else:
-    CSRF_TRUSTED_ORIGINS = [
-        f"https://{host}"
-        for host in ALLOWED_HOSTS
-        if host and not host.startswith(".") and host not in ("localhost", "127.0.0.1", "testserver")
-    ]
+
+def _csrf_trusted_origins_from_env_or_hosts():
+    """Django 4+ requires full URLs (https://host). Env may list bare hostnames."""
+    raw = os.environ.get("CSRF_TRUSTED_ORIGINS", "").strip()
+    entries = (
+        [e.strip() for e in raw.split(",") if e.strip()]
+        if raw
+        else [h for h in ALLOWED_HOSTS if h and not h.startswith(".")]
+    )
+    origins = []
+    for entry in entries:
+        if entry.startswith("http://") or entry.startswith("https://"):
+            origins.append(entry)
+            continue
+        if entry in ("localhost", "127.0.0.1", "testserver"):
+            origins.append(f"http://{entry}")
+        else:
+            origins.append(f"https://{entry}")
+    return origins
+
+
+CSRF_TRUSTED_ORIGINS = _csrf_trusted_origins_from_env_or_hosts()
 
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": [

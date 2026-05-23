@@ -51,7 +51,7 @@ EasyPanel’s proxy cannot connect to Gunicorn. Check in order:
 2. **Port** — app listens on **8000** (`Dockerfile` / `CMD` gunicorn bind).
 3. **Container status** — not crash-looping (OOM during old `collectstatic --clear` was a common cause).
 4. **`ALLOWED_HOSTS`** — must include your hostname, e.g. `db-solar-db-solar-v2.fhibgf.easypanel.host` or `.easypanel.host` (default in settings includes `.easypanel.host`).
-5. **`CSRF_TRUSTED_ORIGINS`** (for HTTPS forms): `https://db-solar-db-solar-v2.fhibgf.easypanel.host`
+5. **`CSRF_TRUSTED_ORIGINS`** (optional): full URLs only, e.g. `https://db-solar-db-solar-v2.fhibgf.easypanel.host` — or omit and settings will add `https://` from `ALLOWED_HOSTS`. Do **not** copy `ALLOWED_HOSTS` verbatim (no `.easypanel.host` wildcards).
 6. **Rebuild** the image after git push (not only restart) so Dockerfile `collectstatic` runs.
 
 ### Environment variables (V2 service)
