@@ -1,4 +1,4 @@
-# Use Python 3.11 slim image as base
+# Python 3.10 (matches production 3.10.20)
 FROM python:3.10-slim
 
 # Set environment variables
