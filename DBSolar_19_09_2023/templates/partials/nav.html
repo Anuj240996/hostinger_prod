@@ -1,5 +1,6 @@
 <!-- navbar -->
 {% load humanize %}
+{% load profile_extras %}
 <style>
     /* Custom CSS for displaying count1 in mobile mode */
     @media (max-width: 767px) {
@@ -163,7 +164,7 @@
 <!--            {% else %}-->
 <!--              <span class="user-img text-capitalize"><img class="rounded-circle" src="{{ user.profile.image.url }}" width="50" height="50" alt="{{ user.first_name }} {{ user.last_name }}">  {{ user.username }} </span>-->
 <!--            {% endif %}-->
-             <img class="rounded-circle" src="{{ user.profile.image.url }}" width="50" height="50" alt="{{ user.first_name }} {{ user.last_name }}">
+             <img class="rounded-circle" src="{{ user.profile|profile_image_url }}" width="50" height="50" alt="{{ user.first_name }} {{ user.last_name }}">
                <span id="user-name">
                   {% if user.first_name %}
                      {{ user.first_name }}
@@ -191,7 +192,7 @@
          <div class="dropdown-menu profile">
             <div class="user-header">
                <div class="avatar avatar-sm">
-                  <img src="{{ user.profile.image.url }}" alt="User Image" class="avatar-img rounded-circle">
+                  <img src="{{ user.profile|profile_image_url }}" alt="User Image" class="avatar-img rounded-circle">
                </div>
                {% if user.first_name %}
                   <div class="user-text text-capitalize">

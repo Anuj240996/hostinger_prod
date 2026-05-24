@@ -214,14 +214,16 @@ USE_TZ = True
 CRISPY_TEMPLATE_PACK = "bootstrap4"
 
 STATIC_URL = "/static/"
+# Order matters: primary `static/` first so collectstatic/WhiteNoise prefer real assets over `asert/` duplicates.
 STATICFILES_DIRS = [
     BASE_DIR / "static",
-    BASE_DIR / "asert",
     BASE_DIR / "lead" / "static",
+    BASE_DIR / "asert",
 ]
 STATIC_ROOT = BASE_DIR / "staticfiles"
 
-WHITENOISE_USE_FINDERS = DEBUG
+# Match localhost runserver (serves all STATICFILES_DIRS). Set WHITENOISE_USE_FINDERS=false after verifying collectstatic.
+WHITENOISE_USE_FINDERS = os.environ.get("WHITENOISE_USE_FINDERS", "true").lower() == "true"
 WHITENOISE_AUTOREFRESH = DEBUG
 WHITENOISE_ROOT = STATIC_ROOT
 

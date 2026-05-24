@@ -34,8 +34,8 @@
       <link rel="stylesheet" href="{% static 'plugins/icheck-bootstrap/icheck-bootstrap.min.css' %}">
       <!-- JQVMap -->
       <link rel="stylesheet" href="{% static 'plugins/jqvmap/jqvmap.min.css' %}">
-      <!-- Theme style not run -->
-<!--      <link rel="stylesheet" href="{% static 'dist1/css/adminlte.min.css' %}">-->
+      <!-- Theme style (AdminLTE — matches local ERP layout) -->
+      <link rel="stylesheet" href="{% static 'dist/css/adminlte.min.css' %}">
       <!-- overlayScrollbars -->
       <link rel="stylesheet" href="{% static 'plugins/overlayScrollbars/css/OverlayScrollbars.min.css' %}">
       <!-- Daterange picker -->
@@ -50,12 +50,12 @@
       <link rel="stylesheet" href="{% static 'assets/plugins/fontawesome/css/all.min.css' %}">
       <link rel="stylesheet" href="{% static 'assets/css/style.css' %}">
       <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=0">
-      <link rel="shortcut icon" href="assets/img/favicon.png">
+      <link rel="shortcut icon" href="{% static 'assets/img/favicon.png' %}">
       <link rel="stylesheet" href="{% static 'assets/plugins/datatables/datatables.min.css' %}">
       <!-- customer table -->
-      <link rel="stylesheet" href="/static/css/main.css" />
-      <link rel="stylesheet" href="/static/css/onchange.css" />
-      <link rel="stylesheet" href="/static/css/checkbox.css" />
+      <link rel="stylesheet" href="{% static 'css/main.css' %}" />
+      <link rel="stylesheet" href="{% static 'css/onchange.css' %}" />
+      <link rel="stylesheet" href="{% static 'css/checkbox.css' %}" />
       <link rel="stylesheet" href="{% static 'css/checkbox.css' %}" />
       <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
       <script src="https://unpkg.com/htmx.org@1.6.0"></script>
@@ -1622,6 +1622,7 @@
       <script src="{% static 'assets/js/jquery-3.6.0.min.js' %}"></script>
       <script src="{% static 'assets/js/popper.min.js' %}"></script>
       <script src="{% static 'assets/plugins/bootstrap/js/bootstrap.min.js' %}"></script>
+      <script src="{% static 'dist/js/adminlte.min.js' %}"></script>
       <script src="{% static 'assets/plugins/slimscroll/jquery.slimscroll.min.js' %}"></script>
       <script src="{% static 'assets/plugins/apexchart/apexcharts.min.js' %}"></script>
       <script src="{% static 'assets/plugins/apexchart/chart-data.js' %}"></script>

@@ -42,6 +42,14 @@ except Exception as e:
   fi
 done
 
+mkdir -p /app/media/profile_images
+if [ ! -f /app/media/profile_images/default.png ]; then
+  if [ -f /app/static/images/dblogosmall.png ]; then
+    cp /app/static/images/dblogosmall.png /app/media/profile_images/default.png
+    echo "Created default profile image at media/profile_images/default.png"
+  fi
+fi
+
 echo "Running database migrations..."
 python manage.py migrate --noinput || {
     echo "ERROR: Database migrations failed. The app will not start until migrations succeed."
