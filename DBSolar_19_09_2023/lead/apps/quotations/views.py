@@ -430,11 +430,15 @@ from django.contrib.auth.models import User
 
 import logging
 
-# Try to import reportlab, provide fallback if not available
+# ReportLab (see requirements.txt reportlab==3.6.13)
 try:
-    from reportlab.pdf import canvas
-    from reportlab.lib.pagesizes import letter
+    from reportlab.pdfgen import canvas
+    from reportlab.lib.pagesizes import letter, A4
     from reportlab.lib.units import inch
+    from reportlab.lib import colors
+    from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
+    from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+    from reportlab.lib.enums import TA_CENTER, TA_RIGHT
     REPORTLAB_AVAILABLE = True
 except ImportError:
     REPORTLAB_AVAILABLE = False
@@ -1362,13 +1366,6 @@ def add_negotiation_note(request, pk):
 
 from django.http import FileResponse
 import io
-from reportlab.pdfgen import canvas
-from reportlab.lib.pagesizes import letter, A4
-from reportlab.lib.units import inch
-from reportlab.lib import colors
-from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
-from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-from reportlab.lib.enums import TA_CENTER, TA_RIGHT
 from datetime import datetime
 
 
