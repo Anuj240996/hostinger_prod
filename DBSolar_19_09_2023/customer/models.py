@@ -110,7 +110,7 @@ class Customer(models.Model):
     first_name = models.CharField(max_length=100, null=True)
     middle_name = models.CharField(max_length=100, null=True)
     last_name = models.CharField(max_length=100, null=True)
-    Address = models.CharField(max_length=100, null=True, db_column='address')
+    Address = models.CharField(max_length=255, null=True, db_column='address')
     department = models.CharField(max_length=200, null=True)
     Plant_Capacity = models.IntegerField(default=0, db_column='plant_capacity')
     Ups_Soft = models.CharField(max_length=100, null=True, db_column='ups_soft')
