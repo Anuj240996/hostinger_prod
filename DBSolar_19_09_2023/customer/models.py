@@ -130,7 +130,7 @@ class Customer(models.Model):
     phase = models.IntegerField(default=1, null=True)
     loadsancution = models.IntegerField(default=0, null=True)
     po_date = models.DateField(null=True, default=None)
-    po_order = models.CharField(max_length=50, null=True)
+    po_order = models.CharField(max_length=80, null=True)
     qunt_solar = models.IntegerField(default=0)
     qunt_inv = models.IntegerField(default=0)
     inv_warranty = models.IntegerField(default=0, null=True)
