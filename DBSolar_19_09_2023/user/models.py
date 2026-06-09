@@ -19,7 +19,7 @@ desig = (
 
 class Profile(models.Model):
     # customer = models.OneToOneField(User, on_delete=models.CASCADE,null=True)
-    # address = models.CharField(max_length=200)
+    # address = models.CharField(max_length=255)
     # phone = models.CharField(max_length=50)
     # DOB = models.DateField(null=True)
     # department = models.CharField(max_length=50, choices=DEPARTMENT, null=True)
@@ -29,7 +29,7 @@ class Profile(models.Model):
 
     customer = models.OneToOneField(User, on_delete=models.CASCADE, null=True)
     #customer = models.OneToOneField(User, on_delete=models.CASCADE, null=True, related_name='profile')
-    address = models.CharField(max_length=200, null=True)
+    address = models.CharField(max_length=255, null=True)
     phone = models.CharField(max_length=50, null=True)
     DOB = models.DateField(null=True, db_column='dob')
     department = models.CharField(choices=[('Administration', 'Administration'), ('Stockist', 'Stockist'), ('Engineers', 'Engineers'), ('Finance', 'Finance'), ('Associate', 'Associate')],max_length=50)
@@ -45,7 +45,7 @@ class Profile(models.Model):
     taluka = models.CharField(max_length=50, null=True)
     district = models.CharField(max_length=50, null=True)
     pg = models.CharField(max_length=50, null=True)
-    institution = models.CharField(max_length=50, null=True)
+    institution = models.CharField(max_length=255, null=True)
     yop = models.DateField(null=True)
     specili = models.CharField(max_length=50, null=True)
 
@@ -57,7 +57,7 @@ class Profile(models.Model):
 
     name = models.CharField(max_length=50, null=True)
     email = models.CharField(max_length=50, null=True)
-    emraddress = models.CharField(max_length=50, null=True)
+    emraddress = models.CharField(max_length=255, null=True)
     permissions = models.ManyToManyField(Permission, blank=True)
     #last_updated_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
     #last_updated_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='updated_profiles')
