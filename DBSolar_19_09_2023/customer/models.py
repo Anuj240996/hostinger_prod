@@ -70,7 +70,7 @@ class Employee(models.Model):
     salary = models.IntegerField(default=0)
     bonus = models.IntegerField(default=0)
     role = models.ForeignKey(Role, on_delete=models.CASCADE)
-    phone = models.IntegerField(default=0)
+    phone = models.CharField(max_length=12)
     hire_date = models.DateField()
 
     def __str__(self):
@@ -118,7 +118,8 @@ class Customer(models.Model):
     Cust_type = models.CharField(max_length=100, null=True, db_column='cust_type')
     City = models.CharField(max_length=100, null=True, db_column='city')
     email = models.CharField(max_length=100, null=True)
-    phone = models.IntegerField(default=0)
+    #phone = models.IntegerField(default=0)
+    phone = models.CharField(max_length=15)
     # Cus_Act_Date = models.DateField(null=True, default=None)
     solar_comp = models.CharField(max_length=100, null=True)
     UPSC = models.CharField(max_length=100, null=True, db_column='upsc')
