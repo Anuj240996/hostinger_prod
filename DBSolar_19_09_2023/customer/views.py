@@ -2453,6 +2453,7 @@ def view_all_cust(request):
         # Calculate project status (all users; queryset already scoped above)
         project_status_list = []
         for cust in emps:
+            comp_name = (cust.Comp_name or '').strip()
             solar_condition = BarcodeImage.objects.filter(product_name='SolarPanel',
                                                           AssignTo_id=cust.new_customer_id).count() >= cust.qunt_solar
 
@@ -2461,10 +2462,10 @@ def view_all_cust(request):
 
             meter_condition = (
                     Meters.objects.annotate(trimmed=Trim('comp_name'))
-                    .filter(trimmed=cust.Comp_name.strip()).exists()
+                    .filter(trimmed=comp_name).exists()
                     and
                     GenerationMeter.objects.annotate(trimmed=Trim('comp_name'))
-                    .filter(trimmed=cust.Comp_name.strip()).exists()
+                    .filter(trimmed=comp_name).exists()
             )
 
             mseb_condition = MSEB.objects.filter(
@@ -2505,6 +2506,7 @@ def view_all_cust(request):
         project_status_list = []
         for cust in emps:
 
+            comp_name = (cust.Comp_name or '').strip()
             solar_condition = BarcodeImage.objects.filter(product_name='SolarPanel',
                                                           AssignTo_id=cust.new_customer_id).count() >= cust.qunt_solar
             inverter_condition = BarcodeImage.objects.filter(product_name='Inverter',
@@ -2512,10 +2514,10 @@ def view_all_cust(request):
 
             meter_condition = (
                     Meters.objects.annotate(trimmed=Trim('comp_name'))
-                    .filter(trimmed=cust.Comp_name.strip()).exists()
+                    .filter(trimmed=comp_name).exists()
                     and
                     GenerationMeter.objects.annotate(trimmed=Trim('comp_name'))
-                    .filter(trimmed=cust.Comp_name.strip()).exists()
+                    .filter(trimmed=comp_name).exists()
             )
 
             mseb_condition = MSEB.objects.filter(
