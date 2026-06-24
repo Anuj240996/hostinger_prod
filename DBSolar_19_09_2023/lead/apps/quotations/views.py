@@ -433,7 +433,7 @@ import logging
 
 # Try to import reportlab, provide fallback if not available
 try:
-    from reportlab.pdf import canvas
+    from reportlab.pdfgen.canvas import canvas
     from reportlab.lib.pagesizes import letter
     from reportlab.lib.units import inch
     REPORTLAB_AVAILABLE = True
