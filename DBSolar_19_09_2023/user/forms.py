@@ -661,14 +661,13 @@ class CreateUserForm(UserCreationForm):
         required=False,
         widget=forms.CheckboxInput(attrs={'class': 'form-check-input', 'type': 'checkbox', 'value': '1'})
     )
-    is_active = forms.BooleanField(
-        label='Active',
-        initial=True,
-        required=False,
-        widget=forms.CheckboxInput(
-            attrs={'class': 'form-check-input', 'type': 'checkbox', 'value': '1', 'template': 'add.html'})
-    )
 
+    is_associate = forms.BooleanField(
+        label='Associate',
+        initial=False,
+        required=False,
+        widget=forms.CheckboxInput(attrs={'class': 'form-check-input', 'type': 'checkbox', 'value': '1'})
+    )
 
     is_superuser = forms.BooleanField(
         label='Administrator',
@@ -686,7 +685,7 @@ class CreateUserForm(UserCreationForm):
 
     class Meta:
         model = User
-        fields = ['username', 'first_name', 'last_name', 'email', 'password1', 'password2', 'is_active', 'is_superuser', 'is_staff']
+        fields = ['username', 'first_name', 'last_name', 'email', 'password1', 'password2', 'is_active', 'is_superuser', 'is_staff', 'is_associate']
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

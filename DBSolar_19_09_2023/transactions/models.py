@@ -497,8 +497,8 @@ class ReturnBillDetails(models.Model):
 class SaleBill(models.Model):
     billno = models.AutoField(primary_key=True)
     time = models.DateTimeField(null=True)
-    Cust_id = models.ForeignKey(Customer, on_delete=models.CASCADE, related_name='salescustomer', null=True, blank=True, db_column='cust_id_id')
-    Vend_id = models.ForeignKey(Vendor, on_delete=models.CASCADE, related_name='salesvendor', null=True, blank=True, db_column='vend_id_id')
+    Cust_id = models.ForeignKey(Customer, on_delete=models.CASCADE, related_name='salescustomer', null=True, blank=True, db_column='Cust_id_id')
+    Vend_id = models.ForeignKey(Vendor, on_delete=models.CASCADE, related_name='salesvendor', null=True, blank=True, db_column='Vend_id_id')
     name = models.CharField(max_length=150)
     phone = models.CharField(max_length=12)
     address = models.CharField(max_length=200)
