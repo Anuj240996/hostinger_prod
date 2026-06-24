@@ -28,13 +28,64 @@ if LEAD_PROJECT_DIR.exists():
 # See https://docs.djangoproject.com/en/3.1/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = '@ujr-e&a%8m%6!z(+ka16+(sm6cug(h6noe%#p%=6%d2nz5t+#'
+SECRET_KEY = os.environ.get(
+    "SECRET_KEY",
+    "@ujr-e&a%8m%6!z(+ka16+(sm6cug(h6noe%#p%=6%d2nz5t+#",
+)
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True  # Temporarily enabled to see error details
+DEBUG = os.environ.get("DEBUG", "False").lower() == "true"
 
-#ALLOWED_HOSTS = ['anujdeshmukh24.pythonanywhere.com']
-ALLOWED_HOSTS = ['www.db-solar.co.in', 'db-solar.co.in', 'localhost', '127.0.0.1', 'testserver']
+
+def _normalize_allowed_host(entry: str) -> str:
+    host = entry.strip()
+    for prefix in ("https://", "http://"):
+        if host.lower().startswith(prefix):
+            host = host[len(prefix):]
+    host = host.split("/")[0].strip()
+    if host.endswith(":"):
+        host = host[:-1]
+    return host
+
+
+ALLOWED_HOSTS_ENV = os.environ.get(
+    "ALLOWED_HOSTS",
+    "www.db-solar.co.in,db-solar.co.in,localhost,127.0.0.1,testserver,.easypanel.host",
+)
+ALLOWED_HOSTS = list(
+    dict.fromkeys(
+        _normalize_allowed_host(h)
+        for h in ALLOWED_HOSTS_ENV.split(",")
+        if h.strip()
+    )
+)
+
+
+def _csrf_trusted_origins_from_env_or_hosts():
+    raw = os.environ.get("CSRF_TRUSTED_ORIGINS", "").strip()
+    entries = (
+        [e.strip() for e in raw.split(",") if e.strip()]
+        if raw
+        else [h for h in ALLOWED_HOSTS if h and not h.startswith(".")]
+    )
+    origins = []
+    for entry in entries:
+        if entry.startswith("."):
+            continue
+        if entry.startswith("http://") or entry.startswith("https://"):
+            origins.append(entry)
+            continue
+        if entry in ("localhost", "127.0.0.1", "testserver"):
+            origins.append(f"http://{entry}")
+        elif entry.replace(".", "").isdigit() or entry.count(".") == 3:
+            origins.append(f"http://{entry}")
+            origins.append(f"https://{entry}")
+        else:
+            origins.append(f"https://{entry}")
+    return origins
+
+
+CSRF_TRUSTED_ORIGINS = _csrf_trusted_origins_from_env_or_hosts()
 
 # Application definition
 
@@ -103,6 +154,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -238,7 +290,11 @@ STATICFILES_DIRS = [
     BASE_DIR / "static",
 ]
 
-STATIC_ROOT = (BASE_DIR/"asert/")
+STATIC_ROOT = BASE_DIR / "staticfiles"
+
+WHITENOISE_USE_FINDERS = os.environ.get("WHITENOISE_USE_FINDERS", "true").lower() == "true"
+WHITENOISE_AUTOREFRESH = DEBUG
+WHITENOISE_ROOT = STATIC_ROOT
 
 
 LOGIN_REDIRECT_URL = 'user:post_login_redirect'
