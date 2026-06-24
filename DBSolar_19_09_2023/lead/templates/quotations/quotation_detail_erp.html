@@ -169,6 +169,19 @@
         </div>
     </div>
 
+    {# Convert to consumer — confirmation before opening customer registration form #}
+    <div id="leadConvertConsumerModal" style="display:none; position:fixed; z-index:99999; left:0; top:0; right:0; bottom:0; background:rgba(0,0,0,0.5); align-items:center; justify-content:center;">
+        <div style="background:white; margin:auto; padding:24px; border-radius:10px; max-width:520px; width:92%; box-shadow:0 6px 18px rgba(0,0,0,0.3);">
+            <h4 class="mb-3 text-primary"><i class="fas fa-user-plus me-2"></i>Convert to Consumer</h4>
+            <p class="text-muted small mb-2">This approved quotation will be converted after you submit the consumer registration form.</p>
+            <p class="mb-3">Click <strong>OK</strong> to open the consumer form for <strong>{{ quotation.get_consumer_type_display|default:quotation.consumer_type|default:"Residential" }}</strong> customer type.</p>
+            <div class="d-flex justify-content-end gap-2 flex-wrap">
+                <button type="button" class="btn btn-secondary" id="closeLeadConvertConsumerModal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="confirmLeadConvertConsumer"><i class="fas fa-check me-1"></i>OK</button>
+            </div>
+        </div>
+    </div>
+
     <div class="row">
         <div class="col-md-8">
             <div class="card mb-4">
@@ -768,58 +781,75 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     var convertBtn = document.getElementById('openLeadConvertConsumer');
-    if (convertBtn) {
-        convertBtn.addEventListener('click', async function () {
-            var quotationId = this.getAttribute('data-id');
-            if (!quotationId) return;
-            if (!window.confirm('Convert this approved quotation to consumer? Click OK to continue or Cancel to stay on this page.')) {
-                return;
-            }
-            convertBtn.disabled = true;
-            try {
-                var markResp = await fetch("{% url 'quotation_mark_converted' quotation.pk %}", {
-                    method: 'POST',
-                    headers: {
-                        'X-CSRFToken': getCSRFTokenFromCookie()
-                    }
-                });
-                if (!markResp.ok) {
-                    throw new Error('Failed to update quotation as converted.');
+    var convertModal = document.getElementById('leadConvertConsumerModal');
+    var convertCloseBtn = document.getElementById('closeLeadConvertConsumerModal');
+    var convertConfirmBtn = document.getElementById('confirmLeadConvertConsumer');
+
+    function openConvertConsumerModal() {
+        if (convertModal) convertModal.style.display = 'flex';
+    }
+    function closeConvertConsumerModal() {
+        if (convertModal) convertModal.style.display = 'none';
+    }
+
+    async function startConvertConsumerFlow() {
+        var quotationId = convertBtn ? convertBtn.getAttribute('data-id') : null;
+        if (!quotationId) return;
+        if (convertConfirmBtn) convertConfirmBtn.disabled = true;
+        try {
+            var resp = await fetch('/quotation/get-quotation-details/' + encodeURIComponent(quotationId) + '/');
+            if (!resp.ok) throw new Error('Failed to fetch quotation details');
+            var data = await resp.json();
+
+            await fetch('/quotation/store-quotation-data/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCSRFTokenFromCookie()
+                },
+                body: JSON.stringify({ data: data, quotation_id: quotationId })
+            });
+
+            var map = {
+                'Residential': '/customer/Cust_emp/',
+                'Commercial': '/customer/Comm_Cust/',
+                'Industrial': '/customer/Comp_Cust/',
+                'Government': '/customer/Govt_Cust/'
+            };
+            var dest = map[data.consumer_type] || '/customer/Cust_emp/';
+            var url = new URL(dest, window.location.origin);
+            url.searchParams.set('from_quotation', '1');
+            url.searchParams.set('quotation_id', quotationId);
+            var fields = ['consumer_type', 'project_type', 'plant_capacity', 'phase', 'consumer_no', 'consumer_full_name', 'first_name', 'middle_name', 'last_name', 'address', 'city', 'state', 'email', 'phone', 'po_order_no', 'po_date', 'comp_name'];
+            fields.forEach(function (k) {
+                if (data[k] !== undefined && data[k] !== null) {
+                    url.searchParams.set(k, String(data[k]));
                 }
-                var resp = await fetch('/quotation/get-quotation-details/' + encodeURIComponent(quotationId) + '/');
-                if (!resp.ok) throw new Error('Failed to fetch quotation details');
-                var data = await resp.json();
+            });
+            window.location.href = url.toString();
+        } catch (err) {
+            alert((err && err.message) ? err.message : 'Convert consumer failed.');
+            if (convertConfirmBtn) convertConfirmBtn.disabled = false;
+        }
+    }
 
-                fetch('/quotation/store-quotation-data/', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRFToken': getCSRFTokenFromCookie()
-                    },
-                    body: JSON.stringify({ data: data, quotation_id: quotationId })
-                }).catch(function () {});
-
-                var map = {
-                    'Residential': '/customer/Cust_emp/',
-                    'Commercial': '/customer/Comm_Cust/',
-                    'Industrial': '/customer/Comp_Cust/',
-                    'Government': '/customer/Govt_Cust/'
-                };
-                var dest = map[data.consumer_type] || '/customer/Cust_emp/';
-                var url = new URL(dest, window.location.origin);
-                url.searchParams.set('from_quotation', '1');
-                url.searchParams.set('quotation_id', quotationId);
-                var fields = ['consumer_type', 'project_type', 'plant_capacity', 'phase', 'consumer_no', 'consumer_full_name', 'first_name', 'middle_name', 'last_name', 'address', 'city', 'state', 'email', 'phone', 'po_order_no', 'po_date', 'comp_name'];
-                fields.forEach(function (k) {
-                    if (data[k] !== undefined && data[k] !== null) {
-                        url.searchParams.set(k, String(data[k]));
-                    }
-                });
-                window.location.href = url.toString();
-            } catch (err) {
-                alert((err && err.message) ? err.message : 'Convert consumer failed.');
-                convertBtn.disabled = false;
-            }
+    if (convertBtn) {
+        convertBtn.addEventListener('click', function () {
+            openConvertConsumerModal();
+        });
+    }
+    if (convertCloseBtn) {
+        convertCloseBtn.addEventListener('click', closeConvertConsumerModal);
+    }
+    if (convertModal) {
+        convertModal.addEventListener('click', function (e) {
+            if (e.target === convertModal) closeConvertConsumerModal();
+        });
+    }
+    if (convertConfirmBtn) {
+        convertConfirmBtn.addEventListener('click', function () {
+            closeConvertConsumerModal();
+            startConvertConsumerFlow();
         });
     }
 

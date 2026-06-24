@@ -518,7 +518,7 @@
                         <td class="col-primary-name-field">${stock.name}</td>
                         <td class="text-center">
                             <div class="quantity-cell" style="background-color: ${quantityBackgroundColor}; color: ${quantityTextColor}; padding: 0px; border-radius: 4px; display: inline-block; width: 100%;">
-                                ${stock.quantity}
+                                ${window.formatQtyDisplay ? window.formatQtyDisplay(stock.quantity, stock.purchase) : stock.quantity}
                                 <span style="margin-left: 0px;"><small>${stock.purchase}</small></span>
                             </div>
                         </td>

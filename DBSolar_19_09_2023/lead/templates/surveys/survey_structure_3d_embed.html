@@ -1,0 +1,116 @@
+﻿{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>3D structure embed</title>
+    <style>
+        body { margin: 0; background: #ffffff; }
+        #embedRoot { width: 640px; margin: 0 auto; }
+        .solar-structure-diagram-wrap { width: 100%; }
+        .solar-diagram-composite { display: block; min-height: 400px; }
+        .solar-diagram-2d-wrap,
+        .solar-diagram-legend { display: none !important; }
+        .solar-diagram-3d-wrap {
+            min-height: 380px;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+        .solar-3d-title { font-size: 13px; font-weight: 600; color: #1e293b; margin-bottom: 6px; }
+        .solar-3d-stage { position: relative; min-height: 380px; }
+        .solar-3d-viewport {
+            width: 100%;
+            height: 380px;
+            min-height: 380px;
+            background: #ffffff;
+            border: none;
+            border-radius: 6px;
+            overflow: hidden;
+        }
+        .solar-3d-viewport canvas { display: block; width: 100% !important; height: 100% !important; }
+        .solar-3d-overlay { position: absolute; inset: 0; pointer-events: none; }
+        .solar-3d-overlay-summary {
+            position: absolute; top: 8px; right: 8px; max-width: 210px;
+            padding: 10px 12px; background: rgba(255,255,255,.96);
+            border: 1px solid #e2e8f0; border-radius: 6px; font-size: 12px; color: #475569;
+        }
+        .solar-3d-overlay-dirs {
+            position: absolute; bottom: 8px; left: 8px; font-size: 10px; color: #64748b;
+        }
+        .solar-3d-zoom-controls {
+            position: absolute; bottom: 8px; right: 8px; z-index: 5;
+            display: flex; flex-direction: column; gap: 4px; pointer-events: auto;
+        }
+        .solar-3d-zoom-btn {
+            width: 34px; height: 34px; border: 1px solid #cbd5e1; border-radius: 6px;
+            background: rgba(255,255,255,.95); font-size: 20px; font-weight: 700; cursor: pointer;
+        }
+        .solar-3d-summary { display: none; }
+    </style>
+</head>
+<body>
+    <div id="embedRoot">
+        <div id="surveyStructureDiagramReadonly" class="solar-structure-diagram-wrap"
+             data-legs="{{ survey.structure_leg_count }}"
+             data-rafters="{{ survey.structure_rafter_count }}"
+             data-purlins="{{ survey.structure_purlin_count }}"
+             data-panels="{{ survey.structure_solar_panel_count|default:'' }}"
+             data-front="{{ survey.structure_front_height_ft|default:'' }}"
+             data-back="{{ survey.structure_back_height_ft|default:'' }}"></div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <script src="{% static 'js/solar_structure_diagram.js' %}?v=20260528f"></script>
+    <script>
+        (function () {
+            var surveyId = {{ survey.pk }};
+
+            function markReady() {
+                window.__solar3dEmbedReady = true;
+                if (window.parent && window.parent !== window) {
+                    window.parent.postMessage({ type: 'solar3dEmbedReady', surveyId: surveyId }, '*');
+                }
+            }
+
+            window.getEmbed3dPng = function () {
+                if (typeof window.captureSolar3DFrontPng === 'function') {
+                    return window.captureSolar3DFrontPng();
+                }
+                return '';
+            };
+
+            document.addEventListener('DOMContentLoaded', function () {
+                var el = document.getElementById('surveyStructureDiagramReadonly');
+                if (!el || typeof window.renderSolarStructureDiagram !== 'function') {
+                    markReady();
+                    return;
+                }
+                window.renderSolarStructureDiagram(el, {
+                    embedMode: true,
+                    legs: el.getAttribute('data-legs'),
+                    rafters: el.getAttribute('data-rafters'),
+                    purlins: el.getAttribute('data-purlins'),
+                    solarPanels: el.getAttribute('data-panels'),
+                    frontHeight: el.getAttribute('data-front'),
+                    backHeight: el.getAttribute('data-back')
+                });
+
+                setTimeout(function () {
+                    var vp = document.querySelector('.solar-3d-viewport');
+                    var st = vp && vp._solar3dState;
+                    if (st && st.applyFrontView) {
+                        st.applyFrontView();
+                        if (st.renderer && st.camera) {
+                            st.controls.update();
+                            st.renderer.render(st.scene, st.camera);
+                        }
+                    }
+                    setTimeout(markReady, 500);
+                }, 700);
+            });
+        })();
+    </script>
+</body>
+</html>

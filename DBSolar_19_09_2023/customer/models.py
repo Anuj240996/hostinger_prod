@@ -70,7 +70,7 @@ class Employee(models.Model):
     salary = models.IntegerField(default=0)
     bonus = models.IntegerField(default=0)
     role = models.ForeignKey(Role, on_delete=models.CASCADE)
-    phone = models.CharField(max_length=12)
+    phone = models.IntegerField(default=0)
     hire_date = models.DateField()
 
     def __str__(self):
@@ -110,7 +110,7 @@ class Customer(models.Model):
     first_name = models.CharField(max_length=100, null=True)
     middle_name = models.CharField(max_length=100, null=True)
     last_name = models.CharField(max_length=100, null=True)
-    Address = models.CharField(max_length=255, null=True, db_column='address')
+    Address = models.CharField(max_length=100, null=True, db_column='address')
     department = models.CharField(max_length=200, null=True)
     Plant_Capacity = models.IntegerField(default=0, db_column='plant_capacity')
     Ups_Soft = models.CharField(max_length=100, null=True, db_column='ups_soft')
@@ -118,8 +118,7 @@ class Customer(models.Model):
     Cust_type = models.CharField(max_length=100, null=True, db_column='cust_type')
     City = models.CharField(max_length=100, null=True, db_column='city')
     email = models.CharField(max_length=100, null=True)
-    #phone = models.IntegerField(default=0)
-    phone = models.CharField(max_length=15)
+    phone = models.IntegerField(default=0)
     # Cus_Act_Date = models.DateField(null=True, default=None)
     solar_comp = models.CharField(max_length=100, null=True)
     UPSC = models.CharField(max_length=100, null=True, db_column='upsc')
@@ -130,7 +129,7 @@ class Customer(models.Model):
     phase = models.IntegerField(default=1, null=True)
     loadsancution = models.IntegerField(default=0, null=True)
     po_date = models.DateField(null=True, default=None)
-    po_order = models.CharField(max_length=80, null=True)
+    po_order = models.CharField(max_length=50, null=True)
     qunt_solar = models.IntegerField(default=0)
     qunt_inv = models.IntegerField(default=0)
     inv_warranty = models.IntegerField(default=0, null=True)
@@ -141,6 +140,11 @@ class Customer(models.Model):
     pump_qunt = models.IntegerField(default=0, null=True)
     pump_warranty = models.IntegerField(default=0, null=True)
     advance_paid = models.CharField(max_length=10,default='not_paid')
+    mobile_app_password = models.CharField(max_length=128, blank=True, null=True, db_column='mobile_app_password')
+    mobile_app_linked_at = models.DateTimeField(null=True, blank=True, db_column='mobile_app_linked_at')
+    mobile_app_linked_username = models.CharField(
+        max_length=150, blank=True, null=True, db_column='mobile_app_linked_username'
+    )
 
   #  Engg_Assign = models.ForeignKey(User, on_delete=models.CASCADE, null=True)
 
@@ -159,7 +163,43 @@ class Customer(models.Model):
         return "%s %s %s %s" %(self.first_name, self.last_name, self.phone,self.Cust_id)
 
 
+class UserApp(models.Model):
+    """Mobile app user accounts (managed by the mobile app backend)."""
 
+    id = models.BigAutoField(primary_key=True)
+    name = models.TextField(blank=True, null=True)
+    email = models.TextField(blank=True, null=True)
+    phone = models.TextField(blank=True, null=True)
+    role = models.TextField(blank=True, null=True)
+    created_at = models.DateTimeField(blank=True, null=True)
+    last_login = models.DateTimeField(blank=True, null=True)
+
+    class Meta:
+        managed = False
+        db_table = 'user_app'
+
+    def __str__(self):
+        return self.name or str(self.id)
+
+
+class AppAuthLink(models.Model):
+    """Links a mobile app user to a consumer auth_user when a project is added in the app."""
+
+    id = models.BigAutoField(primary_key=True)
+    app_user = models.ForeignKey(
+        UserApp,
+        on_delete=models.DO_NOTHING,
+        db_column='app_user_id',
+        related_name='auth_links',
+    )
+    auth_user_id = models.BigIntegerField(db_column='auth_user_id')
+    token = models.TextField(blank=True, null=True)
+    created_at = models.DateTimeField()
+
+    class Meta:
+        managed = False
+        db_table = 'app_auth_links'
+        ordering = ['-created_at']
 
 
     # class Meta:

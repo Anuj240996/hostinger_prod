@@ -123,14 +123,28 @@
 
 
   <div id="header_content" style="margin:0; padding:0;">
+    {% if quotation_master.header_image %}
+    <img src="{{ quotation_master.header_image.url }}"
+         style="width:595pt; height:100pt; display:block; margin:0; padding:0;">
+    {% else %}
     <img src="{% static 'images/quotation_bg1.jpg' %}"
          style="width:595pt; height:100pt; display:block; margin:0; padding:0;">
-
+    {% endif %}
   </div>
 
   <div id="footer_content" style="margin:0; padding:0;">
+  {% if quotation_master.footer_image %}
+  <img src="{{ quotation_master.footer_image.url }}"
+       style="width:595pt; height:60pt; display:block; margin:0; padding:0;">
+  {% elif quotation_master.address %}
+  <div style="width:595pt; height:60pt; font-size:11px; padding:8px 12px; border-top:1px solid #ccc;">
+    <b>{{ quotation_master.company_name }}</b><br>
+    {{ quotation_master.address|linebreaksbr }}
+  </div>
+  {% else %}
   <img src="{% static 'images/address.jpg' %}"
        style="width:595pt; height:60pt; display:block; margin:0; padding:0;">
+  {% endif %}
 </div>
   <!-- ===== BODY CONTENT ===== -->
   <h1>QUOTATION</h1>
@@ -185,10 +199,14 @@
     <tr>
       <td style="padding: 5px; line-height: 1.5;" width="35%">
         <b>From,</b><br>
-        &nbsp;&nbsp;&nbsp;<b>Heramb Industries,</b><br>
+        &nbsp;&nbsp;&nbsp;<b>{{ quotation_master.company_name|default:"Heramb Industries" }},</b><br>
+        {% if quotation_master.from_address %}
+        &nbsp;&nbsp;&nbsp;{{ quotation_master.from_address|linebreaksbr }}
+        {% else %}
         &nbsp;&nbsp;&nbsp;Bhagya Banglow,Near Sant Eknath<br>
         &nbsp;&nbsp;&nbsp;Rang Mandir, New Osman Pura,<br>
         &nbsp;&nbsp;&nbsp;Chh. Sambhaki Nagar.(MH)-431001
+        {% endif %}
       </td>
 <!--      <td style="padding: 2px; width: 33%;">-->
 
@@ -354,8 +372,7 @@
 </table>
 {% if quotation.consumer_type == 'Residential' %}
 <div style="text-align: left; margin-left: 2px; padding: 0px; background-color: yellow; font-weight:regular; margin-top: 10px;">
-  <b>Note-</b>Exact subsidy depends on your electricity load approval. Maximum up to <span class="rupee-symbol">₹</span> 78,000 is available. Final eligible subsidy shall be decided by MNRE / DISCOM after approval.
-  in consumer's Bank A/C directly.
+  <b>Note-</b>{% if quotation_master.subsidy_notes %}{{ quotation_master.subsidy_notes }}{% else %}Exact subsidy depends on your electricity load approval. Maximum up to <span class="rupee-symbol">₹</span> 78,000 is available. Final eligible subsidy shall be decided by MNRE / DISCOM after approval. in consumer's Bank A/C directly.{% endif %}
 </div>
 
 {% endif %}
@@ -642,7 +659,15 @@
     <h4 class="space-top" align="left"> <span  style="background-color: #0A66C2; color: white; font-size: 17px;"><u>Bank Details:</u></span></h4>
 
   <div style=" line-height: 1.8; margin-left: 20px; font-size: 14px;">
-
+  {% if bank_detail %}
+  {% if bank_detail.account_name %}<b>A/C Name -</b> {{ bank_detail.account_name }}<br>{% endif %}
+  {% if bank_detail.gst_no %}<b>GST No -</b> {{ bank_detail.gst_no }}<br>{% endif %}
+  {% if bank_detail.pan_no %}<b>PAN No -</b> {{ bank_detail.pan_no }}<br>{% endif %}
+  {% if bank_detail.account_no %}<b>A/C No -</b> {{ bank_detail.account_no }}<br>{% endif %}
+  {% if bank_detail.ifsc_code %}<b>IFSC CODE -</b> {{ bank_detail.ifsc_code }}<br>{% endif %}
+  {% if bank_detail.bank_name %}<b>Bank Name -</b> {{ bank_detail.bank_name }}<br>{% endif %}
+  {% if bank_detail.branch_name %}<b>Branch Name -</b> {{ bank_detail.branch_name }}<br>{% endif %}
+  {% else %}
   <b>A/C Name -</b> Heramb Industries<br>
   <b>GST No -</b> 123457896541332<br>
   <b>PAN No -</b> ABC12358G<br>
@@ -650,6 +675,7 @@
   <b>IFSC CODE -</b> SVSB000123<br>
   <b>Bank Name -</b> SVC CO-OP Bank<br>
   <b>Branch Name -</b> Aurangabad / Chh. SambhajiNagar<br>
+  {% endif %}
 </div>
   <table class="no-border">
     <tr style="border: none; margin-left: 14px;">
@@ -669,7 +695,7 @@
   <b>With Regards,</b>
    <img src="{% static 'images/sign.jpeg' %}"
          style="width:100pt; height:80pt; display:block; margin:0; padding:0;">
-      <b>M/S HERAMB INDUSTRIES</b>
+      <b>M/S {{ quotation_master.company_name|default:"HERAMB INDUSTRIES"|upper }}</b>
 </div></td>
     </tr>
   </table>

@@ -707,7 +707,7 @@ $(document).ready(function() {
                             <div class="d-flex justify-content-center align-items-center mt-1">
                              <input type="hidden" class="form-control stock-quantity" value="${stockQuantity}" readonly>
 <!--                            <span class="badge ${badgeClass}">${stockQuantity} <small style="color: green">${purchase}</small></span>-->
-                               <span class="badge ${badgeClass}">${parseFloat(stockQuantity) % 1 === 0 ? parseInt(stockQuantity) : parseFloat(stockQuantity).toFixed(3)} <small style="color: green">${purchase}</small></span>
+                               <span class="badge ${badgeClass}">${window.formatQtyDisplay(stockQuantity, purchase)} <small style="color: green">${purchase}</small></span>
                             </div>
                         </div>
 
@@ -921,28 +921,17 @@ $(document).ready(function() {
     $(document).on('input', '.quantity', function () {
         const $input = $(this);
         const $row = $input.closest('.form-row');
-        const purchaseUnit = $row.find('.stock-purchase').val()?.trim();
-        let inputVal = $input.val();
-
-        if (purchaseUnit === 'Nos') {
-            // Check if value is a valid integer
-            if (!/^\d*$/.test(inputVal)) {
-                alert('Please use whole numbers only in the "Nos" unit.');
-                inputVal = inputVal.split('.')[0].replace(/\D/g, ''); // Remove decimal and non-digits
-                $input.val(inputVal);
+        const purchaseUnit = window.getRowPurchaseUnit($row[0]);
+        window.enforceQuantityInputByUnit(this, purchaseUnit, {
+            onChange: function () {
+                updateTotals();
+                if ($('#gstToggle').is(':checked')) {
+                    calculateGST();
+                }
+                updateFinalAmount();
+                updateGSTValues();
             }
-        } else {
-            // Allow decimal for other units, sanitize value
-            const decVal = inputVal.replace(/[^0-9.]/g, ''); // Remove invalid characters
-            const parts = decVal.split('.');
-            const cleanVal = parts.length > 2
-                ? parts[0] + '.' + parts.slice(1).join('') // Keep only one dot
-                : decVal;
-
-            if (inputVal !== cleanVal) {
-                $input.val(cleanVal);
-            }
-        }
+        });
     });
 
 
@@ -1761,8 +1750,9 @@ $(document).ready(function() {
     function validateFields() {
         let isValid = true;
         $('.quantity').each(function() {
-            let quantityValue = parseInt($(this).val(), 10);
-            if (isNaN(quantityValue) || quantityValue <= 0) {
+            const unit = window.getRowPurchaseUnit($(this).closest('.form-row')[0]);
+            let quantityValue = window.roundQty($(this).val(), unit);
+            if (isNaN(parseFloat($(this).val())) || quantityValue <= 0) {
                 isValid = false;
                 alert("Please enter a valid quantity greater than 0.");
                 $(this).focus();

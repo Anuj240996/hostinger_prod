@@ -1180,6 +1180,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 <input type="checkbox" name="terms_conditions" value="{{ term.id }}"
                        data-has-yellow="{{ term.has_yellow_background|yesno:'true,false' }}"
                        {% if term.has_yellow_background %}data-style="yellow"{% endif %}
+                       {% if term.id in default_term_ids %}checked{% endif %}
                        >
                 <span class="term-content {% if term.has_yellow_background %}yellow-bg{% endif %}">
 

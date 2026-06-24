@@ -1,0 +1,155 @@
+"""Quotation master settings: company info, bank details, terms & conditions."""
+
+from functools import wraps
+
+from django.contrib import messages
+from django.contrib.auth.decorators import login_required, user_passes_test
+from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
+
+from .models import QuotationBankDetail, QuotationMaster, TermsAndCondition
+
+
+def _is_control_panel_admin(user):
+    return user.is_superuser or user.is_staff
+
+
+def control_panel_session_required(view_func):
+    """Require Control Panel password session (same as other control panel pages)."""
+    @wraps(view_func)
+    @login_required(login_url='user-login')
+    @user_passes_test(_is_control_panel_admin)
+    def _wrapped(request, *args, **kwargs):
+        if not request.session.get('control_panel_authenticated'):
+            messages.warning(request, 'Please login to Control Panel first')
+            return redirect(f"{reverse('user:control_panel_login')}?next={reverse('quotation:quotation_master')}")
+        return view_func(request, *args, **kwargs)
+    return _wrapped
+
+
+DEFAULT_FROM_ADDRESS = (
+    'Bhagya Banglow, Near Sant Eknath Rang Mandir,\n'
+    'New Osman Pura, Chh. Sambhajinagar (MH) - 431001'
+)
+
+DEFAULT_SUBSIDY_NOTE = (
+    'Exact subsidy depends on your electricity load approval. Maximum up to '
+    '₹ 78,000 is available. Final eligible subsidy shall be decided by MNRE / '
+    'DISCOM after approval.'
+)
+
+
+def _ensure_master_defaults(master):
+    changed = False
+    if not master.from_address:
+        master.from_address = DEFAULT_FROM_ADDRESS
+        changed = True
+    if not master.subsidy_notes:
+        master.subsidy_notes = DEFAULT_SUBSIDY_NOTE
+        changed = True
+    if changed:
+        master.save()
+    if not QuotationBankDetail.objects.exists():
+        QuotationBankDetail.objects.create(
+            account_name='Heramb Industries',
+            gst_no='123457896541332',
+            pan_no='ABC12358G',
+            account_no='112233665544778',
+            ifsc_code='SVSB000123',
+            bank_name='SVC CO-OP Bank',
+            branch_name='Aurangabad / Chh. SambhajiNagar',
+            show_in_quotation_form=True,
+            is_default=True,
+            is_active=True,
+        )
+
+
+@control_panel_session_required
+def quotation_master(request):
+    master = QuotationMaster.get_solo()
+    _ensure_master_defaults(master)
+
+    if request.method == 'POST':
+        action = request.POST.get('action', 'save_company')
+
+        if action == 'save_company':
+            master.company_name = request.POST.get('company_name', master.company_name)
+            master.address = request.POST.get('address', '')
+            master.from_address = request.POST.get('from_address', '')
+            master.subsidy_notes = request.POST.get('subsidy_notes', '')
+            if request.FILES.get('company_logo'):
+                master.company_logo = request.FILES['company_logo']
+            if request.FILES.get('header_image'):
+                master.header_image = request.FILES['header_image']
+            if request.FILES.get('footer_image'):
+                master.footer_image = request.FILES['footer_image']
+            master.save()
+            messages.success(request, 'Company details saved.')
+
+        elif action == 'save_term':
+            term_id = request.POST.get('term_id')
+            content = request.POST.get('content', '').strip()
+            if not content:
+                messages.error(request, 'Terms content is required.')
+            else:
+                if term_id:
+                    term = get_object_or_404(TermsAndCondition, pk=term_id)
+                else:
+                    term = TermsAndCondition()
+                term.content = content
+                term.has_yellow_background = request.POST.get('has_yellow_background') == 'on'
+                term.is_active = request.POST.get('is_active') == 'on'
+                term.show_in_quotation_form = request.POST.get('show_in_quotation_form') == 'on'
+                term.default_selected = request.POST.get('default_selected') == 'on'
+                term.save()
+                messages.success(request, 'Terms & condition saved.')
+
+        elif action == 'delete_term':
+            term_id = request.POST.get('term_id')
+            if term_id:
+                TermsAndCondition.objects.filter(pk=term_id).delete()
+                messages.success(request, 'Terms & condition deleted.')
+
+        elif action == 'save_bank':
+            bank_id = request.POST.get('bank_id')
+            if bank_id:
+                bank = get_object_or_404(QuotationBankDetail, pk=bank_id)
+            else:
+                bank = QuotationBankDetail()
+            bank.account_name = request.POST.get('account_name', '')
+            bank.gst_no = request.POST.get('gst_no', '')
+            bank.pan_no = request.POST.get('pan_no', '')
+            bank.account_no = request.POST.get('account_no', '')
+            bank.ifsc_code = request.POST.get('ifsc_code', '')
+            bank.bank_name = request.POST.get('bank_name', '')
+            bank.branch_name = request.POST.get('branch_name', '')
+            bank.show_in_quotation_form = request.POST.get('show_in_quotation_form') == 'on'
+            bank.is_default = request.POST.get('is_default') == 'on'
+            bank.is_active = request.POST.get('is_active') != 'off'
+            try:
+                bank.sort_order = int(request.POST.get('sort_order') or 0)
+            except ValueError:
+                bank.sort_order = 0
+            bank.save()
+            if bank.is_default:
+                QuotationBankDetail.objects.exclude(pk=bank.pk).update(is_default=False)
+            messages.success(request, 'Bank details saved.')
+
+        elif action == 'delete_bank':
+            bank_id = request.POST.get('bank_id')
+            if bank_id:
+                QuotationBankDetail.objects.filter(pk=bank_id).delete()
+                messages.success(request, 'Bank record deleted.')
+
+        return redirect('quotation:quotation_master')
+
+    terms = TermsAndCondition.objects.all().order_by('id')
+    banks = QuotationBankDetail.objects.filter(is_active=True).order_by('sort_order', 'id')
+    all_banks = QuotationBankDetail.objects.all().order_by('sort_order', 'id')
+
+    return render(request, 'quotation/quotation_master.html', {
+        'master': master,
+        'terms': terms,
+        'banks': banks,
+        'all_banks': all_banks,
+    })

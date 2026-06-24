@@ -1328,10 +1328,10 @@
 <fieldset>
     <legend style="color: darkblue;">Assign Solar Project</legend>
     <div class="highlighted-row mb-1">
-        <div class="col-md-6 item3 required-field">
-            <label for="Associate_Assigned">Associate Assigned<span style="color: red;">*</span></label>
+        <div class="col-md-6 item3">
+            <label for="Associate_Assigned">Associate Assigned</label>
             <select id="Associate_Assigned" name="Associate_Assigned" class="form-control">
-                <option value="" disabled selected>Select Associate</option>
+                <option value="" selected>Select Associate (optional)</option>
                 {% for associate in associates %}
                     <option value="{{ associate.id }}">{{ associate.first_name }} {{ associate.last_name }}</option>
                 {% endfor %}
@@ -1341,7 +1341,7 @@
 
         <div class="col-md-6 item3 required-field">
             <label for="Engineer_Assigned">Engineer Assigned<span style="color: red;">*</span></label>
-            <select id="Engineer_Assigned" name="Engineer_Assigned" class="form-control">
+            <select id="Engineer_Assigned" name="Engineer_Assigned" class="form-control" required>
                 <option value="" disabled selected>Select Engineer</option>
                 {% for engineer in engineers %}
                     <option value="{{ engineer.id }}">{{ engineer.first_name }} {{ engineer.last_name }}</option>
@@ -1807,13 +1807,6 @@
         if (!comWarranty.value) {
             document.getElementById('com_warranty-error').textContent = 'O & M Warranty is required';
             comWarranty.classList.add('error-border');
-            isValid = false;
-        }
-
-        const associateAssigned = document.getElementById('Associate_Assigned');
-        if (!associateAssigned.value) {
-            document.getElementById('Associate_Assigned-error').textContent = 'Associate Assigned is required';
-            associateAssigned.classList.add('error-border');
             isValid = false;
         }
 

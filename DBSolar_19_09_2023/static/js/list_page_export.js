@@ -390,7 +390,12 @@
         function buildExportMatrix() {
             var cols = exportColumnIndexes();
             var headers = cols.map(function (i) { return headerText(table, i); });
-            var rowIdxs = table.rows({ search: 'applied', order: 'applied' }).indexes().toArray();
+            var rowIdxs;
+            if (cfg.getExportRowIndexes && typeof cfg.getExportRowIndexes === 'function') {
+                rowIdxs = cfg.getExportRowIndexes(table);
+            } else {
+                rowIdxs = table.rows({ search: 'applied', order: 'applied' }).indexes().toArray();
+            }
             var body = rowIdxs.map(function (rowIdx, displayIdx) {
                 return cols.map(function (colIndex) {
                     var h = headerText(table, colIndex);
@@ -1162,110 +1167,128 @@
             }
         }
 
+        function runExportAction(exportFn) {
+            if (cfg.prepareExport && typeof cfg.prepareExport === 'function') {
+                cfg.prepareExport(function () {
+                    exportFn();
+                });
+                return;
+            }
+            exportFn();
+        }
+
         global[cfg.apiPrefix + 'GeneratePDF'] = function () {
-            loadPdfHeaderImageDataUrl(listPdfLogoAbsoluteUrl(), function (dataUrl) {
-                runPdf(dataUrl);
+            runExportAction(function () {
+                loadPdfHeaderImageDataUrl(listPdfLogoAbsoluteUrl(), function (dataUrl) {
+                    runPdf(dataUrl);
+                });
             });
         };
 
         global[cfg.apiPrefix + 'GenerateExcel'] = function () {
-            if (typeof XLSX === 'undefined') {
-                alert('Excel library not loaded.');
-                return;
-            }
-            var table = getTable();
-            if (!table) {
-                alert('Table is not ready yet.');
-                return;
-            }
-            var api = buildExportApi(table, cfg);
-            var exp = api.buildExportMatrix();
-            var ws = XLSX.utils.aoa_to_sheet([exp.headers].concat(exp.body));
-            var wb = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(wb, ws, cfg.excelSheetName || 'Sheet1');
-            XLSX.writeFile(wb, cfg.excelFilename || 'export.xlsx');
+            runExportAction(function () {
+                if (typeof XLSX === 'undefined') {
+                    alert('Excel library not loaded.');
+                    return;
+                }
+                var table = getTable();
+                if (!table) {
+                    alert('Table is not ready yet.');
+                    return;
+                }
+                var api = buildExportApi(table, cfg);
+                var exp = api.buildExportMatrix();
+                var ws = XLSX.utils.aoa_to_sheet([exp.headers].concat(exp.body));
+                var wb = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(wb, ws, cfg.excelSheetName || 'Sheet1');
+                XLSX.writeFile(wb, cfg.excelFilename || 'export.xlsx');
+            });
         };
 
         global[cfg.apiPrefix + 'CopyToClipboard'] = function () {
-            var table = getTable();
-            if (!table) {
-                alert('Table is not ready yet.');
-                return;
-            }
-            var api = buildExportApi(table, cfg);
-            var exp = api.buildExportMatrix();
-            var data = [exp.headers].concat(exp.body);
-            var plainTextData = data.map(function (row) {
-                return row.map(function (cell) { return String(cell == null ? '' : cell); }).join('\t');
-            }).join('\n');
-            var ta = document.createElement('textarea');
-            ta.value = plainTextData;
-            document.body.appendChild(ta);
-            ta.select();
-            document.execCommand('copy');
-            document.body.removeChild(ta);
-            alert('Current table (filtered & sorted) copied to clipboard.');
+            runExportAction(function () {
+                var table = getTable();
+                if (!table) {
+                    alert('Table is not ready yet.');
+                    return;
+                }
+                var api = buildExportApi(table, cfg);
+                var exp = api.buildExportMatrix();
+                var data = [exp.headers].concat(exp.body);
+                var plainTextData = data.map(function (row) {
+                    return row.map(function (cell) { return String(cell == null ? '' : cell); }).join('\t');
+                }).join('\n');
+                var ta = document.createElement('textarea');
+                ta.value = plainTextData;
+                document.body.appendChild(ta);
+                ta.select();
+                document.execCommand('copy');
+                document.body.removeChild(ta);
+                alert('Current table (filtered & sorted) copied to clipboard.');
+            });
         };
 
         global[cfg.apiPrefix + 'PrintTable'] = function () {
-            var table = getTable();
-            if (!table) {
-                alert('Table is not ready yet.');
-                return;
-            }
-            var api = buildExportApi(table, cfg);
-            var expRaw = api.buildExportMatrix();
-            var pack = prepareListPagePdfExport(expRaw, cfg);
-            var exp = { headers: pack.headers, body: pack.body };
-            var n = exp.headers.length;
-            var theadRow = '<tr>' + exp.headers.map(function (h) {
-                return '<th>' + escapeHtml(h) + '</th>';
-            }).join('') + '</tr>';
-            var capPrint = listPdfResolveCaption(cfg);
-            var captionRow = capPrint ? '<tr class="dt-print-caption"><td colspan="' + n + '" style="border:none!important;padding:4px 8px 10px!important;text-align:center;font-weight:bold;font-size:13px;color:#111;">' +
-                escapeHtml(capPrint) + '</td></tr>' : '';
-            var tbodyHtml = exp.body.map(function (row) {
-                return '<tr>' + row.map(function (cell, ci) {
-                    return printTableCellHtml(cell, ci, pack, escapeHtml);
-                }).join('') + '</tr>';
-            }).join('');
-            loadPdfHeaderImageDataUrl(listPdfLogoAbsoluteUrl(), function (logoDataUrl) {
-                var logoForLetterhead = logoDataUrl || listPdfLogoAbsoluteUrl();
-                var letterRow = '<tr class="dt-print-letterhead"><td colspan="' + n + '" style="border:none!important;padding:0 0 16px 0!important;vertical-align:top;background:#fff;">' +
-                    listPdfPrintLetterheadInnerHtml(logoForLetterhead) + '</td></tr>';
-                var w = global.open('', '_blank');
-                if (!w) {
-                    alert('Allow pop-ups to print.');
+            runExportAction(function () {
+                var table = getTable();
+                if (!table) {
+                    alert('Table is not ready yet.');
                     return;
                 }
-                w.document.open();
-                w.document.write(
-                    '<html><head><title>' + escapeHtml(cfg.printDocumentTitle || 'Print') + '</title>' +
-                    '<style>' +
-                    'body{font-family:Arial,sans-serif;color:#000;margin:12px}' +
-                    'table.dt-print-main{width:100%;max-width:100%;border-collapse:collapse;border:2px solid #000;table-layout:auto}' +
-                    'thead{display:table-header-group}' +
-                    'tr.dt-print-letterhead td{border:none!important}' +
-                    'tr.dt-print-caption td{border:none!important}' +
-                    'thead tr:not(.dt-print-letterhead):not(.dt-print-caption) th{border:1px solid #000!important;padding:4px 6px 2px 8px;font-size:10px;vertical-align:top;text-align:left;background:#eee;font-weight:bold;white-space:nowrap}' +
-                    'tbody td{border:1px solid #000!important;padding:4px 6px 2px 8px;font-size:10px;vertical-align:top;text-align:left}' +
-                    '.td-export-name-phone .export-name{display:block;font-weight:600;line-height:1.25}' +
-                    '.td-export-name-phone .export-phone{display:block;margin-top:3px;line-height:1.25}' +
-                    '.td-export-name-phone .export-phone small{font-size:9px;color:#333;font-weight:normal}' +
-                    '@media print{' +
-                    '@page{size:A4 landscape;margin:8mm 10mm}' +
-                    'body{margin:0}' +
-                    'thead{display:table-header-group}' +
-                    'tr.dt-print-letterhead td{-webkit-print-color-adjust:exact;print-color-adjust:exact}' +
-                    'table.dt-print-main{width:100%;max-width:100%}' +
-                    'table,th,td{border-color:#000!important}' +
-                    '}' +
-                    '</style></head><body>' +
-                    '<table class="dt-print-main" border="0" cellspacing="0" cellpadding="0">' +
-                    '<thead>' + letterRow + captionRow + theadRow + '</thead><tbody>' + tbodyHtml + '</tbody></table></body></html>'
-                );
-                w.document.close();
-                printWhenReady(w);
+                var api = buildExportApi(table, cfg);
+                var expRaw = api.buildExportMatrix();
+                var pack = prepareListPagePdfExport(expRaw, cfg);
+                var exp = { headers: pack.headers, body: pack.body };
+                var n = exp.headers.length;
+                var theadRow = '<tr>' + exp.headers.map(function (h) {
+                    return '<th>' + escapeHtml(h) + '</th>';
+                }).join('') + '</tr>';
+                var capPrint = listPdfResolveCaption(cfg);
+                var captionRow = capPrint ? '<tr class="dt-print-caption"><td colspan="' + n + '" style="border:none!important;padding:4px 8px 10px!important;text-align:center;font-weight:bold;font-size:13px;color:#111;">' +
+                    escapeHtml(capPrint) + '</td></tr>' : '';
+                var tbodyHtml = exp.body.map(function (row) {
+                    return '<tr>' + row.map(function (cell, ci) {
+                        return printTableCellHtml(cell, ci, pack, escapeHtml);
+                    }).join('') + '</tr>';
+                }).join('');
+                loadPdfHeaderImageDataUrl(listPdfLogoAbsoluteUrl(), function (logoDataUrl) {
+                    var logoForLetterhead = logoDataUrl || listPdfLogoAbsoluteUrl();
+                    var letterRow = '<tr class="dt-print-letterhead"><td colspan="' + n + '" style="border:none!important;padding:0 0 16px 0!important;vertical-align:top;background:#fff;">' +
+                        listPdfPrintLetterheadInnerHtml(logoForLetterhead) + '</td></tr>';
+                    var w = global.open('', '_blank');
+                    if (!w) {
+                        alert('Allow pop-ups to print.');
+                        return;
+                    }
+                    w.document.open();
+                    w.document.write(
+                        '<html><head><title>' + escapeHtml(cfg.printDocumentTitle || 'Print') + '</title>' +
+                        '<style>' +
+                        'body{font-family:Arial,sans-serif;color:#000;margin:12px}' +
+                        'table.dt-print-main{width:100%;max-width:100%;border-collapse:collapse;border:2px solid #000;table-layout:auto}' +
+                        'thead{display:table-header-group}' +
+                        'tr.dt-print-letterhead td{border:none!important}' +
+                        'tr.dt-print-caption td{border:none!important}' +
+                        'thead tr:not(.dt-print-letterhead):not(.dt-print-caption) th{border:1px solid #000!important;padding:4px 6px 2px 8px;font-size:10px;vertical-align:top;text-align:left;background:#eee;font-weight:bold;white-space:nowrap}' +
+                        'tbody td{border:1px solid #000!important;padding:4px 6px 2px 8px;font-size:10px;vertical-align:top;text-align:left}' +
+                        '.td-export-name-phone .export-name{display:block;font-weight:600;line-height:1.25}' +
+                        '.td-export-name-phone .export-phone{display:block;margin-top:3px;line-height:1.25}' +
+                        '.td-export-name-phone .export-phone small{font-size:9px;color:#333;font-weight:normal}' +
+                        '@media print{' +
+                        '@page{size:A4 landscape;margin:8mm 10mm}' +
+                        'body{margin:0}' +
+                        'thead{display:table-header-group}' +
+                        'tr.dt-print-letterhead td{-webkit-print-color-adjust:exact;print-color-adjust:exact}' +
+                        'table.dt-print-main{width:100%;max-width:100%}' +
+                        'table,th,td{border-color:#000!important}' +
+                        '}' +
+                        '</style></head><body>' +
+                        '<table class="dt-print-main" border="0" cellspacing="0" cellpadding="0">' +
+                        '<thead>' + letterRow + captionRow + theadRow + '</thead><tbody>' + tbodyHtml + '</tbody></table></body></html>'
+                    );
+                    w.document.close();
+                    printWhenReady(w);
+                });
             });
         };
     }

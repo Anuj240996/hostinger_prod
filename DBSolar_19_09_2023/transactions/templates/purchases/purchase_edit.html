@@ -716,28 +716,8 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // Quantity input validation
     stockQuantity.addEventListener('input', function () {
-        const purchaseUnit = this.getAttribute('data-purchase-unit')?.trim();
-        let inputVal = this.value;
-
-        if (purchaseUnit === 'Nos') {
-            // Allow only whole numbers
-            if (!/^\d*$/.test(inputVal)) {
-                alert('Please use whole numbers only for the "Nos" unit.');
-                inputVal = inputVal.split('.')[0].replace(/\D/g, '');
-                this.value = inputVal;
-            }
-        } else {
-            // Allow decimals for other units
-            const decVal = inputVal.replace(/[^0-9.]/g, '');
-            const parts = decVal.split('.');
-            const cleanVal = parts.length > 2
-                ? parts[0] + '.' + parts.slice(1).join('')
-                : decVal;
-
-            if (inputVal !== cleanVal) {
-                this.value = cleanVal;
-            }
-        }
+        const purchaseUnit = this.getAttribute('data-purchase-unit')?.trim() || stockSelect.getAttribute('data-purchase')?.trim();
+        window.enforceQuantityInputByUnit(this, purchaseUnit);
     });
 });
 </script>
@@ -812,28 +792,8 @@ $(document).ready(function() {
   $(document).on('input', '.quantity', function () {
         const $input = $(this);
         const $row = $input.closest('.form-row');
-        const purchaseUnit = $row.find('.stock-purchase').val()?.trim();
-        let inputVal = $input.val();
-
-        if (purchaseUnit === 'Nos') {
-            // Check if value is a valid integer
-            if (!/^\d*$/.test(inputVal)) {
-                alert('Please use whole numbers only in the "Nos" unit.');
-                inputVal = inputVal.split('.')[0].replace(/\D/g, ''); // Remove decimal and non-digits
-                $input.val(inputVal);
-            }
-        } else {
-            // Allow decimal for other units, sanitize value
-            const decVal = inputVal.replace(/[^0-9.]/g, ''); // Remove invalid characters
-            const parts = decVal.split('.');
-            const cleanVal = parts.length > 2
-                ? parts[0] + '.' + parts.slice(1).join('') // Keep only one dot
-                : decVal;
-
-            if (inputVal !== cleanVal) {
-                $input.val(cleanVal);
-            }
-        }
+        const purchaseUnit = window.getRowPurchaseUnit($row[0]);
+        window.enforceQuantityInputByUnit(this, purchaseUnit);
   });
 
 
@@ -1121,28 +1081,8 @@ document.addEventListener('DOMContentLoaded', function () {
 document.addEventListener('input', function (event) {
     if (event.target.classList.contains('quantity')) {
         const input = event.target;
-        const purchaseUnit = input.getAttribute('data-purchase-unit')?.trim();
-        let inputVal = input.value;
-
-        if (purchaseUnit === 'Nos') {
-            // Allow only whole numbers
-            if (!/^\d*$/.test(inputVal)) {
-                alert('Please use whole numbers only for the "Nos" unit.');
-                inputVal = inputVal.split('.')[0].replace(/\D/g, '');
-                input.value = inputVal;
-            }
-        } else {
-            // Allow decimals
-            const decVal = inputVal.replace(/[^0-9.]/g, '');
-            const parts = decVal.split('.');
-            const cleanVal = parts.length > 2
-                ? parts[0] + '.' + parts.slice(1).join('')
-                : decVal;
-
-            if (inputVal !== cleanVal) {
-                input.value = cleanVal;
-            }
-        }
+        const purchaseUnit = input.getAttribute('data-purchase-unit')?.trim() || window.getRowPurchaseUnit(input.closest('.form-row, tr'));
+        window.enforceQuantityInputByUnit(input, purchaseUnit);
     }
 });
 </script>

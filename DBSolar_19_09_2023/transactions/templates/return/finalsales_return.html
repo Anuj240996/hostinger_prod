@@ -1,5 +1,6 @@
 {% extends 'partials/base.html' %}
 {% load static %}
+{% load quantity_filters %}
 {% block title %} New Purchase {% endblock title %}
 {% block content %}
 
@@ -72,16 +73,14 @@
                         </td>
                         <td>
                             <div class="d-flex justify-content-center align-items-center mt-1">
-                                <input type="hidden" class="form-control stock-quantity" value="{{ item.stock.quantity }}" readonly>
+                                <input type="hidden" class="form-control stock-quantity" value="{{ item.warehouse_qty_str }}" data-warehouse-qty="{{ item.warehouse_qty_str }}" data-stock-alert="{{ item.stock.stock_alert }}" data-purchase-unit="{{ item.stock.purchase.short_name }}" readonly>
                                 {% if item.stock.quantity > item.stock.stock_alert %}
                                     <span class="badge success">
-<!--                                        {{ item.stock.quantity }} <small>{{ item.stock.purchase.short_name }}</small>-->
-                                        {{ item.stock.quantity|floatformat:"3"|cut:".000" }} <small>{{ item.stock.purchase.short_name }}</small>
+                                        <span class="available-qty-text">{{ item.warehouse_display }}</span> <small>{{ item.stock.purchase.short_name }}</small>
                                     </span>
                                 {% else %}
                                     <span class="badge danger">
-<!--                                        {{ item.stock.quantity }} <small>{{ item.stock.purchase.short_name }}</small>-->
-                                            {{ item.stock.quantity|floatformat:"3"|cut:".000" }} <small>{{ item.stock.purchase.short_name }}</small>
+                                        <span class="available-qty-text">{{ item.warehouse_display }}</span> <small>{{ item.stock.purchase.short_name }}</small>
                                     </span>
                                 {% endif %}
                             </div>
@@ -104,7 +103,7 @@
                         <td>
 
                             <input type="number" min="0" class="form-control return-quantity" style="text-align: center;"
-                                   name="current_quantity_{{ item.pk }}" value="{{ 0 }}" />
+                                   name="current_quantity_{{ item.pk }}" value="{{ 0 }}" data-purchase-unit="{{ item.stock.purchase.short_name }}" />
                             <input type="hidden" class="stock-purchase" value="{{ item.stock.purchase.short_name }}">
                         </td>
                         <td>
@@ -143,57 +142,69 @@
 
     $(document).ready(function () {
 
-            $(document).on('input', '.return-quantity', function () {
-                const $input = $(this);
-                const $row = $input.closest('tr');
+        function updateReturnAvailableBadge($row) {
+            if (!window.formatQtyDisplay || !window.roundQty) {
+                return;
+            }
+            var unit = window.getRowPurchaseUnit($row[0]) || $row.find('.stock-purchase').val() || '';
+            var warehouseQty = window.roundQty(
+                $row.find('.stock-quantity').data('warehouse-qty') || $row.find('.stock-quantity').val() || '0',
+                unit
+            );
+            var currentReturn = window.roundQty($row.find('.return-quantity').val() || '0', unit);
+            var projectedAvailable = window.roundQty(warehouseQty + currentReturn, unit);
+            var badge = $row.find('.badge')[0];
+            if (!badge) {
+                return;
+            }
+            var formatted = window.formatQtyDisplay(projectedAvailable, unit);
+            var qtyText = badge.querySelector('.available-qty-text');
+            if (qtyText) {
+                qtyText.textContent = formatted;
+            }
+            var stockAlert = window.roundQty($row.find('.stock-quantity').data('stock-alert') || '0');
+            $($row.find('.badge')).removeClass('success danger').addClass(
+                projectedAvailable > stockAlert ? 'success' : 'danger'
+            );
+        }
 
-                const unitRaw = $row.find('.stock-purchase').val() || '';
-                const unit = unitRaw.trim().toLowerCase(); // Normalize
+        function updateReturnRow($row) {
+            var unit = window.getRowPurchaseUnit($row[0]) || $row.find('.stock-purchase').val() || '';
+            var $input = $row.find('.return-quantity');
 
-                let inputVal = $input.val();
+            window.enforceQuantityInputByUnit($input[0], unit, { showAlert: true });
 
-                // Parse input value safely
-                let numericVal = parseFloat(inputVal);
-                if (isNaN(numericVal)) numericVal = 0;
+            var currentReturn = window.roundQty($input.val() || '0', unit);
+            var originalQuantity = window.roundQty($row.find('.quantity').val() || '0', unit);
+            var alreadyReturned = window.roundQty($row.find('input[name^="return_quantity_"]').val() || '0', unit);
+            var maxAllowed = window.roundQty(originalQuantity - alreadyReturned, unit);
 
-                // ========== 1. Enforce unit-specific format ==========
-                if (unit === 'nos') {
-                    if (!Number.isInteger(numericVal)) {
-                        alert('Only whole numbers are allowed for the "Nos" unit.');
-                        numericVal = Math.floor(numericVal); // Round down to integer
-                        $input.val(numericVal); // Set corrected value
-                    }
-                }
+            if (currentReturn > maxAllowed) {
+                alert('Current Return quantity cannot exceed the remaining quantity.');
+                $input.val(0);
+                $row.find('.total-quantity').val(window.formatQtyDisplay(maxAllowed, unit));
+                updateReturnAvailableBadge($row);
+                return;
+            }
 
-                // ========== 2. Prevent over-returning ==========
-                const originalQuantity = parseFloat($row.find('.quantity').val()) || 0;
-                const alreadyReturned = parseFloat($row.find('input[name^="return_quantity_"]').val()) || 0;
-                const currentReturn = numericVal;
+            var remainingQuantity = window.roundQty(maxAllowed - currentReturn, unit);
+            $row.find('.total-quantity').val(window.formatQtyDisplay(remainingQuantity, unit));
+            updateReturnAvailableBadge($row);
+        }
 
-                const maxAllowed = originalQuantity - alreadyReturned;
-                if (currentReturn > maxAllowed) {
-                    alert('Current Return quantity cannot exceed the remaining quantity.');
-                    $input.val(0);
-                    $row.find('.total-quantity').val(maxAllowed);
-                    return;
-                }
-
-                // ========== 3. Update remaining quantity ==========
-                const remainingQuantity = maxAllowed - currentReturn;
-                $row.find('.total-quantity').val(remainingQuantity);
-            });
-
+        $(document).on('input', '.return-quantity', function () {
+            updateReturnRow($(this).closest('tr'));
+        });
 
         // Initialize Total Quantity with the correct calculation on page load
         $('.total-quantity').each(function () {
             const row = $(this).closest('tr');
-
-            const originalQuantity = parseFloat(row.find('.quantity').val()) || 0; // Original Quantity
-            const alreadyReturned = parseFloat(row.find('input[name^="return_quantity_"]').val()) || 0; // Already Returned
-
-            // Initialize total quantity as Original Quantity - Already Returned
-            const totalQuantity = originalQuantity - alreadyReturned;
-            $(this).val(totalQuantity);
+            const unit = window.getRowPurchaseUnit(row[0]) || row.find('.stock-purchase').val() || '';
+            const originalQuantity = window.roundQty(row.find('.quantity').val() || '0', unit);
+            const alreadyReturned = window.roundQty(row.find('input[name^="return_quantity_"]').val() || '0', unit);
+            const totalQuantity = window.roundQty(originalQuantity - alreadyReturned, unit);
+            $(this).val(window.formatQtyDisplay(totalQuantity, unit));
+            updateReturnAvailableBadge(row);
         });
 
 

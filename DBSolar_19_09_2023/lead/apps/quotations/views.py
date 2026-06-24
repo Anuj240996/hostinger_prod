@@ -416,6 +416,7 @@ from django.db import connection
 from django.db.models import Q, Sum, Count
 from django.core.paginator import Paginator
 from django.utils import timezone
+from django.utils.dateparse import parse_date
 from django.http import JsonResponse, HttpResponse
 from datetime import date, datetime, timedelta
 import csv
@@ -430,15 +431,11 @@ from django.contrib.auth.models import User
 
 import logging
 
-# ReportLab (see requirements.txt reportlab==3.6.13)
+# Try to import reportlab, provide fallback if not available
 try:
-    from reportlab.pdfgen import canvas
-    from reportlab.lib.pagesizes import letter, A4
+    from reportlab.pdf import canvas
+    from reportlab.lib.pagesizes import letter
     from reportlab.lib.units import inch
-    from reportlab.lib import colors
-    from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
-    from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-    from reportlab.lib.enums import TA_CENTER, TA_RIGHT
     REPORTLAB_AVAILABLE = True
 except ImportError:
     REPORTLAB_AVAILABLE = False
@@ -660,12 +657,9 @@ def quotation_list(request):
         )
 
     from_date = request.GET.get('from_date')
-    if from_date:
-        quotations_qs = quotations_qs.filter(created_at__date__gte=from_date)
-
     to_date = request.GET.get('to_date')
-    if to_date:
-        quotations_qs = quotations_qs.filter(created_at__date__lte=to_date)
+    from_date_parsed = parse_date(from_date.strip()) if from_date and from_date.strip() else None
+    to_date_parsed = parse_date(to_date.strip()) if to_date and to_date.strip() else None
 
     search_query = (request.GET.get('q') or '').strip()
     if search_query:
@@ -685,6 +679,11 @@ def quotation_list(request):
         key=_erp_quotation_sort_key_by_quote_no,
         reverse=True,
     )
+    if from_date_parsed or to_date_parsed:
+        quotations_all = [
+            q for q in quotations_all
+            if _erp_quotation_in_date_range(q, from_date_parsed, to_date_parsed)
+        ]
     quotations_latest = _crm_quotations_latest_per_family(quotations_all)
     summary = _crm_summary_stats_for_latest_quotations(quotations_latest)
 
@@ -793,6 +792,24 @@ def _erp_quotation_date_as_python_date(value):
                 except ValueError:
                     continue
     return None
+
+
+def _erp_quotation_in_date_range(quotation, from_date, to_date):
+    """
+    Inclusive date-range filter for CRM quotation list.
+    Uses quotation.date then created_at (Python-side) to avoid PostgreSQL
+    AT TIME ZONE errors when legacy DB columns are not true timestamps.
+    """
+    qd = _erp_quotation_date_as_python_date(getattr(quotation, 'date', None))
+    if qd is None:
+        qd = _erp_quotation_date_as_python_date(getattr(quotation, 'created_at', None))
+    if qd is None:
+        return False
+    if from_date and qd < from_date:
+        return False
+    if to_date and qd > to_date:
+        return False
+    return True
 
 
 def _erp_quotation_datetime_for_template(value):
@@ -1225,7 +1242,7 @@ def quotation_mark_converted(request, pk):
     if request.method != 'POST':
         return JsonResponse({'success': False, 'message': 'Invalid request method.'}, status=405)
 
-    from quotation.models import QuotationConversionRecord
+    from quotation.conversion_utils import finalize_quotation_conversion
     from quotation.views import quotation_is_latest_in_family_for_request
 
     quotation = _crm_erp_quotation_or_404(request, pk)
@@ -1240,56 +1257,10 @@ def quotation_mark_converted(request, pk):
             status=400,
         )
 
-    if not quotation.convert_consumer or quotation.status != 'converted':
-        quotation.convert_consumer = True
-        quotation.status = 'converted'
-        quotation.save(update_fields=['convert_consumer', 'status'])
-
-    if QuotationConversionRecord._meta.db_table in set(connection.introspection.table_names()):
-        QuotationConversionRecord.objects.create(
-            quotation=quotation,
-            converted_by=request.user if request.user.is_authenticated else None,
-        )
-
-    if quotation.lead_id:
-        try:
-            from apps.leads.timeline import log_quotation_timeline_activity
-            log_quotation_timeline_activity(
-                quotation,
-                request.user if request.user.is_authenticated else None,
-                event='converted',
-            )
-        except Exception:
-            pass
-        try:
-            from apps.leads.pipeline_board import sync_lead_stage_from_pipeline_rules
-
-            sync_lead_stage_from_pipeline_rules(
-                quotation.lead_id,
-                request.user if request.user.is_authenticated else None,
-            )
-        except Exception:
-            pass
-
-    # Match previous CRM logic: create revenue record when quotation is converted.
-    # Keep it idempotent (one revenue row per ERP quotation). Revenue.quotation points at
-    # legacy apps.quotations.Quotation; CRM uses ERP quotation.models.Quotation — use erp_quotation.
-    try:
-        from apps.revenue.models import Revenue
-
-        if quotation.lead_id:
-            amount_value = quotation.final_amount or quotation.net_amount or 0
-            Revenue.objects.get_or_create(
-                erp_quotation=quotation,
-                defaults={
-                    'lead': quotation.lead,
-                    'amount': amount_value,
-                    'date': timezone.now().date(),
-                    'payment_status': 'pending',
-                },
-            )
-    except Exception:
-        logger.exception('Revenue row could not be created after quotation convert')
+    finalize_quotation_conversion(
+        quotation,
+        converted_by=request.user if request.user.is_authenticated else None,
+    )
 
     return JsonResponse({'success': True})
 
@@ -1366,6 +1337,13 @@ def add_negotiation_note(request, pk):
 
 from django.http import FileResponse
 import io
+from reportlab.pdfgen import canvas
+from reportlab.lib.pagesizes import letter, A4
+from reportlab.lib.units import inch
+from reportlab.lib import colors
+from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib.enums import TA_CENTER, TA_RIGHT
 from datetime import datetime
 
 

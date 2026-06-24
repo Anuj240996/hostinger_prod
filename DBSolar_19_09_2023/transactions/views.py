@@ -3,6 +3,12 @@ import logging
 from decimal import Decimal
 from operator import itemgetter
 
+from inventory.quantity_utils import (
+    format_quantity_display,
+    quantize_quantity,
+    quantity_to_str,
+)
+
 from ci_info import vendor
 
 logger = logging.getLogger(__name__)
@@ -3286,8 +3292,10 @@ def extract_from_image(pil_img):
 def get_stock_quantity(request):
     stock_id = request.GET.get('stock_id')
     stock = Stock.objects.get(pk=stock_id)
+    unit = stock.purchase.short_name if stock.purchase_id else None
+    qty = quantize_quantity(stock.quantity, unit)
     return JsonResponse({
-        'quantity': stock.quantity,
+        'quantity': quantity_to_str(qty, unit),
         'stock_alert': stock.stock_alert,
         'gst': stock.gst,
         'purchase': stock.purchase.short_name,
@@ -5206,8 +5214,8 @@ class SaleCreateView(LoginRequiredMixin, View):
                             stock = get_object_or_404(Stock, pk=billitem.stock.id)
                             billitem.sale = stock.sales
 
-                            # Update stock quantity and save
-                            stock.quantity -= billitem.quantity
+                            unit = stock.purchase.short_name if stock.purchase_id else None
+                            stock.quantity = quantize_quantity(stock.quantity - billitem.quantity, unit)
                             stock.save()
                             billitem.save()
 
@@ -5532,8 +5540,8 @@ class customeView(LoginRequiredMixin, View):
                             # Fetch the correct unit from the stock model instead of request.POST
                             billitem.sale = stock.sales  # Assuming `Stock` has a ForeignKey to `Unit`
 
-                            # Update stock quantity and save
-                            stock.quantity -= billitem.quantity
+                            unit = stock.purchase.short_name if stock.purchase_id else None
+                            stock.quantity = quantize_quantity(stock.quantity - billitem.quantity, unit)
                             stock.save()
                             logger.info(f"Stock updated successfully for stock id {stock.id}")
 
@@ -5787,8 +5795,8 @@ class SaleCreateView_bill(LoginRequiredMixin, View):
                             stock = get_object_or_404(Stock, pk=billitem.stock.id)
                             billitem.totalprice = billitem.perprice * billitem.quantity  # Calculate total price
 
-                            # Update stock quantity and save
-                            stock.quantity -= billitem.quantity
+                            unit = stock.purchase.short_name if stock.purchase_id else None
+                            stock.quantity = quantize_quantity(stock.quantity - billitem.quantity, unit)
                             stock.save()
                             logger.info(f"Stock updated successfully for stock id {stock.id}")
 
@@ -6318,8 +6326,8 @@ class SaleCreateView1(LoginRequiredMixin, View):
                 stock = get_object_or_404(Stock, name=billitem.stock.name)
                 # calculates the total price
                 billitem.totalprice = billitem.perprice * billitem.quantity
-                # updates quantity in stock db
-                stock.quantity -= billitem.quantity
+                unit = stock.purchase.short_name if stock.purchase_id else None
+                stock.quantity = quantize_quantity(stock.quantity - billitem.quantity, unit)
                 # saves bill item and stock
                 stock.save()
                 billitem.save()
@@ -7339,6 +7347,11 @@ def edit_sale_view(request, pk):
     # For each item, retrieve the related serial numbers from PurchaseSerial
     for item in sale_items:
         item.serials = PurchaseSerial.objects.filter(stock=item.stock, sales_billno=pk)
+        unit = item.stock.purchase.short_name if item.stock.purchase_id else None
+        item.qty_unit = unit
+        item.warehouse_qty_str = quantity_to_str(item.stock.quantity, unit)
+        item.saved_qty_str = quantity_to_str(item.quantity, unit)
+        item.warehouse_display = format_quantity_display(item.stock.quantity, unit)
 
     try:
         sale_bill_details = SaleBillDetails.objects.get(billno=sale_bill)
@@ -7400,8 +7413,9 @@ def edit_sale_view(request, pk):
         for item in sale_items:
             quantity = request.POST.get(f'quantity_{item.pk}')
             if quantity:
+                unit = item.stock.purchase.short_name if item.stock.purchase_id else None
                 previous_quantity = item.quantity
-                item.quantity = Decimal(quantity)
+                item.quantity = quantize_quantity(quantity, unit)
 
                 # Update the sale field to match the stock
                 item.sale = item.stock.sales
@@ -7411,7 +7425,7 @@ def edit_sale_view(request, pk):
                 stock = item.stock
                 stock_quantity = stock.quantity
                 quantity_change = item.quantity - previous_quantity
-                stock.quantity = stock_quantity - quantity_change
+                stock.quantity = quantize_quantity(stock_quantity - quantity_change, unit)
                 stock.save()
 
         # Process new items
@@ -7419,15 +7433,17 @@ def edit_sale_view(request, pk):
         new_quantities = request.POST.getlist("quantities[]")
         for stock_id, quantity in zip(new_stock_ids, new_quantities):
             stock = Stock.objects.get(pk=stock_id)
+            unit = stock.purchase.short_name if stock.purchase_id else None
+            qty = quantize_quantity(quantity, unit)
 
             SaleItem.objects.create(
                 billno=sale_bill,
                 stock=stock,
-                quantity=Decimal(quantity),
-                totalprice=1 * Decimal(quantity),  # Assuming `price` is handled
+                quantity=qty,
+                totalprice=1 * qty,  # Assuming `price` is handled
                 sale=stock.sales,
             )
-            stock.quantity -= Decimal(quantity)
+            stock.quantity = quantize_quantity(stock.quantity - qty, unit)
             stock.save()
 
         # Handle removed items
@@ -7439,13 +7455,14 @@ def edit_sale_view(request, pk):
             item_to_remove = SaleItem.objects.get(pk=removed_id)
             stock = item_to_remove.stock
             quantity_to_remove = item_to_remove.quantity
+            unit = stock.purchase.short_name if stock.purchase_id else None
 
             PurchaseSerial.objects.filter(
                 stock=stock,
                 sales_billno=sale_bill.billno
             ).update(sales_billno=None)
 
-            stock.quantity += quantity_to_remove
+            stock.quantity = quantize_quantity(stock.quantity + quantity_to_remove, unit)
             stock.save()
             item_to_remove.delete()
 
@@ -8727,6 +8744,10 @@ def finalsale_return(request, pk):
         safe_subcategory = subcategory_for_fk_id(item.stock.subcategory_id)
         item.safe_category_name = safe_category.name if safe_category else ""
         item.safe_subcategory_name = safe_subcategory.name if safe_subcategory else ""
+        unit = item.stock.purchase.short_name if item.stock.purchase_id else None
+        item.qty_unit = unit
+        item.warehouse_qty_str = quantity_to_str(item.stock.quantity, unit)
+        item.warehouse_display = format_quantity_display(item.stock.quantity, unit)
 
     # Fetch the final bill details, if they exist
     try:

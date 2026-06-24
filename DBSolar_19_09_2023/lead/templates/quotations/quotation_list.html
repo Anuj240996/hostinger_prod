@@ -630,10 +630,10 @@
                             </td>
                         </tr>
                         {% empty %}
-                        <tr>
+                        <tr class="crm-empty-row">
                             <td colspan="8" class="text-center py-5">
-                                <i class="fas fa-file-invoice fa-3x text-muted mb-3"></i>
-                                <p class="text-muted">No quotations found</p>
+                                <i class="fas fa-file-invoice fa-3x text-muted mb-3 d-block"></i>
+                                <p class="text-muted mb-2">No quotations found</p>
                                 <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#crmGenerateQuotationModal">
                                     Create First Quotation
                                 </button>
@@ -643,12 +643,15 @@
                     </tbody>
                 </table>
             </div>
-            {% if page_obj and page_obj.paginator.num_pages > 1 %}
+            {% if page_obj %}
             <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 px-3 py-3 border-top quotations-list-pagination">
                 <small class="text-muted">
                     Showing {{ page_obj.start_index }}–{{ page_obj.end_index }} of {{ page_obj.paginator.count }} records
+                    {% if page_obj.paginator.num_pages > 1 %}
                     (Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }})
+                    {% endif %}
                 </small>
+                {% if page_obj.paginator.num_pages > 1 %}
                 <nav aria-label="Quotation list pagination">
                     <ul class="pagination pagination-sm mb-0">
                         <li class="page-item {% if not page_obj.has_previous %}disabled{% endif %}">
@@ -674,6 +677,7 @@
                         </li>
                     </ul>
                 </nav>
+                {% endif %}
             </div>
             {% endif %}
             </div>
@@ -911,31 +915,23 @@
   window.crmApplyCurrentColumnSelections = function () {};
   window.crmColumnVisibilityState = window.crmColumnVisibilityState || {};
 
+  window.destroyCrmQuotationDataTables = function destroyCrmQuotationDataTables() {
+    if (!window.jQuery || !window.jQuery.fn || !window.jQuery.fn.dataTable) return;
+    var $ = window.jQuery;
+    ['#crmQuotationTable', '#crmQuotationExportTable'].forEach(function (sel) {
+      if ($.fn.dataTable.isDataTable(sel)) {
+        try {
+          $(sel).DataTable().destroy();
+        } catch (e) {
+          /* table may already be detached */
+        }
+      }
+    });
+  };
+
   window.initializeCrmQuotationPage = function initializeCrmQuotationPage() {
-    // Make this list a DataTable so exports work like the existing quotation list page.
-    if (window.jQuery && window.jQuery.fn && window.jQuery.fn.dataTable) {
-      var $ = window.jQuery;
-      if (!$.fn.dataTable.isDataTable('#crmQuotationTable')) {
-        $('#crmQuotationTable').DataTable({
-          paging: false, // server-side pagination already used
-          info: false,
-          searching: false,
-          ordering: true,
-          order: [],
-          columnDefs: [
-            { orderable: false, targets: [7] } // Actions column
-          ]
-        });
-      }
-      if (!$.fn.dataTable.isDataTable('#crmQuotationExportTable')) {
-        $('#crmQuotationExportTable').DataTable({
-          paging: false,
-          info: false,
-          searching: false,
-          ordering: true,
-          order: []
-        });
-      }
+    if (typeof window.initCrmQuotationDataTables === 'function') {
+      window.initCrmQuotationDataTables();
     }
 
     var pdfModal = document.getElementById('crmQuotationPdfChoiceModal');
@@ -1061,6 +1057,26 @@
         });
       }
 
+      function syncQuotationListPagination(doc) {
+        var tableView = document.getElementById('quotations-table-view');
+        if (!tableView) return;
+        var tableWrap = tableView.querySelector('.table-responsive');
+        if (!tableWrap) return;
+
+        var newPagination = doc.querySelector('.quotations-list-pagination');
+        var oldPagination = tableView.querySelector('.quotations-list-pagination');
+
+        if (newPagination) {
+          if (oldPagination) {
+            oldPagination.outerHTML = newPagination.outerHTML;
+          } else {
+            tableWrap.insertAdjacentHTML('afterend', newPagination.outerHTML);
+          }
+        } else if (oldPagination) {
+          oldPagination.remove();
+        }
+      }
+
       function fetchAndReplaceTable(params, focusSearchAfterUpdate) {
         var queryString = params.toString();
         var targetUrl = window.location.pathname + (queryString ? ('?' + queryString) : '');
@@ -1076,14 +1092,15 @@
             var doc = parser.parseFromString(html, 'text/html');
             var newTableWrap = doc.querySelector('#crmQuotationTable') ? doc.querySelector('#crmQuotationTable').closest('.table-responsive') : null;
             var oldTableWrap = document.querySelector('#crmQuotationTable') ? document.querySelector('#crmQuotationTable').closest('.table-responsive') : null;
-            var newExportWrap = doc.querySelector('#crmQuotationExportTable') ? doc.querySelector('#crmQuotationExportTable').parentElement : null;
-            var oldExportWrap = document.querySelector('#crmQuotationExportTable') ? document.querySelector('#crmQuotationExportTable').parentElement : null;
-            var newPagination = doc.querySelector('.d-flex.justify-content-between.align-items-center.flex-wrap.gap-2.px-3.py-3.border-top');
-            var oldPagination = document.querySelector('.d-flex.justify-content-between.align-items-center.flex-wrap.gap-2.px-3.py-3.border-top');
+            var newExportTable = doc.getElementById('crmQuotationExportTable');
+            var oldExportTable = document.getElementById('crmQuotationExportTable');
 
+            if (typeof window.destroyCrmQuotationDataTables === 'function') {
+              window.destroyCrmQuotationDataTables();
+            }
             if (newTableWrap && oldTableWrap) oldTableWrap.outerHTML = newTableWrap.outerHTML;
-            if (newExportWrap && oldExportWrap) oldExportWrap.innerHTML = newExportWrap.innerHTML;
-            if (newPagination && oldPagination) oldPagination.outerHTML = newPagination.outerHTML;
+            if (newExportTable && oldExportTable) oldExportTable.outerHTML = newExportTable.outerHTML;
+            syncQuotationListPagination(doc);
             applyCurrentColumnSelections();
 
             if (focusSearchAfterUpdate) {
@@ -1104,6 +1121,29 @@
           .catch(function () {
             alert('Failed to refresh table. Please try again.');
           });
+      }
+
+      var tableViewRoot = document.getElementById('quotations-table-view');
+      if (tableViewRoot && tableViewRoot.dataset.paginationBound !== '1') {
+        tableViewRoot.dataset.paginationBound = '1';
+        tableViewRoot.addEventListener('click', function (e) {
+          var link = e.target.closest('.quotations-list-pagination a.page-link[href]');
+          if (!link) return;
+          var pageItem = link.closest('.page-item');
+          if (pageItem && pageItem.classList.contains('disabled')) return;
+          if (link.classList.contains('page-link') && link.tagName === 'SPAN') return;
+          e.preventDefault();
+          try {
+            var linkUrl = new URL(link.getAttribute('href'), window.location.origin);
+            var params = new URLSearchParams(linkUrl.search);
+            if (rowsSelect) {
+              params.set('per_page', rowsSelect.value || '20');
+            }
+            fetchAndReplaceTable(params, false);
+          } catch (err) {
+            window.location.href = link.getAttribute('href');
+          }
+        });
       }
 
       rowsSelect.addEventListener('change', function () {
@@ -1235,22 +1275,29 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.16/jspdf.plugin.autotable.min.js"></script>
 <script src="{% static 'js/list_page_export.js' %}"></script>
 <script>
-  if (window.jQuery && window.jQuery.fn && window.jQuery.fn.dataTable) {
+  window.initCrmQuotationDataTables = function initCrmQuotationDataTables() {
+    if (!window.jQuery || !window.jQuery.fn || !window.jQuery.fn.dataTable) return;
     var $ = window.jQuery;
-    if (!$.fn.dataTable.isDataTable('#crmQuotationTable')) {
-      var crmDt = $('#crmQuotationTable').DataTable({
-        paging: false,
-        info: false,
-        searching: false,
-        ordering: true,
-        order: [],
-        columnDefs: [{ orderable: false, targets: [7] }]
-      });
-      if (typeof window.attachGlobalDatatableTools === 'function') {
-        window.attachGlobalDatatableTools(crmDt);
+    $.fn.dataTable.ext.errMode = 'none';
+
+    var $main = $('#crmQuotationTable');
+    if ($main.length && !$main.find('tbody tr.crm-empty-row').length) {
+      if (!$.fn.dataTable.isDataTable('#crmQuotationTable')) {
+        var crmDt = $main.DataTable({
+          paging: false,
+          info: false,
+          searching: false,
+          ordering: true,
+          order: [],
+          columnDefs: [{ orderable: false, targets: [7] }]
+        });
+        if (typeof window.attachGlobalDatatableTools === 'function') {
+          window.attachGlobalDatatableTools(crmDt);
+        }
       }
     }
-    if (!$.fn.dataTable.isDataTable('#crmQuotationExportTable')) {
+
+    if ($('#crmQuotationExportTable').length && !$.fn.dataTable.isDataTable('#crmQuotationExportTable')) {
       $('#crmQuotationExportTable').DataTable({
         paging: false,
         info: false,
@@ -1259,11 +1306,67 @@
         order: []
       });
     }
+  };
+
+  window.crmSyncQuotationExportTable = function crmSyncQuotationExportTable(done) {
+    var callback = typeof done === 'function' ? done : function () {};
+    var params = new URLSearchParams(window.location.search || '');
+    params.set('per_page', 'all');
+    params.delete('page');
+    var queryString = params.toString();
+    var targetUrl = window.location.pathname + (queryString ? ('?' + queryString) : '');
+    var fetchUrl = targetUrl + (targetUrl.indexOf('?') >= 0 ? '&' : '?') + '_export_sync=' + Date.now();
+
+    fetch(fetchUrl, {
+      credentials: 'same-origin',
+      cache: 'no-store',
+      headers: { 'X-Requested-With': 'XMLHttpRequest' }
+    })
+      .then(function (resp) { return resp.text(); })
+      .then(function (html) {
+        var doc = new DOMParser().parseFromString(html, 'text/html');
+        var newTable = doc.getElementById('crmQuotationExportTable');
+        var oldTable = document.getElementById('crmQuotationExportTable');
+        if (!newTable || !oldTable) {
+          callback();
+          return;
+        }
+        if (window.jQuery && window.jQuery.fn && window.jQuery.fn.dataTable && window.jQuery.fn.dataTable.isDataTable('#crmQuotationExportTable')) {
+          try {
+            window.jQuery('#crmQuotationExportTable').DataTable().destroy();
+          } catch (e) {
+            /* ignore */
+          }
+        }
+        oldTable.outerHTML = newTable.outerHTML;
+        if (window.jQuery && window.jQuery.fn && window.jQuery.fn.dataTable) {
+          window.jQuery('#crmQuotationExportTable').DataTable({
+            paging: false,
+            info: false,
+            searching: false,
+            ordering: true,
+            order: []
+          });
+        }
+        callback();
+      })
+      .catch(function () {
+        callback();
+      });
+  };
+
+  if (typeof window.initializeCrmQuotationPage === 'function') {
+    window.initializeCrmQuotationPage();
+  } else {
+    window.initCrmQuotationDataTables();
   }
 
   ListPageExport.register({
     apiPrefix: 'crmQuotationList',
     tableSelector: '#crmQuotationExportTable',
+    prepareExport: function (done) {
+      window.crmSyncQuotationExportTable(done);
+    },
     pdfFilename: 'crm_quotation_list.pdf',
     excelFilename: 'crm_quotation_list.xlsx',
     excelSheetName: 'CRMQuotationList',

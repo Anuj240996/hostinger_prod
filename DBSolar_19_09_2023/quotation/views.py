@@ -344,55 +344,9 @@ def quotation_family_timeline_for_request(request, anchor_quotation):
 
 
 def get_active_terms_conditions():
-    """Helper function to get active terms and conditions, handling bit varying type issue"""
-    # Use raw SQL to fetch all data and create model instances directly
-    # This completely bypasses Django ORM to avoid bit varying boolean comparison errors
-    try:
-        with connection.cursor() as cursor:
-            # Use CAST to text to avoid any boolean comparison issues
-            cursor.execute("""
-                SELECT 
-                    id, 
-                    content, 
-                    CAST(has_yellow_background AS TEXT) as has_yellow_text,
-                    CAST(is_active AS TEXT) as is_active_text,
-                    created_at
-                FROM quotation_termsandcondition
-            """)
-            rows = cursor.fetchall()
-
-            # Create model instances directly from raw SQL results
-            terms_list = []
-            for row in rows:
-                # Check if is_active is truthy by checking text value
-                is_active_text = str(row[3]).lower() if row[3] else ''
-                is_active_value = is_active_text in ('1', 't', 'true', 'y', 'yes')
-
-                if is_active_value:
-                    term = TermsAndCondition()
-                    term.id = row[0]
-                    term.content = row[1] if row[1] else ''
-                    # Convert has_yellow_background from text
-                    has_yellow_text = str(row[2]).lower() if row[2] else ''
-                    term.has_yellow_background = has_yellow_text in ('1', 't', 'true', 'y', 'yes')
-                    term.is_active = True  # We already filtered for active ones
-                    term.created_at = row[4] if row[4] else None
-                    # Mark as saved to avoid save() calls and prevent database queries
-                    from django.db.models.base import ModelState
-                    term._state = ModelState()
-                    term._state.adding = False
-                    term._state.db = 'default'
-                    terms_list.append(term)
-
-            return terms_list
-    except Exception as e:
-        # If that fails, return empty list and log the error
-        import logging
-        import traceback
-        logger = logging.getLogger(__name__)
-        logger.error(f"Error fetching terms and conditions: {e}")
-        logger.error(f"Traceback: {traceback.format_exc()}")
-        return []
+    """Helper function to get active terms for quotation forms."""
+    from .master_helpers import get_active_terms_conditions as _get_form_terms
+    return _get_form_terms()
 
 # def quotation_list(request):
 #     quotations = Quotation.objects.all().order_by('-date', '-created_at')
@@ -4546,6 +4500,7 @@ def create_quotation(request):
                 cursor.execute("""
                     SELECT id FROM quotation_termsandcondition
                     WHERE CAST(is_active AS TEXT) IN ('1', 't', 'true', 'y', 'yes')
+                      AND CAST(show_in_quotation_form AS TEXT) IN ('1', 't', 'true', 'y', 'yes')
                 """)
                 active_term_ids = [row[0] for row in cursor.fetchall()]
             # Set queryset to include only active terms (filtering by ID only, no boolean comparison)
@@ -4977,12 +4932,15 @@ def create_quotation(request):
     if getattr(request, 'path', '') and '/new-lead/' in request.path:
         template_name = 'quotations/crm_create_quotation.html'
 
+    from .master_helpers import get_default_selected_term_ids
+
     context = {
         'form': form,
         'panel_companies': panel_companies,
         'inverter_companies': inverter_companies,
         'representatives': representatives,
         'terms_conditions': terms_conditions,
+        'default_term_ids': get_default_selected_term_ids(),
         'passed_consumer_type': consumer_type,  # Pass to template for display
         'passed_consumer_no': consumer_no,  # Pass to template for display
         'survey_lead_rows': _survey_lead_rows_for_quotation_template(),
@@ -5369,6 +5327,8 @@ def industrial_quotation_pdf(request, pk):
         'terms_with_yellow': terms_with_yellow,  # Set of term IDs with yellow background
         'co2_reduction_tons_per_year': round(co2_reduction_tons_per_year, 1),  # Rounded to 1 decimal
     }
+    from .master_helpers import get_quotation_pdf_context_extras
+    context.update(get_quotation_pdf_context_extras())
 
     html = render_to_string('quotation/industrial_quotation.html', context)
     sanitized_html = sanitize_css_units(html, content_width_pts=525)
@@ -7631,53 +7591,9 @@ def edit_quotation(request, pk):
     panel_companies = list(SolarPanelCompany.objects.all())
     inverter_companies = list(InverterCompany.objects.all())
 
-    # Get active terms and conditions - handle bit varying properly
-    try:
-        # Try with text cast first (most reliable)
-        with connection.cursor() as cursor:
-            cursor.execute("""
-                SELECT id FROM quotation_termsandcondition 
-                WHERE CAST(is_active AS TEXT) IN ('1', 't', 'true', 'y', 'yes', 'on')
-            """)
-            active_term_ids = [row[0] for row in cursor.fetchall()]
-        terms_conditions = TermsAndCondition.objects.filter(id__in=active_term_ids).order_by('id')
-    except Exception as e:
-        logger.error(f"Error getting active terms with text cast: {e}")
-        try:
-            # Try alternative - just check for '1' in bit varying
-            with connection.cursor() as cursor:
-                cursor.execute("""
-                    SELECT id FROM quotation_termsandcondition 
-                    WHERE is_active = '1'::bit varying
-                """)
-                active_term_ids = [row[0] for row in cursor.fetchall()]
-            terms_conditions = TermsAndCondition.objects.filter(id__in=active_term_ids).order_by('id')
-        except Exception as e2:
-            logger.error(f"Error getting active terms with bit varying: {e2}")
-            # Last resort: get all terms and filter in Python
-            all_terms = TermsAndCondition.objects.all().order_by('id')
-            # Try to determine active terms by checking their values
-            active_term_ids = []
-            for term in all_terms:
-                try:
-                    # Try to get the raw value
-                    with connection.cursor() as cursor:
-                        cursor.execute("""
-                            SELECT is_active FROM quotation_termsandcondition WHERE id = %s
-                        """, [term.id])
-                        result = cursor.fetchone()
-                        if result:
-                            # Check if value indicates active (1, t, true, etc.)
-                            value = str(result[0]).lower()
-                            if value in ('1', 't', 'true', 'y', 'yes', 'on'):
-                                active_term_ids.append(term.id)
-                except:
-                    continue
-            terms_conditions = TermsAndCondition.objects.filter(id__in=active_term_ids).order_by('id')
-            if not active_term_ids:
-                # If still no active terms, use all terms
-                terms_conditions = all_terms
-                active_term_ids = list(all_terms.values_list('id', flat=True))
+    # Get active terms visible on quotation forms
+    terms_conditions = get_active_terms_conditions()
+    active_term_ids = [t.id for t in terms_conditions]
 
     # Build other_dynamic_list from stored other_details
     other_dynamic_list = [x.strip() for x in (quotation.other_details or "").split(" / ") if x.strip()]
@@ -8183,8 +8099,14 @@ def add_terms_condition_api(request):
         with connection.cursor() as cursor:
             # Insert using raw SQL with proper bit varying casting
             cursor.execute("""
-                INSERT INTO quotation_termsandcondition (content, has_yellow_background, is_active, created_at)
-                VALUES (%s, (%s)::bit(1)::bit varying, B'1'::bit varying, now())
+                INSERT INTO quotation_termsandcondition (
+                    content, has_yellow_background, is_active,
+                    show_in_quotation_form, default_selected, created_at
+                )
+                VALUES (
+                    %s, (%s)::bit(1)::bit varying, B'1'::bit varying,
+                    B'1'::bit varying, B'0'::bit varying, now()
+                )
                 RETURNING id
             """, [content, 1 if has_yellow_background else 0])
             new_id = cursor.fetchone()[0]
@@ -8496,6 +8418,8 @@ def quotation_pdf(request, pk):
         'representatives': reps,
         'terms_with_yellow': terms_with_yellow,  # Set of term IDs with yellow background
     }
+    from .master_helpers import get_quotation_pdf_context_extras
+    context.update(get_quotation_pdf_context_extras())
 
     html = render_to_string('quotation/quotation_template.html', context)
     sanitized_html = sanitize_css_units(html, content_width_pts=525)

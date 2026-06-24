@@ -1,0 +1,24 @@
+<div class="modal fade" id="staffNotificationModal" tabindex="-1" aria-labelledby="staffNotificationModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="staffNotificationModalLabel">Notification</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="d-flex align-items-start gap-3 mb-3">
+                    <img id="staffNotiModalAvatar" class="rounded-circle flex-shrink-0" src="" width="48" height="48" alt="">
+                    <div>
+                        <h6 class="mb-1" id="staffNotiModalSender"></h6>
+                        <small class="text-muted" id="staffNotiModalTime"></small>
+                    </div>
+                </div>
+                <p class="mb-0" id="staffNotiModalMessage"></p>
+            </div>
+            <div class="modal-footer">
+                <a href="{% url 'dashboard-notification' %}" class="btn btn-outline-primary btn-sm">View All</a>
+                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>

@@ -51,6 +51,9 @@ def required_permission(url_name: Optional[str], request: HttpRequest) -> Option
         "customer-index",
         "customer-view_all",
         "customer-view_all_cust",
+        "customer-generate_mobile_qr",
+        "customer-send_mobile_qr_email",
+        "customer-delete_mobile_app_link",
         "customer-display_meters",
         "customer-display_Site_Inspection",
         "customer-Cust_search",
@@ -173,6 +176,8 @@ def required_permission(url_name: Optional[str], request: HttpRequest) -> Option
     if url_name in {"create_quotation"}:
         return ("quotation", "add")
     if url_name in {"edit_quotation", "revise_quotation"}:
+        return ("quotation", "edit")
+    if url_name in {"quotation_master"}:
         return ("quotation", "edit")
 
     # FIREREPORT

@@ -12,8 +12,9 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required, permission_required
 from .decorators import auth_users, allowed_users
 from django.db.models import Q, Max
-from django.http import HttpResponse, HttpResponseRedirect
+from django.http import HttpResponse, HttpResponseRedirect, JsonResponse
 from django.utils import timezone
+from django.urls import reverse
 
 
 
@@ -603,31 +604,124 @@ def allconsumernotification(request):
         return render(request, 'dashboard/allconsumernotification.html', locals())
 
 
+def _mark_staff_notification_read(notification):
+    """Mark a staff notification as read (status=1)."""
+    if notification.status != 1:
+        notification.status = 1
+        notification.read = True
+        notification.save(update_fields=['status', 'read'])
+
+
+def _unread_staff_notifications(user):
+    return staff_Notification.objects.filter(staff_id=user.id, status=0)
+
+
+def _notification_sender_avatar(request, sender):
+    from django.templatetags.static import static
+    fallback = request.build_absolute_uri(static('images/dblogosmall.png'))
+    if not sender:
+        return fallback
+    try:
+        profile = sender.profile
+        image = profile.image
+        if image and image.name and image.storage.exists(image.name):
+            return request.build_absolute_uri(image.url)
+    except Exception:
+        pass
+    return fallback
+
+
+def _serialize_staff_notification(request, notification):
+    sender = notification.sender
+    return {
+        'id': notification.id,
+        'message': notification.message,
+        'sender_name': (sender.get_full_name() or sender.username) if sender else 'System',
+        'sender_avatar': _notification_sender_avatar(request, sender),
+        'created_at': notification.created_at.strftime('%d/%m/%Y %H:%M:%S'),
+    }
+
+
+@login_required(login_url='user-login')
+def staff_notification_open_api(request, pk):
+    """Mark one notification read and return JSON (Lead CRM nav bell AJAX)."""
+    notification = get_object_or_404(
+        staff_Notification.objects.select_related('sender', 'sender__profile'),
+        pk=pk,
+        staff_id=request.user.id,
+    )
+    _mark_staff_notification_read(notification)
+    count1 = _unread_staff_notifications(request.user).count()
+    return JsonResponse({
+        'success': True,
+        'count1': count1,
+        'notification': _serialize_staff_notification(request, notification),
+    })
+
+
+@login_required(login_url='user-login')
+def staff_notification_mark_all_api(request):
+    """Mark all unread notifications read and return JSON."""
+    _unread_staff_notifications(request.user).update(status=1, read=True)
+    return JsonResponse({'success': True, 'count1': 0})
+
+
+@login_required(login_url='user-login')
 def Notification(request):
+    staff = User.objects.filter(id=request.user.id)
+    notification1 = staff_Notification.objects.filter(
+        staff_id=request.user.id, status=False
+    ).order_by('-created_at')
 
-    staff = User.objects.filter(id = request.user.id)
-    notification1 = staff_Notification.objects.filter(staff_id=request.user.id, status=False).order_by('-created_at')
+    selected_notification = None
+    selected_notification_id = request.GET.get('id')
+    if selected_notification_id:
+        selected_notification = staff_Notification.objects.filter(
+            pk=selected_notification_id,
+            staff_id=request.user.id,
+        ).select_related('sender', 'sender__profile').first()
 
-    # for notification2 in notification1:
-    #     notification2.duration = timezone.now() - notification2.created_at
     for i in staff:
         staff_id = i.id
-        total = staff_Notification.objects.filter(status =0)
-        notification = staff_Notification.objects.filter(staff_id=request.user.id).order_by(
-            '-created_at')  # This sorts the notifications in descending order of created_at
-
+        total = staff_Notification.objects.filter(status=0)
+        notification = staff_Notification.objects.filter(
+            staff_id=request.user.id
+        ).select_related('sender', 'sender__profile').order_by('-created_at')
         count1 = staff_Notification.objects.filter(staff_id=staff_id, status=False).count()
-        # for notification in notification:
-        #     notification.duration = timezone.now() - notification.generated_time
         context = {
-            'notification':notification,
-            'total':total,
+            'notification': notification,
+            'total': total,
             'notification1': notification1,
             'count1': count1,
-            #'notification2': notification2,
-
+            'selected_notification': selected_notification,
+            'selected_notification_id': selected_notification_id,
         }
-    return render(request,'dashboard/Notification.html', context)
+    return render(request, 'dashboard/Notification.html', context)
+
+
+@login_required(login_url='user-login')
+def open_staff_notification(request, pk):
+    """Open one notification from the nav dropdown and mark it read."""
+    notification = get_object_or_404(
+        staff_Notification,
+        pk=pk,
+        staff_id=request.user.id,
+    )
+    _mark_staff_notification_read(notification)
+    return redirect(f'{reverse("dashboard-notification")}?id={pk}')
+
+
+@login_required(login_url='user-login')
+def mark_all_staff_notifications_read(request):
+    """Mark all unread notifications as read (Clear All in nav bell)."""
+    staff_Notification.objects.filter(
+        staff_id=request.user.id,
+        status=0,
+    ).update(status=1, read=True)
+    referer = request.META.get('HTTP_REFERER')
+    if referer:
+        return redirect(referer)
+    return redirect('dashboard-notification')
 
 def notification_count(request):
     # global count1
@@ -653,20 +747,14 @@ def notification_count(request):
     return render(request,'dashboard/Notification_count.html', context)
 
 
-def Staff_Notification_Mark_Done(request,status):
+def Staff_Notification_Mark_Done(request, status):
     if not status:
         logout(request)
-        return redirect('login')  # replace 'login' with the name of your login page URL
+        return redirect('user-login')
 
-    count1 = staff_Notification.objects.filter(staff_id=request.user.id, status=False).count()
-    notification1 = staff_Notification.objects.filter(staff_id=request.user.id, status=False).order_by('-created_at')
-    notification = staff_Notification.objects.get(id = status)
-    notification.status = 1
-    notification.save()
+    notification = get_object_or_404(staff_Notification, pk=status, staff_id=request.user.id)
+    _mark_staff_notification_read(notification)
     return redirect('dashboard-notification')
-
-
-from django.http import JsonResponse
 @permission_required('auth.change_user', raise_exception=True)
 def delete_user(request, user_id):
     try:

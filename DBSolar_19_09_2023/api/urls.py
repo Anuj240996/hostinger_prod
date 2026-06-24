@@ -26,7 +26,14 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from rest_framework.authtoken.views import obtain_auth_token
-from .views import viewsets_dict, api_views_dict, CustomerLoginView, GetCustomerDetails, CustomerDataView
+from .views import (
+    viewsets_dict,
+    api_views_dict,
+    CustomerLoginView,
+    GetCustomerDetails,
+    CustomerDataView,
+    MobileProjectLinkView,
+)
 
 # Initialize router
 router = DefaultRouter()
@@ -43,6 +50,7 @@ urlpatterns = [
     path("get-profile/", CustomerLoginView.as_view(), name="get-profile"),
     path('customer-details/', GetCustomerDetails.as_view(), name='customer-details'),
     path('customer-data/', CustomerDataView.as_view(), name='customer-data'),
+    path('mobile-project-link/', MobileProjectLinkView.as_view(), name='mobile-project-link'),
 
 ]
 

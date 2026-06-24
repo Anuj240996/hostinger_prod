@@ -1,6 +1,7 @@
 {% extends 'partials/base.html' %}
 {% block title %}Order Page{% endblock %}
 {% load static %}
+{% load custom_filters %}
 {% block content %}
 
 <div class="wrapper">
@@ -8,9 +9,9 @@
       <div class="page-header">
          <div class="row align-items-center">
             <div class="col">
-               <h3 class="page-title">Notoifcation</h3>
+               <h3 class="page-title">Notification</h3>
                <ul class="breadcrumb">
-                  <li class="breadcrumb-item"><a href="index.html">Dashboard</a></li>
+                  <li class="breadcrumb-item"><a href="{% url 'dashboard-index' %}">Dashboard</a></li>
                   <li class="breadcrumb-item active">Notification</li>
                </ul>
             </div>
@@ -48,28 +49,28 @@
                         </thead>
                         <tbody>
                         {% for i in notification %}
-                           <tr>
+                           <tr id="notification-row-{{ i.id }}" class="{% if selected_notification_id == i.id|stringformat:'s' %}table-primary{% endif %}">
 
                                <td style="text-align: center;"></td>
-                               <td style="text-align: center;">{{i.created_at | date:"d/m/Y H:i:s"}}</td>
-                               {% if i.status == 0 %}
-                                 <td>
-                                    <span class="message"></span>
-                                  </td>
-                                {% else %}
-                                  <td>
-                                       <span class="message" style="text-align: center; display: block; margin: 0 auto;">{{ i.message }}</span>
-                                    </td>
-
-                                {% endif %}
-                               <td class="text-capitalize text-center" style="text-align: center; display: block; margin: 0 auto;">{{i.sender.profile.designation}}</td>
+                               <td style="text-align: center;">{{ i.created_at | date:"d/m/Y H:i:s" }}</td>
+                               <td>
+                                  <span class="message {% if i.status == 0 %}font-weight-bold{% endif %}" style="text-align: center; display: block; margin: 0 auto;">{{ i.message }}</span>
+                               </td>
+                               <td class="text-capitalize text-center" style="text-align: center; display: block; margin: 0 auto;">
+                                   {% if i.sender %}
+                                   {{ i.sender.first_name|default:i.sender.username }}
+                                   {% if i.sender.profile.designation %} — {{ i.sender.profile.designation }}{% endif %}
+                                   {% else %}
+                                   —
+                                   {% endif %}
+                               </td>
 
                                <td class="text-right">
                                    <div class="Action">
                                        {% if i.status == 0 %}
-                                     <a href="{% url 'Staff_Notification_Mark_Done' status=i.id %}" class="btn btn-success" style="width: 90px;">UnRead</a>
+                                     <a href="{% url 'Staff_Notification_Mark_Done' status=i.id %}" class="btn btn-success" style="width: 90px;">Mark Read</a>
                                         {% else %}
-                                     <button class="btn btn-success" disabled="disabled" style="width: 90px;">Read</button>
+                                     <button class="btn btn-secondary" disabled="disabled" style="width: 90px;">Read</button>
                                        {% endif %}
                                    </div>
                                     </td>
@@ -91,6 +92,38 @@
 
 
 <!-- Modal -->
+{% if selected_notification %}
+<div class="modal fade" id="notificationDetailModal" tabindex="-1" role="dialog" aria-labelledby="notificationDetailModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="notificationDetailModalLabel">Notification Details</h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="d-flex align-items-start mb-3">
+          {% if selected_notification.sender %}
+          <img class="rounded-circle mr-3" src="{{ selected_notification.sender.profile|profile_image_url }}" width="48" height="48" alt="">
+          {% endif %}
+          <div>
+            {% if selected_notification.sender %}
+            <h6 class="mb-1">{{ selected_notification.sender.first_name|default:selected_notification.sender.username }}</h6>
+            {% endif %}
+            <small class="text-muted">{{ selected_notification.created_at|date:"d/m/Y H:i:s" }}</small>
+          </div>
+        </div>
+        <p class="mb-0">{{ selected_notification.message }}</p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}
+
 <div class="modal fade" id="exampleModalCenter" tabindex="-1" role="dialog" aria-labelledby="exampleModalCenterTitle" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered" role="document">
     <div class="modal-content">
@@ -195,6 +228,14 @@ $(document).ready(function () {
 </script>
 <script>
 document.addEventListener("DOMContentLoaded", function() {
+    {% if selected_notification %}
+    $('#notificationDetailModal').modal('show');
+    var selectedRow = document.getElementById('notification-row-{{ selected_notification.id }}');
+    if (selectedRow) {
+        selectedRow.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+    {% endif %}
+
     let dataTable = $('#yourDataTable').DataTable();
     //let dataTable = $('#yourDataTable').DataTable({
     //    scrollX: true,

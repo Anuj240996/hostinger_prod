@@ -488,6 +488,24 @@ Version      : 1.0
             '</div></div></div>';
     }
 
+    function applyTableDefaultColumnVisibility(table) {
+        table.columns().every(function() {
+            var idx = this.index();
+            var $th = $(table.column(idx).header());
+            var name = ($th.text() || '').trim();
+            if (name === 'Sr No.' || name === 'Action') {
+                this.visible(true, false);
+                return;
+            }
+            if ($th.hasClass('col-default-hide')) {
+                this.visible(false, false);
+            } else if (name) {
+                this.visible(true, false);
+            }
+        });
+        table.columns.adjust().draw(false);
+    }
+
     function attachGlobalDatatableTools(table) {
         var $wrapper = $(table.table().container());
         var $lengthBox = $wrapper.find('.dataTables_length');
@@ -527,15 +545,20 @@ Version      : 1.0
         });
 
         $lengthBox.on('click', '.resetColumnsBtn', function() {
-            table.columns().every(function() {
-                var idx = this.index();
-                var name = ($(table.column(idx).header()).text() || '').trim();
-                if (name && name !== 'Sr No.' && name !== 'Action') {
-                    this.visible(true, false);
-                }
-            });
+            var $table = $(table.table().node());
+            if ($table.find('thead th.col-default-hide').length) {
+                applyTableDefaultColumnVisibility(table);
+            } else {
+                table.columns().every(function() {
+                    var idx = this.index();
+                    var name = ($(table.column(idx).header()).text() || '').trim();
+                    if (name && name !== 'Sr No.' && name !== 'Action') {
+                        this.visible(true, false);
+                    }
+                });
+                table.columns.adjust().draw(false);
+            }
             if (table.colReorder && typeof table.colReorder.reset === 'function') table.colReorder.reset();
-            table.columns.adjust().draw(false);
         });
 
         $lengthBox.on('click', '.toolbarExcelBtn', function() {
@@ -691,6 +714,9 @@ Version      : 1.0
                 language: { lengthMenu: 'Show _MENU_ rows' },
                 order: dtOrder
             });
+            if ($tbl.find('thead th.col-default-hide').length) {
+                applyTableDefaultColumnVisibility(dt);
+            }
             attachGlobalDatatableTools(dt);
             dt.columns.adjust().draw(false);
             // Horizontal scroll only on the table — keep length/export tools/search row fixed

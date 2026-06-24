@@ -1,3 +1,5 @@
+from turtle import home
+
 from django.urls import path, include
 from . import views
 from .views import get_company_data, check_company_name, check_username
@@ -13,6 +15,17 @@ urlpatterns = [
     path('check-username/', check_username, name='check-username'),
     path('Cust_Search/', views.showresults, name='customer-Cust_search'),
     path('view_all_cust/', views.view_all_cust, name='customer-view_all_cust'),
+    path('generate_mobile_qr/<int:cust_id>/', views.generate_customer_mobile_qr, name='customer-generate_mobile_qr'),
+    path(
+        'send_mobile_qr_email/<int:cust_id>/',
+        views.send_customer_mobile_qr_email,
+        name='customer-send_mobile_qr_email',
+    ),
+    path(
+        'delete_mobile_app_link/<int:link_id>/',
+        views.delete_customer_mobile_app_link,
+        name='customer-delete_mobile_app_link',
+    ),
     path('view_all/', views.view_all, name='customer-view_all'),
     path('customer_update/<int:Cust_id>/', views.customer_update, name='customer-customer-update'),
     path('customer_updatepage/<int:Cust_id>/', views.customer_updatepage, name='customer-customer-updatepage'),

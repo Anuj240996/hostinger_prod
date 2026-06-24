@@ -1,5 +1,6 @@
 {% extends 'partials/base.html' %}
 {% load static %}
+{% load quantity_filters %}
 {% block title %} New Purchase {% endblock title %}
 {% block content %}
 
@@ -666,16 +667,14 @@
 <!--&lt;!&ndash;                                </div>&ndash;&gt;-->
                         <td>
                             <div class="d-flex justify-content-center align-items-center mt-1">
-                                <input type="hidden" class="form-control stock-quantity" value="{{ item.stock.quantity }}" readonly>
+                                <input type="hidden" class="form-control stock-quantity" value="{{ item.warehouse_qty_str }}" data-warehouse-qty="{{ item.warehouse_qty_str }}" data-original-qty="{{ item.warehouse_qty_str }}" data-stock-alert="{{ item.stock.stock_alert }}" data-purchase-unit="{{ item.stock.purchase.short_name }}" readonly>
                                 {% if item.stock.quantity > item.stock.stock_alert %}
                                     <span class="badge success">
-<!--                                        {{ item.stock.quantity }} <small>{{ item.stock.purchase.short_name }}</small>-->
-                                        {{ item.stock.quantity|floatformat:"3"|cut:".000" }} <small>{{ item.stock.purchase.short_name }}</small>
+                                        <span class="available-qty-text">{{ item.warehouse_display }}</span> <small>{{ item.stock.purchase.short_name }}</small>
                                     </span>
                                 {% else %}
                                     <span class="badge danger">
-<!--                                        {{ item.stock.quantity }} <small>{{ item.stock.purchase.short_name }}</small>-->
-                                        {{ item.stock.quantity|floatformat:"3"|cut:".000" }} <small>{{ item.stock.purchase.short_name }}</small>
+                                        <span class="available-qty-text">{{ item.warehouse_display }}</span> <small>{{ item.stock.purchase.short_name }}</small>
                                     </span>
                                 {% endif %}
                             </div>
@@ -688,7 +687,7 @@
 <!--                                        <div class="input-group-append">-->
 <!--                                            <span class="input-group-text me-2">{{item.stock.purchase.short_name}}</span>-->
 <!--                                        </div>-->
-                                       <input type="text" min="1" class="form-control quantity-input" name="quantity_{{ item.pk }}" value="{{ item.quantity|floatformat:"3"|cut:".000" }}" />
+                                       <input type="text" min="1" class="form-control quantity-input" name="quantity_{{ item.pk }}" value="{{ item.quantity|format_qty:item.stock.purchase.short_name }}" data-saved-qty="{{ item.saved_qty_str }}" data-purchase-unit="{{ item.stock.purchase.short_name }}" />
                                         <div class="input-group-append">
                                             <span class="input-group-text me-2 stock-purchase">{{ item.stock.purchase.short_name }}</span>
                                         </div>
@@ -2195,7 +2194,7 @@
                 fetch(`/inventory/get_stock_quantity/?stock_id=${stockId}`)
                     .then(response => response.json())
                     .then(data => {
-                        availableQuantitySpan.innerText = `Available Quantity: ${data.quantity}`;
+                        availableQuantitySpan.innerText = `Available Quantity: ${window.formatQtyDisplay(data.quantity, data.purchase)}`;
 
                         // Store fetched data for later use
                         stockSelect.setAttribute('data-quantity', data.quantity);
@@ -2211,29 +2210,16 @@
         });
 
 
-        // Enforce quantity input as whole number (for "Nos") or decimal (for others)
+        // Enforce quantity by unit: decimals only for Kg, Mtr, Lit
         stockQuantity.addEventListener('input', function () {
             const purchaseUnit = stockSelect.getAttribute('data-purchase')?.trim();
-            let inputVal = stockQuantity.value;
+            window.enforceQuantityInputByUnit(stockQuantity, purchaseUnit);
 
-            if (purchaseUnit === 'Nos') {
-                // Only allow whole numbers
-                if (!/^\d*$/.test(inputVal)) {
-                    alert('Only whole numbers are allowed for the "Nos" unit.');
-                    inputVal = inputVal.split('.')[0].replace(/\D/g, ''); // Remove decimals and non-digits
-                    stockQuantity.value = inputVal;
-                }
-            } else {
-                // Allow decimal numbers for other units
-                const decVal = inputVal.replace(/[^0-9.]/g, '');
-                const parts = decVal.split('.');
-                const cleanVal = parts.length > 2
-                    ? parts[0] + '.' + parts.slice(1).join('')
-                    : decVal;
-
-                if (inputVal !== cleanVal) {
-                    stockQuantity.value = cleanVal;
-                }
+            const originalTotal = window.roundQty(stockSelect.getAttribute('data-quantity') || '0', purchaseUnit);
+            const entered = window.roundQty(stockQuantity.value || '0', purchaseUnit);
+            if (originalTotal > 0) {
+                const remaining = window.roundQty(Math.max(0, originalTotal - entered), purchaseUnit);
+                availableQuantitySpan.innerText = `Available Quantity: ${window.formatQtyDisplay(remaining, purchaseUnit)}`;
             }
         });
 
@@ -2339,37 +2325,57 @@
 <!--            return isValid;-->
 <!--        }-->
 
+          function updateRemainingBadge(row, recalculateRemaining) {
+                window.updateSaleRemainingBadge(row, {
+                    editMode: true,
+                    recalculateRemaining: recalculateRemaining !== false
+                });
+          }
+
+          function initExistingRowBadges() {
+                tableBody.querySelectorAll('tr').forEach(row => {
+                    updateRemainingBadge(row, false);
+                });
+          }
+
           function validateQuantities() {
             let isValid = true;
 
-            // Validate each row
             tableBody.querySelectorAll('tr').forEach(row => {
-                const quantityInput = row.querySelector('input[name^="quantity"]'); // Quantity input
-                const availableQuantityCell = row.querySelector('td:nth-child(5)'); // Available Quantity cell
+                const quantityInput = row.querySelector('input[name^="quantity"]');
+                const stockQtyInput = row.querySelector('.stock-quantity');
 
-                if (!quantityInput || !availableQuantityCell) {
-                    return; // Skip rows with missing inputs or data
+                if (!quantityInput) {
+                    return;
                 }
 
-                const availableQuantity = parseFloat(availableQuantityCell.textContent || "0", 10); // Available Quantity
-                const existingValue = parseFloat(quantityInput.defaultValue || "0", 10); // Existing value before edit
-                const newValue = parseFloat(quantityInput.value || "0", 10); // New Quantity entered by the user
-                const totalquantity = availableQuantity + existingValue;
-                const additionalQuantity = newValue - existingValue; // Calculate additional quantity
+                const unit = (stockQtyInput && stockQtyInput.dataset.purchaseUnit)
+                    || quantityInput.dataset.purchaseUnit
+                    || window.getRowPurchaseUnit(row);
+                const availableQuantity = window.roundQty(
+                    stockQtyInput ? (stockQtyInput.dataset.warehouseQty || stockQtyInput.value) : '0',
+                    unit
+                );
+                const existingValue = window.roundQty(
+                    quantityInput.dataset.savedQty || quantityInput.defaultValue || '0',
+                    unit
+                );
+                const newValue = window.roundQty(quantityInput.value || '0', unit);
+                const maxAllowed = window.roundQty(availableQuantity + existingValue, unit);
 
-                if (isNaN(newValue) || newValue <= 0) {
+                if (isNaN(parseFloat(quantityInput.value)) || newValue <= 0) {
                     isValid = false;
                     quantityInput.classList.add('is-invalid');
                     quantityInput.setCustomValidity('Quantity must be greater than 0.');
-                } else if (additionalQuantity > availableQuantity) {
+                } else if (newValue > maxAllowed) {
                     isValid = false;
                     quantityInput.classList.add('is-invalid');
-                    quantityInput.setCustomValidity(`Additional quantity cannot exceed (Aval + Ext Qunt) = ${totalquantity}`);
+                    quantityInput.setCustomValidity(`Total quantity cannot exceed ${window.formatQtyDisplay(maxAllowed, unit)} (Available ${window.formatQtyDisplay(availableQuantity, unit)} + Existing ${window.formatQtyDisplay(existingValue, unit)})`);
                 } else {
                     quantityInput.classList.remove('is-invalid');
                     quantityInput.setCustomValidity('');
                 }
-                 // Show the validity message
+                updateRemainingBadge(row);
                 quantityInput.reportValidity();
             });
             return isValid;
@@ -2377,10 +2383,14 @@
 
         // Trigger validation on quantity field input
         tableBody.addEventListener('input', function (e) {
-            if (e.target && e.target.matches('input[name^="quantity"]')) {
+            if (e.target && e.target.matches('.quantity-input, input[name^="quantity"]')) {
+                const unit = window.getRowPurchaseUnit(e.target.closest('tr'));
+                window.enforceQuantityInputByUnit(e.target, unit, { showAlert: false });
                 validateQuantities();
             }
         });
+
+        initExistingRowBadges();
 
         // Validate quantities when the form is submitted
         const form = document.getElementById('billForm');
@@ -2404,23 +2414,20 @@
             const purchase = stockSelect.getAttribute('data-purchase') || "N/A";
             const categoryText = categorySelect.options[categorySelect.selectedIndex].text;
             const subcategoryText = subcategorySelect.options[subcategorySelect.selectedIndex].text;
-            const quantity = stockQuantity.value;
+            const quantity = window.roundQty(stockQuantity.value || '0', purchase);
+            const originalTotal = window.roundQty(stockSelect.getAttribute('data-quantity') || '0', purchase);
 
-			const availableQuantitySpan = document.getElementById('availableQuantitySpan').textContent;
-            const availableQuantity = parseInt(availableQuantitySpan.replace('Available Quantity: ', '') || "0", 10);
-
-            // const quantity = parseInt(stockQuantity.value || "0", 10);
-
-            // if (!stockId || !quantity) return;
             if (!stockId || quantity <= 0) {
                 alert('Please enter a valid quantity greater than 0.');
                 return;
             }
 
-            if (quantity > availableQuantity) {
-                alert(`Quantity cannot exceed available stock (${availableQuantity}).`);
+            if (quantity > originalTotal) {
+                alert(`Quantity cannot exceed available stock (${window.formatQtyDisplay(originalTotal, purchase)}).`);
                 return;
             }
+
+            const remaining = window.roundQty(originalTotal - quantity, purchase);
 
             const row = document.createElement('tr');
             row.innerHTML = `
@@ -2436,18 +2443,18 @@
                 </td>
                  <td>
                     <div class="d-flex justify-content-center align-items-center mt-1">
-                        <input type="hidden" class="form-control stock-quantity" value="${availableQuantity}" readonly>
-                        <span class="badge ${availableQuantity > stockAlert ? 'success' : 'danger'}">
-                            ${availableQuantity} <small>${purchase}</small>
+                        <input type="hidden" class="form-control stock-quantity" value="${originalTotal}" data-warehouse-qty="${originalTotal}" data-original-qty="${originalTotal}" data-stock-alert="${stockAlert}" data-purchase-unit="${purchase}" readonly>
+                        <span class="badge ${originalTotal > stockAlert ? 'success' : 'danger'}">
+                            <span class="available-qty-text">${window.formatQtyDisplay(originalTotal, purchase)}</span> <small>${purchase}</small>
                         </span>
                     </div>
                 </td>
 
                 <td>
                       <div class="input-group">
-                          <input type="number" name="quantities[]" class="form-control quantity-input" value="${quantity}" min="1" readonly />
+                          <input type="number" name="quantities[]" class="form-control quantity-input" value="${quantity}" data-saved-qty="0" data-purchase-unit="${purchase}" min="1" readonly />
                           <div class="input-group-append">
-                             <span class="input-group-text me-2">${purchase}</span>
+                             <span class="input-group-text me-2 stock-purchase">${purchase}</span>
                           </div>
                       </div>
                 </td>
@@ -2974,30 +2981,8 @@ $(document).ready(function() {
 <script>
 document.addEventListener('DOMContentLoaded', function () {
     $(document).on('input', '.quantity-input', function () {
-        const $input = $(this);
-        const $row = $input.closest('tr');
-        const purchaseUnit = $row.find('.stock-purchase').text().trim();
-        let inputVal = $input.val();
-
-        if (purchaseUnit === 'Nos') {
-            // Only whole numbers allowed
-            if (!/^\d*$/.test(inputVal)) {
-                alert('Only whole numbers are allowed for "Nos" unit.');
-                inputVal = inputVal.split('.')[0].replace(/\D/g, ''); // Strip decimals and non-digits
-                $input.val(inputVal);
-            }
-        } else {
-            // Allow decimal numbers
-            const decVal = inputVal.replace(/[^0-9.]/g, ''); // Remove invalid characters
-            const parts = decVal.split('.');
-            const cleanVal = parts.length > 2
-                ? parts[0] + '.' + parts.slice(1).join('') // Allow only one dot
-                : decVal;
-
-            if (inputVal !== cleanVal) {
-                $input.val(cleanVal);
-            }
-        }
+        const purchaseUnit = window.getRowPurchaseUnit(this.closest('tr'));
+        window.enforceQuantityInputByUnit(this, purchaseUnit, { showAlert: false });
     });
 });
 </script>

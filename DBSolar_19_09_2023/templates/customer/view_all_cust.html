@@ -95,7 +95,7 @@
         margin-top: 20px;
     }
 
-    button {
+    button:not(.btn):not(.close):not(.btn-qr-share-icon) {
         margin-top: 18px;
         width: 150px;
         height: 50px;
@@ -108,9 +108,39 @@
         cursor: pointer;
     }
 
-    button:hover {
+    button:not(.btn):not(.close):not(.btn-qr-share-icon):hover {
         background: #fff;
         box-shadow: 0 2px 9px 0 rgba(0, 0, 0, .25), 0 3px 5px 13px rgba(0, 0, 0, 0.02);
+    }
+
+    #yourDataTable .actions .btn-sm,
+    #yourDataTable .btn-generate-mobile-qr {
+        width: auto;
+        height: auto;
+        margin-top: 0;
+        padding: 0.25rem 0.5rem;
+        line-height: 1.5;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+    #yourDataTable .col-mobile-qr {
+        width: 52px !important;
+        max-width: 52px !important;
+        min-width: 52px !important;
+        padding-left: 0.2rem !important;
+        padding-right: 0.2rem !important;
+        text-align: center !important;
+        white-space: nowrap !important;
+    }
+    #yourDataTable th.col-mobile-qr {
+        font-size: 0.7rem;
+        line-height: 1.1;
+        white-space: normal !important;
+        word-break: break-word;
+    }
+    #yourDataTable .col-mobile-qr .btn-generate-mobile-qr {
+        padding: 0.2rem 0.35rem;
     }
 
     .btn:hover p,
@@ -123,8 +153,8 @@
     /* Consumer/Firm Name: primary column — wider; other text columns wrapped */
     #yourDataTable .col-consumer-name {
         white-space: normal !important;
-        width: 300px !important;
-        max-width: 380px !important;
+        width: auto !important;
+        max-width: none !important;
         min-width: 220px !important;
         word-break: break-word;
         line-height: 1.25;
@@ -163,13 +193,17 @@
         overflow-y: visible;
         -webkit-overflow-scrolling: touch;
     }
-    /*
-      Avoid stretched columns: default 100%-wide tables distribute empty space.
-      Use content-based width so columns stay only as wide as needed.
-    */
+    /* Fill available card width; Consumer / Firm Name grows with extra space. */
     .dt-consumer-list-wrap table.dataTable#yourDataTable {
-        width: max-content !important;
+        width: 100% !important;
+        max-width: 100% !important;
         table-layout: auto !important;
+    }
+    .dt-consumer-list-wrap .dataTables_wrapper,
+    .dt-consumer-list-wrap .card-table,
+    .dt-consumer-list-wrap .card-body {
+        width: 100%;
+        max-width: 100%;
     }
     .dt-consumer-list-wrap .card-table .table thead th,
     .dt-consumer-list-wrap .card-table .table tbody td {
@@ -281,7 +315,7 @@
 
                                 <!--                               <h4 align="center">Result against "<span style="color: red">{{name}}</span>" keyword </h4>-->
                                 <div class="dt-consumer-list-wrap">
-                                <table id="yourDataTable" class="table table-hover table-center table.dataTable.table-sm mb-0 datatable table.sm dt-compact-cols dt-tools-minimal">
+                                <table id="yourDataTable" class="table table-hover table-center table.dataTable.table-sm mb-0 datatable table.sm dt-tools-minimal w-100">
                                     
 
                                     <thead class="table-success">
@@ -295,15 +329,17 @@
 <!--                                            <th scope="col">UPS Soft</th>-->
                                             <th scope="col">Consumer Type</th>
                                             <th scope="col">Mobile</th>
-                                            <th scope="col">Project Type</th>
+                                            <th scope="col" class="col-default-hide">Project Type</th>
     
-                                            <th scope="col" class="col-email">Email</th>
-                                            <th scope="col" class="col-address">Address</th>
+                                            <th scope="col" class="col-email col-default-hide">Email</th>
+                                            <th scope="col" class="col-address col-default-hide">Address</th>
                                             <th scope="col">City</th>
-                                            <th scope="col">State</th>
-                                            <th scope="col">Pincode</th>
-                                            <th scope="col">Consumer Number</th>
-                                            <th scope="col">Assign Engineer</th>
+                                            <th scope="col" class="col-default-hide">State</th>
+                                            <th scope="col" class="col-default-hide">Pincode</th>
+                                            <th scope="col" class="col-default-hide">Consumer Number</th>
+                                            <th scope="col" class="col-default-hide">Assign Engineer</th>
+                                            <th scope="col" class="text-center col-mobile-qr">Mobile QR</th>
+                                            <th scope="col" class="text-center">Link Status</th>
 
                                             {% if user.is_authenticated and user|user_in_group:"Cust_user" %}
                                             <th class="text-center">Action</th>
@@ -353,6 +389,44 @@
                                             <td>{{Cust.Pincode|default:"-"}}</td>
                                             <td>{{Cust.Consumer|default:"-"}}</td>
                                             <td>{% if Cust.Engg_Assign %}{{Cust.Engg_Assign.username}}{% else %}-{% endif %}</td>
+                                            <td class="text-center col-mobile-qr">
+                                                {% if Cust.new_customer %}
+                                                <div class="actions text-center">
+                                                    <button type="button"
+                                                            class="btn btn-sm bg-success-light btn-generate-mobile-qr"
+                                                            title="Generate mobile app QR"
+                                                            data-cust-id="{{ Cust.Cust_id }}"
+                                                            data-customer-label="{% if Cust.Comp_name %}{{ Cust.Comp_name }}{% else %}{{ Cust.first_name }} {{ Cust.last_name }}{% endif %}"
+                                                            data-consumer-phone="{{ Cust.phone|default:'' }}"
+                                                            data-consumer-email="{{ Cust.new_customer.email|default:'' }}">
+                                                        <i class="fas fa-qrcode"></i>
+                                                    </button>
+                                                </div>
+                                                {% else %}
+                                                <span class="text-muted">—</span>
+                                                {% endif %}
+                                            </td>
+                                            <td class="text-center">
+                                                {% if Cust.mobile_app_links %}
+                                                <button type="button"
+                                                        class="btn btn-sm btn-link p-0 btn-mobile-link-status text-decoration-none"
+                                                        title="View linked mobile app user(s)"
+                                                        data-customer-label="{% if Cust.Comp_name %}{{ Cust.Comp_name }}{% else %}{{ Cust.first_name }} {{ Cust.last_name }}{% endif %}"
+                                                        data-cust-id="{{ Cust.Cust_id }}"
+                                                        data-link-names="{{ Cust.mobile_app_link_names }}"
+                                                        data-link-emails="{{ Cust.mobile_app_link_emails }}"
+                                                        data-link-dates="{{ Cust.mobile_app_link_dates }}"
+                                                        data-link-ids="{{ Cust.mobile_app_link_ids }}">
+                                                    <span class="badge badge-success">Linked</span>
+                                                    <span class="d-block small text-primary font-weight-bold mt-1">{{ Cust.mobile_app_link_primary_name }}</span>
+                                                    {% if Cust.mobile_app_links|length > 1 %}
+                                                    <span class="d-block small text-muted">+{{ Cust.mobile_app_links|length|add:"-1" }} more</span>
+                                                    {% endif %}
+                                                </button>
+                                                {% else %}
+                                                <span class="badge badge-secondary">Not Linked</span>
+                                                {% endif %}
+                                            </td>
                                             <!--                                   <td class="text-right">-->
 
                                             {% if user.is_authenticated and user|user_in_group:"Cust_user" %}
@@ -406,6 +480,272 @@
     </div>
 </div>
 
+<div class="modal fade" id="customerMobileLinkModal" tabindex="-1" role="dialog" aria-labelledby="customerMobileLinkModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="customerMobileLinkModalLabel">Mobile App Link Status</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <p class="mb-2"><strong id="customerMobileLinkName"></strong></p>
+                <p class="mb-2 small text-muted"><strong>Customer ID:</strong> <span id="customerMobileLinkCustId"></span></p>
+                <div id="customerMobileLinkList" class="small"></div>
+                <div id="customerMobileLinkError" class="alert alert-danger small mt-2 mb-0" style="display:none;"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .qr-share-block {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        overflow: visible;
+        margin-bottom: 1rem;
+    }
+    .qr-share-actions-wrap {
+        position: relative;
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        justify-content: center;
+        overflow: visible;
+        padding: 0 10px;
+        width: fit-content;
+        max-width: 100%;
+        margin-top: 0.75rem;
+        margin-left: auto;
+        margin-right: auto;
+        min-height: 58px;
+    }
+    .qr-share-toggle-slot {
+        flex-shrink: 0;
+    }
+    .qr-share-actions-wrap.is-open .qr-share-toggle-slot {
+        margin-right: 0.15rem;
+    }
+    .qr-share-options {
+        display: flex;
+        flex-direction: row;
+        flex-wrap: nowrap;
+        align-items: center;
+        justify-content: flex-start;
+        gap: 0.2rem;
+        max-width: 0;
+        opacity: 0;
+        overflow: hidden;
+        transform: translateX(-8px);
+        transition: max-width 0.32s ease, opacity 0.24s ease, transform 0.24s ease;
+        pointer-events: none;
+        flex: 0 0 auto;
+    }
+    .qr-share-options.is-open {
+        max-width: 520px;
+        opacity: 1;
+        transform: translateX(0);
+        pointer-events: auto;
+        overflow: visible;
+        padding: 2px 4px;
+    }
+    .qr-share-option-slot {
+        width: 58px;
+        height: 54px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        overflow: visible;
+        flex-shrink: 0;
+    }
+    #customerMobileQrModal button.btn-qr-share-icon {
+        width: 46px;
+        height: 46px;
+        margin-top: 0;
+        border: none;
+        border-radius: 50%;
+        padding: 0;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.55rem;
+        box-shadow: none;
+        cursor: pointer;
+        transition: transform 0.2s ease, background-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
+        transform: scale(1);
+        position: relative;
+        z-index: 1;
+    }
+    .btn-qr-share-icon {
+        width: 46px;
+        height: 46px;
+        border: none;
+        border-radius: 50%;
+        padding: 0;
+        margin: 0;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.55rem;
+        background: transparent;
+        box-shadow: none;
+        color: #5c6670;
+        transition: transform 0.2s ease, background-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
+        transform: scale(1);
+        position: relative;
+        z-index: 1;
+    }
+    .btn-qr-share-icon i {
+        line-height: 1;
+        pointer-events: none;
+    }
+    .btn-qr-share-toggle {
+        font-size: 1.7rem;
+        color: #2f3542;
+        background: transparent;
+    }
+    .btn-qr-share-whatsapp { color: #25d366; background: transparent; }
+    .btn-qr-share-email { color: #e67e22; background: transparent; }
+    .btn-qr-share-sms { color: #17a2b8; background: transparent; }
+    .btn-qr-share-download { color: #5c6bc0; background: transparent; }
+    .btn-qr-share-copy { color: #8e24aa; background: transparent; }
+    .btn-qr-share-native { color: #ef5350; background: transparent; }
+    #customerMobileQrModal .btn-qr-share-icon:hover,
+    #customerMobileQrModal .btn-qr-share-icon:focus,
+    .btn-qr-share-icon:hover,
+    .btn-qr-share-icon:focus {
+        outline: none;
+        transform: scale(1.18);
+        box-shadow: 0 4px 14px rgba(0, 0, 0, 0.18);
+        z-index: 3;
+    }
+    .btn-qr-share-toggle:hover,
+    .btn-qr-share-toggle:focus,
+    .btn-qr-share-toggle.is-active {
+        background: #2f3542;
+        color: #fff;
+    }
+    .btn-qr-share-whatsapp:hover,
+    .btn-qr-share-whatsapp:focus {
+        background: #25d366;
+        color: #fff;
+    }
+    .btn-qr-share-email:hover,
+    .btn-qr-share-email:focus {
+        background: #e67e22;
+        color: #fff;
+    }
+    .btn-qr-share-sms:hover,
+    .btn-qr-share-sms:focus {
+        background: #17a2b8;
+        color: #fff;
+    }
+    .btn-qr-share-download:hover,
+    .btn-qr-share-download:focus {
+        background: #5c6bc0;
+        color: #fff;
+    }
+    .btn-qr-share-copy:hover,
+    .btn-qr-share-copy:focus {
+        background: #8e24aa;
+        color: #fff;
+    }
+    .btn-qr-share-native:hover,
+    .btn-qr-share-native:focus {
+        background: #ef5350;
+        color: #fff;
+    }
+    #customerMobileQrModal .modal-body {
+        overflow-x: visible;
+    }
+    #customerMobileQrContent .qr-share-block {
+        overflow: visible;
+    }
+</style>
+
+<div class="modal fade" id="customerMobileQrModal" tabindex="-1" role="dialog" aria-labelledby="customerMobileQrModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg" role="document" style="max-width:560px;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="customerMobileQrModalLabel">Mobile App QR Code</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body text-center">
+                <p class="mb-2"><strong id="customerMobileQrName"></strong></p>
+                <p class="small text-muted mb-3">Scan this QR in the mobile app to add this project to the project list.</p>
+                <div id="customerMobileQrLoading" class="py-4">
+                    <i class="fas fa-spinner fa-spin fa-2x text-primary"></i>
+                    <p class="mt-2 mb-0 small text-muted">Generating QR code...</p>
+                </div>
+                <div id="customerMobileQrContent" style="display:none;">
+                    <div class="qr-share-block">
+                        <img id="customerMobileQrImage" src="" alt="Customer mobile login QR code" class="img-fluid" style="max-width:220px;">
+                        <div id="customerMobileQrShare" class="qr-share-actions-wrap">
+                            <div class="qr-share-option-slot qr-share-toggle-slot">
+                                <button type="button" class="btn-qr-share-icon btn-qr-share-toggle" title="Send to consumer" aria-expanded="false">
+                                    <i class="fas fa-paper-plane"></i>
+                                </button>
+                            </div>
+                            <div class="qr-share-options" id="customerMobileQrShareOptions">
+                                <div class="qr-share-option-slot">
+                                    <button type="button" class="btn-qr-share-icon btn-qr-share-whatsapp" title="WhatsApp">
+                                        <i class="fab fa-whatsapp"></i>
+                                    </button>
+                                </div>
+                                <div class="qr-share-option-slot">
+                                    <button type="button" class="btn-qr-share-icon btn-qr-share-email" title="Email">
+                                        <i class="fas fa-envelope"></i>
+                                    </button>
+                                </div>
+                                <div class="qr-share-option-slot">
+                                    <button type="button" class="btn-qr-share-icon btn-qr-share-sms" title="SMS">
+                                        <i class="fas fa-comment-dots"></i>
+                                    </button>
+                                </div>
+                                <div class="qr-share-option-slot">
+                                    <button type="button" class="btn-qr-share-icon btn-qr-share-download" title="Download QR">
+                                        <i class="fas fa-download"></i>
+                                    </button>
+                                </div>
+                                <div class="qr-share-option-slot">
+                                    <button type="button" class="btn-qr-share-icon btn-qr-share-copy" title="Copy message">
+                                        <i class="fas fa-copy"></i>
+                                    </button>
+                                </div>
+                                <div class="qr-share-option-slot d-none btn-qr-share-native-slot">
+                                    <button type="button" class="btn-qr-share-icon btn-qr-share-native" title="Device share">
+                                        <i class="fas fa-share-alt"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <p id="customerMobileQrShareHint" class="small text-muted mb-3"></p>
+                    <div class="text-left small bg-light rounded p-3">
+                        <p class="mb-1"><strong>Username:</strong> <span id="customerMobileQrUsername"></span></p>
+                        <p class="mb-1"><strong>API Token:</strong></p>
+                        <p class="mb-1 text-break font-monospace" id="customerMobileQrToken" style="font-size:0.75rem; word-break:break-all;"></p>
+                        <p class="mb-1"><strong>Auth User ID:</strong> <span id="customerMobileQrAuthUserId"></span></p>
+                        <p class="mb-0"><strong>Customer ID:</strong> <span id="customerMobileQrCustId"></span></p>
+                    </div>
+                    <p class="small text-muted mt-3 mb-0">QR contains API token from auth_user login. Mobile app uses token to add this project.</p>
+                </div>
+                <div id="customerMobileQrError" class="alert alert-danger small mb-0" style="display:none;"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>window.LIST_PAGE_EXPORT_LOGO_PATH = "{% static 'images/db_logo_200.png' %}";</script>
 <script src="{% static 'js/list_page_export.js' %}"></script>
 <script>
@@ -418,6 +758,628 @@
         pdfCaption: 'Consumer List',
         pdfMergeNamePhoneColumns: true
     });
+</script>
+<script>
+(function () {
+    var qrModal = document.getElementById('customerMobileQrModal');
+    if (!qrModal) return;
+
+    var qrUrlTemplate = "{% url 'customer-generate_mobile_qr' 0 %}".replace('/0/', '/__ID__/');
+    var sendEmailUrlTemplate = "{% url 'customer-send_mobile_qr_email' 0 %}".replace('/0/', '/__ID__/');
+    var loadingEl = document.getElementById('customerMobileQrLoading');
+    var contentEl = document.getElementById('customerMobileQrContent');
+    var errorEl = document.getElementById('customerMobileQrError');
+    var nameEl = document.getElementById('customerMobileQrName');
+    var imageEl = document.getElementById('customerMobileQrImage');
+    var usernameEl = document.getElementById('customerMobileQrUsername');
+    var tokenEl = document.getElementById('customerMobileQrToken');
+    var custIdEl = document.getElementById('customerMobileQrCustId');
+    var authUserIdEl = document.getElementById('customerMobileQrAuthUserId');
+    var shareHintEl = document.getElementById('customerMobileQrShareHint');
+    var shareWrapEl = document.getElementById('customerMobileQrShare');
+    var shareOptionsEl = document.getElementById('customerMobileQrShareOptions');
+    var shareToggleBtn = qrModal.querySelector('.btn-qr-share-toggle');
+    var nativeShareSlot = qrModal.querySelector('.btn-qr-share-native-slot');
+    var qrShareState = null;
+
+    if (nativeShareSlot && navigator.share) {
+        nativeShareSlot.classList.remove('d-none');
+    }
+
+    function closeShareOptions() {
+        if (shareWrapEl) shareWrapEl.classList.remove('is-open');
+        if (shareOptionsEl) shareOptionsEl.classList.remove('is-open');
+        if (shareToggleBtn) {
+            shareToggleBtn.classList.remove('is-active');
+            shareToggleBtn.setAttribute('aria-expanded', 'false');
+        }
+    }
+
+    function toggleShareOptions() {
+        if (!shareOptionsEl || !shareToggleBtn) return;
+        var isOpen = shareOptionsEl.classList.toggle('is-open');
+        if (shareWrapEl) shareWrapEl.classList.toggle('is-open', isOpen);
+        shareToggleBtn.classList.toggle('is-active', isOpen);
+        shareToggleBtn.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+        if (isOpen && shareHintEl) {
+            shareHintEl.className = 'small text-muted mb-3';
+            shareHintEl.textContent = 'Hover an icon to highlight, then click to send.';
+        }
+    }
+
+    function resetModal() {
+        qrShareState = null;
+        closeShareOptions();
+        if (loadingEl) loadingEl.style.display = '';
+        if (contentEl) contentEl.style.display = 'none';
+        if (errorEl) {
+            errorEl.style.display = 'none';
+            errorEl.textContent = '';
+        }
+        if (shareHintEl) {
+            shareHintEl.textContent = '';
+            shareHintEl.className = 'small text-muted mb-3';
+        }
+    }
+
+    function getCsrfToken() {
+        var match = document.cookie.match(/csrftoken=([^;]+)/);
+        return match ? decodeURIComponent(match[1]) : '';
+    }
+
+    function normalizePhone(phone) {
+        var digits = String(phone || '').replace(/\D/g, '');
+        if (!digits) return '';
+        if (digits.length === 10) return '91' + digits;
+        return digits;
+    }
+
+    function buildShareMessage(state) {
+        return [
+            'DB SOLAR - Mobile App Project QR',
+            '',
+            'Company / Consumer: ' + (state.customerName || '—'),
+            'Customer ID: ' + (state.custId || '—'),
+            'Username: ' + (state.username || '—'),
+            '',
+            'Please open the DB SOLAR mobile app and scan the attached QR code to add this project to your project list.'
+        ].join('\n');
+    }
+
+    function setShareState(data, label, phone, email) {
+        qrShareState = {
+            customerName: data.customer_name || label || 'Consumer',
+            custId: data.cust_id || '',
+            username: data.username || '',
+            phone: data.consumer_phone || phone || '',
+            email: data.consumer_email || email || '',
+            qrImage: data.qr_image || ''
+        };
+        if (shareHintEl) {
+            var hints = [];
+            if (qrShareState.phone) hints.push('Phone: ' + qrShareState.phone);
+            if (qrShareState.email) hints.push('Email: ' + qrShareState.email);
+            shareHintEl.textContent = hints.length
+                ? hints.join(' | ') + ' — Email sends QR attachment. WhatsApp shares QR image.'
+                : 'Add consumer phone/email in profile to send QR by Email or WhatsApp.';
+        }
+    }
+
+    function getQrBlob() {
+        return fetch(qrShareState.qrImage).then(function (resp) { return resp.blob(); });
+    }
+
+    function copyQrImageToClipboard() {
+        return getQrBlob().then(function (blob) {
+            if (!navigator.clipboard || !window.ClipboardItem) {
+                throw new Error('Clipboard image not supported');
+            }
+            return navigator.clipboard.write([
+                new ClipboardItem({ 'image/png': blob })
+            ]);
+        });
+    }
+
+    function downloadQrImage() {
+        if (!qrShareState || !qrShareState.qrImage) return false;
+        var safeName = String(qrShareState.customerName || 'consumer')
+            .replace(/[^\w\s-]/g, '')
+            .trim()
+            .replace(/\s+/g, '_') || 'consumer';
+        var link = document.createElement('a');
+        link.href = qrShareState.qrImage;
+        link.download = 'DB_Solar_QR_' + safeName + '_' + (qrShareState.custId || 'project') + '.png';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        return true;
+    }
+
+    function openExternalUrl(url) {
+        var popup = window.open(url, '_blank', 'noopener,noreferrer');
+        if (!popup) {
+            window.location.href = url;
+        }
+    }
+
+    function shareWhatsApp() {
+        if (!qrShareState) return;
+        var message = buildShareMessage(qrShareState);
+        var phone = normalizePhone(qrShareState.phone);
+        var waUrl = phone
+            ? ('https://wa.me/' + phone + '?text=' + encodeURIComponent(message))
+            : ('https://wa.me/?text=' + encodeURIComponent(message));
+
+        if (shareHintEl) {
+            shareHintEl.className = 'small text-muted mb-0';
+            shareHintEl.textContent = 'Preparing QR image for WhatsApp...';
+        }
+
+        getQrBlob().then(function (blob) {
+            var file = new File([blob], 'DB_Solar_QR.png', { type: 'image/png' });
+            if (navigator.canShare && navigator.canShare({ files: [file], text: message })) {
+                return navigator.share({
+                    files: [file],
+                    text: message,
+                    title: 'DB SOLAR Mobile App QR'
+                });
+            }
+            throw new Error('native file share unavailable');
+        }).then(function () {
+            if (shareHintEl) {
+                shareHintEl.className = 'small text-success mb-0';
+                shareHintEl.textContent = 'QR image shared. Select WhatsApp in the share menu.';
+            }
+        }).catch(function () {
+            return copyQrImageToClipboard().then(function () {
+                openExternalUrl(waUrl);
+                if (shareHintEl) {
+                    shareHintEl.className = 'small text-success mb-0';
+                    shareHintEl.textContent = 'QR image copied. WhatsApp opened — paste (Ctrl+V) in chat to send the QR image.';
+                }
+            }).catch(function () {
+                downloadQrImage();
+                openExternalUrl(waUrl);
+                if (shareHintEl) {
+                    shareHintEl.className = 'small text-muted mb-0';
+                    shareHintEl.textContent = 'QR downloaded. WhatsApp opened — attach the downloaded PNG to your message.';
+                }
+            });
+        });
+    }
+
+    function shareEmail() {
+        if (!qrShareState || !qrShareState.custId) return;
+        if (!qrShareState.email) {
+            if (shareHintEl) {
+                shareHintEl.className = 'small text-danger mb-0';
+                shareHintEl.textContent = 'Consumer email is missing. Update the consumer profile first.';
+            }
+            return;
+        }
+
+        var emailBtn = qrModal.querySelector('.btn-qr-share-email');
+        if (emailBtn) {
+            emailBtn.disabled = true;
+            emailBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+        }
+        if (shareHintEl) {
+            shareHintEl.className = 'small text-muted mb-0';
+            shareHintEl.textContent = 'Sending email with QR attachment...';
+        }
+
+        var body = new URLSearchParams();
+        body.append('email', qrShareState.email);
+
+        fetch(sendEmailUrlTemplate.replace('__ID__', qrShareState.custId), {
+            method: 'POST',
+            credentials: 'same-origin',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRFToken': getCsrfToken(),
+                'Content-Type': 'application/x-www-form-urlencoded'
+            },
+            body: body.toString()
+        })
+            .then(function (resp) {
+                return resp.json().then(function (data) {
+                    if (!resp.ok) throw new Error(data.error || 'Failed to send email.');
+                    return data;
+                });
+            })
+            .then(function (data) {
+                if (shareHintEl) {
+                    shareHintEl.className = 'small text-success mb-0';
+                    shareHintEl.textContent = data.message || 'QR code emailed with attachment.';
+                }
+            })
+            .catch(function (err) {
+                if (shareHintEl) {
+                    shareHintEl.className = 'small text-danger mb-0';
+                    shareHintEl.textContent = err.message || 'Failed to send email.';
+                }
+            })
+            .finally(function () {
+                if (emailBtn) {
+                    emailBtn.disabled = false;
+                    emailBtn.innerHTML = '<i class="fas fa-envelope"></i>';
+                }
+            });
+    }
+
+    function openSmsLink(url) {
+        var link = document.createElement('a');
+        link.href = url;
+        link.style.display = 'none';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
+
+    function shareSms() {
+        if (!qrShareState) return;
+        var rawPhone = String(qrShareState.phone || '').replace(/\D/g, '');
+        if (!rawPhone) {
+            if (shareHintEl) {
+                shareHintEl.className = 'small text-danger mb-0';
+                shareHintEl.textContent = 'Consumer phone number is not available for SMS.';
+            }
+            return;
+        }
+
+        var message = buildShareMessage(qrShareState);
+        var isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+        var isAndroid = /Android/i.test(navigator.userAgent);
+        var sep = isIOS ? '&' : '?';
+        var localPhone = rawPhone.length > 10 && rawPhone.indexOf('91') === 0
+            ? rawPhone.slice(-10)
+            : (rawPhone.length === 10 ? rawPhone : rawPhone);
+        var intlPhone = rawPhone.length === 10 ? '91' + rawPhone : rawPhone;
+        var encodedBody = encodeURIComponent(message);
+        var smsUrls = [];
+
+        if (isAndroid) {
+            smsUrls.push('smsto:+' + intlPhone + '?body=' + encodedBody);
+            smsUrls.push('smsto:' + localPhone + '?body=' + encodedBody);
+        }
+        smsUrls.push('sms:+' + intlPhone + sep + 'body=' + encodedBody);
+        smsUrls.push('sms:' + localPhone + sep + 'body=' + encodedBody);
+        smsUrls.push('smsto:+' + intlPhone + sep + 'body=' + encodedBody);
+        smsUrls.push('smsto:' + localPhone + sep + 'body=' + encodedBody);
+
+        downloadQrImage();
+        openSmsLink(smsUrls[0]);
+
+        if (shareHintEl) {
+            shareHintEl.className = 'small text-success mb-0';
+            if (isIOS || isAndroid) {
+                shareHintEl.textContent = 'SMS app opened with message. Attach the downloaded QR image if needed.';
+            } else {
+                shareHintEl.textContent = 'SMS works on mobile devices. QR downloaded — open SMS on phone or copy the message below.';
+                copyShareMessage(true);
+            }
+        }
+    }
+
+    function copyShareMessage(silent) {
+        if (!qrShareState) return;
+        var message = buildShareMessage(qrShareState);
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(message).then(function () {
+                if (!silent && shareHintEl) {
+                    shareHintEl.className = 'small text-success mb-0';
+                    shareHintEl.textContent = 'Message copied. Download QR and send to consumer.';
+                }
+            }).catch(function () {
+                window.prompt('Copy this message:', message);
+            });
+        } else {
+            window.prompt('Copy this message:', message);
+        }
+    }
+
+    function nativeShare() {
+        if (!qrShareState || !navigator.share) return;
+        fetch(qrShareState.qrImage)
+            .then(function (resp) { return resp.blob(); })
+            .then(function (blob) {
+                var safeName = String(qrShareState.customerName || 'consumer')
+                    .replace(/[^\w\s-]/g, '')
+                    .trim()
+                    .replace(/\s+/g, '_') || 'consumer';
+                var file = new File([blob], 'DB_Solar_QR_' + safeName + '.png', { type: 'image/png' });
+                return navigator.share({
+                    title: 'DB SOLAR Mobile App QR',
+                    text: buildShareMessage(qrShareState),
+                    files: [file]
+                });
+            })
+            .catch(function () {
+                shareWhatsApp();
+            });
+    }
+
+    document.addEventListener('click', function (e) {
+        if (e.target.closest('.btn-qr-share-toggle')) {
+            e.preventDefault();
+            e.stopPropagation();
+            toggleShareOptions();
+            return;
+        }
+        if (e.target.closest('.btn-qr-share-whatsapp')) {
+            e.preventDefault();
+            shareWhatsApp();
+            return;
+        }
+        if (e.target.closest('.btn-qr-share-email')) {
+            e.preventDefault();
+            shareEmail();
+            return;
+        }
+        if (e.target.closest('.btn-qr-share-sms')) {
+            e.preventDefault();
+            shareSms();
+            return;
+        }
+        if (e.target.closest('.btn-qr-share-download')) {
+            e.preventDefault();
+            downloadQrImage();
+            return;
+        }
+        if (e.target.closest('.btn-qr-share-copy')) {
+            e.preventDefault();
+            copyShareMessage();
+            return;
+        }
+        if (e.target.closest('.btn-qr-share-native')) {
+            e.preventDefault();
+            nativeShare();
+            return;
+        }
+
+        if (shareOptionsEl && shareOptionsEl.classList.contains('is-open')) {
+            var insideShare = e.target.closest('#customerMobileQrShare');
+            if (!insideShare) closeShareOptions();
+        }
+
+        var btn = e.target.closest('.btn-generate-mobile-qr');
+        if (!btn) return;
+
+        var custId = btn.getAttribute('data-cust-id');
+        var label = btn.getAttribute('data-customer-label') || 'Consumer';
+        var phone = btn.getAttribute('data-consumer-phone') || '';
+        var email = btn.getAttribute('data-consumer-email') || '';
+        if (!custId) return;
+
+        resetModal();
+        if (nameEl) nameEl.textContent = label;
+        if (window.jQuery) {
+            window.jQuery('#customerMobileQrModal').modal('show');
+        } else {
+            qrModal.classList.add('show');
+            qrModal.style.display = 'block';
+        }
+
+        fetch(qrUrlTemplate.replace('__ID__', custId), {
+            credentials: 'same-origin',
+            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        })
+            .then(function (resp) {
+                return resp.json().then(function (data) {
+                    if (!resp.ok) throw new Error(data.error || 'Failed to generate QR code.');
+                    return data;
+                });
+            })
+            .then(function (data) {
+                if (loadingEl) loadingEl.style.display = 'none';
+                if (contentEl) contentEl.style.display = '';
+                if (imageEl) imageEl.src = data.qr_image || '';
+                if (usernameEl) usernameEl.textContent = data.username || '';
+                if (tokenEl) tokenEl.textContent = data.token || '';
+                if (authUserIdEl) authUserIdEl.textContent = data.auth_user_id || '';
+                if (custIdEl) custIdEl.textContent = data.cust_id || '';
+                setShareState(data, label, phone, email);
+            })
+            .catch(function (err) {
+                if (loadingEl) loadingEl.style.display = 'none';
+                if (errorEl) {
+                    errorEl.style.display = '';
+                    errorEl.textContent = err.message || 'Failed to generate QR code.';
+                }
+            });
+    });
+})();
+</script>
+<script>
+(function () {
+    var linkModal = document.getElementById('customerMobileLinkModal');
+    if (!linkModal) return;
+
+    var nameEl = document.getElementById('customerMobileLinkName');
+    var custIdEl = document.getElementById('customerMobileLinkCustId');
+    var listEl = document.getElementById('customerMobileLinkList');
+    var errorEl = document.getElementById('customerMobileLinkError');
+    var deleteUrlTemplate = "{% url 'customer-delete_mobile_app_link' 0 %}".replace('/0/', '/__ID__/');
+    var activeLinkBtn = null;
+    var fieldSep = '|||';
+
+    function getCsrfToken() {
+        var match = document.cookie.match(/csrftoken=([^;]+)/);
+        return match ? decodeURIComponent(match[1]) : '';
+    }
+
+    function splitField(raw) {
+        if (!raw) return [];
+        return raw.split(fieldSep);
+    }
+
+    function buildLinks(btn) {
+        var names = splitField(btn.getAttribute('data-link-names') || '');
+        var emails = splitField(btn.getAttribute('data-link-emails') || '');
+        var dates = splitField(btn.getAttribute('data-link-dates') || '');
+        var ids = splitField(btn.getAttribute('data-link-ids') || '');
+        var count = Math.max(names.length, emails.length, dates.length, ids.length);
+        var links = [];
+        for (var i = 0; i < count; i++) {
+            if (!ids[i]) continue;
+            links.push({
+                id: ids[i],
+                name: names[i] || '—',
+                email: emails[i] || '',
+                linked_at: dates[i] || '—'
+            });
+        }
+        return links;
+    }
+
+    function applyLinkDataToButton(btn, data) {
+        if (!btn || !data) return;
+        btn.setAttribute('data-link-names', data.mobile_app_link_names || '');
+        btn.setAttribute('data-link-emails', data.mobile_app_link_emails || '');
+        btn.setAttribute('data-link-dates', data.mobile_app_link_dates || '');
+        btn.setAttribute('data-link-ids', data.mobile_app_link_ids || '');
+
+        var cell = btn.closest('td');
+        if (!data.remaining_count) {
+            if (cell) {
+                cell.innerHTML = '<span class="badge badge-secondary">Not Linked</span>';
+            }
+            if (window.jQuery) {
+                window.jQuery('#customerMobileLinkModal').modal('hide');
+            }
+            activeLinkBtn = null;
+            return;
+        }
+
+        var badge = btn.querySelector('.badge');
+        if (badge) badge.textContent = 'Linked';
+        var nameElBtn = btn.querySelector('.text-primary.font-weight-bold');
+        if (nameElBtn) nameElBtn.textContent = data.mobile_app_link_primary_name || '';
+        var moreEl = btn.querySelector('.text-muted');
+        if (data.remaining_count > 1) {
+            if (moreEl) {
+                moreEl.textContent = '+' + (data.remaining_count - 1) + ' more';
+            } else {
+                var extra = document.createElement('span');
+                extra.className = 'd-block small text-muted';
+                extra.textContent = '+' + (data.remaining_count - 1) + ' more';
+                btn.appendChild(extra);
+            }
+        } else if (moreEl) {
+            moreEl.remove();
+        }
+    }
+
+    function showError(message) {
+        if (!errorEl) return;
+        if (!message) {
+            errorEl.style.display = 'none';
+            errorEl.textContent = '';
+            return;
+        }
+        errorEl.style.display = '';
+        errorEl.textContent = message;
+    }
+
+    function renderLinks(links) {
+        if (!listEl) return;
+        showError('');
+        if (!links.length) {
+            listEl.innerHTML = '<p class="text-muted mb-0">No linked mobile app users found.</p>';
+            return;
+        }
+        var html = '';
+        links.forEach(function (link, index) {
+            html += '<div class="bg-light rounded p-3' + (index < links.length - 1 ? ' mb-2' : '') + '" data-link-id="' + link.id + '">';
+            html += '<div class="d-flex justify-content-between align-items-start">';
+            html += '<div class="pr-2">';
+            html += '<p class="mb-1"><strong>Mobile App User:</strong> <span class="text-primary font-weight-bold">' + (link.name || '—') + '</span></p>';
+            if (link.email) {
+                html += '<p class="mb-1"><strong>Email:</strong> ' + link.email + '</p>';
+            }
+            html += '<p class="mb-0"><strong>Linked On:</strong> ' + (link.linked_at || '—') + '</p>';
+            html += '</div>';
+            html += '<button type="button" class="btn btn-sm btn-outline-danger btn-delete-mobile-link" data-link-id="' + link.id + '" title="Remove link from mobile app">';
+            html += '<i class="fas fa-trash-alt"></i> Delete';
+            html += '</button>';
+            html += '</div></div>';
+        });
+        listEl.innerHTML = html;
+    }
+
+    function deleteLink(linkId) {
+        if (!activeLinkBtn || !linkId) return;
+        var custId = activeLinkBtn.getAttribute('data-cust-id');
+        if (!custId) return;
+
+        if (!window.confirm('Remove this mobile app link? The project will be unlinked from that mobile app user.')) {
+            return;
+        }
+
+        var deleteBtn = listEl.querySelector('.btn-delete-mobile-link[data-link-id="' + linkId + '"]');
+        if (deleteBtn) {
+            deleteBtn.disabled = true;
+            deleteBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+        }
+
+        var body = new URLSearchParams();
+        body.append('cust_id', custId);
+
+        fetch(deleteUrlTemplate.replace('__ID__', linkId), {
+            method: 'POST',
+            credentials: 'same-origin',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRFToken': getCsrfToken(),
+                'Content-Type': 'application/x-www-form-urlencoded'
+            },
+            body: body.toString()
+        })
+            .then(function (resp) {
+                return resp.json().then(function (data) {
+                    if (!resp.ok) throw new Error(data.error || 'Failed to delete mobile app link.');
+                    return data;
+                });
+            })
+            .then(function (data) {
+                applyLinkDataToButton(activeLinkBtn, data);
+                if (activeLinkBtn) {
+                    renderLinks(buildLinks(activeLinkBtn));
+                }
+            })
+            .catch(function (err) {
+                showError(err.message || 'Failed to delete mobile app link.');
+                if (deleteBtn) {
+                    deleteBtn.disabled = false;
+                    deleteBtn.innerHTML = '<i class="fas fa-trash-alt"></i> Delete';
+                }
+            });
+    }
+
+    document.addEventListener('click', function (e) {
+        var deleteBtn = e.target.closest('.btn-delete-mobile-link');
+        if (deleteBtn) {
+            e.preventDefault();
+            deleteLink(deleteBtn.getAttribute('data-link-id'));
+            return;
+        }
+
+        var btn = e.target.closest('.btn-mobile-link-status');
+        if (!btn) return;
+
+        activeLinkBtn = btn;
+        if (nameEl) nameEl.textContent = btn.getAttribute('data-customer-label') || 'Consumer';
+        if (custIdEl) custIdEl.textContent = btn.getAttribute('data-cust-id') || '';
+        renderLinks(buildLinks(btn));
+
+        if (window.jQuery) {
+            window.jQuery('#customerMobileLinkModal').modal('show');
+        } else {
+            linkModal.classList.add('show');
+            linkModal.style.display = 'block';
+        }
+    });
+})();
 </script>
 
 {% endblock %}

@@ -1,0 +1,715 @@
+﻿{% load humanize static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Site Survey Report â€” {{ lead.name }}</title>
+    <style>
+        * { box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-size: 13px;
+            color: #1a1a1a;
+            margin: 0;
+            padding: 24px;
+            background: #f0f2f5;
+        }
+        .report-sheet {
+            max-width: 900px;
+            margin: 0 auto;
+            background: #fff;
+            padding: 32px 36px;
+            box-shadow: 0 2px 12px rgba(0,0,0,.08);
+        }
+        .no-print {
+            max-width: 900px;
+            margin: 0 auto 16px;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        .no-print a, .no-print button {
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-size: 14px;
+            cursor: pointer;
+            text-decoration: none;
+            border: 1px solid #ccc;
+            background: #fff;
+            color: #333;
+        }
+        .no-print .btn-primary {
+            background: #0d6efd;
+            border-color: #0d6efd;
+            color: #fff;
+        }
+        .no-print .btn-secondary {
+            background: #6c757d;
+            border-color: #6c757d;
+            color: #fff;
+        }
+        .report-header {
+            display: flex;
+            align-items: flex-start;
+            gap: 20px;
+            border: 1px solid #333;
+            padding: 16px;
+            margin-bottom: 20px;
+        }
+        .report-header img {
+            width: 72px;
+            height: 72px;
+            object-fit: contain;
+        }
+        .company-block h1 {
+            margin: 0 0 6px;
+            font-size: 20px;
+            color: #1f4e79;
+        }
+        .company-block p {
+            margin: 0;
+            color: #444;
+            line-height: 1.5;
+        }
+        .report-meta {
+            margin-left: auto;
+            text-align: right;
+            font-size: 12px;
+            color: #555;
+        }
+        .report-meta strong { display: block; font-size: 15px; color: #111; }
+        .report-title {
+            text-align: center;
+            font-size: 18px;
+            font-weight: 700;
+            letter-spacing: .04em;
+            margin: 0 0 24px;
+            color: #1f4e79;
+        }
+        section { margin-bottom: 22px; }
+        section h2 {
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: .06em;
+            color: #1f4e79;
+            border-bottom: 2px solid #1f4e79;
+            padding-bottom: 4px;
+            margin: 0 0 10px;
+        }
+        table.data {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        table.data th,
+        table.data td {
+            border: 1px solid #ccc;
+            padding: 4px 6px;
+            text-align: left;
+            vertical-align: top;
+            line-height: 1.2;
+        }
+        table.data th {
+            width: 34%;
+            background: #f1f5f9;
+            font-weight: 600;
+        }
+        .wall-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 6px;
+        }
+        .wall-card {
+            border: 1px solid #ccc;
+            padding: 6px;
+            text-align: center;
+            min-height: 56px;
+        }
+        .wall-card.is-used { border-color: #198754; background: #f0fff4; }
+        .wall-card.is-total { background: #fff8e6; border-color: #e6a800; }
+        .wall-card .label { font-weight: 600; margin-bottom: 2px; font-size: 12px; }
+        .wall-card .value { font-size: 14px; line-height: 1.15; }
+        .wall-card .badge-used {
+            display: inline-block;
+            font-size: 10px;
+            background: #198754;
+            color: #fff;
+            padding: 2px 6px;
+            border-radius: 4px;
+            margin-top: 4px;
+        }
+        .notes-box {
+            border: 1px solid #ccc;
+            padding: 12px;
+            background: #fafafa;
+            white-space: pre-wrap;
+        }
+        .signature-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 8px;
+        }
+        .signature-table th,
+        .signature-table td {
+            border: 1px solid #ccc;
+            padding: 6px 8px;
+            text-align: left;
+            vertical-align: top;
+            line-height: 1.2;
+        }
+        .signature-table th {
+            background: #f1f5f9;
+            font-weight: 600;
+            width: 22%;
+        }
+        .signature-line {
+            height: 30px;
+        }
+        .photo-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+        }
+        .photo-grid img {
+            width: 100%;
+            height: 160px;
+            object-fit: cover;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .photo-grid figcaption {
+            font-size: 11px;
+            color: #666;
+            margin-top: 4px;
+        }
+        .structure-layout-section {
+            page-break-inside: avoid;
+        }
+        .structure-layout-summary {
+            color: #475569;
+            font-size: 12px;
+            margin-bottom: 10px;
+        }
+        .structure-diagram-wrap {
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+            padding: 12px;
+            background: #fff;
+            text-align: center;
+            overflow-x: auto;
+        }
+        .structure-diagram-wrap svg.structure-diagram-main {
+            display: block;
+            width: 100%;
+            max-width: 420px;
+            height: auto;
+            margin: 0 auto;
+        }
+        .structure-diagram-legend {
+            margin-top: 10px;
+        }
+        .structure-diagram-legend svg {
+            display: block;
+            width: 100%;
+            max-width: 100%;
+            height: auto;
+        }
+        .structure-3d-print-section { page-break-inside: avoid; }
+        .structure-3d-frame {
+            max-width: 520px;
+            margin: 0 auto;
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+            background: #fff;
+            padding: 8px;
+        }
+        .structure-3d-layout {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+        }
+        .structure-3d-frame.has-captured-png .structure-3d-layout {
+            display: block;
+        }
+        .structure-diagram-wrap {
+            flex: 1 1 auto;
+            min-width: 0;
+            line-height: 0;
+        }
+        .structure-meas-aside {
+            flex: 0 0 152px;
+        }
+        .structure-3d-frame.has-captured-png .structure-meas-aside {
+            display: none;
+        }
+        .structure-meas-table {
+            border-collapse: collapse;
+            font-size: 9px;
+            background: #fff;
+            border: 1px solid #cbd5e1;
+            border-radius: 4px;
+            width: 100%;
+        }
+        .structure-meas-table caption {
+            caption-side: top;
+            text-align: center;
+            font-weight: 700;
+            font-size: 9px;
+            color: #1f4e79;
+            background: #f1f5f9;
+            padding: 4px 6px;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        .structure-meas-table th,
+        .structure-meas-table td {
+            padding: 3px 6px;
+            border-top: 1px solid #e2e8f0;
+            text-align: left;
+        }
+        .structure-meas-table th {
+            color: #64748b;
+            font-weight: 500;
+        }
+        .structure-meas-table td {
+            text-align: right;
+            color: #0f172a;
+            font-weight: 600;
+        }
+        .structure-3d-print-section img {
+            display: block;
+            max-width: 100%;
+            width: 100%;
+            max-height: 220px;
+            height: auto;
+            object-fit: contain;
+            vertical-align: top;
+        }
+        .structure-diagram-wrap svg {
+            display: block;
+            max-width: 100%;
+            max-height: 240px;
+            height: auto;
+            vertical-align: top;
+        }
+        #report3dFallbackSvg.is-hidden { display: none !important; }
+        .pdf-status { font-size: 12px; color: #64748b; align-self: center; }
+        .status-ok { color: #198754; font-weight: 600; }
+        .status-warn { color: #dc3545; font-weight: 600; }
+        @media print {
+            body { background: #fff; padding: 0; }
+            .no-print { display: none !important; }
+            #solar3dEmbedFrame { display: none !important; }
+            .structure-3d-frame.has-captured-png .structure-meas-aside { display: none !important; }
+            .report-sheet { box-shadow: none; padding: 16px; max-width: none; }
+            .wall-grid { grid-template-columns: repeat(5, 1fr); }
+            * {
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+            }
+        }
+        @media (max-width: 640px) {
+            .report-header { flex-direction: column; }
+            .report-meta { margin-left: 0; text-align: left; }
+            .wall-grid { grid-template-columns: repeat(2, 1fr); }
+            .photo-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <div class="no-print">
+        <button type="button" class="btn-primary" onclick="window.print()">Print</button>
+        <button type="button" class="btn-secondary" id="btnDownloadPdf">Download PDF</button>
+        <span class="pdf-status" id="pdfStatusText" aria-live="polite"></span>
+        <a href="{% url 'survey_detail' survey.id %}">Back to Survey</a>
+    </div>
+    {% csrf_token %}
+
+    <div class="report-sheet">
+        <header class="report-header">
+            {% if logo_url %}
+            <img src="{{ logo_url }}" alt="{{ company_name }} logo">
+            {% endif %}
+            <div class="company-block">
+                <h1>{{ company_name }}</h1>
+                <p>{{ company_address|linebreaksbr }}</p>
+            </div>
+            <div class="report-meta">
+                <strong>Survey #{{ survey.pk }}</strong>
+                {% if survey.completed_date %}
+                Completed: {{ survey.completed_date|date:'d M Y, h:i A' }}
+                {% endif %}
+                <br>Generated: {% now 'd M Y, h:i A' %}
+            </div>
+        </header>
+
+        <h1 class="report-title">SITE SURVEY REPORT</h1>
+
+        <section>
+            <h2>Client / Lead Details</h2>
+            <table class="data">
+                <tr><th>Name</th><td>{{ lead.name }}</td></tr>
+                <tr><th>Phone</th><td>{{ lead.phone }}</td></tr>
+                <tr><th>Email</th><td>{{ lead.email|default:'â€”' }}</td></tr>
+                <tr><th>Address</th><td>{{ lead.address }}{% if lead.city %}, {{ lead.city }}{% endif %}{% if lead.state %}, {{ lead.state }}{% endif %}{% if lead.pincode %} &mdash; {{ lead.pincode }}{% endif %}</td></tr>
+                <tr><th>Property Type</th><td>{{ lead.get_property_type_display }}</td></tr>
+                <tr><th>Roof Type</th><td>{{ lead.get_roof_type_display }}</td></tr>
+                <tr><th>Monthly Bill</th><td>{% if lead.electricity_bill %}&#8377;{{ lead.electricity_bill|intcomma }}{% else %}&mdash;{% endif %}</td></tr>
+                <tr><th>Latitude</th><td>{% if lead.latitude is not None %}{{ lead.latitude }}{% else %}&mdash;{% endif %}</td></tr>
+                <tr><th>Longitude</th><td>{% if lead.longitude is not None %}{{ lead.longitude }}{% else %}&mdash;{% endif %}</td></tr>
+            </table>
+        </section>
+
+        <section>
+            <h2>Survey Information</h2>
+            <table class="data">
+                <tr><th>Status</th><td>{{ survey.get_status_display }}</td></tr>
+                <tr><th>Scheduled</th><td>{{ survey.scheduled_date|date:'d M Y, h:i A' }}</td></tr>
+                <tr><th>Completed</th><td>{% if survey.completed_date %}{{ survey.completed_date|date:'d M Y, h:i A' }}{% else %}â€”{% endif %}</td></tr>
+                <tr><th>Site Engineer</th><td>{% if survey.engineer %}{{ survey.engineer.get_full_name|default:survey.engineer.username }}{% else %}â€”{% endif %}</td></tr>
+                <tr><th>Feasibility</th><td>{% if survey.feasibility %}{{ survey.get_feasibility_display }}{% else %}â€”{% endif %}</td></tr>
+            </table>
+        </section>
+
+        <section>
+            <h2>Technical Details</h2>
+            <table class="data">
+                <tr><th>Recommended Size</th><td>{% if survey.recommended_size %}{{ survey.recommended_size|floatformat:'-2' }} kW{% else %}â€”{% endif %}</td></tr>
+                <tr><th>Panel Capacity</th><td>{% if survey.panel_count %}{{ survey.panel_count }} kW{% else %}&mdash;{% endif %}</td></tr>
+                <tr><th>Inverter Capacity</th><td>{% if survey.inverter_capacity %}{{ survey.inverter_capacity|floatformat:'-2' }} kW{% else %}â€”{% endif %}</td></tr>
+                <tr><th>Est. Yearly Generation</th><td>{% if survey.estimated_generation %}{{ survey.estimated_generation|floatformat:'-2' }} Units/year{% else %}â€”{% endif %}</td></tr>
+                <tr><th>Building Height</th><td>{% if survey.building_height %}{{ survey.building_height|floatformat:'-2' }} Mtr{% else %}â€”{% endif %}</td></tr>
+                <tr><th>Structure Type</th><td>{{ survey.get_structure_type_display|default:'â€”' }}</td></tr>
+                {% if survey.structure_type and survey.structure_type != 'tin_shade' %}
+                <tr><th>Front Height</th><td>{% if survey.structure_front_height_ft %}{{ survey.structure_front_height_ft|floatformat:'-2' }} ft{% else %}â€”{% endif %}</td></tr>
+                <tr><th>Back Height</th><td>{% if survey.structure_back_height_ft %}{{ survey.structure_back_height_ft|floatformat:'-2' }} ft{% else %}â€”{% endif %}</td></tr>
+                <tr><th>Legs / Rafters / Purlins</th><td>
+                    {% if survey.structure_leg_count %}{{ survey.structure_leg_count|floatformat:'-2' }} Nos.{% else %}â€”{% endif %} /
+                    {% if survey.structure_rafter_count %}{{ survey.structure_rafter_count|floatformat:'-2' }} Nos.{% else %}â€”{% endif %} /
+                    {% if survey.structure_purlin_count %}{{ survey.structure_purlin_count|floatformat:'-2' }} Nos.{% else %}â€”{% endif %}
+                </td></tr>
+                <tr><th>Solar Panels on Structure</th><td>{% if survey.structure_solar_panel_count %}{{ survey.structure_solar_panel_count }} Nos.{% else %}â€”{% endif %}</td></tr>
+                {% endif %}
+            </table>
+        </section>
+
+        {% if has_structure_layout %}
+        <section class="structure-3d-print-section">
+            <h2>3D Structure (Front View)</h2>
+            <div class="structure-3d-frame" id="report3dFrame">
+                <div class="structure-3d-layout">
+                    <div class="structure-diagram-wrap">
+                        <img id="report3dPreviewImg" alt="3D structure front view" style="display:none;">
+                        {% if structure_front3d_svg %}
+                        <div id="report3dFallbackSvg">{{ structure_front3d_svg|safe }}</div>
+                        {% endif %}
+                    </div>
+                    <aside class="structure-meas-aside" id="report3dMeasAside" aria-label="Structure measurements">
+                        <table class="structure-meas-table">
+                            <caption>Measurements</caption>
+                            {% for label, value in structure_measurement_rows %}
+                            <tr><th scope="row">{{ label }}</th><td>{{ value }}</td></tr>
+                            {% endfor %}
+                        </table>
+                    </aside>
+                </div>
+            </div>
+        </section>
+        {% endif %}
+
+        <section>
+            <h2>Roof Area &amp; Wall Lengths</h2>
+            <div class="wall-grid">
+                <div class="wall-card{% if survey.area_use_north %} is-used{% endif %}">
+                    <div class="label">North</div>
+                    <div class="value">{% if survey.length_north_ft %}{{ survey.length_north_ft|floatformat:'-2' }} ft{% else %}â€”{% endif %}</div>
+                    {% if survey.area_use_north %}<span class="badge-used">Used</span>{% endif %}
+                </div>
+                <div class="wall-card{% if survey.area_use_south %} is-used{% endif %}">
+                    <div class="label">South</div>
+                    <div class="value">{% if survey.length_south_ft %}{{ survey.length_south_ft|floatformat:'-2' }} ft{% else %}â€”{% endif %}</div>
+                    {% if survey.area_use_south %}<span class="badge-used">Used</span>{% endif %}
+                </div>
+                <div class="wall-card{% if survey.area_use_east %} is-used{% endif %}">
+                    <div class="label">East</div>
+                    <div class="value">{% if survey.length_east_ft %}{{ survey.length_east_ft|floatformat:'-2' }} ft{% else %}â€”{% endif %}</div>
+                    {% if survey.area_use_east %}<span class="badge-used">Used</span>{% endif %}
+                </div>
+                <div class="wall-card{% if survey.area_use_west %} is-used{% endif %}">
+                    <div class="label">West</div>
+                    <div class="value">{% if survey.length_west_ft %}{{ survey.length_west_ft|floatformat:'-2' }} ft{% else %}â€”{% endif %}</div>
+                    {% if survey.area_use_west %}<span class="badge-used">Used</span>{% endif %}
+                </div>
+                <div class="wall-card is-total">
+                    <div class="label">Total Roof Area</div>
+                    <div class="value">{% if survey.roof_area_required %}{{ survey.roof_area_required|floatformat:'-2' }} sq.ft{% else %}â€”{% endif %}</div>
+                </div>
+            </div>
+        </section>
+
+        <section>
+            <h2>Feasibility Analysis</h2>
+            <table class="data">
+                <tr>
+                    <th>Shadow Analysis</th>
+                    <td>
+                        {% if survey.has_shadow_issues %}
+                        <span class="status-warn">Shadow issues detected</span>
+                        {% else %}
+                        <span class="status-ok">No shadow issues</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                <tr>
+                    <th>Structural Feasibility</th>
+                    <td>
+                        {% if survey.structural_feasible %}
+                        <span class="status-ok">Feasible</span>
+                        {% else %}
+                        <span class="status-warn">Not Feasible</span>
+                        {% endif %}
+                    </td>
+                </tr>
+            </table>
+        </section>
+
+        <section>
+            <h2>Technical Notes</h2>
+            <div class="notes-box">{{ survey.technical_notes|default:'No technical notes added.' }}</div>
+        </section>
+
+        {% if survey.roof_images.all %}
+        <section>
+            <h2>Survey Photos</h2>
+            <div class="photo-grid">
+                {% for image in survey.roof_images.all %}
+                <figure>
+                    <img src="{{ image.image.url }}" alt="Survey photo">
+                    {% if image.caption %}<figcaption>{{ image.caption }}</figcaption>{% endif %}
+                </figure>
+                {% endfor %}
+            </div>
+        </section>
+        {% endif %}
+
+        <section>
+            <h2>Signature Details</h2>
+            <table class="signature-table">
+                <tr>
+                    <th>Checked / Assigned Engg</th>
+                    <td>{% if survey.engineer %}{{ survey.engineer.get_full_name|default:survey.engineer.username }}{% else %}—{% endif %}</td>
+                    <th>Date</th>
+                    <td>{% if survey.completed_date %}{{ survey.completed_date|date:'d M Y' }}{% else %}—{% endif %}</td>
+                </tr>
+                <tr>
+                    <th>Location</th>
+                    <td>{{ lead.city|default:'—' }}{% if lead.state %}, {{ lead.state }}{% endif %}</td>
+                    <th>Signature</th>
+                    <td class="signature-line"></td>
+                </tr>
+            </table>
+        </section>
+    </div>
+
+    {% if has_structure_layout %}
+    <iframe id="solar3dEmbedFrame"
+            src="{% url 'survey_structure_3d_embed' survey.id %}"
+            title="3D structure capture"
+            style="position:absolute;left:-9999px;width:640px;height:420px;border:0;"
+            loading="eager"></iframe>
+    {% endif %}
+
+    <script>
+        function getCookie(name) {
+            var cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                var cookies = document.cookie.split(';');
+                for (var i = 0; i < cookies.length; i++) {
+                    var cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+
+        var cached3dPng = '';
+        var capture3dPromise = null;
+
+        function waitForEmbedReady(timeoutMs) {
+            var frame = document.getElementById('solar3dEmbedFrame');
+            if (!frame) {
+                return Promise.resolve(null);
+            }
+            var deadline = Date.now() + timeoutMs;
+            return new Promise(function (resolve) {
+                function poll() {
+                    try {
+                        if (frame.contentWindow && frame.contentWindow.__solar3dEmbedReady) {
+                            resolve(frame.contentWindow);
+                            return;
+                        }
+                    } catch (e) {}
+                    if (Date.now() >= deadline) {
+                        resolve(null);
+                        return;
+                    }
+                    setTimeout(poll, 150);
+                }
+                poll();
+            });
+        }
+
+        async function capture3dPreviewAsync(timeoutMs) {
+            if (cached3dPng) return cached3dPng;
+            if (capture3dPromise) return capture3dPromise;
+
+            capture3dPromise = (async function () {
+                var embedWin = await waitForEmbedReady(timeoutMs || 7000);
+                if (embedWin && typeof embedWin.getEmbed3dPng === 'function') {
+                    var png = embedWin.getEmbed3dPng() || '';
+                    if (png) {
+                        cached3dPng = png;
+                        updateReport3dPreview(embedWin);
+                    }
+                    return png;
+                }
+                return '';
+            })();
+
+            try {
+                return await capture3dPromise;
+            } finally {
+                capture3dPromise = null;
+            }
+        }
+
+        function updateReport3dPreview(embedWin) {
+            if (!embedWin || typeof embedWin.getEmbed3dPng !== 'function') {
+                return;
+            }
+            var png = embedWin.getEmbed3dPng();
+            var img = document.getElementById('report3dPreviewImg');
+            var fallback = document.getElementById('report3dFallbackSvg');
+            var frame = document.getElementById('report3dFrame');
+            if (img && png) {
+                cached3dPng = png;
+                img.src = png;
+                img.style.display = 'block';
+                if (fallback) {
+                    fallback.classList.add('is-hidden');
+                }
+                if (frame) {
+                    frame.classList.add('has-captured-png');
+                }
+            }
+        }
+
+        window.addEventListener('message', function (ev) {
+            if (!ev.data || ev.data.type !== 'solar3dEmbedReady') {
+                return;
+            }
+            var frame = document.getElementById('solar3dEmbedFrame');
+            if (!frame || !frame.contentWindow) {
+                return;
+            }
+            updateReport3dPreview(frame.contentWindow);
+        });
+
+        async function downloadSurveyPdf() {
+            var btn = document.getElementById('btnDownloadPdf');
+            var status = document.getElementById('pdfStatusText');
+            if (btn) {
+                btn.disabled = true;
+                btn.textContent = 'Generating PDFâ€¦';
+            }
+            if (status) {
+                status.textContent = 'Preparing previewâ€¦';
+            }
+
+            var png = cached3dPng;
+            if (!png) {
+                // Keep download responsive: short wait for preview, then continue.
+                png = await Promise.race([
+                    capture3dPreviewAsync(6000),
+                    new Promise(function (resolve) { setTimeout(function () { resolve(''); }, 1500); })
+                ]);
+            }
+
+            var form = new FormData();
+            form.append('structure_3d_png', png);
+            var csrf = getCookie('csrftoken');
+            if (csrf) {
+                form.append('csrfmiddlewaretoken', csrf);
+            }
+
+            if (status) {
+                status.textContent = 'Building PDFâ€¦';
+            }
+
+            try {
+                var resp = await fetch('{% url "survey_report_pdf" survey.id %}', {
+                    method: 'POST',
+                    body: form,
+                    credentials: 'same-origin',
+                });
+                if (!resp.ok) {
+                    throw new Error('PDF request failed');
+                }
+                var blob = await resp.blob();
+                var url = URL.createObjectURL(blob);
+                var a = document.createElement('a');
+                a.href = url;
+                a.download = 'site_survey_{{ survey.pk }}_report.pdf';
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+                URL.revokeObjectURL(url);
+                if (status) {
+                    status.textContent = 'PDF downloaded.';
+                }
+            } catch (err) {
+                alert('Could not generate PDF. Please try again.');
+                if (status) {
+                    status.textContent = '';
+                }
+            } finally {
+                if (btn) {
+                    btn.disabled = false;
+                    btn.textContent = 'Download PDF';
+                }
+            }
+        }
+
+        var pdfBtn = document.getElementById('btnDownloadPdf');
+        if (pdfBtn) {
+            pdfBtn.addEventListener('click', function (e) {
+                e.preventDefault();
+                downloadSurveyPdf();
+            });
+        }
+
+        // Start capture early so PDF generation is fast.
+        capture3dPreviewAsync(12000);
+    </script>
+
+    {% if request.GET.print %}
+    <script>
+        window.addEventListener('load', function () {
+            Promise.race([
+                capture3dPreviewAsync(7000),
+                new Promise(function (resolve) { setTimeout(resolve, 1800); })
+            ]).then(function () {
+                var frame = document.getElementById('solar3dEmbedFrame');
+                var embedWin = frame && frame.contentWindow ? frame.contentWindow : null;
+                if (embedWin) {
+                    updateReport3dPreview(embedWin);
+                }
+                setTimeout(function () { window.print(); }, 350);
+            });
+        });
+    </script>
+    {% endif %}
+</body>
+</html>

@@ -184,6 +184,7 @@
 #             )
 
 from django.contrib.auth import authenticate
+from django.utils import timezone
 from rest_framework import viewsets, status
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -197,6 +198,7 @@ from django.urls import path
 #from .models import *
 from .serializers import serializers_dict, CustomerSerializer #, CustomerMsebSerializer
 from .models import AuthUser, Customer, CustomerMseb
+from customer.models import Customer as CustomerRecord
 
 # Dictionary to store dynamically generated viewsets and API views
 viewsets_dict = {}
@@ -408,6 +410,49 @@ class CustomerDataView(APIView):
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
+
+class MobileProjectLinkView(APIView):
+    """Register that a consumer project was added to the mobile app project list."""
+
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, *args, **kwargs):
+        cust_id = request.data.get('cust_id')
+        if not cust_id:
+            return Response(
+                {"error": "cust_id is required."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        try:
+            cust = CustomerRecord.objects.get(Cust_id=cust_id)
+        except CustomerRecord.DoesNotExist:
+            return Response(
+                {"error": "Customer not found."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        linked_username = (request.data.get('linked_by_username') or request.user.username or '').strip()
+        if not linked_username:
+            return Response(
+                {"error": "Could not determine linked mobile app username."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        cust.mobile_app_linked_at = timezone.now()
+        cust.mobile_app_linked_username = linked_username
+        cust.save(update_fields=['mobile_app_linked_at', 'mobile_app_linked_username'])
+
+        return Response(
+            {
+                "success": True,
+                "cust_id": cust.Cust_id,
+                "linked_username": cust.mobile_app_linked_username,
+                "linked_at": cust.mobile_app_linked_at.isoformat(),
+            },
+            status=status.HTTP_200_OK,
+        )
 
 
 class CustomerMsebView(APIView):

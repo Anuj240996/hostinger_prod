@@ -846,7 +846,11 @@ $(document).ready(function() {
                 var purchase = data.purchase;
                 var purchase_id = data.purchase_id;
                 var stockAlert = data.stock_alert;
-                var badgeClass = stockQuantity > stockAlert ? 'success' : 'danger';
+                var parsedStock = window.roundQty(stockQuantity, purchase);
+                var defaultQty = window.isDecimalQuantityUnit(purchase)
+                    ? (parsedStock <= 1 ? parsedStock : 1)
+                    : (parsedStock >= 1 ? 1 : Math.max(1, Math.round(parsedStock)));
+                var badgeClass = parsedStock > stockAlert ? 'success' : 'danger';
                 var stockgst = data.gst;
 
                 if (stockId) {
@@ -868,14 +872,13 @@ $(document).ready(function() {
                         </div>
                         <div class="form-group col-md-2 text-center">
                             <div class="d-flex justify-content-center align-items-center mt-1">
-                                <input type="hidden" class="form-control stock-quantity" value="${stockQuantity}" readonly>
-<!--                                <span class="badge ${badgeClass}">${stockQuantity} <small>${purchase}</small></span>-->
-                                    <span class="badge ${badgeClass}">${parseFloat(stockQuantity) % 1 === 0 ? parseInt(stockQuantity) : parseFloat(stockQuantity).toFixed(3)} <small style="color: green">${purchase}</small></span>
+                                <input type="hidden" class="form-control stock-quantity" value="${stockQuantity}" data-warehouse-qty="${stockQuantity}" data-original-qty="${stockQuantity}" data-stock-alert="${stockAlert}" data-purchase-unit="${purchase}" readonly>
+                                    <span class="badge ${badgeClass}"><span class="available-qty-text">${window.formatQtyDisplay(parsedStock, purchase)}</span> <small style="color: green">${purchase}</small></span>
                             </div>
                         </div>
                         <div class="form-group col-md-3 text-center">
                             <div class="input-group">
-                                 <input type="number" class="form-control quantity" style="text-align: center;" name="form-${total}-quantity" value="1">
+                                 <input type="number" class="form-control quantity" style="text-align: center;" name="form-${total}-quantity" value="${defaultQty}" step="any">
                                 <div class="input-group-append">
                                     <span class="input-group-text me-2">${purchase}</span>
                                 </div>
@@ -900,7 +903,13 @@ $(document).ready(function() {
                     selectedStock.remove();
 
                     // Attach the quantity change listener for this row
-                    attachQuantityChangeListener(total - 1, stockQuantity);
+                    attachQuantityChangeListener(total - 1, stockQuantity, purchase);
+                    if (window.updateSaleRemainingBadge) {
+                        window.updateSaleRemainingBadge($('#stockitem .form-row').last()[0], {
+                            editMode: false,
+                            recalculateRemaining: false
+                        });
+                    }
                 }
                 updateTotals();
             }
@@ -908,20 +917,30 @@ $(document).ready(function() {
         $('#fieldset-container').show();
     });
 
-    // Function to attach change listener to the quantity input
-    function attachQuantityChangeListener(rowIndex, stockQuantity) {
-        $(`input[name="form-${rowIndex}-quantity"]`).on('input', function() {
-            var enteredQuantity = parseInt($(this).val(), 10);
-            var warningMessage = $(this).closest('.form-row').find('.warning-message');
+    window.updateRemainingBadge = function(row) {
+        window.updateSaleRemainingBadge(row instanceof jQuery ? row[0] : row, {
+            editMode: false,
+            recalculateRemaining: true
+        });
+    };
 
-            if (enteredQuantity > stockQuantity) {
-                warningMessage.show();  // Show warning if quantity exceeds stock
-            } else if (enteredQuantity <= stockQuantity && enteredQuantity >= 1) {
-                    // When the quantity is valid, hide the warning
-                    warningMessage.hide();
-                }
-            });
-        }
+    function attachQuantityChangeListener(rowIndex, stockQuantity, purchaseUnit) {
+        $(`input[name="form-${rowIndex}-quantity"]`).on('input', function() {
+            var $row = $(this).closest('.form-row');
+            var unit = purchaseUnit || window.getRowPurchaseUnit($row[0]);
+            var enteredQuantity = window.roundQty($(this).val(), unit);
+            var maxStock = window.roundQty($row.find('.stock-quantity').data('original-qty') || $row.find('.stock-quantity').val() || stockQuantity, unit);
+            var warningMessage = $row.find('.warning-message');
+
+            if (enteredQuantity > maxStock) {
+                warningMessage.show();
+            } else if (enteredQuantity > 0 && enteredQuantity <= maxStock) {
+                warningMessage.hide();
+            }
+            window.updateRemainingBadge($row);
+            updateTotals();
+        });
+    }
     function deleteForm(prefix, btn) {
         var formRow = btn.closest('.form-row');
         var totalForms = $('#id_' + prefix + '-TOTAL_FORMS').val();
@@ -954,28 +973,13 @@ $(document).ready(function() {
     $(document).on('input', '.quantity', function () {
         const $input = $(this);
         const $row = $input.closest('.form-row');
-        const purchaseUnit = $row.find('.stock-purchase').val()?.trim();
-        let inputVal = $input.val();
-
-        if (purchaseUnit === 'Nos') {
-            // Check if value is a valid integer
-            if (!/^\d*$/.test(inputVal)) {
-                alert('Please use whole numbers only in the "Nos" unit.');
-                inputVal = inputVal.split('.')[0].replace(/\D/g, ''); // Remove decimal and non-digits
-                $input.val(inputVal);
+        const purchaseUnit = window.getRowPurchaseUnit($row[0]);
+        window.enforceQuantityInputByUnit(this, purchaseUnit, {
+            onChange: function () {
+                window.updateRemainingBadge($row);
+                updateTotals();
             }
-        } else {
-            // Allow decimal for other units, sanitize value
-            const decVal = inputVal.replace(/[^0-9.]/g, ''); // Remove invalid characters
-            const parts = decVal.split('.');
-            const cleanVal = parts.length > 2
-                ? parts[0] + '.' + parts.slice(1).join('') // Keep only one dot
-                : decVal;
-
-            if (inputVal !== cleanVal) {
-                $input.val(cleanVal);
-            }
-        }
+        });
     });
 
 
@@ -1004,13 +1008,13 @@ $(document).ready(function() {
     // Update total quantity and amount
     function updateTotals() {
         var totalQuantity = 0;
-        $('.form-row').each(function() {
-            var quantity = parseFloat($(this).find('.quantity').val()) || 0;
-
+        $('#stockitem .form-row').each(function() {
+            var unit = window.getRowPurchaseUnit(this);
+            var quantity = window.roundQty($(this).find('.quantity').val(), unit) || 0;
             totalQuantity += quantity;
         });
-
-        $('#total_quantity').val(totalQuantity);
+        totalQuantity = window.roundQty(totalQuantity);
+        $('#total_quantity').val(Number(totalQuantity.toFixed(3)));
     }
 
     document.getElementById('purchaseForm').onsubmit = function(event) {
@@ -1305,8 +1309,9 @@ $(document).ready(function() {
 
         // Loop through each quantity field
         $('.quantity').each(function() {
-            let quantityValue = parseInt($(this).val(), 10); // Entered quantity
-            let stockQuantity = parseInt($(this).closest('.form-row').find('.stock-quantity').val(), 10); // Available stock
+            const unit = window.getRowPurchaseUnit($(this).closest('.form-row')[0]);
+            let quantityValue = window.roundQty($(this).val(), unit);
+            let stockQuantity = window.roundQty($(this).closest('.form-row').find('.stock-quantity').data('original-qty') || $(this).closest('.form-row').find('.stock-quantity').val(), unit);
 
             if (isNaN(quantityValue) || quantityValue <= 0) {
                 isValid = false;

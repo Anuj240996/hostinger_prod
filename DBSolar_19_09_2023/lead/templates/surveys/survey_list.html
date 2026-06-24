@@ -1,290 +1,400 @@
 {% extends 'base.html' %}
 {% load humanize %}
+{% load static %}
 
 {% block title %}Site Surveys - Solar CRM{% endblock %}
 
-{% block content %}
+{% block extra_css %}
+{% include 'dashboard/legacy_kpi_card_styles.html' %}
 <style>
-    .surveys-view-toggle .btn.active {
-        background-color: var(--bs-primary);
-        border-color: var(--bs-primary);
-        color: #fff;
+  html, body {
+    overflow-x: hidden;
+  }
+  .surveys-page {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: hidden;
+  }
+  .surveys-page .card,
+  .surveys-page .card-body {
+    min-width: 0;
+  }
+  .surveys-page .table-responsive {
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  #crmSurveyTable {
+    width: 100% !important;
+    table-layout: auto;
+  }
+  #crmSurveyTable .crm-lead-cell {
+    line-height: 1.35;
+  }
+  .surveys-page.crm-legacy-kpi-cards .card.my-card .card-body {
+    padding: 0.7rem 0.8rem;
+  }
+  .surveys-page.crm-legacy-kpi-cards .db-widgets {
+    justify-content: center;
+  }
+  .surveys-page.crm-legacy-kpi-cards .db-info {
+    text-align: center;
+    width: 100%;
+  }
+  .surveys-page.crm-legacy-kpi-cards .db-info h3 {
+    font-size: clamp(1rem, 1.75vw, 1.28rem);
+    margin-bottom: 0.25rem;
+    line-height: 1.2;
+  }
+  .surveys-page.crm-legacy-kpi-cards .db-info h6 {
+    font-size: 1rem;
+    font-weight: 500;
+    line-height: 1.35;
+    color: #444;
+  }
+  .surveys-view-toggle .btn.active {
+    background-color: var(--bs-primary);
+    border-color: var(--bs-primary);
+    color: #fff;
+  }
+  .surveys-page--cards .filter-status-field {
+    display: none !important;
+  }
+  .surveys-page--cards #surveys-card-view {
+    width: 100%;
+  }
+  .surveys-page--cards .surveys-list-toolbar,
+  .surveys-page--cards .surveys-list-pagination {
+    display: none !important;
+  }
+  .surveys-list-pagination {
+    background: #fff;
+  }
+  .surveys-page .surveys-kpi-row {
+    width: 100%;
+  }
+  @media (min-width: 1200px) {
+    .surveys-page .surveys-kpi-row > .col {
+      flex: 1 1 0;
+      min-width: 0;
+      max-width: none;
     }
-
-    .surveys-page--cards .filter-status-field {
-        display: none !important;
-    }
-
-    .surveys-page--cards #surveys-card-view {
-        width: 100%;
-    }
-
-    /* Kanban board — same structure as /new-lead/leads/ card view */
+  }
+  .surveys-page .surveys-filter-form .form-label {
+    margin-bottom: 0.4rem;
+    font-size: 1rem;
+    font-weight: 500;
+    white-space: nowrap;
+  }
+  .surveys-page .surveys-filter-form .form-select,
+  .surveys-page .surveys-filter-form .form-control {
+    font-size: 1rem;
+    min-height: calc(1.5em + 0.75rem + 2px);
+  }
+  .surveys-page .surveys-filter-form .surveys-filter-actions {
+    display: flex;
+    flex-wrap: nowrap;
+    gap: 0.5rem;
+    align-items: center;
+  }
+  .surveys-page .surveys-filter-form .surveys-filter-actions .btn {
+    font-size: 1rem;
+    padding: 0.375rem 0.85rem;
+  }
+  .survey-stage-board {
+    display: flex;
+    flex-direction: row;
+    align-items: flex-start;
+    gap: 1rem;
+    width: 100%;
+    padding: 1rem;
+    min-height: 420px;
+    box-sizing: border-box;
+    background: #fff;
+  }
+  .survey-stage-column {
+    flex: 1 1 0;
+    min-width: 0;
+    max-height: calc(100vh - 260px);
+    background: #f8f9fa;
+    border-radius: 10px;
+    display: flex;
+    flex-direction: column;
+    border-top: 3px solid #dee2e6;
+    overflow: hidden;
+  }
+  @media (max-width: 992px) {
     .survey-stage-board {
-        display: flex;
-        flex-direction: row;
-        align-items: flex-start;
-        gap: 1rem;
-        width: 100%;
-        padding: 1rem;
-        min-height: 420px;
-        box-sizing: border-box;
-        background: #fff;
+      overflow-x: auto;
     }
-
     .survey-stage-column {
-        flex: 1 1 0;
-        min-width: 0;
-        max-height: calc(100vh - 260px);
-        background: #f8f9fa;
-        border-radius: 10px;
-        display: flex;
-        flex-direction: column;
-        border-top: 3px solid #dee2e6;
-        overflow: hidden;
+      flex: 0 0 260px;
+      min-width: 260px;
     }
-
-    @media (max-width: 992px) {
-        .survey-stage-board {
-            overflow-x: auto;
-        }
-        .survey-stage-column {
-            flex: 0 0 260px;
-            min-width: 260px;
-        }
-    }
-
-    .survey-stage-column.status-scheduled { border-top-color: #0d6efd; }
-    .survey-stage-column.status-in_progress { border-top-color: #fd7e14; }
-    .survey-stage-column.status-completed { border-top-color: #198754; }
-    .survey-stage-column.status-cancelled { border-top-color: #dc3545; }
-
-    .survey-stage-column-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding: 0.5rem 0.65rem;
-        border-bottom: 1px solid rgba(0, 0, 0, 0.08);
-        border-radius: 10px 10px 0 0;
-    }
-
-    .survey-stage-column.status-scheduled .survey-stage-column-header {
-        background: rgba(13, 110, 253, 0.18);
-        color: #084298;
-    }
-    .survey-stage-column.status-in_progress .survey-stage-column-header {
-        background: rgba(253, 126, 20, 0.22);
-        color: #653208;
-    }
-    .survey-stage-column.status-completed .survey-stage-column-header {
-        background: rgba(25, 135, 84, 0.2);
-        color: #0a3622;
-    }
-    .survey-stage-column.status-cancelled .survey-stage-column-header {
-        background: rgba(220, 53, 69, 0.18);
-        color: #842029;
-    }
-
-    .survey-stage-column-header h6 {
-        margin: 0;
-        font-weight: 600;
-        font-size: 0.82rem;
-        color: inherit;
-    }
-
-    .survey-stage-count {
-        background: #fff;
-        border: 1px solid rgba(0, 0, 0, 0.1);
-        border-radius: 999px;
-        min-width: 1.5rem;
-        text-align: center;
-        font-size: 0.7rem;
-        font-weight: 600;
-        padding: 0.1rem 0.4rem;
-        color: #212529;
-    }
-
-    .survey-stage-column-cards {
-        flex: 1;
-        overflow-y: auto;
-        padding: 0.65rem;
-        display: flex;
-        flex-direction: column;
-        gap: 0.65rem;
-        background: #f8f9fa;
-        min-height: 80px;
-    }
-
-    .survey-item-card {
-        border: 1px solid #e9ecef;
-        border-left-width: 4px;
-        border-radius: 8px;
-        padding: 0.65rem 0.75rem;
-        background: #fff;
-        font-size: 0.8rem;
-        width: 100%;
-        max-width: 100%;
-        box-sizing: border-box;
-        transition: box-shadow 0.15s ease, border-color 0.15s ease;
-        cursor: pointer;
-        display: flex;
-        flex-direction: column;
-        flex-shrink: 0;
-    }
-
-    .survey-item-card.status-scheduled {
-        border-color: rgba(13, 110, 253, 0.35);
-        border-left-color: #0d6efd;
-    }
-    .survey-item-card.status-in_progress {
-        border-color: rgba(253, 126, 20, 0.4);
-        border-left-color: #fd7e14;
-    }
-    .survey-item-card.status-completed {
-        border-color: rgba(25, 135, 84, 0.35);
-        border-left-color: #198754;
-    }
-    .survey-item-card.status-cancelled {
-        border-color: rgba(220, 53, 69, 0.35);
-        border-left-color: #dc3545;
-    }
-
-    .survey-item-card:hover {
-        box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
-    }
-
-    .survey-item-card .survey-card-head {
-        display: flex;
-        justify-content: space-between;
-        align-items: flex-start;
-        gap: 0.35rem;
-        margin-bottom: 0.45rem;
-    }
-
-    .survey-item-card .survey-card-name {
-        font-weight: 600;
-        font-size: 0.88rem;
-        margin: 0;
-        line-height: 1.25;
-    }
-
-    .survey-item-card .survey-card-phone {
-        font-size: 0.72rem;
-        color: #6c757d;
-        margin-top: 0.1rem;
-    }
-
-    .survey-item-card .survey-card-meta {
-        display: flex;
-        align-items: center;
-        gap: 0.35rem;
-        font-size: 0.72rem;
-        color: #495057;
-        margin-bottom: 0.2rem;
-        line-height: 1.35;
-    }
-
-    .survey-item-card .survey-card-meta > i {
-        width: 0.85rem;
-        min-width: 0.85rem;
-        flex-shrink: 0;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        text-align: center;
-        font-size: 0.68rem;
-        color: #6c757d;
-        line-height: 1;
-    }
-
-    .survey-item-card .survey-card-meta > span {
-        flex: 1;
-        min-width: 0;
-        line-height: 1.35;
-    }
-
-    .survey-item-card .badge {
-        font-size: 0.65rem;
-        padding: 0.2em 0.45em;
-    }
-
-    .survey-item-card .survey-card-actions {
-        margin-top: auto;
-        padding-top: 0.45rem;
-        border-top: 1px solid #e9ecef;
-        display: flex;
-        justify-content: flex-end;
-        align-items: center;
-        gap: 0.25rem;
-    }
-
-    .survey-item-card .survey-card-action {
-        flex: 0 0 auto;
-        min-width: 1.65rem;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        padding: 0.3rem 0.15rem;
-        border: none;
-        border-radius: 4px;
-        background: transparent;
-        font-size: 0.82rem;
-        line-height: 1;
-        text-decoration: none;
-        cursor: pointer;
-        transition: color 0.15s ease, background 0.15s ease;
-    }
-
-    .survey-item-card .survey-card-action--call {
-        color: #0d6efd;
-    }
-    .survey-item-card .survey-card-action--call:hover {
-        color: #fff;
-        background: #0d6efd;
-    }
-
-    .survey-item-card .survey-card-action--view {
-        color: #6f42c1;
-    }
-    .survey-item-card .survey-card-action--view:hover {
-        color: #fff;
-        background: #6f42c1;
-    }
-
-    .survey-item-card .survey-card-action--edit {
-        color: #fd7e14;
-    }
-    .survey-item-card .survey-card-action--edit:hover {
-        color: #fff;
-        background: #fd7e14;
-    }
-
-    .survey-item-card .survey-card-action--quote {
-        color: #198754;
-    }
-    .survey-item-card .survey-card-action--quote:hover {
-        color: #fff;
-        background: #198754;
-    }
-
-    .surveys-page .surveys-view-panel.d-none {
-        display: none !important;
-    }
+  }
+  .survey-stage-column.status-scheduled { border-top-color: #0d6efd; }
+  .survey-stage-column.status-in_progress { border-top-color: #fd7e14; }
+  .survey-stage-column.status-completed { border-top-color: #198754; }
+  .survey-stage-column.status-cancelled { border-top-color: #dc3545; }
+  .survey-stage-column-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.5rem 0.65rem;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+    border-radius: 10px 10px 0 0;
+  }
+  .survey-stage-column.status-scheduled .survey-stage-column-header {
+    background: rgba(13, 110, 253, 0.18);
+    color: #084298;
+  }
+  .survey-stage-column.status-in_progress .survey-stage-column-header {
+    background: rgba(253, 126, 20, 0.22);
+    color: #653208;
+  }
+  .survey-stage-column.status-completed .survey-stage-column-header {
+    background: rgba(25, 135, 84, 0.2);
+    color: #0a3622;
+  }
+  .survey-stage-column.status-cancelled .survey-stage-column-header {
+    background: rgba(220, 53, 69, 0.18);
+    color: #842029;
+  }
+  .survey-stage-column-header h6 {
+    margin: 0;
+    font-weight: 600;
+    font-size: 0.82rem;
+    color: inherit;
+  }
+  .survey-stage-count {
+    background: #fff;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    border-radius: 999px;
+    min-width: 1.5rem;
+    text-align: center;
+    font-size: 0.7rem;
+    font-weight: 600;
+    padding: 0.1rem 0.4rem;
+    color: #212529;
+  }
+  .survey-stage-column-cards {
+    flex: 1;
+    overflow-y: auto;
+    padding: 0.65rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.65rem;
+    background: #f8f9fa;
+    min-height: 80px;
+  }
+  .survey-item-card {
+    border: 1px solid #e9ecef;
+    border-left-width: 4px;
+    border-radius: 8px;
+    padding: 0.65rem 0.75rem;
+    background: #fff;
+    font-size: 0.8rem;
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+    transition: box-shadow 0.15s ease, border-color 0.15s ease;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
+  }
+  .survey-item-card.status-scheduled {
+    border-color: rgba(13, 110, 253, 0.35);
+    border-left-color: #0d6efd;
+  }
+  .survey-item-card.status-in_progress {
+    border-color: rgba(253, 126, 20, 0.4);
+    border-left-color: #fd7e14;
+  }
+  .survey-item-card.status-completed {
+    border-color: rgba(25, 135, 84, 0.35);
+    border-left-color: #198754;
+  }
+  .survey-item-card.status-cancelled {
+    border-color: rgba(220, 53, 69, 0.35);
+    border-left-color: #dc3545;
+  }
+  .survey-item-card:hover {
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
+  }
+  .survey-item-card .survey-card-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 0.35rem;
+    margin-bottom: 0.45rem;
+  }
+  .survey-item-card .survey-card-name {
+    font-weight: 600;
+    font-size: 0.88rem;
+    margin: 0;
+    line-height: 1.25;
+  }
+  .survey-item-card .survey-card-phone {
+    font-size: 0.72rem;
+    color: #6c757d;
+    margin-top: 0.1rem;
+  }
+  .survey-item-card .survey-card-meta {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-size: 0.72rem;
+    color: #495057;
+    margin-bottom: 0.2rem;
+    line-height: 1.35;
+  }
+  .survey-item-card .survey-card-meta > i {
+    width: 0.85rem;
+    min-width: 0.85rem;
+    flex-shrink: 0;
+    font-size: 0.68rem;
+    color: #6c757d;
+  }
+  .survey-item-card .badge {
+    font-size: 0.65rem;
+    padding: 0.2em 0.45em;
+  }
+  .survey-item-card .survey-card-actions {
+    margin-top: auto;
+    padding-top: 0.45rem;
+    border-top: 1px solid #e9ecef;
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 0.25rem;
+  }
+  .survey-item-card .survey-card-action {
+    flex: 0 0 auto;
+    min-width: 1.65rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.3rem 0.15rem;
+    border: none;
+    border-radius: 4px;
+    background: transparent;
+    font-size: 0.82rem;
+    line-height: 1;
+    text-decoration: none;
+    cursor: pointer;
+    transition: color 0.15s ease, background 0.15s ease;
+  }
+  .survey-item-card .survey-card-action--call { color: #0d6efd; }
+  .survey-item-card .survey-card-action--call:hover { color: #fff; background: #0d6efd; }
+  .survey-item-card .survey-card-action--view { color: #6f42c1; }
+  .survey-item-card .survey-card-action--view:hover { color: #fff; background: #6f42c1; }
+  .survey-item-card .survey-card-action--edit { color: #fd7e14; }
+  .survey-item-card .survey-card-action--edit:hover { color: #fff; background: #fd7e14; }
+  .survey-item-card .survey-card-action--quote { color: #198754; }
+  .survey-item-card .survey-card-action--quote:hover { color: #fff; background: #198754; }
+  .surveys-page .surveys-view-panel.d-none {
+    display: none !important;
+  }
 </style>
+{% endblock %}
 
-<div class="surveys-page" id="surveys-page-root">
+{% block content %}
+<div class="surveys-page crm-legacy-kpi-cards" id="surveys-page-root">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h2>Site Surveys</h2>
-        <a href="{% url 'survey_create' %}" class="btn btn-primary">
-            <i class="fas fa-plus me-2"></i>Schedule New Survey
-        </a>
+        <div class="d-flex align-items-center gap-2 flex-wrap justify-content-end">
+            <div class="dt-buttons btn-group flex-wrap">
+                <a href="#" class="btn btn-primary" onclick="crmSurveyListGeneratePDF(); return false;" title="PDF"><i class="fas fa-file-pdf" style="font-size: 1.05rem;"></i></a>
+                <a href="#" class="btn btn-primary" onclick="crmSurveyListGenerateExcel(); return false;" title="Excel"><i class="fas fa-file-excel" style="font-size: 1.05rem;"></i></a>
+                <a href="#" class="btn btn-primary" onclick="crmSurveyListCopyToClipboard(); return false;" title="Copy"><i class="fas fa-copy"></i></a>
+                <a href="#" class="btn btn-primary" onclick="crmSurveyListPrintTable(); return false;" title="Print"><i class="fas fa-print"></i></a>
+            </div>
+            <a href="{% url 'survey_create' %}" class="btn btn-primary">
+                <i class="fas fa-plus me-2"></i>Schedule New Survey
+            </a>
+        </div>
     </div>
 
-    <!-- Filters -->
+    <div class="row row-cols-1 row-cols-sm-2 row-cols-lg-3 row-cols-xl-5 g-3 mb-4 surveys-kpi-row">
+        <div class="col d-flex">
+            <div class="card bg-two w-100 my-card shadow">
+                <a class="text-decoration-none text-dark kpi-card-link" href="{% url 'survey_list' %}">
+                    <div class="card-body">
+                        <div class="db-widgets d-flex justify-content-center align-items-center">
+                            <div class="db-info">
+                                <h3>{{ surveys_total_count|default:0 }}</h3>
+                                <h6>Total Surveys</h6>
+                            </div>
+                        </div>
+                    </div>
+                </a>
+            </div>
+        </div>
+        <div class="col d-flex">
+            <div class="card bg-three w-100 my-card shadow">
+                <a class="text-decoration-none text-dark kpi-card-link" href="{% url 'survey_list' %}?status=scheduled">
+                    <div class="card-body">
+                        <div class="db-widgets d-flex justify-content-center align-items-center">
+                            <div class="db-info">
+                                <h3>{{ scheduled_count|default:0 }}</h3>
+                                <h6>Scheduled</h6>
+                            </div>
+                        </div>
+                    </div>
+                </a>
+            </div>
+        </div>
+        <div class="col d-flex">
+            <div class="card bg-five w-100 my-card shadow">
+                <a class="text-decoration-none text-dark kpi-card-link" href="{% url 'survey_list' %}?status=in_progress">
+                    <div class="card-body">
+                        <div class="db-widgets d-flex justify-content-center align-items-center">
+                            <div class="db-info">
+                                <h3>{{ in_progress_count|default:0 }}</h3>
+                                <h6>In Progress</h6>
+                            </div>
+                        </div>
+                    </div>
+                </a>
+            </div>
+        </div>
+        <div class="col d-flex">
+            <div class="card bg-four w-100 my-card shadow">
+                <a class="text-decoration-none text-dark kpi-card-link" href="{% url 'survey_list' %}?status=completed">
+                    <div class="card-body">
+                        <div class="db-widgets d-flex justify-content-center align-items-center">
+                            <div class="db-info">
+                                <h3>{{ completed_count|default:0 }}</h3>
+                                <h6>Completed</h6>
+                            </div>
+                        </div>
+                    </div>
+                </a>
+            </div>
+        </div>
+        <div class="col d-flex">
+            <div class="card bg-six w-100 my-card shadow">
+                <a class="text-decoration-none text-dark kpi-card-link" href="{% url 'survey_list' %}?status=cancelled">
+                    <div class="card-body">
+                        <div class="db-widgets d-flex justify-content-center align-items-center">
+                            <div class="db-info">
+                                <h3>{{ cancelled_count|default:0 }}</h3>
+                                <h6>Cancelled</h6>
+                            </div>
+                        </div>
+                    </div>
+                </a>
+            </div>
+        </div>
+    </div>
+
     <div class="card mb-4">
-        <div class="card-body">
-            <form method="get" class="row g-3" id="survey-filter-form">
-                <div class="col-md-3 filter-status-field">
+        <div class="card-body py-3">
+            <form method="get" class="row g-2 g-lg-3 align-items-end surveys-filter-form" id="survey-filter-form">
+                {% if request.GET.q %}<input type="hidden" name="q" value="{{ request.GET.q }}">{% endif %}
+                {% if request.GET.per_page %}<input type="hidden" name="per_page" value="{{ request.GET.per_page }}">{% endif %}
+                <div class="col-lg col-md-6 col-12 filter-status-field">
                     <label class="form-label">Status</label>
                     <select name="status" class="form-select">
                         <option value="">All</option>
@@ -294,7 +404,7 @@
                         <option value="cancelled" {% if request.GET.status == 'cancelled' %}selected{% endif %}>Cancelled</option>
                     </select>
                 </div>
-                <div class="col-md-3">
+                <div class="col-lg col-md-6 col-12">
                     <label class="form-label">Engineer</label>
                     <select name="engineer" class="form-select">
                         <option value="">All</option>
@@ -303,27 +413,34 @@
                         {% endfor %}
                     </select>
                 </div>
-                <div class="col-md-3">
+                <div class="col-lg col-md-6 col-12">
                     <label class="form-label">From Date</label>
                     <input type="date" name="from_date" class="form-control" value="{{ request.GET.from_date }}">
                 </div>
-                <div class="col-md-3">
+                <div class="col-lg col-md-6 col-12">
                     <label class="form-label">To Date</label>
                     <input type="date" name="to_date" class="form-control" value="{{ request.GET.to_date }}">
                 </div>
-                <div class="col-12">
-                    <button type="submit" class="btn btn-primary">Apply Filters</button>
-                    <a href="{% url 'survey_list' %}" class="btn btn-outline-secondary">Clear</a>
+                <div class="col-lg-auto col-md-6 col-12">
+                    <div class="surveys-filter-actions">
+                        <button type="submit" class="btn btn-primary">Apply Filters</button>
+                        <a href="{% url 'survey_list' %}" class="btn btn-outline-secondary">Clear</a>
+                    </div>
                 </div>
             </form>
         </div>
     </div>
 
-    <!-- Survey List -->
-    <div class="card">
+    <div class="card" id="surveys-list-card">
         <div class="card-header">
             <div class="d-flex justify-content-between align-items-center">
-                <h5 class="mb-0">Surveys ({{ surveys.count }} total)</h5>
+                <h5 class="mb-0">
+                    <span class="surveys-list-count-label"
+                          data-list-count="{{ page_obj.paginator.count|default:surveys_total_count }}"
+                          data-card-count="{{ surveys_total_count }}">
+                        Surveys ({{ page_obj.paginator.count|default:surveys_total_count }} total)
+                    </span>
+                </h5>
                 <div class="btn-group btn-group-sm surveys-view-toggle" role="group" aria-label="Survey list view">
                     <button type="button" class="btn btn-outline-secondary active" id="surveys-view-list" title="Table view" aria-pressed="true">
                         <i class="fas fa-list"></i>
@@ -336,8 +453,43 @@
         </div>
         <div class="card-body p-0">
             <div id="surveys-table-view" class="surveys-view-panel">
+                <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 px-3 py-3 border-bottom surveys-list-toolbar">
+                    <div class="d-flex align-items-center gap-2 flex-wrap">
+                        <label for="crmSurveyRowsPerPage" class="mb-0 small text-muted">Show</label>
+                        <select id="crmSurveyRowsPerPage" class="form-select form-select-sm" style="width:auto;">
+                            <option value="10" {% if request.GET.per_page == '10' %}selected{% endif %}>10</option>
+                            <option value="20" {% if not request.GET.per_page or request.GET.per_page == '20' %}selected{% endif %}>20</option>
+                            <option value="50" {% if request.GET.per_page == '50' %}selected{% endif %}>50</option>
+                            <option value="all" {% if request.GET.per_page == 'all' %}selected{% endif %}>All</option>
+                        </select>
+                        <span class="small text-muted">rows</span>
+
+                        <div class="position-relative" id="crmSurveyColumnMenuWrap">
+                            <button type="button" class="btn btn-outline-secondary btn-sm" id="crmSurveyColumnToggleBtn">
+                                Columns
+                            </button>
+                            <div id="crmSurveyColumnMenu" class="card shadow-sm p-2" style="display:none; position:absolute; z-index:20; min-width:220px; top:38px; left:0;">
+                                <label class="form-check mb-1"><input class="form-check-input crm-survey-col-toggle" type="checkbox" data-col="0" checked> <span class="form-check-label">Lead Name</span></label>
+                                <label class="form-check mb-1"><input class="form-check-input crm-survey-col-toggle" type="checkbox" data-col="1" checked> <span class="form-check-label">Engineer</span></label>
+                                <label class="form-check mb-1"><input class="form-check-input crm-survey-col-toggle" type="checkbox" data-col="2" checked> <span class="form-check-label">Scheduled Date</span></label>
+                                <label class="form-check mb-1"><input class="form-check-input crm-survey-col-toggle" type="checkbox" data-col="3" checked> <span class="form-check-label">Feasibility</span></label>
+                                <label class="form-check mb-1"><input class="form-check-input crm-survey-col-toggle" type="checkbox" data-col="4" checked> <span class="form-check-label">System Size</span></label>
+                                <label class="form-check mb-1"><input class="form-check-input crm-survey-col-toggle" type="checkbox" data-col="5" checked> <span class="form-check-label">Status</span></label>
+                                <label class="form-check mb-0"><input class="form-check-input crm-survey-col-toggle" type="checkbox" data-col="6" checked> <span class="form-check-label">Actions</span></label>
+                            </div>
+                        </div>
+
+                        <button type="button" class="btn btn-outline-secondary btn-sm" id="crmRefreshSurveyTableBtn">
+                            Refresh
+                        </button>
+                    </div>
+
+                    <div>
+                        <input type="text" id="crmSurveyTableSearchInput" class="form-control form-control-sm" style="min-width:260px;" placeholder="Search all records..." value="{{ request.GET.q|default:'' }}">
+                    </div>
+                </div>
                 <div class="table-responsive">
-                    <table class="table table-hover align-middle mb-0">
+                    <table class="table table-hover align-middle mb-0" id="crmSurveyTable">
                         <thead class="bg-light">
                             <tr>
                                 <th>Lead Name</th>
@@ -346,13 +498,13 @@
                                 <th>Feasibility</th>
                                 <th>System Size</th>
                                 <th>Status</th>
-                                <th>Actions</th>
+                                <th class="text-center">Actions</th>
                             </tr>
                         </thead>
-                        <tbody>
+                        <tbody id="crmSurveyTableBody">
                             {% for survey in surveys %}
-                            <tr class="clickable-row" data-href="{% url 'survey_detail' survey.id %}">
-                                <td>
+                            <tr class="crm-survey-row clickable-row" data-href="{% url 'survey_detail' survey.id %}">
+                                <td class="crm-lead-cell">
                                     <a href="{% url 'lead_detail' survey.lead.id %}" class="text-decoration-none" onclick="event.stopPropagation();">
                                         <strong>{{ survey.lead.name }}</strong>
                                     </a>
@@ -363,21 +515,21 @@
                                 <td>
                                     {{ survey.scheduled_date|date:'d M Y, h:i A' }}
                                     {% if survey.is_today %}
-                                    <span class="badge bg-warning">Today</span>
+                                    <span class="badge bg-warning text-dark">Today</span>
                                     {% endif %}
                                 </td>
                                 <td>
                                     {% if survey.feasibility == 'high' %}
                                     <span class="badge bg-success">High</span>
                                     {% elif survey.feasibility == 'medium' %}
-                                    <span class="badge bg-warning">Medium</span>
+                                    <span class="badge bg-warning text-dark">Medium</span>
                                     {% elif survey.feasibility == 'low' %}
                                     <span class="badge bg-danger">Low</span>
                                     {% else %}
-                                    -
+                                    —
                                     {% endif %}
                                 </td>
-                                <td>{{ survey.recommended_size|default:'-' }} kW</td>
+                                <td>{% if survey.recommended_size %}{{ survey.recommended_size }} kW{% else %}—{% endif %}</td>
                                 <td>
                                     {% if survey.status == 'completed' %}
                                     <span class="badge bg-success">Completed</span>
@@ -389,7 +541,7 @@
                                     <span class="badge bg-danger">Cancelled</span>
                                     {% endif %}
                                 </td>
-                                <td>
+                                <td class="text-center text-nowrap">
                                     <div class="btn-group btn-group-sm" onclick="event.stopPropagation();">
                                         <a href="{% url 'survey_detail' survey.id %}" class="btn btn-outline-primary" title="View">
                                             <i class="fas fa-eye"></i>
@@ -426,10 +578,10 @@
                                 </td>
                             </tr>
                             {% empty %}
-                            <tr>
+                            <tr class="crm-empty-row">
                                 <td colspan="7" class="text-center py-5">
-                                    <i class="fas fa-hard-hat fa-3x text-muted mb-3"></i>
-                                    <p class="text-muted">No surveys found</p>
+                                    <i class="fas fa-hard-hat fa-3x text-muted mb-3 d-block"></i>
+                                    <p class="text-muted mb-2">No surveys found</p>
                                     <a href="{% url 'survey_create' %}" class="btn btn-primary btn-sm">
                                         Schedule First Survey
                                     </a>
@@ -530,83 +682,593 @@
                 </div>
             </div>
         </div>
+        {% if page_obj %}
+        <div class="card-footer surveys-list-pagination">
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                <small class="text-muted">
+                    {% if page_obj.paginator.count %}
+                    Showing {{ page_obj.start_index }}–{{ page_obj.end_index }} of {{ page_obj.paginator.count }} records
+                    {% else %}
+                    Showing 0 records
+                    {% endif %}
+                    {% if page_obj.paginator.num_pages > 1 %}
+                    (Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }})
+                    {% endif %}
+                </small>
+                {% if page_obj.paginator.num_pages > 1 %}
+                <nav aria-label="Survey list pagination">
+                    <ul class="pagination pagination-sm mb-0">
+                        <li class="page-item {% if not page_obj.has_previous %}disabled{% endif %}">
+                            <a class="page-link" href="?{% if pagination_query %}{{ pagination_query }}&{% endif %}page=1">First</a>
+                        </li>
+                        <li class="page-item {% if not page_obj.has_previous %}disabled{% endif %}">
+                            <a class="page-link" href="?{% if pagination_query %}{{ pagination_query }}&{% endif %}page={% if page_obj.has_previous %}{{ page_obj.previous_page_number }}{% else %}1{% endif %}">Prev</a>
+                        </li>
+                        {% for num in page_obj.paginator.page_range %}
+                            {% if num == page_obj.number %}
+                            <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+                            {% elif num >= page_obj.number|add:'-2' and num <= page_obj.number|add:'2' %}
+                            <li class="page-item">
+                                <a class="page-link" href="?{% if pagination_query %}{{ pagination_query }}&{% endif %}page={{ num }}">{{ num }}</a>
+                            </li>
+                            {% endif %}
+                        {% endfor %}
+                        <li class="page-item {% if not page_obj.has_next %}disabled{% endif %}">
+                            <a class="page-link" href="?{% if pagination_query %}{{ pagination_query }}&{% endif %}page={% if page_obj.has_next %}{{ page_obj.next_page_number }}{% else %}{{ page_obj.paginator.num_pages }}{% endif %}">Next</a>
+                        </li>
+                        <li class="page-item {% if not page_obj.has_next %}disabled{% endif %}">
+                            <a class="page-link" href="?{% if pagination_query %}{{ pagination_query }}&{% endif %}page={{ page_obj.paginator.num_pages }}">Last</a>
+                        </li>
+                    </ul>
+                </nav>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
     </div>
 </div>
 
+<div style="position:absolute; left:-99999px; top:-99999px; width:1px; height:1px; overflow:hidden;">
+    <table id="crmSurveyExportTable" class="table table-sm">
+        <thead>
+            <tr>
+                <th>Lead Name</th>
+                <th>Phone</th>
+                <th>Engineer</th>
+                <th>Scheduled Date</th>
+                <th>Feasibility</th>
+                <th>System Size</th>
+                <th>Status</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for survey in export_surveys %}
+            <tr>
+                <td>{{ survey.lead.name }}</td>
+                <td>{{ survey.lead.phone|default:"—" }}</td>
+                <td>{{ survey.engineer.get_full_name|default:'Not Assigned' }}</td>
+                <td>{{ survey.scheduled_date|date:'d M Y, h:i A' }}</td>
+                <td>{% if survey.feasibility == 'high' %}High{% elif survey.feasibility == 'medium' %}Medium{% elif survey.feasibility == 'low' %}Low{% else %}—{% endif %}</td>
+                <td>{% if survey.recommended_size %}{{ survey.recommended_size }} kW{% else %}—{% endif %}</td>
+                <td>{{ survey.get_status_display|default:survey.status|default:"—" }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}
+
+{% block extra_js %}
 <script>
 (function () {
-    var STORAGE_KEY = 'crmSurveysListView';
-    var listBtn = document.getElementById('surveys-view-list');
-    var cardsBtn = document.getElementById('surveys-view-cards');
-    var tableView = document.getElementById('surveys-table-view');
-    var cardView = document.getElementById('surveys-card-view');
-    var pageRoot = document.getElementById('surveys-page-root');
-    var statusFilterField = pageRoot ? pageRoot.querySelector('.filter-status-field') : null;
-    var statusFilterSelect = statusFilterField ? statusFilterField.querySelector('select[name="status"]') : null;
+  var STORAGE_KEY = 'crmSurveysListView';
+  var listBtn = document.getElementById('surveys-view-list');
+  var cardsBtn = document.getElementById('surveys-view-cards');
+  var tableView = document.getElementById('surveys-table-view');
+  var cardView = document.getElementById('surveys-card-view');
+  var pageRoot = document.getElementById('surveys-page-root');
+  var countLabel = document.querySelector('.surveys-list-count-label');
+  var statusFilterField = pageRoot ? pageRoot.querySelector('.filter-status-field') : null;
+  var statusFilterSelect = statusFilterField ? statusFilterField.querySelector('select[name="status"]') : null;
 
-    function stripUrlFilterParam(paramName) {
-        var params = new URLSearchParams(window.location.search);
-        if (!params.has(paramName)) return false;
-        params.delete(paramName);
-        var qs = params.toString();
-        window.location.replace(window.location.pathname + (qs ? '?' + qs : ''));
-        return true;
-    }
+  function stripUrlFilterParam(paramName) {
+    var params = new URLSearchParams(window.location.search);
+    if (!params.has(paramName)) return false;
+    params.delete(paramName);
+    var qs = params.toString();
+    window.location.replace(window.location.pathname + (qs ? '?' + qs : ''));
+    return true;
+  }
 
-    function setView(mode) {
-        var isCards = mode === 'cards';
-        if (isCards && stripUrlFilterParam('status')) return;
-        if (pageRoot) pageRoot.classList.toggle('surveys-page--cards', isCards);
-        if (tableView) tableView.classList.toggle('d-none', isCards);
-        if (cardView) cardView.classList.toggle('d-none', !isCards);
-        if (statusFilterField) {
-            statusFilterField.classList.toggle('d-none', isCards);
-            statusFilterField.setAttribute('aria-hidden', isCards ? 'true' : 'false');
-        }
-        if (isCards && statusFilterSelect) {
-            statusFilterSelect.value = '';
-        }
-        if (listBtn) {
-            listBtn.classList.toggle('active', !isCards);
-            listBtn.setAttribute('aria-pressed', !isCards ? 'true' : 'false');
-        }
-        if (cardsBtn) {
-            cardsBtn.classList.toggle('active', isCards);
-            cardsBtn.setAttribute('aria-pressed', isCards ? 'true' : 'false');
-        }
-        try { localStorage.setItem(STORAGE_KEY, mode); } catch (e) {}
-    }
+  function updateCountLabel(isCards) {
+    if (!countLabel) return;
+    var n = isCards
+      ? (countLabel.getAttribute('data-card-count') || '0')
+      : (countLabel.getAttribute('data-list-count') || '0');
+    countLabel.textContent = 'Surveys (' + n + ' total)';
+  }
 
-    var saved = 'list';
-    try { saved = localStorage.getItem(STORAGE_KEY) || 'list'; } catch (e) {}
-    setView(saved === 'cards' ? 'cards' : 'list');
-
-    if (listBtn) listBtn.addEventListener('click', function () { setView('list'); });
-    if (cardsBtn) cardsBtn.addEventListener('click', function () { setView('cards'); });
-
-    document.querySelectorAll('.clickable-row').forEach(function (row) {
-        row.addEventListener('click', function (e) {
-            if (!e.target.closest('.btn-group') && !e.target.closest('a') && !e.target.closest('form') && !e.target.closest('button')) {
-                window.location = this.dataset.href;
-            }
-        });
-    });
-
+  function bindSurveyItemCards() {
     document.querySelectorAll('.survey-item-card').forEach(function (card) {
-        card.addEventListener('click', function (e) {
-            if (!e.target.closest('.survey-card-actions') && !e.target.closest('.btn-group') && !e.target.closest('form') && !e.target.closest('button')) {
-                window.location = this.dataset.href;
-            }
-        });
-        card.addEventListener('keydown', function (e) {
-            if (e.key === 'Enter' || e.key === ' ') {
-                e.preventDefault();
-                if (!e.target.closest('.survey-card-actions')) {
-                    window.location = this.dataset.href;
-                }
-            }
-        });
+      if (card.dataset.boundSurveyCard === '1') return;
+      card.dataset.boundSurveyCard = '1';
+      card.addEventListener('click', function (e) {
+        if (!e.target.closest('.survey-card-actions') && !e.target.closest('.btn-group') && !e.target.closest('form') && !e.target.closest('button')) {
+          window.location = this.dataset.href;
+        }
+      });
+      card.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          if (!e.target.closest('.survey-card-actions')) {
+            window.location = this.dataset.href;
+          }
+        }
+      });
     });
+  }
+
+  function bindClickableRows() {
+    document.querySelectorAll('.clickable-row').forEach(function (row) {
+      if (row.dataset.boundClickableRow === '1') return;
+      row.dataset.boundClickableRow = '1';
+      row.addEventListener('click', function (e) {
+        if (!e.target.closest('.btn-group') && !e.target.closest('a') && !e.target.closest('form') && !e.target.closest('button')) {
+          window.location = this.dataset.href;
+        }
+      });
+    });
+  }
+
+  function setView(mode) {
+    var isCards = mode === 'cards';
+    if (isCards && stripUrlFilterParam('status')) return;
+    if (pageRoot) pageRoot.classList.toggle('surveys-page--cards', isCards);
+    if (tableView) tableView.classList.toggle('d-none', isCards);
+    if (cardView) cardView.classList.toggle('d-none', !isCards);
+    if (statusFilterField) {
+      statusFilterField.classList.toggle('d-none', isCards);
+      statusFilterField.setAttribute('aria-hidden', isCards ? 'true' : 'false');
+    }
+    if (isCards && statusFilterSelect) {
+      statusFilterSelect.value = '';
+    }
+    if (listBtn) {
+      listBtn.classList.toggle('active', !isCards);
+      listBtn.setAttribute('aria-pressed', !isCards ? 'true' : 'false');
+    }
+    if (cardsBtn) {
+      cardsBtn.classList.toggle('active', isCards);
+      cardsBtn.setAttribute('aria-pressed', isCards ? 'true' : 'false');
+    }
+    updateCountLabel(isCards);
+    try { localStorage.setItem(STORAGE_KEY, mode); } catch (e) {}
+  }
+
+  var saved = 'list';
+  try { saved = localStorage.getItem(STORAGE_KEY) || 'list'; } catch (e) {}
+  bindSurveyItemCards();
+  bindClickableRows();
+  setView(saved === 'cards' ? 'cards' : 'list');
+
+  if (listBtn) listBtn.addEventListener('click', function () { setView('list'); });
+  if (cardsBtn) cardsBtn.addEventListener('click', function () { setView('cards'); });
 })();
+</script>
+<script>
+(function () {
+  window.crmSurveyApplyListToolbarState = function () {};
+  window.crmSurveyApplyCurrentColumnSelections = function () {};
+  window.crmSurveyColumnVisibilityState = window.crmSurveyColumnVisibilityState || {};
+
+  window.destroyCrmSurveyDataTables = function destroyCrmSurveyDataTables() {
+    if (!window.jQuery || !window.jQuery.fn || !window.jQuery.fn.dataTable) return;
+    var $ = window.jQuery;
+    ['#crmSurveyTable', '#crmSurveyExportTable'].forEach(function (sel) {
+      if ($.fn.dataTable.isDataTable(sel)) {
+        try {
+          $(sel).DataTable().destroy();
+        } catch (e) {
+          /* table may already be detached */
+        }
+      }
+    });
+  };
+
+  window.initializeCrmSurveyPage = function initializeCrmSurveyPage() {
+    if (typeof window.initCrmSurveyDataTables === 'function') {
+      window.initCrmSurveyDataTables();
+    }
+
+    bindClickableRowsForSurveyPage();
+    bindSurveyItemCardsForSurveyPage();
+
+    (function attachCrmSurveyListToolbar() {
+      var rowsSelect = document.getElementById('crmSurveyRowsPerPage');
+      var searchInput = document.getElementById('crmSurveyTableSearchInput');
+      var refreshBtn = document.getElementById('crmRefreshSurveyTableBtn');
+      var table = document.getElementById('crmSurveyTable');
+      var columnToggleBtn = document.getElementById('crmSurveyColumnToggleBtn');
+      var columnMenu = document.getElementById('crmSurveyColumnMenu');
+      var columnMenuWrap = document.getElementById('crmSurveyColumnMenuWrap');
+      if (!table || !rowsSelect || !searchInput) return;
+      if (rowsSelect.dataset.toolbarBound === '1') return;
+      rowsSelect.dataset.toolbarBound = '1';
+
+      function applyCurrentColumnSelections() {
+        document.querySelectorAll('.crm-survey-col-toggle').forEach(function (cb) {
+          var colIdx = parseInt(cb.getAttribute('data-col'), 10);
+          if (isNaN(colIdx)) return;
+          var key = String(colIdx);
+          if (Object.prototype.hasOwnProperty.call(window.crmSurveyColumnVisibilityState, key)) {
+            cb.checked = !!window.crmSurveyColumnVisibilityState[key];
+          } else {
+            window.crmSurveyColumnVisibilityState[key] = !!cb.checked;
+          }
+          setColumnVisible(colIdx, !!cb.checked);
+        });
+      }
+
+      function setColumnVisible(colIdx, visible) {
+        var selectors = ['#crmSurveyTable', '#crmSurveyExportTable'];
+        selectors.forEach(function (sel) {
+          if (window.jQuery && window.jQuery.fn && window.jQuery.fn.dataTable && window.jQuery.fn.dataTable.isDataTable(sel)) {
+            try {
+              var dt = window.jQuery(sel).DataTable();
+              dt.column(colIdx).visible(!!visible, false);
+              dt.columns.adjust().draw(false);
+              return;
+            } catch (e) {
+              /* fallback below */
+            }
+          }
+          var tableEl = document.querySelector(sel);
+          if (!tableEl) return;
+          var headRow = tableEl.querySelector('thead tr');
+          if (headRow && headRow.children[colIdx]) {
+            headRow.children[colIdx].style.display = visible ? '' : 'none';
+          }
+          tableEl.querySelectorAll('tbody tr').forEach(function (row) {
+            if (row.children && row.children[colIdx]) {
+              row.children[colIdx].style.display = visible ? '' : 'none';
+            }
+          });
+        });
+      }
+
+      function syncSurveyListPagination(doc) {
+        var listCard = document.getElementById('surveys-list-card');
+        if (!listCard) return;
+
+        var newPagination = doc.querySelector('#surveys-list-card .surveys-list-pagination')
+          || doc.querySelector('.surveys-list-pagination');
+        var oldPagination = listCard.querySelector('.surveys-list-pagination');
+
+        if (newPagination) {
+          if (oldPagination) {
+            oldPagination.outerHTML = newPagination.outerHTML;
+          } else {
+            listCard.insertAdjacentHTML('beforeend', newPagination.outerHTML);
+          }
+        }
+      }
+
+      function fetchAndReplaceTable(params, focusSearchAfterUpdate) {
+        var queryString = params.toString();
+        var targetUrl = window.location.pathname + (queryString ? ('?' + queryString) : '');
+        var fetchUrl = targetUrl + (targetUrl.indexOf('?') >= 0 ? '&' : '?') + '_refresh_ts=' + Date.now();
+        return fetch(fetchUrl, {
+            credentials: 'same-origin',
+            cache: 'no-store',
+            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+          })
+          .then(function (resp) { return resp.text(); })
+          .then(function (html) {
+            var parser = new DOMParser();
+            var doc = parser.parseFromString(html, 'text/html');
+            var newTableWrap = doc.querySelector('#crmSurveyTable') ? doc.querySelector('#crmSurveyTable').closest('.table-responsive') : null;
+            var oldTableWrap = document.querySelector('#crmSurveyTable') ? document.querySelector('#crmSurveyTable').closest('.table-responsive') : null;
+            var newExportTable = doc.getElementById('crmSurveyExportTable');
+            var oldExportTable = document.getElementById('crmSurveyExportTable');
+            var newCountLabel = doc.querySelector('.surveys-list-count-label');
+            var oldCountLabel = document.querySelector('.surveys-list-count-label');
+
+            if (typeof window.destroyCrmSurveyDataTables === 'function') {
+              window.destroyCrmSurveyDataTables();
+            }
+            if (newTableWrap && oldTableWrap) oldTableWrap.outerHTML = newTableWrap.outerHTML;
+            if (newExportTable && oldExportTable) oldExportTable.outerHTML = newExportTable.outerHTML;
+            if (newCountLabel && oldCountLabel) {
+              oldCountLabel.setAttribute('data-list-count', newCountLabel.getAttribute('data-list-count') || '0');
+              oldCountLabel.setAttribute('data-card-count', newCountLabel.getAttribute('data-card-count') || '0');
+              var isCards = document.getElementById('surveys-page-root') && document.getElementById('surveys-page-root').classList.contains('surveys-page--cards');
+              var n = isCards
+                ? (oldCountLabel.getAttribute('data-card-count') || '0')
+                : (oldCountLabel.getAttribute('data-list-count') || '0');
+              oldCountLabel.textContent = 'Surveys (' + n + ' total)';
+            }
+            syncSurveyListPagination(doc);
+            applyCurrentColumnSelections();
+
+            if (focusSearchAfterUpdate) {
+              searchInput.focus();
+              var v = searchInput.value || '';
+              searchInput.setSelectionRange(v.length, v.length);
+            }
+            window.history.replaceState({}, '', targetUrl);
+            initializeCrmSurveyPage();
+            if (typeof window.crmSurveyApplyCurrentColumnSelections === 'function') {
+              window.crmSurveyApplyCurrentColumnSelections();
+            }
+            var tableCard = document.querySelector('#crmSurveyTable');
+            if (tableCard && tableCard.scrollIntoView) {
+              tableCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+          })
+          .catch(function () {
+            alert('Failed to refresh table. Please try again.');
+          });
+      }
+
+      var listCardRoot = document.getElementById('surveys-list-card');
+      if (listCardRoot && listCardRoot.dataset.paginationBound !== '1') {
+        listCardRoot.dataset.paginationBound = '1';
+        listCardRoot.addEventListener('click', function (e) {
+          var link = e.target.closest('.surveys-list-pagination a.page-link[href]');
+          if (!link) return;
+          var pageItem = link.closest('.page-item');
+          if (pageItem && pageItem.classList.contains('disabled')) return;
+          if (link.classList.contains('page-link') && link.tagName === 'SPAN') return;
+          e.preventDefault();
+          try {
+            var linkUrl = new URL(link.getAttribute('href'), window.location.origin);
+            var params = new URLSearchParams(linkUrl.search);
+            if (rowsSelect) {
+              params.set('per_page', rowsSelect.value || '20');
+            }
+            fetchAndReplaceTable(params, false);
+          } catch (err) {
+            window.location.href = link.getAttribute('href');
+          }
+        });
+      }
+
+      rowsSelect.addEventListener('change', function () {
+        var params = new URLSearchParams(window.location.search || '');
+        params.set('per_page', rowsSelect.value || '20');
+        params.delete('page');
+        fetchAndReplaceTable(params, false);
+      });
+
+      var searchDebounceTimer = null;
+      searchInput.addEventListener('input', function () {
+        if (searchDebounceTimer) {
+          clearTimeout(searchDebounceTimer);
+        }
+        searchDebounceTimer = setTimeout(function () {
+          var params = new URLSearchParams(window.location.search || '');
+          var val = (searchInput.value || '').trim();
+          if (val) {
+            params.set('q', val);
+          } else {
+            params.delete('q');
+          }
+          params.set('per_page', rowsSelect.value || '20');
+          params.delete('page');
+          fetchAndReplaceTable(params, true);
+        }, 350);
+      });
+
+      if (refreshBtn) {
+        refreshBtn.addEventListener('click', function () {
+          window.crmSurveyColumnVisibilityState = {};
+          document.querySelectorAll('.crm-survey-col-toggle').forEach(function (cb) {
+            cb.checked = true;
+          });
+
+          var params = new URLSearchParams(window.location.search || '');
+          params.set('per_page', rowsSelect.value || '20');
+          var qVal = (searchInput.value || '').trim();
+          if (qVal) {
+            params.set('q', qVal);
+          } else {
+            params.delete('q');
+          }
+          refreshBtn.disabled = true;
+          var oldText = refreshBtn.textContent;
+          refreshBtn.textContent = 'Refreshing...';
+          fetchAndReplaceTable(params, false).finally(function () {
+            refreshBtn.disabled = false;
+            refreshBtn.textContent = oldText || 'Refresh';
+          });
+        });
+      }
+
+      if (columnToggleBtn && columnMenu) {
+        columnToggleBtn.addEventListener('click', function (e) {
+          e.stopPropagation();
+          if (window.jQuery && window.jQuery.fn && window.jQuery.fn.dataTable && window.jQuery.fn.dataTable.isDataTable('#crmSurveyTable')) {
+            var wrap = window.jQuery('#crmSurveyTable').closest('.dataTables_wrapper');
+            var openBtn = wrap.find('.columnFilterOpenBtn').first();
+            if (openBtn.length) {
+              openBtn.trigger('click');
+              return;
+            }
+          }
+          columnMenu.style.display = columnMenu.style.display === 'none' ? 'block' : 'none';
+        });
+        document.addEventListener('click', function (e) {
+          if (!columnMenuWrap || !columnMenuWrap.contains(e.target)) {
+            columnMenu.style.display = 'none';
+          }
+        });
+      }
+
+      document.querySelectorAll('.crm-survey-col-toggle').forEach(function (cb) {
+        cb.addEventListener('change', function () {
+          var colIdx = parseInt(this.getAttribute('data-col'), 10);
+          if (isNaN(colIdx)) return;
+          window.crmSurveyColumnVisibilityState[String(colIdx)] = !!this.checked;
+          setColumnVisible(colIdx, !!this.checked);
+        });
+      });
+
+      window.crmSurveyApplyListToolbarState = function () {};
+      window.crmSurveyApplyCurrentColumnSelections = applyCurrentColumnSelections;
+      applyCurrentColumnSelections();
+    })();
+  };
+
+  function bindClickableRowsForSurveyPage() {
+    document.querySelectorAll('.clickable-row').forEach(function (row) {
+      if (row.dataset.boundClickableRow === '1') return;
+      row.dataset.boundClickableRow = '1';
+      row.addEventListener('click', function (e) {
+        if (!e.target.closest('.btn-group') && !e.target.closest('a') && !e.target.closest('form') && !e.target.closest('button')) {
+          window.location = this.dataset.href;
+        }
+      });
+    });
+  }
+
+  function bindSurveyItemCardsForSurveyPage() {
+    document.querySelectorAll('.survey-item-card').forEach(function (card) {
+      if (card.dataset.boundSurveyCard === '1') return;
+      card.dataset.boundSurveyCard = '1';
+      card.addEventListener('click', function (e) {
+        if (!e.target.closest('.survey-card-actions') && !e.target.closest('.btn-group') && !e.target.closest('form') && !e.target.closest('button')) {
+          window.location = this.dataset.href;
+        }
+      });
+      card.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          if (!e.target.closest('.survey-card-actions')) {
+            window.location = this.dataset.href;
+          }
+        }
+      });
+    });
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initializeCrmSurveyPage);
+  } else {
+    initializeCrmSurveyPage();
+  }
+})();
+</script>
+
+<script>window.LIST_PAGE_EXPORT_LOGO_PATH = "{% static 'images/db_logo_200.png' %}";</script>
+<script src="https://cdn.datatables.net/1.13.8/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.8/js/dataTables.bootstrap5.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.0/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.4.0/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.16/jspdf.plugin.autotable.min.js"></script>
+<script src="{% static 'js/list_page_export.js' %}"></script>
+<script>
+  window.initCrmSurveyDataTables = function initCrmSurveyDataTables() {
+    if (!window.jQuery || !window.jQuery.fn || !window.jQuery.fn.dataTable) return;
+    var $ = window.jQuery;
+    $.fn.dataTable.ext.errMode = 'none';
+
+    var $main = $('#crmSurveyTable');
+    if ($main.length && !$main.find('tbody tr.crm-empty-row').length) {
+      if (!$.fn.dataTable.isDataTable('#crmSurveyTable')) {
+        var crmDt = $main.DataTable({
+          paging: false,
+          info: false,
+          searching: false,
+          ordering: true,
+          order: [],
+          columnDefs: [{ orderable: false, targets: [6] }]
+        });
+        if (typeof window.attachGlobalDatatableTools === 'function') {
+          window.attachGlobalDatatableTools(crmDt);
+        }
+      }
+    }
+
+    if ($('#crmSurveyExportTable').length && !$.fn.dataTable.isDataTable('#crmSurveyExportTable')) {
+      $('#crmSurveyExportTable').DataTable({
+        paging: false,
+        info: false,
+        searching: false,
+        ordering: true,
+        order: []
+      });
+    }
+  };
+
+  window.crmSyncSurveyExportTable = function crmSyncSurveyExportTable(done) {
+    var callback = typeof done === 'function' ? done : function () {};
+    var params = new URLSearchParams(window.location.search || '');
+    params.set('per_page', 'all');
+    params.delete('page');
+    var queryString = params.toString();
+    var targetUrl = window.location.pathname + (queryString ? ('?' + queryString) : '');
+    var fetchUrl = targetUrl + (targetUrl.indexOf('?') >= 0 ? '&' : '?') + '_export_sync=' + Date.now();
+
+    fetch(fetchUrl, {
+      credentials: 'same-origin',
+      cache: 'no-store',
+      headers: { 'X-Requested-With': 'XMLHttpRequest' }
+    })
+      .then(function (resp) { return resp.text(); })
+      .then(function (html) {
+        var doc = new DOMParser().parseFromString(html, 'text/html');
+        var newTable = doc.getElementById('crmSurveyExportTable');
+        var oldTable = document.getElementById('crmSurveyExportTable');
+        if (!newTable || !oldTable) {
+          callback();
+          return;
+        }
+        if (window.jQuery && window.jQuery.fn && window.jQuery.fn.dataTable && window.jQuery.fn.dataTable.isDataTable('#crmSurveyExportTable')) {
+          try {
+            window.jQuery('#crmSurveyExportTable').DataTable().destroy();
+          } catch (e) {
+            /* ignore */
+          }
+        }
+        oldTable.outerHTML = newTable.outerHTML;
+        if (window.jQuery && window.jQuery.fn && window.jQuery.fn.dataTable) {
+          window.jQuery('#crmSurveyExportTable').DataTable({
+            paging: false,
+            info: false,
+            searching: false,
+            ordering: true,
+            order: []
+          });
+        }
+        callback();
+      })
+      .catch(function () {
+        callback();
+      });
+  };
+
+  if (typeof window.initializeCrmSurveyPage === 'function') {
+    window.initializeCrmSurveyPage();
+  } else {
+    window.initCrmSurveyDataTables();
+  }
+
+  ListPageExport.register({
+    apiPrefix: 'crmSurveyList',
+    tableSelector: '#crmSurveyExportTable',
+    prepareExport: function (done) {
+      window.crmSyncSurveyExportTable(done);
+    },
+    pdfFilename: 'crm_survey_list.pdf',
+    excelFilename: 'crm_survey_list.xlsx',
+    excelSheetName: 'CRMSurveyList',
+    printDocumentTitle: 'Site Surveys List',
+    pdfCaption: 'Site Surveys List',
+    pdfEmbedUnicodeFont: true,
+    excludeHeader: function (label) {
+      var h = (label || '').trim().toLowerCase();
+      return h === 'action' || h === 'actions';
+    }
+  });
 </script>
 {% endblock %}

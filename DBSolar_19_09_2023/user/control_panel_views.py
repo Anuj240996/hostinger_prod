@@ -11,7 +11,7 @@ from django.views.decorators.csrf import csrf_protect
 from django.db import transaction
 from django.contrib.auth import hashers
 from django.utils import timezone
-from django.urls import reverse
+from django.utils.http import url_has_allowed_host_and_scheme
 import json
 import secrets
 from collections import OrderedDict
@@ -77,6 +77,9 @@ def control_panel_login(request):
             access_config.save()
             
             messages.success(request, 'Access granted to Control Panel')
+            next_url = request.POST.get('next') or request.GET.get('next')
+            if next_url and url_has_allowed_host_and_scheme(next_url, allowed_hosts={request.get_host()}):
+                return redirect(next_url)
             return redirect('user:control_panel_home')
         else:
             messages.error(request, 'Invalid password. Access denied.')

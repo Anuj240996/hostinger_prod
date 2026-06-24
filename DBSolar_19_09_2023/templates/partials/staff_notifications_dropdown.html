@@ -1,0 +1,52 @@
+{% load humanize %}
+{% load custom_filters %}
+<div class="dropdown me-3 crm-noti-dropdown" id="staffNotiDropdownRoot">
+    <button class="btn btn-outline-secondary position-relative" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Notifications" data-staff-noti-bell>
+        <i class="far fa-bell{% if count1 > 0 %} fa-shake{% endif %}"></i>
+        <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-warning text-dark" data-staff-noti-badge{% if count1 <= 0 %} hidden{% endif %}>
+            {% if count1 > 9 %}9<sup style="font-size: 100%;">+</sup>{% elif count1 > 0 %}{{ count1 }}{% endif %}
+        </span>
+    </button>
+    <div class="dropdown-menu dropdown-menu-end notification-dropdown">
+        <div class="d-flex justify-content-between align-items-center px-3 py-2 border-bottom">
+            <span class="fw-semibold">Notifications</span>
+            <a href="{% url 'dashboard-mark-all-notifications-read' %}" class="clear-noti small text-decoration-none js-staff-noti-clear-all">Clear All</a>
+        </div>
+        <div class="noti-content">
+            <ul class="list-unstyled mb-0" data-staff-noti-list>
+                {% for item in notification1 %}
+                <li data-notification-id="{{ item.id }}">
+                    <a href="{% url 'dashboard-open-notification' pk=item.id %}"
+                       class="dropdown-item js-staff-noti-open"
+                       data-notification-id="{{ item.id }}">
+                        <div class="d-flex align-items-start gap-2">
+                            {% if item.sender %}
+                            <img class="rounded-circle flex-shrink-0" src="{{ item.sender.profile|profile_image_url }}" width="36" height="36" alt="{{ item.sender.username }}">
+                            {% else %}
+                            <span class="rounded-circle bg-light d-inline-flex align-items-center justify-content-center flex-shrink-0" style="width:36px;height:36px;">
+                                <i class="fas fa-user text-muted"></i>
+                            </span>
+                            {% endif %}
+                            <div class="min-w-0">
+                                <p class="mb-1 small">
+                                    {% if item.sender %}
+                                    <span class="fw-bold">{{ item.sender.first_name|default:item.sender.username }}</span> has sent you<br>
+                                    {% endif %}
+                                    <span>{{ item.message }}</span>
+                                </p>
+                                <p class="mb-0 text-muted small">{{ item.created_at|naturaltime }}</p>
+                            </div>
+                        </div>
+                    </a>
+                </li>
+                {% endfor %}
+                <li{% if notification1 %} hidden{% endif %} data-staff-noti-empty>
+                    <span class="dropdown-item text-muted">No notifications</span>
+                </li>
+            </ul>
+        </div>
+        <div class="border-top text-center py-2">
+            <a href="{% url 'dashboard-notification' %}" class="small text-decoration-none">View All Notifications</a>
+        </div>
+    </div>
+</div>

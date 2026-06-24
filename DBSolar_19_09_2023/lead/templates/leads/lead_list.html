@@ -1,12 +1,49 @@
 {% extends 'base.html' %}
 {% load humanize %}
 {% load humanize indian_numbers %}
-
+{% load static %}
 
 {% block title %}Leads - Solar CRM{% endblock %}
 
-{% block content %}
+{% block extra_css %}
+{% include 'dashboard/legacy_kpi_card_styles.html' %}
 <style>
+  html, body { overflow-x: hidden; }
+  .leads-page { width: 100%; max-width: 100%; overflow-x: hidden; }
+  .leads-page .card, .leads-page .card-body { min-width: 0; }
+  .leads-page .table-responsive {
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  #crmLeadTable { width: 100% !important; table-layout: auto; }
+  .leads-page.crm-legacy-kpi-cards .card.my-card .card-body { padding: 0.7rem 0.8rem; }
+  .leads-page.crm-legacy-kpi-cards .db-widgets { justify-content: center; }
+  .leads-page.crm-legacy-kpi-cards .db-info { text-align: center; width: 100%; }
+  .leads-page.crm-legacy-kpi-cards .db-info h3 {
+    font-size: clamp(1rem, 1.75vw, 1.28rem);
+    margin-bottom: 0.25rem;
+    line-height: 1.2;
+  }
+  .leads-page.crm-legacy-kpi-cards .db-info h6 {
+    font-size: 1rem;
+    font-weight: 500;
+    line-height: 1.35;
+    color: #444;
+  }
+  .leads-page .leads-kpi-row { width: 100%; }
+  @media (min-width: 1200px) {
+    .leads-page .leads-kpi-row > .col {
+      flex: 1 1 0;
+      min-width: 0;
+      max-width: none;
+    }
+  }
+  .leads-page--cards .leads-list-toolbar,
+  .leads-page--cards .leads-list-pagination {
+    display: none !important;
+  }
+  .leads-list-pagination { background: #fff; }
     .leads-page .lead-row-title {
         font-weight: 600;
         margin-bottom: 5px;
@@ -69,30 +106,44 @@
         display: none !important;
     }
 
-    .leads-page--cards .leads-list-pagination {
-        display: none !important;
-    }
-
-    /* Stage columns: horizontal board, cards stacked vertically in each column */
+    /* Stage columns: full-width horizontal board */
     .lead-stage-board {
         display: flex;
         flex-direction: row;
-        align-items: flex-start;
-        gap: 1rem;
-        overflow-x: auto;
+        align-items: stretch;
+        gap: 0.75rem;
         padding: 1rem;
         min-height: 420px;
+        width: 100%;
+        box-sizing: border-box;
+    }
+
+    .leads-page--cards #leads-card-view,
+    .leads-page--cards .lead-stage-board {
+        width: 100%;
+        max-width: 100%;
     }
 
     .lead-stage-column {
-        flex: 0 0 260px;
-        min-width: 260px;
+        flex: 1 1 0;
+        min-width: 0;
         max-height: calc(100vh - 260px);
         background: #f8f9fa;
         border-radius: 10px;
         display: flex;
         flex-direction: column;
         border-top: 3px solid #dee2e6;
+    }
+
+    @media (max-width: 991.98px) {
+        .lead-stage-board {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+        .lead-stage-column {
+            flex: 0 0 240px;
+            min-width: 240px;
+        }
     }
 
     .lead-stage-column.stage-new { border-top-color: #0d6efd; }
@@ -427,14 +478,112 @@
         display: none !important;
     }
 </style>
-<div class="leads-page" id="leads-page-root">
+{% endblock %}
+
+{% block content %}
+<div class="leads-page crm-legacy-kpi-cards" id="leads-page-root">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h2>Leads Management</h2>
-        <a href="{% url 'lead_create' %}" class="btn btn-primary">
-            <i class="fas fa-plus me-2"></i>Add New Lead
-        </a>
+        <div class="d-flex align-items-center gap-2 flex-wrap justify-content-end">
+            <div class="dt-buttons btn-group flex-wrap">
+                <a href="#" class="btn btn-primary" onclick="crmLeadListGeneratePDF(); return false;" title="PDF"><i class="fas fa-file-pdf" style="font-size: 1.05rem;"></i></a>
+                <a href="#" class="btn btn-primary" onclick="crmLeadListGenerateExcel(); return false;" title="Excel"><i class="fas fa-file-excel" style="font-size: 1.05rem;"></i></a>
+                <a href="#" class="btn btn-primary" onclick="crmLeadListCopyToClipboard(); return false;" title="Copy"><i class="fas fa-copy"></i></a>
+                <a href="#" class="btn btn-primary" onclick="crmLeadListPrintTable(); return false;" title="Print"><i class="fas fa-print"></i></a>
+            </div>
+            <a href="{% url 'lead_create' %}" class="btn btn-primary">
+                <i class="fas fa-plus me-2"></i>Add New Lead
+            </a>
+        </div>
     </div>
-    
+
+    <div class="row row-cols-1 row-cols-sm-2 row-cols-lg-3 row-cols-xl-6 g-3 mb-4 leads-kpi-row">
+        <div class="col d-flex">
+            <div class="card bg-two w-100 my-card shadow">
+                <a class="text-decoration-none text-dark kpi-card-link" href="{{ kpi_url_total }}">
+                    <div class="card-body">
+                        <div class="db-widgets d-flex justify-content-center align-items-center">
+                            <div class="db-info">
+                                <h3>{{ leads_total_count|default:0 }}</h3>
+                                <h6>Total Leads</h6>
+                            </div>
+                        </div>
+                    </div>
+                </a>
+            </div>
+        </div>
+        <div class="col d-flex">
+            <div class="card bg-three w-100 my-card shadow">
+                <a class="text-decoration-none text-dark kpi-card-link" href="{{ kpi_url_new }}">
+                    <div class="card-body">
+                        <div class="db-widgets d-flex justify-content-center align-items-center">
+                            <div class="db-info">
+                                <h3>{{ new_count|default:0 }}</h3>
+                                <h6>New Lead</h6>
+                            </div>
+                        </div>
+                    </div>
+                </a>
+            </div>
+        </div>
+        <div class="col d-flex">
+            <div class="card bg-five w-100 my-card shadow">
+                <a class="text-decoration-none text-dark kpi-card-link" href="{{ kpi_url_survey }}">
+                    <div class="card-body">
+                        <div class="db-widgets d-flex justify-content-center align-items-center">
+                            <div class="db-info">
+                                <h3>{{ survey_count|default:0 }}</h3>
+                                <h6>Survey</h6>
+                            </div>
+                        </div>
+                    </div>
+                </a>
+            </div>
+        </div>
+        <div class="col d-flex">
+            <div class="card bg-four w-100 my-card shadow">
+                <a class="text-decoration-none text-dark kpi-card-link" href="{{ kpi_url_quote }}">
+                    <div class="card-body">
+                        <div class="db-widgets d-flex justify-content-center align-items-center">
+                            <div class="db-info">
+                                <h3>{{ quote_count|default:0 }}</h3>
+                                <h6>Quotation</h6>
+                            </div>
+                        </div>
+                    </div>
+                </a>
+            </div>
+        </div>
+        <div class="col d-flex">
+            <div class="card bg-one w-100 my-card shadow">
+                <a class="text-decoration-none text-dark kpi-card-link" href="{{ kpi_url_won }}">
+                    <div class="card-body">
+                        <div class="db-widgets d-flex justify-content-center align-items-center">
+                            <div class="db-info">
+                                <h3>{{ won_count|default:0 }}</h3>
+                                <h6>Won</h6>
+                            </div>
+                        </div>
+                    </div>
+                </a>
+            </div>
+        </div>
+        <div class="col d-flex">
+            <div class="card bg-six w-100 my-card shadow">
+                <a class="text-decoration-none text-dark kpi-card-link" href="{{ kpi_url_lost }}">
+                    <div class="card-body">
+                        <div class="db-widgets d-flex justify-content-center align-items-center">
+                            <div class="db-info">
+                                <h3>{{ lost_count|default:0 }}</h3>
+                                <h6>Lost</h6>
+                            </div>
+                        </div>
+                    </div>
+                </a>
+            </div>
+        </div>
+    </div>
+
     <div class="row leads-layout-row">
         <!-- Filters -->
         <div class="col-md-3 leads-filters-col">
@@ -444,6 +593,8 @@
                 </div>
                 <div class="card-body">
                     <form method="get" id="filter-form">
+                        {% if search_query %}<input type="hidden" name="q" value="{{ search_query }}" id="filter-form-q">{% endif %}
+                        {% if request.GET.per_page %}<input type="hidden" name="per_page" value="{{ request.GET.per_page }}">{% endif %}
                         <div class="mb-3 filter-field">
                             <label class="form-label">Date Range</label>
                             <select name="date_range" class="form-select" onchange="this.form.submit()">
@@ -521,33 +672,66 @@
         
         <!-- Right Panel - Lead List -->
         <div class="col-md-9 leads-content-col">
-            <div class="card">
+            <div class="card" id="leads-list-card">
                 <div class="card-header">
                     <div class="d-flex justify-content-between align-items-center">
-                        <h5 class="mb-0">Leads ({{ page_obj.paginator.count }} total)</h5>
-                        <div class="d-flex align-items-center gap-2 flex-wrap justify-content-end">
-                            <div class="btn-group btn-group-sm leads-view-toggle" role="group" aria-label="Lead list view">
-                                <button type="button" class="btn btn-outline-secondary active" id="leads-view-list" title="Table view" aria-pressed="true">
-                                    <i class="fas fa-list"></i>
-                                </button>
-                                <button type="button" class="btn btn-outline-secondary" id="leads-view-cards" title="Card view" aria-pressed="false">
-                                    <i class="fas fa-th-large"></i>
-                                </button>
-                            </div>
-                            <a href="{% url 'lead_export' %}?{{ request.GET.urlencode }}" class="btn btn-outline-secondary btn-sm">
-                                <i class="fas fa-download me-1"></i>Export
-                            </a>
+                        <h5 class="mb-0">
+                            <span class="leads-list-count-label"
+                                  data-list-count="{{ page_obj.paginator.count|default:leads_total_count }}"
+                                  data-card-count="{{ board_leads_count|default:leads_total_count }}">
+                                Leads ({{ page_obj.paginator.count|default:leads_total_count }} total)
+                            </span>
+                        </h5>
+                        <div class="btn-group btn-group-sm leads-view-toggle" role="group" aria-label="Lead list view">
+                            <button type="button" class="btn btn-outline-secondary active" id="leads-view-list" title="Table view" aria-pressed="true">
+                                <i class="fas fa-list"></i>
+                            </button>
+                            <button type="button" class="btn btn-outline-secondary" id="leads-view-cards" title="Card view" aria-pressed="false">
+                                <i class="fas fa-th-large"></i>
+                            </button>
                         </div>
                     </div>
                 </div>
                 <div class="card-body p-0">
                     <div id="leads-table-view" class="leads-view-panel">
+                    <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 px-3 py-3 border-bottom leads-list-toolbar">
+                        <div class="d-flex align-items-center gap-2 flex-wrap">
+                            <label for="crmLeadRowsPerPage" class="mb-0 small text-muted">Show</label>
+                            <select id="crmLeadRowsPerPage" class="form-select form-select-sm" style="width:auto;">
+                                <option value="10" {% if request.GET.per_page == '10' %}selected{% endif %}>10</option>
+                                <option value="20" {% if not request.GET.per_page or request.GET.per_page == '20' %}selected{% endif %}>20</option>
+                                <option value="50" {% if request.GET.per_page == '50' %}selected{% endif %}>50</option>
+                                <option value="all" {% if request.GET.per_page == 'all' %}selected{% endif %}>All</option>
+                            </select>
+                            <span class="small text-muted">rows</span>
+                            <div class="position-relative" id="crmLeadColumnMenuWrap">
+                                <button type="button" class="btn btn-outline-secondary btn-sm" id="crmLeadColumnToggleBtn">Columns</button>
+                                <div id="crmLeadColumnMenu" class="card shadow-sm p-2" style="display:none; position:absolute; z-index:20; min-width:220px; top:38px; left:0;">
+                                    <label class="form-check mb-1"><input class="form-check-input crm-lead-col-toggle" type="checkbox" data-col="0" checked> <span class="form-check-label">Lead Name</span></label>
+                                    <label class="form-check mb-1"><input class="form-check-input crm-lead-col-toggle" type="checkbox" data-col="1" checked> <span class="form-check-label">Phone</span></label>
+                                    <label class="form-check mb-1"><input class="form-check-input crm-lead-col-toggle" type="checkbox" data-col="2" checked> <span class="form-check-label">Location</span></label>
+                                    <label class="form-check mb-1"><input class="form-check-input crm-lead-col-toggle" type="checkbox" data-col="3" checked> <span class="form-check-label">Electricity Bill</span></label>
+                                    <label class="form-check mb-1"><input class="form-check-input crm-lead-col-toggle" type="checkbox" data-col="4" checked> <span class="form-check-label">Property Type</span></label>
+                                    <label class="form-check mb-1"><input class="form-check-input crm-lead-col-toggle" type="checkbox" data-col="5" checked> <span class="form-check-label">Score</span></label>
+                                    <label class="form-check mb-1"><input class="form-check-input crm-lead-col-toggle" type="checkbox" data-col="6" checked> <span class="form-check-label">Stage</span></label>
+                                    <label class="form-check mb-1"><input class="form-check-input crm-lead-col-toggle" type="checkbox" data-col="7" checked> <span class="form-check-label">Assigned To</span></label>
+                                    <label class="form-check mb-1"><input class="form-check-input crm-lead-col-toggle" type="checkbox" data-col="8" checked> <span class="form-check-label">Next Follow-up</span></label>
+                                    <label class="form-check mb-1"><input class="form-check-input crm-lead-col-toggle" type="checkbox" data-col="9" checked> <span class="form-check-label">Created Date</span></label>
+                                    <label class="form-check mb-0"><input class="form-check-input crm-lead-col-toggle" type="checkbox" data-col="10" checked> <span class="form-check-label">Actions</span></label>
+                                </div>
+                            </div>
+                            <button type="button" class="btn btn-outline-secondary btn-sm" id="crmRefreshLeadTableBtn">Refresh</button>
+                        </div>
+                        <div>
+                            <input type="text" id="crmLeadTableSearchInput" class="form-control form-control-sm" style="min-width:260px;" placeholder="Search all records..." value="{{ search_query|default:'' }}">
+                        </div>
+                    </div>
                     <div class="table-responsive">
-                        <table class="table table-hover align-middle mb-0">
+                        <table class="table table-hover align-middle mb-0" id="crmLeadTable">
                             <thead class="bg-light">
                                 <tr>
-                                    <th colspan="3">Name</th>
-<!--                                    <th>Phone</th>-->
+                                    <th>Lead Name</th>
+                                    <th>Phone</th>
                                     <th>Location</th>
                                     <th>Electricity Bill</th>
                                     <th>Property Type</th>
@@ -556,31 +740,21 @@
                                     <th>Assigned To</th>
                                     <th>Next Follow-up</th>
                                     <th>Created Date</th>
-                                    <th>Actions</th>
+                                    <th class="text-center">Actions</th>
                                 </tr>
                             </thead>
-                            <tbody>
+                            <tbody id="crmLeadTableBody">
                                 {% for lead in leads %}
-                                <tr class="clickable-row" data-href="/new-lead/leads/{{ lead.id }}/">
-<!--                                    <td colspan="3">-->
-<!--                                        <strong>{{ lead.name }}<br><small>{{ lead.phone }}</small></strong>-->
-<!--                                    </td>-->
-                                    <td colspan="3">
-     <div class="lead-row-title">{{ lead.name }}</div>
-                            <div class="lead-row-subtitle">{{ lead.phone }}</div>
-</td>
-<!--                                    <td>{{ lead.phone }}</td>-->
-                                    <td>{{ lead.city }}</td>
-                                    <td>{{ lead.electricity_bill|default:'-'|indian_currency }}</td>
-                                    <td>{{ lead.get_property_type_display }}</td>
+                                <tr class="crm-lead-row clickable-row" data-href="{% url 'lead_detail' lead.id %}">
+                                    <td class="lead-row-title">{{ lead.name }}</td>
+                                    <td class="lead-row-subtitle">{{ lead.phone|default:"—" }}</td>
+                                    <td>{{ lead.city|default:"—" }}</td>
+                                    <td>{{ lead.electricity_bill|default:'—'|indian_currency }}</td>
+                                    <td>{{ lead.get_property_type_display|default:"—" }}</td>
                                     <td>
-                                        <span class="badge score-{{ lead.score }}">
-                                            {{ lead.get_score_display }}
-                                        </span>
+                                        <span class="badge score-{{ lead.score }}">{{ lead.get_score_display }}</span>
                                     </td>
-                                    <td>
-                                        {% include 'leads/_lead_list_status_badge.html' %}
-                                    </td>
+                                    <td>{% include 'leads/_lead_list_status_badge.html' %}</td>
                                     <td>{{ lead.assigned_to.get_full_name|default:'Unassigned' }}</td>
                                     <td>
                                         {% if lead.next_followup %}
@@ -588,27 +762,22 @@
                                         {% if lead.next_followup < now %}
                                         <span class="badge bg-danger">Overdue</span>
                                         {% endif %}
-                                        {% else %}
-                                        -
-                                        {% endif %}
+                                        {% else %}—{% endif %}
                                     </td>
                                     <td>{{ lead.created|date:'d M Y' }}</td>
-                                    <td>
-                                        <div class="btn-group btn-group-sm">
-                                            <a href="/new-lead/leads/{{ lead.id }}/" class="btn btn-outline-primary">
-                                                <i class="fas fa-eye"></i>
-                                            </a>
-                                            <a href="/new-lead/leads/{{ lead.id }}/edit/" class="btn btn-outline-secondary">
-                                                <i class="fas fa-edit"></i>
-                                            </a>
+                                    <td class="text-center text-nowrap">
+                                        <div class="btn-group btn-group-sm" onclick="event.stopPropagation();">
+                                            <a href="{% url 'lead_detail' lead.id %}" class="btn btn-outline-primary" title="View"><i class="fas fa-eye"></i></a>
+                                            <a href="{% url 'lead_edit' lead.id %}" class="btn btn-outline-secondary" title="Edit"><i class="fas fa-edit"></i></a>
                                         </div>
                                     </td>
                                 </tr>
                                 {% empty %}
-                                <tr>
-                                    <td colspan="11" class="text-center py-4">
-                                        <i class="fas fa-users fa-3x text-muted mb-3"></i>
-                                        <p class="text-muted">No leads found</p>
+                                <tr class="crm-empty-row">
+                                    <td colspan="11" class="text-center py-5">
+                                        <i class="fas fa-users fa-3x text-muted mb-3 d-block"></i>
+                                        <p class="text-muted mb-2">No leads found</p>
+                                        <a href="{% url 'lead_create' %}" class="btn btn-primary btn-sm">Add First Lead</a>
                                     </td>
                                 </tr>
                                 {% endfor %}
@@ -718,50 +887,47 @@
                     </div>
                 </div>
 
-                <!-- Pagination -->
-                {% if page_obj.paginator.num_pages > 1 %}
+                {% if page_obj %}
                 <div class="card-footer leads-list-pagination">
-                    <nav>
-                        <ul class="pagination justify-content-center mb-0">
-                            {% if page_obj.has_previous %}
-                            <li class="page-item">
-                                <a class="page-link" href="?page=1{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">
-                                    <i class="fas fa-angle-double-left"></i>
-                                </a>
-                            </li>
-                            <li class="page-item">
-                                <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">
-                                    <i class="fas fa-angle-left"></i>
-                                </a>
-                            </li>
+                    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                        <small class="text-muted">
+                            {% if page_obj.paginator.count %}
+                            Showing {{ page_obj.start_index }}–{{ page_obj.end_index }} of {{ page_obj.paginator.count }} records
+                            {% else %}
+                            Showing 0 records
                             {% endif %}
-                            
-                            {% for num in page_obj.paginator.page_range %}
-                                {% if page_obj.number == num %}
-                                <li class="page-item active">
-                                    <span class="page-link">{{ num }}</span>
-                                </li>
-                                {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
-                                <li class="page-item">
-                                    <a class="page-link" href="?page={{ num }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">{{ num }}</a>
-                                </li>
-                                {% endif %}
-                            {% endfor %}
-                            
-                            {% if page_obj.has_next %}
-                            <li class="page-item">
-                                <a class="page-link" href="?page={{ page_obj.next_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">
-                                    <i class="fas fa-angle-right"></i>
-                                </a>
-                            </li>
-                            <li class="page-item">
-                                <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">
-                                    <i class="fas fa-angle-double-right"></i>
-                                </a>
-                            </li>
+                            {% if page_obj.paginator.num_pages > 1 %}
+                            (Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }})
                             {% endif %}
-                        </ul>
-                    </nav>
+                        </small>
+                        {% if page_obj.paginator.num_pages > 1 %}
+                        <nav aria-label="Lead list pagination">
+                            <ul class="pagination pagination-sm mb-0">
+                                <li class="page-item {% if not page_obj.has_previous %}disabled{% endif %}">
+                                    <a class="page-link" href="?{% if pagination_query %}{{ pagination_query }}&{% endif %}page=1">First</a>
+                                </li>
+                                <li class="page-item {% if not page_obj.has_previous %}disabled{% endif %}">
+                                    <a class="page-link" href="?{% if pagination_query %}{{ pagination_query }}&{% endif %}page={% if page_obj.has_previous %}{{ page_obj.previous_page_number }}{% else %}1{% endif %}">Prev</a>
+                                </li>
+                                {% for num in page_obj.paginator.page_range %}
+                                    {% if num == page_obj.number %}
+                                    <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+                                    {% elif num >= page_obj.number|add:'-2' and num <= page_obj.number|add:'2' %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="?{% if pagination_query %}{{ pagination_query }}&{% endif %}page={{ num }}">{{ num }}</a>
+                                    </li>
+                                    {% endif %}
+                                {% endfor %}
+                                <li class="page-item {% if not page_obj.has_next %}disabled{% endif %}">
+                                    <a class="page-link" href="?{% if pagination_query %}{{ pagination_query }}&{% endif %}page={% if page_obj.has_next %}{{ page_obj.next_page_number }}{% else %}{{ page_obj.paginator.num_pages }}{% endif %}">Next</a>
+                                </li>
+                                <li class="page-item {% if not page_obj.has_next %}disabled{% endif %}">
+                                    <a class="page-link" href="?{% if pagination_query %}{{ pagination_query }}&{% endif %}page={{ page_obj.paginator.num_pages }}">Last</a>
+                                </li>
+                            </ul>
+                        </nav>
+                        {% endif %}
+                    </div>
                 </div>
                 {% endif %}
             </div>
@@ -769,6 +935,43 @@
     </div>
 </div>
 
+<div style="position:absolute; left:-99999px; top:-99999px; width:1px; height:1px; overflow:hidden;">
+    <table id="crmLeadExportTable" class="table table-sm">
+        <thead>
+            <tr>
+                <th>Lead Name</th>
+                <th>Phone</th>
+                <th>Location</th>
+                <th>Electricity Bill</th>
+                <th>Property Type</th>
+                <th>Score</th>
+                <th>Stage</th>
+                <th>Assigned To</th>
+                <th>Next Follow-up</th>
+                <th>Created Date</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for lead in export_leads %}
+            <tr>
+                <td>{{ lead.name }}</td>
+                <td>{{ lead.phone|default:"—" }}</td>
+                <td>{{ lead.city|default:"—" }}</td>
+                <td>{% if lead.electricity_bill %}{{ lead.electricity_bill|indian_currency }}{% else %}—{% endif %}</td>
+                <td>{{ lead.get_property_type_display|default:"—" }}</td>
+                <td>{{ lead.get_score_display }}</td>
+                <td>{% if lead.list_status_label %}{{ lead.list_status_label }}{% else %}{{ lead.get_stage_display }}{% endif %}</td>
+                <td>{{ lead.assigned_to.get_full_name|default:'Unassigned' }}</td>
+                <td>{% if lead.next_followup %}{{ lead.next_followup|date:'d M Y' }}{% else %}—{% endif %}</td>
+                <td>{{ lead.created|date:'d M Y' }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}
+
+{% block extra_js %}
 <script>
 (function () {
     var STORAGE_KEY = 'crmLeadsListView';
@@ -778,22 +981,91 @@
     var cardView = document.getElementById('leads-card-view');
 
     var pageRoot = document.getElementById('leads-page-root');
-
+    var countLabel = document.querySelector('.leads-list-count-label');
     var stageFilterField = pageRoot ? pageRoot.querySelector('.filter-stage-field') : null;
     var stageFilterSelect = stageFilterField ? stageFilterField.querySelector('select[name="stage"]') : null;
 
-    function stripUrlFilterParam(paramName) {
-        var params = new URLSearchParams(window.location.search);
-        if (!params.has(paramName)) return false;
-        params.delete(paramName);
-        var qs = params.toString();
-        window.location.replace(window.location.pathname + (qs ? '?' + qs : ''));
-        return true;
+    function updateCountLabel(isCards) {
+        if (!countLabel) return;
+        var n = isCards
+            ? (countLabel.getAttribute('data-card-count') || '0')
+            : (countLabel.getAttribute('data-list-count') || '0');
+        countLabel.textContent = 'Leads (' + n + ' total)';
     }
 
-    function setView(mode) {
+    function bindLeadItemCards() {
+        document.querySelectorAll('.lead-item-card').forEach(function (card) {
+            if (card.dataset.boundLeadCard === '1') return;
+            card.dataset.boundLeadCard = '1';
+            card.addEventListener('click', function (e) {
+                if (!e.target.closest('.lead-card-actions') && !e.target.closest('.btn-group')) {
+                    window.location = this.dataset.href;
+                }
+            });
+            card.addEventListener('keydown', function (e) {
+                if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    if (!e.target.closest('.lead-card-actions')) {
+                        window.location = this.dataset.href;
+                    }
+                }
+            });
+        });
+    }
+    window.crmLeadBindItemCards = bindLeadItemCards;
+
+    function bindClickableRows() {
+        document.querySelectorAll('.clickable-row').forEach(function (row) {
+            if (row.dataset.boundClickableRow === '1') return;
+            row.dataset.boundClickableRow = '1';
+            row.addEventListener('click', function (e) {
+                if (!e.target.closest('.btn-group') && !e.target.closest('a') && !e.target.closest('form') && !e.target.closest('button')) {
+                    window.location = this.dataset.href;
+                }
+            });
+        });
+    }
+
+    function syncStageFilterForCardView(isCards) {
+        var filterForm = document.getElementById('filter-form');
+        var hiddenStage = document.getElementById('filter-form-stage');
+        if (stageFilterSelect) {
+            stageFilterSelect.disabled = false;
+        }
+        if (!isCards) {
+            if (hiddenStage) hiddenStage.remove();
+            return;
+        }
+        if (stageFilterSelect) {
+            stageFilterSelect.disabled = true;
+        }
+        var stageVal = new URLSearchParams(window.location.search || '').get('stage') || '';
+        if (!stageVal) {
+            if (hiddenStage) hiddenStage.remove();
+            return;
+        }
+        if (!hiddenStage && filterForm) {
+            hiddenStage = document.createElement('input');
+            hiddenStage.type = 'hidden';
+            hiddenStage.name = 'stage';
+            hiddenStage.id = 'filter-form-stage';
+            filterForm.insertBefore(hiddenStage, filterForm.firstChild);
+        }
+        if (hiddenStage) hiddenStage.value = stageVal;
+    }
+
+    var filterForm = document.getElementById('filter-form');
+    if (filterForm) {
+        filterForm.addEventListener('submit', function () {
+            if (pageRoot && pageRoot.classList.contains('leads-page--cards')) {
+                syncStageFilterForCardView(true);
+            }
+        });
+    }
+    window.crmLeadSyncStageFilterForCardView = syncStageFilterForCardView;
+
+    function setView(mode, skipRefresh) {
         var isCards = mode === 'cards';
-        if (isCards && stripUrlFilterParam('stage')) return;
         if (pageRoot) pageRoot.classList.toggle('leads-page--cards', isCards);
         if (tableView) tableView.classList.toggle('d-none', isCards);
         if (cardView) cardView.classList.toggle('d-none', !isCards);
@@ -801,9 +1073,7 @@
             stageFilterField.classList.toggle('d-none', isCards);
             stageFilterField.setAttribute('aria-hidden', isCards ? 'true' : 'false');
         }
-        if (isCards && stageFilterSelect) {
-            stageFilterSelect.value = '';
-        }
+        syncStageFilterForCardView(isCards);
         if (listBtn) {
             listBtn.classList.toggle('active', !isCards);
             listBtn.setAttribute('aria-pressed', !isCards ? 'true' : 'false');
@@ -812,39 +1082,406 @@
             cardsBtn.classList.toggle('active', isCards);
             cardsBtn.setAttribute('aria-pressed', isCards ? 'true' : 'false');
         }
+        updateCountLabel(isCards);
         try { localStorage.setItem(STORAGE_KEY, mode); } catch (e) {}
+        if (isCards && !skipRefresh && typeof window.crmLeadFetchAndReplaceList === 'function') {
+            window.crmLeadFetchAndReplaceList(new URLSearchParams(window.location.search || ''), false);
+        }
     }
 
     var saved = 'list';
     try { saved = localStorage.getItem(STORAGE_KEY) || 'list'; } catch (e) {}
-    setView(saved === 'cards' ? 'cards' : 'list');
+    bindLeadItemCards();
+    bindClickableRows();
+    setView(saved === 'cards' ? 'cards' : 'list', true);
 
-    if (listBtn) listBtn.addEventListener('click', function () { setView('list'); });
-    if (cardsBtn) cardsBtn.addEventListener('click', function () { setView('cards'); });
-
-    document.querySelectorAll('.clickable-row').forEach(function (row) {
-        row.addEventListener('click', function (e) {
-            if (!e.target.closest('.btn-group')) {
-                window.location = this.dataset.href;
-            }
-        });
-    });
-
-    document.querySelectorAll('.lead-item-card').forEach(function (card) {
-        card.addEventListener('click', function (e) {
-            if (!e.target.closest('.lead-card-actions') && !e.target.closest('.btn-group')) {
-                window.location = this.dataset.href;
-            }
-        });
-        card.addEventListener('keydown', function (e) {
-            if (e.key === 'Enter' || e.key === ' ') {
-                e.preventDefault();
-                if (!e.target.closest('.btn-group')) {
-                    window.location = this.dataset.href;
-                }
-            }
-        });
-    });
+    if (listBtn) listBtn.addEventListener('click', function () { setView('list', true); });
+    if (cardsBtn) cardsBtn.addEventListener('click', function () { setView('cards', false); });
 })();
+</script>
+<script>
+(function () {
+  window.crmLeadApplyListToolbarState = function () {};
+  window.crmLeadApplyCurrentColumnSelections = function () {};
+  window.crmLeadColumnVisibilityState = window.crmLeadColumnVisibilityState || {};
+
+  window.destroyCrmLeadDataTables = function destroyCrmLeadDataTables() {
+    if (!window.jQuery || !window.jQuery.fn || !window.jQuery.fn.dataTable) return;
+    var $ = window.jQuery;
+    ['#crmLeadTable', '#crmLeadExportTable'].forEach(function (sel) {
+      if ($.fn.dataTable.isDataTable(sel)) {
+        try { $(sel).DataTable().destroy(); } catch (e) {}
+      }
+    });
+  };
+
+  function bindClickableRowsForLeadPage() {
+    document.querySelectorAll('.clickable-row').forEach(function (row) {
+      if (row.dataset.boundClickableRow === '1') return;
+      row.dataset.boundClickableRow = '1';
+      row.addEventListener('click', function (e) {
+        if (!e.target.closest('.btn-group') && !e.target.closest('a') && !e.target.closest('form') && !e.target.closest('button')) {
+          window.location = this.dataset.href;
+        }
+      });
+    });
+  }
+
+  window.initializeCrmLeadPage = function initializeCrmLeadPage() {
+    if (typeof window.initCrmLeadDataTables === 'function') {
+      window.initCrmLeadDataTables();
+    }
+    bindClickableRowsForLeadPage();
+
+    (function attachCrmLeadListToolbar() {
+      var rowsSelect = document.getElementById('crmLeadRowsPerPage');
+      var searchInput = document.getElementById('crmLeadTableSearchInput');
+      var refreshBtn = document.getElementById('crmRefreshLeadTableBtn');
+      var table = document.getElementById('crmLeadTable');
+      var columnToggleBtn = document.getElementById('crmLeadColumnToggleBtn');
+      var columnMenu = document.getElementById('crmLeadColumnMenu');
+      var columnMenuWrap = document.getElementById('crmLeadColumnMenuWrap');
+      if (!table || !rowsSelect || !searchInput) return;
+      if (rowsSelect.dataset.toolbarBound === '1') return;
+      rowsSelect.dataset.toolbarBound = '1';
+
+      function applyCurrentColumnSelections() {
+        document.querySelectorAll('.crm-lead-col-toggle').forEach(function (cb) {
+          var colIdx = parseInt(cb.getAttribute('data-col'), 10);
+          if (isNaN(colIdx)) return;
+          var key = String(colIdx);
+          if (Object.prototype.hasOwnProperty.call(window.crmLeadColumnVisibilityState, key)) {
+            cb.checked = !!window.crmLeadColumnVisibilityState[key];
+          } else {
+            window.crmLeadColumnVisibilityState[key] = !!cb.checked;
+          }
+          setColumnVisible(colIdx, !!cb.checked);
+        });
+      }
+
+      function setColumnVisible(colIdx, visible) {
+        ['#crmLeadTable', '#crmLeadExportTable'].forEach(function (sel) {
+          if (window.jQuery && window.jQuery.fn.dataTable && window.jQuery.fn.dataTable.isDataTable(sel)) {
+            try {
+              var dt = window.jQuery(sel).DataTable();
+              dt.column(colIdx).visible(!!visible, false);
+              dt.columns.adjust().draw(false);
+              return;
+            } catch (e) {}
+          }
+          var tableEl = document.querySelector(sel);
+          if (!tableEl) return;
+          var headRow = tableEl.querySelector('thead tr');
+          if (headRow && headRow.children[colIdx]) {
+            headRow.children[colIdx].style.display = visible ? '' : 'none';
+          }
+          tableEl.querySelectorAll('tbody tr').forEach(function (row) {
+            if (row.children && row.children[colIdx]) {
+              row.children[colIdx].style.display = visible ? '' : 'none';
+            }
+          });
+        });
+      }
+
+      function syncLeadListPagination(doc) {
+        var listCard = document.getElementById('leads-list-card');
+        if (!listCard) return;
+        var newPagination = doc.querySelector('#leads-list-card .leads-list-pagination') || doc.querySelector('.leads-list-pagination');
+        var oldPagination = listCard.querySelector('.leads-list-pagination');
+        if (newPagination) {
+          if (oldPagination) oldPagination.outerHTML = newPagination.outerHTML;
+          else listCard.insertAdjacentHTML('beforeend', newPagination.outerHTML);
+        }
+      }
+
+      function syncFilterFormHiddenFields(doc, params) {
+        var filterForm = document.getElementById('filter-form');
+        var newForm = doc.getElementById('filter-form');
+        if (!filterForm || !newForm) return;
+
+        function syncHidden(name, id, value) {
+          var oldInput = id ? document.getElementById(id) : filterForm.querySelector('input[name="' + name + '"]');
+          if (value) {
+            if (oldInput) {
+              oldInput.value = value;
+            } else {
+              var el = document.createElement('input');
+              el.type = 'hidden';
+              el.name = name;
+              el.value = value;
+              if (id) el.id = id;
+              filterForm.insertBefore(el, filterForm.firstChild);
+            }
+          } else if (oldInput) {
+            oldInput.remove();
+          }
+        }
+
+        var qVal = '';
+        var newQ = newForm.querySelector('input[name="q"]');
+        if (newQ) qVal = newQ.value || '';
+        else if (params) qVal = params.get('q') || '';
+        syncHidden('q', 'filter-form-q', qVal);
+
+        var stageVal = '';
+        if (params) stageVal = params.get('stage') || '';
+        if (!stageVal) {
+          var newStageSelect = newForm.querySelector('select[name="stage"]');
+          if (newStageSelect) stageVal = newStageSelect.value || '';
+        }
+        if (document.getElementById('leads-page-root') && document.getElementById('leads-page-root').classList.contains('leads-page--cards')) {
+          syncHidden('stage', 'filter-form-stage', stageVal);
+        }
+      }
+
+      function syncLeadCardViewFromDoc(doc) {
+        var newCardView = doc.getElementById('leads-card-view');
+        var oldCardView = document.getElementById('leads-card-view');
+        if (newCardView && oldCardView) {
+          oldCardView.innerHTML = newCardView.innerHTML;
+          document.querySelectorAll('.lead-item-card').forEach(function (card) {
+            delete card.dataset.boundLeadCard;
+          });
+          if (typeof window.crmLeadBindItemCards === 'function') {
+            window.crmLeadBindItemCards();
+          }
+        }
+      }
+
+      function syncLeadKpiRowFromDoc(doc) {
+        var newRow = doc.querySelector('.leads-kpi-row');
+        var oldRow = document.querySelector('.leads-kpi-row');
+        if (newRow && oldRow) {
+          oldRow.outerHTML = newRow.outerHTML;
+        }
+      }
+
+      function fetchAndReplaceTable(params, focusSearchAfterUpdate) {
+        var queryString = params.toString();
+        var targetUrl = window.location.pathname + (queryString ? ('?' + queryString) : '');
+        var fetchUrl = targetUrl + (targetUrl.indexOf('?') >= 0 ? '&' : '?') + '_refresh_ts=' + Date.now();
+        return fetch(fetchUrl, {
+            credentials: 'same-origin',
+            cache: 'no-store',
+            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+          })
+          .then(function (resp) { return resp.text(); })
+          .then(function (html) {
+            var doc = new DOMParser().parseFromString(html, 'text/html');
+            var newTableWrap = doc.querySelector('#crmLeadTable') ? doc.querySelector('#crmLeadTable').closest('.table-responsive') : null;
+            var oldTableWrap = document.querySelector('#crmLeadTable') ? document.querySelector('#crmLeadTable').closest('.table-responsive') : null;
+            var newExportTable = doc.getElementById('crmLeadExportTable');
+            var oldExportTable = document.getElementById('crmLeadExportTable');
+            var newCountLabel = doc.querySelector('.leads-list-count-label');
+            var oldCountLabel = document.querySelector('.leads-list-count-label');
+
+            if (typeof window.destroyCrmLeadDataTables === 'function') {
+              window.destroyCrmLeadDataTables();
+            }
+            if (newTableWrap && oldTableWrap) oldTableWrap.outerHTML = newTableWrap.outerHTML;
+            if (newExportTable && oldExportTable) oldExportTable.outerHTML = newExportTable.outerHTML;
+            syncLeadCardViewFromDoc(doc);
+            syncLeadKpiRowFromDoc(doc);
+            syncFilterFormHiddenFields(doc, params);
+            if (newCountLabel && oldCountLabel) {
+              oldCountLabel.setAttribute('data-list-count', newCountLabel.getAttribute('data-list-count') || '0');
+              oldCountLabel.setAttribute('data-card-count', newCountLabel.getAttribute('data-card-count') || '0');
+              var isCards = document.getElementById('leads-page-root') && document.getElementById('leads-page-root').classList.contains('leads-page--cards');
+              var n = isCards ? (oldCountLabel.getAttribute('data-card-count') || '0') : (oldCountLabel.getAttribute('data-list-count') || '0');
+              oldCountLabel.textContent = 'Leads (' + n + ' total)';
+            }
+            syncLeadListPagination(doc);
+            applyCurrentColumnSelections();
+            if (focusSearchAfterUpdate) {
+              searchInput.focus();
+              var v = searchInput.value || '';
+              searchInput.setSelectionRange(v.length, v.length);
+            }
+            window.history.replaceState({}, '', targetUrl);
+            initializeCrmLeadPage();
+            if (typeof window.crmLeadApplyCurrentColumnSelections === 'function') {
+              window.crmLeadApplyCurrentColumnSelections();
+            }
+          })
+          .catch(function () { alert('Failed to refresh table. Please try again.'); });
+      }
+      window.crmLeadFetchAndReplaceList = fetchAndReplaceTable;
+
+      var listCardRoot = document.getElementById('leads-list-card');
+      if (listCardRoot && listCardRoot.dataset.paginationBound !== '1') {
+        listCardRoot.dataset.paginationBound = '1';
+        listCardRoot.addEventListener('click', function (e) {
+          var link = e.target.closest('.leads-list-pagination a.page-link[href]');
+          if (!link) return;
+          var pageItem = link.closest('.page-item');
+          if (pageItem && pageItem.classList.contains('disabled')) return;
+          if (link.tagName === 'SPAN') return;
+          e.preventDefault();
+          try {
+            var linkUrl = new URL(link.getAttribute('href'), window.location.origin);
+            var params = new URLSearchParams(linkUrl.search);
+            if (rowsSelect) params.set('per_page', rowsSelect.value || '20');
+            fetchAndReplaceTable(params, false);
+          } catch (err) {
+            window.location.href = link.getAttribute('href');
+          }
+        });
+      }
+
+      rowsSelect.addEventListener('change', function () {
+        var params = new URLSearchParams(window.location.search || '');
+        params.set('per_page', rowsSelect.value || '20');
+        params.delete('page');
+        fetchAndReplaceTable(params, false);
+      });
+
+      var searchDebounceTimer = null;
+      searchInput.addEventListener('input', function () {
+        if (searchDebounceTimer) clearTimeout(searchDebounceTimer);
+        searchDebounceTimer = setTimeout(function () {
+          var params = new URLSearchParams(window.location.search || '');
+          var val = (searchInput.value || '').trim();
+          if (val) params.set('q', val);
+          else { params.delete('q'); params.delete('search'); }
+          params.set('per_page', rowsSelect.value || '20');
+          params.delete('page');
+          fetchAndReplaceTable(params, true);
+        }, 350);
+      });
+
+      if (refreshBtn) {
+        refreshBtn.addEventListener('click', function () {
+          window.crmLeadColumnVisibilityState = {};
+          document.querySelectorAll('.crm-lead-col-toggle').forEach(function (cb) { cb.checked = true; });
+          var params = new URLSearchParams(window.location.search || '');
+          params.set('per_page', rowsSelect.value || '20');
+          var qVal = (searchInput.value || '').trim();
+          if (qVal) params.set('q', qVal);
+          else { params.delete('q'); params.delete('search'); }
+          refreshBtn.disabled = true;
+          var oldText = refreshBtn.textContent;
+          refreshBtn.textContent = 'Refreshing...';
+          fetchAndReplaceTable(params, false).finally(function () {
+            refreshBtn.disabled = false;
+            refreshBtn.textContent = oldText || 'Refresh';
+          });
+        });
+      }
+
+      if (columnToggleBtn && columnMenu) {
+        columnToggleBtn.addEventListener('click', function (e) {
+          e.stopPropagation();
+          if (window.jQuery && window.jQuery.fn.dataTable && window.jQuery.fn.dataTable.isDataTable('#crmLeadTable')) {
+            var wrap = window.jQuery('#crmLeadTable').closest('.dataTables_wrapper');
+            var openBtn = wrap.find('.columnFilterOpenBtn').first();
+            if (openBtn.length) { openBtn.trigger('click'); return; }
+          }
+          columnMenu.style.display = columnMenu.style.display === 'none' ? 'block' : 'none';
+        });
+        document.addEventListener('click', function (e) {
+          if (!columnMenuWrap || !columnMenuWrap.contains(e.target)) {
+            columnMenu.style.display = 'none';
+          }
+        });
+      }
+
+      document.querySelectorAll('.crm-lead-col-toggle').forEach(function (cb) {
+        cb.addEventListener('change', function () {
+          var colIdx = parseInt(this.getAttribute('data-col'), 10);
+          if (isNaN(colIdx)) return;
+          window.crmLeadColumnVisibilityState[String(colIdx)] = !!this.checked;
+          setColumnVisible(colIdx, !!this.checked);
+        });
+      });
+
+      window.crmLeadApplyCurrentColumnSelections = applyCurrentColumnSelections;
+      applyCurrentColumnSelections();
+    })();
+  };
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initializeCrmLeadPage);
+  } else {
+    initializeCrmLeadPage();
+  }
+})();
+</script>
+<script>window.LIST_PAGE_EXPORT_LOGO_PATH = "{% static 'images/db_logo_200.png' %}";</script>
+<script src="https://cdn.datatables.net/1.13.8/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.8/js/dataTables.bootstrap5.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.0/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.4.0/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.16/jspdf.plugin.autotable.min.js"></script>
+<script src="{% static 'js/list_page_export.js' %}"></script>
+<script>
+  window.initCrmLeadDataTables = function initCrmLeadDataTables() {
+    if (!window.jQuery || !window.jQuery.fn || !window.jQuery.fn.dataTable) return;
+    var $ = window.jQuery;
+    $.fn.dataTable.ext.errMode = 'none';
+    var $main = $('#crmLeadTable');
+    if ($main.length && !$main.find('tbody tr.crm-empty-row').length) {
+      if (!$.fn.dataTable.isDataTable('#crmLeadTable')) {
+        var crmDt = $main.DataTable({
+          paging: false, info: false, searching: false, ordering: true, order: [],
+          columnDefs: [{ orderable: false, targets: [10] }]
+        });
+        if (typeof window.attachGlobalDatatableTools === 'function') {
+          window.attachGlobalDatatableTools(crmDt);
+        }
+      }
+    }
+    if ($('#crmLeadExportTable').length && !$.fn.dataTable.isDataTable('#crmLeadExportTable')) {
+      $('#crmLeadExportTable').DataTable({ paging: false, info: false, searching: false, ordering: true, order: [] });
+    }
+  };
+
+  window.crmSyncLeadExportTable = function crmSyncLeadExportTable(done) {
+    var callback = typeof done === 'function' ? done : function () {};
+    var params = new URLSearchParams(window.location.search || '');
+    params.set('per_page', 'all');
+    params.delete('page');
+    var queryString = params.toString();
+    var targetUrl = window.location.pathname + (queryString ? ('?' + queryString) : '');
+    var fetchUrl = targetUrl + (targetUrl.indexOf('?') >= 0 ? '&' : '?') + '_export_sync=' + Date.now();
+    fetch(fetchUrl, { credentials: 'same-origin', cache: 'no-store', headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+      .then(function (resp) { return resp.text(); })
+      .then(function (html) {
+        var doc = new DOMParser().parseFromString(html, 'text/html');
+        var newTable = doc.getElementById('crmLeadExportTable');
+        var oldTable = document.getElementById('crmLeadExportTable');
+        if (!newTable || !oldTable) { callback(); return; }
+        if (window.jQuery && window.jQuery.fn.dataTable && window.jQuery.fn.dataTable.isDataTable('#crmLeadExportTable')) {
+          try { window.jQuery('#crmLeadExportTable').DataTable().destroy(); } catch (e) {}
+        }
+        oldTable.outerHTML = newTable.outerHTML;
+        if (window.jQuery && window.jQuery.fn.dataTable) {
+          window.jQuery('#crmLeadExportTable').DataTable({ paging: false, info: false, searching: false, ordering: true, order: [] });
+        }
+        callback();
+      })
+      .catch(function () { callback(); });
+  };
+
+  if (typeof window.initializeCrmLeadPage === 'function') {
+    window.initializeCrmLeadPage();
+  } else {
+    window.initCrmLeadDataTables();
+  }
+
+  ListPageExport.register({
+    apiPrefix: 'crmLeadList',
+    tableSelector: '#crmLeadExportTable',
+    prepareExport: function (done) { window.crmSyncLeadExportTable(done); },
+    pdfFilename: 'crm_lead_list.pdf',
+    excelFilename: 'crm_lead_list.xlsx',
+    excelSheetName: 'CRMLeadList',
+    printDocumentTitle: 'Leads List',
+    pdfCaption: 'Leads List',
+    pdfEmbedUnicodeFont: true,
+    excludeHeader: function (label) {
+      var h = (label || '').trim().toLowerCase();
+      return h === 'action' || h === 'actions';
+    }
+  });
 </script>
 {% endblock %}

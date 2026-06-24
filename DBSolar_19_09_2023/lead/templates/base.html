@@ -14,9 +14,11 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <!-- Custom CSS -->
+    <!-- DataTables (Bootstrap 5) -->
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.8/css/dataTables.bootstrap5.min.css">
+    <!-- Solar CRM styles (crm/ path avoids collision with ERP asert/css/style.css) -->
     {% load static %}
-    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+    <link rel="stylesheet" href="{% static 'crm/css/style.css' %}">
     {% block extra_css %}{% endblock %}
 </head>
 <body>
@@ -115,30 +117,7 @@
                     </button>
 
                     <div class="ms-auto d-flex align-items-center">
-                        <!-- Notifications -->
-                        <div class="dropdown me-3">
-                            <button class="btn btn-outline-secondary position-relative" type="button" data-bs-toggle="dropdown">
-                                <i class="fas fa-bell"></i>
-                                {% if unread_notifications_count > 0 %}
-                                <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
-                                    {{ unread_notifications_count }}
-                                </span>
-                                {% endif %}
-                            </button>
-                            <div class="dropdown-menu dropdown-menu-end notification-dropdown">
-                                <h6 class="dropdown-header">Notifications</h6>
-                                {% for notification in notifications %}
-                                <a class="dropdown-item {% if not notification.is_read %}unread{% endif %}" href="{{ notification.link }}">
-                                    <small class="text-muted">{{ notification.created|timesince }} ago</small>
-                                    <p class="mb-0">{{ notification.message }}</p>
-                                </a>
-                                {% empty %}
-                                <span class="dropdown-item text-muted">No notifications</span>
-                                {% endfor %}
-                                <div class="dropdown-divider"></div>
-                                <a class="dropdown-item text-center" href="#">View All</a>
-                            </div>
-                        </div>
+                        {% include 'partials/staff_notifications_dropdown.html' %}
 
                         <!-- User Menu -->
                         <div class="dropdown">
@@ -153,10 +132,9 @@
                                 {% endif %}
                                 <li><hr class="dropdown-divider"></li>
                                 <li>
-                                    <form method="post" action="{% url 'logout' %}" style="display: inline;">
-                                        {% csrf_token %}
-                                        <button type="submit" class="dropdown-item">Logout</button>
-                                    </form>
+                                    <a class="dropdown-item" href="{% url 'user-logout' %}">
+                                        <i class="fas fa-sign-out-alt me-2"></i>Logout
+                                    </a>
                                 </li>
                             </ul>
                         </div>
@@ -181,6 +159,8 @@
             </main>
         </div>
     </div>
+
+    {% include 'partials/staff_notification_modal.html' %}
 
     {# Same pre-flight as ERP quotation list: consumer type + consumer no, then redirect to full create form #}
     <div class="modal fade" id="crmGenerateQuotationModal" tabindex="-1" aria-labelledby="crmGenerateQuotationModalLabel" aria-hidden="true">
@@ -228,6 +208,7 @@
     <script src="https://unpkg.com/htmx.org@1.9.4"></script>
     <!-- Custom JS -->
     <script src="{% static 'js/main.js' %}"></script>
+    {% include 'partials/staff_notifications_script.html' %}
     {% block extra_js %}{% endblock %}
 
     <script>

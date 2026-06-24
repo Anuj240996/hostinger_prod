@@ -806,6 +806,15 @@
        <h4 align="left"> <span  style="background-color: #0A66C2; color: white; font-size: 17px; padding-top: -20px;"><u>Bank Details:</u></span></h4>
 
   <div style=" line-height: 1.8; margin-left: 40px; font-size: 15px; padding-top: -10px;">
+  {% if bank_detail %}
+  {% if bank_detail.account_name %}<b>A/C Name -</b> {{ bank_detail.account_name }}<br>{% endif %}
+  {% if bank_detail.gst_no %}<b>GST No -</b> {{ bank_detail.gst_no }}<br>{% endif %}
+  {% if bank_detail.pan_no %}<b>PAN No -</b> {{ bank_detail.pan_no }}<br>{% endif %}
+  {% if bank_detail.account_no %}<b>A/C No -</b> {{ bank_detail.account_no }}<br>{% endif %}
+  {% if bank_detail.ifsc_code %}<b>IFSC CODE -</b> {{ bank_detail.ifsc_code }}<br>{% endif %}
+  {% if bank_detail.bank_name %}<b>Bank Name -</b> {{ bank_detail.bank_name }}<br>{% endif %}
+  {% if bank_detail.branch_name %}<b>Branch Name -</b> {{ bank_detail.branch_name }}<br>{% endif %}
+  {% else %}
   <b>A/C Name -</b> Heramb Industries<br>
   <b>GST No -</b> 123457896541332<br>
   <b>PAN No -</b> ABC12358G<br>
@@ -813,6 +822,7 @@
   <b>IFSC CODE -</b> SVSB000123<br>
   <b>Bank Name -</b> SVC CO-OP Bank<br>
   <b>Branch Name -</b> Aurangabad / Chh. SambhajiNagar<br>
+  {% endif %}
 </div>
     </div>
   </div>
@@ -834,7 +844,7 @@
   <b>With Regards,</b>
    <img src="{% static 'images/sign.jpeg' %}"
          style="width:85pt; height:65pt; display:block; margin:0; padding:0; padding-top: -10px;">
-      <b>M/S HERAMB INDUSTRIES</b>
+      <b>M/S {{ quotation_master.company_name|default:"HERAMB INDUSTRIES"|upper }}</b>
 </div></td>
     </tr>
   </table>

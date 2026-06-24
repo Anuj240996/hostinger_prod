@@ -1,6 +1,6 @@
 <!-- navbar -->
 {% load humanize %}
-{% load profile_extras %}
+{% load custom_filters %}
 <style>
     /* Custom CSS for displaying count1 in mobile mode */
     @media (max-width: 767px) {
@@ -119,25 +119,24 @@
          <div class="dropdown-menu notifications notification_view">
             <div class="topnav-dropdown-header notification_view">
                <span class="notification-title">Notifications</span>
-               <a href="javascript:void(0)" class="clear-noti"> Clear All </a>
+               <a href="{% url 'dashboard-mark-all-notifications-read' %}" class="clear-noti"> Clear All </a>
             </div>
             <div class="noti-content notification_view">
                <ul class="notification-list">
-                  {% for notification1 in notification1 %}
+                  {% for notif_item in notification1 %}
                   <li class="notification-message">
 
-                     <a href="{% url 'dashboard-notification' %}">
+                     <a href="{% url 'dashboard-open-notification' pk=notif_item.id %}">
 
                         <div class="media">
-                           {% if not notification1.status %}
+                           {% if not notif_item.status %}
                            <span class="avatar avatar-sm">
-<!--                           <img class="avatar-img rounded-circle" alt="User Image" src="{{ user.profile.image.url }}">-->
-                               <img class="avatar-img rounded-circle" alt="{{ notification1.sender.username }}" src="{{ notification1.sender.profile.image.url }}">
+                               <img class="avatar-img rounded-circle" alt="{{ notif_item.sender.username }}" src="{{ notif_item.sender.profile|profile_image_url }}">
                            </span>
 
                            <div class="media-body">
-                              <p class="noti-details"><span class="noti-title  font-weight-bold">{{ notification1.sender.first_name }}</span> has sent you  <br> &nbsp;<span class="noti-title">{{ notification1.message }}  </span></p>
-                              <p class="noti-time"><span class="notification-time">{{ notification1.created_at|naturaltime }}</span></p>
+                              <p class="noti-details"><span class="noti-title  font-weight-bold">{{ notif_item.sender.first_name }}</span> has sent you  <br> &nbsp;<span class="noti-title">{{ notif_item.message }}  </span></p>
+                              <p class="noti-time"><span class="notification-time">{{ notif_item.created_at|naturaltime }}</span></p>
                            </div>
 
 

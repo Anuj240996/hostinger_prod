@@ -142,6 +142,46 @@ def attach_lead_list_status_labels(leads, quotation_map=None):
     return lead_list
 
 
+QUOTE_SENT_APPROVED_LABELS = frozenset({'Sent', 'Approved'})
+
+
+def _quote_sent_approved_lead_ids(leads_qs):
+    """Lead IDs whose latest quotation shows Sent or Approved in the list/pipeline."""
+    from apps.leads.pipeline_board import (
+        _latest_quotation_map_all_leads,
+        resolve_pipeline_column_for_lead,
+    )
+
+    leads = list(leads_queryset_with_surveys(leads_qs))
+    if not leads:
+        return set()
+
+    lead_ids = [lead.pk for lead in leads]
+    survey_map = _latest_survey_by_lead_id(
+        [lead.pk for lead in leads if _latest_survey_for_lead(lead) is None]
+    )
+    quote_map = _latest_quotation_map_all_leads(lead_ids)
+
+    matching = set()
+    for lead in leads:
+        quotation = quote_map.get(lead.pk)
+        if not quotation:
+            continue
+        survey = _latest_survey_for_lead(lead) or survey_map.get(lead.pk)
+        _, label, _ = resolve_pipeline_column_for_lead(lead, survey, quotation)
+        if (label or '').strip() in QUOTE_SENT_APPROVED_LABELS:
+            matching.add(lead.pk)
+    return matching
+
+
+def _filter_leads_quote_sent_approved(leads_qs):
+    """Filter queryset to leads with Sent or Approved quotation status."""
+    matching_ids = _quote_sent_approved_lead_ids(leads_qs)
+    if not matching_ids:
+        return leads_qs.none()
+    return leads_qs.filter(pk__in=matching_ids)
+
+
 def _erp_quotation_sort_key(quotation):
     """Latest revision first — same quote# ordering as CRM quotation list."""
     no = (getattr(quotation, 'quotation_no', None) or '').strip()
@@ -258,82 +298,137 @@ def build_lead_list_board_columns(leads_qs, user=None):
     return columns
 
 
+def _lead_list_kpi_url(request, stage=None):
+    """KPI card link preserving active sidebar/search filters."""
+    params = request.GET.copy()
+    params.pop('page', None)
+    if stage:
+        params['stage'] = stage
+    else:
+        params.pop('stage', None)
+    qs = params.urlencode()
+    from django.urls import reverse
+    return reverse('lead_list') + ('?' + qs if qs else '')
+
+
 @login_required
 def lead_list(request):
-    """
-    Display list of leads with filtering
-    """
-    leads = Lead.objects.all()
-
-    # Search
-    search_query = request.GET.get('search', '')
-    if search_query:
-        leads = leads.filter(
-            Q(name__icontains=search_query) |
-            Q(phone__icontains=search_query) |
-            Q(email__icontains=search_query) |
-            Q(address__icontains=search_query)
-        )
-
-    # Apply filters
-    stage_filter = request.GET.get('stage')
-    if stage_filter == 'survey_pending':
-        pending_ids = _pending_survey_lead_ids(leads)
-        leads = leads.filter(Q(stage='survey') | Q(pk__in=pending_ids)).distinct()
-    elif stage_filter:
-        leads = leads.filter(stage=stage_filter)
-    if request.GET.get('score'):
-        leads = leads.filter(score=request.GET.get('score'))
-    if request.GET.get('assigned_to'):
-        leads = leads.filter(assigned_to_id=request.GET.get('assigned_to'))
-    if request.GET.get('source'):
-        leads = leads.filter(source_id=request.GET.get('source'))
-    if request.GET.get('city'):
-        leads = leads.filter(city__icontains=request.GET.get('city'))
-
-    # Date range filter
-    date_range = request.GET.get('date_range')
-    if date_range == 'today':
-        leads = leads.filter(created__date=timezone.now().date())
-    elif date_range == 'yesterday':
-        yesterday = timezone.now().date() - timedelta(days=1)
-        leads = leads.filter(created__date=yesterday)
-    elif date_range == 'this_week':
-        start = timezone.now().date() - timedelta(days=timezone.now().weekday())
-        leads = leads.filter(created__date__gte=start)
-    elif date_range == 'this_month':
-        leads = leads.filter(created__month=timezone.now().month)
-
-    followup = request.GET.get('followup')
-    today = timezone.now().date()
-    if followup == 'due_today':
-        leads = leads.filter(next_followup__date=today)
-    elif followup == 'overdue':
-        leads = leads.filter(next_followup__date__lt=today)
-
-    # Ordering
-    order_by = request.GET.get('order_by', '-created')
-    leads = leads.order_by(order_by)
-    leads = leads_queryset_with_surveys(leads)
-
-    # Pagination
-    page = request.GET.get('page', 1)
-    paginator = Paginator(leads, 20)
-    leads_page = paginator.get_page(page)
+    """List leads with filters, search, pagination, and export support."""
     from apps.leads.pipeline_board import _latest_quotation_map_all_leads
 
-    quote_map = _latest_quotation_map_all_leads(
-        [lead.pk for lead in leads_page.object_list]
-    )
-    attach_lead_list_status_labels(leads_page.object_list, quotation_map=quote_map)
+    leads_qs = Lead.objects.all().select_related('assigned_to', 'source')
+
+    search_query = (request.GET.get('q') or request.GET.get('search') or '').strip()
+    if search_query:
+        leads_qs = leads_qs.filter(
+            Q(name__icontains=search_query)
+            | Q(phone__icontains=search_query)
+            | Q(email__icontains=search_query)
+            | Q(address__icontains=search_query)
+            | Q(city__icontains=search_query)
+        ).distinct()
+
+    if request.GET.get('score'):
+        leads_qs = leads_qs.filter(score=request.GET.get('score'))
+    if request.GET.get('assigned_to'):
+        leads_qs = leads_qs.filter(assigned_to_id=request.GET.get('assigned_to'))
+    if request.GET.get('source'):
+        leads_qs = leads_qs.filter(source_id=request.GET.get('source'))
+    if request.GET.get('city'):
+        leads_qs = leads_qs.filter(city__icontains=request.GET.get('city'))
+
+    date_range = request.GET.get('date_range')
+    today = timezone.now().date()
+    if date_range == 'today':
+        leads_qs = leads_qs.filter(created__date=today)
+    elif date_range == 'yesterday':
+        yesterday = today - timedelta(days=1)
+        leads_qs = leads_qs.filter(created__date=yesterday)
+    elif date_range == 'this_week':
+        start = today - timedelta(days=today.weekday())
+        leads_qs = leads_qs.filter(created__date__gte=start)
+    elif date_range == 'this_month':
+        leads_qs = leads_qs.filter(created__month=today.month, created__year=today.year)
+
+    followup = request.GET.get('followup')
+    if followup == 'due_today':
+        leads_qs = leads_qs.filter(next_followup__date=today)
+    elif followup == 'overdue':
+        leads_qs = leads_qs.filter(next_followup__date__lt=today)
+
+    total_count = leads_qs.count()
+    new_count = leads_qs.filter(stage__in=('new', 'qualified')).count()
+    survey_count = leads_qs.filter(stage='survey').count()
+    quote_count = len(_quote_sent_approved_lead_ids(leads_qs))
+    won_count = leads_qs.filter(stage='won').count()
+    lost_count = leads_qs.filter(stage='lost').count()
+
+    stage_filter = request.GET.get('stage')
+    if stage_filter == 'survey_pending':
+        pending_ids = _pending_survey_lead_ids(leads_qs)
+        leads_qs = leads_qs.filter(Q(stage='survey') | Q(pk__in=pending_ids)).distinct()
+    elif stage_filter == 'quote':
+        leads_qs = _filter_leads_quote_sent_approved(leads_qs)
+    elif stage_filter == 'new':
+        leads_qs = leads_qs.filter(stage__in=('new', 'qualified'))
+    elif stage_filter:
+        leads_qs = leads_qs.filter(stage=stage_filter)
+
+    board_leads_count = leads_qs.count()
+
+    order_by = request.GET.get('order_by', '-created')
+    leads_qs = leads_qs.order_by(order_by)
+    leads_qs = leads_queryset_with_surveys(leads_qs)
+
+    per_page_raw = (request.GET.get('per_page') or '20').strip().lower()
+    if per_page_raw == 'all':
+        per_page = max(1, leads_qs.count())
+    else:
+        try:
+            per_page = int(per_page_raw)
+        except (TypeError, ValueError):
+            per_page = 20
+        if per_page not in (10, 20, 50):
+            per_page = 20
+
+    paginator = Paginator(leads_qs, per_page)
+    page_obj = paginator.get_page(request.GET.get('page'))
+    leads_page = page_obj.object_list
+
+    quote_map = _latest_quotation_map_all_leads([lead.pk for lead in leads_page])
+    attach_lead_list_status_labels(leads_page, quotation_map=quote_map)
+
+    export_leads = list(leads_qs)
+    export_quote_map = _latest_quotation_map_all_leads([lead.pk for lead in export_leads])
+    attach_lead_list_status_labels(export_leads, quotation_map=export_quote_map)
+
+    pagination_params = request.GET.copy()
+    pagination_params.pop('page', None)
 
     context = {
         'leads': leads_page,
-        'page_obj': leads_page,
-        'board_columns': build_lead_list_board_columns(leads, request.user),
+        'export_leads': export_leads,
+        'search_query': search_query,
+        'page_obj': page_obj,
+        'leads_total_count': total_count,
+        'new_count': new_count,
+        'survey_count': survey_count,
+        'quote_count': quote_count,
+        'won_count': won_count,
+        'lost_count': lost_count,
+        'board_columns': build_lead_list_board_columns(leads_qs, request.user),
+        'board_leads_count': board_leads_count,
+        'stage_filter': stage_filter or '',
+        'kpi_url_total': _lead_list_kpi_url(request),
+        'kpi_url_new': _lead_list_kpi_url(request, 'new'),
+        'kpi_url_survey': _lead_list_kpi_url(request, 'survey'),
+        'kpi_url_quote': _lead_list_kpi_url(request, 'quote'),
+        'kpi_url_won': _lead_list_kpi_url(request, 'won'),
+        'kpi_url_lost': _lead_list_kpi_url(request, 'lost'),
         'sales_users': lead_list_filter_sales_users_queryset(),
         'lead_sources': LeadSource.objects.filter(is_active=True),
         'stage_choices': list(Lead.STAGE_CHOICES) + [('survey_pending', 'Survey Pending')],
+        'pagination_query': pagination_params.urlencode(),
         'now': timezone.now(),
     }
 

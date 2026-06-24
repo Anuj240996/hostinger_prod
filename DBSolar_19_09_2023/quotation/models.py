@@ -171,10 +171,72 @@ class TermsAndCondition(models.Model):
     content = models.TextField()
     has_yellow_background = models.BooleanField(default=False)
     is_active = models.BooleanField(default=True)
+    show_in_quotation_form = models.BooleanField(
+        default=True,
+        help_text='When enabled, this term appears on create/edit quotation forms.',
+    )
+    default_selected = models.BooleanField(
+        default=False,
+        help_text='When enabled, pre-selected on new quotation forms.',
+    )
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
         return self.content[:50] + "..." if len(self.content) > 50 else self.content
+
+
+class QuotationMaster(models.Model):
+    """Singleton settings for quotation letterhead, subsidy notes, etc."""
+    company_name = models.CharField(max_length=200, default='Heramb Industries')
+    company_logo = models.ImageField(upload_to='quotation/master/', blank=True, null=True)
+    address = models.TextField(
+        blank=True,
+        help_text='Company address shown on quotation PDF footer / letterhead.',
+    )
+    from_address = models.TextField(
+        blank=True,
+        help_text='From-address block on quotation PDF.',
+    )
+    header_image = models.ImageField(upload_to='quotation/master/', blank=True, null=True)
+    footer_image = models.ImageField(upload_to='quotation/master/', blank=True, null=True)
+    subsidy_notes = models.TextField(
+        blank=True,
+        help_text='Subsidy note text shown on quotation PDF.',
+    )
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = 'Quotation Master'
+        verbose_name_plural = 'Quotation Master'
+
+    @classmethod
+    def get_solo(cls):
+        obj, _ = cls.objects.get_or_create(pk=1)
+        return obj
+
+
+class QuotationBankDetail(models.Model):
+    account_name = models.CharField(max_length=200, blank=True)
+    gst_no = models.CharField(max_length=50, blank=True)
+    pan_no = models.CharField(max_length=20, blank=True)
+    account_no = models.CharField(max_length=50, blank=True)
+    ifsc_code = models.CharField(max_length=20, blank=True)
+    bank_name = models.CharField(max_length=100, blank=True)
+    branch_name = models.CharField(max_length=100, blank=True)
+    show_in_quotation_form = models.BooleanField(
+        default=True,
+        help_text='Show this bank block on quotation PDF when selected as default.',
+    )
+    is_default = models.BooleanField(default=False)
+    is_active = models.BooleanField(default=True)
+    sort_order = models.PositiveIntegerField(default=0)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['sort_order', 'id']
+
+    def __str__(self):
+        return self.account_name or self.bank_name or f'Bank #{self.pk}'
 
 #
 # class Quotation(models.Model):

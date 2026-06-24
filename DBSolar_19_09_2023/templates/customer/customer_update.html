@@ -327,11 +327,10 @@
                         <div class="col-sm-6 item1">
                             <div class="form-group">
                             <label for="Associate_Assigned"><b>Associate Assigned</b></label>
-                            <select id="Associate_Assigned" name="Associate_Assigned" class="form-control text-capitalize" required>
+                            <select id="Associate_Assigned" name="Associate_Assigned" class="form-control text-capitalize">
+                                <option value="" {% if not customer.Assoc_Assign %}selected{% endif %}>Select Associate (optional)</option>
                                 {% if customer.Assoc_Assign %}
                                     <option value="{{ customer.Assoc_Assign.id }}" selected>{{ customer.Assoc_Assign.first_name }} {{ customer.Assoc_Assign.last_name }}</option>
-                                {% else %}
-                                    <option value="" disabled selected>Select Associate</option>
                                 {% endif %}
                                 {% for associate in associates %}
                                     {% if not customer.Assoc_Assign or customer.Assoc_Assign.id != associate.id %}
@@ -343,10 +342,12 @@
                         </div>
                         <div class="col-sm-6 item1">
                             <div class="form-group">
-                            <label for="Engineer_Assigned"><b>Engineer Assigned</b></label>
+                            <label for="Engineer_Assigned"><b>Engineer Assigned</b><span style="color: red;">*</span></label>
                             <select id="Engineer_Assigned" name="Engineer_Assigned" class="form-control text-capitalize" required>
                                 {% if customer.Engg_Assign %}
                                     <option value="{{ customer.Engg_Assign.id }}" selected>{{ customer.Engg_Assign.first_name }} {{ customer.Engg_Assign.last_name }}</option>
+                                {% else %}
+                                    <option value="" disabled selected>Select Engineer</option>
                                 {% endif %}
                                 {% for engineer in engineers %}
                                     {% if not customer.Engg_Assign or customer.Engg_Assign.id != engineer.id %}

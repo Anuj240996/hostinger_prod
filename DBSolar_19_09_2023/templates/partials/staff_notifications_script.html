@@ -1,0 +1,122 @@
+<script>
+(function () {
+    'use strict';
+
+    var modalEl = document.getElementById('staffNotificationModal');
+    var dropdownRoot = document.getElementById('staffNotiDropdownRoot');
+    if (!modalEl || !dropdownRoot) {
+        return;
+    }
+
+    var modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+    var bellBtn = dropdownRoot.querySelector('[data-staff-noti-bell]');
+    var badgeEl = dropdownRoot.querySelector('[data-staff-noti-badge]');
+    var listEl = dropdownRoot.querySelector('[data-staff-noti-list]');
+    var emptyEl = dropdownRoot.querySelector('[data-staff-noti-empty]');
+    var openApiUrlTemplate = '{% url "dashboard-open-notification-api" pk=0 %}';
+    var markAllApiUrl = '{% url "dashboard-mark-all-notifications-api" %}';
+
+    function renderBadge(count) {
+        if (!bellBtn || !badgeEl) {
+            return;
+        }
+        if (count > 0) {
+            badgeEl.hidden = false;
+            if (count > 9) {
+                badgeEl.innerHTML = '9<sup style="font-size:100%;">+</sup>';
+            } else {
+                badgeEl.textContent = String(count);
+            }
+            bellBtn.querySelector('i')?.classList.add('fa-shake');
+        } else {
+            badgeEl.hidden = true;
+            badgeEl.textContent = '';
+            bellBtn.querySelector('i')?.classList.remove('fa-shake');
+        }
+    }
+
+    function removeListItem(id) {
+        var row = listEl ? listEl.querySelector('[data-notification-id="' + id + '"]') : null;
+        if (row) {
+            row.remove();
+        }
+        if (listEl && !listEl.querySelector('[data-notification-id]')) {
+            if (emptyEl) {
+                emptyEl.hidden = false;
+            }
+        }
+    }
+
+    function showModal(data) {
+        document.getElementById('staffNotiModalSender').textContent = data.sender_name || 'System';
+        document.getElementById('staffNotiModalTime').textContent = data.created_at || '';
+        document.getElementById('staffNotiModalMessage').textContent = data.message || '';
+        var avatar = document.getElementById('staffNotiModalAvatar');
+        if (avatar) {
+            avatar.src = data.sender_avatar || '';
+            avatar.alt = data.sender_name || 'Sender';
+        }
+        modal.show();
+    }
+
+    dropdownRoot.addEventListener('click', function (event) {
+        var openLink = event.target.closest('.js-staff-noti-open');
+        if (openLink) {
+            event.preventDefault();
+            var id = openLink.getAttribute('data-notification-id');
+            if (!id) {
+                return;
+            }
+            fetch(openApiUrlTemplate.replace('/0/', '/' + id + '/'), {
+                method: 'GET',
+                headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                credentials: 'same-origin',
+            })
+                .then(function (response) { return response.json(); })
+                .then(function (payload) {
+                    if (!payload.success) {
+                        return;
+                    }
+                    removeListItem(id);
+                    renderBadge(payload.count1);
+                    showModal(payload.notification);
+                })
+                .catch(function () {
+                    window.location.href = openLink.getAttribute('href');
+                });
+            return;
+        }
+
+        var clearLink = event.target.closest('.js-staff-noti-clear-all');
+        if (clearLink) {
+            event.preventDefault();
+            fetch(markAllApiUrl, {
+                method: 'GET',
+                headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                credentials: 'same-origin',
+            })
+                .then(function (response) { return response.json(); })
+                .then(function (payload) {
+                    if (!payload.success) {
+                        return;
+                    }
+                    if (listEl) {
+                        listEl.querySelectorAll('[data-notification-id]').forEach(function (node) {
+                            node.remove();
+                        });
+                    }
+                    if (emptyEl) {
+                        emptyEl.hidden = false;
+                    }
+                    renderBadge(0);
+                });
+        }
+    });
+
+    window.addEventListener('pageshow', function (event) {
+        if (event.persisted) {
+            window.location.reload();
+        }
+    });
+})();
+</script>

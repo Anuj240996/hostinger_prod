@@ -453,16 +453,16 @@
             <legend style="color: darkblue;">Assign Solar Project</legend>
             <div class="highlighted-row mb-1">
                 <div class="col-md-6 item3">
-                    <label for="Associate_Assigned">Associate Assigned<span style="color: red;">*</span></label>
-                    <select id="Associate_Assigned" name="Associate_Assigned" class="form-control" required>
-                        <option value="" disabled selected>Select Associate</option>
+                    <label for="Associate_Assigned">Associate Assigned</label>
+                    <select id="Associate_Assigned" name="Associate_Assigned" class="form-control">
+                        <option value="" selected>Select Associate (optional)</option>
                         {% for associate in associates %}
                             <option value="{{ associate.id }}">{{ associate.first_name }} {{ associate.last_name }}</option>
                         {% endfor %}
                     </select>
                 </div>
 
-                <div class="col-md-6 item3">
+                <div class="col-md-6 item3 required-field">
                     <label for="Engineer_Assigned">Engineer Assigned<span style="color: red;">*</span></label>
                     <select id="Engineer_Assigned" name="Engineer_Assigned" class="form-control" required>
                         <option value="" disabled selected>Select Engineer</option>
