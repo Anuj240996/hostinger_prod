@@ -170,6 +170,8 @@ class UserApp(models.Model):
     name = models.TextField(blank=True, null=True)
     email = models.TextField(blank=True, null=True)
     phone = models.TextField(blank=True, null=True)
+    password_hash = models.TextField(blank=True, null=True)
+    address = models.TextField(blank=True, null=True)
     role = models.TextField(blank=True, null=True)
     created_at = models.DateTimeField(blank=True, null=True)
     last_login = models.DateTimeField(blank=True, null=True)
