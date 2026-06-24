@@ -1,5 +1,3 @@
-from turtle import home
-
 from django.urls import path, include
 from . import views
 from .views import get_company_data, check_company_name, check_username
