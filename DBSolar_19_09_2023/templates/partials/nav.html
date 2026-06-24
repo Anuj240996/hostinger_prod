@@ -129,9 +129,9 @@
                      <a href="{% url 'dashboard-open-notification' pk=notif_item.id %}">
 
                         <div class="media">
-                           {% if not notif_item.status %}
+                           {% if notif_item.sender and not notif_item.status %}
                            <span class="avatar avatar-sm">
-                               <img class="avatar-img rounded-circle" alt="{{ notif_item.sender.username }}" src="{{ notif_item.sender.profile|profile_image_url }}">
+                               <img class="avatar-img rounded-circle" alt="{{ notif_item.sender.username }}" src="{{ notif_item.sender|profile_image_url }}">
                            </span>
 
                            <div class="media-body">
@@ -163,7 +163,7 @@
 <!--            {% else %}-->
 <!--              <span class="user-img text-capitalize"><img class="rounded-circle" src="{{ user.profile.image.url }}" width="50" height="50" alt="{{ user.first_name }} {{ user.last_name }}">  {{ user.username }} </span>-->
 <!--            {% endif %}-->
-             <img class="rounded-circle" src="{{ user.profile|profile_image_url }}" width="50" height="50" alt="{{ user.first_name }} {{ user.last_name }}">
+             <img class="rounded-circle" src="{{ user|profile_image_url }}" width="50" height="50" alt="{{ user.first_name }} {{ user.last_name }}">
                <span id="user-name">
                   {% if user.first_name %}
                      {{ user.first_name }}
@@ -191,12 +191,12 @@
          <div class="dropdown-menu profile">
             <div class="user-header">
                <div class="avatar avatar-sm">
-                  <img src="{{ user.profile|profile_image_url }}" alt="User Image" class="avatar-img rounded-circle">
+                  <img src="{{ user|profile_image_url }}" alt="User Image" class="avatar-img rounded-circle">
                </div>
                {% if user.first_name %}
                   <div class="user-text text-capitalize">
                    <h6>{{ user.first_name }} {{ user.last_name }}</h6>
-                   <p class="text-muted mb-0">{{ user.profile.designation }}-{{ user.profile.department }}</p>
+                   <p class="text-muted mb-0">{{ user|user_profile_label }}</p>
                   </div>
                {% else %}
                   <div class="user-text text-capitalize">

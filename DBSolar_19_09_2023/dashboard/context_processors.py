@@ -11,7 +11,7 @@ def staff_nav_notifications(request):
     notification1 = staff_Notification.objects.filter(
         staff_id=request.user.id,
         status=0,
-    ).select_related('sender', 'sender__profile').order_by('-created_at')
+    ).select_related('sender').order_by('-created_at')
 
     return {
         'count1': notification1.count(),

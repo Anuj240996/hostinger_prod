@@ -21,7 +21,7 @@
                        data-notification-id="{{ item.id }}">
                         <div class="d-flex align-items-start gap-2">
                             {% if item.sender %}
-                            <img class="rounded-circle flex-shrink-0" src="{{ item.sender.profile|profile_image_url }}" width="36" height="36" alt="{{ item.sender.username }}">
+                            <img class="rounded-circle flex-shrink-0" src="{{ item.sender|profile_image_url }}" width="36" height="36" alt="{{ item.sender.username }}">
                             {% else %}
                             <span class="rounded-circle bg-light d-inline-flex align-items-center justify-content-center flex-shrink-0" style="width:36px;height:36px;">
                                 <i class="fas fa-user text-muted"></i>

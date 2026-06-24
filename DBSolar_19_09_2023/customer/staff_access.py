@@ -1,13 +1,19 @@
 """
 Staff-scoped Customer querysets: Associates see Assoc_Assign; engineers see Engg_Assign.
 """
+from django.core.exceptions import ObjectDoesNotExist
+
 from .models import Customer
 
 
 def is_associate_staff(user):
     if not getattr(user, "is_authenticated", False) or not user.is_staff:
         return False
-    prof = getattr(user, "profile", None)
+    prof = None
+    try:
+        prof = user.profile
+    except ObjectDoesNotExist:
+        prof = None
     return bool(prof and getattr(prof, "department", None) == "Associate")
 
 

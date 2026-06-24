@@ -59,7 +59,9 @@
                                <td class="text-capitalize text-center" style="text-align: center; display: block; margin: 0 auto;">
                                    {% if i.sender %}
                                    {{ i.sender.first_name|default:i.sender.username }}
-                                   {% if i.sender.profile.designation %} — {{ i.sender.profile.designation }}{% endif %}
+                                   {% with prof=i.sender|user_profile %}
+                                   {% if prof and prof.designation %} — {{ prof.designation }}{% endif %}
+                                   {% endwith %}
                                    {% else %}
                                    —
                                    {% endif %}
@@ -105,7 +107,7 @@
       <div class="modal-body">
         <div class="d-flex align-items-start mb-3">
           {% if selected_notification.sender %}
-          <img class="rounded-circle mr-3" src="{{ selected_notification.sender.profile|profile_image_url }}" width="48" height="48" alt="">
+          <img class="rounded-circle mr-3" src="{{ selected_notification.sender|profile_image_url }}" width="48" height="48" alt="">
           {% endif %}
           <div>
             {% if selected_notification.sender %}
