@@ -417,14 +417,14 @@
                                                         data-link-emails="{{ Cust.mobile_app_link_emails }}"
                                                         data-link-dates="{{ Cust.mobile_app_link_dates }}"
                                                         data-link-ids="{{ Cust.mobile_app_link_ids }}">
-                                                    <span class="badge badge-success">Linked</span>
+                                                    <span class="badge badge-success">Attached</span>
                                                     <span class="d-block small text-primary font-weight-bold mt-1">{{ Cust.mobile_app_link_primary_name }}</span>
                                                     {% if Cust.mobile_app_links|length > 1 %}
                                                     <span class="d-block small text-muted">+{{ Cust.mobile_app_links|length|add:"-1" }} more</span>
                                                     {% endif %}
                                                 </button>
                                                 {% else %}
-                                                <span class="badge badge-secondary">Not Linked</span>
+                                                <span class="badge badge-secondary">Detached</span>
                                                 {% endif %}
                                             </td>
                                             <!--                                   <td class="text-right">-->
@@ -1242,7 +1242,7 @@
         var cell = btn.closest('td');
         if (!data.remaining_count) {
             if (cell) {
-                cell.innerHTML = '<span class="badge badge-secondary">Not Linked</span>';
+                cell.innerHTML = '<span class="badge badge-secondary">Detached</span>';
             }
             if (window.jQuery) {
                 window.jQuery('#customerMobileLinkModal').modal('hide');
@@ -1252,7 +1252,7 @@
         }
 
         var badge = btn.querySelector('.badge');
-        if (badge) badge.textContent = 'Linked';
+        if (badge) badge.textContent = 'Attached';
         var nameElBtn = btn.querySelector('.text-primary.font-weight-bold');
         if (nameElBtn) nameElBtn.textContent = data.mobile_app_link_primary_name || '';
         var moreEl = btn.querySelector('.text-muted');
