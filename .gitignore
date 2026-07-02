@@ -1,0 +1,29 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Virtual environments (never commit; the container builds its own)
+env/
+venv/
+.venv/
+ENV/
+DBSolar_19_09_2023/env/
+DBSolar_19_09_2023/venv/
+
+# Django
+*.log
+db.sqlite3
+db.sqlite3-journal
+staticfiles/
+DBSolar_19_09_2023/staticfiles/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# Env files
+.env

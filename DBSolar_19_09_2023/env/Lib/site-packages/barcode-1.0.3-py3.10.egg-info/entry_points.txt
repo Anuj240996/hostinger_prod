@@ -1,3 +1,0 @@
-[console_scripts]
-barcode = barcode.cli:main
-
