@@ -55,10 +55,10 @@ class Firetequesthistory(models.Model):
     firereport = models.ForeignKey(Firereport, on_delete=models.CASCADE, null=True)
     status = models.CharField(max_length=200, null=True)
     remark = models.CharField(max_length=250, null=True)
-    # Production PostgreSQL keeps mixed-case column names (quoted).
+    # Production PostgreSQL keeps mixed-case postingDate; AssignBy was renamed to assignby.
     postingDate = models.DateTimeField(auto_now_add=True, db_column='postingDate')
     AssignTo = models.ForeignKey(User, on_delete=models.CASCADE, null=True, db_column='assignto_id')
-    AssignBy = models.IntegerField(default=0, db_column='AssignBy')
+    AssignBy = models.IntegerField(default=0, db_column='assignby')
 
     def save(self, *args, **kwargs):
         # Use IST for postingDate when creating new records
