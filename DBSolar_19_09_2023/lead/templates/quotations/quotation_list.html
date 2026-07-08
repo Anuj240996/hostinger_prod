@@ -911,6 +911,44 @@
 </script>
 <script>
 (function () {
+  function preserveQuotationFiltersOnKpiCards() {
+    var allowedParams = ['assigned_to', 'from_date', 'to_date', 'q', 'per_page'];
+    var currentParams = new URLSearchParams(window.location.search || '');
+
+    document.querySelectorAll('.kpi-card-link').forEach(function (link) {
+      var href = link.getAttribute('href');
+      if (!href) return;
+
+      var targetUrl;
+      try {
+        targetUrl = new URL(href, window.location.origin);
+      } catch (e) {
+        return;
+      }
+
+      var targetParams = new URLSearchParams(targetUrl.search || '');
+      allowedParams.forEach(function (key) {
+        if (currentParams.has(key)) {
+          targetParams.set(key, currentParams.get(key) || '');
+        }
+      });
+
+      // Keep status from the card URL itself, but always reset pagination.
+      targetParams.delete('page');
+      targetUrl.search = targetParams.toString();
+      link.setAttribute('href', targetUrl.pathname + (targetUrl.search ? '?' + targetParams.toString() : ''));
+    });
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', preserveQuotationFiltersOnKpiCards);
+  } else {
+    preserveQuotationFiltersOnKpiCards();
+  }
+})();
+</script>
+<script>
+(function () {
   window.crmApplyListToolbarState = function () {};
   window.crmApplyCurrentColumnSelections = function () {};
   window.crmColumnVisibilityState = window.crmColumnVisibilityState || {};
