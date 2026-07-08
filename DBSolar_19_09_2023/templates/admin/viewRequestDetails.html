@@ -1,6 +1,7 @@
 {% extends 'partials/base.html' %}
 {% load static %}
 {% load tz %}
+{% load custom_filters %}
 {% block content %}
 
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@mdi/font/css/materialdesignicons.min.css">
@@ -114,7 +115,7 @@
                                     <tr>
                                         <th style="text-align: center; width: 250px" rowspan="5">
                                          <div class="image-container" style="align: center;">
-                                           <img class="img-thumbnail ml-2" height="150px" width="200px" src="{{ firereport.AssignTo.profile.image_url }}" class="card-img-top"  alt="profile-image">
+                                           <img class="img-thumbnail ml-2" height="150px" width="200px" src="{{ firereport.AssignTo|profile_image_url }}" class="card-img-top"  alt="profile-image" onerror="this.onerror=null;this.src='/media/profile_pics/default.png';">
                                            <img src="{% static '/images/dblogosmall.png' %}" alt="Company Symbol" class="company-symbol-overlap">
                                          </div>
                                         </th>
@@ -126,15 +127,15 @@
                                     </tr>
                                     <tr>
                                         <th style="width: 300px">&nbsp;&nbsp; Employee ID & Designation</th>
-                                        <td class="text-capitalize"> DB / {{firereport.AssignTo.id}} - {{firereport.AssignTo.profile.designation}}</td>
+                                        <td class="text-capitalize"> DB / {{firereport.AssignTo.id}} - {% if firereport.AssignTo.profile %}{{ firereport.AssignTo.profile.designation }}{% endif %}</td>
                                     </tr>
                                     <tr>
                                         <th style="width: 300px"> &nbsp;&nbsp; Contact No.</th>
-                                        <td>{{firereport.AssignTo.profile.workphone}}</td>
+                                        <td>{% if firereport.AssignTo.profile %}{{ firereport.AssignTo.profile.workphone }}{% endif %}</td>
                                     </tr>
                                     <tr>
                                         <th style="width: 300px">&nbsp;&nbsp; Engineers Address</th>
-                                        <td class="text-capitalize">{{firereport.AssignTo.profile.address}}</td>
+                                        <td class="text-capitalize">{% if firereport.AssignTo.profile %}{{ firereport.AssignTo.profile.address }}{% endif %}</td>
                                     </tr>
                                     <tr>
                                         <th></th>
@@ -367,7 +368,7 @@ $(document).ready(function() {
                 id: {{ user.id|default:0 }},
                 firstName: "{{ user.first_name|default:""|escapejs }}",
                 lastName: "{{ user.last_name|default:""|escapejs }}",
-                department: "{% if user.profile.department %}{{ user.profile.department|escapejs }}{% else %}{% endif %}"
+                department: "{% if user.profile %}{{ user.profile.department|default:''|escapejs }}{% endif %}"
             }{% if not forloop.last %},{% endif %}
         {% endfor %}
     ];

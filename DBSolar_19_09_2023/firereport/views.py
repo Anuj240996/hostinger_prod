@@ -1937,7 +1937,13 @@ def viewRequestDetails(request, pid):
     user = get_user(request)
     if user is None:
         return redirect('user-login')
-    firereport = Firereport.objects.filter(id=pid).order_by('-Postingdate').first()
+    firereport = (
+        Firereport.objects
+        .select_related('AssignTo', 'AssignTo__profile')
+        .filter(id=pid)
+        .order_by('-Postingdate')
+        .first()
+    )
     if not firereport:
         messages.error(request, f"Request #{pid} not found.")
         return redirect('firereport-assignRequest')
@@ -1950,9 +1956,13 @@ def viewRequestDetails(request, pid):
     firereportid = firereport.id
     #team = Teams.objects.all()
     # all_users = User.objects.all()
-    all_users = User.objects.filter(is_staff=1, is_active=1)
+    all_users = User.objects.filter(is_staff=1, is_active=1).select_related('profile')
     reportcount = Firetequesthistory.objects.filter(firereport=firereport).count()
-    unique_departments = set(user.profile.department for user in all_users)
+    # Never call .profile on users without a row — that raised RelatedObjectDoesNotExist (500).
+    unique_departments = {
+        p.department
+        for p in Profile.objects.filter(customer__in=all_users).exclude(department__isnull=True).exclude(department='')
+    }
     error1 = None  # Initialize error1 variable
     error = None
 
@@ -2053,7 +2063,13 @@ def reviewRequestDetails(request, pid):
     user = get_user(request)
     if user is None:
         return redirect('user-login')
-    firereport = Firereport.objects.filter(id=pid).order_by('-Postingdate').first()
+    firereport = (
+        Firereport.objects
+        .select_related('AssignTo', 'AssignTo__profile')
+        .filter(id=pid)
+        .order_by('-Postingdate')
+        .first()
+    )
     if not firereport:
         messages.error(request, f"Request #{pid} not found.")
         return redirect('firereport-reassignRequest')
@@ -2073,12 +2089,15 @@ def reviewRequestDetails(request, pid):
     # Filter users who are not the currently assigned user
     # all_users = User.objects.exclude(id=assigned_user.id) if assigned_user else User.objects.all()
     if assigned_user:
-        all_users = User.objects.exclude(id=assigned_user.id).filter(is_staff=1, is_active=1)
+        all_users = User.objects.exclude(id=assigned_user.id).filter(is_staff=1, is_active=1).select_related('profile')
     else:
-        all_users = User.objects.filter(is_staff=1, is_active=1)
+        all_users = User.objects.filter(is_staff=1, is_active=1).select_related('profile')
     #all_users = User.objects.all()
     reportcount = Firetequesthistory.objects.filter(firereport=firereport).count()
-    unique_departments = set(user.profile.department for user in all_users)
+    unique_departments = {
+        p.department
+        for p in Profile.objects.filter(customer__in=all_users).exclude(department__isnull=True).exclude(department='')
+    }
     try:
         if request.method == "POST":
             Teamid = request.POST['AssignTo']
@@ -2108,7 +2127,10 @@ def reviewRequestDetails(request, pid):
         count1 = staff_Notification.objects.filter(staff_id=request.user.id, status=False).count()
         notification1 = staff_Notification.objects.filter(staff_id=request.user.id, status=False).order_by('-created_at')
         user = get_user(request)
-        unique_departments = set(user.profile.department for user in all_users)
+        unique_departments = {
+            p.department
+            for p in Profile.objects.filter(customer__in=all_users).exclude(department__isnull=True).exclude(department='')
+        }
         if user is None:
             return redirect('user-login')
         if request.method == "POST":

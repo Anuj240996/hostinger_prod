@@ -33,12 +33,6 @@ class Profile(models.Model):
     DOB = models.DateField(null=True, db_column='dob')
     department = models.CharField(choices=[('Administration', 'Administration'), ('Stockist', 'Stockist'), ('Engineers', 'Engineers'), ('Finance', 'Finance'), ('Associate', 'Associate')],max_length=50)
     image = models.ImageField(default='profile_pics/default.png', upload_to='profile_pics', null=True, blank=True)
-
-    @property
-    def image_url(self):
-        """Always serve avatar from /media/profile_pics/."""
-        from user.templatetags.custom_filters import _media_profile_image_url
-        return _media_profile_image_url(self.image)
     designation = models.CharField(choices=[('Admin', 'Admin'), ('Sr.Cleark', 'Sr.Cleark'), ('Jr.Cleark', 'Jr.Cleark'), ('Accountant', 'Accountant'), ('Sr.Engg', 'Sr.Engg'), ('Jr.Engg', 'Jr.Engg'), ('Associate', 'Associate')] , max_length=50,  null=True)
     last_updated_by = models.PositiveIntegerField(null=True)
     workphone = models.CharField(max_length=50, null=True)
@@ -68,8 +62,16 @@ class Profile(models.Model):
     #last_updated_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='updated_profiles')
     #joiningdate = models.DateField(null=True)
 
+    @property
+    def image_url(self):
+        """Always serve avatar from /media/profile_pics/."""
+        from user.templatetags.custom_filters import _media_profile_image_url
+        return _media_profile_image_url(self.image)
+
     def __str__(self):
-        return f'{self.customer.username}-Profile'
+        if self.customer_id and self.customer:
+            return f'{self.customer.username}-Profile'
+        return f'Profile-{self.pk}'
 
 
 

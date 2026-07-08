@@ -1,5 +1,6 @@
 {% extends 'partials/base.html' %}
 {% load static %}
+{% load custom_filters %}
 {% load firereport_dt %}
 {% block content %}
 
@@ -138,7 +139,7 @@
                   <tr>
                     <th style="text-align: center; width: 250px" rowspan="5">
                       <div class="image-container">
-                        <img class="img-thumbnail ml-2" height="150" width="200" src="{{ service_request.AssignTo.profile.image_url }}" alt="profile-image">
+                        <img class="img-thumbnail ml-2" height="150" width="200" src="{{ service_request.AssignTo|profile_image_url }}" alt="profile-image">
                         <img src="{% static '/images/dblogosmall.png' %}" alt="Company Symbol" class="company-symbol-overlap">
                       </div>
                     </th>
@@ -149,15 +150,15 @@
                   </tr>
                   <tr>
                     <th style="width: 300px">&nbsp;&nbsp;Employee ID & Designation</th>
-                    <td class="text-capitalize">DB / {{ service_request.AssignTo.id }} - {{ service_request.AssignTo.profile.designation }}</td>
+                    <td class="text-capitalize">DB / {{ service_request.AssignTo.id }} - {% if service_request.AssignTo.profile %}{{ service_request.AssignTo.profile.designation }}{% endif %}</td>
                   </tr>
                   <tr>
                     <th style="width: 300px">&nbsp;&nbsp;Contact No.</th>
-                    <td>{{ service_request.AssignTo.profile.workphone }}</td>
+                    <td>{% if service_request.AssignTo.profile %}{{ service_request.AssignTo.profile.workphone }}{% endif %}</td>
                   </tr>
                   <tr>
                     <th style="width: 300px">&nbsp;&nbsp;Engineers Address</th>
-                    <td class="text-capitalize">{{ service_request.AssignTo.profile.address }}</td>
+                    <td class="text-capitalize">{% if service_request.AssignTo.profile %}{{ service_request.AssignTo.profile.address }}{% endif %}</td>
                   </tr>
                   <tr>
                     <th></th>

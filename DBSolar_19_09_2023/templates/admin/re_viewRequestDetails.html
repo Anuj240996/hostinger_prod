@@ -1,5 +1,6 @@
 {% extends 'partials/base.html' %}
 {% load static %}
+{% load custom_filters %}
 {% load tz %}
 {% block content %}
 <style>
@@ -96,7 +97,7 @@
                                     <tr>
                                         <th style="text-align: center; width: 250px" rowspan="5">
                                          <div class="image-container" style="align: center;">
-                                           <img class="img-thumbnail ml-2" height="150px" width="200px" src="{{ firereport.AssignTo.profile.image_url }}" class="card-img-top"  alt="profile-image">
+                                           <img class="img-thumbnail ml-2" height="150px" width="200px" src="{{ firereport.AssignTo|profile_image_url }}" class="card-img-top"  alt="profile-image">
                                            <img src="{% static '/images/dblogosmall.png' %}" alt="Company Symbol" class="company-symbol-overlap">
                                          </div>
                                         </th>
@@ -108,15 +109,15 @@
                                     </tr>
                                     <tr>
                                         <th style="width: 300px">&nbsp;&nbsp; Employee ID & Designation</th>
-                                        <td> DB / {{firereport.AssignTo.id}} - {{firereport.AssignTo.profile.designation}}</td>
+                                        <td> DB / {{firereport.AssignTo.id}} - {% if firereport.AssignTo.profile %}{{ firereport.AssignTo.profile.designation }}{% endif %}</td>
                                     </tr>
                                     <tr>
                                         <th style="width: 300px"> &nbsp;&nbsp; Contact No.</th>
-                                        <td>{{firereport.AssignTo.profile.phone}}</td>
+                                        <td>{% if firereport.AssignTo.profile %}{{ firereport.AssignTo.profile.phone }}{% endif %}</td>
                                     </tr>
                                     <tr>
                                         <th style="width: 300px">&nbsp;&nbsp; Engineers Address</th>
-                                        <td>{{firereport.AssignTo.profile.address}}</td>
+                                        <td>{% if firereport.AssignTo.profile %}{{ firereport.AssignTo.profile.address }}{% endif %}</td>
                                     </tr>
                                     <tr>
                                         <th></th>
@@ -149,7 +150,7 @@
                                     <tr>
                                         <th style="text-align: center; width: 250px" rowspan="5">
                                          <div class="image-container" style="align: center;">
-                                           <img class="img-thumbnail ml-2" height="150px" width="200px" src="{{ firereport.AssignTo.profile.image_url }}" class="card-img-top"  alt="profile-image">
+                                           <img class="img-thumbnail ml-2" height="150px" width="200px" src="{{ firereport.AssignTo|profile_image_url }}" class="card-img-top"  alt="profile-image">
                                            <img src="{% static '/images/dblogosmall.png' %}" alt="Company Symbol" class="company-symbol-overlap">
                                          </div>
                                         </th>
@@ -161,15 +162,15 @@
                                     </tr>
                                     <tr>
                                         <th style="width: 300px">&nbsp;&nbsp; Employee ID & Designation</th>
-                                        <td> DB / {{firereport.AssignTo.id}} - {{firereport.AssignTo.profile.designation}}</td>
+                                        <td> DB / {{firereport.AssignTo.id}} - {% if firereport.AssignTo.profile %}{{ firereport.AssignTo.profile.designation }}{% endif %}</td>
                                     </tr>
                                     <tr>
                                         <th style="width: 300px"> &nbsp;&nbsp; Contact No.</th>
-                                        <td>{{firereport.AssignTo.profile.phone}}</td>
+                                        <td>{% if firereport.AssignTo.profile %}{{ firereport.AssignTo.profile.phone }}{% endif %}</td>
                                     </tr>
                                     <tr>
                                         <th style="width: 300px">&nbsp;&nbsp; Engineers Address</th>
-                                        <td>{{firereport.AssignTo.profile.address}}</td>
+                                        <td>{% if firereport.AssignTo.profile %}{{ firereport.AssignTo.profile.address }}{% endif %}</td>
                                     </tr>
                                     <tr>
                                         <th></th>
