@@ -83,19 +83,19 @@
                     <li>
                         <!-- Add Company Symbol Overlapping the Image -->
                         <!--<div class="image-container">-->
-                        <!--    <img class="img-thumbnail ml-1" src="{{ employee.image.url }}" class="card-img-top" alt="profile-image" style="max-height:500px; max-width:500px;">-->
+                        <!--    <img class="img-thumbnail ml-1" src="{{ employee.image_url }}" class="card-img-top" alt="profile-image" style="max-height:500px; max-width:500px;">-->
                         <!--    <img src="{% static '/images/dblogosmall.png' %}" alt="Company Symbol" class="company-symbol-overlap">-->
                         <!--</div>-->
                         {% if user1.is_active %}
 
                             <div class="image-container">
-                                <img class="img-thumbnail ml-1" src="{{ employee.image.url }}" class="card-img-top" alt="profile-image" style="max-height:350px; max-width:200px;">
+                                <img class="img-thumbnail ml-1" src="{{ employee.image_url }}" class="card-img-top" alt="profile-image" style="max-height:350px; max-width:200px;">
                                 <img src="{% static '/images/dblogosmall.png' %}" alt="Company Symbol" class="company-symbol-overlap">
                             </div>
 
                         {% else %}
                            <div class="image-container">
-                                <img class="img-thumbnail ml-1" src="{{ employee.image.url }}" class="card-img-top" alt="profile-image" style="max-height:350px; max-width:200px;">
+                                <img class="img-thumbnail ml-1" src="{{ employee.image_url }}" class="card-img-top" alt="profile-image" style="max-height:350px; max-width:200px;">
                                 <img src="{% static '/images/inactive2.png' %}" alt="Inactive Symbol" class="company-symbol-overlap" style="max-width: 80%; height: 50%; right: -10%; bottom: -10%;">
                             </div>
                         {% endif %}
@@ -103,7 +103,7 @@
                         <!-- End Company Symbol -->
                     </li>
                     <li>
-                        <small class="text-muted">Currently:  <a href="{{ employee.image.url }}">{{ employee.image }}</a></small>
+                        <small class="text-muted">Currently:  <a href="{{ employee.image_url }}">{{ employee.image }}</a></small>
                     </li>
                 </ul>
 

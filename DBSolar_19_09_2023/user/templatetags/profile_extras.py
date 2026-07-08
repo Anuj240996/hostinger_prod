@@ -1,20 +1,19 @@
 from django import template
-from django.templatetags.static import static
+from django.conf import settings
+
+from user.templatetags.custom_filters import _media_profile_image_url
 
 register = template.Library()
 
 
 @register.filter
 def profile_image_url(profile):
-    """Avatar URL with static fallback when media file is missing."""
+    """Avatar URL from media/profile_pics, with default fallback."""
+    media_url = settings.MEDIA_URL if settings.MEDIA_URL.endswith('/') else f'{settings.MEDIA_URL}/'
+    default_url = f'{media_url}profile_pics/default.png'
     if profile is None:
-        return static("images/dblogosmall.png")
+        return default_url
     try:
-        image = profile.image
-        if image and image.name:
-            storage = image.storage
-            if storage.exists(image.name):
-                return image.url
+        return _media_profile_image_url(getattr(profile, 'image', None))
     except Exception:
-        pass
-    return static("images/dblogosmall.png")
+        return default_url

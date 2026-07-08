@@ -2,6 +2,7 @@
 {% block title %}Order Page{% endblock %}
 {% load static %}
 {% load group_filters %}
+{% load custom_filters %}
 {% block content %}
 <style>
     /* Add this style to customize checkbox size */
@@ -175,7 +176,7 @@
                               <td>{{ customer.username }}</td>
                               <td class="table-avatar col-emp-full-name col-primary-name-field">
 
-                                      <a href="{% url 'user-profile-updatepage' customer.id %}" class="avatar avatar-sm mr-2"><img class="avatar-img rounded-circle" src="{{ customer.profile.image.url }}" alt=""></a>
+                                      <a href="{% url 'user-profile-updatepage' customer.id %}" class="avatar avatar-sm mr-2"><img class="avatar-img rounded-circle" src="{{ customer|profile_image_url }}" alt="" onerror="this.onerror=null;this.src='/media/profile_pics/default.png';"></a>
                                       <a href="{% url 'user-profile-updatepage' customer.id %}" class="text-capitalize">{{ customer.first_name }} {{ customer.last_name }}</a>
 
                               </td>

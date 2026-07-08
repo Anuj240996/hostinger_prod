@@ -42,11 +42,17 @@ except Exception as e:
   fi
 done
 
-mkdir -p /app/media/profile_images
-if [ ! -f /app/media/profile_images/default.png ]; then
-  if [ -f /app/static/images/dblogosmall.png ]; then
-    cp /app/static/images/dblogosmall.png /app/media/profile_images/default.png
-    echo "Created default profile image at media/profile_images/default.png"
+mkdir -p /app/media/profile_pics
+if [ ! -f /app/media/profile_pics/default.png ]; then
+  if [ -f /app/media/profile_images/default.png ]; then
+    cp /app/media/profile_images/default.png /app/media/profile_pics/default.png
+    echo "Copied default profile image to media/profile_pics/default.png"
+  elif [ -f /app/static/images/dblogosmall.png ]; then
+    cp /app/static/images/dblogosmall.png /app/media/profile_pics/default.png
+    echo "Created default profile image at media/profile_pics/default.png"
+  elif [ -f /app/staticfiles/images/dblogosmall.png ]; then
+    cp /app/staticfiles/images/dblogosmall.png /app/media/profile_pics/default.png
+    echo "Created default profile image at media/profile_pics/default.png from staticfiles"
   fi
 fi
 

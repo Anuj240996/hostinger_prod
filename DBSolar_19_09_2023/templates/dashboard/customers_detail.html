@@ -61,15 +61,15 @@
                         </table>
                     </div>
                     <div class="image-container">
-<!--                        <img class="img-thumbnail ml-1" src="{{ customers.profile.image.url }}" class="card-img-top" alt="profile-image" style="max-height:350px; max-width:200px;">-->
+<!--                        <img class="img-thumbnail ml-1" src="{{ customers.profile.image_url }}" class="card-img-top" alt="profile-image" style="max-height:350px; max-width:200px;">-->
 <!--                        <img src="{% static '/images/dblogosmall.png' %}" alt="Company Symbol" class="company-symbol-overlap">-->
 
                             {% if customers %}
                                 {% if customers.is_active %}
-                                      <img class="img-thumbnail ml-1" src="{{ customers.profile.image.url }}" class="card-img-top" alt="profile-image" style="max-height:350px; max-width:200px;">
+                                      <img class="img-thumbnail ml-1" src="{{ customers.profile.image_url }}" class="card-img-top" alt="profile-image" style="max-height:350px; max-width:200px;">
                                       <img src="{% static '/images/dblogosmall.png' %}" alt="Company Symbol" class="company-symbol-overlap" style="max-width: 50%; height: 20%; right: 0; bottom: 45%;">
                                 {% else %}
-                                    <img class="img-thumbnail ml-1" src="{{ customers.profile.image.url }}" class="card-img-top" alt="profile-image" style="max-height:350px; max-width:200px;">
+                                    <img class="img-thumbnail ml-1" src="{{ customers.profile.image_url }}" class="card-img-top" alt="profile-image" style="max-height:350px; max-width:200px;">
                                     <img src="{% static '/images/inactive2.png' %}" alt="Inactive Symbol" class="company-symbol-overlap" style="max-width: 80%; height: 30%; right: -8%; bottom: 45%;">
                                 {% endif %}
                             {% else %}

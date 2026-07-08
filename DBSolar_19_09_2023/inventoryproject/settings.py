@@ -290,6 +290,16 @@ STATICFILES_DIRS = [
     BASE_DIR / "static",
 ]
 
+# Legacy images are referenced as /static/images/* across many templates.
+# Support both historical storage locations without changing template code.
+_legacy_image_dirs = [
+    BASE_DIR / "media" / "static" / "images",
+    BASE_DIR / "static" / "assets" / "images",
+]
+for _legacy_dir in _legacy_image_dirs:
+    if _legacy_dir.exists():
+        STATICFILES_DIRS.append(("images", _legacy_dir))
+
 STATIC_ROOT = BASE_DIR / "staticfiles"
 
 WHITENOISE_USE_FINDERS = os.environ.get("WHITENOISE_USE_FINDERS", "true").lower() == "true"

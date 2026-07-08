@@ -279,7 +279,9 @@ from io import BytesIO
 @permission_required('auth.change_user', raise_exception=True)
 def customers(request):
     # customer = User.objects.filter(groups=2, is_staff=True)
-    customer = User.objects.filter(groups=2, is_staff=True).exclude(Q(first_name='') | Q(last_name=''))
+    customer = User.objects.filter(groups=2, is_staff=True).exclude(
+        Q(first_name='') | Q(last_name='')
+    ).select_related('profile')
     customer_count = customer.count()
     profile = Profile.objects.all()
     totalAdmin = Profile.objects.filter(customer__is_active=True, department='Administration').count()
@@ -617,15 +619,16 @@ def _unread_staff_notifications(user):
 
 
 def _notification_sender_avatar(request, sender):
-    from django.templatetags.static import static
-    fallback = request.build_absolute_uri(static('images/dblogosmall.png'))
+    from django.conf import settings
+    from user.templatetags.custom_filters import _media_profile_image_url
+    media_url = settings.MEDIA_URL if settings.MEDIA_URL.endswith('/') else f'{settings.MEDIA_URL}/'
+    fallback = request.build_absolute_uri(f"{media_url}profile_pics/default.png")
     if not sender:
         return fallback
     try:
         profile = sender.profile
-        image = profile.image
-        if image and image.name and image.storage.exists(image.name):
-            return request.build_absolute_uri(image.url)
+        url = _media_profile_image_url(getattr(profile, 'image', None))
+        return request.build_absolute_uri(url)
     except Exception:
         pass
     return fallback

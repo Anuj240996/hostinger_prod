@@ -3,7 +3,44 @@
 {% block title %}Order Page{% endblock %}
 {% load static %}
 {% block content %}
-<div class="content container-fluid">
+<style>
+  .consumer-dashboard-page .card.my-card .card-body {
+    padding: 0.5rem 0.7rem;
+  }
+  .consumer-dashboard-page .db-widgets {
+    gap: 0.4rem;
+  }
+  .consumer-dashboard-page .db-icon {
+    font-size: 18px;
+    width: 42px;
+    height: 42px;
+    padding: 10px 11px !important;
+    margin-right: 8px;
+    flex-shrink: 0;
+  }
+  .consumer-dashboard-page .bg-two .db-icon,
+  .consumer-dashboard-page .bg-five .db-icon,
+  .consumer-dashboard-page .bg-seven .db-icon,
+  .consumer-dashboard-page .bg-eight .db-icon {
+    padding: 10px 11px !important;
+  }
+  .consumer-dashboard-page .db-info {
+    min-width: 0;
+    flex: 1 1 auto;
+  }
+  .consumer-dashboard-page .db-info h3 {
+    font-size: 1.3rem;
+    margin-bottom: 0.05rem;
+    line-height: 1.1;
+  }
+  .consumer-dashboard-page .db-info h6 {
+    font-size: 0.82rem;
+    line-height: 1.15;
+    white-space: nowrap;
+    margin: 0;
+  }
+</style>
+<div class="content container-fluid consumer-dashboard-page">
 <div class="page-header">
    <div class="row">
       <div class="col-sm-12">
@@ -39,7 +76,7 @@
                </div>
                <div class="db-info text-right">
                   <h3>{{ totalIndividual }}</h3>
-                  <h6>&nbsp;&nbsp;&nbsp;&nbsp;Residential Cust</h6>
+                  <h6>Residential Cust</h6>
                </div>
             </div>
          </div>
@@ -57,7 +94,7 @@
                </div>
                <div class="db-info text-right">
                   <h3>{{ totalCompany }}</h3>
-                  <h6>&nbsp;&nbsp;&nbsp;&nbsp;Industrial Cust</h6>
+                  <h6>Industrial Cust</h6>
                </div>
             </div>
          </div>

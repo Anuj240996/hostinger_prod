@@ -32,7 +32,7 @@ class Profile(models.Model):
     phone = models.CharField(max_length=50, null=True)
     DOB = models.DateField(null=True)
     department = models.CharField(choices=[('Administration', 'Administration'), ('Stockist', 'Stockist'), ('Engineers', 'Engineers'), ('Finance', 'Finance')],max_length=50)
-    image = models.ImageField(default='profile_images/default.png',upload_to='profile_pics', null=True, blank=True)
+    image = models.ImageField(default='profile_pics/default.png', upload_to='profile_pics', null=True, blank=True)
     designation = models.CharField(choices=[('Admin', 'Admin'), ('Sr.Cleark', 'Sr.Cleark'), ('Jr.Cleark', 'Jr.Cleark'), ('Accountant', 'Accountant'), ('Sr.Engg', 'Sr.Engg'), ('Jr.Engg', 'Jr.Engg')] , max_length=50,  null=True)
     last_updated_by = models.PositiveIntegerField(null=True)
     workphone = models.CharField(max_length=50, null=True)

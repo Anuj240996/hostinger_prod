@@ -27,13 +27,18 @@ class Profile(models.Model):
     #                           upload_to='profile_images')
     # customer = models.ForeignKey(User,on_delete=models.CASCADE,null=True)
 
-    customer = models.OneToOneField(User, on_delete=models.CASCADE, null=True)
-    #customer = models.OneToOneField(User, on_delete=models.CASCADE, null=True, related_name='profile')
+    customer = models.OneToOneField(User, on_delete=models.CASCADE, null=True, related_name='profile')
     address = models.CharField(max_length=200, null=True)
     phone = models.CharField(max_length=50, null=True)
     DOB = models.DateField(null=True, db_column='dob')
     department = models.CharField(choices=[('Administration', 'Administration'), ('Stockist', 'Stockist'), ('Engineers', 'Engineers'), ('Finance', 'Finance'), ('Associate', 'Associate')],max_length=50)
-    image = models.ImageField(default='profile_images/default.png',upload_to='profile_pics', null=True, blank=True)
+    image = models.ImageField(default='profile_pics/default.png', upload_to='profile_pics', null=True, blank=True)
+
+    @property
+    def image_url(self):
+        """Always serve avatar from /media/profile_pics/."""
+        from user.templatetags.custom_filters import _media_profile_image_url
+        return _media_profile_image_url(self.image)
     designation = models.CharField(choices=[('Admin', 'Admin'), ('Sr.Cleark', 'Sr.Cleark'), ('Jr.Cleark', 'Jr.Cleark'), ('Accountant', 'Accountant'), ('Sr.Engg', 'Sr.Engg'), ('Jr.Engg', 'Jr.Engg'), ('Associate', 'Associate')] , max_length=50,  null=True)
     last_updated_by = models.PositiveIntegerField(null=True)
     workphone = models.CharField(max_length=50, null=True)

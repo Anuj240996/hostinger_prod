@@ -47,13 +47,13 @@
                                    <li>
                                        <!-- Add Company Symbol Overlapping the Image -->
                                        <div class="image-container">
-                                           <img class="img-thumbnail ml-2" height="550px" src="{{ employee.image.url }}" class="card-img-top" height="200px" alt="profile-image">
+                                           <img class="img-thumbnail ml-2" height="550px" src="{{ employee.image_url }}" class="card-img-top" height="200px" alt="profile-image">
                                            <img src="{% static '/images/dblogosmall.png' %}" alt="Company Symbol" class="company-symbol-overlap">
                                        </div>
                                        <!-- End Company Symbol -->
                                    </li>
                                    <li>
-                                       <small class="text-muted">Currently:  <a href="{{ employee.image.url }}">{{ employee.image }}</a></small>
+                                       <small class="text-muted">Currently:  <a href="{{ employee.image_url }}">{{ employee.image }}</a></small>
                                    </li>
                                </ul>
 
@@ -200,13 +200,13 @@
                                 <li>
                                     <!-- Add Company Symbol Overlapping the Image -->
                                     <div class="image-container">
-                                        <img class="img-thumbnail ml-2" height="550px" src="{{ employee.image.url }}" class="card-img-top" height="200px" alt="profile-image">
+                                        <img class="img-thumbnail ml-2" height="550px" src="{{ employee.image_url }}" class="card-img-top" height="200px" alt="profile-image">
                                         <img src="{% static '/images/dblogosmall.png' %}" alt="Company Symbol" class="company-symbol-overlap">
                                     </div>
                                     <!-- End Company Symbol -->
                                 </li>
                                 <li>
-                                    <small class="text-muted">Currently:  <a href="{{ employee.image.url }}">{{ employee.image }}</a></small>
+                                    <small class="text-muted">Currently:  <a href="{{ employee.image_url }}">{{ employee.image }}</a></small>
                                 </li>
 
                                  <li>

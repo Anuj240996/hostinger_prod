@@ -98,6 +98,7 @@ from django.views.decorators.cache import never_cache
 from user.views import profile
 from rest_framework_simplejwt.views import TokenObtainPairView
 from django.views.generic import RedirectView
+from django.views.static import serve as media_serve
 
 from inventoryproject.legacy_redirects import redirect_legacy_leads_path
 
@@ -148,8 +149,12 @@ urlpatterns = [
     path('api/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
 
 ]
-if settings.DEBUG:
-    urlpatterns += static(settings.MEDIA_URL,
-                          document_root=settings.MEDIA_ROOT)
-urlpatterns += static(settings.MEDIA_URL,
-                      document_root=settings.MEDIA_ROOT)
+# django.conf.urls.static.static() is a no-op when DEBUG=False, so media URLs
+# 404 in production. Always expose MEDIA_ROOT under MEDIA_URL.
+urlpatterns += [
+    re_path(
+        r'^media/(?P<path>.*)$',
+        media_serve,
+        {'document_root': settings.MEDIA_ROOT},
+    ),
+]
