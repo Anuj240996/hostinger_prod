@@ -586,7 +586,7 @@ class PurchaseSerial(models.Model):
     purchase = models.ForeignKey(Unit, on_delete=models.CASCADE, related_name='purchaseserial_purchases')
     # billno = models.ForeignKey(PurchaseBill, on_delete=models.CASCADE, related_name='purchasebillno')
     # stock = models.ForeignKey(Stock, on_delete=models.CASCADE, related_name='purchaseitem')
-    serialNo = models.CharField(max_length=50, blank=True, null=True, db_column='serialno')
+    serialNo = models.CharField(max_length=50, blank=True, null=True, db_column='serialNo')
     item = models.ForeignKey(PurchaseItem, on_delete=models.CASCADE, related_name='purchaseserial_set', null=True)
     sales_billno = models.ForeignKey(SaleBill, on_delete=models.CASCADE, related_name='sale_bill', null=True)
     final_salebill = models.ForeignKey(FinalSale, on_delete=models.CASCADE, related_name='sale_bills1', null=True, blank=True)
