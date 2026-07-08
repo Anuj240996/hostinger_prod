@@ -875,9 +875,12 @@
     });
   }
 
-  function setView(mode) {
+  function setView(mode, opts) {
+    opts = opts || {};
     var isCards = mode === 'cards';
-    if (isCards && stripUrlFilterParam('status')) return;
+    // Only clear status when user manually switches to card view (full Kanban).
+    // Do not strip status on page load — KPI cards use ?status= and must filter the board.
+    if (isCards && opts.userToggledView && stripUrlFilterParam('status')) return;
     if (pageRoot) pageRoot.classList.toggle('quotations-page--cards', isCards);
     if (tableView) tableView.classList.toggle('d-none', isCards);
     if (cardView) cardView.classList.toggle('d-none', !isCards);
@@ -885,8 +888,13 @@
       statusFilterField.classList.toggle('d-none', isCards);
       statusFilterField.setAttribute('aria-hidden', isCards ? 'true' : 'false');
     }
-    if (isCards && statusFilterSelect) {
-      statusFilterSelect.value = '';
+    if (statusFilterSelect) {
+      var urlStatus = new URLSearchParams(window.location.search || '').get('status') || '';
+      if (opts.userToggledView && isCards) {
+        statusFilterSelect.value = '';
+      } else if (urlStatus) {
+        statusFilterSelect.value = urlStatus;
+      }
     }
     if (listBtn) {
       listBtn.classList.toggle('active', !isCards);
@@ -906,7 +914,7 @@
   setView(saved === 'cards' ? 'cards' : 'list');
 
   if (listBtn) listBtn.addEventListener('click', function () { setView('list'); });
-  if (cardsBtn) cardsBtn.addEventListener('click', function () { setView('cards'); });
+  if (cardsBtn) cardsBtn.addEventListener('click', function () { setView('cards', { userToggledView: true }); });
 })();
 </script>
 <script>
