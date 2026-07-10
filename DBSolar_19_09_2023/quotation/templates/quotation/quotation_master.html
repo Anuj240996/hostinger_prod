@@ -33,57 +33,75 @@
   }
   .bank-round-check-wrap {
     position: relative;
-    width: 22px;
-    height: 22px;
-    display: inline-block;
-    background: transparent !important;
+    width: 24px;
+    height: 24px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: none !important;
+    background-color: transparent !important;
     box-shadow: none !important;
-  }
-  .bank-round-check {
-    position: absolute;
-    inset: 0;
-    width: 22px !important;
-    height: 22px !important;
+    border: none !important;
+    padding: 0 !important;
     margin: 0 !important;
-    opacity: 0;
     cursor: pointer;
-    z-index: 3;
+  }
+  /* Fully hide native checkbox so browser/Bootstrap fill never shows */
+  .bank-card .bank-round-check-wrap input.bank-round-check[type="checkbox"],
+  .bank-card input.bank-round-check[type="checkbox"] {
+    position: absolute !important;
+    width: 1px !important;
+    height: 1px !important;
+    padding: 0 !important;
+    margin: -1px !important;
+    overflow: hidden !important;
+    clip: rect(0, 0, 0, 0) !important;
+    clip-path: inset(50%) !important;
+    white-space: nowrap !important;
+    border: 0 !important;
+    opacity: 0 !important;
+    appearance: none !important;
+    -webkit-appearance: none !important;
+    background: transparent !important;
+    background-color: transparent !important;
+    background-image: none !important;
+    accent-color: transparent !important;
+    box-shadow: none !important;
+    filter: none !important;
   }
   .bank-round-check-ui {
-    position: absolute;
-    inset: 0;
-    width: 22px;
-    height: 22px;
+    width: 24px;
+    height: 24px;
     border: 2px solid #00897B;
     border-radius: 50%;
     background: transparent !important;
     background-color: transparent !important;
+    background-image: none !important;
     box-shadow: none !important;
-    pointer-events: none;
-    z-index: 1;
+    display: inline-flex !important;
+    align-items: center;
+    justify-content: center;
     box-sizing: border-box;
+    line-height: 0;
   }
-  .bank-round-check-mark {
-    position: absolute;
-    left: 7px;
-    top: 3px;
-    width: 5px;
-    height: 9px;
-    border: solid #00897B;
-    border-width: 0 2px 2px 0;
-    transform: rotate(45deg);
-    pointer-events: none;
-    opacity: 0;
-    z-index: 2;
+  .bank-round-check-ui svg {
+    width: 12px;
+    height: 12px;
+    display: none;
+    fill: none;
+    stroke: #00897B;
+    stroke-width: 2.4;
+    stroke-linecap: round;
+    stroke-linejoin: round;
   }
-  .bank-round-check:checked ~ .bank-round-check-ui {
+  .bank-round-check-wrap.is-checked .bank-round-check-ui,
+  .bank-round-check-wrap:has(input:checked) .bank-round-check-ui {
     background: transparent !important;
+    background-color: transparent !important;
   }
-  .bank-round-check:checked ~ .bank-round-check-mark {
-    opacity: 1;
-  }
-  .bank-round-check:focus-visible ~ .bank-round-check-ui {
-    box-shadow: 0 0 0 3px rgba(0,137,123,.2);
+  .bank-round-check-wrap.is-checked .bank-round-check-ui svg,
+  .bank-round-check-wrap:has(input:checked) .bank-round-check-ui svg {
+    display: block;
   }
   .bank-use-form {
     margin: 0;
@@ -295,7 +313,7 @@
                 <input type="hidden" name="branch_name" value="{{ bank.branch_name }}">
                 <input type="hidden" name="ifsc_code" value="{{ bank.ifsc_code }}">
                 <input type="hidden" name="sort_order" value="{{ bank.sort_order }}">
-                <span class="bank-round-check-wrap">
+                <label class="bank-round-check-wrap{% if bank_count == 1 or use_on_pdf %} is-checked{% endif %}">
                   <input
                     class="bank-round-check"
                     type="checkbox"
@@ -304,9 +322,12 @@
                     onchange="this.form.submit()"
                     aria-label="Use on quotation PDF"
                   >
-                  <span class="bank-round-check-ui" aria-hidden="true"></span>
-                  <span class="bank-round-check-mark" aria-hidden="true"></span>
-                </span>
+                  <span class="bank-round-check-ui" aria-hidden="true">
+                    <svg viewBox="0 0 16 16" focusable="false">
+                      <polyline points="3.5,8.5 6.5,11.5 12.5,4.5"></polyline>
+                    </svg>
+                  </span>
+                </label>
               </form>
             </div>
 
@@ -401,7 +422,7 @@
             {% csrf_token %}
             <input type="hidden" name="action" value="save_bank">
             <div class="bank-card-top">
-              <span class="bank-round-check-wrap">
+              <label class="bank-round-check-wrap{% if bank_count == 0 %} is-checked{% endif %}">
                 <input
                   class="bank-round-check"
                   type="checkbox"
@@ -411,9 +432,12 @@
                   aria-label="Use on quotation PDF"
                   title="Use on quotation PDF"
                 >
-                <span class="bank-round-check-ui" aria-hidden="true"></span>
-                <span class="bank-round-check-mark" aria-hidden="true"></span>
-              </span>
+                <span class="bank-round-check-ui" aria-hidden="true">
+                  <svg viewBox="0 0 16 16" focusable="false">
+                    <polyline points="3.5,8.5 6.5,11.5 12.5,4.5"></polyline>
+                  </svg>
+                </span>
+              </label>
             </div>
             <div class="bank-card-body">
             <div class="row g-2">
