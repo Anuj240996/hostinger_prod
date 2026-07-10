@@ -538,12 +538,48 @@ def register(request):
     return render(request, 'user/login.html')
 
 
+def _resync_auth_user_sequences():
+    """Keep auth_user / user_profile ID sequences ahead of existing rows."""
+    from django.db import connection
+
+    if connection.vendor != "postgresql":
+        return
+    with connection.cursor() as cursor:
+        cursor.execute(
+            """
+            DO $$
+            DECLARE
+                seq_name text;
+                max_id bigint;
+            BEGIN
+                SELECT pg_get_serial_sequence('auth_user', 'id') INTO seq_name;
+                IF seq_name IS NOT NULL THEN
+                    SELECT COALESCE(MAX(id), 0) INTO max_id FROM auth_user;
+                    IF max_id > 0 THEN
+                        PERFORM setval(seq_name, max_id, true);
+                    END IF;
+                END IF;
+
+                SELECT pg_get_serial_sequence('user_profile', 'id') INTO seq_name;
+                IF seq_name IS NOT NULL THEN
+                    SELECT COALESCE(MAX(id), 0) INTO max_id FROM user_profile;
+                    IF max_id > 0 THEN
+                        PERFORM setval(seq_name, max_id, true);
+                    END IF;
+                END IF;
+            END $$;
+            """
+        )
+
+
 @login_required(login_url='user-login')
 
 @login_required(login_url='user-login')
 @allowed_users(allowed_roles=['Admin'])
 @permission_required('auth.change_user', raise_exception=True)
 def add(request):
+    from django.db import IntegrityError
+
     error = ""
     count1 = staff_Notification.objects.filter(staff_id=request.user.id, status=False).count()
     notification1 = staff_Notification.objects.filter(staff_id=request.user.id, status=False).order_by('-created_at')
@@ -558,7 +594,12 @@ def add(request):
             # Associate users must be staff as requested.
             user.is_staff = True if is_associate else form.cleaned_data.get('is_staff', True)
             user.is_active = True
-            user.save()
+            try:
+                user.save()
+            except IntegrityError:
+                # Sequence can lag after imports/manual inserts; resync and retry once.
+                _resync_auth_user_sequences()
+                user.save()
 
             # Add the user to the 'Customers' group
             group = Group.objects.get(name='Customers')
