@@ -5600,10 +5600,23 @@ def link_callback(uri, rel):
             if os.path.isfile(path):
                 return path
 
-        # Then look in STATIC_ROOT
-        path = os.path.join(str(settings.STATIC_ROOT), static_path)
-        if os.path.isfile(path):
-            return path
+        # Then look in STATIC_ROOT / legacy asert collectstatic tree
+        for root in (settings.STATIC_ROOT, settings.BASE_DIR / 'asert'):
+            path = os.path.join(str(root), static_path)
+            if os.path.isfile(path):
+                return path
+
+        # Django static finders (covers app static + collectstatic)
+        try:
+            from django.contrib.staticfiles import finders
+            found = finders.find(static_path)
+            if found:
+                if isinstance(found, (list, tuple)):
+                    found = found[0]
+                if found and os.path.isfile(found):
+                    return found
+        except Exception:
+            pass
 
     # 4. Otherwise, let xhtml2pdf try to handle it
     return uri
