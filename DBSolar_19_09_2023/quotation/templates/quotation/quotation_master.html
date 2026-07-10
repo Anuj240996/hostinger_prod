@@ -151,28 +151,63 @@
   }
   .term-card {
     border: 1px solid #dce3ea;
-    border-radius: 12px;
+    border-radius: 10px;
     padding: 16px;
     margin-bottom: 14px;
-    background: #fff;
-    box-shadow: 0 1px 2px rgba(0,0,0,.04);
+    background: #f8fafb;
+    position: relative;
+    width: 100%;
+    box-sizing: border-box;
   }
   .term-card.yellow-preview {
     background: linear-gradient(180deg, #fffde7 0%, #fff9c4 100%);
     border-color: #f0d86a;
   }
-  .term-index {
-    width: 34px;
-    height: 34px;
-    border-radius: 50%;
-    background: #00897B;
-    color: #fff;
-    display: inline-flex;
+  /* Global main.css styles ALL forms — keep term forms flush inside the card */
+  .term-card form,
+  .term-card .term-delete-inline {
+    width: auto !important;
+    max-width: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    border: none !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    background-color: transparent !important;
+    box-shadow: none !important;
+    display: block !important;
+  }
+  .term-card.is-editing .term-view-mode { display: none; }
+  .term-card:not(.is-editing) .term-edit-mode { display: none; }
+  .term-card-actions {
+    margin-top: 12px;
+    display: flex !important;
+    flex-direction: row !important;
+    flex-wrap: nowrap !important;
     align-items: center;
     justify-content: center;
-    font-weight: 700;
-    font-size: 0.9rem;
-    flex-shrink: 0;
+    gap: 8px;
+  }
+  .term-card-actions .term-delete-inline {
+    display: inline-flex !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    width: auto;
+  }
+  .term-field-label {
+    font-size: 0.78rem;
+    color: #78909c;
+    margin-bottom: 2px;
+  }
+  .term-field-value {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: #263238;
+    margin-bottom: 10px;
+    word-break: break-word;
+    white-space: pre-wrap;
+    line-height: 1.45;
+    min-height: 1.2em;
   }
   .term-badge {
     display: inline-block;
@@ -471,52 +506,49 @@
   <div class="card master-card">
     <div class="card-header">Terms &amp; Conditions</div>
     <div class="card-body">
-      <p class="help-text mb-3">
-        Edit the term text below. Badges show how each term appears on the quotation form and PDF.
-        <strong>Yellow</strong> highlights the term on PDF.
-        <strong>Form</strong> shows it on create/edit quotation.
-        <strong>Default</strong> pre-selects it for new quotations.
-      </p>
-
       {% for term in terms %}
-      <div class="term-card {% if term.has_yellow_background %}yellow-preview{% endif %}">
-        <form method="post">
+      <div class="term-card {% if term.has_yellow_background %}yellow-preview{% endif %}" id="term-card-{{ term.id }}" data-term-id="{{ term.id }}">
+        <div class="term-view-mode">
+          <div class="mb-2">
+            {% if term.has_yellow_background %}
+              <span class="term-badge on-yellow">Yellow PDF</span>
+            {% else %}
+              <span class="term-badge off">No yellow</span>
+            {% endif %}
+            {% if term.show_in_quotation_form %}
+              <span class="term-badge on-form">On form</span>
+            {% else %}
+              <span class="term-badge off">Hidden on form</span>
+            {% endif %}
+            {% if term.default_selected %}
+              <span class="term-badge on-default">Default selected</span>
+            {% endif %}
+            {% if term.is_active %}
+              <span class="term-badge on-active">Active</span>
+            {% else %}
+              <span class="term-badge off">Inactive</span>
+            {% endif %}
+          </div>
+          <div class="term-field-label">Term text</div>
+          <div class="term-field-value">{{ term.content|default:"—" }}</div>
+          <div class="term-card-actions">
+            <button type="button" class="btn btn-sm btn-primary" onclick="editTermCard({{ term.id }})">Update</button>
+            <form method="post" class="term-delete-inline" onsubmit="return confirm('Delete this term?');">
+              {% csrf_token %}
+              <input type="hidden" name="action" value="delete_term">
+              <input type="hidden" name="term_id" value="{{ term.id }}">
+              <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
+            </form>
+          </div>
+        </div>
+
+        <form method="post" class="term-edit-mode">
           {% csrf_token %}
           <input type="hidden" name="action" value="save_term">
           <input type="hidden" name="term_id" value="{{ term.id }}">
-
-          <div class="d-flex align-items-start gap-3 mb-2">
-            <span class="term-index">{{ forloop.counter }}</span>
-            <div class="flex-grow-1">
-              <div class="mb-2">
-                {% if term.has_yellow_background %}
-                  <span class="term-badge on-yellow">Yellow PDF</span>
-                {% else %}
-                  <span class="term-badge off">No yellow</span>
-                {% endif %}
-                {% if term.show_in_quotation_form %}
-                  <span class="term-badge on-form">On form</span>
-                {% else %}
-                  <span class="term-badge off">Hidden on form</span>
-                {% endif %}
-                {% if term.default_selected %}
-                  <span class="term-badge on-default">Default selected</span>
-                {% endif %}
-                {% if term.is_active %}
-                  <span class="term-badge on-active">Active</span>
-                {% else %}
-                  <span class="term-badge off">Inactive</span>
-                {% endif %}
-              </div>
-              <label class="form-label small mb-1">Term text</label>
-              <textarea name="content" class="form-control" rows="3">{{ term.content }}</textarea>
-              {% if term.content %}
-              <div class="term-preview">{{ term.content }}</div>
-              {% endif %}
-            </div>
-          </div>
-
-          <div class="d-flex flex-wrap gap-3 mb-2 ms-5">
+          <label class="form-label small mb-1">Term text</label>
+          <textarea name="content" class="form-control" rows="3">{{ term.content }}</textarea>
+          <div class="d-flex flex-wrap gap-3 my-2">
             <div class="form-check">
               <input class="form-check-input" type="checkbox" name="has_yellow_background" id="yellow_{{ term.id }}" {% if term.has_yellow_background %}checked{% endif %}>
               <label class="form-check-label" for="yellow_{{ term.id }}">Yellow background on PDF</label>
@@ -534,16 +566,10 @@
               <label class="form-check-label" for="active_{{ term.id }}">Active</label>
             </div>
           </div>
-
-          <div class="d-flex gap-2 ms-5">
-            <button type="submit" class="btn btn-sm btn-primary">Save Term</button>
+          <div class="term-card-actions">
+            <button type="submit" class="btn btn-sm btn-success">Save</button>
+            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="cancelTermEdit({{ term.id }})">Cancel</button>
           </div>
-        </form>
-        <form method="post" class="ms-5 mt-2" onsubmit="return confirm('Delete this term?');">
-          {% csrf_token %}
-          <input type="hidden" name="action" value="delete_term">
-          <input type="hidden" name="term_id" value="{{ term.id }}">
-          <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
         </form>
       </div>
       {% empty %}
@@ -576,7 +602,9 @@
               <label class="form-check-label" for="new_active">Active</label>
             </div>
           </div>
-          <button type="submit" class="btn btn-sm btn-success">Add Term</button>
+          <div class="term-card-actions">
+            <button type="submit" class="btn btn-sm btn-success">Add Term</button>
+          </div>
         </form>
       </div>
     </div>
@@ -589,6 +617,14 @@
   }
   function cancelBankEdit(bankId) {
     var card = document.getElementById('bank-card-' + bankId);
+    if (card) card.classList.remove('is-editing');
+  }
+  function editTermCard(termId) {
+    var card = document.getElementById('term-card-' + termId);
+    if (card) card.classList.add('is-editing');
+  }
+  function cancelTermEdit(termId) {
+    var card = document.getElementById('term-card-' + termId);
     if (card) card.classList.remove('is-editing');
   }
 </script>
