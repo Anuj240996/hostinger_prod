@@ -70,6 +70,41 @@
 
     .no-border td, .no-border th { border: none !important; }
 
+    /* From / To / Date: separate boxes so shorter columns don't stretch */
+    table.party-info-wrap {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 6px;
+      margin-bottom: 0;
+      table-layout: fixed;
+    }
+    table.party-info-wrap > tr > td,
+    table.party-info-wrap td.party-col {
+      border: none !important;
+      padding: 0 2px !important;
+      margin: 0 !important;
+      vertical-align: top !important;
+    }
+    table.party-box {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 0 !important;
+      table-layout: fixed;
+    }
+    table.party-box td {
+      border: 1px solid #000 !important;
+      padding: 3px 5px !important;
+      margin: 0 !important;
+      line-height: 1.25 !important;
+      vertical-align: top !important;
+      text-align: left !important;
+    }
+    .party-box-line {
+      display: block;
+      margin: 0;
+      padding: 0;
+    }
+
     .center { text-align: center; }
     .right { text-align: right; white-space: nowrap; }
     .bold { font-weight: bold; }
@@ -195,39 +230,57 @@
     for your requirement. Plant Capacity <b><span class="black"> &nbsp;{{ quotation.plant_capacity_kw|clean_decimal  }}</span> KW</b>
     solar system with our genuine competitive offer as follows:
   </span>
-  <table align="center" class="party-info-table" style="margin-top: 6px;">
+  <table align="center" class="party-info-wrap no-border" style="margin-top: 6px; margin-bottom: 0;">
     <tr>
-      <td style="padding: 4px 6px; line-height: 1.35; vertical-align: top;" width="35%">
-        <b>From,</b><br>
-        <b>{{ quotation_master.company_name|default:"Heramb Industries" }},</b><br>
-        {% if quotation_master.from_address %}
-        {{ quotation_master.from_address|linebreaksbr }}
-        {% else %}
-        Bhagya Banglow,Near Sant Eknath<br>
-        Rang Mandir, New Osman Pura,<br>
-        Chh. Sambhaki Nagar.(MH)-431001
-        {% endif %}
+      <td class="party-col" width="35%" style="border: none; padding: 0 2px; vertical-align: top;">
+        <table class="party-box" style="margin: 0;">
+          <tr>
+            <td style="padding: 3px 5px; line-height: 1.25; vertical-align: top; text-align: left;">
+              <b>From,</b><br>
+              <b>{{ quotation_master.company_name|default:"Heramb Industries" }},</b><br>
+              {% if quotation_master.from_address %}
+              {{ quotation_master.from_address|striptags|linebreaksbr }}
+              {% else %}
+              Bhagya Banglow,Near Sant Eknath<br>
+              Rang Mandir, New Osman Pura,<br>
+              Chh. Sambhaki Nagar.(MH)-431001
+              {% endif %}
+            </td>
+          </tr>
+        </table>
       </td>
-      <td style="padding: 4px 6px; line-height: 1.35; vertical-align: top;" width="33%">
-        <b>To,</b><br>
-        <b>{{ quotation.title }} {{ quotation.consumer_name }}</b><br>
-        {{ quotation.consumer_address1 }}{% if quotation.consumer_address1 %},{% endif %}<br>
-        {{ quotation.consumer_address2 }}
+      <td class="party-col" width="33%" style="border: none; padding: 0 2px; vertical-align: top;">
+        <table class="party-box" style="margin: 0;">
+          <tr>
+            <td style="padding: 3px 5px; line-height: 1.25; vertical-align: top; text-align: left;">
+              <b>To,</b><br>
+              <b>{{ quotation.title }} {{ quotation.consumer_name }}</b><br>
+              {% if quotation.consumer_address1 %}{{ quotation.consumer_address1 }},{% endif %}<br>
+              {{ quotation.consumer_address2 }}
+            </td>
+          </tr>
+        </table>
       </td>
-      <td style="padding: 4px 6px; line-height: 1.35; vertical-align: top;" width="32%">
-        <b>Date - </b>{{ formatted_date }}<br>
-        <b>Quotation No. - </b>
-          {% if quotation.consumer_type == 'Residential' %}
-            DB/Res/{{ quotation.quotation_no }}/{% now "y" as this_year %}{{ this_year }}
-          {% elif quotation.consumer_type == 'Commercial' %}
-            DB/Comm/{{ quotation.quotation_no }}/{% now "y" as this_year %}{{ this_year }}
-          {% elif quotation.consumer_type == 'Industrial' %}
-            DB/Ind/{{ quotation.quotation_no }}/{% now "y" as this_year %}{{ this_year }}
-          {% endif %}
-        <br>
-        <b>Consumer No. - </b>{{ quotation.consumer_no }}<br>
-        <b>Consumer Type - </b>{{ quotation.consumer_type }}<br>
-        <b>Mobile No. - </b>{{ quotation.consumer_mobile }}
+      <td class="party-col" width="32%" style="border: none; padding: 0 2px; vertical-align: top;">
+        <table class="party-box" style="margin: 0;">
+          <tr>
+            <td style="padding: 3px 5px; line-height: 1.25; vertical-align: top; text-align: left;">
+              <b>Date - </b>{{ formatted_date }}<br>
+              <b>Quotation No. - </b>
+              {% if quotation.consumer_type == 'Residential' %}
+                DB/Res/{{ quotation.quotation_no }}/{% now "y" as this_year %}{{ this_year }}
+              {% elif quotation.consumer_type == 'Commercial' %}
+                DB/Comm/{{ quotation.quotation_no }}/{% now "y" as this_year %}{{ this_year }}
+              {% elif quotation.consumer_type == 'Industrial' %}
+                DB/Ind/{{ quotation.quotation_no }}/{% now "y" as this_year %}{{ this_year }}
+              {% endif %}
+              <br>
+              <b>Consumer No. - </b>{{ quotation.consumer_no }}<br>
+              <b>Consumer Type - </b>{{ quotation.consumer_type }}<br>
+              <b>Mobile No. - </b>{{ quotation.consumer_mobile }}
+            </td>
+          </tr>
+        </table>
       </td>
     </tr>
   </table>
