@@ -944,19 +944,10 @@ def Cust_emp(request):
             )
             messages.info(request, 'New Customer enrolled Successfully')
 
-            cust = customer_queryset_for_request(request.user)
-            if Cust_id:
-                cust = cust.filter(Cust_id=Cust_id)
-                context = {
-                    'cust': cust,
-                    'count1': count1,
-                    'notification1': notification1,
-                    'engineers': engineers,
-                    'associates': associates,
-                    'cities': cities,
-                }
-                return render(request, 'customer/Cust_emp.html', context)
-            return HttpResponseRedirect("customer/Cust_emp")
+            # Save & Exit → leave the form; Save & New / default → fresh form (PRG)
+            if request.POST.get('save_exit'):
+                return redirect('customer-cust')
+            return redirect('customer-Cust_emp')
         else:
             context['form'] = form
             return render(request, 'customer/Cust_emp.html', context)

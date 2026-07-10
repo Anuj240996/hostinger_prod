@@ -937,12 +937,12 @@
     {% if messages %}
         <ul class="messages">
             {% for message in messages %}
-            {% if message.tags %} <script> alert("{{ message }}") </script> {% endif %}>{% endfor %}
+            {% if message.tags %} <script> alert("{{ message|escapejs }}") </script> {% endif %}>{% endfor %}
         </ul>
     {% endif %}
 
     <div class="testbox">
-    <form method="post" name="Cust_Form" id="Cust_Form" onfocus="frm_onfocus(this)" hx-post="" hx-target="body" novalidate>
+    <form method="post" name="Cust_Form" id="Cust_Form" onfocus="frm_onfocus(this)" novalidate>
         {% csrf_token %}
 <!--         <div class="banner d-flex flex-column align-items-center">-->
          <div style=" position: relative;
@@ -1984,26 +1984,15 @@
     function submitForm(actionType) {
         const form = document.getElementById('Cust_Form');
 
-        // If validation passes, show success message
-        alert('New Residential Customer enrolled Successfully');
-
+        // Do not alert before save — server shows one success message after redirect
         if (actionType === 'save_exit') {
-            // Create a hidden input to indicate Save & Exit
             const hiddenInput = document.createElement('input');
             hiddenInput.type = 'hidden';
             hiddenInput.name = 'save_exit';
             hiddenInput.value = 'true';
             form.appendChild(hiddenInput);
-
-            // Submit the form
             form.submit();
-
-            // Redirect after a short delay
-            setTimeout(function() {
-                window.location.href = '{% url 'customer-cust' %}';
-            }, 1000);
         } else {
-            // For Save & New, submit normally
             const hiddenInput = document.createElement('input');
             hiddenInput.type = 'hidden';
             hiddenInput.name = 'save_new';
