@@ -71,6 +71,52 @@ def _mark_quotation_converted_after_consumer_save(request, quotation_id):
         print(f"Failed to mark quotation {quotation_id} as converted: {e}")
 
 
+def _resync_customer_result_id_sequence():
+    """Keep customer_result.id sequence ahead of existing rows (import/manual lag)."""
+    from django.db import connection
+
+    if connection.vendor != "postgresql":
+        return
+    with connection.cursor() as cursor:
+        cursor.execute(
+            """
+            DO $$
+            DECLARE
+                seq_name text;
+                max_id bigint;
+            BEGIN
+                SELECT pg_get_serial_sequence('customer_result', 'id') INTO seq_name;
+                IF seq_name IS NULL THEN
+                    RETURN;
+                END IF;
+                SELECT COALESCE(MAX(id), 0) INTO max_id FROM customer_result;
+                IF max_id > 0 THEN
+                    PERFORM setval(seq_name, max_id, true);
+                ELSE
+                    PERFORM setval(seq_name, 1, false);
+                END IF;
+            END $$;
+            """
+        )
+
+
+def _create_customer_result(*, consumer, consumer_id, assign_to=None):
+    """Create Result row; resync sequence once on duplicate-key IntegrityError."""
+    from django.db import IntegrityError
+    from .models import Result
+
+    payload = {
+        "consumer": consumer,
+        "consumer_id": consumer_id,
+        "AssignTo": assign_to,
+    }
+    try:
+        return Result.objects.create(**payload)
+    except IntegrityError:
+        _resync_customer_result_id_sequence()
+        return Result.objects.create(**payload)
+
+
 DEFAULT_CUSTOMER_MOBILE_PASSWORD = 'admin@123'
 
 
@@ -891,12 +937,11 @@ def Cust_emp(request):
             #         print(f"Failed to mark quotation {quotation_id} as converted: {e}")
 
             # After saving Customer, create related Result entry
-            result = Result.objects.create(
-                consumer=Comp_name,  # Or any other field like customer name
-                consumer_id=new_cust,  # Link to newly created Customer
-                AssignTo=Emp_id if isinstance(Emp_id, User) else None  # Assign the engineer if available
+            _create_customer_result(
+                consumer=Comp_name,
+                consumer_id=new_cust,
+                assign_to=Emp_id if isinstance(Emp_id, User) else None,
             )
-            result.save()
             messages.info(request, 'New Customer enrolled Successfully')
 
             cust = customer_queryset_for_request(request.user)
@@ -1301,12 +1346,11 @@ def Comm_Cust(request):
                     _mark_quotation_converted_after_consumer_save(request, quotation_id)
 
                 # After saving Customer, create related Result entry
-                result = Result.objects.create(
+                _create_customer_result(
                     consumer=Comp_name,
                     consumer_id=new_cust,
-                    AssignTo=Emp_id if isinstance(Emp_id, User) else None
+                    assign_to=Emp_id if isinstance(Emp_id, User) else None,
                 )
-                result.save()
 
                 messages.info(request, 'New Customer enrolled Successfully')
                 cust = customer_queryset_for_request(request.user)
@@ -2033,12 +2077,11 @@ def Comp_Cust(request):
             _mark_quotation_converted_after_consumer_save(request, quotation_id)
 
         # After saving Customer, create related Result entry
-        result = Result.objects.create(
+        _create_customer_result(
             consumer=Comp_name,
             consumer_id=new_cust,
-            AssignTo=request.user
+            assign_to=request.user,
         )
-        result.save()
 
         messages.success(request, "New Customer enrolled Successfully")
         return HttpResponseRedirect(reverse('customer-cust'))
@@ -2278,12 +2321,11 @@ def Govt_Cust(request):
 
 
             # After saving Customer, create related Result entry
-            result = Result.objects.create(
+            _create_customer_result(
                 consumer=Comp_name,
                 consumer_id=new_cust,
-                AssignTo=Emp_id if isinstance(Emp_id, User) else None
+                assign_to=Emp_id if isinstance(Emp_id, User) else None,
             )
-            result.save()
 
             messages.info(request, 'New Consumer enrolled Successfully')
             cust = customer_queryset_for_request(request.user)
