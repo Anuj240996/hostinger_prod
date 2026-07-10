@@ -19,12 +19,17 @@
     position: relative;
   }
   .bank-card-top {
+    position: absolute;
+    top: 10px;
+    right: 10px;
     display: flex;
-    justify-content: flex-end;
+    flex-direction: column;
     align-items: center;
-    gap: 10px;
-    margin-bottom: 12px;
-    min-height: 28px;
+    gap: 8px;
+    z-index: 2;
+  }
+  .bank-card-body {
+    padding-right: 42px;
   }
   .bank-round-check {
     appearance: none;
@@ -69,6 +74,16 @@
   .bank-delete-x:hover {
     background: #ffcdd2;
     color: #b71c1c;
+  }
+  .bank-use-form,
+  .bank-delete-form {
+    margin: 0;
+    padding: 0;
+    border: none;
+    background: transparent;
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
   .bank-view-grid .bank-field-label {
     font-size: 0.78rem;
@@ -250,7 +265,13 @@
           {% with use_on_pdf=bank.is_default %}
           <div class="bank-card" id="bank-card-{{ bank.id }}" data-bank-id="{{ bank.id }}">
             <div class="bank-card-top">
-              <form method="post" class="bank-use-form m-0" title="Use on quotation PDF">
+              <form method="post" class="bank-delete-form" onsubmit="return confirm('Delete this bank record?');" title="Delete bank">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="delete_bank">
+                <input type="hidden" name="bank_id" value="{{ bank.id }}">
+                <button type="submit" class="bank-delete-x" aria-label="Delete">&times;</button>
+              </form>
+              <form method="post" class="bank-use-form" title="Use on quotation PDF">
                 {% csrf_token %}
                 <input type="hidden" name="action" value="save_bank">
                 <input type="hidden" name="bank_id" value="{{ bank.id }}">
@@ -269,14 +290,9 @@
                   aria-label="Use on quotation PDF"
                 >
               </form>
-              <form method="post" class="m-0" onsubmit="return confirm('Delete this bank record?');" title="Delete bank">
-                {% csrf_token %}
-                <input type="hidden" name="action" value="delete_bank">
-                <input type="hidden" name="bank_id" value="{{ bank.id }}">
-                <button type="submit" class="bank-delete-x" aria-label="Delete">&times;</button>
-              </form>
             </div>
 
+            <div class="bank-card-body">
             <div class="bank-view-mode">
               <div class="row bank-view-grid">
                 <div class="col-md-6">
@@ -348,6 +364,7 @@
                 <button type="button" class="btn btn-sm btn-outline-secondary" onclick="cancelBankEdit({{ bank.id }})">Cancel</button>
               </div>
             </form>
+            </div>
           </div>
           {% endwith %}
           {% empty %}
@@ -370,6 +387,7 @@
                 title="Use on quotation PDF"
               >
             </div>
+            <div class="bank-card-body">
             <div class="row g-2">
               <div class="col-md-6">
                 <label class="form-label small mb-1">A/C Name</label>
@@ -393,6 +411,7 @@
               </div>
             </div>
             <button type="submit" class="btn btn-sm btn-success mt-3">Add Bank</button>
+            </div>
           </form>
         </div>
       </div>
