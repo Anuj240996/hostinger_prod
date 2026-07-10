@@ -16,6 +16,30 @@
     padding: 14px;
     margin-bottom: 14px;
     background: #f8fafb;
+    position: relative;
+  }
+  .bank-card-top {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    margin-bottom: 10px;
+    min-height: 28px;
+  }
+  .bank-use-check {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0;
+    font-size: 0.88rem;
+    font-weight: 600;
+    color: #00695c;
+    white-space: nowrap;
+  }
+  .bank-use-check input {
+    width: 1.1rem;
+    height: 1.1rem;
+    margin: 0;
+    cursor: pointer;
   }
   .term-card {
     border: 1px solid #dce3ea;
@@ -172,12 +196,31 @@
           <span>Bank Details</span>
         </div>
         <div class="card-body">
+          <p class="help-text mb-3">
+            Tick <strong>Use on quotation PDF</strong> on the bank card that should appear on the PDF.
+            Checking it enables show / default / active together; unchecking disables all three.
+            {% if bank_count == 1 %}With one bank only, it stays selected by default.{% else %}With multiple banks, choose one card.{% endif %}
+          </p>
           {% for bank in all_banks %}
+          {% with use_on_pdf=bank.is_default %}
           <div class="bank-card">
             <form method="post">
               {% csrf_token %}
               <input type="hidden" name="action" value="save_bank">
               <input type="hidden" name="bank_id" value="{{ bank.id }}">
+
+              <div class="bank-card-top">
+                <label class="bank-use-check" for="use_on_pdf_{{ bank.id }}">
+                  <input
+                    class="form-check-input"
+                    type="checkbox"
+                    name="use_on_pdf"
+                    id="use_on_pdf_{{ bank.id }}"
+                    {% if bank_count == 1 or use_on_pdf %}checked{% endif %}
+                  >
+                  Use on quotation PDF
+                </label>
+              </div>
 
               <div class="row g-2">
                 <div class="col-md-6">
@@ -206,20 +249,7 @@
                 </div>
               </div>
 
-              <div class="form-check mt-2">
-                <input class="form-check-input" type="checkbox" name="show_in_quotation_form" id="bank_show_{{ bank.id }}" {% if bank.show_in_quotation_form %}checked{% endif %}>
-                <label class="form-check-label" for="bank_show_{{ bank.id }}">Show on quotation PDF</label>
-              </div>
-              <div class="form-check">
-                <input class="form-check-input" type="checkbox" name="is_default" id="bank_default_{{ bank.id }}" {% if bank.is_default %}checked{% endif %}>
-                <label class="form-check-label" for="bank_default_{{ bank.id }}">Default bank (used on PDF)</label>
-              </div>
-              <div class="form-check mb-2">
-                <input class="form-check-input" type="checkbox" name="is_active" id="bank_active_{{ bank.id }}" {% if bank.is_active %}checked{% endif %}>
-                <label class="form-check-label" for="bank_active_{{ bank.id }}">Active</label>
-              </div>
-
-              <button type="submit" class="btn btn-sm btn-primary">Update</button>
+              <button type="submit" class="btn btn-sm btn-primary mt-3">Update</button>
             </form>
             <form method="post" class="d-inline mt-2" onsubmit="return confirm('Delete this bank record?');">
               {% csrf_token %}
@@ -228,6 +258,7 @@
               <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
             </form>
           </div>
+          {% endwith %}
           {% empty %}
           <p class="text-muted">No bank details yet. Add one below.</p>
           {% endfor %}
@@ -237,6 +268,18 @@
           <form method="post" class="bank-card">
             {% csrf_token %}
             <input type="hidden" name="action" value="save_bank">
+            <div class="bank-card-top">
+              <label class="bank-use-check" for="use_on_pdf_new">
+                <input
+                  class="form-check-input"
+                  type="checkbox"
+                  name="use_on_pdf"
+                  id="use_on_pdf_new"
+                  {% if bank_count == 0 %}checked{% endif %}
+                >
+                Use on quotation PDF
+              </label>
+            </div>
             <div class="row g-2">
               <div class="col-md-6">
                 <label class="form-label small mb-1">A/C Name</label>
@@ -259,15 +302,7 @@
                 <input type="text" name="ifsc_code" class="form-control form-control-sm" placeholder="IFSC">
               </div>
             </div>
-            <div class="form-check mt-2">
-              <input class="form-check-input" type="checkbox" name="show_in_quotation_form" checked>
-              <label class="form-check-label">Show on quotation PDF</label>
-            </div>
-            <div class="form-check">
-              <input class="form-check-input" type="checkbox" name="is_default">
-              <label class="form-check-label">Default bank</label>
-            </div>
-            <button type="submit" class="btn btn-sm btn-success mt-2">Add Bank</button>
+            <button type="submit" class="btn btn-sm btn-success mt-3">Add Bank</button>
           </form>
         </div>
       </div>

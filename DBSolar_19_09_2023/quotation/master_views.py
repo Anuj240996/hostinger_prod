@@ -127,16 +127,22 @@ def quotation_master(request):
             bank.ifsc_code = request.POST.get('ifsc_code', '')
             bank.bank_name = request.POST.get('bank_name', '')
             bank.branch_name = request.POST.get('branch_name', '')
-            bank.show_in_quotation_form = request.POST.get('show_in_quotation_form') == 'on'
-            bank.is_default = request.POST.get('is_default') == 'on'
-            bank.is_active = request.POST.get('is_active') != 'off'
+            # Single "Use on quotation PDF" checkbox controls show + default + active
+            use_on_pdf = request.POST.get('use_on_pdf') == 'on'
+            bank.show_in_quotation_form = use_on_pdf
+            bank.is_default = use_on_pdf
+            bank.is_active = use_on_pdf
             try:
                 bank.sort_order = int(request.POST.get('sort_order') or 0)
             except ValueError:
                 bank.sort_order = 0
             bank.save()
-            if bank.is_default:
-                QuotationBankDetail.objects.exclude(pk=bank.pk).update(is_default=False)
+            if use_on_pdf:
+                QuotationBankDetail.objects.exclude(pk=bank.pk).update(
+                    is_default=False,
+                    show_in_quotation_form=False,
+                    is_active=False,
+                )
             messages.success(request, 'Bank details saved.')
 
         elif action == 'delete_bank':
@@ -144,6 +150,14 @@ def quotation_master(request):
             if bank_id:
                 QuotationBankDetail.objects.filter(pk=bank_id).delete()
                 messages.success(request, 'Bank record deleted.')
+                # If only one bank remains, make it the PDF bank by default
+                remaining = QuotationBankDetail.objects.all()
+                if remaining.count() == 1:
+                    only = remaining.first()
+                    only.show_in_quotation_form = True
+                    only.is_default = True
+                    only.is_active = True
+                    only.save(update_fields=['show_in_quotation_form', 'is_default', 'is_active'])
 
         return redirect('quotation:quotation_master')
 
@@ -151,9 +165,19 @@ def quotation_master(request):
     banks = QuotationBankDetail.objects.filter(is_active=True).order_by('sort_order', 'id')
     all_banks = QuotationBankDetail.objects.all().order_by('sort_order', 'id')
 
+    # Single bank card → always selected for PDF
+    if all_banks.count() == 1:
+        only = all_banks.first()
+        if not (only.show_in_quotation_form and only.is_default and only.is_active):
+            only.show_in_quotation_form = True
+            only.is_default = True
+            only.is_active = True
+            only.save(update_fields=['show_in_quotation_form', 'is_default', 'is_active'])
+
     return render(request, 'quotation/quotation_master.html', {
         'master': master,
         'terms': terms,
         'banks': banks,
         'all_banks': all_banks,
+        'bank_count': all_banks.count(),
     })
