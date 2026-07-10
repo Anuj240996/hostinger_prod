@@ -250,16 +250,20 @@
     margin-bottom: 4px;
   }
   #addBankModal .modal-header,
-  #addTermModal .modal-header {
+  #addTermModal .modal-header,
+  #editCompanyModal .modal-header {
     background: #00897B;
     color: #fff;
   }
   #addBankModal .modal-header .btn-close,
-  #addTermModal .modal-header .btn-close {
+  #addTermModal .modal-header .btn-close,
+  #editCompanyModal .modal-header .btn-close {
     filter: invert(1);
   }
   #addBankModal .modal-body form,
-  #addTermModal .modal-body form {
+  #addTermModal .modal-body form,
+  #editCompanyModal .modal-body form,
+  #editCompanyModal form {
     width: 100% !important;
     max-width: none !important;
     padding: 0 !important;
@@ -288,20 +292,6 @@
     width: 100%;
     box-sizing: border-box;
   }
-  .company-card form {
-    width: auto !important;
-    max-width: none !important;
-    padding: 0 !important;
-    margin: 0 !important;
-    border: none !important;
-    border-radius: 0 !important;
-    background: transparent !important;
-    background-color: transparent !important;
-    box-shadow: none !important;
-  }
-  .company-card.is-editing .company-view-mode { display: none !important; }
-  .company-card:not(.is-editing) .company-edit-mode { display: none !important; }
-  .company-card.is-editing .company-edit-mode { display: block !important; }
   .company-card-actions {
     margin-top: 12px;
     display: flex !important;
@@ -355,125 +345,65 @@
         <div class="card-header">Company Details</div>
         <div class="card-body">
           <div class="company-card" id="company-card">
-            <div class="company-view-mode">
-              <div class="row company-view-grid">
-                <div class="col-12">
-                  <div class="company-field-label">Company Name</div>
-                  <div class="company-field-value">{{ master.company_name|default:"—" }}</div>
-                </div>
-                <div class="col-md-6">
-                  <div class="company-field-label">GST No</div>
-                  <div class="company-field-value">{{ master.gst_no|default:"—" }}</div>
-                </div>
-                <div class="col-md-6">
-                  <div class="company-field-label">PAN No</div>
-                  <div class="company-field-value">{{ master.pan_no|default:"—" }}</div>
-                </div>
-                <div class="col-md-4">
-                  <div class="company-field-label">Company Logo</div>
-                  <div class="company-field-value">
-                    {% if master.company_logo %}
-                      <img src="{{ master.company_logo.url }}" alt="Logo" class="logo-preview">
-                    {% else %}
-                      —
-                    {% endif %}
-                  </div>
-                </div>
-                <div class="col-md-4">
-                  <div class="company-field-label">PDF Header Image</div>
-                  <div class="company-field-value">
-                    {% if master.header_image %}
-                      <img src="{{ master.header_image.url }}" alt="Header" class="logo-preview">
-                    {% else %}
-                      —
-                    {% endif %}
-                  </div>
-                </div>
-                <div class="col-md-4">
-                  <div class="company-field-label">PDF Footer Image</div>
-                  <div class="company-field-value">
-                    {% if master.footer_image %}
-                      <img src="{{ master.footer_image.url }}" alt="Footer" class="logo-preview">
-                    {% else %}
-                      —
-                    {% endif %}
-                  </div>
-                </div>
-                <div class="col-12">
-                  <div class="company-field-label">From Address</div>
-                  <div class="company-field-value">{{ master.from_address|default:"—" }}</div>
-                </div>
-                <div class="col-12">
-                  <div class="company-field-label">Footer Address</div>
-                  <div class="company-field-value">{{ master.address|default:"—" }}</div>
-                </div>
-                <div class="col-12">
-                  <div class="company-field-label">Subsidy Notes</div>
-                  <div class="company-field-value">{{ master.subsidy_notes|default:"—" }}</div>
+            <div class="row company-view-grid">
+              <div class="col-12">
+                <div class="company-field-label">Company Name</div>
+                <div class="company-field-value">{{ master.company_name|default:"—" }}</div>
+              </div>
+              <div class="col-md-6">
+                <div class="company-field-label">GST No</div>
+                <div class="company-field-value">{{ master.gst_no|default:"—" }}</div>
+              </div>
+              <div class="col-md-6">
+                <div class="company-field-label">PAN No</div>
+                <div class="company-field-value">{{ master.pan_no|default:"—" }}</div>
+              </div>
+              <div class="col-md-4">
+                <div class="company-field-label">Company Logo</div>
+                <div class="company-field-value">
+                  {% if master.company_logo %}
+                    <img src="{{ master.company_logo.url }}" alt="Logo" class="logo-preview">
+                  {% else %}
+                    —
+                  {% endif %}
                 </div>
               </div>
-              <div class="company-card-actions">
-                <button type="button" class="btn btn-sm btn-primary" onclick="editCompanyCard()">Update</button>
+              <div class="col-md-4">
+                <div class="company-field-label">PDF Header Image</div>
+                <div class="company-field-value">
+                  {% if master.header_image %}
+                    <img src="{{ master.header_image.url }}" alt="Header" class="logo-preview">
+                  {% else %}
+                    —
+                  {% endif %}
+                </div>
+              </div>
+              <div class="col-md-4">
+                <div class="company-field-label">PDF Footer Image</div>
+                <div class="company-field-value">
+                  {% if master.footer_image %}
+                    <img src="{{ master.footer_image.url }}" alt="Footer" class="logo-preview">
+                  {% else %}
+                    —
+                  {% endif %}
+                </div>
+              </div>
+              <div class="col-12">
+                <div class="company-field-label">From Address</div>
+                <div class="company-field-value">{{ master.from_address|default:"—" }}</div>
+              </div>
+              <div class="col-12">
+                <div class="company-field-label">Footer Address</div>
+                <div class="company-field-value">{{ master.address|default:"—" }}</div>
+              </div>
+              <div class="col-12">
+                <div class="company-field-label">Subsidy Notes</div>
+                <div class="company-field-value">{{ master.subsidy_notes|default:"—" }}</div>
               </div>
             </div>
-
-            <form method="post" enctype="multipart/form-data" class="company-edit-mode">
-              {% csrf_token %}
-              <input type="hidden" name="action" value="save_company">
-
-              <div class="mb-2">
-                <label class="form-label small mb-1">Company Name</label>
-                <input type="text" name="company_name" class="form-control form-control-sm" value="{{ master.company_name }}">
-              </div>
-              <div class="row g-2 mb-2">
-                <div class="col-md-6">
-                  <label class="form-label small mb-1">GST No</label>
-                  <input type="text" name="gst_no" class="form-control form-control-sm" value="{{ master.gst_no }}" placeholder="GST Number">
-                </div>
-                <div class="col-md-6">
-                  <label class="form-label small mb-1">PAN No</label>
-                  <input type="text" name="pan_no" class="form-control form-control-sm" value="{{ master.pan_no }}" placeholder="PAN Number">
-                </div>
-              </div>
-              <div class="mb-2">
-                <label class="form-label small mb-1">Company Logo</label>
-                {% if master.company_logo %}
-                  <div class="mb-1"><img src="{{ master.company_logo.url }}" alt="Logo" class="logo-preview"></div>
-                {% endif %}
-                <input type="file" name="company_logo" class="form-control form-control-sm" accept="image/*">
-              </div>
-              <div class="mb-2">
-                <label class="form-label small mb-1">PDF Header Image</label>
-                {% if master.header_image %}
-                  <div class="mb-1"><img src="{{ master.header_image.url }}" alt="Header" class="logo-preview"></div>
-                {% endif %}
-                <input type="file" name="header_image" class="form-control form-control-sm" accept="image/*">
-              </div>
-              <div class="mb-2">
-                <label class="form-label small mb-1">PDF Footer Image</label>
-                {% if master.footer_image %}
-                  <div class="mb-1"><img src="{{ master.footer_image.url }}" alt="Footer" class="logo-preview"></div>
-                {% endif %}
-                <input type="file" name="footer_image" class="form-control form-control-sm" accept="image/*">
-              </div>
-              <div class="mb-2">
-                <label class="form-label small mb-1">From Address (on quotation PDF)</label>
-                <textarea name="from_address" class="form-control form-control-sm" rows="3">{{ master.from_address }}</textarea>
-              </div>
-              <div class="mb-2">
-                <label class="form-label small mb-1">Footer Address</label>
-                <textarea name="address" class="form-control form-control-sm" rows="2">{{ master.address }}</textarea>
-              </div>
-              <div class="mb-2">
-                <label class="form-label small mb-1">Subsidy Notes</label>
-                <textarea name="subsidy_notes" class="form-control form-control-sm" rows="2">{{ master.subsidy_notes }}</textarea>
-              </div>
-
-              <div class="company-card-actions">
-                <button type="submit" class="btn btn-sm btn-success">Save</button>
-                <button type="button" class="btn btn-sm btn-outline-secondary" onclick="cancelCompanyEdit()">Cancel</button>
-              </div>
-            </form>
+            <div class="company-card-actions">
+              <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#editCompanyModal">Update</button>
+            </div>
           </div>
         </div>
       </div>
@@ -789,6 +719,75 @@
   </div>
 </div>
 
+<!-- Edit Company Modal -->
+<div class="modal fade" id="editCompanyModal" tabindex="-1" aria-labelledby="editCompanyModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="editCompanyModalLabel">Update Company Details</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="save_company">
+        <div class="modal-body">
+          <div class="mb-2">
+            <label class="form-label small mb-1">Company Name</label>
+            <input type="text" name="company_name" class="form-control form-control-sm" value="{{ master.company_name }}">
+          </div>
+          <div class="row g-2 mb-2">
+            <div class="col-md-6">
+              <label class="form-label small mb-1">GST No</label>
+              <input type="text" name="gst_no" class="form-control form-control-sm" value="{{ master.gst_no }}" placeholder="GST Number">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label small mb-1">PAN No</label>
+              <input type="text" name="pan_no" class="form-control form-control-sm" value="{{ master.pan_no }}" placeholder="PAN Number">
+            </div>
+          </div>
+          <div class="mb-2">
+            <label class="form-label small mb-1">Company Logo</label>
+            {% if master.company_logo %}
+              <div class="mb-1"><img src="{{ master.company_logo.url }}" alt="Logo" class="logo-preview"></div>
+            {% endif %}
+            <input type="file" name="company_logo" class="form-control form-control-sm" accept="image/*">
+          </div>
+          <div class="mb-2">
+            <label class="form-label small mb-1">PDF Header Image</label>
+            {% if master.header_image %}
+              <div class="mb-1"><img src="{{ master.header_image.url }}" alt="Header" class="logo-preview"></div>
+            {% endif %}
+            <input type="file" name="header_image" class="form-control form-control-sm" accept="image/*">
+          </div>
+          <div class="mb-2">
+            <label class="form-label small mb-1">PDF Footer Image</label>
+            {% if master.footer_image %}
+              <div class="mb-1"><img src="{{ master.footer_image.url }}" alt="Footer" class="logo-preview"></div>
+            {% endif %}
+            <input type="file" name="footer_image" class="form-control form-control-sm" accept="image/*">
+          </div>
+          <div class="mb-2">
+            <label class="form-label small mb-1">From Address (on quotation PDF)</label>
+            <textarea name="from_address" class="form-control form-control-sm" rows="3">{{ master.from_address }}</textarea>
+          </div>
+          <div class="mb-2">
+            <label class="form-label small mb-1">Footer Address</label>
+            <textarea name="address" class="form-control form-control-sm" rows="2">{{ master.address }}</textarea>
+          </div>
+          <div class="mb-2">
+            <label class="form-label small mb-1">Subsidy Notes</label>
+            <textarea name="subsidy_notes" class="form-control form-control-sm" rows="2">{{ master.subsidy_notes }}</textarea>
+          </div>
+        </div>
+        <div class="modal-footer justify-content-center">
+          <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-sm btn-success">Save</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 <script>
   function editBankCard(bankId) {
@@ -805,14 +804,6 @@
   }
   function cancelTermEdit(termId) {
     var card = document.getElementById('term-card-' + termId);
-    if (card) card.classList.remove('is-editing');
-  }
-  function editCompanyCard() {
-    var card = document.getElementById('company-card');
-    if (card) card.classList.add('is-editing');
-  }
-  function cancelCompanyEdit() {
-    var card = document.getElementById('company-card');
     if (card) card.classList.remove('is-editing');
   }
   // Keep round checkbox UI in sync inside Add Bank modal
