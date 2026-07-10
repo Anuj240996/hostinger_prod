@@ -13,7 +13,7 @@
   .bank-card {
     border: 1px solid #dce3ea;
     border-radius: 10px;
-    padding: 14px;
+    padding: 16px 16px 14px;
     margin-bottom: 14px;
     background: #f8fafb;
     position: relative;
@@ -22,25 +22,70 @@
     display: flex;
     justify-content: flex-end;
     align-items: center;
-    margin-bottom: 10px;
+    gap: 10px;
+    margin-bottom: 12px;
     min-height: 28px;
   }
-  .bank-use-check {
-    display: flex;
-    align-items: center;
-    gap: 8px;
+  .bank-round-check {
+    appearance: none;
+    -webkit-appearance: none;
+    width: 20px;
+    height: 20px;
     margin: 0;
-    font-size: 0.88rem;
-    font-weight: 600;
-    color: #00695c;
-    white-space: nowrap;
-  }
-  .bank-use-check input {
-    width: 1.1rem;
-    height: 1.1rem;
-    margin: 0;
+    border: 2px solid #00897B;
+    border-radius: 50%;
+    background: #fff;
     cursor: pointer;
+    flex-shrink: 0;
+    position: relative;
   }
+  .bank-round-check:checked {
+    background: #00897B;
+    box-shadow: inset 0 0 0 3px #fff;
+  }
+  .bank-round-check:focus {
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(0,137,123,.25);
+  }
+  .bank-round-check:checked:focus {
+    box-shadow: inset 0 0 0 3px #fff, 0 0 0 3px rgba(0,137,123,.25);
+  }
+  .bank-delete-x {
+    width: 28px;
+    height: 28px;
+    border: none;
+    border-radius: 50%;
+    background: #ffebee;
+    color: #c62828;
+    font-size: 1.15rem;
+    line-height: 1;
+    font-weight: 700;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+  }
+  .bank-delete-x:hover {
+    background: #ffcdd2;
+    color: #b71c1c;
+  }
+  .bank-view-grid .bank-field-label {
+    font-size: 0.78rem;
+    color: #78909c;
+    margin-bottom: 2px;
+  }
+  .bank-view-grid .bank-field-value {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: #263238;
+    margin-bottom: 10px;
+    word-break: break-word;
+    min-height: 1.2em;
+  }
+  .bank-card.is-editing .bank-view-mode { display: none; }
+  .bank-card:not(.is-editing) .bank-edit-mode { display: none; }
+  .bank-card-actions { margin-top: 12px; display: flex; gap: 8px; flex-wrap: wrap; }
   .term-card {
     border: 1px solid #dce3ea;
     border-radius: 12px;
@@ -197,30 +242,80 @@
         </div>
         <div class="card-body">
           <p class="help-text mb-3">
-            Tick <strong>Use on quotation PDF</strong> on the bank card that should appear on the PDF.
-            Checking it enables show / default / active together; unchecking disables all three.
+            Select the round checkbox on the bank card to use on the quotation PDF.
             {% if bank_count == 1 %}With one bank only, it stays selected by default.{% else %}With multiple banks, choose one card.{% endif %}
+            Click <strong>Update</strong> to edit values.
           </p>
           {% for bank in all_banks %}
           {% with use_on_pdf=bank.is_default %}
-          <div class="bank-card">
-            <form method="post">
+          <div class="bank-card" id="bank-card-{{ bank.id }}" data-bank-id="{{ bank.id }}">
+            <div class="bank-card-top">
+              <form method="post" class="bank-use-form m-0" title="Use on quotation PDF">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="save_bank">
+                <input type="hidden" name="bank_id" value="{{ bank.id }}">
+                <input type="hidden" name="account_name" value="{{ bank.account_name }}">
+                <input type="hidden" name="account_no" value="{{ bank.account_no }}">
+                <input type="hidden" name="bank_name" value="{{ bank.bank_name }}">
+                <input type="hidden" name="branch_name" value="{{ bank.branch_name }}">
+                <input type="hidden" name="ifsc_code" value="{{ bank.ifsc_code }}">
+                <input type="hidden" name="sort_order" value="{{ bank.sort_order }}">
+                <input
+                  class="bank-round-check"
+                  type="checkbox"
+                  name="use_on_pdf"
+                  {% if bank_count == 1 or use_on_pdf %}checked{% endif %}
+                  onchange="this.form.submit()"
+                  aria-label="Use on quotation PDF"
+                >
+              </form>
+              <form method="post" class="m-0" onsubmit="return confirm('Delete this bank record?');" title="Delete bank">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="delete_bank">
+                <input type="hidden" name="bank_id" value="{{ bank.id }}">
+                <button type="submit" class="bank-delete-x" aria-label="Delete">&times;</button>
+              </form>
+            </div>
+
+            <div class="bank-view-mode">
+              <div class="row bank-view-grid">
+                <div class="col-md-6">
+                  <div class="bank-field-label">A/C Name</div>
+                  <div class="bank-field-value">{{ bank.account_name|default:"—" }}</div>
+                </div>
+                <div class="col-md-6">
+                  <div class="bank-field-label">A/C No</div>
+                  <div class="bank-field-value">{{ bank.account_no|default:"—" }}</div>
+                </div>
+                <div class="col-md-6">
+                  <div class="bank-field-label">Bank Name</div>
+                  <div class="bank-field-value">{{ bank.bank_name|default:"—" }}</div>
+                </div>
+                <div class="col-md-6">
+                  <div class="bank-field-label">Branch Name</div>
+                  <div class="bank-field-value">{{ bank.branch_name|default:"—" }}</div>
+                </div>
+                <div class="col-md-6">
+                  <div class="bank-field-label">IFSC</div>
+                  <div class="bank-field-value">{{ bank.ifsc_code|default:"—" }}</div>
+                </div>
+                <div class="col-md-6">
+                  <div class="bank-field-label">Order</div>
+                  <div class="bank-field-value">{{ bank.sort_order }}</div>
+                </div>
+              </div>
+              <div class="bank-card-actions">
+                <button type="button" class="btn btn-sm btn-primary" onclick="editBankCard({{ bank.id }})">Update</button>
+              </div>
+            </div>
+
+            <form method="post" class="bank-edit-mode">
               {% csrf_token %}
               <input type="hidden" name="action" value="save_bank">
               <input type="hidden" name="bank_id" value="{{ bank.id }}">
-
-              <div class="bank-card-top">
-                <label class="bank-use-check" for="use_on_pdf_{{ bank.id }}">
-                  <input
-                    class="form-check-input"
-                    type="checkbox"
-                    name="use_on_pdf"
-                    id="use_on_pdf_{{ bank.id }}"
-                    {% if bank_count == 1 or use_on_pdf %}checked{% endif %}
-                  >
-                  Use on quotation PDF
-                </label>
-              </div>
+              {% if bank_count == 1 or use_on_pdf %}
+              <input type="hidden" name="use_on_pdf" value="on">
+              {% endif %}
 
               <div class="row g-2">
                 <div class="col-md-6">
@@ -248,14 +343,10 @@
                   <input type="number" name="sort_order" class="form-control form-control-sm" placeholder="Order" value="{{ bank.sort_order }}">
                 </div>
               </div>
-
-              <button type="submit" class="btn btn-sm btn-primary mt-3">Update</button>
-            </form>
-            <form method="post" class="d-inline mt-2" onsubmit="return confirm('Delete this bank record?');">
-              {% csrf_token %}
-              <input type="hidden" name="action" value="delete_bank">
-              <input type="hidden" name="bank_id" value="{{ bank.id }}">
-              <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
+              <div class="bank-card-actions">
+                <button type="submit" class="btn btn-sm btn-success">Save</button>
+                <button type="button" class="btn btn-sm btn-outline-secondary" onclick="cancelBankEdit({{ bank.id }})">Cancel</button>
+              </div>
             </form>
           </div>
           {% endwith %}
@@ -269,16 +360,15 @@
             {% csrf_token %}
             <input type="hidden" name="action" value="save_bank">
             <div class="bank-card-top">
-              <label class="bank-use-check" for="use_on_pdf_new">
-                <input
-                  class="form-check-input"
-                  type="checkbox"
-                  name="use_on_pdf"
-                  id="use_on_pdf_new"
-                  {% if bank_count == 0 %}checked{% endif %}
-                >
-                Use on quotation PDF
-              </label>
+              <input
+                class="bank-round-check"
+                type="checkbox"
+                name="use_on_pdf"
+                id="use_on_pdf_new"
+                {% if bank_count == 0 %}checked{% endif %}
+                aria-label="Use on quotation PDF"
+                title="Use on quotation PDF"
+              >
             </div>
             <div class="row g-2">
               <div class="col-md-6">
@@ -423,4 +513,14 @@
     </div>
   </div>
 </div>
+<script>
+  function editBankCard(bankId) {
+    var card = document.getElementById('bank-card-' + bankId);
+    if (card) card.classList.add('is-editing');
+  }
+  function cancelBankEdit(bankId) {
+    var card = document.getElementById('bank-card-' + bankId);
+    if (card) card.classList.remove('is-editing');
+  }
+</script>
 {% endblock %}
