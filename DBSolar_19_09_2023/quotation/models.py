@@ -189,6 +189,8 @@ class QuotationMaster(models.Model):
     """Singleton settings for quotation letterhead, subsidy notes, etc."""
     company_name = models.CharField(max_length=200, default='Heramb Industries')
     company_logo = models.ImageField(upload_to='quotation/master/', blank=True, null=True)
+    gst_no = models.CharField(max_length=50, blank=True, help_text='Company GST number on quotation PDF.')
+    pan_no = models.CharField(max_length=20, blank=True, help_text='Company PAN number on quotation PDF.')
     address = models.TextField(
         blank=True,
         help_text='Company address shown on quotation PDF footer / letterhead.',

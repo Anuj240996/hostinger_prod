@@ -830,7 +830,10 @@
             <span style="background-color: #0A66C2; color: white; font-size: 17px;"><u>Company Details:</u></span>
           </h4>
           <div style="line-height: 1.8; margin-left: 20px; font-size: 15px;">
-            {% if bank_detail %}
+            {% if quotation_master.gst_no or quotation_master.pan_no %}
+              {% if quotation_master.gst_no %}<b>GST No -</b> {{ quotation_master.gst_no }}<br>{% endif %}
+              {% if quotation_master.pan_no %}<b>PAN No -</b> {{ quotation_master.pan_no }}<br>{% endif %}
+            {% elif bank_detail %}
               {% if bank_detail.gst_no %}<b>GST No -</b> {{ bank_detail.gst_no }}<br>{% endif %}
               {% if bank_detail.pan_no %}<b>PAN No -</b> {{ bank_detail.pan_no }}<br>{% endif %}
             {% else %}

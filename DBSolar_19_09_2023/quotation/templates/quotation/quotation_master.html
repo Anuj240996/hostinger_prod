@@ -8,10 +8,69 @@
 <style>
   .master-card { margin-bottom: 1.5rem; }
   .master-card .card-header { background: #00897B; color: #fff; font-weight: 600; }
-  .term-row { border: 1px solid #dee2e6; border-radius: 6px; padding: 12px; margin-bottom: 12px; background: #fafafa; }
-  .term-row.yellow-preview { background: #fff9c4; }
   .logo-preview { max-height: 80px; max-width: 200px; object-fit: contain; }
   .help-text { font-size: 0.85rem; color: #666; }
+  .bank-card {
+    border: 1px solid #dce3ea;
+    border-radius: 10px;
+    padding: 14px;
+    margin-bottom: 14px;
+    background: #f8fafb;
+  }
+  .term-card {
+    border: 1px solid #dce3ea;
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 14px;
+    background: #fff;
+    box-shadow: 0 1px 2px rgba(0,0,0,.04);
+  }
+  .term-card.yellow-preview {
+    background: linear-gradient(180deg, #fffde7 0%, #fff9c4 100%);
+    border-color: #f0d86a;
+  }
+  .term-index {
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    background: #00897B;
+    color: #fff;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 0.9rem;
+    flex-shrink: 0;
+  }
+  .term-badge {
+    display: inline-block;
+    font-size: 0.72rem;
+    font-weight: 600;
+    padding: 3px 8px;
+    border-radius: 999px;
+    margin-right: 4px;
+    margin-bottom: 4px;
+  }
+  .term-badge.on-yellow { background: #fff59d; color: #6d5a00; }
+  .term-badge.on-form { background: #e3f2fd; color: #0d47a1; }
+  .term-badge.on-default { background: #e8f5e9; color: #1b5e20; }
+  .term-badge.on-active { background: #e0f2f1; color: #004d40; }
+  .term-badge.off { background: #eceff1; color: #607d8b; }
+  .term-preview {
+    border-left: 4px solid #00897B;
+    background: #f5f7f8;
+    padding: 10px 12px;
+    border-radius: 0 8px 8px 0;
+    margin-top: 10px;
+    white-space: pre-wrap;
+    font-size: 0.92rem;
+    line-height: 1.45;
+    color: #333;
+  }
+  .term-card.yellow-preview .term-preview {
+    border-left-color: #f9a825;
+    background: #fffde7;
+  }
 </style>
 
 <div class="container-fluid my-3">
@@ -46,6 +105,17 @@
             <div class="mb-3">
               <label class="form-label">Company Name</label>
               <input type="text" name="company_name" class="form-control" value="{{ master.company_name }}">
+            </div>
+
+            <div class="row">
+              <div class="col-md-6 mb-3">
+                <label class="form-label">GST No</label>
+                <input type="text" name="gst_no" class="form-control" value="{{ master.gst_no }}" placeholder="GST Number">
+              </div>
+              <div class="col-md-6 mb-3">
+                <label class="form-label">PAN No</label>
+                <input type="text" name="pan_no" class="form-control" value="{{ master.pan_no }}" placeholder="PAN Number">
+              </div>
             </div>
 
             <div class="mb-3">
@@ -103,62 +173,91 @@
         </div>
         <div class="card-body">
           {% for bank in all_banks %}
-          <form method="post" class="border rounded p-3 mb-3 bg-light">
-            {% csrf_token %}
-            <input type="hidden" name="action" value="save_bank">
-            <input type="hidden" name="bank_id" value="{{ bank.id }}">
+          <div class="bank-card">
+            <form method="post">
+              {% csrf_token %}
+              <input type="hidden" name="action" value="save_bank">
+              <input type="hidden" name="bank_id" value="{{ bank.id }}">
 
-            <div class="row g-2">
-              <div class="col-md-6"><input type="text" name="account_name" class="form-control form-control-sm" placeholder="A/C Name" value="{{ bank.account_name }}"></div>
-              <div class="col-md-6"><input type="text" name="gst_no" class="form-control form-control-sm" placeholder="GST No" value="{{ bank.gst_no }}"></div>
-              <div class="col-md-6"><input type="text" name="pan_no" class="form-control form-control-sm" placeholder="PAN No" value="{{ bank.pan_no }}"></div>
-              <div class="col-md-6"><input type="text" name="account_no" class="form-control form-control-sm" placeholder="A/C No" value="{{ bank.account_no }}"></div>
-              <div class="col-md-6"><input type="text" name="ifsc_code" class="form-control form-control-sm" placeholder="IFSC" value="{{ bank.ifsc_code }}"></div>
-              <div class="col-md-6"><input type="text" name="bank_name" class="form-control form-control-sm" placeholder="Bank Name" value="{{ bank.bank_name }}"></div>
-              <div class="col-md-8"><input type="text" name="branch_name" class="form-control form-control-sm" placeholder="Branch" value="{{ bank.branch_name }}"></div>
-              <div class="col-md-4"><input type="number" name="sort_order" class="form-control form-control-sm" placeholder="Order" value="{{ bank.sort_order }}"></div>
-            </div>
+              <div class="row g-2">
+                <div class="col-md-6">
+                  <label class="form-label small mb-1">A/C Name</label>
+                  <input type="text" name="account_name" class="form-control form-control-sm" placeholder="A/C Name" value="{{ bank.account_name }}">
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label small mb-1">A/C No</label>
+                  <input type="text" name="account_no" class="form-control form-control-sm" placeholder="A/C No" value="{{ bank.account_no }}">
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label small mb-1">Bank Name</label>
+                  <input type="text" name="bank_name" class="form-control form-control-sm" placeholder="Bank Name" value="{{ bank.bank_name }}">
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label small mb-1">Branch Name</label>
+                  <input type="text" name="branch_name" class="form-control form-control-sm" placeholder="Branch" value="{{ bank.branch_name }}">
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label small mb-1">IFSC</label>
+                  <input type="text" name="ifsc_code" class="form-control form-control-sm" placeholder="IFSC" value="{{ bank.ifsc_code }}">
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label small mb-1">Order</label>
+                  <input type="number" name="sort_order" class="form-control form-control-sm" placeholder="Order" value="{{ bank.sort_order }}">
+                </div>
+              </div>
 
-            <div class="form-check mt-2">
-              <input class="form-check-input" type="checkbox" name="show_in_quotation_form" id="bank_show_{{ bank.id }}" {% if bank.show_in_quotation_form %}checked{% endif %}>
-              <label class="form-check-label" for="bank_show_{{ bank.id }}">Show on quotation PDF</label>
-            </div>
-            <div class="form-check">
-              <input class="form-check-input" type="checkbox" name="is_default" id="bank_default_{{ bank.id }}" {% if bank.is_default %}checked{% endif %}>
-              <label class="form-check-label" for="bank_default_{{ bank.id }}">Default bank (used on PDF)</label>
-            </div>
-            <div class="form-check mb-2">
-              <input class="form-check-input" type="checkbox" name="is_active" id="bank_active_{{ bank.id }}" {% if bank.is_active %}checked{% endif %}>
-              <label class="form-check-label" for="bank_active_{{ bank.id }}">Active</label>
-            </div>
+              <div class="form-check mt-2">
+                <input class="form-check-input" type="checkbox" name="show_in_quotation_form" id="bank_show_{{ bank.id }}" {% if bank.show_in_quotation_form %}checked{% endif %}>
+                <label class="form-check-label" for="bank_show_{{ bank.id }}">Show on quotation PDF</label>
+              </div>
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" name="is_default" id="bank_default_{{ bank.id }}" {% if bank.is_default %}checked{% endif %}>
+                <label class="form-check-label" for="bank_default_{{ bank.id }}">Default bank (used on PDF)</label>
+              </div>
+              <div class="form-check mb-2">
+                <input class="form-check-input" type="checkbox" name="is_active" id="bank_active_{{ bank.id }}" {% if bank.is_active %}checked{% endif %}>
+                <label class="form-check-label" for="bank_active_{{ bank.id }}">Active</label>
+              </div>
 
-            <div class="d-flex gap-2">
               <button type="submit" class="btn btn-sm btn-primary">Update</button>
-            </div>
-          </form>
-          <form method="post" class="d-inline" onsubmit="return confirm('Delete this bank record?');">
-            {% csrf_token %}
-            <input type="hidden" name="action" value="delete_bank">
-            <input type="hidden" name="bank_id" value="{{ bank.id }}">
-            <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
-          </form>
+            </form>
+            <form method="post" class="d-inline mt-2" onsubmit="return confirm('Delete this bank record?');">
+              {% csrf_token %}
+              <input type="hidden" name="action" value="delete_bank">
+              <input type="hidden" name="bank_id" value="{{ bank.id }}">
+              <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
+            </form>
+          </div>
           {% empty %}
           <p class="text-muted">No bank details yet. Add one below.</p>
           {% endfor %}
 
           <hr>
           <h6>Add Bank Detail</h6>
-          <form method="post" class="border rounded p-3">
+          <form method="post" class="bank-card">
             {% csrf_token %}
             <input type="hidden" name="action" value="save_bank">
             <div class="row g-2">
-              <div class="col-md-6"><input type="text" name="account_name" class="form-control form-control-sm" placeholder="A/C Name"></div>
-              <div class="col-md-6"><input type="text" name="gst_no" class="form-control form-control-sm" placeholder="GST No"></div>
-              <div class="col-md-6"><input type="text" name="pan_no" class="form-control form-control-sm" placeholder="PAN No"></div>
-              <div class="col-md-6"><input type="text" name="account_no" class="form-control form-control-sm" placeholder="A/C No"></div>
-              <div class="col-md-6"><input type="text" name="ifsc_code" class="form-control form-control-sm" placeholder="IFSC"></div>
-              <div class="col-md-6"><input type="text" name="bank_name" class="form-control form-control-sm" placeholder="Bank Name"></div>
-              <div class="col-md-8"><input type="text" name="branch_name" class="form-control form-control-sm" placeholder="Branch"></div>
+              <div class="col-md-6">
+                <label class="form-label small mb-1">A/C Name</label>
+                <input type="text" name="account_name" class="form-control form-control-sm" placeholder="A/C Name">
+              </div>
+              <div class="col-md-6">
+                <label class="form-label small mb-1">A/C No</label>
+                <input type="text" name="account_no" class="form-control form-control-sm" placeholder="A/C No">
+              </div>
+              <div class="col-md-6">
+                <label class="form-label small mb-1">Bank Name</label>
+                <input type="text" name="bank_name" class="form-control form-control-sm" placeholder="Bank Name">
+              </div>
+              <div class="col-md-6">
+                <label class="form-label small mb-1">Branch Name</label>
+                <input type="text" name="branch_name" class="form-control form-control-sm" placeholder="Branch">
+              </div>
+              <div class="col-md-6">
+                <label class="form-label small mb-1">IFSC</label>
+                <input type="text" name="ifsc_code" class="form-control form-control-sm" placeholder="IFSC">
+              </div>
             </div>
             <div class="form-check mt-2">
               <input class="form-check-input" type="checkbox" name="show_in_quotation_form" checked>
@@ -179,75 +278,113 @@
     <div class="card-header">Terms &amp; Conditions</div>
     <div class="card-body">
       <p class="help-text mb-3">
-        <strong>Show in quotation form</strong> — only checked terms appear on create/edit quotation pages.
-        <strong>Default selected</strong> — pre-checked when creating a new quotation.
+        Edit the term text below. Badges show how each term appears on the quotation form and PDF.
+        <strong>Yellow</strong> highlights the term on PDF.
+        <strong>Form</strong> shows it on create/edit quotation.
+        <strong>Default</strong> pre-selects it for new quotations.
       </p>
 
       {% for term in terms %}
-      <form method="post" class="term-row {% if term.has_yellow_background %}yellow-preview{% endif %}">
-        {% csrf_token %}
-        <input type="hidden" name="action" value="save_term">
-        <input type="hidden" name="term_id" value="{{ term.id }}">
+      <div class="term-card {% if term.has_yellow_background %}yellow-preview{% endif %}">
+        <form method="post">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="save_term">
+          <input type="hidden" name="term_id" value="{{ term.id }}">
 
-        <div class="mb-2">
-          <textarea name="content" class="form-control" rows="3">{{ term.content }}</textarea>
-        </div>
+          <div class="d-flex align-items-start gap-3 mb-2">
+            <span class="term-index">{{ forloop.counter }}</span>
+            <div class="flex-grow-1">
+              <div class="mb-2">
+                {% if term.has_yellow_background %}
+                  <span class="term-badge on-yellow">Yellow PDF</span>
+                {% else %}
+                  <span class="term-badge off">No yellow</span>
+                {% endif %}
+                {% if term.show_in_quotation_form %}
+                  <span class="term-badge on-form">On form</span>
+                {% else %}
+                  <span class="term-badge off">Hidden on form</span>
+                {% endif %}
+                {% if term.default_selected %}
+                  <span class="term-badge on-default">Default selected</span>
+                {% endif %}
+                {% if term.is_active %}
+                  <span class="term-badge on-active">Active</span>
+                {% else %}
+                  <span class="term-badge off">Inactive</span>
+                {% endif %}
+              </div>
+              <label class="form-label small mb-1">Term text</label>
+              <textarea name="content" class="form-control" rows="3">{{ term.content }}</textarea>
+              {% if term.content %}
+              <div class="term-preview">{{ term.content }}</div>
+              {% endif %}
+            </div>
+          </div>
 
-        <div class="d-flex flex-wrap gap-3 mb-2">
-          <div class="form-check">
-            <input class="form-check-input" type="checkbox" name="has_yellow_background" id="yellow_{{ term.id }}" {% if term.has_yellow_background %}checked{% endif %}>
-            <label class="form-check-label" for="yellow_{{ term.id }}">Yellow background on PDF</label>
+          <div class="d-flex flex-wrap gap-3 mb-2 ms-5">
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" name="has_yellow_background" id="yellow_{{ term.id }}" {% if term.has_yellow_background %}checked{% endif %}>
+              <label class="form-check-label" for="yellow_{{ term.id }}">Yellow background on PDF</label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" name="show_in_quotation_form" id="show_{{ term.id }}" {% if term.show_in_quotation_form %}checked{% endif %}>
+              <label class="form-check-label" for="show_{{ term.id }}">Show in quotation form</label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" name="default_selected" id="default_{{ term.id }}" {% if term.default_selected %}checked{% endif %}>
+              <label class="form-check-label" for="default_{{ term.id }}">Default selected</label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" name="is_active" id="active_{{ term.id }}" {% if term.is_active %}checked{% endif %}>
+              <label class="form-check-label" for="active_{{ term.id }}">Active</label>
+            </div>
           </div>
-          <div class="form-check">
-            <input class="form-check-input" type="checkbox" name="show_in_quotation_form" id="show_{{ term.id }}" {% if term.show_in_quotation_form %}checked{% endif %}>
-            <label class="form-check-label" for="show_{{ term.id }}">Show in quotation form</label>
-          </div>
-          <div class="form-check">
-            <input class="form-check-input" type="checkbox" name="default_selected" id="default_{{ term.id }}" {% if term.default_selected %}checked{% endif %}>
-            <label class="form-check-label" for="default_{{ term.id }}">Default selected</label>
-          </div>
-          <div class="form-check">
-            <input class="form-check-input" type="checkbox" name="is_active" id="active_{{ term.id }}" {% if term.is_active %}checked{% endif %}>
-            <label class="form-check-label" for="active_{{ term.id }}">Active</label>
-          </div>
-        </div>
 
-        <div class="d-flex gap-2">
-          <button type="submit" class="btn btn-sm btn-primary">Save</button>
-        </div>
-      </form>
-      <form method="post" class="d-inline mb-3" onsubmit="return confirm('Delete this term?');">
-        {% csrf_token %}
-        <input type="hidden" name="action" value="delete_term">
-        <input type="hidden" name="term_id" value="{{ term.id }}">
-        <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
-      </form>
+          <div class="d-flex gap-2 ms-5">
+            <button type="submit" class="btn btn-sm btn-primary">Save Term</button>
+          </div>
+        </form>
+        <form method="post" class="ms-5 mt-2" onsubmit="return confirm('Delete this term?');">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="delete_term">
+          <input type="hidden" name="term_id" value="{{ term.id }}">
+          <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
+        </form>
+      </div>
       {% empty %}
       <p class="text-muted">No terms added yet.</p>
       {% endfor %}
 
       <hr>
       <h6>Add New Term</h6>
-      <form method="post" class="term-row">
-        {% csrf_token %}
-        <input type="hidden" name="action" value="save_term">
-        <textarea name="content" class="form-control mb-2" rows="3" placeholder="Enter terms &amp; condition text..."></textarea>
-        <div class="d-flex flex-wrap gap-3 mb-2">
-          <div class="form-check">
-            <input class="form-check-input" type="checkbox" name="has_yellow_background" id="new_yellow">
-            <label class="form-check-label" for="new_yellow">Yellow background</label>
+      <div class="term-card">
+        <form method="post">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="save_term">
+          <label class="form-label small mb-1">Term text</label>
+          <textarea name="content" class="form-control mb-2" rows="3" placeholder="Enter terms &amp; condition text..."></textarea>
+          <div class="d-flex flex-wrap gap-3 mb-2">
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" name="has_yellow_background" id="new_yellow">
+              <label class="form-check-label" for="new_yellow">Yellow background</label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" name="show_in_quotation_form" id="new_show" checked>
+              <label class="form-check-label" for="new_show">Show in quotation form</label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" name="default_selected" id="new_default">
+              <label class="form-check-label" for="new_default">Default selected</label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" name="is_active" id="new_active" checked>
+              <label class="form-check-label" for="new_active">Active</label>
+            </div>
           </div>
-          <div class="form-check">
-            <input class="form-check-input" type="checkbox" name="show_in_quotation_form" id="new_show" checked>
-            <label class="form-check-label" for="new_show">Show in quotation form</label>
-          </div>
-          <div class="form-check">
-            <input class="form-check-input" type="checkbox" name="default_selected" id="new_default">
-            <label class="form-check-label" for="new_default">Default selected</label>
-          </div>
-        </div>
-        <button type="submit" class="btn btn-sm btn-success">Add Term</button>
-      </form>
+          <button type="submit" class="btn btn-sm btn-success">Add Term</button>
+        </form>
+      </div>
     </div>
   </div>
 </div>

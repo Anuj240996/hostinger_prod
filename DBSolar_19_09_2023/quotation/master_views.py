@@ -47,13 +47,17 @@ def _ensure_master_defaults(master):
     if not master.subsidy_notes:
         master.subsidy_notes = DEFAULT_SUBSIDY_NOTE
         changed = True
+    if not master.gst_no:
+        master.gst_no = '123457896541332'
+        changed = True
+    if not master.pan_no:
+        master.pan_no = 'ABC12358G'
+        changed = True
     if changed:
         master.save()
     if not QuotationBankDetail.objects.exists():
         QuotationBankDetail.objects.create(
             account_name='Heramb Industries',
-            gst_no='123457896541332',
-            pan_no='ABC12358G',
             account_no='112233665544778',
             ifsc_code='SVSB000123',
             bank_name='SVC CO-OP Bank',
@@ -74,6 +78,8 @@ def quotation_master(request):
 
         if action == 'save_company':
             master.company_name = request.POST.get('company_name', master.company_name)
+            master.gst_no = request.POST.get('gst_no', '')
+            master.pan_no = request.POST.get('pan_no', '')
             master.address = request.POST.get('address', '')
             master.from_address = request.POST.get('from_address', '')
             master.subsidy_notes = request.POST.get('subsidy_notes', '')
@@ -117,8 +123,6 @@ def quotation_master(request):
             else:
                 bank = QuotationBankDetail()
             bank.account_name = request.POST.get('account_name', '')
-            bank.gst_no = request.POST.get('gst_no', '')
-            bank.pan_no = request.POST.get('pan_no', '')
             bank.account_no = request.POST.get('account_no', '')
             bank.ifsc_code = request.POST.get('ifsc_code', '')
             bank.bank_name = request.POST.get('bank_name', '')
