@@ -13,23 +13,23 @@
   .bank-card {
     border: 1px solid #dce3ea;
     border-radius: 10px;
-    padding: 16px 16px 14px;
+    padding: 16px;
     margin-bottom: 14px;
     background: #f8fafb;
     position: relative;
+    width: 100%;
+    box-sizing: border-box;
   }
   .bank-card-top {
     position: absolute;
-    top: 10px;
-    right: 10px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 8px;
+    top: 12px;
+    right: 12px;
     z-index: 2;
   }
   .bank-card-body {
-    padding-right: 42px;
+    padding-right: 36px;
+    width: 100%;
+    box-sizing: border-box;
   }
   .bank-round-check {
     appearance: none;
@@ -39,51 +39,27 @@
     margin: 0;
     border: 2px solid #00897B;
     border-radius: 50%;
-    background: #fff;
+    background-color: transparent;
+    background-image: none;
     cursor: pointer;
     flex-shrink: 0;
-    position: relative;
+    display: block;
   }
   .bank-round-check:checked {
-    background: #00897B;
-    box-shadow: inset 0 0 0 3px #fff;
+    background-color: transparent;
+    background-image: radial-gradient(circle, #00897B 0 35%, transparent 38%);
+    box-shadow: none;
   }
   .bank-round-check:focus {
     outline: none;
-    box-shadow: 0 0 0 3px rgba(0,137,123,.25);
+    box-shadow: 0 0 0 3px rgba(0,137,123,.2);
   }
-  .bank-round-check:checked:focus {
-    box-shadow: inset 0 0 0 3px #fff, 0 0 0 3px rgba(0,137,123,.25);
-  }
-  .bank-delete-x {
-    width: 28px;
-    height: 28px;
-    border: none;
-    border-radius: 50%;
-    background: #ffebee;
-    color: #c62828;
-    font-size: 1.15rem;
-    line-height: 1;
-    font-weight: 700;
-    cursor: pointer;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    padding: 0;
-  }
-  .bank-delete-x:hover {
-    background: #ffcdd2;
-    color: #b71c1c;
-  }
-  .bank-use-form,
-  .bank-delete-form {
+  .bank-use-form {
     margin: 0;
     padding: 0;
     border: none;
     background: transparent;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    display: block;
   }
   .bank-view-grid .bank-field-label {
     font-size: 0.78rem;
@@ -100,7 +76,7 @@
   }
   .bank-card.is-editing .bank-view-mode { display: none; }
   .bank-card:not(.is-editing) .bank-edit-mode { display: none; }
-  .bank-card-actions { margin-top: 12px; display: flex; gap: 8px; flex-wrap: wrap; }
+  .bank-card-actions { margin-top: 12px; display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
   .term-card {
     border: 1px solid #dce3ea;
     border-radius: 12px;
@@ -265,12 +241,6 @@
           {% with use_on_pdf=bank.is_default %}
           <div class="bank-card" id="bank-card-{{ bank.id }}" data-bank-id="{{ bank.id }}">
             <div class="bank-card-top">
-              <form method="post" class="bank-delete-form" onsubmit="return confirm('Delete this bank record?');" title="Delete bank">
-                {% csrf_token %}
-                <input type="hidden" name="action" value="delete_bank">
-                <input type="hidden" name="bank_id" value="{{ bank.id }}">
-                <button type="submit" class="bank-delete-x" aria-label="Delete">&times;</button>
-              </form>
               <form method="post" class="bank-use-form" title="Use on quotation PDF">
                 {% csrf_token %}
                 <input type="hidden" name="action" value="save_bank">
@@ -322,6 +292,12 @@
               </div>
               <div class="bank-card-actions">
                 <button type="button" class="btn btn-sm btn-primary" onclick="editBankCard({{ bank.id }})">Update</button>
+                <form method="post" class="d-inline m-0" onsubmit="return confirm('Delete this bank record?');">
+                  {% csrf_token %}
+                  <input type="hidden" name="action" value="delete_bank">
+                  <input type="hidden" name="bank_id" value="{{ bank.id }}">
+                  <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
+                </form>
               </div>
             </div>
 
