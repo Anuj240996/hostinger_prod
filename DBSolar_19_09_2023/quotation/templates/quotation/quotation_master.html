@@ -175,24 +175,28 @@
     background: transparent !important;
     background-color: transparent !important;
     box-shadow: none !important;
-    display: block !important;
   }
-  .term-card.is-editing .term-view-mode { display: none; }
-  .term-card:not(.is-editing) .term-edit-mode { display: none; }
+  .term-card .term-delete-inline {
+    display: inline-flex !important;
+  }
+  .term-card.is-editing .term-view-mode { display: none !important; }
+  .term-card:not(.is-editing) .term-edit-mode { display: none !important; }
+  .term-card.is-editing .term-edit-mode { display: block !important; }
   .term-card-actions {
     margin-top: 12px;
     display: flex !important;
     flex-direction: row !important;
     flex-wrap: nowrap !important;
     align-items: center;
-    justify-content: center;
+    justify-content: center !important;
     gap: 8px;
+    width: 100%;
   }
   .term-card-actions .term-delete-inline {
     display: inline-flex !important;
     margin: 0 !important;
     padding: 0 !important;
-    width: auto;
+    width: auto !important;
   }
   .term-field-label {
     font-size: 0.78rem;
@@ -529,7 +533,6 @@
               <span class="term-badge off">Inactive</span>
             {% endif %}
           </div>
-          <div class="term-field-label">Term text</div>
           <div class="term-field-value">{{ term.content|default:"—" }}</div>
           <div class="term-card-actions">
             <button type="button" class="btn btn-sm btn-primary" onclick="editTermCard({{ term.id }})">Update</button>
@@ -546,7 +549,6 @@
           {% csrf_token %}
           <input type="hidden" name="action" value="save_term">
           <input type="hidden" name="term_id" value="{{ term.id }}">
-          <label class="form-label small mb-1">Term text</label>
           <textarea name="content" class="form-control" rows="3">{{ term.content }}</textarea>
           <div class="d-flex flex-wrap gap-3 my-2">
             <div class="form-check">
@@ -582,7 +584,6 @@
         <form method="post">
           {% csrf_token %}
           <input type="hidden" name="action" value="save_term">
-          <label class="form-label small mb-1">Term text</label>
           <textarea name="content" class="form-control mb-2" rows="3" placeholder="Enter terms &amp; condition text..."></textarea>
           <div class="d-flex flex-wrap gap-3 mb-2">
             <div class="form-check">
