@@ -29,11 +29,16 @@ def get_changed_fields(instance):
         old_val = getattr(old, field.name)
         new_val = getattr(new, field.name)
         if old_val != new_val:
-            # Convert to serializable types
-            if hasattr(old_val, 'isoformat'):
-                old_val = old_val.isoformat()
-                new_val = new_val.isoformat()
-            changes[field.name] = {'old': str(old_val), 'new': str(new_val)}
+            # Convert to serializable types without assuming both sides are datetime.
+            def _serialize(val):
+                if hasattr(val, 'isoformat') and not isinstance(val, str):
+                    try:
+                        return val.isoformat()
+                    except Exception:
+                        return str(val)
+                return str(val)
+
+            changes[field.name] = {'old': _serialize(old_val), 'new': _serialize(new_val)}
     return changes if changes else None
 
 def log_action(sender, instance, created=False, **kwargs):

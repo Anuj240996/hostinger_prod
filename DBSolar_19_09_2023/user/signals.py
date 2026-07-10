@@ -7,7 +7,14 @@ from django.dispatch import receiver
 @receiver(post_save, sender=User)
 def create_profile(sender, instance, created, **kwargs):
     if created:
-        Profile.objects.create(customer=instance)
+        Profile.objects.get_or_create(
+            customer=instance,
+            defaults={
+                'department': 'Administration',
+                'bg': 'O +ve',
+                'image': 'profile_pics/default.png',
+            },
+        )
 
 
 # @receiver(post_save, sender=User)

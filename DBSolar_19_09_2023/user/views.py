@@ -801,6 +801,30 @@ def edit_profile(request):
 @login_required(login_url='user-login')
 @allowed_users(allowed_roles=['Admin'])
 def profile_update(request,pk):
+    from datetime import datetime, date
+    from django.utils import timezone
+    import traceback
+
+    def _parse_date(value):
+        value = (value or '').strip()
+        if not value:
+            return None
+        for fmt in ('%Y-%m-%d', '%d-%m-%Y', '%d/%m/%Y'):
+            try:
+                return datetime.strptime(value, fmt).date()
+            except ValueError:
+                continue
+        return None
+
+    def _parse_datetime(value):
+        parsed = _parse_date(value)
+        if not parsed:
+            return None
+        dt = datetime.combine(parsed, datetime.min.time())
+        if timezone.is_naive(dt):
+            return timezone.make_aware(dt, timezone.get_current_timezone())
+        return dt
+
     error = ""
     count1 = staff_Notification.objects.filter(staff_id=request.user.id, status=False).count()
     notification1 = staff_Notification.objects.filter(staff_id=request.user.id, status=False).order_by('-created_at')
@@ -808,10 +832,15 @@ def profile_update(request,pk):
     designations = Profile._meta.get_field('designation').choices
     bgs = Profile._meta.get_field('bg').choices
     user1 = User.objects.get(id=pk)
-    # print(user1)
-    employee = Profile.objects.get(customer_id=user1)
+    employee, _ = Profile.objects.get_or_create(
+        customer=user1,
+        defaults={
+            'department': 'Administration',
+            'bg': 'O +ve',
+            'image': 'profile_pics/default.png',
+        },
+    )
     is_associate_user = user1.groups.filter(name='Associate').exists()
-    # print(user1)
     if request.method == "POST":
         fn = request.POST['firstname']
         ln = request.POST['lastname']
@@ -837,17 +866,12 @@ def profile_update(request,pk):
         emremail = request.POST['emremail']
         emraddress = request.POST['emraddress']
 
-
         user1.first_name = fn
         user1.last_name = ln
         user1.email = em
 
-        #employee.department = dept
         employee.phone = phone
-        #employee.designation = desig
         employee.address = add
-
-        #employee.bg = bg
         employee.city = city
         employee.taluka = taluka
         employee.district = district
@@ -869,28 +893,33 @@ def profile_update(request,pk):
             employee.designation = 'Associate'
         if bg:
             employee.bg = bg
-        if yop:
-            employee.yop = yop
 
-        if jod:
-            user1.date_joined = jod
+        parsed_yop = _parse_date(yop)
+        if parsed_yop:
+            employee.yop = parsed_yop
 
-        if dob:
-            employee.DOB = dob
+        parsed_jod = _parse_datetime(jod)
+        if parsed_jod:
+            user1.date_joined = parsed_jod
+
+        parsed_dob = _parse_date(dob)
+        if parsed_dob:
+            employee.DOB = parsed_dob
         if image:
             employee.image = image
 
         try:
             user = get_user(request)
             employee.last_updated_by = user.id
-            # print(user)
             employee.save()
             user1.save()
             logout(request)
-            login(request, user)
-            error="no"
-        except:
-            error="yes"
+            login(request, user, backend='django.contrib.auth.backends.ModelBackend')
+            error = "no"
+        except Exception as e:
+            print(f"Error in profile_update({pk}): {e}")
+            print(traceback.format_exc())
+            error = "yes"
     return render(request, 'user/profile_update.html', locals())
 
 @login_required(login_url='user-login')
