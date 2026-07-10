@@ -195,68 +195,39 @@
     for your requirement. Plant Capacity <b><span class="black"> &nbsp;{{ quotation.plant_capacity_kw|clean_decimal  }}</span> KW</b>
     solar system with our genuine competitive offer as follows:
   </span>
-  <table align="center">
+  <table align="center" class="party-info-table" style="margin-top: 6px;">
     <tr>
-      <td style="padding: 5px; line-height: 1.5;" width="35%">
+      <td style="padding: 4px 6px; line-height: 1.35; vertical-align: top;" width="35%">
         <b>From,</b><br>
-        &nbsp;&nbsp;&nbsp;<b>{{ quotation_master.company_name|default:"Heramb Industries" }},</b><br>
+        <b>{{ quotation_master.company_name|default:"Heramb Industries" }},</b><br>
         {% if quotation_master.from_address %}
-        &nbsp;&nbsp;&nbsp;{{ quotation_master.from_address|linebreaksbr }}
+        {{ quotation_master.from_address|linebreaksbr }}
         {% else %}
-        &nbsp;&nbsp;&nbsp;Bhagya Banglow,Near Sant Eknath<br>
-        &nbsp;&nbsp;&nbsp;Rang Mandir, New Osman Pura,<br>
-        &nbsp;&nbsp;&nbsp;Chh. Sambhaki Nagar.(MH)-431001
+        Bhagya Banglow,Near Sant Eknath<br>
+        Rang Mandir, New Osman Pura,<br>
+        Chh. Sambhaki Nagar.(MH)-431001
         {% endif %}
       </td>
-<!--      <td style="padding: 2px; width: 33%;">-->
-
-<!--          <b>From,</b>-->
-<!--          <div style="margin-left: 10px;">-->
-<!--              <b>Heramb Industries, Bhagya</b><br>-->
-<!--              Banglow, Near Sant Eknath Rang<br>-->
-<!--              Mandir, New Osman Pura,<br>-->
-<!--              Chh. Sambhaji Nagar (MH) - 431001-->
-<!--          </div>-->
-
-<!--      </td>-->
-
-      <td style="padding: 5px; line-height: 1.5;" width="33%">
+      <td style="padding: 4px 6px; line-height: 1.35; vertical-align: top;" width="33%">
         <b>To,</b><br>
-        &nbsp;&nbsp;&nbsp;<b>{{ quotation.title }} {{ quotation.consumer_name }}</b><br>
-        &nbsp;&nbsp;&nbsp;{{ quotation.consumer_address1 }} ,<br>
-        &nbsp;&nbsp;&nbsp;{{ quotation.consumer_address2 }}<br>
+        <b>{{ quotation.title }} {{ quotation.consumer_name }}</b><br>
+        {{ quotation.consumer_address1 }}{% if quotation.consumer_address1 %},{% endif %}<br>
+        {{ quotation.consumer_address2 }}
       </td>
-      <td style="padding: 5px;" width="35%">
-<!--        <div style="line-height: 1.8;">-->
-<!--        &nbsp;&nbsp;<b>Date - </b>{{ quotation.date|date:"d / m / Y" }}<br>-->
-<!--        &nbsp;&nbsp;&nbsp;<b>Quotation No.-</b>DB/Res/{{ quotation.quotation_no }}/{% now "y" as this_year %}-->
-<!--{{ this_year }}<br>-->
-<!--        &nbsp;&nbsp;&nbsp;<b>Consumer No.</b>{{ quotation.consumer_no }}<br>-->
-<!--          &nbsp;&nbsp;&nbsp;<b>Consumer type </b>Residential<br>-->
-<!--        &nbsp;&nbsp;&nbsp;<b>Mobile No.</b>{{ quotation.consumer_mobile }}<br>-->
-
-<!--        </div>-->
-          <div style="line-height: 5;">
-            <b>Date - </b>{{ formatted_date }}<br>
-            &nbsp;<b>Quotation No. - </b>
-              {% if quotation.consumer_type == 'Residential' %}
-                DB/Res/{{ quotation.quotation_no }}/
-                {% now "y" as this_year %}{{ this_year }}
-              {% elif quotation.consumer_type == 'Commercial' %}
-                DB/Comm/{{ quotation.quotation_no }}/
-                {% now "y" as this_year %}{{ this_year }}
-               {% elif quotation.consumer_type == 'Industrial' %}
-                DB/Ind/{{ quotation.quotation_no }}/
-                {% now "y" as this_year %}{{ this_year }}
-              {% endif %}
-
-              <br>
-
-            &nbsp;<b>Consumer No. - </b>{{ quotation.consumer_no }}<br>
-            &nbsp;<b>Consumer Type - </b>{{ quotation.consumer_type }}<br>
-            &nbsp;<b>Mobile No. - </b>{{ quotation.consumer_mobile }}
-        </div>
-
+      <td style="padding: 4px 6px; line-height: 1.35; vertical-align: top;" width="32%">
+        <b>Date - </b>{{ formatted_date }}<br>
+        <b>Quotation No. - </b>
+          {% if quotation.consumer_type == 'Residential' %}
+            DB/Res/{{ quotation.quotation_no }}/{% now "y" as this_year %}{{ this_year }}
+          {% elif quotation.consumer_type == 'Commercial' %}
+            DB/Comm/{{ quotation.quotation_no }}/{% now "y" as this_year %}{{ this_year }}
+          {% elif quotation.consumer_type == 'Industrial' %}
+            DB/Ind/{{ quotation.quotation_no }}/{% now "y" as this_year %}{{ this_year }}
+          {% endif %}
+        <br>
+        <b>Consumer No. - </b>{{ quotation.consumer_no }}<br>
+        <b>Consumer Type - </b>{{ quotation.consumer_type }}<br>
+        <b>Mobile No. - </b>{{ quotation.consumer_mobile }}
       </td>
     </tr>
   </table>
