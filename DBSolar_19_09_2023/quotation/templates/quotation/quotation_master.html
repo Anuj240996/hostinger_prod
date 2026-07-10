@@ -140,6 +140,7 @@
     flex-direction: row !important;
     flex-wrap: nowrap !important;
     align-items: center;
+    justify-content: center;
     gap: 8px;
   }
   .bank-card-actions .bank-delete-inline {
@@ -303,11 +304,6 @@
           <span>Bank Details</span>
         </div>
         <div class="card-body">
-          <p class="help-text mb-3">
-            Select the round checkbox on the bank card to use on the quotation PDF.
-            {% if bank_count == 1 %}With one bank only, it stays selected by default.{% else %}With multiple banks, choose one card.{% endif %}
-            Click <strong>Update</strong> to edit values.
-          </p>
           {% for bank in all_banks %}
           {% with use_on_pdf=bank.is_default %}
           <div class="bank-card" id="bank-card-{{ bank.id }}" data-bank-id="{{ bank.id }}">
@@ -363,10 +359,6 @@
                   <div class="bank-field-label">IFSC</div>
                   <div class="bank-field-value">{{ bank.ifsc_code|default:"—" }}</div>
                 </div>
-                <div class="col-md-6">
-                  <div class="bank-field-label">Order</div>
-                  <div class="bank-field-value">{{ bank.sort_order }}</div>
-                </div>
               </div>
               <div class="bank-card-actions">
                 <button type="button" class="btn btn-sm btn-primary" onclick="editBankCard({{ bank.id }})">Update</button>
@@ -383,6 +375,7 @@
               {% csrf_token %}
               <input type="hidden" name="action" value="save_bank">
               <input type="hidden" name="bank_id" value="{{ bank.id }}">
+              <input type="hidden" name="sort_order" value="{{ bank.sort_order }}">
               {% if bank_count == 1 or use_on_pdf %}
               <input type="hidden" name="use_on_pdf" value="on">
               {% endif %}
@@ -407,10 +400,6 @@
                 <div class="col-md-6">
                   <label class="form-label small mb-1">IFSC</label>
                   <input type="text" name="ifsc_code" class="form-control form-control-sm" placeholder="IFSC" value="{{ bank.ifsc_code }}">
-                </div>
-                <div class="col-md-6">
-                  <label class="form-label small mb-1">Order</label>
-                  <input type="number" name="sort_order" class="form-control form-control-sm" placeholder="Order" value="{{ bank.sort_order }}">
                 </div>
               </div>
               <div class="bank-card-actions">
