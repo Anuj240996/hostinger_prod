@@ -5570,22 +5570,38 @@ def link_callback(uri, rel):
 
     # 2. Handle media files
     if uri.startswith(settings.MEDIA_URL):
-        path = os.path.join(settings.MEDIA_ROOT, uri.replace(settings.MEDIA_URL, ''))
+        path = os.path.join(str(settings.MEDIA_ROOT), uri.replace(settings.MEDIA_URL, ''))
         if os.path.isfile(path):
             return path
 
     # 3. Handle static files from STATICFILES_DIRS and STATIC_ROOT
     if uri.startswith(settings.STATIC_URL):
-        static_path = uri.replace(settings.STATIC_URL, '')
+        static_path = uri.replace(settings.STATIC_URL, '').lstrip('/')
 
-        # First look in each STATICFILES_DIR
+        # First look in each STATICFILES_DIR (supports plain paths and (prefix, path) tuples)
         for static_dir in getattr(settings, 'STATICFILES_DIRS', []):
-            path = os.path.join(static_dir, static_path)
+            if isinstance(static_dir, (list, tuple)) and len(static_dir) == 2:
+                prefix, directory = static_dir
+                prefix = str(prefix).strip('/').replace('\\', '/')
+                directory = str(directory)
+                candidate_name = static_path.replace('\\', '/')
+                if prefix:
+                    if candidate_name == prefix:
+                        path = directory
+                    elif candidate_name.startswith(prefix + '/'):
+                        path = os.path.join(directory, candidate_name[len(prefix) + 1:])
+                    else:
+                        continue
+                else:
+                    path = os.path.join(directory, candidate_name)
+            else:
+                path = os.path.join(str(static_dir), static_path)
+
             if os.path.isfile(path):
                 return path
 
         # Then look in STATIC_ROOT
-        path = os.path.join(settings.STATIC_ROOT, static_path)
+        path = os.path.join(str(settings.STATIC_ROOT), static_path)
         if os.path.isfile(path):
             return path
 
