@@ -31,24 +31,49 @@
     width: 100%;
     box-sizing: border-box;
   }
+  .bank-round-check-wrap {
+    position: relative;
+    width: 22px;
+    height: 22px;
+    display: inline-block;
+  }
   .bank-round-check {
     appearance: none;
     -webkit-appearance: none;
-    width: 20px;
-    height: 20px;
+    width: 22px;
+    height: 22px;
     margin: 0;
     border: 2px solid #00897B;
     border-radius: 50%;
-    background-color: transparent;
-    background-image: none;
+    background: transparent !important;
+    background-color: transparent !important;
+    background-image: none !important;
     cursor: pointer;
-    flex-shrink: 0;
     display: block;
+    position: relative;
+    z-index: 1;
   }
   .bank-round-check:checked {
-    background-color: transparent;
-    background-image: radial-gradient(circle, #00897B 0 35%, transparent 38%);
-    box-shadow: none;
+    background: transparent !important;
+    background-color: transparent !important;
+    background-image: none !important;
+    box-shadow: none !important;
+  }
+  .bank-round-check-mark {
+    position: absolute;
+    left: 7px;
+    top: 3px;
+    width: 6px;
+    height: 11px;
+    border: solid #00897B;
+    border-width: 0 2px 2px 0;
+    transform: rotate(45deg);
+    pointer-events: none;
+    opacity: 0;
+    z-index: 2;
+  }
+  .bank-round-check:checked + .bank-round-check-mark {
+    opacity: 1;
   }
   .bank-round-check:focus {
     outline: none;
@@ -76,7 +101,20 @@
   }
   .bank-card.is-editing .bank-view-mode { display: none; }
   .bank-card:not(.is-editing) .bank-edit-mode { display: none; }
-  .bank-card-actions { margin-top: 12px; display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  .bank-card-actions {
+    margin-top: 12px;
+    display: flex !important;
+    flex-direction: row !important;
+    flex-wrap: nowrap !important;
+    align-items: center;
+    gap: 8px;
+  }
+  .bank-card-actions .bank-delete-inline {
+    display: inline-flex !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    width: auto;
+  }
   .term-card {
     border: 1px solid #dce3ea;
     border-radius: 12px;
@@ -251,14 +289,17 @@
                 <input type="hidden" name="branch_name" value="{{ bank.branch_name }}">
                 <input type="hidden" name="ifsc_code" value="{{ bank.ifsc_code }}">
                 <input type="hidden" name="sort_order" value="{{ bank.sort_order }}">
-                <input
-                  class="bank-round-check"
-                  type="checkbox"
-                  name="use_on_pdf"
-                  {% if bank_count == 1 or use_on_pdf %}checked{% endif %}
-                  onchange="this.form.submit()"
-                  aria-label="Use on quotation PDF"
-                >
+                <span class="bank-round-check-wrap">
+                  <input
+                    class="bank-round-check"
+                    type="checkbox"
+                    name="use_on_pdf"
+                    {% if bank_count == 1 or use_on_pdf %}checked{% endif %}
+                    onchange="this.form.submit()"
+                    aria-label="Use on quotation PDF"
+                  >
+                  <span class="bank-round-check-mark" aria-hidden="true"></span>
+                </span>
               </form>
             </div>
 
@@ -292,7 +333,7 @@
               </div>
               <div class="bank-card-actions">
                 <button type="button" class="btn btn-sm btn-primary" onclick="editBankCard({{ bank.id }})">Update</button>
-                <form method="post" class="d-inline m-0" onsubmit="return confirm('Delete this bank record?');">
+                <form method="post" class="bank-delete-inline" onsubmit="return confirm('Delete this bank record?');">
                   {% csrf_token %}
                   <input type="hidden" name="action" value="delete_bank">
                   <input type="hidden" name="bank_id" value="{{ bank.id }}">
@@ -353,15 +394,18 @@
             {% csrf_token %}
             <input type="hidden" name="action" value="save_bank">
             <div class="bank-card-top">
-              <input
-                class="bank-round-check"
-                type="checkbox"
-                name="use_on_pdf"
-                id="use_on_pdf_new"
-                {% if bank_count == 0 %}checked{% endif %}
-                aria-label="Use on quotation PDF"
-                title="Use on quotation PDF"
-              >
+              <span class="bank-round-check-wrap">
+                <input
+                  class="bank-round-check"
+                  type="checkbox"
+                  name="use_on_pdf"
+                  id="use_on_pdf_new"
+                  {% if bank_count == 0 %}checked{% endif %}
+                  aria-label="Use on quotation PDF"
+                  title="Use on quotation PDF"
+                >
+                <span class="bank-round-check-mark" aria-hidden="true"></span>
+              </span>
             </div>
             <div class="bank-card-body">
             <div class="row g-2">
