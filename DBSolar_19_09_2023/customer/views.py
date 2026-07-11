@@ -891,8 +891,8 @@ def Cust_emp(request):
                 pump_warranty = request.POST.get('pump_warranty')
             else:
                 Consumer = request.POST.get('Consumer')
-                current_load = request.POST.get('Bill_unit')
-                loadsancution = request.POST.get('loadsancution')
+                current_load = _parse_post_int(request.POST.get('Bill_unit'))
+                loadsancution = _parse_post_int(request.POST.get('loadsancution'))
 
             if city_name == "Other" and new_city_name:
                 # Check if the new city already exists in the database
@@ -1271,8 +1271,8 @@ def Comm_Cust(request):
                     pump_warranty = request.POST.get('pump_warranty')
                 else:
                     Consumer = request.POST.get('Consumer')
-                    current_load = request.POST.get('Bill_unit')
-                    loadsancution = request.POST.get('loadsancution')
+                    current_load = _parse_post_int(request.POST.get('Bill_unit'))
+                    loadsancution = _parse_post_int(request.POST.get('loadsancution'))
 
                 if city_name == "Other" and new_city_name:
                     # Check if the new city already exists in the database
@@ -2204,7 +2204,7 @@ def Govt_Cust(request):
 
             Comp_name = request.POST['Comp_name']
             Consumer = request.POST['Consumer']
-            current_load = request.POST['Bill_unit']
+            current_load = _parse_post_int(request.POST.get('Bill_unit'))
             Address = request.POST['Address']
             Plant_Capacity = _parse_post_int(request.POST.get('Plant_Capacity'))
             Ups_Soft = request.POST['Ups_Soft']
@@ -2214,7 +2214,7 @@ def Govt_Cust(request):
             UPSC = request.POST['UPSC']
             state = request.POST['state']
             Pincode = _parse_post_int(request.POST.get('Pincode'))
-            loadsancution = request.POST['loadsancution']
+            loadsancution = _parse_post_int(request.POST.get('loadsancution'))
             # po_date = (request.POST['po_date'])
             # Date
             po_date_str = request.POST.get('po_date')
@@ -2249,8 +2249,8 @@ def Govt_Cust(request):
                 pump_warranty = request.POST.get('pump_warranty')
             else:
                 Consumer = request.POST.get('Consumer')
-                current_load = request.POST.get('Bill_unit')
-                loadsancution = request.POST.get('loadsancution')
+                current_load = _parse_post_int(request.POST.get('Bill_unit'))
+                loadsancution = _parse_post_int(request.POST.get('loadsancution'))
 
             if city_name == "Other" and new_city_name:
                 # Check if the new city already exists in the database
@@ -3036,8 +3036,8 @@ def customer_update(request, Cust_id):
             customer.loadsancution = None
         else:
             consumer = request.POST.get('consumer')
-            current_load = request.POST.get('current_load')
-            loadsancution = request.POST.get('loadsancution')
+            current_load = _parse_post_int(request.POST.get('current_load'))
+            loadsancution = _parse_post_int(request.POST.get('loadsancution'))
 
             customer.Consumer = consumer
             customer.current_load = current_load
