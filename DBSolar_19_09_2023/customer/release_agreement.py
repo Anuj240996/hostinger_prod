@@ -125,6 +125,50 @@ def save_uploaded_doc(customer, doc_type, uploaded_file, user=None):
     return doc
 
 
+def delete_uploaded_doc(customer, doc_type):
+    """Remove Release or Agreement PDF (disk + binary) for a consumer."""
+    from .models import ConsumerReleaseAgreement
+
+    doc_type = (doc_type or '').strip().lower()
+    if doc_type not in ('release', 'agreement'):
+        raise ValueError('doc_type must be release or agreement')
+
+    doc = (
+        ConsumerReleaseAgreement.objects.filter(customer=customer)
+        .order_by('-created_at')
+        .first()
+    )
+    if not doc:
+        raise ValueError('No Release & Agreement record found for this consumer.')
+
+    def _clear_file(field):
+        if not field:
+            return
+        try:
+            if field.name:
+                field.delete(save=False)
+        except Exception:
+            pass
+        try:
+            field.name = ''
+        except Exception:
+            pass
+
+    if doc_type == 'release':
+        _clear_file(doc.release_pdf)
+        _clear_file(doc.pdf)
+        doc.release_pdf = None
+        doc.pdf = None
+        doc.release_pdf_data = None
+    else:
+        _clear_file(doc.agreement_pdf)
+        doc.agreement_pdf = None
+        doc.agreement_pdf_data = None
+
+    doc.save()
+    return doc
+
+
 def backfill_release_agreements(limit=None, user=None):
     """Create missing Release PDFs for every Result row that is release-ready."""
     from .models import Result

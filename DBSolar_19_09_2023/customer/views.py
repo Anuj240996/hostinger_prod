@@ -2546,6 +2546,39 @@ def upload_release_agreement_docs(request, cust_id):
 
 
 @login_required(login_url='user-login')
+@require_POST
+def delete_release_agreement_doc(request, cust_id, doc_type):
+    """Delete Release or Agreement PDF for a consumer."""
+    from .models import Customer, Result
+    from .release_agreement import delete_uploaded_doc, result_is_release_ready
+
+    customer = get_object_or_404(Customer, Cust_id=cust_id)
+    doc_type = (doc_type or '').strip().lower()
+    if doc_type not in ('release', 'agreement'):
+        return JsonResponse({'ok': False, 'error': 'Invalid document type.'}, status=400)
+
+    try:
+        doc = delete_uploaded_doc(customer, doc_type)
+    except ValueError as exc:
+        return JsonResponse({'ok': False, 'error': str(exc)}, status=400)
+    except Exception as exc:
+        return JsonResponse({'ok': False, 'error': str(exc)}, status=500)
+
+    result = Result.objects.filter(consumer_id=customer).order_by('-id').first()
+    return JsonResponse({
+        'ok': True,
+        'cust_id': customer.Cust_id,
+        'deleted': doc_type,
+        'release_ready': result_is_release_ready(result),
+        'has_release': bool(doc and doc.has_release_pdf),
+        'has_agreement': bool(doc and doc.has_agreement_pdf),
+        'has_both': bool(doc and doc.has_both_pdfs),
+        'release_url': f'/customer/release_agreement/{customer.Cust_id}/release/',
+        'agreement_url': f'/customer/release_agreement/{customer.Cust_id}/agreement/',
+    })
+
+
+@login_required(login_url='user-login')
 def view_all_cust(request):
     count1 = staff_Notification.objects.filter(staff_id=request.user.id, status=False).count()
     notification1 = staff_Notification.objects.filter(staff_id=request.user.id, status=False).order_by('-created_at')

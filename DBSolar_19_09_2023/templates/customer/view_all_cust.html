@@ -522,13 +522,13 @@
                 {% csrf_token %}
                 <div class="modal-body">
                     <p class="mb-2"><strong id="releaseDocsUploadCustomerLabel">Consumer</strong></p>
-                    <p class="text-muted small">Upload Release PDF and Agreement PDF separately.</p>
-                    <div class="form-group">
+                    <p class="text-muted small">Upload only the missing PDF file(s).</p>
+                    <div class="form-group" id="releasePdfFormGroup">
                         <label for="releasePdfInput">Release PDF</label>
                         <input type="file" class="form-control-file" id="releasePdfInput" name="release_pdf" accept="application/pdf,.pdf">
                         <small class="form-text text-muted" id="releasePdfStatus"></small>
                     </div>
-                    <div class="form-group mb-0">
+                    <div class="form-group mb-0" id="agreementPdfFormGroup">
                         <label for="agreementPdfInput">Agreement PDF</label>
                         <input type="file" class="form-control-file" id="agreementPdfInput" name="agreement_pdf" accept="application/pdf,.pdf">
                         <small class="form-text text-muted" id="agreementPdfStatus"></small>
@@ -566,6 +566,7 @@
                         style="width:100%; height:75vh; border:1px solid #cfd8dc; border-radius:4px; background:#f5f5f5;"></iframe>
             </div>
             <div class="modal-footer">
+                <button type="button" class="btn btn-danger" id="releaseDocsDeleteBtn">Delete</button>
                 <a href="#" class="btn btn-outline-primary" id="releaseDocsOpenNewTab" target="_blank" rel="noopener">Open in new tab</a>
                 <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
             </div>
@@ -1494,6 +1495,8 @@
     var agreementInput = document.getElementById('agreementPdfInput');
     var releaseStatus = document.getElementById('releasePdfStatus');
     var agreementStatus = document.getElementById('agreementPdfStatus');
+    var releaseFormGroup = document.getElementById('releasePdfFormGroup');
+    var agreementFormGroup = document.getElementById('agreementPdfFormGroup');
     var activeUploadUrl = '';
     var activeCustId = '';
 
@@ -1502,8 +1505,12 @@
     var viewerOpenTab = document.getElementById('releaseDocsOpenNewTab');
     var btnRelease = document.getElementById('btnToggleReleasePdf');
     var btnAgreement = document.getElementById('btnToggleAgreementPdf');
+    var btnDeletePdf = document.getElementById('releaseDocsDeleteBtn');
     var currentReleaseUrl = '';
     var currentAgreementUrl = '';
+    var currentViewerKind = 'release';
+    var viewerCustId = '';
+    var viewerCustomerLabel = '';
     var viewerBlobUrl = null;
     var viewerRequestId = 0;
 
@@ -1518,6 +1525,27 @@
         uploadError.textContent = msg;
     }
 
+    function configureUploadFields(hasRelease, hasAgreement) {
+        if (releaseFormGroup) releaseFormGroup.style.display = hasRelease ? 'none' : '';
+        if (agreementFormGroup) agreementFormGroup.style.display = hasAgreement ? 'none' : '';
+        if (releaseInput) {
+            releaseInput.value = '';
+            releaseInput.disabled = !!hasRelease;
+            releaseInput.required = !hasRelease;
+        }
+        if (agreementInput) {
+            agreementInput.value = '';
+            agreementInput.disabled = !!hasAgreement;
+            agreementInput.required = !hasAgreement;
+        }
+        if (releaseStatus) {
+            releaseStatus.textContent = hasRelease ? 'Already uploaded.' : 'Required';
+        }
+        if (agreementStatus) {
+            agreementStatus.textContent = hasAgreement ? 'Already uploaded.' : 'Required';
+        }
+    }
+
     function revokeViewerBlob() {
         if (viewerBlobUrl) {
             URL.revokeObjectURL(viewerBlobUrl);
@@ -1526,6 +1554,7 @@
     }
 
     function setViewerPdf(url, kind) {
+        currentViewerKind = kind || 'release';
         if (btnRelease && btnAgreement) {
             btnRelease.classList.toggle('active', kind === 'release');
             btnAgreement.classList.toggle('active', kind === 'agreement');
@@ -1533,6 +1562,10 @@
         if (viewerOpenTab) {
             viewerOpenTab.href = url || '#';
             viewerOpenTab.style.display = url ? '' : 'none';
+        }
+        if (btnDeletePdf) {
+            btnDeletePdf.style.display = url ? '' : 'none';
+            btnDeletePdf.textContent = kind === 'agreement' ? 'Delete Agreement' : 'Delete Release';
         }
         if (!viewerFrame) return;
 
@@ -1543,7 +1576,6 @@
             return;
         }
 
-        // Load via fetch+blob so proxy X-Frame-Options DENY cannot block the modal iframe.
         var requestId = ++viewerRequestId;
         viewerFrame.src = 'about:blank';
         fetch(url, {
@@ -1582,6 +1614,9 @@
             data.release_ready === 1 ||
             data.release_ready === '1' ||
             cell.getAttribute('data-release-ready') === '1';
+        if (data.release_ready === true || data.release_ready === 1 || data.release_ready === '1') {
+            cell.setAttribute('data-release-ready', '1');
+        }
         if (data.has_both) {
             cell.innerHTML =
                 '<a href="javascript:void(0);" class="btn-link font-weight-bold btn-open-release-viewer"' +
@@ -1614,18 +1649,10 @@
             if (uploadLabel) {
                 uploadLabel.textContent = addBtn.getAttribute('data-customer-label') || ('Consumer #' + activeCustId);
             }
-            if (releaseStatus) {
-                releaseStatus.textContent = addBtn.getAttribute('data-has-release') === '1'
-                    ? 'Release PDF already uploaded (optional replace).'
-                    : 'Required';
-            }
-            if (agreementStatus) {
-                agreementStatus.textContent = addBtn.getAttribute('data-has-agreement') === '1'
-                    ? 'Agreement PDF already uploaded (optional replace).'
-                    : 'Required';
-            }
-            if (releaseInput) releaseInput.value = '';
-            if (agreementInput) agreementInput.value = '';
+            configureUploadFields(
+                addBtn.getAttribute('data-has-release') === '1',
+                addBtn.getAttribute('data-has-agreement') === '1'
+            );
             showUploadError('');
             if (window.jQuery) window.jQuery('#releaseDocsUploadModal').modal('show');
             return;
@@ -1634,11 +1661,12 @@
         var viewBtn = e.target.closest('.btn-open-release-viewer');
         if (viewBtn) {
             e.preventDefault();
+            viewerCustId = viewBtn.getAttribute('data-cust-id') || '';
+            viewerCustomerLabel = viewBtn.getAttribute('data-customer-label') || '';
             currentReleaseUrl = viewBtn.getAttribute('data-release-url') || '';
             currentAgreementUrl = viewBtn.getAttribute('data-agreement-url') || '';
             if (viewerLabel) {
-                viewerLabel.textContent = viewBtn.getAttribute('data-customer-label') ||
-                    ('Consumer #' + (viewBtn.getAttribute('data-cust-id') || ''));
+                viewerLabel.textContent = viewerCustomerLabel || ('Consumer #' + viewerCustId);
             }
             setViewerPdf(currentReleaseUrl, 'release');
             if (window.jQuery) window.jQuery('#releaseDocsViewerModal').modal('show');
@@ -1653,6 +1681,47 @@
     if (btnAgreement) {
         btnAgreement.addEventListener('click', function () {
             setViewerPdf(currentAgreementUrl, 'agreement');
+        });
+    }
+    if (btnDeletePdf) {
+        btnDeletePdf.addEventListener('click', function () {
+            if (!viewerCustId || !currentViewerKind) return;
+            var kindLabel = currentViewerKind === 'agreement' ? 'Agreement' : 'Release';
+            if (!window.confirm('Delete the ' + kindLabel + ' PDF for this consumer?')) return;
+
+            btnDeletePdf.disabled = true;
+            var deleteUrl = '/customer/delete_release_docs/' + viewerCustId + '/' + currentViewerKind + '/';
+            fetch(deleteUrl, {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRFToken': getCsrfToken()
+                }
+            })
+                .then(function (resp) {
+                    return resp.json().then(function (data) {
+                        if (!resp.ok || !data.ok) throw new Error((data && data.error) || 'Delete failed.');
+                        return data;
+                    });
+                })
+                .then(function (data) {
+                    var cell = document.querySelector('.attached-doc-cell[data-cust-id="' + (data.cust_id || viewerCustId) + '"]');
+                    if (cell) {
+                        cell.setAttribute(
+                            'data-customer-label',
+                            viewerCustomerLabel || cell.getAttribute('data-customer-label') || ''
+                        );
+                    }
+                    renderAttachedDocCell(cell, data);
+                    if (window.jQuery) window.jQuery('#releaseDocsViewerModal').modal('hide');
+                })
+                .catch(function (err) {
+                    window.alert(err.message || 'Delete failed.');
+                })
+                .finally(function () {
+                    btnDeletePdf.disabled = false;
+                });
         });
     }
     if (window.jQuery) {
@@ -1674,13 +1743,17 @@
                 showUploadError('Upload URL missing.');
                 return;
             }
-            if ((!releaseInput || !releaseInput.files.length) && (!agreementInput || !agreementInput.files.length)) {
-                showUploadError('Please select at least one PDF file.');
+            var releaseVisible = releaseFormGroup && releaseFormGroup.style.display !== 'none';
+            var agreementVisible = agreementFormGroup && agreementFormGroup.style.display !== 'none';
+            var hasReleaseFile = releaseVisible && releaseInput && releaseInput.files.length;
+            var hasAgreementFile = agreementVisible && agreementInput && agreementInput.files.length;
+            if (!hasReleaseFile && !hasAgreementFile) {
+                showUploadError('Please select the missing PDF file.');
                 return;
             }
             var formData = new FormData();
-            if (releaseInput && releaseInput.files.length) formData.append('release_pdf', releaseInput.files[0]);
-            if (agreementInput && agreementInput.files.length) formData.append('agreement_pdf', agreementInput.files[0]);
+            if (hasReleaseFile) formData.append('release_pdf', releaseInput.files[0]);
+            if (hasAgreementFile) formData.append('agreement_pdf', agreementInput.files[0]);
 
             if (uploadSubmit) {
                 uploadSubmit.disabled = true;

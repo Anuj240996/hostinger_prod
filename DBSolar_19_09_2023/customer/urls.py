@@ -28,6 +28,11 @@ urlpatterns = [
         views.upload_release_agreement_docs,
         name='customer-upload-release-docs',
     ),
+    path(
+        'delete_release_docs/<int:cust_id>/<str:doc_type>/',
+        views.delete_release_agreement_doc,
+        name='customer-delete-release-docs',
+    ),
     path('generate_mobile_qr/<int:cust_id>/', views.generate_customer_mobile_qr, name='customer-generate_mobile_qr'),
     path(
         'send_mobile_qr_email/<int:cust_id>/',
