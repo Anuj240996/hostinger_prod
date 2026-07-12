@@ -1501,6 +1501,8 @@
     var btnAgreement = document.getElementById('btnToggleAgreementPdf');
     var currentReleaseUrl = '';
     var currentAgreementUrl = '';
+    var viewerBlobUrl = null;
+    var viewerRequestId = 0;
 
     function showUploadError(msg) {
         if (!uploadError) return;
@@ -1513,16 +1515,60 @@
         uploadError.textContent = msg;
     }
 
-    function setViewerPdf(url, kind) {
-        if (viewerFrame) viewerFrame.src = url || 'about:blank';
-        if (viewerOpenTab) {
-            viewerOpenTab.href = url || '#';
-            viewerOpenTab.style.display = url ? '' : 'none';
+    function revokeViewerBlob() {
+        if (viewerBlobUrl) {
+            URL.revokeObjectURL(viewerBlobUrl);
+            viewerBlobUrl = null;
         }
+    }
+
+    function setViewerPdf(url, kind) {
         if (btnRelease && btnAgreement) {
             btnRelease.classList.toggle('active', kind === 'release');
             btnAgreement.classList.toggle('active', kind === 'agreement');
         }
+        if (viewerOpenTab) {
+            viewerOpenTab.href = url || '#';
+            viewerOpenTab.style.display = url ? '' : 'none';
+        }
+        if (!viewerFrame) return;
+
+        revokeViewerBlob();
+        viewerFrame.removeAttribute('srcdoc');
+        if (!url) {
+            viewerFrame.src = 'about:blank';
+            return;
+        }
+
+        // Load via fetch+blob so proxy X-Frame-Options DENY cannot block the modal iframe.
+        var requestId = ++viewerRequestId;
+        viewerFrame.src = 'about:blank';
+        fetch(url, {
+            credentials: 'same-origin',
+            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        })
+            .then(function (resp) {
+                if (!resp.ok) throw new Error('PDF load failed (' + resp.status + ')');
+                return resp.blob();
+            })
+            .then(function (blob) {
+                if (requestId !== viewerRequestId) return;
+                var pdfBlob = (blob && blob.type && blob.type.indexOf('pdf') !== -1)
+                    ? blob
+                    : new Blob([blob], { type: 'application/pdf' });
+                viewerBlobUrl = URL.createObjectURL(pdfBlob);
+                viewerFrame.src = viewerBlobUrl;
+            })
+            .catch(function (err) {
+                if (requestId !== viewerRequestId) return;
+                var msg = (err && err.message) ? err.message : 'Could not load PDF.';
+                viewerFrame.srcdoc =
+                    '<div style="font-family:Arial,sans-serif;padding:24px;color:#b71c1c;">' +
+                    '<p style="margin:0 0 12px;"><strong>Could not preview PDF.</strong></p>' +
+                    '<p style="margin:0 0 12px;">' + msg + '</p>' +
+                    '<p style="margin:0;"><a href="' + url + '" target="_blank" rel="noopener">Open in new tab</a></p>' +
+                    '</div>';
+            });
     }
 
     function renderAttachedDocCell(cell, data) {
@@ -1602,7 +1648,12 @@
     }
     if (window.jQuery) {
         window.jQuery('#releaseDocsViewerModal').on('hidden.bs.modal', function () {
-            if (viewerFrame) viewerFrame.src = 'about:blank';
+            viewerRequestId += 1;
+            revokeViewerBlob();
+            if (viewerFrame) {
+                viewerFrame.removeAttribute('srcdoc');
+                viewerFrame.src = 'about:blank';
+            }
         });
     }
 

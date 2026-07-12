@@ -5,6 +5,7 @@ from django.contrib.auth.forms import UserCreationForm
 from django.db.models.functions import Trim, Lower, Cast
 from django.http import HttpResponseRedirect
 from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.clickjacking import xframe_options_exempt
 from django.views.decorators.http import require_POST
 
 from detect_barcodes.models import BarcodeImage
@@ -2392,8 +2393,9 @@ def _attach_release_agreements(emps):
 
 
 @login_required(login_url='user-login')
+@xframe_options_exempt
 def download_release_agreement(request, cust_id, doc_type='release'):
-    """Serve Release or Agreement PDF for a consumer."""
+    """Serve Release or Agreement PDF for a consumer (embeddable in modal iframe)."""
     from django.http import FileResponse, Http404
     from .models import Customer, ConsumerReleaseAgreement
 
@@ -2415,12 +2417,18 @@ def download_release_agreement(request, cust_id, doc_type='release'):
         raise Http404(f'{doc_type.title()} PDF is not available for this consumer yet.')
 
     try:
-        return FileResponse(
+        filename = f'{doc_type}_{cust_id}.pdf'
+        response = FileResponse(
             file_field.open('rb'),
             as_attachment=False,
-            filename=f'{doc_type}_{cust_id}.pdf',
+            filename=filename,
             content_type='application/pdf',
         )
+        # Allow same-site modal iframe embedding (proxy may otherwise deny framing).
+        response['Content-Disposition'] = f'inline; filename="{filename}"'
+        response['X-Frame-Options'] = 'SAMEORIGIN'
+        response['Content-Security-Policy'] = "frame-ancestors 'self'"
+        return response
     except Exception as exc:
         raise Http404(str(exc)) from exc
 
