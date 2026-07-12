@@ -13,6 +13,11 @@ urlpatterns = [
     path('check-username/', check_username, name='check-username'),
     path('Cust_Search/', views.showresults, name='customer-Cust_search'),
     path('view_all_cust/', views.view_all_cust, name='customer-view_all_cust'),
+    path(
+        'release_agreement/<int:cust_id>/',
+        views.download_release_agreement,
+        name='customer-release-agreement',
+    ),
     path('generate_mobile_qr/<int:cust_id>/', views.generate_customer_mobile_qr, name='customer-generate_mobile_qr'),
     path(
         'send_mobile_qr_email/<int:cust_id>/',

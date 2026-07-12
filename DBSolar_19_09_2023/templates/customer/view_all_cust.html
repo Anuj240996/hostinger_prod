@@ -340,6 +340,7 @@
                                             <th scope="col" class="col-default-hide">Assign Engineer</th>
                                             <th scope="col" class="text-center col-mobile-qr">Mobile QR</th>
                                             <th scope="col" class="text-center">Link Status</th>
+                                            <th scope="col" class="text-center">Attached Doc</th>
 
                                             {% if user.is_authenticated and user|user_in_group:"Cust_user" %}
                                             <th class="text-center">Action</th>
@@ -425,6 +426,19 @@
                                                 </button>
                                                 {% else %}
                                                 <span class="badge badge-secondary">Detached</span>
+                                                {% endif %}
+                                            </td>
+                                            <td class="text-center">
+                                                {% if Cust.release_agreement and Cust.release_agreement.pdf %}
+                                                <a href="{% url 'customer-release-agreement' Cust.Cust_id %}"
+                                                   class="btn btn-sm bg-info-light"
+                                                   title="Download Release &amp; Agreement PDF"
+                                                   target="_blank" rel="noopener">
+                                                    <i class="fas fa-file-pdf text-danger"></i>
+                                                    <span class="d-block small">Release PDF</span>
+                                                </a>
+                                                {% else %}
+                                                <span class="text-muted">—</span>
                                                 {% endif %}
                                             </td>
                                             <!--                                   <td class="text-right">-->

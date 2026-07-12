@@ -5661,9 +5661,13 @@ def save_selected_serials(request):
             if required_inverter > 0 and assigned_inverter == required_inverter:
                 result_obj.inverter = True
 
-            # Save only if any change was made
             if result_obj.solar_panel or result_obj.inverter:
                 result_obj.save()
+                try:
+                    from customer.release_agreement import ensure_release_agreement_for_customer
+                    ensure_release_agreement_for_customer(customer, user=request.user)
+                except Exception as release_err:
+                    print(f"⚠️ Release agreement check failed for customer {customer_id}: {release_err}")
 
         except Exception as e:
             print(f"⚠️ Error updating Result table for customer {customer_id}: {e}")

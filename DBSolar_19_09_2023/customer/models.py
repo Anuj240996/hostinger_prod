@@ -495,5 +495,41 @@ class Result(models.Model):
 
     def __str__(self):
         return self.consumer
+
+
+class ConsumerReleaseAgreement(models.Model):
+    """Release & Agreement PDF generated when Result milestone flags are all complete."""
+    customer = models.ForeignKey(
+        Customer,
+        on_delete=models.CASCADE,
+        related_name='release_agreements',
+        db_column='consumer_id_id',
+    )
+    result = models.ForeignKey(
+        Result,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='release_agreements',
+    )
+    pdf = models.FileField(upload_to='release_agreements/%Y/%m/', blank=True)
+    title = models.CharField(max_length=255, default='Release & Agreement')
+    created_at = models.DateTimeField(auto_now_add=True)
+    created_by = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='created_release_agreements',
+    )
+
+    class Meta:
+        db_table = 'customer_release_agreement'
+        ordering = ['-created_at']
+        verbose_name = 'Consumer Release Agreement'
+        verbose_name_plural = 'Consumer Release Agreements'
+
+    def __str__(self):
+        return f'Release & Agreement — {self.customer_id}'
 # CRM integration removed — leads moved to a separate app.
 

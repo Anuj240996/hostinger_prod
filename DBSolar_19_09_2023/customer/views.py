@@ -13,6 +13,7 @@ from .models import customer_technical_Details, Meter, Meters, GenerationMeter, 
     SolarPump
 from django.shortcuts import redirect
 from .models import MSEB
+from .release_agreement import ensure_release_agreement_for_customer
 
 from datetime import datetime, timedelta, date
 # import datetime
@@ -2367,6 +2368,82 @@ from customer.mobile_app_links import (
 )
 
 
+def _attach_release_agreements(emps):
+    """Attach latest Release & Agreement PDF (if any) onto each customer for list display."""
+    from .models import ConsumerReleaseAgreement, Result
+    from .release_agreement import ensure_release_agreement_for_customer
+
+    customers = list(emps)
+    if not customers:
+        return customers
+
+    cust_ids = [c.Cust_id for c in customers]
+
+    # Ensure PDFs exist for ready Result rows in this page set
+    ready_ids = set(
+        Result.objects.filter(
+            consumer_id_id__in=cust_ids,
+            solar_panel=True,
+            inverter=True,
+            net_meter=True,
+            mseb=True,
+            inspection_report=True,
+        ).values_list('consumer_id_id', flat=True)
+    )
+    by_id = {c.Cust_id: c for c in customers}
+    for cid in ready_ids:
+        cust = by_id.get(cid)
+        if cust:
+            try:
+                ensure_release_agreement_for_customer(cust)
+            except Exception:
+                pass
+
+    docs = (
+        ConsumerReleaseAgreement.objects.filter(customer_id__in=cust_ids)
+        .exclude(pdf='')
+        .exclude(pdf__isnull=True)
+        .order_by('customer_id', '-created_at')
+    )
+    latest = {}
+    for doc in docs:
+        if doc.customer_id not in latest:
+            latest[doc.customer_id] = doc
+
+    for cust in customers:
+        cust.release_agreement = latest.get(cust.Cust_id)
+    return customers
+
+
+@login_required(login_url='user-login')
+def download_release_agreement(request, cust_id):
+    """Serve stored Release & Agreement PDF for a consumer (generate if missing & ready)."""
+    from django.http import FileResponse, Http404
+    from .models import Customer, ConsumerReleaseAgreement
+
+    customer = get_object_or_404(Customer, Cust_id=cust_id)
+    doc = ensure_release_agreement_for_customer(customer, user=request.user)
+    if not doc or not doc.pdf:
+        doc = (
+            ConsumerReleaseAgreement.objects.filter(customer=customer)
+            .exclude(pdf='')
+            .order_by('-created_at')
+            .first()
+        )
+    if not doc or not doc.pdf:
+        raise Http404('Release & Agreement PDF is not available for this consumer yet.')
+
+    try:
+        return FileResponse(
+            doc.pdf.open('rb'),
+            as_attachment=True,
+            filename=f'release_agreement_{cust_id}.pdf',
+            content_type='application/pdf',
+        )
+    except Exception as exc:
+        raise Http404(str(exc)) from exc
+
+
 @login_required(login_url='user-login')
 def view_all_cust(request):
     count1 = staff_Notification.objects.filter(staff_id=request.user.id, status=False).count()
@@ -2524,6 +2601,7 @@ def view_all_cust(request):
                     break
 
         emps = attach_mobile_app_links(emps)
+        emps = _attach_release_agreements(emps)
 
         context = {
 
@@ -2578,6 +2656,7 @@ def view_all_cust(request):
                     break
 
         emps = attach_mobile_app_links(emps)
+        emps = _attach_release_agreements(emps)
 
         context = {
 
@@ -3171,10 +3250,15 @@ def Site_Technical_Details(request):
                 }
             )
 
-            # If the record already exists, update the inspection_report field
             if not created:
                 result_instance.inspection_report = True
                 result_instance.save()
+
+            try:
+                from .release_agreement import ensure_release_agreement_for_customer
+                ensure_release_agreement_for_customer(customer_instance, user=request.user)
+            except Exception:
+                pass
 
             messages.success(request, 'Data saved successfully and inspection report updated.')
             return redirect('customer-Site_Technical_Details')
@@ -3359,6 +3443,11 @@ def _site_inspection_page(request, default_mode='new'):
         )
 
         Result.objects.filter(consumer_id=customer).update(inspection_report=True)
+        try:
+            from .release_agreement import ensure_release_agreement_for_customer
+            ensure_release_agreement_for_customer(customer, user=request.user)
+        except Exception:
+            pass
         messages.success(request, "Inspection details successfully saved.")
         return redirect(f"{reverse('customer-Site_Inspection_Details')}?mode=new")
 
@@ -4661,6 +4750,22 @@ def _mseb_step_save_post(request):
     mseb_instance.AssignBy = request.user
     mseb_instance.comp_name = comp_name
     mseb_instance.save()
+
+    # Keep customer_result.net_meter / mseb in sync for release-agreement gating
+    try:
+        from .models import Result
+        from .release_agreement import ensure_release_agreement_for_customer
+
+        result_updates = {}
+        if field_name == 'net_meter' and field_value:
+            result_updates['net_meter'] = True
+        if field_name in ('release', 'installation_date') and field_value:
+            result_updates['mseb'] = True
+        if result_updates:
+            Result.objects.filter(consumer_id=customer).update(**result_updates)
+        ensure_release_agreement_for_customer(customer, user=request.user)
+    except Exception:
+        pass
 
     return JsonResponse({'status': 'success', 'message': 'Record saved successfully'})
 
