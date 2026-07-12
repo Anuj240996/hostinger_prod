@@ -616,9 +616,9 @@
 </div>
 
 <style>
-    /* Keep PDF viewer modal tight to the page width (less side empty space) */
+    /* Keep PDF viewer modal tight to typical portrait page width */
     #releaseDocsViewerModal .release-docs-viewer-dialog {
-        max-width: min(780px, 96vw);
+        max-width: min(680px, 96vw);
         width: auto;
         margin-left: auto;
         margin-right: auto;
@@ -1622,44 +1622,6 @@
         }
     }
 
-    function resetViewerDialogWidth() {
-        var dialog = document.querySelector('#releaseDocsViewerModal .release-docs-viewer-dialog');
-        if (dialog) dialog.style.maxWidth = '';
-    }
-
-    function sizeViewerDialogToPdf(blob) {
-        var dialog = document.querySelector('#releaseDocsViewerModal .release-docs-viewer-dialog');
-        if (!dialog || !blob) return Promise.resolve();
-        return blob.arrayBuffer().then(function (buf) {
-            var bytes = new Uint8Array(buf);
-            var sampleLen = Math.min(bytes.length, 750000);
-            var text = '';
-            // latin1 keeps binary bytes as chars so MediaBox regex still works
-            if (typeof TextDecoder !== 'undefined') {
-                text = new TextDecoder('latin1').decode(bytes.subarray(0, sampleLen));
-            } else {
-                for (var i = 0; i < sampleLen; i++) text += String.fromCharCode(bytes[i]);
-            }
-            var match = text.match(/\/MediaBox\s*\[\s*([0-9.+\-]+)\s+([0-9.+\-]+)\s+([0-9.+\-]+)\s+([0-9.+\-]+)\s*\]/);
-            if (!match) return;
-            var pageW = Math.abs(parseFloat(match[3]) - parseFloat(match[1]));
-            var pageH = Math.abs(parseFloat(match[4]) - parseFloat(match[2]));
-            if (!pageW || !pageH) return;
-
-            var frameH = (viewerFrame && viewerFrame.clientHeight) ? viewerFrame.clientHeight : (window.innerHeight * 0.7);
-            // Fit page height into iframe; derive display width from aspect ratio
-            var displayW = (pageW / pageH) * frameH;
-            // Toolbar / chrome padding inside native PDF viewer (~40px) + modal chrome
-            var target = Math.ceil(displayW + 56);
-            var minW = 520;
-            var maxW = Math.floor(window.innerWidth * 0.96);
-            // Cap so landscape scans do not reopen almost full-screen
-            maxW = Math.min(maxW, 900);
-            target = Math.max(minW, Math.min(target, maxW));
-            dialog.style.maxWidth = target + 'px';
-        }).catch(function () { /* keep CSS default */ });
-    }
-
     function configureViewerToggles(hasRelease, hasAgreement) {
         var showRelease = !!hasRelease;
         var showAgreement = !!hasAgreement;
@@ -1717,44 +1679,10 @@
         if (!viewerFrame) return;
 
         revokeViewerBlob();
-        resetViewerDialogWidth();
         viewerFrame.removeAttribute('srcdoc');
-        if (!url) {
-            viewerFrame.src = 'about:blank';
-            return;
-        }
-
-        var requestId = ++viewerRequestId;
-        viewerFrame.src = 'about:blank';
-        fetch(url, {
-            credentials: 'same-origin',
-            headers: { 'X-Requested-With': 'XMLHttpRequest' }
-        })
-            .then(function (resp) {
-                if (!resp.ok) throw new Error('PDF load failed (' + resp.status + ')');
-                return resp.blob();
-            })
-            .then(function (blob) {
-                if (requestId !== viewerRequestId) return;
-                var pdfBlob = (blob && blob.type && blob.type.indexOf('pdf') !== -1)
-                    ? blob
-                    : new Blob([blob], { type: 'application/pdf' });
-                return sizeViewerDialogToPdf(pdfBlob).then(function () {
-                    if (requestId !== viewerRequestId) return;
-                    viewerBlobUrl = URL.createObjectURL(pdfBlob);
-                    viewerFrame.src = viewerBlobUrl;
-                });
-            })
-            .catch(function (err) {
-                if (requestId !== viewerRequestId) return;
-                var msg = (err && err.message) ? err.message : 'Could not load PDF.';
-                viewerFrame.srcdoc =
-                    '<div style="font-family:Arial,sans-serif;padding:24px;color:#b71c1c;">' +
-                    '<p style="margin:0 0 12px;"><strong>Could not preview PDF.</strong></p>' +
-                    '<p style="margin:0 0 12px;">' + msg + '</p>' +
-                    '<p style="margin:0;"><a href="' + url + '" target="_blank" rel="noopener">Open in new tab</a></p>' +
-                    '</div>';
-            });
+        viewerRequestId += 1;
+        // Load PDF URL directly in the iframe (no pre-fetch/blob). Browser streams it immediately.
+        viewerFrame.src = url || 'about:blank';
     }
 
     function renderAttachedDocCell(cell, data) {
@@ -1895,7 +1823,6 @@
         window.jQuery('#releaseDocsViewerModal').on('hidden.bs.modal', function () {
             viewerRequestId += 1;
             revokeViewerBlob();
-            resetViewerDialogWidth();
             if (viewerFrame) {
                 viewerFrame.removeAttribute('srcdoc');
                 viewerFrame.src = 'about:blank';

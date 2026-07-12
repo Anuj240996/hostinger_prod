@@ -2493,6 +2493,7 @@ def download_release_agreement(request, cust_id, doc_type='release'):
     response['X-Frame-Options'] = 'SAMEORIGIN'
     response['Content-Security-Policy'] = "frame-ancestors 'self'"
     response['Content-Length'] = str(len(pdf_bytes))
+    response['Cache-Control'] = 'private, max-age=300'
     return response
 
 
