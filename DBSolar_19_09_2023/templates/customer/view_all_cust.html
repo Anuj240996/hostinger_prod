@@ -430,6 +430,7 @@
                                             </td>
                                             <td class="text-center attached-doc-cell"
                                                 data-cust-id="{{ Cust.Cust_id }}"
+                                                data-release-ready="{% if Cust.release_ready %}1{% else %}0{% endif %}"
                                                 data-customer-label="{% if Cust.Comp_name %}{{ Cust.Comp_name }}{% else %}{{ Cust.first_name }} {{ Cust.last_name }}{% endif %}">
                                                 {% if Cust.release_agreement and Cust.release_agreement.has_both_pdfs %}
                                                 <a href="javascript:void(0);"
@@ -440,7 +441,7 @@
                                                    data-agreement-url="{% url 'customer-release-agreement-type' Cust.Cust_id 'agreement' %}">
                                                     Release &amp; Agreement
                                                 </a>
-                                                {% else %}
+                                                {% elif Cust.release_ready %}
                                                 <button type="button"
                                                         class="btn btn-sm btn-success btn-add-release-docs"
                                                         data-cust-id="{{ Cust.Cust_id }}"
@@ -450,6 +451,8 @@
                                                         data-upload-url="{% url 'customer-upload-release-docs' Cust.Cust_id %}">
                                                     Add
                                                 </button>
+                                                {% else %}
+                                                <span class="text-muted">—</span>
                                                 {% endif %}
                                             </td>
                                             <!--                                   <td class="text-right">-->
@@ -1575,6 +1578,10 @@
         if (!cell || !data) return;
         var custId = data.cust_id || cell.getAttribute('data-cust-id');
         var label = cell.getAttribute('data-customer-label') || '';
+        var releaseReady = data.release_ready === true ||
+            data.release_ready === 1 ||
+            data.release_ready === '1' ||
+            cell.getAttribute('data-release-ready') === '1';
         if (data.has_both) {
             cell.innerHTML =
                 '<a href="javascript:void(0);" class="btn-link font-weight-bold btn-open-release-viewer"' +
@@ -1583,7 +1590,7 @@
                 ' data-release-url="' + (data.release_url || '') + '"' +
                 ' data-agreement-url="' + (data.agreement_url || '') + '">' +
                 'Release &amp; Agreement</a>';
-        } else {
+        } else if (releaseReady) {
             cell.innerHTML =
                 '<button type="button" class="btn btn-sm btn-success btn-add-release-docs"' +
                 ' data-cust-id="' + custId + '"' +
@@ -1591,6 +1598,8 @@
                 ' data-has-release="' + (data.has_release ? '1' : '0') + '"' +
                 ' data-has-agreement="' + (data.has_agreement ? '1' : '0') + '"' +
                 ' data-upload-url="/customer/upload_release_docs/' + custId + '/">Add</button>';
+        } else {
+            cell.innerHTML = '<span class="text-muted">—</span>';
         }
     }
 

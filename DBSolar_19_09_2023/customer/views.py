@@ -2370,8 +2370,9 @@ from customer.mobile_app_links import (
 
 
 def _attach_release_agreements(emps):
-    """Attach latest Release/Agreement doc row onto each customer for list display."""
-    from .models import ConsumerReleaseAgreement
+    """Attach latest Release/Agreement doc + Result readiness onto each customer."""
+    from .models import ConsumerReleaseAgreement, Result
+    from .release_agreement import result_is_release_ready
 
     customers = list(emps)
     if not customers:
@@ -2382,13 +2383,26 @@ def _attach_release_agreements(emps):
         ConsumerReleaseAgreement.objects.filter(customer_id__in=cust_ids)
         .order_by('customer_id', '-created_at')
     )
-    latest = {}
+    latest_docs = {}
     for doc in docs:
-        if doc.customer_id not in latest:
-            latest[doc.customer_id] = doc
+        if doc.customer_id not in latest_docs:
+            latest_docs[doc.customer_id] = doc
+
+    results = (
+        Result.objects.filter(consumer_id_id__in=cust_ids)
+        .order_by('consumer_id_id', '-id')
+    )
+    latest_results = {}
+    for row in results:
+        cid = row.consumer_id_id
+        if cid not in latest_results:
+            latest_results[cid] = row
 
     for cust in customers:
-        cust.release_agreement = latest.get(cust.Cust_id)
+        cust.release_agreement = latest_docs.get(cust.Cust_id)
+        result = latest_results.get(cust.Cust_id)
+        cust.customer_result = result
+        cust.release_ready = result_is_release_ready(result)
     return customers
 
 
@@ -2438,10 +2452,23 @@ def download_release_agreement(request, cust_id, doc_type='release'):
 @require_POST
 def upload_release_agreement_docs(request, cust_id):
     """Upload Release and/or Agreement PDFs separately for a consumer."""
-    from .models import Customer
-    from .release_agreement import save_uploaded_doc
+    from .models import Customer, Result
+    from .release_agreement import save_uploaded_doc, result_is_release_ready
 
     customer = get_object_or_404(Customer, Cust_id=cust_id)
+    result = Result.objects.filter(consumer_id=customer).order_by('-id').first()
+    if not result_is_release_ready(result):
+        return JsonResponse(
+            {
+                'ok': False,
+                'error': (
+                    'Add is allowed only when solar_panel, inverter, net_meter, '
+                    'mseb and inspection_report are all True in customer_result.'
+                ),
+            },
+            status=400,
+        )
+
     release_file = request.FILES.get('release_pdf')
     agreement_file = request.FILES.get('agreement_pdf')
     if not release_file and not agreement_file:
@@ -2461,6 +2488,7 @@ def upload_release_agreement_docs(request, cust_id):
     return JsonResponse({
         'ok': True,
         'cust_id': customer.Cust_id,
+        'release_ready': True,
         'has_release': bool(doc and doc.has_release_pdf),
         'has_agreement': bool(doc and doc.has_agreement_pdf),
         'has_both': bool(doc and doc.has_both_pdfs),
