@@ -2369,6 +2369,54 @@ from customer.mobile_app_links import (
 )
 
 
+def _compute_project_status_from_result(project_type, result):
+    """
+    Project Status from customer_result flags, gated by consumer.project_type:
+    - Rooftop: solar_panel, inverter, net_meter, mseb, inspection_report
+    - Water Pump: solar_panel, solar_pump, inspection_report, controller
+    """
+    if not result:
+        return 'Pending'
+
+    pt = (project_type or '').strip().lower().replace('_', ' ')
+    if 'water' in pt and 'pump' in pt:
+        fields = ('solar_panel', 'solar_pump', 'inspection_report', 'controller')
+    elif 'rooftop' in pt:
+        fields = ('solar_panel', 'inverter', 'net_meter', 'mseb', 'inspection_report')
+    else:
+        return 'Pending'
+
+    if all(bool(getattr(result, field, False)) for field in fields):
+        return 'Completed'
+    return 'Pending'
+
+
+def _attach_project_statuses(emps):
+    """Set emp.project_status from latest customer_result row per consumer."""
+    from .models import Result
+
+    customers = list(emps)
+    if not customers:
+        return customers
+
+    cust_ids = [c.Cust_id for c in customers]
+    results = (
+        Result.objects.filter(consumer_id_id__in=cust_ids)
+        .order_by('consumer_id_id', '-id')
+    )
+    latest = {}
+    for row in results:
+        if row.consumer_id_id not in latest:
+            latest[row.consumer_id_id] = row
+
+    for cust in customers:
+        cust.project_status = _compute_project_status_from_result(
+            getattr(cust, 'project_type', None),
+            latest.get(cust.Cust_id),
+        )
+    return customers
+
+
 def _attach_release_agreements(emps):
     """Attach latest Release/Agreement doc + Result readiness onto each customer."""
     from .models import ConsumerReleaseAgreement, Result
@@ -2613,46 +2661,9 @@ def view_all_cust(request):
                 current_month = today.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
                 emps = _po_date_cast(emps).filter(_po_d_cast__gte=current_month.date())
 
-        # Calculate project status (all users; queryset already scoped above)
-        project_status_list = []
-        for cust in emps:
-            comp_name = (cust.Comp_name or '').strip()
-            solar_condition = BarcodeImage.objects.filter(product_name='SolarPanel',
-                                                          AssignTo_id=cust.new_customer_id).count() >= cust.qunt_solar
-
-            inverter_condition = BarcodeImage.objects.filter(product_name='Inverter',
-                                                             AssignTo_id=cust.new_customer_id).count() >= cust.qunt_inv
-
-            meter_condition = (
-                    Meters.objects.annotate(trimmed=Trim('comp_name'))
-                    .filter(trimmed=comp_name).exists()
-                    and
-                    GenerationMeter.objects.annotate(trimmed=Trim('comp_name'))
-                    .filter(trimmed=comp_name).exists()
-            )
-
-            mseb_condition = MSEB.objects.filter(
-                customer__Cust_id=cust.Cust_id,
-                installation_date_date__isnull=False
-            ).exists()
-
-            if solar_condition and inverter_condition and meter_condition and mseb_condition:
-                project_status = "Completed"
-            else:
-                project_status = "Pending"
-
-            project_status_list.append({
-                'Cust_id': cust.Cust_id,
-                'project_status': project_status
-            })
-
+        # Project status from customer_result flags by project_type (Rooftop / Water Pump)
         emps = list(emps)
-        for emp in emps:
-            for status in project_status_list:
-                if emp.Cust_id == status['Cust_id']:
-                    emp.project_status = status['project_status']
-                    break
-
+        emps = _attach_project_statuses(emps)
         emps = attach_mobile_app_links(emps)
         emps = _attach_release_agreements(emps)
 
@@ -2667,47 +2678,8 @@ def view_all_cust(request):
         }
         return render(request, 'customer/view_all_cust.html', context)
     elif request.method == 'GET':
-        project_status_list = []
-        for cust in emps:
-
-            comp_name = (cust.Comp_name or '').strip()
-            solar_condition = BarcodeImage.objects.filter(product_name='SolarPanel',
-                                                          AssignTo_id=cust.new_customer_id).count() >= cust.qunt_solar
-            inverter_condition = BarcodeImage.objects.filter(product_name='Inverter',
-                                                             AssignTo_id=cust.new_customer_id).count() >= cust.qunt_inv
-
-            meter_condition = (
-                    Meters.objects.annotate(trimmed=Trim('comp_name'))
-                    .filter(trimmed=comp_name).exists()
-                    and
-                    GenerationMeter.objects.annotate(trimmed=Trim('comp_name'))
-                    .filter(trimmed=comp_name).exists()
-            )
-
-            mseb_condition = MSEB.objects.filter(
-                customer__Cust_id=cust.Cust_id,
-                installation_date_date__isnull=False
-            ).exists()
-
-            # Determine project status
-            if solar_condition and inverter_condition and meter_condition and mseb_condition:
-                project_status = "Completed"
-            else:
-                project_status = "Pending"
-
-            project_status_list.append({
-                'Cust_id': cust.Cust_id,
-                'project_status': project_status
-            })
-
-        # Merge status list with customers
         emps = list(emps)
-        for emp in emps:
-            for status in project_status_list:
-                if emp.Cust_id == status['Cust_id']:
-                    emp.project_status = status['project_status']
-                    break
-
+        emps = _attach_project_statuses(emps)
         emps = attach_mobile_app_links(emps)
         emps = _attach_release_agreements(emps)
 
