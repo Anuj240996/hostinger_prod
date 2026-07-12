@@ -2396,6 +2396,7 @@ def _attach_release_agreements(emps):
 @xframe_options_exempt
 def download_release_agreement(request, cust_id, doc_type='release'):
     """Serve Release or Agreement PDF for a consumer (embeddable in modal iframe)."""
+    from io import BytesIO
     from django.http import FileResponse, Http404
     from .models import Customer, ConsumerReleaseAgreement
 
@@ -2412,25 +2413,25 @@ def download_release_agreement(request, cust_id, doc_type='release'):
     if not doc:
         raise Http404('No Release & Agreement documents found for this consumer.')
 
-    file_field = doc.effective_release_file() if doc_type == 'release' else doc.agreement_pdf
-    if not file_field:
-        raise Http404(f'{doc_type.title()} PDF is not available for this consumer yet.')
-
-    try:
-        filename = f'{doc_type}_{cust_id}.pdf'
-        response = FileResponse(
-            file_field.open('rb'),
-            as_attachment=False,
-            filename=filename,
-            content_type='application/pdf',
+    pdf_bytes = doc.get_pdf_bytes(doc_type)
+    if not pdf_bytes:
+        raise Http404(
+            f'{doc_type.title()} PDF is not available for this consumer yet. '
+            'Please upload it again from the Attached Doc Add button.'
         )
-        # Allow same-site modal iframe embedding (proxy may otherwise deny framing).
-        response['Content-Disposition'] = f'inline; filename="{filename}"'
-        response['X-Frame-Options'] = 'SAMEORIGIN'
-        response['Content-Security-Policy'] = "frame-ancestors 'self'"
-        return response
-    except Exception as exc:
-        raise Http404(str(exc)) from exc
+
+    filename = f'{doc_type}_{cust_id}.pdf'
+    response = FileResponse(
+        BytesIO(pdf_bytes),
+        as_attachment=False,
+        filename=filename,
+        content_type='application/pdf',
+    )
+    response['Content-Disposition'] = f'inline; filename="{filename}"'
+    response['X-Frame-Options'] = 'SAMEORIGIN'
+    response['Content-Security-Policy'] = "frame-ancestors 'self'"
+    response['Content-Length'] = str(len(pdf_bytes))
+    return response
 
 
 @login_required(login_url='user-login')

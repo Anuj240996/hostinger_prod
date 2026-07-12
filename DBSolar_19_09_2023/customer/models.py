@@ -516,6 +516,9 @@ class ConsumerReleaseAgreement(models.Model):
     pdf = models.FileField(upload_to='release_agreements/%Y/%m/', blank=True)
     release_pdf = models.FileField(upload_to='release_agreements/%Y/%m/', blank=True)
     agreement_pdf = models.FileField(upload_to='release_agreements/%Y/%m/', blank=True)
+    # Durable copies (container media is ephemeral without a volume mount)
+    release_pdf_data = models.BinaryField(null=True, blank=True, editable=False)
+    agreement_pdf_data = models.BinaryField(null=True, blank=True, editable=False)
     title = models.CharField(max_length=255, default='Release & Agreement')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -538,11 +541,26 @@ class ConsumerReleaseAgreement(models.Model):
 
     @property
     def has_release_pdf(self):
-        return bool(self.release_pdf) or bool(self.pdf)
+        if self.release_pdf_data:
+            return True
+        file_field = self.release_pdf or self.pdf
+        if file_field and file_field.name:
+            try:
+                return file_field.storage.exists(file_field.name)
+            except Exception:
+                return False
+        return False
 
     @property
     def has_agreement_pdf(self):
-        return bool(self.agreement_pdf)
+        if self.agreement_pdf_data:
+            return True
+        if self.agreement_pdf and self.agreement_pdf.name:
+            try:
+                return self.agreement_pdf.storage.exists(self.agreement_pdf.name)
+            except Exception:
+                return False
+        return False
 
     @property
     def has_both_pdfs(self):
@@ -550,5 +568,26 @@ class ConsumerReleaseAgreement(models.Model):
 
     def effective_release_file(self):
         return self.release_pdf or self.pdf
+
+    def get_pdf_bytes(self, doc_type='release'):
+        """Return PDF bytes from disk FileField, falling back to BinaryField."""
+        doc_type = (doc_type or 'release').strip().lower()
+        file_field = self.effective_release_file() if doc_type == 'release' else self.agreement_pdf
+        if file_field:
+            try:
+                if file_field.name and file_field.storage.exists(file_field.name):
+                    file_field.open('rb')
+                    try:
+                        data = file_field.read()
+                    finally:
+                        file_field.close()
+                    if data:
+                        return bytes(data)
+            except Exception:
+                pass
+        blob = self.release_pdf_data if doc_type == 'release' else self.agreement_pdf_data
+        if blob:
+            return bytes(blob)
+        return None
 # CRM integration removed — leads moved to a separate app.
 

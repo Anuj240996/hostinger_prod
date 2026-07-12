@@ -87,6 +87,7 @@ def ensure_release_agreement_for_customer(customer, user=None, force=False):
     doc.release_pdf.save(filename, ContentFile(pdf_bytes), save=False)
     # Keep legacy field in sync for older download URLs
     doc.pdf.save(filename, ContentFile(pdf_bytes), save=False)
+    doc.release_pdf_data = bytes(pdf_bytes)
     doc.save()
     return doc
 
@@ -107,15 +108,17 @@ def save_uploaded_doc(customer, doc_type, uploaded_file, user=None):
     data = uploaded_file.read()
     if not data:
         raise ValueError('Uploaded file is empty')
+    data = bytes(data)
 
     doc = get_or_create_doc_row(customer, user=user)
     safe_name = f'{doc_type}_{customer.Cust_id}.pdf'
-    content = ContentFile(data, name=safe_name)
     if doc_type == 'release':
         doc.release_pdf.save(safe_name, ContentFile(data, name=safe_name), save=False)
         doc.pdf.save(safe_name, ContentFile(data, name=safe_name), save=False)
+        doc.release_pdf_data = data
     else:
         doc.agreement_pdf.save(safe_name, ContentFile(data, name=safe_name), save=False)
+        doc.agreement_pdf_data = data
     if user and getattr(user, 'is_authenticated', False):
         doc.created_by = user
     doc.save()
