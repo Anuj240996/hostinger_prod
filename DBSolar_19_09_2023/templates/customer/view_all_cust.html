@@ -437,6 +437,8 @@
                                                    class="btn-link font-weight-bold btn-open-release-viewer"
                                                    data-cust-id="{{ Cust.Cust_id }}"
                                                    data-customer-label="{% if Cust.Comp_name %}{{ Cust.Comp_name }}{% else %}{{ Cust.first_name }} {{ Cust.last_name }}{% endif %}"
+                                                   data-has-release="1"
+                                                   data-has-agreement="1"
                                                    data-release-url="{% url 'customer-release-agreement-type' Cust.Cust_id 'release' %}"
                                                    data-agreement-url="{% url 'customer-release-agreement-type' Cust.Cust_id 'agreement' %}">
                                                     Release &amp; Agreement
@@ -1586,22 +1588,16 @@
 
     function openViewerFromUpload(kind, url) {
         if (!url) return;
-        viewerCustId = activeCustId || '';
-        viewerCustomerLabel = activeUploadLabel || '';
-        currentReleaseUrl = activeReleaseUrl || '';
-        currentAgreementUrl = activeAgreementUrl || '';
-        if (viewerLabel) {
-            viewerLabel.textContent = viewerCustomerLabel || ('Consumer #' + viewerCustId);
-        }
-        if (window.jQuery) {
-            window.jQuery('#releaseDocsUploadModal').modal('hide');
-            window.jQuery('#releaseDocsViewerModal').one('shown.bs.modal', function () {
-                setViewerPdf(url, kind);
-            });
-            window.jQuery('#releaseDocsViewerModal').modal('show');
-        } else {
-            setViewerPdf(url, kind);
-        }
+        if (window.jQuery) window.jQuery('#releaseDocsUploadModal').modal('hide');
+        openViewerForConsumer({
+            custId: activeCustId,
+            label: activeUploadLabel,
+            releaseUrl: activeReleaseUrl,
+            agreementUrl: activeAgreementUrl,
+            hasRelease: !!(releaseUploadedGroup && releaseUploadedGroup.style.display !== 'none'),
+            hasAgreement: !!(agreementUploadedGroup && agreementUploadedGroup.style.display !== 'none'),
+            kind: kind
+        });
     }
 
     function revokeViewerBlob() {
@@ -1611,11 +1607,51 @@
         }
     }
 
+    function configureViewerToggles(hasRelease, hasAgreement) {
+        var showRelease = !!hasRelease;
+        var showAgreement = !!hasAgreement;
+        if (btnRelease) {
+            btnRelease.style.display = showRelease ? '' : 'none';
+            btnRelease.classList.toggle('active', showRelease && (!showAgreement || currentViewerKind === 'release'));
+        }
+        if (btnAgreement) {
+            btnAgreement.style.display = showAgreement ? '' : 'none';
+            btnAgreement.classList.toggle('active', showAgreement && (!showRelease || currentViewerKind === 'agreement'));
+        }
+    }
+
+    function openViewerForConsumer(opts) {
+        opts = opts || {};
+        viewerCustId = opts.custId || '';
+        viewerCustomerLabel = opts.label || '';
+        currentReleaseUrl = opts.releaseUrl || '';
+        currentAgreementUrl = opts.agreementUrl || '';
+        var hasRelease = opts.hasRelease === true || opts.hasRelease === 1 || opts.hasRelease === '1';
+        var hasAgreement = opts.hasAgreement === true || opts.hasAgreement === 1 || opts.hasAgreement === '1';
+        // Fallback: URL presence when flags not provided
+        if (opts.hasRelease == null) hasRelease = !!currentReleaseUrl;
+        if (opts.hasAgreement == null) hasAgreement = !!currentAgreementUrl;
+
+        if (viewerLabel) {
+            viewerLabel.textContent = viewerCustomerLabel || ('Consumer #' + viewerCustId);
+        }
+
+        configureViewerToggles(hasRelease, hasAgreement);
+
+        var kind = opts.kind || (hasRelease ? 'release' : 'agreement');
+        if (kind === 'release' && !hasRelease && hasAgreement) kind = 'agreement';
+        if (kind === 'agreement' && !hasAgreement && hasRelease) kind = 'release';
+
+        var url = kind === 'agreement' ? currentAgreementUrl : currentReleaseUrl;
+        setViewerPdf(url, kind);
+        if (window.jQuery) window.jQuery('#releaseDocsViewerModal').modal('show');
+    }
+
     function setViewerPdf(url, kind) {
         currentViewerKind = kind || 'release';
         if (btnRelease && btnAgreement) {
-            btnRelease.classList.toggle('active', kind === 'release');
-            btnAgreement.classList.toggle('active', kind === 'agreement');
+            btnRelease.classList.toggle('active', kind === 'release' && btnRelease.style.display !== 'none');
+            btnAgreement.classList.toggle('active', kind === 'agreement' && btnAgreement.style.display !== 'none');
         }
         if (viewerOpenTab) {
             viewerOpenTab.href = url || '#';
@@ -1680,6 +1716,7 @@
                 '<a href="javascript:void(0);" class="btn-link font-weight-bold btn-open-release-viewer"' +
                 ' data-cust-id="' + custId + '"' +
                 ' data-customer-label="' + label.replace(/"/g, '&quot;') + '"' +
+                ' data-has-release="1" data-has-agreement="1"' +
                 ' data-release-url="' + (data.release_url || '') + '"' +
                 ' data-agreement-url="' + (data.agreement_url || '') + '">' +
                 'Release &amp; Agreement</a>';
@@ -1734,15 +1771,15 @@
         var viewBtn = e.target.closest('.btn-open-release-viewer');
         if (viewBtn) {
             e.preventDefault();
-            viewerCustId = viewBtn.getAttribute('data-cust-id') || '';
-            viewerCustomerLabel = viewBtn.getAttribute('data-customer-label') || '';
-            currentReleaseUrl = viewBtn.getAttribute('data-release-url') || '';
-            currentAgreementUrl = viewBtn.getAttribute('data-agreement-url') || '';
-            if (viewerLabel) {
-                viewerLabel.textContent = viewerCustomerLabel || ('Consumer #' + viewerCustId);
-            }
-            setViewerPdf(currentReleaseUrl, 'release');
-            if (window.jQuery) window.jQuery('#releaseDocsViewerModal').modal('show');
+            openViewerForConsumer({
+                custId: viewBtn.getAttribute('data-cust-id') || '',
+                label: viewBtn.getAttribute('data-customer-label') || '',
+                releaseUrl: viewBtn.getAttribute('data-release-url') || '',
+                agreementUrl: viewBtn.getAttribute('data-agreement-url') || '',
+                hasRelease: viewBtn.getAttribute('data-has-release') !== '0',
+                hasAgreement: viewBtn.getAttribute('data-has-agreement') !== '0',
+                kind: 'release'
+            });
         }
     });
 
