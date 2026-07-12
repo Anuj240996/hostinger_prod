@@ -560,7 +560,7 @@
 
 <!-- View Release & Agreement PDFs -->
 <div class="modal fade" id="releaseDocsViewerModal" tabindex="-1" role="dialog" aria-labelledby="releaseDocsViewerModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered modal-xl" role="document" style="max-width: 95%;">
+    <div class="modal-dialog modal-dialog-centered release-docs-viewer-dialog" role="document">
         <div class="modal-content">
             <div class="modal-header" style="background:#00897B;color:#fff;">
                 <h5 class="modal-title" id="releaseDocsViewerModalLabel">Release &amp; Agreement</h5>
@@ -616,6 +616,21 @@
 </div>
 
 <style>
+    /* Keep PDF viewer modal tight to the page width (less side empty space) */
+    #releaseDocsViewerModal .release-docs-viewer-dialog {
+        max-width: min(780px, 96vw);
+        width: auto;
+        margin-left: auto;
+        margin-right: auto;
+    }
+    #releaseDocsViewerModal .modal-body {
+        padding: 0.4rem 0.45rem;
+    }
+    #releaseDocsViewerModal #releaseDocsViewerFrame {
+        display: block;
+        width: 100%;
+        margin: 0;
+    }
     .qr-share-block {
         display: flex;
         flex-direction: column;
@@ -1607,6 +1622,44 @@
         }
     }
 
+    function resetViewerDialogWidth() {
+        var dialog = document.querySelector('#releaseDocsViewerModal .release-docs-viewer-dialog');
+        if (dialog) dialog.style.maxWidth = '';
+    }
+
+    function sizeViewerDialogToPdf(blob) {
+        var dialog = document.querySelector('#releaseDocsViewerModal .release-docs-viewer-dialog');
+        if (!dialog || !blob) return Promise.resolve();
+        return blob.arrayBuffer().then(function (buf) {
+            var bytes = new Uint8Array(buf);
+            var sampleLen = Math.min(bytes.length, 750000);
+            var text = '';
+            // latin1 keeps binary bytes as chars so MediaBox regex still works
+            if (typeof TextDecoder !== 'undefined') {
+                text = new TextDecoder('latin1').decode(bytes.subarray(0, sampleLen));
+            } else {
+                for (var i = 0; i < sampleLen; i++) text += String.fromCharCode(bytes[i]);
+            }
+            var match = text.match(/\/MediaBox\s*\[\s*([0-9.+\-]+)\s+([0-9.+\-]+)\s+([0-9.+\-]+)\s+([0-9.+\-]+)\s*\]/);
+            if (!match) return;
+            var pageW = Math.abs(parseFloat(match[3]) - parseFloat(match[1]));
+            var pageH = Math.abs(parseFloat(match[4]) - parseFloat(match[2]));
+            if (!pageW || !pageH) return;
+
+            var frameH = (viewerFrame && viewerFrame.clientHeight) ? viewerFrame.clientHeight : (window.innerHeight * 0.7);
+            // Fit page height into iframe; derive display width from aspect ratio
+            var displayW = (pageW / pageH) * frameH;
+            // Toolbar / chrome padding inside native PDF viewer (~40px) + modal chrome
+            var target = Math.ceil(displayW + 56);
+            var minW = 520;
+            var maxW = Math.floor(window.innerWidth * 0.96);
+            // Cap so landscape scans do not reopen almost full-screen
+            maxW = Math.min(maxW, 900);
+            target = Math.max(minW, Math.min(target, maxW));
+            dialog.style.maxWidth = target + 'px';
+        }).catch(function () { /* keep CSS default */ });
+    }
+
     function configureViewerToggles(hasRelease, hasAgreement) {
         var showRelease = !!hasRelease;
         var showAgreement = !!hasAgreement;
@@ -1664,6 +1717,7 @@
         if (!viewerFrame) return;
 
         revokeViewerBlob();
+        resetViewerDialogWidth();
         viewerFrame.removeAttribute('srcdoc');
         if (!url) {
             viewerFrame.src = 'about:blank';
@@ -1685,8 +1739,11 @@
                 var pdfBlob = (blob && blob.type && blob.type.indexOf('pdf') !== -1)
                     ? blob
                     : new Blob([blob], { type: 'application/pdf' });
-                viewerBlobUrl = URL.createObjectURL(pdfBlob);
-                viewerFrame.src = viewerBlobUrl;
+                return sizeViewerDialogToPdf(pdfBlob).then(function () {
+                    if (requestId !== viewerRequestId) return;
+                    viewerBlobUrl = URL.createObjectURL(pdfBlob);
+                    viewerFrame.src = viewerBlobUrl;
+                });
             })
             .catch(function (err) {
                 if (requestId !== viewerRequestId) return;
@@ -1838,6 +1895,7 @@
         window.jQuery('#releaseDocsViewerModal').on('hidden.bs.modal', function () {
             viewerRequestId += 1;
             revokeViewerBlob();
+            resetViewerDialogWidth();
             if (viewerFrame) {
                 viewerFrame.removeAttribute('srcdoc');
                 viewerFrame.src = 'about:blank';
