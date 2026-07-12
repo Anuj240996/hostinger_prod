@@ -555,18 +555,22 @@
                 </button>
             </div>
             <div class="modal-body p-2">
-                <div class="text-center mb-2">
-                    <div class="btn-group" role="group" aria-label="PDF toggle">
-                        <button type="button" class="btn btn-outline-success active" id="btnToggleReleasePdf">Release</button>
-                        <button type="button" class="btn btn-outline-success" id="btnToggleAgreementPdf">Agreement</button>
+                <div class="d-flex flex-wrap align-items-center justify-content-between mb-2 px-1">
+                    <div class="text-center flex-grow-1">
+                        <div class="btn-group" role="group" aria-label="PDF toggle">
+                            <button type="button" class="btn btn-outline-success active" id="btnToggleReleasePdf">Release</button>
+                            <button type="button" class="btn btn-outline-success" id="btnToggleAgreementPdf">Agreement</button>
+                        </div>
+                        <p class="mb-0 mt-2 small text-muted" id="releaseDocsViewerCustomerLabel"></p>
                     </div>
-                    <p class="mb-0 mt-2 small text-muted" id="releaseDocsViewerCustomerLabel"></p>
+                    <div class="mt-2 mt-md-0 ml-md-2">
+                        <button type="button" class="btn btn-danger" id="releaseDocsDeleteBtn">Delete Release</button>
+                    </div>
                 </div>
                 <iframe id="releaseDocsViewerFrame" title="Release or Agreement PDF" src="about:blank"
-                        style="width:100%; height:75vh; border:1px solid #cfd8dc; border-radius:4px; background:#f5f5f5;"></iframe>
+                        style="width:100%; height:70vh; border:1px solid #cfd8dc; border-radius:4px; background:#f5f5f5;"></iframe>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-danger" id="releaseDocsDeleteBtn">Delete</button>
                 <a href="#" class="btn btn-outline-primary" id="releaseDocsOpenNewTab" target="_blank" rel="noopener">Open in new tab</a>
                 <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
             </div>
