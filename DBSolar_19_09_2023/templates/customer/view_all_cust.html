@@ -448,6 +448,8 @@
                                                         data-customer-label="{% if Cust.Comp_name %}{{ Cust.Comp_name }}{% else %}{{ Cust.first_name }} {{ Cust.last_name }}{% endif %}"
                                                         data-has-release="{% if Cust.release_agreement and Cust.release_agreement.has_release_pdf %}1{% else %}0{% endif %}"
                                                         data-has-agreement="{% if Cust.release_agreement and Cust.release_agreement.has_agreement_pdf %}1{% else %}0{% endif %}"
+                                                        data-release-url="{% url 'customer-release-agreement-type' Cust.Cust_id 'release' %}"
+                                                        data-agreement-url="{% url 'customer-release-agreement-type' Cust.Cust_id 'agreement' %}"
                                                         data-upload-url="{% url 'customer-upload-release-docs' Cust.Cust_id %}">
                                                     Add
                                                 </button>
@@ -522,11 +524,21 @@
                 {% csrf_token %}
                 <div class="modal-body">
                     <p class="mb-2"><strong id="releaseDocsUploadCustomerLabel">Consumer</strong></p>
-                    <p class="text-muted small">Upload only the missing PDF file(s).</p>
+                    <p class="text-muted small">Upload only the missing PDF file(s). Already uploaded files can be opened below.</p>
+
+                    <div class="form-group" id="releasePdfUploadedGroup" style="display:none;">
+                        <label class="d-block">Release PDF</label>
+                        <a href="javascript:void(0);" class="btn-link font-weight-bold" id="releasePdfUploadedLink">View uploaded Release PDF</a>
+                    </div>
                     <div class="form-group" id="releasePdfFormGroup">
                         <label for="releasePdfInput">Release PDF</label>
                         <input type="file" class="form-control-file" id="releasePdfInput" name="release_pdf" accept="application/pdf,.pdf">
                         <small class="form-text text-muted" id="releasePdfStatus"></small>
+                    </div>
+
+                    <div class="form-group" id="agreementPdfUploadedGroup" style="display:none;">
+                        <label class="d-block">Agreement PDF</label>
+                        <a href="javascript:void(0);" class="btn-link font-weight-bold" id="agreementPdfUploadedLink">View uploaded Agreement PDF</a>
                     </div>
                     <div class="form-group mb-0" id="agreementPdfFormGroup">
                         <label for="agreementPdfInput">Agreement PDF</label>
@@ -1501,8 +1513,15 @@
     var agreementStatus = document.getElementById('agreementPdfStatus');
     var releaseFormGroup = document.getElementById('releasePdfFormGroup');
     var agreementFormGroup = document.getElementById('agreementPdfFormGroup');
+    var releaseUploadedGroup = document.getElementById('releasePdfUploadedGroup');
+    var agreementUploadedGroup = document.getElementById('agreementPdfUploadedGroup');
+    var releaseUploadedLink = document.getElementById('releasePdfUploadedLink');
+    var agreementUploadedLink = document.getElementById('agreementPdfUploadedLink');
     var activeUploadUrl = '';
     var activeCustId = '';
+    var activeUploadLabel = '';
+    var activeReleaseUrl = '';
+    var activeAgreementUrl = '';
 
     var viewerFrame = document.getElementById('releaseDocsViewerFrame');
     var viewerLabel = document.getElementById('releaseDocsViewerCustomerLabel');
@@ -1529,9 +1548,24 @@
         uploadError.textContent = msg;
     }
 
-    function configureUploadFields(hasRelease, hasAgreement) {
+    function configureUploadFields(hasRelease, hasAgreement, releaseUrl, agreementUrl) {
+        activeReleaseUrl = releaseUrl || '';
+        activeAgreementUrl = agreementUrl || '';
+
         if (releaseFormGroup) releaseFormGroup.style.display = hasRelease ? 'none' : '';
         if (agreementFormGroup) agreementFormGroup.style.display = hasAgreement ? 'none' : '';
+        if (releaseUploadedGroup) releaseUploadedGroup.style.display = hasRelease ? '' : 'none';
+        if (agreementUploadedGroup) agreementUploadedGroup.style.display = hasAgreement ? '' : 'none';
+
+        if (releaseUploadedLink) {
+            releaseUploadedLink.setAttribute('data-pdf-url', activeReleaseUrl);
+            releaseUploadedLink.setAttribute('data-pdf-kind', 'release');
+        }
+        if (agreementUploadedLink) {
+            agreementUploadedLink.setAttribute('data-pdf-url', activeAgreementUrl);
+            agreementUploadedLink.setAttribute('data-pdf-kind', 'agreement');
+        }
+
         if (releaseInput) {
             releaseInput.value = '';
             releaseInput.disabled = !!hasRelease;
@@ -1543,10 +1577,30 @@
             agreementInput.required = !hasAgreement;
         }
         if (releaseStatus) {
-            releaseStatus.textContent = hasRelease ? 'Already uploaded.' : 'Required';
+            releaseStatus.textContent = hasRelease ? '' : 'Required';
         }
         if (agreementStatus) {
-            agreementStatus.textContent = hasAgreement ? 'Already uploaded.' : 'Required';
+            agreementStatus.textContent = hasAgreement ? '' : 'Required';
+        }
+    }
+
+    function openViewerFromUpload(kind, url) {
+        if (!url) return;
+        viewerCustId = activeCustId || '';
+        viewerCustomerLabel = activeUploadLabel || '';
+        currentReleaseUrl = activeReleaseUrl || '';
+        currentAgreementUrl = activeAgreementUrl || '';
+        if (viewerLabel) {
+            viewerLabel.textContent = viewerCustomerLabel || ('Consumer #' + viewerCustId);
+        }
+        if (window.jQuery) {
+            window.jQuery('#releaseDocsUploadModal').modal('hide');
+            window.jQuery('#releaseDocsViewerModal').one('shown.bs.modal', function () {
+                setViewerPdf(url, kind);
+            });
+            window.jQuery('#releaseDocsViewerModal').modal('show');
+        } else {
+            setViewerPdf(url, kind);
         }
     }
 
@@ -1636,6 +1690,8 @@
                 ' data-customer-label="' + label.replace(/"/g, '&quot;') + '"' +
                 ' data-has-release="' + (data.has_release ? '1' : '0') + '"' +
                 ' data-has-agreement="' + (data.has_agreement ? '1' : '0') + '"' +
+                ' data-release-url="' + (data.release_url || ('/customer/release_agreement/' + custId + '/release/')) + '"' +
+                ' data-agreement-url="' + (data.agreement_url || ('/customer/release_agreement/' + custId + '/agreement/')) + '"' +
                 ' data-upload-url="/customer/upload_release_docs/' + custId + '/">Add</button>';
         } else {
             cell.innerHTML = '<span class="text-muted">—</span>';
@@ -1643,19 +1699,32 @@
     }
 
     document.addEventListener('click', function (e) {
+        var uploadedLink = e.target.closest('#releasePdfUploadedLink, #agreementPdfUploadedLink');
+        if (uploadedLink) {
+            e.preventDefault();
+            openViewerFromUpload(
+                uploadedLink.getAttribute('data-pdf-kind') || 'release',
+                uploadedLink.getAttribute('data-pdf-url') || ''
+            );
+            return;
+        }
+
         var addBtn = e.target.closest('.btn-add-release-docs');
         if (addBtn) {
             e.preventDefault();
             activeUploadUrl = addBtn.getAttribute('data-upload-url') || '';
             activeCustId = addBtn.getAttribute('data-cust-id') || '';
+            activeUploadLabel = addBtn.getAttribute('data-customer-label') || '';
             var cell = addBtn.closest('.attached-doc-cell');
-            if (cell) cell.setAttribute('data-customer-label', addBtn.getAttribute('data-customer-label') || '');
+            if (cell) cell.setAttribute('data-customer-label', activeUploadLabel);
             if (uploadLabel) {
-                uploadLabel.textContent = addBtn.getAttribute('data-customer-label') || ('Consumer #' + activeCustId);
+                uploadLabel.textContent = activeUploadLabel || ('Consumer #' + activeCustId);
             }
             configureUploadFields(
                 addBtn.getAttribute('data-has-release') === '1',
-                addBtn.getAttribute('data-has-agreement') === '1'
+                addBtn.getAttribute('data-has-agreement') === '1',
+                addBtn.getAttribute('data-release-url') || ('/customer/release_agreement/' + activeCustId + '/release/'),
+                addBtn.getAttribute('data-agreement-url') || ('/customer/release_agreement/' + activeCustId + '/agreement/')
             );
             showUploadError('');
             if (window.jQuery) window.jQuery('#releaseDocsUploadModal').modal('show');
