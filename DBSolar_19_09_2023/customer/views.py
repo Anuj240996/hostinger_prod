@@ -2369,40 +2369,16 @@ from customer.mobile_app_links import (
 
 
 def _attach_release_agreements(emps):
-    """Attach latest Release & Agreement PDF (if any) onto each customer for list display."""
-    from .models import ConsumerReleaseAgreement, Result
-    from .release_agreement import ensure_release_agreement_for_customer
+    """Attach latest Release/Agreement doc row onto each customer for list display."""
+    from .models import ConsumerReleaseAgreement
 
     customers = list(emps)
     if not customers:
         return customers
 
     cust_ids = [c.Cust_id for c in customers]
-
-    # Ensure PDFs exist for ready Result rows in this page set
-    ready_ids = set(
-        Result.objects.filter(
-            consumer_id_id__in=cust_ids,
-            solar_panel=True,
-            inverter=True,
-            net_meter=True,
-            mseb=True,
-            inspection_report=True,
-        ).values_list('consumer_id_id', flat=True)
-    )
-    by_id = {c.Cust_id: c for c in customers}
-    for cid in ready_ids:
-        cust = by_id.get(cid)
-        if cust:
-            try:
-                ensure_release_agreement_for_customer(cust)
-            except Exception:
-                pass
-
     docs = (
         ConsumerReleaseAgreement.objects.filter(customer_id__in=cust_ids)
-        .exclude(pdf='')
-        .exclude(pdf__isnull=True)
         .order_by('customer_id', '-created_at')
     )
     latest = {}
@@ -2416,32 +2392,72 @@ def _attach_release_agreements(emps):
 
 
 @login_required(login_url='user-login')
-def download_release_agreement(request, cust_id):
-    """Serve stored Release & Agreement PDF for a consumer (generate if missing & ready)."""
+def download_release_agreement(request, cust_id, doc_type='release'):
+    """Serve Release or Agreement PDF for a consumer."""
     from django.http import FileResponse, Http404
     from .models import Customer, ConsumerReleaseAgreement
 
     customer = get_object_or_404(Customer, Cust_id=cust_id)
-    doc = ensure_release_agreement_for_customer(customer, user=request.user)
-    if not doc or not doc.pdf:
-        doc = (
-            ConsumerReleaseAgreement.objects.filter(customer=customer)
-            .exclude(pdf='')
-            .order_by('-created_at')
-            .first()
-        )
-    if not doc or not doc.pdf:
-        raise Http404('Release & Agreement PDF is not available for this consumer yet.')
+    doc_type = (doc_type or request.GET.get('type') or 'release').strip().lower()
+    if doc_type not in ('release', 'agreement'):
+        doc_type = 'release'
+
+    doc = (
+        ConsumerReleaseAgreement.objects.filter(customer=customer)
+        .order_by('-created_at')
+        .first()
+    )
+    if not doc:
+        raise Http404('No Release & Agreement documents found for this consumer.')
+
+    file_field = doc.effective_release_file() if doc_type == 'release' else doc.agreement_pdf
+    if not file_field:
+        raise Http404(f'{doc_type.title()} PDF is not available for this consumer yet.')
 
     try:
         return FileResponse(
-            doc.pdf.open('rb'),
-            as_attachment=True,
-            filename=f'release_agreement_{cust_id}.pdf',
+            file_field.open('rb'),
+            as_attachment=False,
+            filename=f'{doc_type}_{cust_id}.pdf',
             content_type='application/pdf',
         )
     except Exception as exc:
         raise Http404(str(exc)) from exc
+
+
+@login_required(login_url='user-login')
+@require_POST
+def upload_release_agreement_docs(request, cust_id):
+    """Upload Release and/or Agreement PDFs separately for a consumer."""
+    from .models import Customer
+    from .release_agreement import save_uploaded_doc
+
+    customer = get_object_or_404(Customer, Cust_id=cust_id)
+    release_file = request.FILES.get('release_pdf')
+    agreement_file = request.FILES.get('agreement_pdf')
+    if not release_file and not agreement_file:
+        return JsonResponse({'ok': False, 'error': 'Please select at least one PDF to upload.'}, status=400)
+
+    try:
+        doc = None
+        if release_file:
+            doc = save_uploaded_doc(customer, 'release', release_file, user=request.user)
+        if agreement_file:
+            doc = save_uploaded_doc(customer, 'agreement', agreement_file, user=request.user)
+    except ValueError as exc:
+        return JsonResponse({'ok': False, 'error': str(exc)}, status=400)
+    except Exception as exc:
+        return JsonResponse({'ok': False, 'error': str(exc)}, status=500)
+
+    return JsonResponse({
+        'ok': True,
+        'cust_id': customer.Cust_id,
+        'has_release': bool(doc and doc.has_release_pdf),
+        'has_agreement': bool(doc and doc.has_agreement_pdf),
+        'has_both': bool(doc and doc.has_both_pdfs),
+        'release_url': f'/customer/release_agreement/{customer.Cust_id}/release/',
+        'agreement_url': f'/customer/release_agreement/{customer.Cust_id}/agreement/',
+    })
 
 
 @login_required(login_url='user-login')

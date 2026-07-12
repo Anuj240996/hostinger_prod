@@ -498,7 +498,7 @@ class Result(models.Model):
 
 
 class ConsumerReleaseAgreement(models.Model):
-    """Release & Agreement PDF generated when Result milestone flags are all complete."""
+    """Release and Agreement PDFs linked to a consumer (customer_result milestones)."""
     customer = models.ForeignKey(
         Customer,
         on_delete=models.CASCADE,
@@ -512,9 +512,13 @@ class ConsumerReleaseAgreement(models.Model):
         blank=True,
         related_name='release_agreements',
     )
+    # Legacy combined PDF (kept for older rows); prefer release_pdf / agreement_pdf
     pdf = models.FileField(upload_to='release_agreements/%Y/%m/', blank=True)
+    release_pdf = models.FileField(upload_to='release_agreements/%Y/%m/', blank=True)
+    agreement_pdf = models.FileField(upload_to='release_agreements/%Y/%m/', blank=True)
     title = models.CharField(max_length=255, default='Release & Agreement')
     created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
     created_by = models.ForeignKey(
         User,
         on_delete=models.SET_NULL,
@@ -531,5 +535,20 @@ class ConsumerReleaseAgreement(models.Model):
 
     def __str__(self):
         return f'Release & Agreement — {self.customer_id}'
+
+    @property
+    def has_release_pdf(self):
+        return bool(self.release_pdf) or bool(self.pdf)
+
+    @property
+    def has_agreement_pdf(self):
+        return bool(self.agreement_pdf)
+
+    @property
+    def has_both_pdfs(self):
+        return self.has_release_pdf and self.has_agreement_pdf
+
+    def effective_release_file(self):
+        return self.release_pdf or self.pdf
 # CRM integration removed — leads moved to a separate app.
 

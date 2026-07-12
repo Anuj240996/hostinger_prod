@@ -428,17 +428,28 @@
                                                 <span class="badge badge-secondary">Detached</span>
                                                 {% endif %}
                                             </td>
-                                            <td class="text-center">
-                                                {% if Cust.release_agreement and Cust.release_agreement.pdf %}
-                                                <a href="{% url 'customer-release-agreement' Cust.Cust_id %}"
-                                                   class="btn btn-sm bg-info-light"
-                                                   title="Download Release &amp; Agreement PDF"
-                                                   target="_blank" rel="noopener">
-                                                    <i class="fas fa-file-pdf text-danger"></i>
-                                                    <span class="d-block small">Release PDF</span>
+                                            <td class="text-center attached-doc-cell"
+                                                data-cust-id="{{ Cust.Cust_id }}"
+                                                data-customer-label="{% if Cust.Comp_name %}{{ Cust.Comp_name }}{% else %}{{ Cust.first_name }} {{ Cust.last_name }}{% endif %}">
+                                                {% if Cust.release_agreement and Cust.release_agreement.has_both_pdfs %}
+                                                <a href="javascript:void(0);"
+                                                   class="btn-link font-weight-bold btn-open-release-viewer"
+                                                   data-cust-id="{{ Cust.Cust_id }}"
+                                                   data-customer-label="{% if Cust.Comp_name %}{{ Cust.Comp_name }}{% else %}{{ Cust.first_name }} {{ Cust.last_name }}{% endif %}"
+                                                   data-release-url="{% url 'customer-release-agreement-type' Cust.Cust_id 'release' %}"
+                                                   data-agreement-url="{% url 'customer-release-agreement-type' Cust.Cust_id 'agreement' %}">
+                                                    Release &amp; Agreement
                                                 </a>
                                                 {% else %}
-                                                <span class="text-muted">—</span>
+                                                <button type="button"
+                                                        class="btn btn-sm btn-success btn-add-release-docs"
+                                                        data-cust-id="{{ Cust.Cust_id }}"
+                                                        data-customer-label="{% if Cust.Comp_name %}{{ Cust.Comp_name }}{% else %}{{ Cust.first_name }} {{ Cust.last_name }}{% endif %}"
+                                                        data-has-release="{% if Cust.release_agreement and Cust.release_agreement.has_release_pdf %}1{% else %}0{% endif %}"
+                                                        data-has-agreement="{% if Cust.release_agreement and Cust.release_agreement.has_agreement_pdf %}1{% else %}0{% endif %}"
+                                                        data-upload-url="{% url 'customer-upload-release-docs' Cust.Cust_id %}">
+                                                    Add
+                                                </button>
                                                 {% endif %}
                                             </td>
                                             <!--                                   <td class="text-right">-->
@@ -494,7 +505,73 @@
     </div>
 </div>
 
+<!-- Upload Release & Agreement PDFs -->
+<div class="modal fade" id="releaseDocsUploadModal" tabindex="-1" role="dialog" aria-labelledby="releaseDocsUploadModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title" id="releaseDocsUploadModalLabel">Upload Release &amp; Agreement</h5>
+                <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <form id="releaseDocsUploadForm" enctype="multipart/form-data">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <p class="mb-2"><strong id="releaseDocsUploadCustomerLabel">Consumer</strong></p>
+                    <p class="text-muted small">Upload Release PDF and Agreement PDF separately.</p>
+                    <div class="form-group">
+                        <label for="releasePdfInput">Release PDF</label>
+                        <input type="file" class="form-control-file" id="releasePdfInput" name="release_pdf" accept="application/pdf,.pdf">
+                        <small class="form-text text-muted" id="releasePdfStatus"></small>
+                    </div>
+                    <div class="form-group mb-0">
+                        <label for="agreementPdfInput">Agreement PDF</label>
+                        <input type="file" class="form-control-file" id="agreementPdfInput" name="agreement_pdf" accept="application/pdf,.pdf">
+                        <small class="form-text text-muted" id="agreementPdfStatus"></small>
+                    </div>
+                    <div class="alert alert-danger mt-3 mb-0" id="releaseDocsUploadError" style="display:none;"></div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-success" id="releaseDocsUploadSubmit">Upload</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- View Release & Agreement PDFs -->
+<div class="modal fade" id="releaseDocsViewerModal" tabindex="-1" role="dialog" aria-labelledby="releaseDocsViewerModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-xl" role="document" style="max-width: 95%;">
+        <div class="modal-content">
+            <div class="modal-header" style="background:#00897B;color:#fff;">
+                <h5 class="modal-title" id="releaseDocsViewerModalLabel">Release &amp; Agreement</h5>
+                <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body p-2">
+                <div class="text-center mb-2">
+                    <div class="btn-group" role="group" aria-label="PDF toggle">
+                        <button type="button" class="btn btn-outline-success active" id="btnToggleReleasePdf">Release</button>
+                        <button type="button" class="btn btn-outline-success" id="btnToggleAgreementPdf">Agreement</button>
+                    </div>
+                    <p class="mb-0 mt-2 small text-muted" id="releaseDocsViewerCustomerLabel"></p>
+                </div>
+                <iframe id="releaseDocsViewerFrame" title="Release or Agreement PDF" src="about:blank"
+                        style="width:100%; height:75vh; border:1px solid #cfd8dc; border-radius:4px; background:#f5f5f5;"></iframe>
+            </div>
+            <div class="modal-footer">
+                <a href="#" class="btn btn-outline-primary" id="releaseDocsOpenNewTab" target="_blank" rel="noopener">Open in new tab</a>
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <div class="modal fade" id="customerMobileLinkModal" tabindex="-1" role="dialog" aria-labelledby="customerMobileLinkModalLabel" aria-hidden="true">
+
     <div class="modal-dialog modal-dialog-centered" role="document">
         <div class="modal-content">
             <div class="modal-header">
@@ -1393,6 +1470,194 @@
             linkModal.style.display = 'block';
         }
     });
+})();
+</script>
+
+
+<script>
+(function () {
+    function getCsrfToken() {
+        var input = document.querySelector('#releaseDocsUploadForm input[name="csrfmiddlewaretoken"]');
+        if (input && input.value) return input.value;
+        var cookie = document.cookie.match(/(?:^|; )csrftoken=([^;]+)/);
+        return cookie ? decodeURIComponent(cookie[1]) : '';
+    }
+
+    var uploadForm = document.getElementById('releaseDocsUploadForm');
+    var uploadLabel = document.getElementById('releaseDocsUploadCustomerLabel');
+    var uploadError = document.getElementById('releaseDocsUploadError');
+    var uploadSubmit = document.getElementById('releaseDocsUploadSubmit');
+    var releaseInput = document.getElementById('releasePdfInput');
+    var agreementInput = document.getElementById('agreementPdfInput');
+    var releaseStatus = document.getElementById('releasePdfStatus');
+    var agreementStatus = document.getElementById('agreementPdfStatus');
+    var activeUploadUrl = '';
+    var activeCustId = '';
+
+    var viewerFrame = document.getElementById('releaseDocsViewerFrame');
+    var viewerLabel = document.getElementById('releaseDocsViewerCustomerLabel');
+    var viewerOpenTab = document.getElementById('releaseDocsOpenNewTab');
+    var btnRelease = document.getElementById('btnToggleReleasePdf');
+    var btnAgreement = document.getElementById('btnToggleAgreementPdf');
+    var currentReleaseUrl = '';
+    var currentAgreementUrl = '';
+
+    function showUploadError(msg) {
+        if (!uploadError) return;
+        if (!msg) {
+            uploadError.style.display = 'none';
+            uploadError.textContent = '';
+            return;
+        }
+        uploadError.style.display = '';
+        uploadError.textContent = msg;
+    }
+
+    function setViewerPdf(url, kind) {
+        if (viewerFrame) viewerFrame.src = url || 'about:blank';
+        if (viewerOpenTab) {
+            viewerOpenTab.href = url || '#';
+            viewerOpenTab.style.display = url ? '' : 'none';
+        }
+        if (btnRelease && btnAgreement) {
+            btnRelease.classList.toggle('active', kind === 'release');
+            btnAgreement.classList.toggle('active', kind === 'agreement');
+        }
+    }
+
+    function renderAttachedDocCell(cell, data) {
+        if (!cell || !data) return;
+        var custId = data.cust_id || cell.getAttribute('data-cust-id');
+        var label = cell.getAttribute('data-customer-label') || '';
+        if (data.has_both) {
+            cell.innerHTML =
+                '<a href="javascript:void(0);" class="btn-link font-weight-bold btn-open-release-viewer"' +
+                ' data-cust-id="' + custId + '"' +
+                ' data-customer-label="' + label.replace(/"/g, '&quot;') + '"' +
+                ' data-release-url="' + (data.release_url || '') + '"' +
+                ' data-agreement-url="' + (data.agreement_url || '') + '">' +
+                'Release &amp; Agreement</a>';
+        } else {
+            cell.innerHTML =
+                '<button type="button" class="btn btn-sm btn-success btn-add-release-docs"' +
+                ' data-cust-id="' + custId + '"' +
+                ' data-customer-label="' + label.replace(/"/g, '&quot;') + '"' +
+                ' data-has-release="' + (data.has_release ? '1' : '0') + '"' +
+                ' data-has-agreement="' + (data.has_agreement ? '1' : '0') + '"' +
+                ' data-upload-url="/customer/upload_release_docs/' + custId + '/">Add</button>';
+        }
+    }
+
+    document.addEventListener('click', function (e) {
+        var addBtn = e.target.closest('.btn-add-release-docs');
+        if (addBtn) {
+            e.preventDefault();
+            activeUploadUrl = addBtn.getAttribute('data-upload-url') || '';
+            activeCustId = addBtn.getAttribute('data-cust-id') || '';
+            var cell = addBtn.closest('.attached-doc-cell');
+            if (cell) cell.setAttribute('data-customer-label', addBtn.getAttribute('data-customer-label') || '');
+            if (uploadLabel) {
+                uploadLabel.textContent = addBtn.getAttribute('data-customer-label') || ('Consumer #' + activeCustId);
+            }
+            if (releaseStatus) {
+                releaseStatus.textContent = addBtn.getAttribute('data-has-release') === '1'
+                    ? 'Release PDF already uploaded (optional replace).'
+                    : 'Required';
+            }
+            if (agreementStatus) {
+                agreementStatus.textContent = addBtn.getAttribute('data-has-agreement') === '1'
+                    ? 'Agreement PDF already uploaded (optional replace).'
+                    : 'Required';
+            }
+            if (releaseInput) releaseInput.value = '';
+            if (agreementInput) agreementInput.value = '';
+            showUploadError('');
+            if (window.jQuery) window.jQuery('#releaseDocsUploadModal').modal('show');
+            return;
+        }
+
+        var viewBtn = e.target.closest('.btn-open-release-viewer');
+        if (viewBtn) {
+            e.preventDefault();
+            currentReleaseUrl = viewBtn.getAttribute('data-release-url') || '';
+            currentAgreementUrl = viewBtn.getAttribute('data-agreement-url') || '';
+            if (viewerLabel) {
+                viewerLabel.textContent = viewBtn.getAttribute('data-customer-label') ||
+                    ('Consumer #' + (viewBtn.getAttribute('data-cust-id') || ''));
+            }
+            setViewerPdf(currentReleaseUrl, 'release');
+            if (window.jQuery) window.jQuery('#releaseDocsViewerModal').modal('show');
+        }
+    });
+
+    if (btnRelease) {
+        btnRelease.addEventListener('click', function () {
+            setViewerPdf(currentReleaseUrl, 'release');
+        });
+    }
+    if (btnAgreement) {
+        btnAgreement.addEventListener('click', function () {
+            setViewerPdf(currentAgreementUrl, 'agreement');
+        });
+    }
+    if (window.jQuery) {
+        window.jQuery('#releaseDocsViewerModal').on('hidden.bs.modal', function () {
+            if (viewerFrame) viewerFrame.src = 'about:blank';
+        });
+    }
+
+    if (uploadForm) {
+        uploadForm.addEventListener('submit', function (e) {
+            e.preventDefault();
+            showUploadError('');
+            if (!activeUploadUrl) {
+                showUploadError('Upload URL missing.');
+                return;
+            }
+            if ((!releaseInput || !releaseInput.files.length) && (!agreementInput || !agreementInput.files.length)) {
+                showUploadError('Please select at least one PDF file.');
+                return;
+            }
+            var formData = new FormData();
+            if (releaseInput && releaseInput.files.length) formData.append('release_pdf', releaseInput.files[0]);
+            if (agreementInput && agreementInput.files.length) formData.append('agreement_pdf', agreementInput.files[0]);
+
+            if (uploadSubmit) {
+                uploadSubmit.disabled = true;
+                uploadSubmit.textContent = 'Uploading...';
+            }
+
+            fetch(activeUploadUrl, {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRFToken': getCsrfToken()
+                },
+                body: formData
+            })
+                .then(function (resp) {
+                    return resp.json().then(function (data) {
+                        if (!resp.ok || !data.ok) throw new Error((data && data.error) || 'Upload failed.');
+                        return data;
+                    });
+                })
+                .then(function (data) {
+                    var cell = document.querySelector('.attached-doc-cell[data-cust-id="' + (data.cust_id || activeCustId) + '"]');
+                    renderAttachedDocCell(cell, data);
+                    if (window.jQuery) window.jQuery('#releaseDocsUploadModal').modal('hide');
+                })
+                .catch(function (err) {
+                    showUploadError(err.message || 'Upload failed.');
+                })
+                .finally(function () {
+                    if (uploadSubmit) {
+                        uploadSubmit.disabled = false;
+                        uploadSubmit.textContent = 'Upload';
+                    }
+                });
+        });
+    }
 })();
 </script>
 

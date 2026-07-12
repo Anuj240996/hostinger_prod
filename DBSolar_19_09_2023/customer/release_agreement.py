@@ -22,6 +22,27 @@ def result_is_release_ready(result):
     return all(bool(getattr(result, field, False)) for field in RELEASE_READY_FIELDS)
 
 
+def get_or_create_doc_row(customer, user=None, result=None):
+    from .models import ConsumerReleaseAgreement, Result
+
+    if result is None:
+        result = Result.objects.filter(consumer_id=customer).order_by('-id').first()
+
+    doc = (
+        ConsumerReleaseAgreement.objects.filter(customer=customer)
+        .order_by('-created_at')
+        .first()
+    )
+    if doc:
+        return doc
+
+    return ConsumerReleaseAgreement.objects.create(
+        customer=customer,
+        result=result,
+        created_by=user if getattr(user, 'is_authenticated', False) else None,
+    )
+
+
 def _build_release_pdf_bytes(customer, result):
     html = render_to_string(
         'customer/release_agreement_pdf.html',
@@ -30,61 +51,79 @@ def _build_release_pdf_bytes(customer, result):
             'result': result,
             'generated_at': timezone.now(),
             'flags': {field: bool(getattr(result, field, False)) for field in RELEASE_READY_FIELDS},
+            'doc_kind': 'Release',
         },
     )
     result_buffer = BytesIO()
     pisa_status = pisa.CreatePDF(src=html, dest=result_buffer, encoding='utf-8')
     if pisa_status.err:
-        raise RuntimeError(f'Release agreement PDF failed with {pisa_status.err} errors')
+        raise RuntimeError(f'Release PDF failed with {pisa_status.err} errors')
     return result_buffer.getvalue()
 
 
 def ensure_release_agreement_for_customer(customer, user=None, force=False):
     """
-    If customer_result flags are all True for this consumer_id, create/store
-    Release & Agreement PDF (once unless force=True).
+    If customer_result flags are all True, ensure a Release PDF exists
+    (Agreement remains manual upload unless already present).
     """
-    from .models import ConsumerReleaseAgreement, Result
+    from .models import Result
 
     if not customer:
         return None
 
     result = Result.objects.filter(consumer_id=customer).order_by('-id').first()
     if not result_is_release_ready(result):
-        return None
+        return get_or_create_doc_row(customer, user=user, result=result)
 
-    existing = (
-        ConsumerReleaseAgreement.objects.filter(customer=customer)
-        .exclude(pdf='')
-        .exclude(pdf__isnull=True)
-        .order_by('-created_at')
-        .first()
-    )
-    if existing and not force:
-        return existing
+    doc = get_or_create_doc_row(customer, user=user, result=result)
+    if doc.has_release_pdf and not force:
+        return doc
 
     pdf_bytes = _build_release_pdf_bytes(customer, result)
-    filename = f'release_agreement_{customer.Cust_id}.pdf'
-
-    if existing and force:
-        doc = existing
-    else:
-        doc = ConsumerReleaseAgreement(
-            customer=customer,
-            result=result,
-            created_by=user if getattr(user, 'is_authenticated', False) else None,
-        )
-
+    filename = f'release_{customer.Cust_id}.pdf'
     doc.result = result
     if user and getattr(user, 'is_authenticated', False):
         doc.created_by = user
+    doc.release_pdf.save(filename, ContentFile(pdf_bytes), save=False)
+    # Keep legacy field in sync for older download URLs
     doc.pdf.save(filename, ContentFile(pdf_bytes), save=False)
     doc.save()
     return doc
 
 
+def save_uploaded_doc(customer, doc_type, uploaded_file, user=None):
+    """Save a manually uploaded release or agreement PDF."""
+    doc_type = (doc_type or '').strip().lower()
+    if doc_type not in ('release', 'agreement'):
+        raise ValueError('doc_type must be release or agreement')
+    if not uploaded_file:
+        raise ValueError('No file uploaded')
+
+    name = (getattr(uploaded_file, 'name', '') or '').lower()
+    content_type = (getattr(uploaded_file, 'content_type', '') or '').lower()
+    if not (name.endswith('.pdf') or 'pdf' in content_type):
+        raise ValueError('Only PDF files are allowed')
+
+    data = uploaded_file.read()
+    if not data:
+        raise ValueError('Uploaded file is empty')
+
+    doc = get_or_create_doc_row(customer, user=user)
+    safe_name = f'{doc_type}_{customer.Cust_id}.pdf'
+    content = ContentFile(data, name=safe_name)
+    if doc_type == 'release':
+        doc.release_pdf.save(safe_name, ContentFile(data, name=safe_name), save=False)
+        doc.pdf.save(safe_name, ContentFile(data, name=safe_name), save=False)
+    else:
+        doc.agreement_pdf.save(safe_name, ContentFile(data, name=safe_name), save=False)
+    if user and getattr(user, 'is_authenticated', False):
+        doc.created_by = user
+    doc.save()
+    return doc
+
+
 def backfill_release_agreements(limit=None, user=None):
-    """Create missing PDFs for every Result row that is release-ready."""
+    """Create missing Release PDFs for every Result row that is release-ready."""
     from .models import Result
 
     qs = Result.objects.filter(

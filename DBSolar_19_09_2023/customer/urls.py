@@ -18,6 +18,16 @@ urlpatterns = [
         views.download_release_agreement,
         name='customer-release-agreement',
     ),
+    path(
+        'release_agreement/<int:cust_id>/<str:doc_type>/',
+        views.download_release_agreement,
+        name='customer-release-agreement-type',
+    ),
+    path(
+        'upload_release_docs/<int:cust_id>/',
+        views.upload_release_agreement_docs,
+        name='customer-upload-release-docs',
+    ),
     path('generate_mobile_qr/<int:cust_id>/', views.generate_customer_mobile_qr, name='customer-generate_mobile_qr'),
     path(
         'send_mobile_qr_email/<int:cust_id>/',
