@@ -5,7 +5,6 @@
 
 {% block content %}
 <style>
-  /* Monthly consumption + Assigned to: same row, aligned with columns above */
   .lead-form .lead-property-assign-row {
     align-items: flex-start;
     margin-bottom: 1rem;
@@ -22,6 +21,67 @@
   .lead-form .lead-property-assign-row > [class*="col-"] select {
     width: 100%;
   }
+  .lead-form .lead-compact-row .form-group {
+    margin-bottom: 0.85rem;
+  }
+  .lead-form .input-group-text {
+    background: #f1f5f9;
+    color: #334155;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+  .lead-form .lead-input-group .form-group {
+    margin-bottom: 0;
+    flex: 1 1 auto;
+  }
+  .lead-form .lead-input-group .form-group label {
+    display: none;
+  }
+  .lead-form .lead-field-label {
+    display: block;
+    margin-bottom: 0.35rem;
+    font-weight: 500;
+  }
+  .lead-form .lead-schedule-card {
+    background: linear-gradient(160deg, #ecfdf5 0%, #f0fdfa 55%, #ffffff 100%);
+    border: 1px solid #99f6e4;
+    border-radius: 12px;
+    padding: 1rem 1.1rem 1.15rem;
+    box-shadow: 0 8px 20px rgba(13, 148, 136, 0.08);
+  }
+  .lead-form .lead-schedule-card h5 {
+    color: #0f766e;
+    margin-bottom: 0.35rem;
+  }
+  .lead-form .lead-schedule-card .lead-schedule-hint {
+    color: #64748b;
+    font-size: 0.82rem;
+    margin-bottom: 0.75rem;
+  }
+  .lead-form .lead-schedule-card .form-control[type="datetime-local"] {
+    border: 1px solid #5eead4;
+    border-radius: 10px;
+    background: #ffffff;
+    min-height: 46px;
+    padding: 0.55rem 0.75rem;
+    color: #0f172a;
+    box-shadow: inset 0 1px 2px rgba(15, 23, 42, 0.04);
+  }
+  .lead-form .lead-schedule-card .form-control[type="datetime-local"]:focus {
+    border-color: #0d9488;
+    box-shadow: 0 0 0 0.2rem rgba(13, 148, 136, 0.2);
+  }
+  .lead-form .lead-schedule-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    background: #0d9488;
+    color: #fff;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 0.65rem;
+  }
 </style>
 <div class="lead-form">
     <div class="d-flex justify-content-between align-items-center mb-4">
@@ -33,7 +93,7 @@
 
     <div class="card">
         <div class="card-body">
-            <form method="post" novalidate>
+            <form method="post" novalidate id="leadCreateEditForm">
                 {% csrf_token %}
 
                 <div class="row">
@@ -42,16 +102,28 @@
                         {{ form.name|as_crispy_field }}
                         {{ form.phone|as_crispy_field }}
                         {{ form.email|as_crispy_field }}
-                        {{ form.longitude|as_crispy_field }}
-                        {{ form.latitude|as_crispy_field }}
                     </div>
 
                     <div class="col-md-6">
                         <h5 class="mb-3">Location</h5>
                         {{ form.address|as_crispy_field }}
                         {{ form.city|as_crispy_field }}
-                        {{ form.state|as_crispy_field }}
-                        {{ form.pincode|as_crispy_field }}
+                        <div class="row lead-compact-row">
+                            <div class="col-md-7">
+                                {{ form.state|as_crispy_field }}
+                            </div>
+                            <div class="col-md-5">
+                                {{ form.pincode|as_crispy_field }}
+                            </div>
+                        </div>
+                        <div class="row lead-compact-row">
+                            <div class="col-md-6">
+                                {{ form.longitude|as_crispy_field }}
+                            </div>
+                            <div class="col-md-6">
+                                {{ form.latitude|as_crispy_field }}
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -62,15 +134,21 @@
                         <h5 class="mb-3">Property Details</h5>
                         {{ form.property_type|as_crispy_field }}
                         {{ form.roof_type|as_crispy_field }}
-                        {{ form.electricity_bill|as_crispy_field }}
-                        <div class="row">
-                            <div class="col-8">
-                                {{ form.rooftop_area|as_crispy_field }}
-                            </div>
-                            <div class="col-4">
-                                {{ form.rooftop_area_unit|as_crispy_field }}
-                            </div>
+
+                        <label class="lead-field-label" for="{{ form.electricity_bill.id_for_label }}">Electricity Bill</label>
+                        <div class="input-group mb-3">
+                            <span class="input-group-text">₹</span>
+                            {{ form.electricity_bill }}
                         </div>
+                        {% if form.electricity_bill.errors %}<div class="text-danger small mb-2">{{ form.electricity_bill.errors }}</div>{% endif %}
+
+                        <label class="lead-field-label" for="{{ form.rooftop_area.id_for_label }}">Total Rooftop Area</label>
+                        <div class="input-group mb-3">
+                            {{ form.rooftop_area }}
+                            {{ form.rooftop_area_unit }}
+                        </div>
+                        {% if form.rooftop_area.errors %}<div class="text-danger small mb-2">{{ form.rooftop_area.errors }}</div>{% endif %}
+                        {% if form.rooftop_area_unit.errors %}<div class="text-danger small mb-2">{{ form.rooftop_area_unit.errors }}</div>{% endif %}
                     </div>
 
                     <div class="col-md-6">
@@ -83,7 +161,12 @@
 
                 <div class="row lead-property-assign-row mt-1">
                     <div class="col-md-6">
-                        {{ form.monthly_consumption|as_crispy_field }}
+                        <label class="lead-field-label" for="{{ form.monthly_consumption.id_for_label }}">Monthly Consumption</label>
+                        <div class="input-group mb-3">
+                            {{ form.monthly_consumption }}
+                            <span class="input-group-text">kWh/month</span>
+                        </div>
+                        {% if form.monthly_consumption.errors %}<div class="text-danger small mb-2">{{ form.monthly_consumption.errors }}</div>{% endif %}
                     </div>
                     <div class="col-md-6">
                         {{ form.assigned_to|as_crispy_field }}
@@ -95,14 +178,33 @@
                 <div class="row">
                     <div class="col-md-6">
                         <h5 class="mb-3">Financial Information</h5>
-                        {{ form.budget|as_crispy_field }}
-                        {{ form.estimated_value|as_crispy_field }}
+
+                        <label class="lead-field-label" for="{{ form.budget.id_for_label }}">Budget</label>
+                        <div class="input-group mb-3">
+                            <span class="input-group-text">₹</span>
+                            {{ form.budget }}
+                        </div>
+                        {% if form.budget.errors %}<div class="text-danger small mb-2">{{ form.budget.errors }}</div>{% endif %}
+
+                        <label class="lead-field-label" for="{{ form.estimated_value.id_for_label }}">Estimated Value</label>
+                        <div class="input-group mb-3">
+                            <span class="input-group-text">₹</span>
+                            {{ form.estimated_value }}
+                        </div>
+                        {% if form.estimated_value.errors %}<div class="text-danger small mb-2">{{ form.estimated_value.errors }}</div>{% endif %}
+
                         {{ form.finance_type|as_crispy_field }}
                     </div>
 
                     <div class="col-md-6">
-                        <h5 class="mb-3">Schedule</h5>
-                        {{ form.next_followup|as_crispy_field }}
+                        <div class="lead-schedule-card">
+                            <div class="d-flex align-items-center mb-1">
+                                <span class="lead-schedule-icon"><i class="fas fa-calendar-alt"></i></span>
+                                <h5 class="mb-0">Schedule</h5>
+                            </div>
+                            <p class="lead-schedule-hint mb-2">Pick the next follow-up date and time.</p>
+                            {{ form.next_followup|as_crispy_field }}
+                        </div>
                     </div>
                 </div>
 
@@ -128,4 +230,51 @@
         </div>
     </div>
 </div>
+<script>
+(function () {
+  function formatIndian(value) {
+    var raw = String(value || '').replace(/,/g, '').trim();
+    if (!raw) return '';
+    var num = Number(raw);
+    if (!isFinite(num)) return String(value);
+    try {
+      return num.toLocaleString('en-IN', { maximumFractionDigits: 2 });
+    } catch (e) {
+      return String(value);
+    }
+  }
+
+  function unformatIndian(value) {
+    return String(value || '').replace(/,/g, '').trim();
+  }
+
+  ['id_electricity_bill', 'id_budget', 'id_estimated_value'].forEach(function (id) {
+    var el = document.getElementById(id);
+    if (!el) return;
+    if (el.value) el.value = formatIndian(el.value);
+    el.addEventListener('blur', function () {
+      el.value = formatIndian(el.value);
+    });
+    el.addEventListener('focus', function () {
+      el.value = unformatIndian(el.value);
+    });
+  });
+
+  var form = document.getElementById('leadCreateEditForm');
+  if (form) {
+    form.addEventListener('submit', function () {
+      ['id_electricity_bill', 'id_budget', 'id_estimated_value'].forEach(function (id) {
+        var el = document.getElementById(id);
+        if (el) el.value = unformatIndian(el.value);
+      });
+    });
+  }
+
+  var unitSelect = document.getElementById('id_rooftop_area_unit');
+  if (unitSelect) {
+    unitSelect.classList.add('form-control');
+    unitSelect.style.maxWidth = '90px';
+  }
+})();
+</script>
 {% endblock %}

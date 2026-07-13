@@ -1,5 +1,5 @@
 {% extends 'new_lead_base.html' %}
-{% load humanize %}
+{% load humanize indian_numbers %}
 
 {% block title %}{{ lead.name }} - Lead Details{% endblock %}
 
@@ -51,14 +51,6 @@
                         </div>
 
                         <div class="info-item mb-3">
-                            <label class="text-muted d-block small">Coordinates</label>
-                            <div class="small">
-                                <div><strong>Lat:</strong> {% if lead.latitude is not None %}{{ lead.latitude }}{% else %}—{% endif %}</div>
-                                <div><strong>Long:</strong> {% if lead.longitude is not None %}{{ lead.longitude }}{% else %}—{% endif %}</div>
-                            </div>
-                        </div>
-
-                        <div class="info-item mb-3">
                             <label class="text-muted d-block small">Address</label>
                             <div class="d-flex">
                                 <i class="fas fa-map-marker-alt text-danger me-2"></i>
@@ -70,10 +62,24 @@
                         </div>
 
                         <div class="info-item mb-3">
+                            <label class="text-muted d-block small">Longitude / Latitude</label>
+                            <div class="small">
+                                <div><strong>Longitude:</strong> {% if lead.longitude is not None %}{{ lead.longitude }}{% else %}—{% endif %}</div>
+                                <div><strong>Latitude:</strong> {% if lead.latitude is not None %}{{ lead.latitude }}{% else %}—{% endif %}</div>
+                            </div>
+                        </div>
+
+                        <div class="info-item mb-3">
                             <label class="text-muted d-block small">Electricity Bill</label>
                             <div class="d-flex align-items-center">
                                 <i class="fas fa-file-invoice text-warning me-2"></i>
-                                <span>₹{{ lead.electricity_bill|default:'0'|intcomma }}/month</span>
+                                <span>
+                                    {% if lead.electricity_bill is not None %}
+                                        {{ lead.electricity_bill|indian_currency }}/month
+                                    {% else %}
+                                        —
+                                    {% endif %}
+                                </span>
                             </div>
                         </div>
 
@@ -83,18 +89,51 @@
                                 <span class="badge bg-light text-dark me-1">{{ lead.get_property_type_display }}</span>
                                 <span class="badge bg-light text-dark">{{ lead.get_roof_type_display }} Roof</span>
                             </div>
-                            {% if lead.rooftop_area %}
-                            <div class="mt-1 small text-muted">
-                                Total Rooftop Area: {{ lead.rooftop_area }} {{ lead.get_rooftop_area_unit_display }}
+                        </div>
+
+                        <div class="info-item mb-3">
+                            <label class="text-muted d-block small">Total Rooftop Area</label>
+                            <div>
+                                {% if lead.rooftop_area is not None %}
+                                    {{ lead.rooftop_area|indian_number }} {{ lead.get_rooftop_area_unit_display }}
+                                {% else %}
+                                    —
+                                {% endif %}
                             </div>
-                            {% endif %}
+                        </div>
+
+                        <div class="info-item mb-3">
+                            <label class="text-muted d-block small">Monthly Consumption</label>
+                            <div>
+                                {% if lead.monthly_consumption is not None %}
+                                    {{ lead.monthly_consumption|indian_number }} kWh/month
+                                {% else %}
+                                    —
+                                {% endif %}
+                            </div>
                         </div>
 
                         <div class="info-item mb-3">
                             <label class="text-muted d-block small">Budget</label>
                             <div class="d-flex align-items-center">
-                                <i class="fas fa-rupee-sign text-success me-2"></i>
-                                <span>₹{{ lead.budget|default:'Not specified'|intcomma }}</span>
+                                <span>
+                                    {% if lead.budget is not None %}
+                                        {{ lead.budget|indian_currency }}
+                                    {% else %}
+                                        —
+                                    {% endif %}
+                                </span>
+                            </div>
+                        </div>
+
+                        <div class="info-item mb-3">
+                            <label class="text-muted d-block small">Estimated Value</label>
+                            <div>
+                                {% if lead.estimated_value is not None %}
+                                    {{ lead.estimated_value|indian_currency }}
+                                {% else %}
+                                    —
+                                {% endif %}
                             </div>
                         </div>
 
@@ -104,7 +143,7 @@
                                 {% if lead.finance_type %}
                                 <span class="badge bg-success">{{ lead.get_finance_type_display }}</span>
                                 {% else %}
-                                <span class="text-muted">Not specified</span>
+                                <span class="text-muted">—</span>
                                 {% endif %}
                             </div>
                         </div>
@@ -199,7 +238,7 @@
                         <div class="row mb-3">
                             <div class="col-6">
                                 <label class="text-muted small">Opportunity Value</label>
-                                <h5 class="mb-0">₹{{ lead.estimated_value|default:'0'|intcomma }}</h5>
+                                <h5 class="mb-0">{% if lead.estimated_value is not None %}{{ lead.estimated_value|indian_currency }}{% else %}—{% endif %}</h5>
                             </div>
                             <div class="col-6">
                                 <label class="text-muted small">Probability</label>
@@ -214,7 +253,7 @@
 
                         <div class="mb-3">
                             <label class="text-muted small">Weighted Value</label>
-                            <h4 class="text-success">₹{{ lead.weighted_value|intcomma }}</h4>
+                            <h4 class="text-success">{% if lead.weighted_value %}{{ lead.weighted_value|indian_currency }}{% else %}—{% endif %}</h4>
                         </div>
                     </div>
                 </div>

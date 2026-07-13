@@ -115,13 +115,22 @@ class LeadForm(forms.ModelForm):
         self.fields['latitude'].required = False
         self.fields['longitude'].label = 'Longitude'
         self.fields['latitude'].label = 'Latitude'
+        self.fields['state'].label = 'State'
+        self.fields['pincode'].label = 'Pin Code'
         self.fields['rooftop_area'].label = 'Total Rooftop Area'
         self.fields['rooftop_area'].required = False
-        self.fields['rooftop_area_unit'].label = 'Unit'
+        self.fields['rooftop_area_unit'].label = ''
         self.fields['rooftop_area_unit'].required = False
+        self.fields['electricity_bill'].label = 'Electricity Bill'
+        self.fields['electricity_bill'].required = False
+        self.fields['monthly_consumption'].label = 'Monthly Consumption'
+        self.fields['monthly_consumption'].required = False
+        self.fields['budget'].label = 'Budget'
+        self.fields['estimated_value'].label = 'Estimated Value'
         self.fields['finance_type'].label = 'Finance'
         self.fields['finance_type'].required = False
         self.fields['finance_type'].choices = [('', '---------')] + list(Lead.FINANCE_TYPES)
+        self.fields['next_followup'].label = 'Next Follow-up'
         if organization:
             self.fields['source'].queryset = LeadSource.objects.filter(organization=organization, is_active=True)
             # All campaigns for the org (not only active), with blank default labeled N.A.
@@ -148,10 +157,20 @@ class LeadForm(forms.ModelForm):
             'address': forms.Textarea(attrs={'rows': 3}),
             'notes': forms.Textarea(attrs={'rows': 3}),
             'internal_notes': forms.Textarea(attrs={'rows': 3}),
-            'next_followup': forms.DateTimeInput(attrs={'type': 'datetime-local'}),
-            'longitude': forms.NumberInput(attrs={'step': 'any', 'placeholder': 'e.g. 78.9629'}),
-            'latitude': forms.NumberInput(attrs={'step': 'any', 'placeholder': 'e.g. 20.5937'}),
-            'rooftop_area': forms.NumberInput(attrs={'step': 'any', 'placeholder': 'Area'}),
+            'next_followup': forms.DateTimeInput(attrs={
+                'type': 'datetime-local',
+                'class': 'form-control lead-schedule-input',
+            }),
+            'longitude': forms.NumberInput(attrs={'step': 'any', 'placeholder': 'e.g. 78.9629', 'class': 'form-control'}),
+            'latitude': forms.NumberInput(attrs={'step': 'any', 'placeholder': 'e.g. 20.5937', 'class': 'form-control'}),
+            'state': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'State'}),
+            'pincode': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Pin code', 'maxlength': '10'}),
+            'rooftop_area': forms.NumberInput(attrs={'step': 'any', 'placeholder': 'Area', 'class': 'form-control'}),
+            'rooftop_area_unit': forms.Select(attrs={'class': 'form-control', 'style': 'max-width:90px;'}),
+            'electricity_bill': forms.NumberInput(attrs={'step': 'any', 'placeholder': '0', 'class': 'form-control', 'inputmode': 'decimal'}),
+            'budget': forms.NumberInput(attrs={'step': 'any', 'placeholder': '0', 'class': 'form-control', 'inputmode': 'decimal'}),
+            'estimated_value': forms.NumberInput(attrs={'step': 'any', 'placeholder': '0', 'class': 'form-control', 'inputmode': 'decimal'}),
+            'monthly_consumption': forms.NumberInput(attrs={'step': '1', 'placeholder': '0', 'class': 'form-control'}),
         }
 
 class LeadActivityForm(forms.ModelForm):
