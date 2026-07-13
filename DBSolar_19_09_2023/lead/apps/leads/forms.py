@@ -206,6 +206,9 @@ class LeadForm(forms.ModelForm):
             '%Y-%m-%d %H:%M:%S',
             '%d/%m/%Y %H:%M',
             '%d/%m/%Y %H:%M:%S',
+            '%d/%m/%Y %I:%M %p',
+            '%d/%m/%Y %I:%M%p',
+            '%d/%m/%Y %I:%M %P',
         ]
 
         # Prefill money fields from DB in Indian format (edit page).
@@ -265,7 +268,7 @@ class LeadForm(forms.ModelForm):
             'next_followup': forms.DateTimeInput(attrs={
                 'type': 'text',
                 'class': 'form-control lead-schedule-input',
-                'placeholder': 'DD/MM/YYYY HH:MM',
+                'placeholder': 'DD/MM/YYYY hh:mm AM/PM',
                 'autocomplete': 'off',
             }, format='%Y-%m-%dT%H:%M'),
             'longitude': forms.NumberInput(attrs={'step': 'any', 'placeholder': 'e.g. 78.9629', 'class': 'form-control'}),

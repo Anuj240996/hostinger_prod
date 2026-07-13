@@ -291,7 +291,7 @@
                                 <span class="lead-schedule-icon"><i class="fas fa-calendar-alt"></i></span>
                                 <h5 class="mb-0">Schedule</h5>
                             </div>
-                            <p class="lead-schedule-hint mb-2">Select follow-up date &amp; time (DD/MM/YYYY).</p>
+                            <p class="lead-schedule-hint mb-2">Select follow-up date &amp; time (DD/MM/YYYY hh:mm AM/PM).</p>
                             <label class="lead-field-label" for="{{ form.next_followup.id_for_label }}">Next Follow-up</label>
                             <div class="lead-schedule-picker-wrap mb-1">
                                 {{ form.next_followup }}
@@ -392,12 +392,12 @@
     }
     flatpickr(scheduleEl, {
       enableTime: true,
-      time_24hr: true,
+      time_24hr: false,
       allowInput: true,
       minuteIncrement: 1,
       dateFormat: 'Y-m-d\\TH:i',
       altInput: true,
-      altFormat: 'd/m/Y H:i',
+      altFormat: 'd/m/Y h:i K',
       altInputClass: 'form-control lead-schedule-visible',
       defaultDate: initial || null,
       disableMobile: true
