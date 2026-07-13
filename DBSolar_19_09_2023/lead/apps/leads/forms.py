@@ -1,34 +1,59 @@
 from django import forms
 from django.contrib.auth import get_user_model
 from django.db.models import Q
+from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
 
 from .models import Lead, LeadActivity, LeadSource, Campaign
 
 User = get_user_model()
-# class LeadForm(forms.ModelForm):
-#     class Meta:
-#         model = Lead
-#         fields = [
-#             'name', 'phone', 'email', 'alternate_phone',
-#             'address', 'city', 'state', 'pincode',
-#             'property_type', 'roof_type', 'electricity_bill', 'monthly_consumption',
-#             'source', 'campaign', 'score',
-#             'assigned_to', 'budget', 'estimated_value',
-#             'next_followup', 'notes', 'internal_notes'
-#         ]
-#         widgets = {
-#             'address': forms.Textarea(attrs={'rows': 3}),
-#             'notes': forms.Textarea(attrs={'rows': 3}),
-#             'internal_notes': forms.Textarea(attrs={'rows': 3}),
-#             'next_followup': forms.DateTimeInput(attrs={'type': 'datetime-local'}),
-#         }
-#
-#     def __init__(self, *args, **kwargs):
-#         super().__init__(*args, **kwargs)
-#         self.fields['assigned_to'].queryset = User.objects.filter(is_active=True)
-#         self.fields['assigned_to'].required = False
 
-#
+
+def _format_indian_amount(value):
+    """Format decimal for edit-form display (Indian grouping, no symbol)."""
+    if value is None or value == '':
+        return ''
+    try:
+        dec = Decimal(str(value)).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+    except (InvalidOperation, ValueError, TypeError):
+        return str(value)
+    sign = '-' if dec < 0 else ''
+    dec = abs(dec)
+    if dec == dec.to_integral_value():
+        digits = str(dec.to_integral_value())
+    else:
+        text = format(dec, 'f')
+        whole, frac = text.split('.', 1)
+        digits = whole
+        frac = frac.rstrip('0')
+        grouped = _group_indian(digits)
+        return f'{sign}{grouped}.{frac}' if frac else f'{sign}{grouped}'
+    return f'{sign}{_group_indian(digits)}'
+
+
+def _group_indian(integer_digits):
+    rev = integer_digits[::-1]
+    groups = [rev[:3]]
+    i = 3
+    while i < len(rev):
+        groups.append(rev[i:i + 2])
+        i += 2
+    return ','.join(groups)[::-1]
+
+
+def _parse_indian_decimal(value):
+    if value in (None, ''):
+        return None
+    if isinstance(value, Decimal):
+        return value
+    text = str(value).replace(',', '').replace('₹', '').replace('\u20b9', '').strip()
+    if not text:
+        return None
+    try:
+        return Decimal(text)
+    except (InvalidOperation, ValueError):
+        raise forms.ValidationError('Enter a valid amount.')
+
+
 def lead_list_filter_sales_users_queryset():
     """Active staff (non-superuser), including associates, for Assigned to filters and lead forms."""
     return (
@@ -102,6 +127,35 @@ def lead_assignee_engineers_queryset():
 
 
 class LeadForm(forms.ModelForm):
+    # Text inputs so Indian comma formatting works on edit (type=number rejects commas).
+    electricity_bill = forms.CharField(
+        required=False,
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'inputmode': 'decimal',
+            'placeholder': '0',
+            'autocomplete': 'off',
+        }),
+    )
+    budget = forms.CharField(
+        required=False,
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'inputmode': 'decimal',
+            'placeholder': '0',
+            'autocomplete': 'off',
+        }),
+    )
+    estimated_value = forms.CharField(
+        required=False,
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'inputmode': 'decimal',
+            'placeholder': '0',
+            'autocomplete': 'off',
+        }),
+    )
+
     def __init__(self, *args, **kwargs):
         organization = kwargs.pop('organization', None)
         super().__init__(*args, **kwargs)
@@ -122,7 +176,6 @@ class LeadForm(forms.ModelForm):
         self.fields['rooftop_area_unit'].label = ''
         self.fields['rooftop_area_unit'].required = False
         self.fields['electricity_bill'].label = 'Electricity Bill'
-        self.fields['electricity_bill'].required = False
         self.fields['monthly_consumption'].label = 'Monthly Consumption'
         self.fields['monthly_consumption'].required = False
         self.fields['budget'].label = 'Budget'
@@ -131,9 +184,15 @@ class LeadForm(forms.ModelForm):
         self.fields['finance_type'].required = False
         self.fields['finance_type'].choices = [('', '---------')] + list(Lead.FINANCE_TYPES)
         self.fields['next_followup'].label = 'Next Follow-up'
+
+        # Prefill money fields from DB in Indian format (edit page).
+        if self.instance and self.instance.pk and not self.is_bound:
+            self.fields['electricity_bill'].initial = _format_indian_amount(self.instance.electricity_bill)
+            self.fields['budget'].initial = _format_indian_amount(self.instance.budget)
+            self.fields['estimated_value'].initial = _format_indian_amount(self.instance.estimated_value)
+
         if organization:
             self.fields['source'].queryset = LeadSource.objects.filter(organization=organization, is_active=True)
-            # All campaigns for the org (not only active), with blank default labeled N.A.
             self.fields['campaign'].queryset = Campaign.objects.filter(organization=organization).order_by(
                 'name'
             )
@@ -141,6 +200,15 @@ class LeadForm(forms.ModelForm):
         else:
             self.fields['source'].queryset = LeadSource.objects.none()
             self.fields['campaign'].queryset = Campaign.objects.none()
+
+    def clean_electricity_bill(self):
+        return _parse_indian_decimal(self.cleaned_data.get('electricity_bill'))
+
+    def clean_budget(self):
+        return _parse_indian_decimal(self.cleaned_data.get('budget'))
+
+    def clean_estimated_value(self):
+        return _parse_indian_decimal(self.cleaned_data.get('estimated_value'))
 
     class Meta:
         model = Lead
@@ -165,12 +233,17 @@ class LeadForm(forms.ModelForm):
             'latitude': forms.NumberInput(attrs={'step': 'any', 'placeholder': 'e.g. 20.5937', 'class': 'form-control'}),
             'state': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'State'}),
             'pincode': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Pin code', 'maxlength': '10'}),
-            'rooftop_area': forms.NumberInput(attrs={'step': 'any', 'placeholder': 'Area', 'class': 'form-control'}),
-            'rooftop_area_unit': forms.Select(attrs={'class': 'form-control', 'style': 'max-width:90px;'}),
-            'electricity_bill': forms.NumberInput(attrs={'step': 'any', 'placeholder': '0', 'class': 'form-control', 'inputmode': 'decimal'}),
-            'budget': forms.NumberInput(attrs={'step': 'any', 'placeholder': '0', 'class': 'form-control', 'inputmode': 'decimal'}),
-            'estimated_value': forms.NumberInput(attrs={'step': 'any', 'placeholder': '0', 'class': 'form-control', 'inputmode': 'decimal'}),
-            'monthly_consumption': forms.NumberInput(attrs={'step': '1', 'placeholder': '0', 'class': 'form-control'}),
+            'rooftop_area': forms.NumberInput(attrs={
+                'step': 'any',
+                'placeholder': 'Area',
+                'class': 'form-control lead-rooftop-input',
+            }),
+            'rooftop_area_unit': forms.Select(attrs={'class': 'form-select lead-rooftop-unit'}),
+            'monthly_consumption': forms.NumberInput(attrs={
+                'step': '1',
+                'placeholder': '0',
+                'class': 'form-control lead-consumption-input',
+            }),
         }
 
 class LeadActivityForm(forms.ModelForm):

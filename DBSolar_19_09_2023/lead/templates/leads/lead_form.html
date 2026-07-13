@@ -82,6 +82,28 @@
     justify-content: center;
     margin-right: 0.65rem;
   }
+  .lead-form .lead-inline-unit-group {
+    display: flex;
+    flex-wrap: nowrap;
+    align-items: stretch;
+    width: auto;
+    max-width: 280px;
+  }
+  .lead-form .lead-inline-unit-group .lead-consumption-input,
+  .lead-form .lead-inline-unit-group .lead-rooftop-input {
+    flex: 0 0 110px;
+    width: 110px;
+    max-width: 110px;
+  }
+  .lead-form .lead-inline-unit-group .lead-rooftop-unit,
+  .lead-form .lead-inline-unit-group .input-group-text {
+    flex: 0 0 auto;
+    width: auto;
+    white-space: nowrap;
+  }
+  .lead-form .lead-inline-unit-group .lead-rooftop-unit {
+    max-width: 90px;
+  }
 </style>
 <div class="lead-form">
     <div class="d-flex justify-content-between align-items-center mb-4">
@@ -143,7 +165,7 @@
                         {% if form.electricity_bill.errors %}<div class="text-danger small mb-2">{{ form.electricity_bill.errors }}</div>{% endif %}
 
                         <label class="lead-field-label" for="{{ form.rooftop_area.id_for_label }}">Total Rooftop Area</label>
-                        <div class="input-group mb-3">
+                        <div class="input-group mb-3 lead-inline-unit-group">
                             {{ form.rooftop_area }}
                             {{ form.rooftop_area_unit }}
                         </div>
@@ -162,7 +184,7 @@
                 <div class="row lead-property-assign-row mt-1">
                     <div class="col-md-6">
                         <label class="lead-field-label" for="{{ form.monthly_consumption.id_for_label }}">Monthly Consumption</label>
-                        <div class="input-group mb-3">
+                        <div class="input-group mb-3 lead-inline-unit-group">
                             {{ form.monthly_consumption }}
                             <span class="input-group-text">kWh/month</span>
                         </div>
