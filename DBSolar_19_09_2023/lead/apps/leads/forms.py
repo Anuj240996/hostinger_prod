@@ -111,6 +111,17 @@ class LeadForm(forms.ModelForm):
         self.fields['assigned_to'].label_from_instance = (
             lambda u: (u.get_full_name() or '').strip() or (u.username or '')
         )
+        self.fields['longitude'].required = False
+        self.fields['latitude'].required = False
+        self.fields['longitude'].label = 'Longitude'
+        self.fields['latitude'].label = 'Latitude'
+        self.fields['rooftop_area'].label = 'Total Rooftop Area'
+        self.fields['rooftop_area'].required = False
+        self.fields['rooftop_area_unit'].label = 'Unit'
+        self.fields['rooftop_area_unit'].required = False
+        self.fields['finance_type'].label = 'Finance'
+        self.fields['finance_type'].required = False
+        self.fields['finance_type'].choices = [('', '---------')] + list(Lead.FINANCE_TYPES)
         if organization:
             self.fields['source'].queryset = LeadSource.objects.filter(organization=organization, is_active=True)
             # All campaigns for the org (not only active), with blank default labeled N.A.
@@ -125,11 +136,12 @@ class LeadForm(forms.ModelForm):
     class Meta:
         model = Lead
         fields = [
-            'name', 'phone', 'email', 'alternate_phone',
+            'name', 'phone', 'email', 'longitude', 'latitude',
             'address', 'city', 'state', 'pincode',
-            'property_type', 'roof_type', 'electricity_bill', 'monthly_consumption',
+            'property_type', 'roof_type', 'electricity_bill',
+            'rooftop_area', 'rooftop_area_unit', 'monthly_consumption',
             'source', 'campaign', 'score',
-            'assigned_to', 'budget', 'estimated_value',
+            'assigned_to', 'budget', 'estimated_value', 'finance_type',
             'next_followup', 'notes', 'internal_notes'
         ]
         widgets = {
@@ -137,6 +149,9 @@ class LeadForm(forms.ModelForm):
             'notes': forms.Textarea(attrs={'rows': 3}),
             'internal_notes': forms.Textarea(attrs={'rows': 3}),
             'next_followup': forms.DateTimeInput(attrs={'type': 'datetime-local'}),
+            'longitude': forms.NumberInput(attrs={'step': 'any', 'placeholder': 'e.g. 78.9629'}),
+            'latitude': forms.NumberInput(attrs={'step': 'any', 'placeholder': 'e.g. 20.5937'}),
+            'rooftop_area': forms.NumberInput(attrs={'step': 'any', 'placeholder': 'Area'}),
         }
 
 class LeadActivityForm(forms.ModelForm):

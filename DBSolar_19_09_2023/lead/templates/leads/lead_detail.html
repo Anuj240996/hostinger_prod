@@ -39,9 +39,6 @@
                             <div class="d-flex align-items-center">
                                 <i class="fas fa-phone text-primary me-2"></i>
                                 <span>{{ lead.phone }}</span>
-                                {% if lead.alternate_phone %}
-                                <br><small class="text-muted">Alt: {{ lead.alternate_phone }}</small>
-                                {% endif %}
                             </div>
                         </div>
 
@@ -50,6 +47,14 @@
                             <div class="d-flex align-items-center">
                                 <i class="fas fa-envelope text-info me-2"></i>
                                 <span>{{ lead.email|default:'Not provided' }}</span>
+                            </div>
+                        </div>
+
+                        <div class="info-item mb-3">
+                            <label class="text-muted d-block small">Coordinates</label>
+                            <div class="small">
+                                <div><strong>Lat:</strong> {% if lead.latitude is not None %}{{ lead.latitude }}{% else %}—{% endif %}</div>
+                                <div><strong>Long:</strong> {% if lead.longitude is not None %}{{ lead.longitude }}{% else %}—{% endif %}</div>
                             </div>
                         </div>
 
@@ -78,6 +83,11 @@
                                 <span class="badge bg-light text-dark me-1">{{ lead.get_property_type_display }}</span>
                                 <span class="badge bg-light text-dark">{{ lead.get_roof_type_display }} Roof</span>
                             </div>
+                            {% if lead.rooftop_area %}
+                            <div class="mt-1 small text-muted">
+                                Total Rooftop Area: {{ lead.rooftop_area }} {{ lead.get_rooftop_area_unit_display }}
+                            </div>
+                            {% endif %}
                         </div>
 
                         <div class="info-item mb-3">
@@ -85,6 +95,17 @@
                             <div class="d-flex align-items-center">
                                 <i class="fas fa-rupee-sign text-success me-2"></i>
                                 <span>₹{{ lead.budget|default:'Not specified'|intcomma }}</span>
+                            </div>
+                        </div>
+
+                        <div class="info-item mb-3">
+                            <label class="text-muted d-block small">Finance</label>
+                            <div>
+                                {% if lead.finance_type %}
+                                <span class="badge bg-success">{{ lead.get_finance_type_display }}</span>
+                                {% else %}
+                                <span class="text-muted">Not specified</span>
+                                {% endif %}
                             </div>
                         </div>
 

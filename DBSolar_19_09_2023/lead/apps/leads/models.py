@@ -266,6 +266,16 @@ class Lead(TenantAwareModel, TimeStampedModel):
         ('tile', 'Tile'),
         ('other', 'Other'),
     )
+    ROOFTOP_AREA_UNITS = (
+        ('m2', 'm²'),
+        ('ft2', 'ft²'),
+    )
+    FINANCE_TYPES = (
+        ('finance', 'Finance'),
+        ('cash', 'Cash'),
+        ('netbanking', 'Netbanking'),
+        ('upi', 'UPI'),
+    )
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     name = models.CharField(max_length=200)
@@ -284,6 +294,13 @@ class Lead(TenantAwareModel, TimeStampedModel):
     roof_type = models.CharField(max_length=20, choices=ROOF_TYPES, default='flat')
     electricity_bill = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     monthly_consumption = models.IntegerField(null=True, blank=True, help_text="kWh per month")
+    rooftop_area = models.DecimalField(
+        max_digits=12, decimal_places=2, null=True, blank=True,
+        help_text='Total rooftop area',
+    )
+    rooftop_area_unit = models.CharField(
+        max_length=5, choices=ROOFTOP_AREA_UNITS, default='m2', blank=True,
+    )
 
     source = models.ForeignKey(LeadSource, on_delete=models.SET_NULL, null=True)
     campaign = models.ForeignKey(Campaign, on_delete=models.SET_NULL, null=True, blank=True)
@@ -296,6 +313,10 @@ class Lead(TenantAwareModel, TimeStampedModel):
 
     budget = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
     estimated_value = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
+    finance_type = models.CharField(
+        max_length=20, choices=FINANCE_TYPES, blank=True, default='',
+        verbose_name='Finance',
+    )
     probability = models.IntegerField(default=0, validators=[MinValueValidator(0), MaxValueValidator(100)])
 
     next_followup = models.DateTimeField(null=True, blank=True)

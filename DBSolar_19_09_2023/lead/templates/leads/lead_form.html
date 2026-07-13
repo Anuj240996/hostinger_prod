@@ -42,7 +42,8 @@
                         {{ form.name|as_crispy_field }}
                         {{ form.phone|as_crispy_field }}
                         {{ form.email|as_crispy_field }}
-                        {{ form.alternate_phone|as_crispy_field }}
+                        {{ form.longitude|as_crispy_field }}
+                        {{ form.latitude|as_crispy_field }}
                     </div>
 
                     <div class="col-md-6">
@@ -62,6 +63,14 @@
                         {{ form.property_type|as_crispy_field }}
                         {{ form.roof_type|as_crispy_field }}
                         {{ form.electricity_bill|as_crispy_field }}
+                        <div class="row">
+                            <div class="col-8">
+                                {{ form.rooftop_area|as_crispy_field }}
+                            </div>
+                            <div class="col-4">
+                                {{ form.rooftop_area_unit|as_crispy_field }}
+                            </div>
+                        </div>
                     </div>
 
                     <div class="col-md-6">
@@ -88,6 +97,7 @@
                         <h5 class="mb-3">Financial Information</h5>
                         {{ form.budget|as_crispy_field }}
                         {{ form.estimated_value|as_crispy_field }}
+                        {{ form.finance_type|as_crispy_field }}
                     </div>
 
                     <div class="col-md-6">
