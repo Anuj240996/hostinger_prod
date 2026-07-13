@@ -354,6 +354,18 @@
     });
   });
 
+  function bindDigitsOnly(id, maxLen) {
+    var el = document.getElementById(id);
+    if (!el) return;
+    el.setAttribute('maxlength', String(maxLen));
+    el.addEventListener('input', function () {
+      var digits = String(el.value || '').replace(/\D/g, '').slice(0, maxLen);
+      if (el.value !== digits) el.value = digits;
+    });
+  }
+  bindDigitsOnly('id_phone', 10);
+  bindDigitsOnly('id_pincode', 6);
+
   var form = document.getElementById('leadCreateEditForm');
   if (form) {
     form.addEventListener('submit', function () {

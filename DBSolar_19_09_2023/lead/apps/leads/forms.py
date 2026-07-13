@@ -171,6 +171,21 @@ class LeadForm(forms.ModelForm):
         self.fields['latitude'].label = 'Latitude'
         self.fields['state'].label = 'State'
         self.fields['pincode'].label = 'Pin Code'
+        self.fields['phone'].widget.attrs.update({
+            'maxlength': '10',
+            'minlength': '10',
+            'inputmode': 'numeric',
+            'pattern': r'[0-9]{10}',
+            'placeholder': '10-digit mobile',
+        })
+        self.fields['pincode'].widget.attrs.update({
+            'maxlength': '6',
+            'minlength': '6',
+            'inputmode': 'numeric',
+            'pattern': r'[0-9]{6}',
+            'placeholder': '6-digit pin',
+            'class': 'form-control',
+        })
         self.fields['rooftop_area'].label = 'Total Rooftop Area'
         self.fields['rooftop_area'].required = False
         self.fields['rooftop_area_unit'].label = ''
@@ -218,6 +233,20 @@ class LeadForm(forms.ModelForm):
     def clean_estimated_value(self):
         return _parse_indian_decimal(self.cleaned_data.get('estimated_value'))
 
+    def clean_phone(self):
+        phone = (self.cleaned_data.get('phone') or '').strip()
+        digits = ''.join(ch for ch in phone if ch.isdigit())
+        if len(digits) != 10:
+            raise forms.ValidationError('Phone number must be exactly 10 digits.')
+        return digits
+
+    def clean_pincode(self):
+        pincode = (self.cleaned_data.get('pincode') or '').strip()
+        digits = ''.join(ch for ch in pincode if ch.isdigit())
+        if len(digits) != 6:
+            raise forms.ValidationError('Pin code must be exactly 6 digits.')
+        return digits
+
     class Meta:
         model = Lead
         fields = [
@@ -242,7 +271,22 @@ class LeadForm(forms.ModelForm):
             'longitude': forms.NumberInput(attrs={'step': 'any', 'placeholder': 'e.g. 78.9629', 'class': 'form-control'}),
             'latitude': forms.NumberInput(attrs={'step': 'any', 'placeholder': 'e.g. 20.5937', 'class': 'form-control'}),
             'state': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'State'}),
-            'pincode': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Pin code', 'maxlength': '10'}),
+            'phone': forms.TextInput(attrs={
+                'class': 'form-control',
+                'maxlength': '10',
+                'minlength': '10',
+                'inputmode': 'numeric',
+                'pattern': '[0-9]{10}',
+                'placeholder': '10-digit mobile',
+            }),
+            'pincode': forms.TextInput(attrs={
+                'class': 'form-control',
+                'maxlength': '6',
+                'minlength': '6',
+                'inputmode': 'numeric',
+                'pattern': '[0-9]{6}',
+                'placeholder': '6-digit pin',
+            }),
             'rooftop_area': forms.NumberInput(attrs={
                 'step': 'any',
                 'placeholder': 'Area',
