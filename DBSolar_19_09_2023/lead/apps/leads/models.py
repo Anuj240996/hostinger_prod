@@ -260,10 +260,11 @@ class Lead(TenantAwareModel, TimeStampedModel):
         ('industrial', 'Industrial'),
     )
     ROOF_TYPES = (
-        ('flat', 'Flat'),
+        ('flat', 'SLap'),
         ('sloped', 'Sloped'),
         ('metal', 'Metal'),
         ('tile', 'Tile'),
+        ('mixed', 'Mixed'),
         ('other', 'Other'),
     )
     ROOFTOP_AREA_UNITS = (
