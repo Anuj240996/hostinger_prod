@@ -322,8 +322,26 @@ class LeadFilterForm(forms.Form):
         ('custom', 'Custom Range'),
     ], required=False)
 
-    from_date = forms.DateField(required=False, widget=forms.DateInput(attrs={'type': 'date'}))
-    to_date = forms.DateField(required=False, widget=forms.DateInput(attrs={'type': 'date'}))
+    from_date = forms.DateField(
+        required=False,
+        widget=forms.DateInput(attrs={
+            'type': 'text',
+            'class': 'form-control crm-date-picker',
+            'placeholder': 'DD/MM/YYYY',
+            'autocomplete': 'off',
+        }, format='%Y-%m-%d'),
+        input_formats=['%Y-%m-%d', '%d/%m/%Y'],
+    )
+    to_date = forms.DateField(
+        required=False,
+        widget=forms.DateInput(attrs={
+            'type': 'text',
+            'class': 'form-control crm-date-picker',
+            'placeholder': 'DD/MM/YYYY',
+            'autocomplete': 'off',
+        }, format='%Y-%m-%d'),
+        input_formats=['%Y-%m-%d', '%d/%m/%Y'],
+    )
     assigned_to = forms.ModelChoiceField(
         queryset=User.objects.none(),
         required=False,

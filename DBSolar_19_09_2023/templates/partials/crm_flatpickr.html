@@ -1,0 +1,168 @@
+{# Shared Flatpickr for CRM / new-lead pages: 12h AM/PM datetime + DD/MM/YYYY dates #}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.css">
+<style>
+  .flatpickr-calendar {
+    border-radius: 14px !important;
+    border: 1px solid #99f6e4 !important;
+    box-shadow: 0 16px 40px rgba(15, 118, 110, 0.18) !important;
+    font-family: inherit;
+    z-index: 2000 !important;
+  }
+  .flatpickr-months .flatpickr-month,
+  .flatpickr-current-month .flatpickr-monthDropdown-months,
+  .flatpickr-weekdays,
+  span.flatpickr-weekday {
+    background: #0d9488 !important;
+    color: #fff !important;
+    fill: #fff !important;
+  }
+  .flatpickr-months .flatpickr-prev-month,
+  .flatpickr-months .flatpickr-next-month {
+    color: #fff !important;
+    fill: #fff !important;
+  }
+  .flatpickr-day.selected,
+  .flatpickr-day.startRange,
+  .flatpickr-day.endRange,
+  .flatpickr-day.selected:hover {
+    background: #0d9488 !important;
+    border-color: #0d9488 !important;
+  }
+  .flatpickr-time input:hover,
+  .flatpickr-time .flatpickr-am-pm:hover,
+  .flatpickr-time input:focus,
+  .flatpickr-time .flatpickr-am-pm:focus {
+    background: #ecfdf5 !important;
+  }
+  .crm-fp-datetime-wrap,
+  .crm-fp-date-wrap {
+    position: relative;
+  }
+  .form-control.crm-fp-visible,
+  input.crm-fp-visible {
+    min-height: 42px;
+  }
+</style>
+<script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.js"></script>
+<script>
+(function () {
+  if (window.__crmFlatpickrInit) return;
+  window.__crmFlatpickrInit = true;
+
+  function normalizeDateTimeValue(raw) {
+    var initial = String(raw || '').trim();
+    if (!initial) return '';
+    initial = initial.replace(' ', 'T');
+    if (initial.length >= 16) initial = initial.slice(0, 16);
+    return initial;
+  }
+
+  function enhanceDateTimeInput(el) {
+    if (!el || el._flatpickr || el.classList.contains('flatpickr-input')) return;
+    if (el.type === 'datetime-local' || el.type === 'date') {
+      el.type = 'text';
+    }
+    el.setAttribute('autocomplete', 'off');
+    if (!el.getAttribute('placeholder')) {
+      el.setAttribute('placeholder', 'DD/MM/YYYY hh:mm AM/PM');
+    }
+    var initial = normalizeDateTimeValue(el.value);
+    if (initial) el.value = initial;
+    flatpickr(el, {
+      enableTime: true,
+      time_24hr: false,
+      allowInput: true,
+      minuteIncrement: 1,
+      dateFormat: 'Y-m-d\\TH:i',
+      altInput: true,
+      altFormat: 'd/m/Y h:i K',
+      altInputClass: 'form-control crm-fp-visible',
+      defaultDate: initial || null,
+      disableMobile: true
+    });
+  }
+
+  function enhanceDateInput(el) {
+    if (!el || el._flatpickr || el.classList.contains('flatpickr-input')) return;
+    if (el.type === 'date') el.type = 'text';
+    el.setAttribute('autocomplete', 'off');
+    if (!el.getAttribute('placeholder')) {
+      el.setAttribute('placeholder', 'DD/MM/YYYY');
+    }
+    var initial = String(el.value || '').trim().slice(0, 10);
+    if (initial) el.value = initial;
+    flatpickr(el, {
+      allowInput: true,
+      dateFormat: 'Y-m-d',
+      altInput: true,
+      altFormat: 'd/m/Y',
+      altInputClass: 'form-control crm-fp-visible',
+      defaultDate: initial || null,
+      disableMobile: true
+    });
+  }
+
+  function isDateOnlyName(name) {
+    name = String(name || '').toLowerCase();
+    return (
+      name === 'from_date' ||
+      name === 'to_date' ||
+      name === 'start_date' ||
+      name === 'end_date' ||
+      name === 'po_date' ||
+      name === 'valid_until' ||
+      name === 'date' ||
+      name.indexOf('from_date') !== -1 ||
+      name.indexOf('to_date') !== -1
+    );
+  }
+
+  function isDateTimeName(name) {
+    name = String(name || '').toLowerCase();
+    return (
+      name === 'next_followup' ||
+      name === 'followup_date' ||
+      name === 'scheduled_date' ||
+      name.indexOf('followup') !== -1 ||
+      name.indexOf('scheduled') !== -1
+    );
+  }
+
+  window.initCrmFlatpickr = function (root) {
+    if (typeof flatpickr !== 'function') return;
+    root = root || document;
+
+    root.querySelectorAll('input[type="datetime-local"], input.crm-datetime-picker').forEach(enhanceDateTimeInput);
+
+    root.querySelectorAll('input[type="date"], input.crm-date-picker').forEach(enhanceDateInput);
+
+    root.querySelectorAll('input[type="text"]').forEach(function (el) {
+      if (el._flatpickr || el.classList.contains('flatpickr-input') || el.classList.contains('crm-fp-visible')) return;
+      var name = el.getAttribute('name') || el.id || '';
+      if (isDateTimeName(name) || el.id === 'id_next_followup') {
+        enhanceDateTimeInput(el);
+      } else if (isDateOnlyName(name)) {
+        enhanceDateInput(el);
+      }
+    });
+  };
+
+  function boot() {
+    window.initCrmFlatpickr(document);
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', boot);
+  } else {
+    boot();
+  }
+
+  document.body.addEventListener('shown.bs.modal', function (e) {
+    window.initCrmFlatpickr(e.target || document);
+  });
+
+  document.body.addEventListener('htmx:afterSwap', function (e) {
+    window.initCrmFlatpickr(e.target || document);
+  });
+})();
+</script>

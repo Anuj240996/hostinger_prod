@@ -692,19 +692,40 @@ def lead_add_activity(request, pk):
                 'outcome': request.POST.get('outcome'),
             }
         elif activity_type == 'followup':
-            followup_date = request.POST.get('followup_date')
+            followup_date = (request.POST.get('followup_date') or '').strip()
             if followup_date:
-                metadata['followup_date'] = followup_date
-                lead.next_followup = followup_date
-                lead.save()
+                parsed_followup = None
+                for fmt in (
+                    '%Y-%m-%dT%H:%M',
+                    '%Y-%m-%dT%H:%M:%S',
+                    '%Y-%m-%d %H:%M',
+                    '%Y-%m-%d %H:%M:%S',
+                    '%d/%m/%Y %I:%M %p',
+                    '%d/%m/%Y %I:%M%p',
+                    '%d/%m/%Y %H:%M',
+                ):
+                    try:
+                        from datetime import datetime
+                        parsed_followup = datetime.strptime(followup_date, fmt)
+                        if timezone.is_naive(parsed_followup):
+                            parsed_followup = timezone.make_aware(
+                                parsed_followup, timezone.get_current_timezone()
+                            )
+                        break
+                    except ValueError:
+                        continue
+                if parsed_followup:
+                    metadata['followup_date'] = followup_date
+                    lead.next_followup = parsed_followup
+                    lead.save(update_fields=['next_followup'])
 
-                # Create follow-up record
-                FollowUp.objects.create(
-                    lead=lead,
-                    user=request.user,
-                    scheduled_date=followup_date,
-                    notes=description
-                )
+                    # Create follow-up record
+                    FollowUp.objects.create(
+                        lead=lead,
+                        user=request.user,
+                        scheduled_date=parsed_followup,
+                        notes=description
+                    )
 
         # Create activity
         LeadActivity.objects.create(

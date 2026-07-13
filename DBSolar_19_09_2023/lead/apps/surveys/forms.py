@@ -75,11 +75,25 @@ class SurveyForm(forms.ModelForm):
         model = Survey
         fields = ['lead', 'engineer', 'scheduled_date', 'status', 'feasibility']
         widgets = {
-            'scheduled_date': forms.DateTimeInput(attrs={'type': 'datetime-local'}),
+            'scheduled_date': forms.DateTimeInput(attrs={
+                'type': 'text',
+                'class': 'form-control crm-datetime-picker',
+                'placeholder': 'DD/MM/YYYY hh:mm AM/PM',
+                'autocomplete': 'off',
+            }, format='%Y-%m-%dT%H:%M'),
         }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.fields['scheduled_date'].input_formats = [
+            '%Y-%m-%dT%H:%M',
+            '%Y-%m-%dT%H:%M:%S',
+            '%Y-%m-%d %H:%M',
+            '%Y-%m-%d %H:%M:%S',
+            '%d/%m/%Y %I:%M %p',
+            '%d/%m/%Y %I:%M%p',
+            '%d/%m/%Y %H:%M',
+        ]
         if not self.instance.pk:
             self.fields['status'].initial = 'in_progress'
 

@@ -170,8 +170,6 @@
     background: #ecfdf5 !important;
   }
 </style>
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.css">
-<script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.js"></script>
 <div class="lead-form">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h2>{{ title }}</h2>
@@ -381,28 +379,7 @@
     unitSelect.classList.add('form-control', 'lead-rooftop-unit');
   }
 
-  // Custom calendar (Flatpickr) instead of browser datetime-local
-  var scheduleEl = document.getElementById('id_next_followup');
-  if (scheduleEl && typeof flatpickr === 'function') {
-    var initial = (scheduleEl.value || '').trim();
-    // Normalize Django/ISO values like 2026-07-11T22:27:00 or with seconds
-    if (initial) {
-      initial = initial.replace(' ', 'T').slice(0, 16);
-      scheduleEl.value = initial;
-    }
-    flatpickr(scheduleEl, {
-      enableTime: true,
-      time_24hr: false,
-      allowInput: true,
-      minuteIncrement: 1,
-      dateFormat: 'Y-m-d\\TH:i',
-      altInput: true,
-      altFormat: 'd/m/Y h:i K',
-      altInputClass: 'form-control lead-schedule-visible',
-      defaultDate: initial || null,
-      disableMobile: true
-    });
-  }
+  // Schedule picker is initialized globally via partials/crm_flatpickr.html
 })();
 </script>
 {% endblock %}

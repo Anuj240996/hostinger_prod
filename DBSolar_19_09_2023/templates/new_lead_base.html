@@ -126,6 +126,7 @@
     <script src="https://unpkg.com/htmx.org@1.9.4"></script>
     <script src="{% static 'js/main.js' %}"></script>
     {% include 'partials/staff_notifications_script.html' %}
+    {% include 'partials/crm_flatpickr.html' %}
     {% block extra_js %}{% endblock %}
     <script>
         document.getElementById('sidebarCollapse').addEventListener('click', function() {

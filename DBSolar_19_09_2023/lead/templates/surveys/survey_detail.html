@@ -733,8 +733,9 @@
                 </div>
                 <div class="modal-body">
                     <label class="form-label" for="reschedule_scheduled_date">New scheduled date & time</label>
-                    <input type="datetime-local" class="form-control" id="reschedule_scheduled_date" name="scheduled_date"
-                           value="{{ survey.scheduled_date|date:'Y-m-d' }}T{{ survey.scheduled_date|time:'H:i' }}" required>
+                    <input type="text" class="form-control crm-datetime-picker" id="reschedule_scheduled_date" name="scheduled_date"
+                           value="{{ survey.scheduled_date|date:'Y-m-d' }}T{{ survey.scheduled_date|time:'H:i' }}"
+                           placeholder="DD/MM/YYYY hh:mm AM/PM" autocomplete="off" required>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Close</button>

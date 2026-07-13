@@ -43,7 +43,12 @@ class QuotationForm(forms.ModelForm):
             'valid_until', 'terms_conditions', 'internal_notes'
         ]
         widgets = {
-            'valid_until': forms.DateInput(attrs={'type': 'date'}),
+            'valid_until': forms.DateInput(attrs={
+                'type': 'text',
+                'class': 'form-control crm-date-picker',
+                'placeholder': 'DD/MM/YYYY',
+                'autocomplete': 'off',
+            }, format='%Y-%m-%d'),
             'terms_conditions': forms.Textarea(attrs={'rows': 4}),
             'internal_notes': forms.Textarea(attrs={'rows': 3}),
         }
