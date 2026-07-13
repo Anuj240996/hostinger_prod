@@ -82,18 +82,20 @@
     justify-content: center;
     margin-right: 0.65rem;
   }
+  /* Full-width value + attached unit (same length as Electricity Bill) */
   .lead-form .lead-inline-unit-group {
     display: flex;
     flex-wrap: nowrap;
     align-items: stretch;
-    width: auto;
-    max-width: 280px;
+    width: 100%;
+    max-width: 100%;
   }
   .lead-form .lead-inline-unit-group .lead-consumption-input,
   .lead-form .lead-inline-unit-group .lead-rooftop-input {
-    flex: 0 0 110px;
-    width: 110px;
-    max-width: 110px;
+    flex: 1 1 auto;
+    width: 1%;
+    min-width: 0;
+    max-width: none;
   }
   .lead-form .lead-inline-unit-group .lead-rooftop-unit,
   .lead-form .lead-inline-unit-group .input-group-text {
@@ -102,9 +104,74 @@
     white-space: nowrap;
   }
   .lead-form .lead-inline-unit-group .lead-rooftop-unit {
-    max-width: 90px;
+    max-width: 100px;
+    min-width: 84px;
+  }
+  .lead-form .lead-schedule-picker-wrap {
+    position: relative;
+  }
+  .lead-form .lead-schedule-picker-wrap .form-control,
+  .lead-form .lead-schedule-picker-wrap .flatpickr-input,
+  .lead-form .lead-schedule-picker-wrap .form-control.input {
+    border: 1px solid #5eead4 !important;
+    border-radius: 10px !important;
+    background: #ffffff !important;
+    min-height: 48px;
+    padding: 0.65rem 2.75rem 0.65rem 0.9rem !important;
+    color: #0f172a;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    box-shadow: inset 0 1px 2px rgba(15, 23, 42, 0.04);
+  }
+  .lead-form .lead-schedule-picker-wrap .form-control:focus,
+  .lead-form .lead-schedule-picker-wrap .form-control.input:focus {
+    border-color: #0d9488 !important;
+    box-shadow: 0 0 0 0.2rem rgba(13, 148, 136, 0.2) !important;
+  }
+  .lead-form .lead-schedule-picker-affix {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #0d9488;
+    pointer-events: none;
+    z-index: 2;
+  }
+  .flatpickr-calendar {
+    border-radius: 14px !important;
+    border: 1px solid #99f6e4 !important;
+    box-shadow: 0 16px 40px rgba(15, 118, 110, 0.18) !important;
+    font-family: inherit;
+  }
+  .flatpickr-months .flatpickr-month,
+  .flatpickr-current-month .flatpickr-monthDropdown-months,
+  .flatpickr-weekdays,
+  span.flatpickr-weekday {
+    background: #0d9488 !important;
+    color: #fff !important;
+    fill: #fff !important;
+  }
+  .flatpickr-months .flatpickr-prev-month,
+  .flatpickr-months .flatpickr-next-month {
+    color: #fff !important;
+    fill: #fff !important;
+  }
+  .flatpickr-day.selected,
+  .flatpickr-day.startRange,
+  .flatpickr-day.endRange,
+  .flatpickr-day.selected:hover {
+    background: #0d9488 !important;
+    border-color: #0d9488 !important;
+  }
+  .flatpickr-time input:hover,
+  .flatpickr-time .flatpickr-am-pm:hover,
+  .flatpickr-time input:focus,
+  .flatpickr-time .flatpickr-am-pm:focus {
+    background: #ecfdf5 !important;
   }
 </style>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.css">
+<script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.js"></script>
 <div class="lead-form">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h2>{{ title }}</h2>
@@ -224,8 +291,13 @@
                                 <span class="lead-schedule-icon"><i class="fas fa-calendar-alt"></i></span>
                                 <h5 class="mb-0">Schedule</h5>
                             </div>
-                            <p class="lead-schedule-hint mb-2">Pick the next follow-up date and time.</p>
-                            {{ form.next_followup|as_crispy_field }}
+                            <p class="lead-schedule-hint mb-2">Select follow-up date &amp; time (DD/MM/YYYY).</p>
+                            <label class="lead-field-label" for="{{ form.next_followup.id_for_label }}">Next Follow-up</label>
+                            <div class="lead-schedule-picker-wrap mb-1">
+                                {{ form.next_followup }}
+                                <span class="lead-schedule-picker-affix"><i class="fas fa-calendar-check"></i></span>
+                            </div>
+                            {% if form.next_followup.errors %}<div class="text-danger small">{{ form.next_followup.errors }}</div>{% endif %}
                         </div>
                     </div>
                 </div>
@@ -294,8 +366,30 @@
 
   var unitSelect = document.getElementById('id_rooftop_area_unit');
   if (unitSelect) {
-    unitSelect.classList.add('form-control');
-    unitSelect.style.maxWidth = '90px';
+    unitSelect.classList.add('form-control', 'lead-rooftop-unit');
+  }
+
+  // Custom calendar (Flatpickr) instead of browser datetime-local
+  var scheduleEl = document.getElementById('id_next_followup');
+  if (scheduleEl && typeof flatpickr === 'function') {
+    var initial = (scheduleEl.value || '').trim();
+    // Normalize Django/ISO values like 2026-07-11T22:27:00 or with seconds
+    if (initial) {
+      initial = initial.replace(' ', 'T').slice(0, 16);
+      scheduleEl.value = initial;
+    }
+    flatpickr(scheduleEl, {
+      enableTime: true,
+      time_24hr: true,
+      allowInput: true,
+      minuteIncrement: 1,
+      dateFormat: 'Y-m-d\\TH:i',
+      altInput: true,
+      altFormat: 'd/m/Y H:i',
+      altInputClass: 'form-control lead-schedule-visible',
+      defaultDate: initial || null,
+      disableMobile: true
+    });
   }
 })();
 </script>

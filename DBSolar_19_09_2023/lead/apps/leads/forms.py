@@ -184,6 +184,14 @@ class LeadForm(forms.ModelForm):
         self.fields['finance_type'].required = False
         self.fields['finance_type'].choices = [('', '---------')] + list(Lead.FINANCE_TYPES)
         self.fields['next_followup'].label = 'Next Follow-up'
+        self.fields['next_followup'].input_formats = [
+            '%Y-%m-%dT%H:%M',
+            '%Y-%m-%dT%H:%M:%S',
+            '%Y-%m-%d %H:%M',
+            '%Y-%m-%d %H:%M:%S',
+            '%d/%m/%Y %H:%M',
+            '%d/%m/%Y %H:%M:%S',
+        ]
 
         # Prefill money fields from DB in Indian format (edit page).
         if self.instance and self.instance.pk and not self.is_bound:
@@ -226,9 +234,11 @@ class LeadForm(forms.ModelForm):
             'notes': forms.Textarea(attrs={'rows': 3}),
             'internal_notes': forms.Textarea(attrs={'rows': 3}),
             'next_followup': forms.DateTimeInput(attrs={
-                'type': 'datetime-local',
+                'type': 'text',
                 'class': 'form-control lead-schedule-input',
-            }),
+                'placeholder': 'DD/MM/YYYY HH:MM',
+                'autocomplete': 'off',
+            }, format='%Y-%m-%dT%H:%M'),
             'longitude': forms.NumberInput(attrs={'step': 'any', 'placeholder': 'e.g. 78.9629', 'class': 'form-control'}),
             'latitude': forms.NumberInput(attrs={'step': 'any', 'placeholder': 'e.g. 20.5937', 'class': 'form-control'}),
             'state': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'State'}),
