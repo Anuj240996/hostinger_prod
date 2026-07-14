@@ -62,7 +62,14 @@ class PurchaseItemForm(forms.ModelForm):
         self.fields['stock'].queryset = Stock.objects.for_forms_dropdown()
         self.fields['stock'].widget.attrs.update({'class': 'textinput form-control setprice stock', 'required': 'true'})
         self.fields['quantity'].widget.attrs.update({'class': 'textinput form-control setprice quantity', 'min': '0', 'required': 'true'})
-        self.fields['perprice'].widget.attrs.update({'class': 'textinput form-control setprice price', 'min': '0', 'required': 'true'})
+        self.fields['perprice'].widget.attrs.update({
+            'class': 'textinput form-control setprice price',
+            'min': '0',
+            'step': 'any',
+            'inputmode': 'decimal',
+            'required': 'true',
+            'type': 'number',
+        })
         self.fields['purchase'].widget = forms.HiddenInput()
     class Meta:
         model = PurchaseItem
