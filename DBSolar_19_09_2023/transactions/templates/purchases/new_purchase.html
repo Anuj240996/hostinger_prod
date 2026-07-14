@@ -7,6 +7,15 @@
 <div style="color:#575757; font-style: bold; font-size: 3rem; border-bottom: 1px solid white;"
      xmlns="http://www.w3.org/1999/html">New Purchase</div>
 <br>
+{% if messages %}
+<div class="mb-3">
+  {% for message in messages %}
+  <div class="alert {% if message.tags == 'error' %}alert-danger{% elif message.tags == 'success' %}alert-success{% else %}alert-info{% endif %}" role="alert">
+    {{ message }}
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
 <fieldset>
 <div class="panel panel-default">
     <div class="panel-heading panel-heading-text">Supplier Details</div>
@@ -1971,6 +1980,8 @@ $(document).ready(function() {
             } else {
                 alert("Please fill in all required fields in the modal (Eway No, Bill Date, Handby, and Destination).");
             }
+        } else {
+            alert("Please select Invoice Bill or DC Bill before submitting.");
         }
     });
 });

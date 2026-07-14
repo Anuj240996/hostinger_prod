@@ -1641,6 +1641,13 @@ class PurchaseCreateView(LoginRequiredMixin, View):
                     # Extract GST toggle state
                     gst_toggle = request.POST.get('gstToggle')
 
+                    def _dec(val, default='0'):
+                        """Normalize currency/blank POST values for DecimalFields."""
+                        if val is None:
+                            return default
+                        s = str(val).replace('₹', '').replace(',', '').strip()
+                        return s if s not in ('', '-') else default
+
                     # Initialize GST values
                     gst_value = 0
                     gst_amount = 0
@@ -1650,10 +1657,10 @@ class PurchaseCreateView(LoginRequiredMixin, View):
                     destination = 0
                     po_no = 0
                     po_date = 0
-                    round_off = request.POST.get('round_off')
-                    delivery_charges = request.POST.get('delivery_charges')
-                    final_amount_raw = request.POST.get('final_amount', '0')
-                    final_amount = final_amount_raw.replace('₹', '').strip() if final_amount_raw else '0'
+                    round_off = _dec(request.POST.get('round_off'))
+                    delivery_charges = _dec(request.POST.get('delivery_charges'))
+                    final_amount = _dec(request.POST.get('final_amount', '0'))
+                    total_amount = _dec(request.POST.get('total_amount'))
                     eway_no = request.POST.get('eway_no')
                     bill_date = request.POST.get('bill_date')
                     veh_no = request.POST.get('veh_no')
@@ -1663,8 +1670,8 @@ class PurchaseCreateView(LoginRequiredMixin, View):
                     po_date = request.POST.get('po_date')
 
                     if gst_toggle == 'on':  # or 'true' based on how the toggle is set in your HTML
-                        gst_value = request.POST.get('gst_value')
-                        gst_amount = request.POST.get('gst_amount')
+                        gst_value = request.POST.get('gst_value') or 0
+                        gst_amount = _dec(request.POST.get('gst_amount'))
 
                     # Save PurchaseBillDetails
                     billdetailsobj = PurchaseBillDetails(
@@ -1682,7 +1689,7 @@ class PurchaseCreateView(LoginRequiredMixin, View):
                         tcs=bill_date,
                         # final_amount=request.POST.get('final_amount'),
                         final_amount=final_amount,
-                        total_amount=request.POST.get('total_amount'),
+                        total_amount=total_amount,
                     )
                     billdetailsobj.save()
                     logger.info("PurchaseBillDetails saved successfully")
@@ -3298,8 +3305,8 @@ def get_stock_quantity(request):
         'quantity': quantity_to_str(qty, unit),
         'stock_alert': stock.stock_alert,
         'gst': stock.gst,
-        'purchase': stock.purchase.short_name,
-        'purchase_id': stock.purchase.id,
+        'purchase': unit,
+        'purchase_id': stock.purchase_id,
     })
 
 

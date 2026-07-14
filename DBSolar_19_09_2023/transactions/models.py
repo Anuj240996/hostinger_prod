@@ -168,6 +168,51 @@ class PurchaseBill(models.Model):
     time = models.DateTimeField(auto_now=True)
     supplier = models.ForeignKey(Supplier, on_delete=models.CASCADE, related_name='purchasesupplier')
 
+    # Stable advisory lock key for PostgreSQL (must not clash with other locks in the project)
+    _BILLNO_PG_LOCK = 9_123_450_126
+
+    def save(self, *args, **kwargs):
+        """
+        Ensure new bills get billno = MAX(billno)+1 so inserts work when the
+        PostgreSQL sequence is behind real data (common after MySQL migration).
+        """
+        from django.db import connection, transaction
+        from django.db.models import Max
+
+        is_insert = self._state.adding
+        if is_insert and self.billno is None:
+
+            def _take_next_billno():
+                with connection.cursor() as cursor:
+                    if connection.vendor == "postgresql":
+                        cursor.execute(
+                            "SELECT pg_advisory_xact_lock(%s);",
+                            [PurchaseBill._BILLNO_PG_LOCK],
+                        )
+                m = PurchaseBill.objects.aggregate(_m=Max("billno"))["_m"]
+                self.billno = (m or 0) + 1
+
+            if connection.in_atomic_block:
+                _take_next_billno()
+            else:
+                with transaction.atomic():
+                    _take_next_billno()
+
+        super().save(*args, **kwargs)
+
+        if is_insert and connection.vendor == "postgresql":
+            with connection.cursor() as cursor:
+                cursor.execute(
+                    "SELECT pg_get_serial_sequence(%s, %s);",
+                    ["transactions_purchasebill", "billno"],
+                )
+                row = cursor.fetchone()
+                if row and row[0]:
+                    cursor.execute(
+                        "SELECT setval(%s::regclass, %s);",
+                        [row[0], self.billno],
+                    )
+
     def __str__(self):
         return "Bill no: " + str(self.billno)
 
@@ -241,6 +286,49 @@ class PurchaseBillDetails(models.Model):
     total_amount = models.DecimalField(max_digits=10, decimal_places=2, null=True)  # Store final amount
     round_off = models.DecimalField(max_digits=10, decimal_places=2, null=True)  # Store final amount
     delivery_charges = models.DecimalField(max_digits=10, decimal_places=2, null=True)  # Store final amount
+
+    _ID_PG_LOCK = 9_123_450_127
+
+    def save(self, *args, **kwargs):
+        """
+        Assign id = MAX(id)+1 when the PostgreSQL sequence is behind (MySQL migration).
+        """
+        from django.db import connection, transaction
+        from django.db.models import Max
+
+        is_insert = self._state.adding
+        if is_insert and self.pk is None:
+
+            def _take_next_id():
+                with connection.cursor() as cursor:
+                    if connection.vendor == "postgresql":
+                        cursor.execute(
+                            "SELECT pg_advisory_xact_lock(%s);",
+                            [PurchaseBillDetails._ID_PG_LOCK],
+                        )
+                m = PurchaseBillDetails.objects.aggregate(_m=Max("id"))["_m"]
+                self.pk = (m or 0) + 1
+
+            if connection.in_atomic_block:
+                _take_next_id()
+            else:
+                with transaction.atomic():
+                    _take_next_id()
+
+        super().save(*args, **kwargs)
+
+        if is_insert and connection.vendor == "postgresql":
+            with connection.cursor() as cursor:
+                cursor.execute(
+                    "SELECT pg_get_serial_sequence(%s, %s);",
+                    ["transactions_purchasebilldetails", "id"],
+                )
+                row = cursor.fetchone()
+                if row and row[0]:
+                    cursor.execute(
+                        "SELECT setval(%s::regclass, %s);",
+                        [row[0], self.pk],
+                    )
 
     def __str__(self):
         return "Bill no: " + str(self.billno.billno)
