@@ -261,6 +261,47 @@ class PurchaseItem(models.Model):
     totalprice = models.DecimalField(max_digits=10, decimal_places=2, null=True)  # Store final amount
     purchase = models.ForeignKey(Unit, on_delete=models.CASCADE, related_name='purchaseitem_purchased_products', null=True)
 
+    _ID_PG_LOCK = 9_123_450_128
+
+    def save(self, *args, **kwargs):
+        """Assign id = MAX(id)+1 when the PostgreSQL sequence is behind (MySQL migration)."""
+        from django.db import connection, transaction
+        from django.db.models import Max
+
+        is_insert = self._state.adding
+        if is_insert and self.pk is None:
+
+            def _take_next_id():
+                with connection.cursor() as cursor:
+                    if connection.vendor == "postgresql":
+                        cursor.execute(
+                            "SELECT pg_advisory_xact_lock(%s);",
+                            [PurchaseItem._ID_PG_LOCK],
+                        )
+                m = PurchaseItem.objects.aggregate(_m=Max("id"))["_m"]
+                self.pk = (m or 0) + 1
+
+            if connection.in_atomic_block:
+                _take_next_id()
+            else:
+                with transaction.atomic():
+                    _take_next_id()
+
+        super().save(*args, **kwargs)
+
+        if is_insert and connection.vendor == "postgresql":
+            with connection.cursor() as cursor:
+                cursor.execute(
+                    "SELECT pg_get_serial_sequence(%s, %s);",
+                    ["transactions_purchaseitem", "id"],
+                )
+                row = cursor.fetchone()
+                if row and row[0]:
+                    cursor.execute(
+                        "SELECT setval(%s::regclass, %s);",
+                        [row[0], self.pk],
+                    )
+
     def __str__(self):
         return "Bill no: " + str(self.billno.billno) + ", Item = " + self.stock.name
 
@@ -682,6 +723,47 @@ class PurchaseSerial(models.Model):
                                        blank=True)
 
     # purchase = models.ForeignKey(Unit, on_delete=models.CASCADE, related_name='purchaseitem_purchased_products', null=True)
+
+    _ID_PG_LOCK = 9_123_450_129
+
+    def save(self, *args, **kwargs):
+        """Assign id = MAX(id)+1 when the PostgreSQL sequence is behind (MySQL migration)."""
+        from django.db import connection, transaction
+        from django.db.models import Max
+
+        is_insert = self._state.adding
+        if is_insert and self.pk is None:
+
+            def _take_next_id():
+                with connection.cursor() as cursor:
+                    if connection.vendor == "postgresql":
+                        cursor.execute(
+                            "SELECT pg_advisory_xact_lock(%s);",
+                            [PurchaseSerial._ID_PG_LOCK],
+                        )
+                m = PurchaseSerial.objects.aggregate(_m=Max("id"))["_m"]
+                self.pk = (m or 0) + 1
+
+            if connection.in_atomic_block:
+                _take_next_id()
+            else:
+                with transaction.atomic():
+                    _take_next_id()
+
+        super().save(*args, **kwargs)
+
+        if is_insert and connection.vendor == "postgresql":
+            with connection.cursor() as cursor:
+                cursor.execute(
+                    "SELECT pg_get_serial_sequence(%s, %s);",
+                    ["transactions_purchaseserial", "id"],
+                )
+                row = cursor.fetchone()
+                if row and row[0]:
+                    cursor.execute(
+                        "SELECT setval(%s::regclass, %s);",
+                        [row[0], self.pk],
+                    )
 
     def __str__(self):
         return "Bill no: " + str(self.billno.billno) + ", Item = " + self.stock.name
