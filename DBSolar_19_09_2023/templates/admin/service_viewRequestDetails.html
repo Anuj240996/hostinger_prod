@@ -512,11 +512,11 @@
                           </div>
                           <div class="col-md-3">
                             <label>Engg Name</label>
-                            <input type="text" name="engg_sign_name" class="form-control form-control-sm" value="{{ service_report.engg_sign_name|default:service_request.AssignTo.get_full_name }}">
+                            <input type="text" name="engg_sign_name" class="form-control form-control-sm" value="{% if service_report and service_report.engg_sign_name %}{{ service_report.engg_sign_name }}{% elif service_request.AssignTo %}{{ service_request.AssignTo.get_full_name }}{% endif %}">
                           </div>
                           <div class="col-md-2">
                             <label>Engg ID</label>
-                            <input type="text" name="engg_id" class="form-control form-control-sm" value="{{ service_report.engg_id|default:service_request.AssignTo.id }}">
+                            <input type="text" name="engg_id" class="form-control form-control-sm" value="{% if service_report and service_report.engg_id %}{{ service_report.engg_id }}{% elif service_request.AssignTo %}{{ service_request.AssignTo.id }}{% endif %}">
                           </div>
                           <div class="col-md-3">
                             <label>Date</label>
