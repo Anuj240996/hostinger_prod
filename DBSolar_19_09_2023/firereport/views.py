@@ -112,6 +112,22 @@ def _service_qs_scoped_for_staff(qs, user):
     return qs.filter(AssignTo_id=user.id)
 
 
+def _service_new_qs_scoped_for_staff(qs, user):
+    """New (unassigned) queue: superusers/Admin see all; associates see their consumers; others none."""
+    from customer.staff_access import associate_consumer_user_ids, is_associate_staff
+    if not user.is_authenticated:
+        return qs.none()
+    if user.is_superuser or user.groups.filter(name='Admin').exists():
+        return qs
+    if is_associate_staff(user):
+        ids = associate_consumer_user_ids(user)
+        if not ids:
+            return qs.none()
+        return qs.filter(Account_id__in=ids)
+    # Regular engineers do not see the unassigned queue (assignment is admin/superuser).
+    return qs.none()
+
+
 def _assert_service_staff_access(request, service_request):
     """Return HttpResponse (403/401) if staff user may not access this service row; else None."""
     from django.http import HttpResponse
@@ -132,6 +148,9 @@ def _assert_service_staff_access(request, service_request):
                 "You are not authorized to view service requests outside your assigned consumers.",
                 status=403,
             )
+        return None
+    # Allow any staff to open unassigned requests so they can assign an engineer.
+    if service_request.AssignTo_id is None:
         return None
     if service_request.AssignTo_id != u.id:
         return HttpResponse("You are not authorized to view this service request.", status=403)
@@ -485,10 +504,31 @@ def task(request):
 
 
 @login_required(login_url='user-login')
+def serviceRequestsNew(request):
+    """Queue of consumer/mobile service requests waiting for engineer assignment."""
+    count1 = staff_Notification.objects.filter(staff_id=request.user.id, status=False).count()
+    notification1 = staff_Notification.objects.filter(staff_id=request.user.id, status=False).order_by('-created_at')
+    qs = (
+        ServiceRequest.objects
+        .filter(AssignTo__isnull=True)
+        .exclude(Status='Completed')
+        .order_by('-id')
+    )
+    if not (request.user.is_superuser or request.user.groups.filter(name='Admin').exists()):
+        qs = _service_new_qs_scoped_for_staff(qs, request.user)
+    return render(request, 'admin/service_new.html', {
+        'service_requests': qs,
+        'count1': count1,
+        'notification1': notification1,
+    })
+
+
+@login_required(login_url='user-login')
 def serviceRequestsInProcess(request):
     count1 = staff_Notification.objects.filter(staff_id=request.user.id, status=False).count()
     notification1 = staff_Notification.objects.filter(staff_id=request.user.id, status=False).order_by('-created_at')
-    qs = ServiceRequest.objects.filter(Status='In Process').order_by('-id')
+    # In Process = work started; must already have an engineer (unassigned stay in New Request).
+    qs = ServiceRequest.objects.filter(Status='In Process', AssignTo__isnull=False).order_by('-id')
     if not request.user.is_superuser:
         qs = _service_qs_scoped_for_staff(qs, request.user)
     return render(request, 'admin/service_in_process.html', {
@@ -502,7 +542,7 @@ def serviceRequestsInProcess(request):
 def serviceRequestsAssigned(request):
     count1 = staff_Notification.objects.filter(staff_id=request.user.id, status=False).count()
     notification1 = staff_Notification.objects.filter(staff_id=request.user.id, status=False).order_by('-created_at')
-    qs = ServiceRequest.objects.filter(Status='Assigned').order_by('-id')
+    qs = ServiceRequest.objects.filter(Status='Assigned', AssignTo__isnull=False).order_by('-id')
     if not request.user.is_superuser:
         qs = _service_qs_scoped_for_staff(qs, request.user)
     return render(request, 'admin/service_assigned.html', {
@@ -944,12 +984,54 @@ def serviceReportPdf(request, pid):
 
 @login_required(login_url='user-login')
 def serviceViewRequestDetails(request, pid):
+    from customer.staff_access import is_associate_staff
+
     count1 = staff_Notification.objects.filter(staff_id=request.user.id, status=False).count()
     notification1 = staff_Notification.objects.filter(staff_id=request.user.id, status=False).order_by('-created_at')
     service_request = get_object_or_404(ServiceRequest, pk=pid)
     auth_err = _assert_service_staff_access(request, service_request)
     if auth_err:
         return auth_err
+
+    service_associate_readonly = is_associate_staff(request.user)
+    error = None
+    all_users = User.objects.filter(is_staff=1, is_active=1).select_related('profile')
+    unique_departments = {
+        p.department
+        for p in Profile.objects.filter(customer__in=all_users).exclude(department__isnull=True).exclude(department='')
+    }
+
+    if request.method == "POST" and 'AssignTo' in request.POST:
+        if service_associate_readonly:
+            messages.warning(request, "Associate users cannot assign service requests.")
+            return redirect('firereport-service-viewRequestDetails', pid=pid)
+        if service_request.AssignTo_id:
+            messages.info(request, "This service request is already assigned.")
+            return redirect('firereport-service-viewRequestDetails', pid=pid)
+        try:
+            team1 = User.objects.get(id=request.POST['AssignTo'])
+            now = now_ist()
+            service_request.AssignTo = team1
+            service_request.Status = "Assigned"
+            service_request.AssignBy = request.user.id
+            service_request.AssignedTime = now
+            service_request.UpdationDate = now
+            service_request.save()
+            ServiceRequestHistory.objects.create(
+                service_request=service_request,
+                status='Assigned',
+                remark=f'Assigned to {team1.first_name} {team1.last_name}'.strip()[:250],
+                AssignTo=team1,
+                AssignBy=request.user.id,
+            )
+            messages.success(request, "Service request assigned successfully.")
+            return redirect('firereport-service-assigned')
+        except Exception as e:
+            import traceback
+            print(f"Error assigning service request: {str(e)}")
+            print(traceback.format_exc())
+            error = "yes"
+            messages.error(request, "Failed to assign service request. Please try again.")
 
     customer = Customer.objects.filter(phone=service_request.MobileNumber).order_by('-Cust_id').first()
     if not customer:
@@ -1068,6 +1150,10 @@ def serviceViewRequestDetails(request, pid):
         'solar_qty_default': solar_qty_default,
         'inverter_qty_default': inverter_qty_default,
         'inverter_serial_default': inverter_serial_default,
+        'all_users': all_users,
+        'unique_departments': unique_departments,
+        'service_associate_readonly': service_associate_readonly,
+        'error': error,
     })
 
 

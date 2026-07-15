@@ -129,6 +129,55 @@
 
             {% if not service_request.AssignTo %}
             <h3 align="center" style="text-align: center; color: red;">Not Assigned Yet</h3>
+            {% if not service_associate_readonly %}
+            <div class="form-group text-center">
+              <button type="button" class="btn btn-primary btn-sm" data-toggle="modal" data-target="#serviceAssignModal">
+                Assign To Engineer
+              </button>
+            </div>
+            <div class="modal fade" id="serviceAssignModal" tabindex="-1" role="dialog" aria-labelledby="serviceAssignModalLabel" aria-hidden="true">
+              <div class="modal-dialog" role="document">
+                <div class="modal-content">
+                  <div class="modal-header">
+                    <h5 class="modal-title" id="serviceAssignModalLabel">Assign Engineer</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                      <span aria-hidden="true">&times;</span>
+                    </button>
+                  </div>
+                  <div class="modal-body">
+                    <form method="post">
+                      {% csrf_token %}
+                      <table width="100%">
+                        <tr>
+                          <th>Department:</th>
+                          <td>
+                            <select id="service_department" name="department" class="form-control" required>
+                              <option value="">Select Department</option>
+                              {% for department in unique_departments %}
+                              <option value="{{ department }}">{{ department }}</option>
+                              {% endfor %}
+                            </select>
+                          </td>
+                        </tr>
+                        <tr>
+                          <th>Assign To:</th>
+                          <td>
+                            <select id="service_assign_to" name="AssignTo" class="form-control" required disabled>
+                              <option value="">-- Select Name --</option>
+                            </select>
+                          </td>
+                        </tr>
+                      </table>
+                      <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                        <button type="submit" class="btn btn-primary">Submit</button>
+                      </div>
+                    </form>
+                  </div>
+                </div>
+              </div>
+            </div>
+            {% endif %}
             {% else %}
             <div class="row">
               <div class="col-12">
@@ -662,5 +711,33 @@
     }
 
   })();
+</script>
+<script>
+(function() {
+  var allUsers = [
+    {% for user in all_users %}
+    {
+      id: {{ user.id|default:0 }},
+      firstName: "{{ user.first_name|default:''|escapejs }}",
+      lastName: "{{ user.last_name|default:''|escapejs }}",
+      department: "{% if user.profile %}{{ user.profile.department|default:''|escapejs }}{% endif %}"
+    }{% if not forloop.last %},{% endif %}
+    {% empty %}
+    {% endfor %}
+  ];
+  if (typeof jQuery === 'undefined') return;
+  jQuery(function($) {
+    $('#service_department').on('change', function() {
+      var selectedDepartment = $(this).val();
+      var $assign = $('#service_assign_to');
+      $assign.empty().append($('<option>', { value: '', text: '-- Select Name --' }));
+      allUsers.filter(function(u) { return u.department === selectedDepartment; }).forEach(function(u) {
+        var name = ((u.firstName || '') + ' ' + (u.lastName || '')).trim() || 'Unknown';
+        $assign.append($('<option>', { value: u.id, text: name }));
+      });
+      $assign.prop('disabled', !selectedDepartment);
+    });
+  });
+})();
 </script>
 {% endblock %}

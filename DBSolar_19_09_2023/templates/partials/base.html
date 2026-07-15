@@ -444,9 +444,10 @@
                      <li class="{% active_link 'firereport-task' 'active' %}">
                         <a href="{% url 'firereport-task' %}"><i class="nav-icon fa fa-tasks" aria-hidden="true"></i><span> New Task</span></a>
                      </li>
-                     <li class="submenu {% active_link 'firereport-service-assigned' 'active' %} {% active_link 'firereport-service-in-process' 'active' %} {% active_link 'firereport-service-completed' 'active' %}">
+                     <li class="submenu {% active_link 'firereport-service-new' 'active' %} {% active_link 'firereport-service-assigned' 'active' %} {% active_link 'firereport-service-in-process' 'active' %} {% active_link 'firereport-service-completed' 'active' %}">
                         <a href="#"><i class="nav-icon fas fa-tools" aria-hidden="true"></i> <span> Services</span> <span class="menu-arrow"></span></a>
                         <ul>
+                           <li><a href="{% url 'firereport-service-new' %}"><i class="nav-icon fas fa-plus-circle" aria-hidden="true"></i> New Request</a></li>
                            <li><a href="{% url 'firereport-service-assigned' %}"><i class="nav-icon fas fa-clipboard-list" aria-hidden="true"></i> Assigned Request</a></li>
                            <li><a href="{% url 'firereport-service-in-process' %}"><i class="nav-icon fas fa-spinner" aria-hidden="true"></i> Requests In Process</a></li>
                            <li><a href="{% url 'firereport-service-completed' %}"><i class="nav-icon fas fa-check-circle" aria-hidden="true"></i> Completed Requests</a></li>
@@ -634,9 +635,10 @@
                            <li><a href="{% url 'firereport-search' %}"> <i class="nav-icon fas fa-search"></i> Search</a></li>
                         </ul>
                      </li>
-                     <li class="submenu {% active_link 'firereport-service-assigned' 'active' %} {% active_link 'firereport-service-in-process' 'active' %} {% active_link 'firereport-service-completed' 'active' %}">
+                     <li class="submenu {% active_link 'firereport-service-new' 'active' %} {% active_link 'firereport-service-assigned' 'active' %} {% active_link 'firereport-service-in-process' 'active' %} {% active_link 'firereport-service-completed' 'active' %}">
                         <a href="#"><i class="nav-icon fas fa-tools" aria-hidden="true"></i> <span> Services</span> <span class="menu-arrow"></span></a>
                         <ul>
+                           <li><a href="{% url 'firereport-service-new' %}"><i class="nav-icon fas fa-plus-circle" aria-hidden="true"></i> New Request</a></li>
                            <li><a href="{% url 'firereport-service-assigned' %}"><i class="nav-icon fas fa-clipboard-list" aria-hidden="true"></i> Assigned Request</a></li>
                            <li><a href="{% url 'firereport-service-in-process' %}"><i class="nav-icon fas fa-spinner" aria-hidden="true"></i> Requests In Process</a></li>
                            <li><a href="{% url 'firereport-service-completed' %}"><i class="nav-icon fas fa-check-circle" aria-hidden="true"></i> Completed Requests</a></li>
@@ -1073,9 +1075,10 @@
                         </ul>
                      </li>
                      {% endif %}
-                    <li class="submenu {% active_link 'firereport-service-assigned' 'active' %} {% active_link 'firereport-service-in-process' 'active' %} {% active_link 'firereport-service-completed' 'active' %}">
+                    <li class="submenu {% active_link 'firereport-service-new' 'active' %} {% active_link 'firereport-service-assigned' 'active' %} {% active_link 'firereport-service-in-process' 'active' %} {% active_link 'firereport-service-completed' 'active' %}">
                        <a href="#"><i class="nav-icon fas fa-tools" aria-hidden="true"></i> <span> Services</span> <span class="menu-arrow"></span></a>
                        <ul>
+                          <li><a href="{% url 'firereport-service-new' %}"><i class="nav-icon fas fa-plus-circle" aria-hidden="true"></i> New Request</a></li>
                           <li><a href="{% url 'firereport-service-assigned' %}"><i class="nav-icon fas fa-clipboard-list" aria-hidden="true"></i> Assigned Request</a></li>
                           <li><a href="{% url 'firereport-service-in-process' %}"><i class="nav-icon fas fa-spinner" aria-hidden="true"></i> Requests In Process</a></li>
                           <li><a href="{% url 'firereport-service-completed' %}"><i class="nav-icon fas fa-check-circle" aria-hidden="true"></i> Completed Requests</a></li>
@@ -1142,9 +1145,10 @@
                            <li><a href="{% url 'firereport-dateReport' %}"> <i class="nav-icon fas fa-calendar-alt"></i> All Report</a></li>
                         </ul>
                      </li>
-                     <li class="submenu {% active_link 'firereport-service-assigned' 'active' %} {% active_link 'firereport-service-in-process' 'active' %} {% active_link 'firereport-service-completed' 'active' %}">
+                     <li class="submenu {% active_link 'firereport-service-new' 'active' %} {% active_link 'firereport-service-assigned' 'active' %} {% active_link 'firereport-service-in-process' 'active' %} {% active_link 'firereport-service-completed' 'active' %}">
                         <a href="#"><i class="nav-icon fas fa-tools" aria-hidden="true"></i> <span> Services</span> <span class="menu-arrow"></span></a>
                         <ul>
+                           <li><a href="{% url 'firereport-service-new' %}"><i class="nav-icon fas fa-plus-circle" aria-hidden="true"></i> New Request</a></li>
                            <li><a href="{% url 'firereport-service-assigned' %}"><i class="nav-icon fas fa-clipboard-list" aria-hidden="true"></i> Assigned Request</a></li>
                            <li><a href="{% url 'firereport-service-in-process' %}"><i class="nav-icon fas fa-spinner" aria-hidden="true"></i> Requests In Process</a></li>
                            <li><a href="{% url 'firereport-service-completed' %}"><i class="nav-icon fas fa-check-circle" aria-hidden="true"></i> Completed Requests</a></li>
@@ -1200,9 +1204,10 @@
                            <li><a href="{% url 'firereport-dateReport' %}"> <i class="nav-icon fas fa-calendar-alt"></i> All Report</a></li>
                         </ul>
                      </li>
-                     <li class="submenu {% active_link 'firereport-service-assigned' 'active' %} {% active_link 'firereport-service-in-process' 'active' %} {% active_link 'firereport-service-completed' 'active' %}">
+                     <li class="submenu {% active_link 'firereport-service-new' 'active' %} {% active_link 'firereport-service-assigned' 'active' %} {% active_link 'firereport-service-in-process' 'active' %} {% active_link 'firereport-service-completed' 'active' %}">
                         <a href="#"><i class="nav-icon fas fa-tools" aria-hidden="true"></i> <span> Services</span> <span class="menu-arrow"></span></a>
                         <ul>
+                           <li><a href="{% url 'firereport-service-new' %}"><i class="nav-icon fas fa-plus-circle" aria-hidden="true"></i> New Request</a></li>
                            <li><a href="{% url 'firereport-service-assigned' %}"><i class="nav-icon fas fa-clipboard-list" aria-hidden="true"></i> Assigned Request</a></li>
                            <li><a href="{% url 'firereport-service-in-process' %}"><i class="nav-icon fas fa-spinner" aria-hidden="true"></i> Requests In Process</a></li>
                            <li><a href="{% url 'firereport-service-completed' %}"><i class="nav-icon fas fa-check-circle" aria-hidden="true"></i> Completed Requests</a></li>

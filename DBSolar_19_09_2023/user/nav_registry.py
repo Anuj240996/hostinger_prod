@@ -178,6 +178,7 @@ def staff_nav_specs() -> List[NavSpec]:
 
     # Services
     specs += [
+        n("staff.services.new", "Services", "New Request", "firereport-service-new"),
         n("staff.services.assigned", "Services", "Assigned Request", "firereport-service-assigned"),
         n("staff.services.in_process", "Services", "Requests In Process", "firereport-service-in-process"),
         n("staff.services.completed", "Services", "Completed Requests", "firereport-service-completed"),

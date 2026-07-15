@@ -38,6 +38,7 @@ urlpatterns = [
     path('reviewRequestDetails/<int:pid>', reviewRequestDetails, name='firereport-reviewRequestDetails'),
     path('dateReport', dateReport, name='firereport-dateReport'),
     path('search', search, name='firereport-search'),
+    path('services/new', serviceRequestsNew, name='firereport-service-new'),
     path('services/assigned', serviceRequestsAssigned, name='firereport-service-assigned'),
     path('services/in-process', serviceRequestsInProcess, name='firereport-service-in-process'),
     path('services/completed', serviceRequestsCompleted, name='firereport-service-completed'),

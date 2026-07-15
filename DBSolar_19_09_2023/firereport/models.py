@@ -76,7 +76,7 @@ class ServiceRequest(models.Model):
     Location = models.CharField(max_length=200, null=True, db_column='Location')
     Message = models.TextField(null=True, db_column='message')
     AssignTo = models.ForeignKey(User, on_delete=models.CASCADE, null=True, db_column='assignto_id')
-    Status = models.CharField(max_length=150, null=True, blank=True, default="In Process", db_column='status')
+    Status = models.CharField(max_length=150, null=True, blank=True, default="Pending", db_column='status')
     Postingdate = models.DateTimeField(auto_now_add=True, db_column='postingdate')
     AssignedTime = models.DateTimeField(null=True, db_column='assignedtime')
     UpdationDate = models.DateTimeField(null=True, db_column='updationdate')
@@ -85,8 +85,9 @@ class ServiceRequest(models.Model):
     AssignBy = models.IntegerField(default=0, db_column='assignby')
 
     def save(self, *args, **kwargs):
+        # Unassigned mobile/app inserts should land in New Request (Pending), not In Process.
         if not self.Status:
-            self.Status = "In Process"
+            self.Status = "Pending"
         if not self.pk and self.Postingdate is None:
             self.Postingdate = timezone.localtime(timezone.now())
         super().save(*args, **kwargs)
