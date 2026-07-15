@@ -337,17 +337,35 @@ SESSION_EXPIRE_AT_BROWSER_CLOSE = True
 # Reset timer each request (so active users stay logged in)
 SESSION_SAVE_EVERY_REQUEST = True
 
-# --- Service Report OTP SMS ---
-# SMS_PROVIDER: msg91 | http | console
-# console = generate OTP but do not call an SMS gateway (until keys are set).
-SMS_PROVIDER = os.environ.get("SMS_PROVIDER", "msg91").strip().lower()
+# --- Service Report OTP: WhatsApp + Email (SMS not used) ---
 SMS_COUNTRY_CODE = os.environ.get("SMS_COUNTRY_CODE", "91").strip()
+
+# WHATSAPP_PROVIDER: ultramsg | meta | http | console
+WHATSAPP_PROVIDER = os.environ.get("WHATSAPP_PROVIDER", "ultramsg").strip().lower()
+ULTRAMSG_INSTANCE_ID = os.environ.get("ULTRAMSG_INSTANCE_ID", "").strip()
+ULTRAMSG_TOKEN = os.environ.get("ULTRAMSG_TOKEN", "").strip()
+WHATSAPP_META_TOKEN = os.environ.get("WHATSAPP_META_TOKEN", "").strip()
+WHATSAPP_META_PHONE_NUMBER_ID = os.environ.get("WHATSAPP_META_PHONE_NUMBER_ID", "").strip()
+WHATSAPP_META_API_VERSION = os.environ.get("WHATSAPP_META_API_VERSION", "v19.0").strip()
+WHATSAPP_META_TEMPLATE = os.environ.get("WHATSAPP_META_TEMPLATE", "").strip()
+WHATSAPP_META_TEMPLATE_LANG = os.environ.get("WHATSAPP_META_TEMPLATE_LANG", "en").strip()
+WHATSAPP_HTTP_URL = os.environ.get("WHATSAPP_HTTP_URL", "").strip()
+WHATSAPP_HTTP_METHOD = os.environ.get("WHATSAPP_HTTP_METHOD", "POST").strip().upper()
+# Fall back to console when UltraMsg/Meta keys are missing so OTP UI still works.
+if WHATSAPP_PROVIDER == "ultramsg" and (not ULTRAMSG_INSTANCE_ID or not ULTRAMSG_TOKEN):
+    WHATSAPP_PROVIDER = "console"
+if WHATSAPP_PROVIDER in ("meta", "whatsapp_cloud", "cloud") and (
+    not WHATSAPP_META_TOKEN or not WHATSAPP_META_PHONE_NUMBER_ID
+):
+    WHATSAPP_PROVIDER = "console"
+
+DEFAULT_FROM_EMAIL = os.environ.get("DEFAULT_FROM_EMAIL", EMAIL_HOST_USER).strip() or EMAIL_HOST_USER
+
+# Legacy SMS env kept unused for Service Report OTP (WhatsApp+Email only now).
+SMS_PROVIDER = "console"
 MSG91_AUTH_KEY = os.environ.get("MSG91_AUTH_KEY", "").strip()
 MSG91_SENDER = os.environ.get("MSG91_SENDER", "DBSOLR").strip()
 MSG91_ROUTE = os.environ.get("MSG91_ROUTE", "4").strip()
 SMS_HTTP_URL = os.environ.get("SMS_HTTP_URL", "").strip()
 SMS_HTTP_METHOD = os.environ.get("SMS_HTTP_METHOD", "GET").strip().upper()
-# If MSG91 key is missing, fall back to console so the UI still works for setup.
-if SMS_PROVIDER == "msg91" and not MSG91_AUTH_KEY:
-    SMS_PROVIDER = "console"
 

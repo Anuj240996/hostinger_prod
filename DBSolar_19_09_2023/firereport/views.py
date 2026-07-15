@@ -592,7 +592,7 @@ def serviceRequestsCompleted(request):
 
 @login_required(login_url='user-login')
 def serviceSendReportOtp(request, pid):
-    """Generate OTP and SMS it to the consumer when Service Report is opened."""
+    """Generate OTP and auto-send it to consumer WhatsApp number + email (not SMS)."""
     if request.method != 'POST':
         return JsonResponse({'ok': False, 'error': 'Method not allowed'}, status=405)
 
@@ -604,27 +604,39 @@ def serviceSendReportOtp(request, pid):
         return JsonResponse({'ok': False, 'error': 'OTP can be sent only when request is In Process'}, status=400)
 
     from firereport.sms_utils import (
-        build_service_report_otp_message,
+        deliver_service_report_otp,
         mask_mobile,
         normalize_indian_mobile,
-        send_sms,
     )
     import random
 
     phone = normalize_indian_mobile(req.MobileNumber)
-    if not phone:
+    customer = None
+    if req.MobileNumber:
         customer = Customer.objects.filter(phone=req.MobileNumber).order_by('-Cust_id').first()
-        if customer:
-            phone = normalize_indian_mobile(customer.phone)
+        if not customer:
+            try:
+                customer = Customer.objects.filter(phone=int(str(req.MobileNumber).strip())).order_by('-Cust_id').first()
+            except Exception:
+                customer = None
+    if not phone and customer:
+        phone = normalize_indian_mobile(customer.phone)
     if not phone:
         return JsonResponse({'ok': False, 'error': 'Consumer mobile number is missing or invalid'}, status=400)
 
+    # Resolve consumer email: customer profile, then account user
+    email = ''
+    if customer and getattr(customer, 'email', None):
+        email = (customer.email or '').strip()
+    if not email and getattr(req, 'Account_id', None):
+        try:
+            acct = User.objects.filter(id=req.Account_id).first()
+            if acct and acct.email:
+                email = (acct.email or '').strip()
+        except Exception:
+            pass
+
     otp = f"{random.randint(100000, 999999)}"
-    message = build_service_report_otp_message(
-        name=req.FullName or 'Customer',
-        service_id=req.id,
-        otp=otp,
-    )
     expires = now_ist() + timezone.timedelta(minutes=10)
 
     # Invalidate previous unverified OTPs for this request
@@ -632,7 +644,17 @@ def serviceSendReportOtp(request, pid):
         expires_at=now_ist() - timezone.timedelta(seconds=1)
     )
 
-    sent_ok, detail = send_sms(phone, message)
+    delivery = deliver_service_report_otp(
+        phone=phone,
+        email=email or None,
+        name=req.FullName or 'Customer',
+        service_id=req.id,
+        otp=otp,
+    )
+    sent_ok = bool(delivery.get('ok'))
+    detail = delivery.get('detail') or ''
+    message = delivery.get('message_text') or ''
+
     row = ServiceReportOtp.objects.create(
         service_request=req,
         phone=phone,
@@ -649,25 +671,41 @@ def serviceSendReportOtp(request, pid):
     if not sent_ok:
         return JsonResponse({
             'ok': False,
-            'error': detail or 'Failed to send OTP SMS',
+            'error': detail or 'Failed to send OTP on WhatsApp/Email',
             'masked_phone': mask_mobile(phone),
+            'masked_email': delivery.get('masked_email') or '',
+            'whatsapp_ok': bool(delivery.get('whatsapp_ok')),
+            'email_ok': bool(delivery.get('email_ok')),
             'otp_id': row.id,
         }, status=502)
 
+    channels = []
+    if delivery.get('whatsapp_ok'):
+        channels.append(f"WhatsApp {mask_mobile(phone)}")
+    if delivery.get('email_ok'):
+        channels.append(f"Email {delivery.get('masked_email')}")
+    channel_txt = " & ".join(channels) if channels else mask_mobile(phone)
+
     payload = {
         'ok': True,
-        'message': detail or 'OTP sent',
+        'message': f"OTP auto-sent to {channel_txt}. Ask consumer for OTP and verify below.",
+        'detail': detail,
         'masked_phone': mask_mobile(phone),
+        'masked_email': delivery.get('masked_email') or '',
+        'whatsapp_ok': bool(delivery.get('whatsapp_ok')),
+        'email_ok': bool(delivery.get('email_ok')),
         'otp_id': row.id,
         'expires_in_sec': 600,
     }
-    # Only expose OTP value when SMS gateway is not configured (console mode).
+    # Expose OTP only in console (API keys not configured yet) for superuser testing.
     from django.conf import settings as djsettings
-    if (getattr(djsettings, 'SMS_PROVIDER', '') or '').lower() == 'console' and request.user.is_superuser:
+    if (getattr(djsettings, 'WHATSAPP_PROVIDER', '') or '').lower() == 'console' and request.user.is_superuser:
         payload['dev_otp'] = otp
         payload['message'] = (
-            f"OTP generated for {mask_mobile(phone)}. SMS gateway not configured yet "
-            f"(set MSG91_AUTH_KEY in EasyPanel). Dev OTP: {otp}"
+            f"OTP generated for WhatsApp {mask_mobile(phone)}"
+            + (f" / Email {delivery.get('masked_email')}" if delivery.get('masked_email') else "")
+            + f". WhatsApp API not configured yet (set ULTRAMSG_* or WHATSAPP_META_* in EasyPanel). "
+            + f"Email: {'sent' if delivery.get('email_ok') else 'not sent'}. Dev OTP: {otp}"
         )
     return JsonResponse(payload)
 

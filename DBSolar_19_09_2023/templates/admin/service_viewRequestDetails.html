@@ -269,7 +269,7 @@
                   </div>
                   <div class="modal-body">
                     <div id="serviceOtpBanner" class="alert alert-info py-2" style="display:none;">
-                      <span id="serviceOtpBannerText">Sending OTP to consumer...</span>
+                      <span id="serviceOtpBannerText">Sending OTP to consumer WhatsApp &amp; Email...</span>
                       <button type="button" id="serviceOtpResendBtn" class="btn btn-sm btn-outline-primary ml-2" style="display:none;">Resend OTP</button>
                     </div>
                     <form id="serviceReportForm" method="post" action="{% url 'firereport-service-mark-completed' service_request.id %}" novalidate>
@@ -539,7 +539,7 @@
                             <button type="button" id="serviceOtpVerifyBtn" class="btn btn-success btn-sm btn-block">Verify OTP</button>
                           </div>
                           <div class="col-md-5">
-                            <small id="serviceOtpVerifyStatus" class="text-muted">OTP is auto-sent to consumer mobile when this form opens.</small>
+                            <small id="serviceOtpVerifyStatus" class="text-muted">OTP is auto-sent to consumer WhatsApp number and email when this form opens.</small>
                           </div>
                         </div>
                       </fieldset>
@@ -684,7 +684,7 @@
         status.className = ok ? 'text-success' : 'text-muted';
         status.textContent = ok
           ? 'OTP verified. You can submit the service report.'
-          : 'OTP is auto-sent to consumer mobile when this form opens.';
+          : 'OTP is auto-sent to consumer WhatsApp number and email when this form opens.';
       }
     }
 
@@ -693,7 +693,7 @@
       var url = serviceReportModal.getAttribute('data-send-otp-url');
       if (!url) return;
       setOtpVerified(false);
-      setOtpBanner('info', 'Sending OTP to consumer mobile...', false);
+      setOtpBanner('info', 'Sending OTP to consumer WhatsApp number & email...', false);
       fetch(url, {
         method: 'POST',
         headers: {
@@ -715,13 +715,13 @@
           } else {
             setOtpBanner(
               'danger',
-              (data.error || 'Failed to send OTP') + (data.masked_phone ? (' (' + data.masked_phone + ')') : ''),
+              (data.error || 'Failed to send OTP on WhatsApp/Email') + (data.masked_phone ? (' (' + data.masked_phone + ')') : ''),
               true
             );
           }
         })
         .catch(function() {
-          setOtpBanner('danger', 'Unable to send OTP right now. Check SMS settings / network.', true);
+          setOtpBanner('danger', 'Unable to send OTP right now. Check WhatsApp/Email settings / network.', true);
         });
     }
 
