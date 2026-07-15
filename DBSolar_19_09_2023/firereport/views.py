@@ -996,10 +996,24 @@ def serviceViewRequestDetails(request, pid):
     service_associate_readonly = is_associate_staff(request.user)
     error = None
     all_users = User.objects.filter(is_staff=1, is_active=1).select_related('profile')
-    unique_departments = {
-        p.department
-        for p in Profile.objects.filter(customer__in=all_users).exclude(department__isnull=True).exclude(department='')
-    }
+    engineer_options = []
+    unique_departments = set()
+    for u in all_users:
+        dept = ''
+        try:
+            dept = (u.profile.department or '').strip()
+        except Profile.DoesNotExist:
+            dept = ''
+        if dept:
+            unique_departments.add(dept)
+        engineer_options.append({
+            'id': u.id,
+            'firstName': u.first_name or '',
+            'lastName': u.last_name or '',
+            'department': dept,
+        })
+    unique_departments = sorted(unique_departments)
+    engineer_options_json = json.dumps(engineer_options)
 
     if request.method == "POST" and 'AssignTo' in request.POST:
         if service_associate_readonly:
@@ -1152,6 +1166,7 @@ def serviceViewRequestDetails(request, pid):
         'inverter_serial_default': inverter_serial_default,
         'all_users': all_users,
         'unique_departments': unique_departments,
+        'engineer_options_json': engineer_options_json,
         'service_associate_readonly': service_associate_readonly,
         'error': error,
     })

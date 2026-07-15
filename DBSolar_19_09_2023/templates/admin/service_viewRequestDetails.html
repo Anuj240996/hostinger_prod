@@ -712,32 +712,33 @@
 
   })();
 </script>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script>
 (function() {
-  var allUsers = [
-    {% for user in all_users %}
-    {
-      id: {{ user.id|default:0 }},
-      firstName: "{{ user.first_name|default:''|escapejs }}",
-      lastName: "{{ user.last_name|default:''|escapejs }}",
-      department: "{% if user.profile %}{{ user.profile.department|default:''|escapejs }}{% endif %}"
-    }{% if not forloop.last %},{% endif %}
-    {% empty %}
-    {% endfor %}
-  ];
-  if (typeof jQuery === 'undefined') return;
-  jQuery(function($) {
-    $('#service_department').on('change', function() {
-      var selectedDepartment = $(this).val();
+  var allUsers = {{ engineer_options_json|safe }};
+  function bindAssignDropdown($) {
+    $('#service_department').off('change.serviceAssign').on('change.serviceAssign', function() {
+      var selectedDepartment = ($(this).val() || '').trim();
       var $assign = $('#service_assign_to');
       $assign.empty().append($('<option>', { value: '', text: '-- Select Name --' }));
-      allUsers.filter(function(u) { return u.department === selectedDepartment; }).forEach(function(u) {
+      allUsers.filter(function(u) {
+        return ((u.department || '').trim() === selectedDepartment);
+      }).forEach(function(u) {
         var name = ((u.firstName || '') + ' ' + (u.lastName || '')).trim() || 'Unknown';
         $assign.append($('<option>', { value: u.id, text: name }));
       });
       $assign.prop('disabled', !selectedDepartment);
     });
-  });
+  }
+  if (typeof jQuery !== 'undefined') {
+    jQuery(function($) { bindAssignDropdown($); });
+  } else {
+    document.addEventListener('DOMContentLoaded', function() {
+      if (typeof jQuery !== 'undefined') {
+        jQuery(function($) { bindAssignDropdown($); });
+      }
+    });
+  }
 })();
 </script>
 {% endblock %}
