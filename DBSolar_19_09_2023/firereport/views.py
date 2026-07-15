@@ -591,12 +591,144 @@ def serviceRequestsCompleted(request):
 
 
 @login_required(login_url='user-login')
+def serviceSendReportOtp(request, pid):
+    """Generate OTP and SMS it to the consumer when Service Report is opened."""
+    if request.method != 'POST':
+        return JsonResponse({'ok': False, 'error': 'Method not allowed'}, status=405)
+
+    req = get_object_or_404(ServiceRequest, pk=pid)
+    auth_err = _assert_service_staff_access(request, req)
+    if auth_err:
+        return JsonResponse({'ok': False, 'error': 'Not authorized'}, status=403)
+    if req.Status != 'In Process':
+        return JsonResponse({'ok': False, 'error': 'OTP can be sent only when request is In Process'}, status=400)
+
+    from firereport.sms_utils import (
+        build_service_report_otp_message,
+        mask_mobile,
+        normalize_indian_mobile,
+        send_sms,
+    )
+    import random
+
+    phone = normalize_indian_mobile(req.MobileNumber)
+    if not phone:
+        customer = Customer.objects.filter(phone=req.MobileNumber).order_by('-Cust_id').first()
+        if customer:
+            phone = normalize_indian_mobile(customer.phone)
+    if not phone:
+        return JsonResponse({'ok': False, 'error': 'Consumer mobile number is missing or invalid'}, status=400)
+
+    otp = f"{random.randint(100000, 999999)}"
+    message = build_service_report_otp_message(
+        name=req.FullName or 'Customer',
+        service_id=req.id,
+        otp=otp,
+    )
+    expires = now_ist() + timezone.timedelta(minutes=10)
+
+    # Invalidate previous unverified OTPs for this request
+    ServiceReportOtp.objects.filter(service_request=req, verified_at__isnull=True).update(
+        expires_at=now_ist() - timezone.timedelta(seconds=1)
+    )
+
+    sent_ok, detail = send_sms(phone, message)
+    row = ServiceReportOtp.objects.create(
+        service_request=req,
+        phone=phone,
+        otp_code=otp,
+        message_text=message,
+        expires_at=expires,
+        sent_ok=bool(sent_ok),
+        send_detail=(detail or '')[:250],
+        created_by=request.user,
+    )
+    # Clear previous verify flag so a new OTP must be confirmed
+    request.session.pop(f"service_report_otp_verified_{pid}", None)
+
+    if not sent_ok:
+        return JsonResponse({
+            'ok': False,
+            'error': detail or 'Failed to send OTP SMS',
+            'masked_phone': mask_mobile(phone),
+            'otp_id': row.id,
+        }, status=502)
+
+    payload = {
+        'ok': True,
+        'message': detail or 'OTP sent',
+        'masked_phone': mask_mobile(phone),
+        'otp_id': row.id,
+        'expires_in_sec': 600,
+    }
+    # Only expose OTP value when SMS gateway is not configured (console mode).
+    from django.conf import settings as djsettings
+    if (getattr(djsettings, 'SMS_PROVIDER', '') or '').lower() == 'console' and request.user.is_superuser:
+        payload['dev_otp'] = otp
+        payload['message'] = (
+            f"OTP generated for {mask_mobile(phone)}. SMS gateway not configured yet "
+            f"(set MSG91_AUTH_KEY in EasyPanel). Dev OTP: {otp}"
+        )
+    return JsonResponse(payload)
+
+
+@login_required(login_url='user-login')
+def serviceVerifyReportOtp(request, pid):
+    """Verify consumer OTP before allowing Service Report submit."""
+    if request.method != 'POST':
+        return JsonResponse({'ok': False, 'error': 'Method not allowed'}, status=405)
+
+    req = get_object_or_404(ServiceRequest, pk=pid)
+    auth_err = _assert_service_staff_access(request, req)
+    if auth_err:
+        return JsonResponse({'ok': False, 'error': 'Not authorized'}, status=403)
+
+    otp_code = (request.POST.get('otp') or request.POST.get('otp_code') or '').strip()
+    if not otp_code.isdigit() or len(otp_code) != 6:
+        return JsonResponse({'ok': False, 'error': 'Enter the 6-digit OTP'}, status=400)
+
+    row = (
+        ServiceReportOtp.objects
+        .filter(service_request=req, otp_code=otp_code, verified_at__isnull=True)
+        .order_by('-created_at')
+        .first()
+    )
+    if not row:
+        return JsonResponse({'ok': False, 'error': 'Invalid OTP'}, status=400)
+    if row.expires_at and row.expires_at < now_ist():
+        return JsonResponse({'ok': False, 'error': 'OTP expired. Click Resend OTP.'}, status=400)
+
+    row.verified_at = now_ist()
+    row.save(update_fields=['verified_at'])
+    request.session[f"service_report_otp_verified_{pid}"] = True
+    request.session.modified = True
+    return JsonResponse({'ok': True, 'message': 'OTP verified successfully'})
+
+
+@login_required(login_url='user-login')
 def serviceMarkCompleted(request, pid):
     if request.method != 'POST':
         return redirect('firereport-service-in-process')
     req = get_object_or_404(ServiceRequest, pk=pid)
     if not request.user.is_superuser and req.AssignTo_id != request.user.id:
         return HttpResponse("You are not authorized to update this service request.", status=403)
+
+    # Consumer OTP must be verified before service report can be submitted.
+    otp_session_key = f"service_report_otp_verified_{pid}"
+    if not request.session.get(otp_session_key):
+        recent = (
+            ServiceReportOtp.objects
+            .filter(service_request=req, verified_at__isnull=False)
+            .order_by('-verified_at')
+            .first()
+        )
+        if not recent or recent.verified_at < (now_ist() - timezone.timedelta(minutes=30)):
+            messages.error(
+                request,
+                "Consumer OTP is required. Open Service Report to send OTP, then verify it before submitting.",
+            )
+            return redirect('firereport-service-viewRequestDetails', pid=pid)
+
     remark_lines = []
     selected_remark_ids = request.POST.getlist('selected_remark_ids')
     for rid in selected_remark_ids:

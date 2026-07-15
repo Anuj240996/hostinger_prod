@@ -337,3 +337,17 @@ SESSION_EXPIRE_AT_BROWSER_CLOSE = True
 # Reset timer each request (so active users stay logged in)
 SESSION_SAVE_EVERY_REQUEST = True
 
+# --- Service Report OTP SMS ---
+# SMS_PROVIDER: msg91 | http | console
+# console = generate OTP but do not call an SMS gateway (until keys are set).
+SMS_PROVIDER = os.environ.get("SMS_PROVIDER", "msg91").strip().lower()
+SMS_COUNTRY_CODE = os.environ.get("SMS_COUNTRY_CODE", "91").strip()
+MSG91_AUTH_KEY = os.environ.get("MSG91_AUTH_KEY", "").strip()
+MSG91_SENDER = os.environ.get("MSG91_SENDER", "DBSOLR").strip()
+MSG91_ROUTE = os.environ.get("MSG91_ROUTE", "4").strip()
+SMS_HTTP_URL = os.environ.get("SMS_HTTP_URL", "").strip()
+SMS_HTTP_METHOD = os.environ.get("SMS_HTTP_METHOD", "GET").strip().upper()
+# If MSG91 key is missing, fall back to console so the UI still works for setup.
+if SMS_PROVIDER == "msg91" and not MSG91_AUTH_KEY:
+    SMS_PROVIDER = "console"
+

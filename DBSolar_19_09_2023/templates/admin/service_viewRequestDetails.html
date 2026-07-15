@@ -253,10 +253,12 @@
             {% endif %}
 
             {% if service_request.Status != 'Completed' and service_request.Status == 'In Process' %}
-            <button type="button" class="btn btn-primary btn-sm" data-toggle="modal" data-target="#serviceReportModal">Service Report</button>
+            <button type="button" id="openServiceReportBtn" class="btn btn-primary btn-sm" data-toggle="modal" data-target="#serviceReportModal">Service Report</button>
             {% endif %}
 
-            <div class="modal fade" id="serviceReportModal" tabindex="-1" role="dialog" aria-labelledby="serviceReportModalLabel" aria-hidden="true">
+            <div class="modal fade" id="serviceReportModal" tabindex="-1" role="dialog" aria-labelledby="serviceReportModalLabel" aria-hidden="true"
+                 data-send-otp-url="{% url 'firereport-service-send-otp' service_request.id %}"
+                 data-verify-otp-url="{% url 'firereport-service-verify-otp' service_request.id %}">
               <div class="modal-dialog modal-xl" role="document" style="max-width: 92%;">
                 <div class="modal-content">
                   <div class="modal-header">
@@ -266,8 +268,13 @@
                     </button>
                   </div>
                   <div class="modal-body">
+                    <div id="serviceOtpBanner" class="alert alert-info py-2" style="display:none;">
+                      <span id="serviceOtpBannerText">Sending OTP to consumer...</span>
+                      <button type="button" id="serviceOtpResendBtn" class="btn btn-sm btn-outline-primary ml-2" style="display:none;">Resend OTP</button>
+                    </div>
                     <form id="serviceReportForm" method="post" action="{% url 'firereport-service-mark-completed' service_request.id %}" novalidate>
                       {% csrf_token %}
+                      <input type="hidden" name="otp_verified" id="otpVerifiedFlag" value="0">
                       <div class="service-report-header d-flex align-items-center">
                         <img src="{% static '/images/dblogosmall.png' %}" alt="Company Logo">
                         <div>
@@ -523,10 +530,22 @@
                             <input type="date" name="engg_sign_date" class="form-control form-control-sm" value="{{ service_report.engg_sign_date|date:'Y-m-d'|default:report_date_default }}">
                           </div>
                         </div>
+                        <div class="row mt-2 align-items-end">
+                          <div class="col-md-4">
+                            <label>Consumer OTP <span style="color:red;">*</span></label>
+                            <input type="text" id="serviceConsumerOtp" class="form-control form-control-sm" maxlength="6" inputmode="numeric" placeholder="Enter 6-digit OTP from consumer" autocomplete="one-time-code">
+                          </div>
+                          <div class="col-md-3">
+                            <button type="button" id="serviceOtpVerifyBtn" class="btn btn-success btn-sm btn-block">Verify OTP</button>
+                          </div>
+                          <div class="col-md-5">
+                            <small id="serviceOtpVerifyStatus" class="text-muted">OTP is auto-sent to consumer mobile when this form opens.</small>
+                          </div>
+                        </div>
                       </fieldset>
 
                       <div class="modal-footer">
-                        <button type="submit" class="btn btn-primary">Submit</button>
+                        <button type="submit" id="serviceReportSubmitBtn" class="btn btn-primary" disabled>Submit</button>
                       </div>
                     </form>
                   </div>
@@ -635,8 +654,136 @@
     }
 
     var serviceReportForm = document.getElementById('serviceReportForm');
+    var serviceReportModal = document.getElementById('serviceReportModal');
+    var otpVerified = false;
+
+    function csrfToken() {
+      var el = document.querySelector('#serviceReportForm input[name="csrfmiddlewaretoken"]');
+      return el ? el.value : '';
+    }
+
+    function setOtpBanner(kind, text, showResend) {
+      var banner = document.getElementById('serviceOtpBanner');
+      var bannerText = document.getElementById('serviceOtpBannerText');
+      var resend = document.getElementById('serviceOtpResendBtn');
+      if (!banner || !bannerText) return;
+      banner.style.display = 'block';
+      banner.className = 'alert py-2 alert-' + (kind || 'info');
+      bannerText.textContent = text || '';
+      if (resend) resend.style.display = showResend ? 'inline-block' : 'none';
+    }
+
+    function setOtpVerified(ok) {
+      otpVerified = !!ok;
+      var flag = document.getElementById('otpVerifiedFlag');
+      if (flag) flag.value = ok ? '1' : '0';
+      var submitBtn = document.getElementById('serviceReportSubmitBtn');
+      if (submitBtn) submitBtn.disabled = !ok;
+      var status = document.getElementById('serviceOtpVerifyStatus');
+      if (status) {
+        status.className = ok ? 'text-success' : 'text-muted';
+        status.textContent = ok
+          ? 'OTP verified. You can submit the service report.'
+          : 'OTP is auto-sent to consumer mobile when this form opens.';
+      }
+    }
+
+    function sendServiceOtp() {
+      if (!serviceReportModal) return;
+      var url = serviceReportModal.getAttribute('data-send-otp-url');
+      if (!url) return;
+      setOtpVerified(false);
+      setOtpBanner('info', 'Sending OTP to consumer mobile...', false);
+      fetch(url, {
+        method: 'POST',
+        headers: {
+          'X-CSRFToken': csrfToken(),
+          'X-Requested-With': 'XMLHttpRequest'
+        },
+        credentials: 'same-origin'
+      })
+        .then(function(r) { return r.json().then(function(data) { return { status: r.status, data: data }; }); })
+        .then(function(res) {
+          var data = res.data || {};
+          if (data.ok) {
+            var okText = data.message
+              || ('OTP SMS sent to consumer ' + (data.masked_phone || '') + '. Ask consumer for OTP and verify below.');
+            if (data.dev_otp) {
+              okText = okText + ' (Dev OTP: ' + data.dev_otp + ')';
+            }
+            setOtpBanner('success', okText, true);
+          } else {
+            setOtpBanner(
+              'danger',
+              (data.error || 'Failed to send OTP') + (data.masked_phone ? (' (' + data.masked_phone + ')') : ''),
+              true
+            );
+          }
+        })
+        .catch(function() {
+          setOtpBanner('danger', 'Unable to send OTP right now. Check SMS settings / network.', true);
+        });
+    }
+
+    if (serviceReportModal) {
+      window.__sendServiceOtp = sendServiceOtp;
+      // Modal "shown" hook is bound after jQuery loads (script below).
+      var openBtn = document.getElementById('openServiceReportBtn');
+      if (openBtn) {
+        openBtn.addEventListener('click', function() {
+          setTimeout(function() { sendServiceOtp(); }, 400);
+        });
+      }
+    }
+    var resendBtn = document.getElementById('serviceOtpResendBtn');
+    if (resendBtn) {
+      resendBtn.addEventListener('click', function() { sendServiceOtp(); });
+    }
+    var verifyBtn = document.getElementById('serviceOtpVerifyBtn');
+    if (verifyBtn && serviceReportModal) {
+      verifyBtn.addEventListener('click', function() {
+        var otpInput = document.getElementById('serviceConsumerOtp');
+        var otp = otpInput ? (otpInput.value || '').trim() : '';
+        var url = serviceReportModal.getAttribute('data-verify-otp-url');
+        if (!otp || otp.length !== 6) {
+          alert('Enter the 6-digit OTP received by consumer.');
+          return;
+        }
+        var body = new FormData();
+        body.append('otp', otp);
+        body.append('csrfmiddlewaretoken', csrfToken());
+        verifyBtn.disabled = true;
+        fetch(url, {
+          method: 'POST',
+          headers: { 'X-Requested-With': 'XMLHttpRequest', 'X-CSRFToken': csrfToken() },
+          body: body,
+          credentials: 'same-origin'
+        })
+          .then(function(r) { return r.json().then(function(data) { return { status: r.status, data: data }; }); })
+          .then(function(res) {
+            verifyBtn.disabled = false;
+            if (res.data && res.data.ok) {
+              setOtpVerified(true);
+              alert(res.data.message || 'OTP verified');
+            } else {
+              setOtpVerified(false);
+              alert((res.data && res.data.error) || 'OTP verification failed');
+            }
+          })
+          .catch(function() {
+            verifyBtn.disabled = false;
+            alert('Unable to verify OTP right now.');
+          });
+      });
+    }
+
     if (serviceReportForm) {
       serviceReportForm.addEventListener('submit', function(e) {
+        if (!otpVerified) {
+          e.preventDefault();
+          alert('Please verify the consumer OTP before submitting the service report.');
+          return false;
+        }
         // Ensure disabled fieldset values are still posted to backend
         serviceReportForm.querySelectorAll('input.__mirror_disabled').forEach(function(el) { el.remove(); });
         serviceReportForm.querySelectorAll('#consumerDetailsFieldset [name], #projectDetailsFieldset [name]').forEach(function(el) {
@@ -731,11 +878,21 @@
     });
   }
   if (typeof jQuery !== 'undefined') {
-    jQuery(function($) { bindAssignDropdown($); });
+    jQuery(function($) {
+      bindAssignDropdown($);
+      $('#serviceReportModal').on('shown.bs.modal', function() {
+        if (typeof window.__sendServiceOtp === 'function') window.__sendServiceOtp();
+      });
+    });
   } else {
     document.addEventListener('DOMContentLoaded', function() {
       if (typeof jQuery !== 'undefined') {
-        jQuery(function($) { bindAssignDropdown($); });
+        jQuery(function($) {
+          bindAssignDropdown($);
+          $('#serviceReportModal').on('shown.bs.modal', function() {
+            if (typeof window.__sendServiceOtp === 'function') window.__sendServiceOtp();
+          });
+        });
       }
     });
   }
