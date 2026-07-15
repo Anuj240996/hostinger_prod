@@ -231,7 +231,7 @@
                        Not Applicable
                    {% elif customer.phase == 1 %}
                        1 Phase
-                   {% elif customer.phase == 3 %}
+                   {% elif customer.phase == 3 or customer.phase == 2 %}
                        3 Phase
                    {% else %}
                        {{ customer.phase }} Phase

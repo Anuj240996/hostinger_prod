@@ -124,7 +124,7 @@
                             <select name="phase" class="form-control text-capitalize">
                               <option value="0" {% if customer.phase == 0 %}selected{% endif %}>Not Applicable</option>
                               <option value="1" {% if customer.phase == 1 %}selected{% endif %}>1 Phase</option>
-                              <option value="2" {% if customer.phase == 2 %}selected{% endif %}>2 Phase</option>
+                              <option value="3" {% if customer.phase == 3 or customer.phase == 2 %}selected{% endif %}>3 Phase</option>
                             </select>
                           </div>
                         </div>
