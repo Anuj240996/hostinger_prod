@@ -552,7 +552,7 @@
                     <div id="serviceOtpBanner" class="alert alert-info py-2" style="display:none;">
                       <span id="serviceOtpBannerText">Sending OTP to consumer WhatsApp &amp; Email...</span>
                     </div>
-                    <p class="mb-2">OTP is sent to the consumer email and WhatsApp number from the customer table. Enter the OTP to complete this service request.</p>
+                    <p class="mb-2">OTP is sent to the consumer email and WhatsApp number from the customer table. It is valid for 20 minutes. Enter the OTP to complete this service request.</p>
                     <label for="serviceConsumerOtp">Consumer OTP <span style="color:red;">*</span></label>
                     <input type="text" id="serviceConsumerOtp" class="form-control" maxlength="6" inputmode="numeric" placeholder="Enter 6-digit OTP from consumer" autocomplete="one-time-code">
                     <small id="serviceOtpVerifyStatus" class="text-muted d-block mt-2">Service will remain In Process until OTP is verified.</small>
@@ -792,7 +792,30 @@
       if (otpInput) otpInput.value = '';
       setOtpVerified(false);
       if (typeof jQuery !== 'undefined') {
-        jQuery('#serviceOtpVerifyModal').modal('show');
+        var $reportModal = jQuery('#serviceReportModal');
+        var $otpModal = jQuery('#serviceOtpVerifyModal');
+        $otpModal
+          .off('hidden.bs.modal.serviceOtpReturn')
+          .on('hidden.bs.modal.serviceOtpReturn', function() {
+            // Cancel/close returns to the report without losing entered values.
+            if (!formReadyToComplete) {
+              $reportModal.modal('show');
+            }
+          });
+        if ($reportModal.hasClass('show')) {
+          $reportModal.one('hidden.bs.modal', function() {
+            $otpModal.modal('show');
+            setTimeout(function() {
+              if (otpInput) otpInput.focus();
+            }, 250);
+          });
+          $reportModal.modal('hide');
+        } else {
+          $otpModal.modal('show');
+          setTimeout(function() {
+            if (otpInput) otpInput.focus();
+          }, 250);
+        }
       }
     }
 
@@ -870,7 +893,6 @@
             mirrorDisabledFields();
             if (typeof jQuery !== 'undefined') {
               jQuery('#serviceOtpVerifyModal').modal('hide');
-              jQuery('#serviceReportModal').modal('hide');
             }
             serviceReportForm.submit();
           } else {

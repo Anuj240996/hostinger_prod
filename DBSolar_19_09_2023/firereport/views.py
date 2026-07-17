@@ -758,7 +758,7 @@ def serviceSendReportOtp(request, pid):
         }, status=400)
 
     otp = f"{secrets.randbelow(900000) + 100000}"
-    expires = now + timezone.timedelta(minutes=10)
+    expires = now + timezone.timedelta(minutes=20)
 
     # Invalidate previous unverified OTPs for this request
     ServiceReportOtp.objects.filter(service_request=req, verified_at__isnull=True).update(
@@ -836,7 +836,7 @@ def serviceSendReportOtp(request, pid):
         'email_ok': bool(delivery.get('email_ok')),
         'email_detail': delivery.get('email_detail') or '',
         'otp_id': row.id,
-        'expires_in_sec': 600,
+        'expires_in_sec': 1200,
     }
     if request.user.is_superuser:
         payload['dev_otp'] = otp

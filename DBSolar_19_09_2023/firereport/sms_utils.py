@@ -48,7 +48,7 @@ def build_service_report_otp_message(*, name: str, service_id: int, otp: str) ->
     return (
         f"Dear {consumer}, DB Solar Service Report OTP for SRV/{service_id} is {otp}. "
         f"Share this OTP with the DB Solar engineer only after you are satisfied with the service work. "
-        f"Valid for 10 minutes. - DB Solar"
+        f"Valid for 20 minutes. - DB Solar"
     )
 
 
