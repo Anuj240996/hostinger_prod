@@ -26,6 +26,7 @@ from django.db.models import Q
 
 #from django.shortcuts import render, HttpResponse
 import json
+import re
 import traceback
 from reportlab.lib.pagesizes import A4
 from reportlab.pdfgen import canvas
@@ -590,6 +591,95 @@ def serviceRequestsCompleted(request):
     })
 
 
+def _resolve_service_consumer_contacts(req):
+    """Resolve consumer phone + email like the consumer QR share flow."""
+    from firereport.sms_utils import normalize_indian_mobile
+
+    phone = normalize_indian_mobile(req.MobileNumber)
+    customer = None
+
+    phone_candidates = []
+    raw_digits = re.sub(r'\D+', '', str(req.MobileNumber or ''))
+    if phone:
+        phone_candidates.append(phone)
+        try:
+            phone_candidates.append(int(phone))
+        except Exception:
+            pass
+    if raw_digits:
+        phone_candidates.append(raw_digits)
+        if len(raw_digits) >= 10:
+            last10 = raw_digits[-10:]
+            phone_candidates.append(last10)
+            try:
+                phone_candidates.append(int(last10))
+            except Exception:
+                pass
+
+    seen = set()
+    for candidate in phone_candidates:
+        key = str(candidate)
+        if key in seen:
+            continue
+        seen.add(key)
+        customer = (
+            Customer.objects
+            .filter(phone=candidate)
+            .select_related('new_customer')
+            .order_by('-Cust_id')
+            .first()
+        )
+        if customer:
+            break
+
+    if not customer and getattr(req, 'Account_id', None):
+        customer = (
+            Customer.objects
+            .filter(new_customer_id=req.Account_id)
+            .select_related('new_customer')
+            .order_by('-Cust_id')
+            .first()
+        )
+
+    if not customer and req.FullName:
+        customer = (
+            Customer.objects
+            .filter(Comp_name__icontains=req.FullName)
+            .select_related('new_customer')
+            .order_by('-Cust_id')
+            .first()
+        )
+        if not customer:
+            customer = (
+                Customer.objects
+                .filter(Consumer__icontains=req.FullName)
+                .select_related('new_customer')
+                .order_by('-Cust_id')
+                .first()
+            )
+
+    if not phone and customer:
+        phone = normalize_indian_mobile(customer.phone)
+
+    email = ''
+    if customer:
+        try:
+            from customer.views import _consumer_email_for_customer
+            email = (_consumer_email_for_customer(customer) or '').strip()
+        except Exception:
+            if customer.new_customer and customer.new_customer.email:
+                email = (customer.new_customer.email or '').strip()
+            if not email:
+                email = (customer.email or '').strip()
+
+    if not email and getattr(req, 'Account_id', None):
+        acct = User.objects.filter(id=req.Account_id).only('email').first()
+        if acct and acct.email:
+            email = (acct.email or '').strip()
+
+    return phone, email, customer
+
+
 @login_required(login_url='user-login')
 def serviceSendReportOtp(request, pid):
     """Generate OTP and auto-send it to consumer WhatsApp number + email (not SMS)."""
@@ -604,9 +694,9 @@ def serviceSendReportOtp(request, pid):
         return JsonResponse({'ok': False, 'error': 'OTP can be sent only when request is In Process'}, status=400)
 
     from firereport.sms_utils import (
+        build_whatsapp_share_url,
         deliver_service_report_otp,
         mask_mobile,
-        normalize_indian_mobile,
     )
     import secrets
 
@@ -622,10 +712,9 @@ def serviceSendReportOtp(request, pid):
         .first()
     )
     if recent:
-        from firereport.sms_utils import build_whatsapp_share_url
         payload = {
             'ok': True,
-            'message': 'OTP was already sent. Please wait before requesting another OTP.',
+            'message': 'OTP was already sent. Opening WhatsApp again.',
             'masked_phone': mask_mobile(recent.phone),
             'whatsapp_url': build_whatsapp_share_url(recent.phone, recent.message_text or '') or '',
             'whatsapp_browser': True,
@@ -639,53 +728,9 @@ def serviceSendReportOtp(request, pid):
             payload['dev_otp'] = recent.otp_code
         return JsonResponse(payload)
 
-    phone = normalize_indian_mobile(req.MobileNumber)
-    customer = None
-    if req.MobileNumber:
-        customer = (
-            Customer.objects
-            .filter(phone=req.MobileNumber)
-            .select_related('new_customer')
-            .order_by('-Cust_id')
-            .first()
-        )
-        if not customer:
-            try:
-                customer = (
-                    Customer.objects
-                    .filter(phone=int(str(req.MobileNumber).strip()))
-                    .select_related('new_customer')
-                    .order_by('-Cust_id')
-                    .first()
-                )
-            except Exception:
-                customer = None
-    if not customer and req.FullName:
-        customer = (
-            Customer.objects
-            .filter(Comp_name__icontains=req.FullName)
-            .select_related('new_customer')
-            .order_by('-Cust_id')
-            .first()
-        )
-    if not phone and customer:
-        phone = normalize_indian_mobile(customer.phone)
+    phone, email, _customer = _resolve_service_consumer_contacts(req)
     if not phone:
-        return JsonResponse({'ok': False, 'error': 'Consumer mobile number is missing or invalid'}, status=400)
-
-    # Resolve consumer email: customer profile, then account user
-    email = ''
-    if customer and customer.new_customer and customer.new_customer.email:
-        email = (customer.new_customer.email or '').strip()
-    if not email and customer and getattr(customer, 'email', None):
-        email = (customer.email or '').strip()
-    if not email and getattr(req, 'Account_id', None):
-        try:
-            acct = User.objects.filter(id=req.Account_id).first()
-            if acct and acct.email:
-                email = (acct.email or '').strip()
-        except Exception:
-            pass
+        return JsonResponse({'ok': False, 'error': 'Consumer mobile/WhatsApp number is missing or invalid'}, status=400)
 
     otp = f"{secrets.randbelow(900000) + 100000}"
     expires = now + timezone.timedelta(minutes=10)
@@ -735,11 +780,11 @@ def serviceSendReportOtp(request, pid):
 
     channels = []
     if delivery.get('whatsapp_ok'):
-        channels.append(f"WhatsApp {mask_mobile(phone)}")
+        channels.append(f"WhatsApp auto-sent to {mask_mobile(phone)}")
     elif delivery.get('whatsapp_browser'):
-        channels.append(f"WhatsApp chat {mask_mobile(phone)}")
+        channels.append(f"WhatsApp opened for {mask_mobile(phone)}")
     if delivery.get('email_ok'):
-        channels.append(f"Email {delivery.get('masked_email')}")
+        channels.append(f"Email auto-sent to {delivery.get('masked_email')}")
     elif email:
         channels.append(f"Email failed ({delivery.get('email_detail') or 'error'})")
     else:
@@ -748,7 +793,7 @@ def serviceSendReportOtp(request, pid):
 
     payload = {
         'ok': True,
-        'message': f"OTP ready for {channel_txt}. Ask consumer for OTP and verify below.",
+        'message': f"OTP delivered: {channel_txt}. Ask consumer for OTP and verify below.",
         'detail': detail,
         'masked_phone': mask_mobile(phone),
         'masked_email': delivery.get('masked_email') or '',
@@ -760,14 +805,8 @@ def serviceSendReportOtp(request, pid):
         'otp_id': row.id,
         'expires_in_sec': 600,
     }
-    if request.user.is_superuser and not delivery.get('whatsapp_ok'):
+    if request.user.is_superuser:
         payload['dev_otp'] = otp
-        payload['message'] = (
-            f"OTP generated for WhatsApp {mask_mobile(phone)}"
-            + (f" / Email {delivery.get('masked_email')}" if delivery.get('masked_email') else "")
-            + f". Email: {'sent' if delivery.get('email_ok') else (delivery.get('email_detail') or 'not sent')}. "
-            + f"Dev OTP: {otp}"
-        )
     return JsonResponse(payload)
 
 

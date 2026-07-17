@@ -254,6 +254,7 @@
 
             {% if service_request.Status != 'Completed' and service_request.Status == 'In Process' %}
             <button type="button" id="openServiceReportBtn" class="btn btn-primary btn-sm" data-toggle="modal" data-target="#serviceReportModal">Service Report</button>
+            <a id="serviceOtpWhatsAppLink" href="#" target="_blank" rel="noopener noreferrer" style="display:none;" aria-hidden="true">WhatsApp OTP</a>
             {% endif %}
 
             <div class="modal fade" id="serviceReportModal" tabindex="-1" role="dialog" aria-labelledby="serviceReportModalLabel" aria-hidden="true"
@@ -539,7 +540,7 @@
                             <button type="button" id="serviceOtpVerifyBtn" class="btn btn-success btn-sm btn-block">Verify OTP</button>
                           </div>
                           <div class="col-md-5">
-                            <small id="serviceOtpVerifyStatus" class="text-muted">OTP is emailed automatically and opened in WhatsApp (same as consumer QR share) when this form opens.</small>
+                            <small id="serviceOtpVerifyStatus" class="text-muted">On open: OTP email is auto-sent and WhatsApp opens with the OTP for this consumer.</small>
                           </div>
                         </div>
                       </fieldset>
@@ -657,6 +658,7 @@
     var serviceReportModal = document.getElementById('serviceReportModal');
     var otpVerified = false;
     var otpSending = false;
+    var waOtpPopup = null;
 
     function csrfToken() {
       var el = document.querySelector('#serviceReportForm input[name="csrfmiddlewaretoken"]');
@@ -685,26 +687,57 @@
         status.className = ok ? 'text-success' : 'text-muted';
         status.textContent = ok
           ? 'OTP verified. You can submit the service report.'
-          : 'OTP is emailed automatically and opened in WhatsApp (same as consumer QR share) when this form opens.';
+          : 'On open: OTP email is auto-sent and WhatsApp chat opens with the OTP message.';
       }
     }
 
     function openWhatsAppOtp(url) {
       if (!url) return;
-      var popup = window.open(url, '_blank', 'noopener,noreferrer');
-      if (!popup) {
-        // Popup blocked — fall back to same-tab navigation like consumer QR page.
-        window.location.href = url;
+      if (waOtpPopup && !waOtpPopup.closed) {
+        try {
+          waOtpPopup.location.href = url;
+          waOtpPopup.focus();
+          return;
+        } catch (e) {}
       }
+      var popup = window.open(url, 'dbSolarServiceOtpWa', 'noopener,noreferrer');
+      if (popup) {
+        waOtpPopup = popup;
+        return;
+      }
+      var link = document.getElementById('serviceOtpWhatsAppLink');
+      if (link) {
+        link.href = url;
+        link.click();
+        return;
+      }
+      window.location.href = url;
     }
 
-    function sendServiceOtp() {
+    function closeUnusedWhatsAppPopup() {
+      if (waOtpPopup && !waOtpPopup.closed) {
+        try { waOtpPopup.close(); } catch (e) {}
+      }
+      waOtpPopup = null;
+    }
+
+    function sendServiceOtp(fromUserGesture) {
       if (!serviceReportModal || otpSending) return;
       var url = serviceReportModal.getAttribute('data-send-otp-url');
       if (!url) return;
+
+      // Open blank window during click gesture so WhatsApp is not blocked after fetch.
+      if (fromUserGesture) {
+        try {
+          waOtpPopup = window.open('about:blank', 'dbSolarServiceOtpWa');
+        } catch (e) {
+          waOtpPopup = null;
+        }
+      }
+
       otpSending = true;
       setOtpVerified(false);
-      setOtpBanner('info', 'Sending OTP email and preparing WhatsApp (same as consumer QR)...', false);
+      setOtpBanner('info', 'Auto-sending OTP to consumer email and WhatsApp...', false);
       fetch(url, {
         method: 'POST',
         headers: {
@@ -717,27 +750,37 @@
         .then(function(res) {
           var data = res.data || {};
           if (data.ok) {
-            // Same as consumer list QR: open WhatsApp chat with prefilled OTP message.
-            if (data.whatsapp_url && (data.whatsapp_browser || !data.whatsapp_ok)) {
+            if (data.whatsapp_ok) {
+              closeUnusedWhatsAppPopup();
+            } else if (data.whatsapp_url) {
               openWhatsAppOtp(data.whatsapp_url);
+            } else {
+              closeUnusedWhatsAppPopup();
             }
             var parts = [];
             if (data.whatsapp_ok) {
-              parts.push('WhatsApp sent to ' + (data.masked_phone || 'consumer'));
+              parts.push('WhatsApp auto-sent to ' + (data.masked_phone || 'consumer'));
             } else if (data.whatsapp_url) {
               parts.push('WhatsApp opened for ' + (data.masked_phone || 'consumer') + ' — tap Send');
             }
             if (data.email_ok) {
-              parts.push('Email sent to ' + (data.masked_email || 'consumer'));
+              parts.push('Email auto-sent to ' + (data.masked_email || 'consumer'));
             } else if (data.email_detail) {
               parts.push('Email: ' + data.email_detail);
+            } else {
+              parts.push('Email missing on consumer profile');
             }
-            var okText = parts.length ? parts.join('. ') + '.' : (data.message || 'OTP ready.');
+            var okText = parts.join('. ') + '.';
             if (data.dev_otp) {
               okText = okText + ' (Dev OTP: ' + data.dev_otp + ')';
             }
-            setOtpBanner(data.email_ok || data.whatsapp_ok || data.whatsapp_url ? 'success' : 'warning', okText, true);
+            setOtpBanner(
+              (data.email_ok || data.whatsapp_ok || data.whatsapp_url) ? 'success' : 'warning',
+              okText,
+              true
+            );
           } else {
+            closeUnusedWhatsAppPopup();
             setOtpBanner(
               'danger',
               (data.error || 'Failed to send OTP on WhatsApp/Email') + (data.masked_phone ? (' (' + data.masked_phone + ')') : ''),
@@ -747,18 +790,25 @@
           otpSending = false;
         })
         .catch(function() {
+          closeUnusedWhatsAppPopup();
           otpSending = false;
           setOtpBanner('danger', 'Unable to send OTP right now. Check WhatsApp/Email settings / network.', true);
         });
     }
 
     if (serviceReportModal) {
-      window.__sendServiceOtp = sendServiceOtp;
-      // Modal "shown" hook is bound after jQuery loads (script below).
+      window.__sendServiceOtp = function() { sendServiceOtp(false); };
+      var openBtn = document.getElementById('openServiceReportBtn');
+      if (openBtn) {
+        openBtn.addEventListener('click', function() {
+          // Fire during the same user click that opens the modal.
+          setTimeout(function() { sendServiceOtp(true); }, 50);
+        });
+      }
     }
     var resendBtn = document.getElementById('serviceOtpResendBtn');
     if (resendBtn) {
-      resendBtn.addEventListener('click', function() { sendServiceOtp(); });
+      resendBtn.addEventListener('click', function() { sendServiceOtp(true); });
     }
     var verifyBtn = document.getElementById('serviceOtpVerifyBtn');
     if (verifyBtn && serviceReportModal) {
