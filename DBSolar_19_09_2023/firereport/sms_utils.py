@@ -8,7 +8,7 @@ from urllib.parse import quote_plus
 
 import requests
 from django.conf import settings
-from django.core.mail import send_mail
+from django.core.mail import EmailMessage
 
 logger = logging.getLogger(__name__)
 
@@ -56,8 +56,17 @@ def build_service_report_otp_email_subject(*, service_id: int) -> str:
     return f"DB Solar Service Report OTP - SRV/{service_id}"
 
 
+def build_whatsapp_share_url(phone: str, message: str) -> Optional[str]:
+    """Same pattern as consumer QR page: open WhatsApp chat with prefilled text."""
+    mobile = normalize_indian_mobile(phone)
+    if not mobile:
+        return None
+    country = str(getattr(settings, "SMS_COUNTRY_CODE", "91") or "91").strip()
+    return f"https://wa.me/{country}{mobile}?text={quote_plus(message)}"
+
+
 def send_whatsapp(phone: str, message: str) -> Tuple[bool, str]:
-    """Auto-send WhatsApp message to consumer mobile number."""
+    """Send WhatsApp via API when configured. Console mode does not pretend success."""
     mobile = normalize_indian_mobile(phone)
     if not mobile:
         return False, "Invalid consumer mobile number for WhatsApp"
@@ -69,10 +78,11 @@ def send_whatsapp(phone: str, message: str) -> Tuple[bool, str]:
     e164 = f"+{full_mobile}"
 
     if provider == "console":
-        logger.warning("WHATSAPP_PROVIDER=console phone=%s msg=%s", mask_mobile(mobile), message)
-        return True, (
-            "OTP generated (WhatsApp console mode — set WHATSAPP API keys in EasyPanel to send real WhatsApp)"
+        logger.warning(
+            "WHATSAPP_PROVIDER=console phone=%s — browser WhatsApp share will be used",
+            mask_mobile(mobile),
         )
+        return False, "WhatsApp API not configured — open WhatsApp chat to send OTP"
 
     if provider == "ultramsg":
         instance = (getattr(settings, "ULTRAMSG_INSTANCE_ID", None) or "").strip()
@@ -181,7 +191,7 @@ def send_whatsapp(phone: str, message: str) -> Tuple[bool, str]:
 
 
 def send_otp_email(email: str, *, subject: str, message: str) -> Tuple[bool, str]:
-    """Send OTP email to consumer."""
+    """Send OTP email using the same SMTP EmailMessage path as consumer QR email."""
     to_email = (email or "").strip()
     if not to_email or "@" not in to_email:
         return False, "Consumer email is missing or invalid"
@@ -191,16 +201,14 @@ def send_otp_email(email: str, *, subject: str, message: str) -> Tuple[bool, str
         or getattr(settings, "EMAIL_HOST_USER", None)
         or "noreply@db-solar.co.in"
     )
+    body = (
+        f"{message}\n\n"
+        "If you did not request this service verification, please do not share the OTP.\n\n"
+        "Regards,\n"
+        "DB SOLAR Team"
+    )
     try:
-        sent = send_mail(
-            subject=subject,
-            message=message,
-            from_email=from_email,
-            recipient_list=[to_email],
-            fail_silently=False,
-        )
-        if not sent:
-            return False, "Email gateway returned 0 (not sent)"
+        EmailMessage(subject, body, from_email, [to_email]).send(fail_silently=False)
         return True, f"OTP email sent to {mask_email(to_email)}"
     except Exception as exc:
         logger.exception("OTP email send failed")
@@ -216,30 +224,34 @@ def deliver_service_report_otp(
     otp: str,
 ) -> dict:
     """
-    Auto-send OTP on WhatsApp number + email.
-    Returns channel results; overall ok if WhatsApp OR email succeeds
-    (WhatsApp required when phone exists; email is best-effort add-on if address present).
+    Deliver OTP the same way as consumer list QR share:
+    - Email: server SMTP auto-send (EmailMessage)
+    - WhatsApp: API auto-send when configured; otherwise return wa.me URL for browser open
     """
     message = build_service_report_otp_message(name=name, service_id=service_id, otp=otp)
     subject = build_service_report_otp_email_subject(service_id=service_id)
+    whatsapp_url = build_whatsapp_share_url(phone, message)
 
     wa_ok, wa_detail = send_whatsapp(phone, message)
+    # If API is not configured / failed, browser WhatsApp share is available (consumer QR style).
+    wa_browser = bool(whatsapp_url) and not wa_ok
+    if wa_browser:
+        wa_detail = "WhatsApp chat ready to open (same as consumer QR share)"
+
     email_ok, email_detail = (False, "No consumer email")
     if email:
         email_ok, email_detail = send_otp_email(email, subject=subject, message=message)
 
-    # Prefer WhatsApp success; email alone is also acceptable if WA fails but mail works.
-    overall_ok = bool(wa_ok or email_ok)
-    parts = []
-    parts.append(f"WhatsApp: {wa_detail}")
-    parts.append(f"Email: {email_detail}")
-    detail = " | ".join(parts)
+    overall_ok = bool(wa_ok or wa_browser or email_ok)
+    detail = f"WhatsApp: {wa_detail} | Email: {email_detail}"
 
     return {
         "ok": overall_ok,
         "detail": detail,
         "message_text": message,
         "whatsapp_ok": wa_ok,
+        "whatsapp_browser": wa_browser,
+        "whatsapp_url": whatsapp_url or "",
         "whatsapp_detail": wa_detail,
         "email_ok": email_ok,
         "email_detail": email_detail,

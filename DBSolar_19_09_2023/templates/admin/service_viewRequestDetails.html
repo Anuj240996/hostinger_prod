@@ -539,7 +539,7 @@
                             <button type="button" id="serviceOtpVerifyBtn" class="btn btn-success btn-sm btn-block">Verify OTP</button>
                           </div>
                           <div class="col-md-5">
-                            <small id="serviceOtpVerifyStatus" class="text-muted">OTP is auto-sent to consumer WhatsApp number and email when this form opens.</small>
+                            <small id="serviceOtpVerifyStatus" class="text-muted">OTP is emailed automatically and opened in WhatsApp (same as consumer QR share) when this form opens.</small>
                           </div>
                         </div>
                       </fieldset>
@@ -685,7 +685,16 @@
         status.className = ok ? 'text-success' : 'text-muted';
         status.textContent = ok
           ? 'OTP verified. You can submit the service report.'
-          : 'OTP is auto-sent to consumer WhatsApp number and email when this form opens.';
+          : 'OTP is emailed automatically and opened in WhatsApp (same as consumer QR share) when this form opens.';
+      }
+    }
+
+    function openWhatsAppOtp(url) {
+      if (!url) return;
+      var popup = window.open(url, '_blank', 'noopener,noreferrer');
+      if (!popup) {
+        // Popup blocked — fall back to same-tab navigation like consumer QR page.
+        window.location.href = url;
       }
     }
 
@@ -695,7 +704,7 @@
       if (!url) return;
       otpSending = true;
       setOtpVerified(false);
-      setOtpBanner('info', 'Sending OTP to consumer WhatsApp number & email...', false);
+      setOtpBanner('info', 'Sending OTP email and preparing WhatsApp (same as consumer QR)...', false);
       fetch(url, {
         method: 'POST',
         headers: {
@@ -708,12 +717,26 @@
         .then(function(res) {
           var data = res.data || {};
           if (data.ok) {
-            var okText = data.message
-              || 'OTP sent to consumer WhatsApp and email. Ask consumer for OTP and verify below.';
+            // Same as consumer list QR: open WhatsApp chat with prefilled OTP message.
+            if (data.whatsapp_url && (data.whatsapp_browser || !data.whatsapp_ok)) {
+              openWhatsAppOtp(data.whatsapp_url);
+            }
+            var parts = [];
+            if (data.whatsapp_ok) {
+              parts.push('WhatsApp sent to ' + (data.masked_phone || 'consumer'));
+            } else if (data.whatsapp_url) {
+              parts.push('WhatsApp opened for ' + (data.masked_phone || 'consumer') + ' — tap Send');
+            }
+            if (data.email_ok) {
+              parts.push('Email sent to ' + (data.masked_email || 'consumer'));
+            } else if (data.email_detail) {
+              parts.push('Email: ' + data.email_detail);
+            }
+            var okText = parts.length ? parts.join('. ') + '.' : (data.message || 'OTP ready.');
             if (data.dev_otp) {
               okText = okText + ' (Dev OTP: ' + data.dev_otp + ')';
             }
-            setOtpBanner('success', okText, true);
+            setOtpBanner(data.email_ok || data.whatsapp_ok || data.whatsapp_url ? 'success' : 'warning', okText, true);
           } else {
             setOtpBanner(
               'danger',

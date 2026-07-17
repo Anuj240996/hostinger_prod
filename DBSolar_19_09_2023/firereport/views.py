@@ -622,18 +622,20 @@ def serviceSendReportOtp(request, pid):
         .first()
     )
     if recent:
+        from firereport.sms_utils import build_whatsapp_share_url
         payload = {
             'ok': True,
             'message': 'OTP was already sent. Please wait before requesting another OTP.',
             'masked_phone': mask_mobile(recent.phone),
+            'whatsapp_url': build_whatsapp_share_url(recent.phone, recent.message_text or '') or '',
+            'whatsapp_browser': True,
+            'whatsapp_ok': False,
+            'email_ok': False,
             'otp_id': recent.id,
             'expires_in_sec': max(1, int((recent.expires_at - now).total_seconds())),
             'throttled': True,
         }
-        if (
-            (getattr(settings, 'WHATSAPP_PROVIDER', '') or '').lower() == 'console'
-            and request.user.is_superuser
-        ):
+        if request.user.is_superuser:
             payload['dev_otp'] = recent.otp_code
         return JsonResponse(payload)
 
@@ -724,37 +726,47 @@ def serviceSendReportOtp(request, pid):
             'masked_phone': mask_mobile(phone),
             'masked_email': delivery.get('masked_email') or '',
             'whatsapp_ok': bool(delivery.get('whatsapp_ok')),
+            'whatsapp_browser': bool(delivery.get('whatsapp_browser')),
+            'whatsapp_url': delivery.get('whatsapp_url') or '',
             'email_ok': bool(delivery.get('email_ok')),
+            'email_detail': delivery.get('email_detail') or '',
             'otp_id': row.id,
         }, status=502)
 
     channels = []
     if delivery.get('whatsapp_ok'):
         channels.append(f"WhatsApp {mask_mobile(phone)}")
+    elif delivery.get('whatsapp_browser'):
+        channels.append(f"WhatsApp chat {mask_mobile(phone)}")
     if delivery.get('email_ok'):
         channels.append(f"Email {delivery.get('masked_email')}")
+    elif email:
+        channels.append(f"Email failed ({delivery.get('email_detail') or 'error'})")
+    else:
+        channels.append('Email missing on consumer profile')
     channel_txt = " & ".join(channels) if channels else mask_mobile(phone)
 
     payload = {
         'ok': True,
-        'message': f"OTP auto-sent to {channel_txt}. Ask consumer for OTP and verify below.",
+        'message': f"OTP ready for {channel_txt}. Ask consumer for OTP and verify below.",
         'detail': detail,
         'masked_phone': mask_mobile(phone),
         'masked_email': delivery.get('masked_email') or '',
         'whatsapp_ok': bool(delivery.get('whatsapp_ok')),
+        'whatsapp_browser': bool(delivery.get('whatsapp_browser')),
+        'whatsapp_url': delivery.get('whatsapp_url') or '',
         'email_ok': bool(delivery.get('email_ok')),
+        'email_detail': delivery.get('email_detail') or '',
         'otp_id': row.id,
         'expires_in_sec': 600,
     }
-    # Expose OTP only in console (API keys not configured yet) for superuser testing.
-    from django.conf import settings as djsettings
-    if (getattr(djsettings, 'WHATSAPP_PROVIDER', '') or '').lower() == 'console' and request.user.is_superuser:
+    if request.user.is_superuser and not delivery.get('whatsapp_ok'):
         payload['dev_otp'] = otp
         payload['message'] = (
             f"OTP generated for WhatsApp {mask_mobile(phone)}"
             + (f" / Email {delivery.get('masked_email')}" if delivery.get('masked_email') else "")
-            + f". WhatsApp API not configured yet (set ULTRAMSG_* or WHATSAPP_META_* in EasyPanel). "
-            + f"Email: {'sent' if delivery.get('email_ok') else 'not sent'}. Dev OTP: {otp}"
+            + f". Email: {'sent' if delivery.get('email_ok') else (delivery.get('email_detail') or 'not sent')}. "
+            + f"Dev OTP: {otp}"
         )
     return JsonResponse(payload)
 
