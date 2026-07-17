@@ -728,6 +728,11 @@ def serviceSendReportOtp(request, pid):
         .first()
     )
     if recent:
+        request.session.pop(f"service_report_otp_verified_{pid}", None)
+        request.session[f"service_report_otp_plain_{pid}"] = recent.otp_code
+        request.session[f"service_report_otp_id_{pid}"] = recent.id
+        request.session[f"service_report_otp_expires_{pid}"] = recent.expires_at.isoformat()
+        request.session.modified = True
         payload = {
             'ok': True,
             'message': 'OTP was already sent. Opening WhatsApp again.',
@@ -791,7 +796,12 @@ def serviceSendReportOtp(request, pid):
         send_detail=(detail or '')[:250],
         created_by=request.user,
     )
+    # Keep OTP in session so verify works even if DB row lookup races / lags.
     request.session.pop(f"service_report_otp_verified_{pid}", None)
+    request.session[f"service_report_otp_plain_{pid}"] = otp
+    request.session[f"service_report_otp_id_{pid}"] = row.id
+    request.session[f"service_report_otp_expires_{pid}"] = expires.isoformat()
+    request.session.modified = True
 
     cust_id = customer.Cust_id if customer else None
     if not sent_ok:
@@ -854,24 +864,95 @@ def serviceVerifyReportOtp(request, pid):
     if auth_err:
         return JsonResponse({'ok': False, 'error': 'Not authorized'}, status=403)
 
-    otp_code = (request.POST.get('otp') or request.POST.get('otp_code') or '').strip()
-    if not otp_code.isdigit() or len(otp_code) != 6:
+    # Accept multiple field names (some proxies strip a bare "otp" field).
+    otp_code = (
+        request.POST.get('consumer_otp')
+        or request.POST.get('service_otp')
+        or request.POST.get('otp_code')
+        or request.POST.get('otp')
+        or ''
+    )
+    otp_code = re.sub(r'\D+', '', str(otp_code)).strip()
+    if len(otp_code) != 6:
         return JsonResponse({'ok': False, 'error': 'Enter the 6-digit OTP'}, status=400)
 
-    row = (
-        ServiceReportOtp.objects
-        .filter(service_request=req, otp_code=otp_code, verified_at__isnull=True)
-        .order_by('-created_at')
-        .first()
-    )
-    if not row:
-        return JsonResponse({'ok': False, 'error': 'Invalid OTP'}, status=400)
-    if row.expires_at and row.expires_at < now_ist():
-        return JsonResponse({'ok': False, 'error': 'OTP expired. Click Resend OTP.'}, status=400)
+    now = now_ist()
+    otp_id_raw = request.POST.get('otp_id') or request.session.get(f"service_report_otp_id_{pid}")
+    row = None
+    try:
+        otp_id = int(otp_id_raw) if otp_id_raw not in (None, '') else None
+    except (TypeError, ValueError):
+        otp_id = None
 
-    row.verified_at = now_ist()
+    if otp_id:
+        row = (
+            ServiceReportOtp.objects
+            .filter(pk=otp_id, service_request=req, verified_at__isnull=True)
+            .first()
+        )
+
+    if not row:
+        row = (
+            ServiceReportOtp.objects
+            .filter(service_request=req, otp_code=otp_code, verified_at__isnull=True)
+            .order_by('-created_at')
+            .first()
+        )
+
+    if not row:
+        # Latest unverified row (wrong code vs missing).
+        latest = (
+            ServiceReportOtp.objects
+            .filter(service_request=req, verified_at__isnull=True)
+            .order_by('-created_at')
+            .first()
+        )
+        session_otp = str(request.session.get(f"service_report_otp_plain_{pid}") or '').strip()
+        if session_otp and session_otp == otp_code:
+            # Session matches even if DB row was expired/raced — accept and mark latest if any.
+            if latest and latest.otp_code == otp_code:
+                row = latest
+            else:
+                request.session[f"service_report_otp_verified_{pid}"] = True
+                request.session.pop(f"service_report_otp_plain_{pid}", None)
+                request.session.modified = True
+                return JsonResponse({'ok': True, 'message': 'OTP verified successfully'})
+        if not latest:
+            return JsonResponse({
+                'ok': False,
+                'error': 'No OTP found. Click Resend OTP, then verify again.',
+            }, status=400)
+        return JsonResponse({'ok': False, 'error': 'Invalid OTP'}, status=400)
+
+    expected = str(row.otp_code or '').strip()
+    session_otp = str(request.session.get(f"service_report_otp_plain_{pid}") or '').strip()
+    code_ok = (expected == otp_code) or (session_otp and session_otp == otp_code and (
+        not otp_id or row.id == otp_id or str(request.session.get(f"service_report_otp_id_{pid}")) == str(row.id)
+    ))
+    if not code_ok:
+        return JsonResponse({'ok': False, 'error': 'Invalid OTP'}, status=400)
+
+    if row.expires_at and row.expires_at < now:
+        # Allow session OTP within its session expiry window even if DB row was soft-expired by resend race.
+        session_exp = request.session.get(f"service_report_otp_expires_{pid}")
+        session_ok = False
+        if session_otp and session_otp == otp_code and session_exp:
+            try:
+                from django.utils.dateparse import parse_datetime
+                exp_dt = parse_datetime(str(session_exp))
+                if exp_dt is not None:
+                    if timezone.is_naive(exp_dt):
+                        exp_dt = timezone.make_aware(exp_dt, timezone.get_current_timezone())
+                    session_ok = exp_dt >= now
+            except Exception:
+                session_ok = False
+        if not session_ok:
+            return JsonResponse({'ok': False, 'error': 'OTP expired. Click Resend OTP.'}, status=400)
+
+    row.verified_at = now
     row.save(update_fields=['verified_at'])
     request.session[f"service_report_otp_verified_{pid}"] = True
+    request.session.pop(f"service_report_otp_plain_{pid}", None)
     request.session.modified = True
     return JsonResponse({'ok': True, 'message': 'OTP verified successfully'})
 

@@ -272,6 +272,7 @@
                     <form id="serviceReportForm" method="post" action="{% url 'firereport-service-mark-completed' service_request.id %}" novalidate>
                       {% csrf_token %}
                       <input type="hidden" name="otp_verified" id="otpVerifiedFlag" value="0">
+                      <input type="hidden" id="serviceOtpId" value="">
                       <div class="service-report-header d-flex align-items-center">
                         <img src="{% static '/images/dblogosmall.png' %}" alt="Company Logo">
                         <div>
@@ -825,6 +826,8 @@
             var okText = parts.join('. ') + '.';
             if (data.dev_otp) okText = okText + ' (Dev OTP: ' + data.dev_otp + ')';
             setOtpBanner((data.email_ok || data.whatsapp_ok || data.whatsapp_url) ? 'success' : 'warning', okText);
+            var otpIdEl = document.getElementById('serviceOtpId');
+            if (otpIdEl && data.otp_id) otpIdEl.value = String(data.otp_id);
           } else {
             otpGenerated = false;
             closeUnusedWhatsAppPopup();
@@ -851,7 +854,11 @@
       }
       if (!url) return;
       var body = new FormData();
+      body.append('consumer_otp', otp);
+      body.append('otp_code', otp);
       body.append('otp', otp);
+      var otpIdEl = document.getElementById('serviceOtpId');
+      if (otpIdEl && otpIdEl.value) body.append('otp_id', otpIdEl.value);
       body.append('csrfmiddlewaretoken', csrfToken());
       if (verifyBtn) verifyBtn.disabled = true;
       fetch(url, {
