@@ -342,6 +342,8 @@ SMS_COUNTRY_CODE = os.environ.get("SMS_COUNTRY_CODE", "91").strip()
 
 # WHATSAPP_PROVIDER: ultramsg | meta | http | console
 WHATSAPP_PROVIDER = os.environ.get("WHATSAPP_PROVIDER", "ultramsg").strip().lower()
+# Default DB Solar WhatsApp Business number used as the sender identity.
+WHATSAPP_DEFAULT_FROM_NUMBER = os.environ.get("WHATSAPP_DEFAULT_FROM_NUMBER", "7588540555").strip()
 ULTRAMSG_INSTANCE_ID = os.environ.get("ULTRAMSG_INSTANCE_ID", "").strip()
 ULTRAMSG_TOKEN = os.environ.get("ULTRAMSG_TOKEN", "").strip()
 WHATSAPP_META_TOKEN = os.environ.get("WHATSAPP_META_TOKEN", "").strip()

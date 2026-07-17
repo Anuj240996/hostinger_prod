@@ -1074,6 +1074,47 @@ def serviceMarkCompleted(request, pid):
         AssignTo=req.AssignTo,
         AssignBy=request.user.id,
     )
+
+    # After successful save: auto-send WhatsApp from default number 7588540555
+    # to the consumer's registered WhatsApp/phone from the customer table.
+    try:
+        from firereport.sms_utils import mask_mobile, send_service_completed_whatsapp
+
+        phone, _email, cust = _resolve_service_consumer_contacts(req)
+        consumer_name = (
+            (cust.Comp_name if cust and cust.Comp_name else None)
+            or (cust.Consumer if cust and cust.Consumer else None)
+            or req.FullName
+            or 'Customer'
+        )
+        if phone:
+            wa_ok, wa_detail = send_service_completed_whatsapp(
+                phone=phone,
+                name=consumer_name,
+                service_id=req.id,
+                remark=combined_remark,
+            )
+            if wa_ok:
+                messages.success(
+                    request,
+                    f"Service report saved. WhatsApp sent to consumer {mask_mobile(phone)} from 7588540555.",
+                )
+            else:
+                messages.warning(
+                    request,
+                    f"Service report saved, but WhatsApp was not sent ({wa_detail}).",
+                )
+        else:
+            messages.warning(
+                request,
+                "Service report saved, but consumer WhatsApp/phone was not found in customer table.",
+            )
+    except Exception as exc:
+        messages.warning(
+            request,
+            f"Service report saved, but WhatsApp notification failed: {exc}",
+        )
+
     return redirect('firereport-service-completed')
 
 

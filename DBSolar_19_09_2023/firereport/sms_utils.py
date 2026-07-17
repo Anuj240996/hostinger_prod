@@ -65,8 +65,25 @@ def build_whatsapp_share_url(phone: str, message: str) -> Optional[str]:
     return f"https://wa.me/{country}{mobile}?text={quote_plus(message)}"
 
 
+def build_service_report_completed_message(*, name: str, service_id: int, remark: str = "") -> str:
+    consumer = (name or "Customer").strip() or "Customer"
+    from_number = (
+        getattr(settings, "WHATSAPP_DEFAULT_FROM_NUMBER", None) or "7588540555"
+    ).strip()
+    remark_txt = (remark or "").strip()
+    lines = [
+        f"Dear {consumer},",
+        f"Your DB Solar service report SRV/{service_id} has been completed successfully.",
+    ]
+    if remark_txt:
+        lines.append(f"Remark: {remark_txt}")
+    lines.append(f"For support contact DB Solar WhatsApp: {from_number}")
+    lines.append("Thank you. - DB Solar")
+    return " ".join(lines)
+
+
 def send_whatsapp(phone: str, message: str) -> Tuple[bool, str]:
-    """Send WhatsApp via API when configured. Console mode does not pretend success."""
+    """Send WhatsApp via API from the default DB Solar number when configured."""
     mobile = normalize_indian_mobile(phone)
     if not mobile:
         return False, "Invalid consumer mobile number for WhatsApp"
@@ -76,13 +93,22 @@ def send_whatsapp(phone: str, message: str) -> Tuple[bool, str]:
     full_mobile = f"{country}{mobile}"
     # Ultramsg/Meta often want +91...
     e164 = f"+{full_mobile}"
+    from_number = normalize_indian_mobile(
+        getattr(settings, "WHATSAPP_DEFAULT_FROM_NUMBER", None) or "7588540555"
+    ) or "7588540555"
+    from_e164 = f"+{country}{from_number}"
 
     if provider == "console":
         logger.warning(
-            "WHATSAPP_PROVIDER=console phone=%s — browser WhatsApp share will be used",
+            "WHATSAPP_PROVIDER=console from=%s to=%s msg=%s",
+            from_number,
             mask_mobile(mobile),
+            message,
         )
-        return False, "WhatsApp API not configured — open WhatsApp chat to send OTP"
+        return False, (
+            f"WhatsApp API not configured — cannot auto-send from {from_number}. "
+            "Set ULTRAMSG_INSTANCE_ID / ULTRAMSG_TOKEN (linked to 7588540555) in EasyPanel."
+        )
 
     if provider == "ultramsg":
         instance = (getattr(settings, "ULTRAMSG_INSTANCE_ID", None) or "").strip()
@@ -91,9 +117,16 @@ def send_whatsapp(phone: str, message: str) -> Tuple[bool, str]:
             return False, "ULTRAMSG_INSTANCE_ID / ULTRAMSG_TOKEN not configured"
         url = f"https://api.ultramsg.com/{instance}/messages/chat"
         try:
+            # UltraMsg instance must be linked to WHATSAPP_DEFAULT_FROM_NUMBER (7588540555).
             resp = requests.post(
                 url,
-                data={"token": token, "to": e164, "body": message, "priority": "10"},
+                data={
+                    "token": token,
+                    "to": e164,
+                    "body": message,
+                    "priority": "10",
+                    "referenceId": from_number,
+                },
                 timeout=25,
             )
             body = (resp.text or "").strip()
@@ -103,7 +136,7 @@ def send_whatsapp(phone: str, message: str) -> Tuple[bool, str]:
             low = body.lower()
             if '"error"' in low and '"sent":"true"' not in low and '"sent": true' not in low:
                 return False, f"UltraMsg rejected: {body[:200]}"
-            return True, "OTP WhatsApp sent"
+            return True, f"WhatsApp sent from {from_number} to {mask_mobile(mobile)}"
         except Exception as exc:
             logger.exception("UltraMsg WhatsApp send failed")
             return False, f"WhatsApp send failed: {exc}"
@@ -154,7 +187,7 @@ def send_whatsapp(phone: str, message: str) -> Tuple[bool, str]:
             body = (resp.text or "").strip()
             if resp.status_code >= 400:
                 return False, f"Meta WhatsApp error: {body[:200]}"
-            return True, "OTP WhatsApp sent"
+            return True, f"WhatsApp sent from {from_number} to {mask_mobile(mobile)}"
         except Exception as exc:
             logger.exception("Meta WhatsApp send failed")
             return False, f"WhatsApp send failed: {exc}"
@@ -169,25 +202,49 @@ def send_whatsapp(phone: str, message: str) -> Tuple[bool, str]:
             .replace("{e164}", quote_plus(e164))
             .replace("{mobile}", quote_plus(mobile))
             .replace("{message}", quote_plus(message))
+            .replace("{from}", quote_plus(from_number))
+            .replace("{from_e164}", quote_plus(from_e164))
         )
         try:
             method = (getattr(settings, "WHATSAPP_HTTP_METHOD", "GET") or "GET").upper()
             if method == "POST":
                 resp = requests.post(
                     url,
-                    data={"phone": full_mobile, "to": e164, "message": message},
+                    data={
+                        "phone": full_mobile,
+                        "to": e164,
+                        "message": message,
+                        "from": from_number,
+                        "from_e164": from_e164,
+                    },
                     timeout=25,
                 )
             else:
                 resp = requests.get(url, timeout=25)
             if resp.status_code >= 400:
                 return False, f"WhatsApp gateway HTTP {resp.status_code}: {(resp.text or '')[:200]}"
-            return True, "OTP WhatsApp sent"
+            return True, f"WhatsApp sent from {from_number} to {mask_mobile(mobile)}"
         except Exception as exc:
             logger.exception("HTTP WhatsApp send failed")
             return False, f"WhatsApp send failed: {exc}"
 
     return False, f"Unknown WHATSAPP_PROVIDER={provider}"
+
+
+def send_service_completed_whatsapp(
+    *,
+    phone: str,
+    name: str,
+    service_id: int,
+    remark: str = "",
+) -> Tuple[bool, str]:
+    """Auto-send service-completed WhatsApp from default number 7588540555."""
+    message = build_service_report_completed_message(
+        name=name,
+        service_id=service_id,
+        remark=remark,
+    )
+    return send_whatsapp(phone, message)
 
 
 def send_otp_email(email: str, *, subject: str, message: str) -> Tuple[bool, str]:
