@@ -527,11 +527,30 @@
                             <input type="date" name="engg_sign_date" class="form-control form-control-sm" value="{{ service_report.engg_sign_date|date:'Y-m-d'|default:report_date_default }}">
                           </div>
                         </div>
-                        <small class="text-muted">Click Submit to verify consumer OTP. Service request is completed only after OTP verification.</small>
+                        <small class="text-muted">Verify consumer OTP below. Submit appears only after OTP is verified.</small>
+                      </fieldset>
+
+                      <fieldset class="service-report-fieldset">
+                        <legend>Consumer OTP Verification</legend>
+                        <div id="serviceOtpBanner" class="alert alert-info py-2" style="display:none;">
+                          <span id="serviceOtpBannerText">Sending OTP to consumer WhatsApp &amp; Email...</span>
+                        </div>
+                        <p class="mb-2 small text-muted">OTP is sent to the consumer email and WhatsApp when Service Report opens. Valid for 20 minutes.</p>
+                        <div class="row align-items-end">
+                          <div class="col-md-4">
+                            <label for="serviceConsumerOtp">Consumer OTP <span style="color:red;">*</span></label>
+                            <input type="text" id="serviceConsumerOtp" class="form-control form-control-sm" maxlength="6" inputmode="numeric" placeholder="Enter 6-digit OTP" autocomplete="one-time-code">
+                          </div>
+                          <div class="col-md-8">
+                            <button type="button" id="serviceOtpVerifyBtn" class="btn btn-success btn-sm">Verify OTP</button>
+                            <button type="button" id="serviceOtpResendBtn" class="btn btn-outline-secondary btn-sm">Resend OTP</button>
+                          </div>
+                        </div>
+                        <small id="serviceOtpVerifyStatus" class="text-muted d-block mt-2">Submit button stays hidden until OTP is verified. Service remains In Process until then.</small>
                       </fieldset>
 
                       <div class="modal-footer">
-                        <button type="button" id="serviceReportSubmitBtn" class="btn btn-primary">Submit</button>
+                        <button type="submit" id="serviceReportSubmitBtn" class="btn btn-primary" style="display:none;">Submit</button>
                       </div>
                     </form>
                   </div>
@@ -545,33 +564,6 @@
     </div>
   </div>
 </section>
-
-<div class="modal fade" id="serviceOtpVerifyModal" tabindex="-1" role="dialog" aria-labelledby="serviceOtpVerifyModalLabel" aria-hidden="true" data-backdrop="static" data-keyboard="false" style="z-index: 2000;">
-  <div class="modal-dialog modal-dialog-centered" role="document">
-    <div class="modal-content">
-      <div class="modal-header bg-primary text-white">
-        <h5 class="modal-title" id="serviceOtpVerifyModalLabel">Verify Consumer OTP</h5>
-        <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
-          <span aria-hidden="true">&times;</span>
-        </button>
-      </div>
-      <div class="modal-body">
-        <div id="serviceOtpBanner" class="alert alert-info py-2" style="display:none;">
-          <span id="serviceOtpBannerText">Sending OTP to consumer WhatsApp &amp; Email...</span>
-        </div>
-        <p class="mb-2">OTP is sent to the consumer email and WhatsApp number from the customer table. It is valid for 20 minutes. Enter the OTP to complete this service request.</p>
-        <label for="serviceConsumerOtp">Consumer OTP <span style="color:red;">*</span></label>
-        <input type="text" id="serviceConsumerOtp" class="form-control" maxlength="6" inputmode="numeric" placeholder="Enter 6-digit OTP from consumer" autocomplete="one-time-code">
-        <small id="serviceOtpVerifyStatus" class="text-muted d-block mt-2">Service will remain In Process until OTP is verified.</small>
-      </div>
-      <div class="modal-footer">
-        <button type="button" id="serviceOtpResendBtn" class="btn btn-outline-secondary">Resend OTP</button>
-        <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
-        <button type="button" id="serviceOtpVerifyBtn" class="btn btn-success">Verify OTP &amp; Complete</button>
-      </div>
-    </div>
-  </div>
-</div>
 <script>
   (function() {
     var phaseSelect = document.getElementById('phaseType');
@@ -668,10 +660,10 @@
 
     var serviceReportForm = document.getElementById('serviceReportForm');
     var serviceReportModal = document.getElementById('serviceReportModal');
+    var serviceReportSubmitBtn = document.getElementById('serviceReportSubmitBtn');
     var otpVerified = false;
     var otpSending = false;
     var otpGenerated = false;
-    var formReadyToComplete = false;
     var waOtpPopup = null;
 
     function csrfToken() {
@@ -688,6 +680,11 @@
       bannerText.textContent = text || '';
     }
 
+    function syncSubmitVisibility() {
+      if (!serviceReportSubmitBtn) return;
+      serviceReportSubmitBtn.style.display = otpVerified ? '' : 'none';
+    }
+
     function setOtpVerified(ok) {
       otpVerified = !!ok;
       var flag = document.getElementById('otpVerifiedFlag');
@@ -696,9 +693,10 @@
       if (status) {
         status.className = ok ? 'text-success d-block mt-2' : 'text-muted d-block mt-2';
         status.textContent = ok
-          ? 'OTP verified. Saving service report as Completed...'
-          : 'Service will remain In Process until OTP is verified.';
+          ? 'OTP verified. Submit button is now available to save the service report.'
+          : 'Submit button stays hidden until OTP is verified. Service remains In Process until then.';
       }
+      syncSubmitVisibility();
     }
 
     function openWhatsAppOtp(url) {
@@ -792,51 +790,6 @@
       return { hasError: hasError, firstInvalid: firstInvalid };
     }
 
-    function showOtpVerifyModal() {
-      var otpInput = document.getElementById('serviceConsumerOtp');
-      var otpModalEl = document.getElementById('serviceOtpVerifyModal');
-      if (otpInput) otpInput.value = '';
-      setOtpVerified(false);
-      // Keep Service Report open; show OTP on top (nested hide/show was failing silently).
-      if (otpModalEl && otpModalEl.parentNode !== document.body) {
-        document.body.appendChild(otpModalEl);
-      }
-      if (typeof jQuery !== 'undefined' && jQuery.fn && jQuery.fn.modal) {
-        var $otpModal = jQuery('#serviceOtpVerifyModal');
-        $otpModal.css('z-index', 2000);
-        $otpModal.off('shown.bs.modal.serviceOtpFocus').one('shown.bs.modal.serviceOtpFocus', function() {
-          jQuery('.modal-backdrop').last().css('z-index', 1990);
-          if (otpInput) otpInput.focus();
-        });
-        $otpModal.modal('show');
-        return;
-      }
-      if (otpModalEl) {
-        otpModalEl.classList.add('show');
-        otpModalEl.style.display = 'block';
-        otpModalEl.setAttribute('aria-hidden', 'false');
-        if (otpInput) otpInput.focus();
-      } else {
-        alert('OTP verification dialog is missing. Please refresh the page.');
-      }
-    }
-
-    function openOtpAfterValidation() {
-      formReadyToComplete = false;
-      setOtpVerified(false);
-      var validation = validateServiceReportForm();
-      if (validation.hasError) {
-        alert('Please fill all required fields before submitting the service report.');
-        if (validation.firstInvalid && typeof validation.firstInvalid.focus === 'function') validation.firstInvalid.focus();
-        return false;
-      }
-      showOtpVerifyModal();
-      if (!otpGenerated && !otpSending) {
-        sendServiceOtp(true);
-      }
-      return true;
-    }
-
     function sendServiceOtp(fromUserGesture) {
       if (!serviceReportModal || otpSending) return;
       var url = serviceReportModal.getAttribute('data-send-otp-url');
@@ -847,6 +800,8 @@
       }
       otpSending = true;
       setOtpVerified(false);
+      var otpInput = document.getElementById('serviceConsumerOtp');
+      if (otpInput) otpInput.value = '';
       setOtpBanner('info', 'Sending OTP to consumer email and WhatsApp...');
       fetch(url, {
         method: 'POST',
@@ -885,7 +840,7 @@
         });
     }
 
-    function verifyServiceOtpAndComplete() {
+    function verifyServiceOtp() {
       var otpInput = document.getElementById('serviceConsumerOtp');
       var otp = otpInput ? (otpInput.value || '').trim() : '';
       var url = serviceReportModal ? serviceReportModal.getAttribute('data-verify-otp-url') : '';
@@ -894,7 +849,7 @@
         alert('Enter the 6-digit OTP received by consumer.');
         return;
       }
-      if (!url || !serviceReportForm) return;
+      if (!url) return;
       var body = new FormData();
       body.append('otp', otp);
       body.append('csrfmiddlewaretoken', csrfToken());
@@ -910,30 +865,22 @@
           if (verifyBtn) verifyBtn.disabled = false;
           if (res.data && res.data.ok) {
             setOtpVerified(true);
-            formReadyToComplete = true;
-            mirrorDisabledFields();
-            if (typeof jQuery !== 'undefined') {
-              jQuery('#serviceOtpVerifyModal').modal('hide');
-            }
-            serviceReportForm.submit();
           } else {
             setOtpVerified(false);
-            formReadyToComplete = false;
-            alert((res.data && res.data.error) || 'OTP verification failed. Service request is not completed.');
+            alert((res.data && res.data.error) || 'OTP verification failed.');
           }
         })
         .catch(function() {
           if (verifyBtn) verifyBtn.disabled = false;
           setOtpVerified(false);
-          formReadyToComplete = false;
-          alert('Unable to verify OTP right now. Service request is not completed.');
+          alert('Unable to verify OTP right now.');
         });
     }
 
     var openServiceReportBtn = document.getElementById('openServiceReportBtn');
     if (openServiceReportBtn) {
       openServiceReportBtn.addEventListener('click', function() {
-        // Generate/send OTP as soon as the Service Report is opened.
+        setOtpVerified(false);
         sendServiceOtp(true);
       });
     }
@@ -941,25 +888,28 @@
     var resendBtn = document.getElementById('serviceOtpResendBtn');
     if (resendBtn) resendBtn.addEventListener('click', function() { sendServiceOtp(true); });
     var verifyBtn = document.getElementById('serviceOtpVerifyBtn');
-    if (verifyBtn) verifyBtn.addEventListener('click', function() { verifyServiceOtpAndComplete(); });
+    if (verifyBtn) verifyBtn.addEventListener('click', function() { verifyServiceOtp(); });
 
-    var serviceReportSubmitBtn = document.getElementById('serviceReportSubmitBtn');
-    if (serviceReportSubmitBtn) {
-      serviceReportSubmitBtn.addEventListener('click', function(e) {
-        e.preventDefault();
-        openOtpAfterValidation();
-      });
-    }
+    syncSubmitVisibility();
 
     if (serviceReportForm) {
       serviceReportForm.addEventListener('submit', function(e) {
-        if (formReadyToComplete && otpVerified) {
-          mirrorDisabledFields();
-          return true;
+        if (!otpVerified) {
+          e.preventDefault();
+          alert('Verify consumer OTP first. Submit is available only after OTP verification.');
+          var otpInput = document.getElementById('serviceConsumerOtp');
+          if (otpInput) otpInput.focus();
+          return false;
         }
-        e.preventDefault();
-        openOtpAfterValidation();
-        return false;
+        var validation = validateServiceReportForm();
+        if (validation.hasError) {
+          e.preventDefault();
+          alert('Please fill all required fields before submitting the service report.');
+          if (validation.firstInvalid && typeof validation.firstInvalid.focus === 'function') validation.firstInvalid.focus();
+          return false;
+        }
+        mirrorDisabledFields();
+        return true;
       });
     }
 
