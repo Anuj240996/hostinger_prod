@@ -670,6 +670,7 @@
     var serviceReportModal = document.getElementById('serviceReportModal');
     var otpVerified = false;
     var otpSending = false;
+    var otpGenerated = false;
     var formReadyToComplete = false;
     var waOtpPopup = null;
 
@@ -839,6 +840,7 @@
         .then(function(res) {
           var data = res.data || {};
           if (data.ok) {
+            otpGenerated = true;
             if (data.whatsapp_ok) closeUnusedWhatsAppPopup();
             else if (data.whatsapp_url) openWhatsAppOtp(data.whatsapp_url);
             else closeUnusedWhatsAppPopup();
@@ -852,12 +854,14 @@
             if (data.dev_otp) okText = okText + ' (Dev OTP: ' + data.dev_otp + ')';
             setOtpBanner((data.email_ok || data.whatsapp_ok || data.whatsapp_url) ? 'success' : 'warning', okText);
           } else {
+            otpGenerated = false;
             closeUnusedWhatsAppPopup();
             setOtpBanner('danger', (data.error || 'Failed to send OTP') + (data.masked_phone ? (' (' + data.masked_phone + ')') : ''));
           }
           otpSending = false;
         })
         .catch(function() {
+          otpGenerated = false;
           closeUnusedWhatsAppPopup();
           otpSending = false;
           setOtpBanner('danger', 'Unable to send OTP right now. Check WhatsApp/Email settings / network.');
@@ -909,6 +913,14 @@
         });
     }
 
+    var openServiceReportBtn = document.getElementById('openServiceReportBtn');
+    if (openServiceReportBtn) {
+      openServiceReportBtn.addEventListener('click', function() {
+        // Generate/send OTP as soon as the Service Report is opened.
+        sendServiceOtp(true);
+      });
+    }
+
     var resendBtn = document.getElementById('serviceOtpResendBtn');
     if (resendBtn) resendBtn.addEventListener('click', function() { sendServiceOtp(true); });
     var verifyBtn = document.getElementById('serviceOtpVerifyBtn');
@@ -930,7 +942,11 @@
           return false;
         }
         showOtpVerifyModal();
-        sendServiceOtp(true);
+        // Normally OTP was already sent when Service Report opened.
+        // Retry here only if that initial delivery failed or did not run.
+        if (!otpGenerated && !otpSending) {
+          sendServiceOtp(true);
+        }
         return false;
       });
     }
