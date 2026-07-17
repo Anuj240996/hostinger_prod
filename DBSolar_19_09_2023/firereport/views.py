@@ -608,17 +608,64 @@ def serviceSendReportOtp(request, pid):
         mask_mobile,
         normalize_indian_mobile,
     )
-    import random
+    import secrets
+
+    now = now_ist()
+    recent = (
+        ServiceReportOtp.objects
+        .filter(
+            service_request=req,
+            created_at__gte=now - timezone.timedelta(seconds=45),
+            expires_at__gt=now,
+            verified_at__isnull=True,
+        )
+        .first()
+    )
+    if recent:
+        payload = {
+            'ok': True,
+            'message': 'OTP was already sent. Please wait before requesting another OTP.',
+            'masked_phone': mask_mobile(recent.phone),
+            'otp_id': recent.id,
+            'expires_in_sec': max(1, int((recent.expires_at - now).total_seconds())),
+            'throttled': True,
+        }
+        if (
+            (getattr(settings, 'WHATSAPP_PROVIDER', '') or '').lower() == 'console'
+            and request.user.is_superuser
+        ):
+            payload['dev_otp'] = recent.otp_code
+        return JsonResponse(payload)
 
     phone = normalize_indian_mobile(req.MobileNumber)
     customer = None
     if req.MobileNumber:
-        customer = Customer.objects.filter(phone=req.MobileNumber).order_by('-Cust_id').first()
+        customer = (
+            Customer.objects
+            .filter(phone=req.MobileNumber)
+            .select_related('new_customer')
+            .order_by('-Cust_id')
+            .first()
+        )
         if not customer:
             try:
-                customer = Customer.objects.filter(phone=int(str(req.MobileNumber).strip())).order_by('-Cust_id').first()
+                customer = (
+                    Customer.objects
+                    .filter(phone=int(str(req.MobileNumber).strip()))
+                    .select_related('new_customer')
+                    .order_by('-Cust_id')
+                    .first()
+                )
             except Exception:
                 customer = None
+    if not customer and req.FullName:
+        customer = (
+            Customer.objects
+            .filter(Comp_name__icontains=req.FullName)
+            .select_related('new_customer')
+            .order_by('-Cust_id')
+            .first()
+        )
     if not phone and customer:
         phone = normalize_indian_mobile(customer.phone)
     if not phone:
@@ -626,7 +673,9 @@ def serviceSendReportOtp(request, pid):
 
     # Resolve consumer email: customer profile, then account user
     email = ''
-    if customer and getattr(customer, 'email', None):
+    if customer and customer.new_customer and customer.new_customer.email:
+        email = (customer.new_customer.email or '').strip()
+    if not email and customer and getattr(customer, 'email', None):
         email = (customer.email or '').strip()
     if not email and getattr(req, 'Account_id', None):
         try:
@@ -636,12 +685,12 @@ def serviceSendReportOtp(request, pid):
         except Exception:
             pass
 
-    otp = f"{random.randint(100000, 999999)}"
-    expires = now_ist() + timezone.timedelta(minutes=10)
+    otp = f"{secrets.randbelow(900000) + 100000}"
+    expires = now + timezone.timedelta(minutes=10)
 
     # Invalidate previous unverified OTPs for this request
     ServiceReportOtp.objects.filter(service_request=req, verified_at__isnull=True).update(
-        expires_at=now_ist() - timezone.timedelta(seconds=1)
+        expires_at=now - timezone.timedelta(seconds=1)
     )
 
     delivery = deliver_service_report_otp(

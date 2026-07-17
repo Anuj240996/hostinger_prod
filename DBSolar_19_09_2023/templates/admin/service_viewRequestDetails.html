@@ -656,6 +656,7 @@
     var serviceReportForm = document.getElementById('serviceReportForm');
     var serviceReportModal = document.getElementById('serviceReportModal');
     var otpVerified = false;
+    var otpSending = false;
 
     function csrfToken() {
       var el = document.querySelector('#serviceReportForm input[name="csrfmiddlewaretoken"]');
@@ -689,9 +690,10 @@
     }
 
     function sendServiceOtp() {
-      if (!serviceReportModal) return;
+      if (!serviceReportModal || otpSending) return;
       var url = serviceReportModal.getAttribute('data-send-otp-url');
       if (!url) return;
+      otpSending = true;
       setOtpVerified(false);
       setOtpBanner('info', 'Sending OTP to consumer WhatsApp number & email...', false);
       fetch(url, {
@@ -707,7 +709,7 @@
           var data = res.data || {};
           if (data.ok) {
             var okText = data.message
-              || ('OTP SMS sent to consumer ' + (data.masked_phone || '') + '. Ask consumer for OTP and verify below.');
+              || 'OTP sent to consumer WhatsApp and email. Ask consumer for OTP and verify below.';
             if (data.dev_otp) {
               okText = okText + ' (Dev OTP: ' + data.dev_otp + ')';
             }
@@ -719,8 +721,10 @@
               true
             );
           }
+          otpSending = false;
         })
         .catch(function() {
+          otpSending = false;
           setOtpBanner('danger', 'Unable to send OTP right now. Check WhatsApp/Email settings / network.', true);
         });
     }
@@ -728,12 +732,6 @@
     if (serviceReportModal) {
       window.__sendServiceOtp = sendServiceOtp;
       // Modal "shown" hook is bound after jQuery loads (script below).
-      var openBtn = document.getElementById('openServiceReportBtn');
-      if (openBtn) {
-        openBtn.addEventListener('click', function() {
-          setTimeout(function() { sendServiceOtp(); }, 400);
-        });
-      }
     }
     var resendBtn = document.getElementById('serviceOtpResendBtn');
     if (resendBtn) {
