@@ -1007,7 +1007,7 @@ def serviceMarkCompleted(request, pid):
     required_fields = [
         'report_date', 'report_time',
         'acdb_pn', 'acdb_ne', 'acdb_pn2',
-        'generation_today', 'generation_yesterday', 'generation_monthly', 'generation_yearly',
+        'generation_today', 'generation_yearly',
         'import_units', 'export_units', 'meter_generation_units',
         'consumer_sign_name', 'engg_sign_name', 'engg_id', 'engg_sign_date',
     ]
@@ -1360,14 +1360,12 @@ def serviceReportPdf(request, pid):
 
     section_header_value_table(
         "Generation",
-        ["Today", "Yesterday", "Monthly", "Yearly"],
+        ["Today", "Yearly"],
         [
             f"{report.generation_today} Unit" if report.generation_today else "-",
-            f"{report.generation_yesterday} Unit" if report.generation_yesterday else "-",
-            f"{report.generation_monthly} Unit" if report.generation_monthly else "-",
             f"{report.generation_yearly} Unit" if report.generation_yearly else "-",
         ],
-        [134, 134, 134, 134],
+        [268, 269],
     )
 
     section_header_value_table(

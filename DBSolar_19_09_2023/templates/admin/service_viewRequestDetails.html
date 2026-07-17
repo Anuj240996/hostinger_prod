@@ -463,10 +463,8 @@
                       <fieldset class="service-report-fieldset">
                         <legend>Generation</legend>
                         <div class="row">
-                          <div class="col-md-3"><label>Today</label><input type="text" name="generation_today" class="form-control form-control-sm" value="{{ service_report.generation_today|default:'' }}"></div>
-                          <div class="col-md-3"><label>Yesterday</label><input type="text" name="generation_yesterday" class="form-control form-control-sm" value="{{ service_report.generation_yesterday|default:'' }}"></div>
-                          <div class="col-md-3"><label>Monthly</label><input type="text" name="generation_monthly" class="form-control form-control-sm" value="{{ service_report.generation_monthly|default:'' }}"></div>
-                          <div class="col-md-3"><label>Yearly</label><input type="text" name="generation_yearly" class="form-control form-control-sm" value="{{ service_report.generation_yearly|default:'' }}"></div>
+                          <div class="col-md-6"><label>Today</label><input type="text" name="generation_today" class="form-control form-control-sm" value="{{ service_report.generation_today|default:'' }}"></div>
+                          <div class="col-md-6"><label>Yearly</label><input type="text" name="generation_yearly" class="form-control form-control-sm" value="{{ service_report.generation_yearly|default:'' }}"></div>
                         </div>
                       </fieldset>
 
@@ -778,7 +776,7 @@
       var requiredNames = [
         'report_date', 'report_time',
         'acdb_pn', 'acdb_ne', 'acdb_pn2',
-        'generation_today', 'generation_yesterday', 'generation_monthly', 'generation_yearly',
+        'generation_today', 'generation_yearly',
         'import_units', 'export_units', 'meter_generation_units',
         'consumer_sign_name', 'engg_sign_name', 'engg_id', 'engg_sign_date'
       ];
