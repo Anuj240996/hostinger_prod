@@ -531,36 +531,9 @@
                       </fieldset>
 
                       <div class="modal-footer">
-                        <button type="submit" id="serviceReportSubmitBtn" class="btn btn-primary">Submit</button>
+                        <button type="button" id="serviceReportSubmitBtn" class="btn btn-primary">Submit</button>
                       </div>
                     </form>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div class="modal fade" id="serviceOtpVerifyModal" tabindex="-1" role="dialog" aria-labelledby="serviceOtpVerifyModalLabel" aria-hidden="true" data-backdrop="static" data-keyboard="false">
-              <div class="modal-dialog modal-dialog-centered" role="document">
-                <div class="modal-content">
-                  <div class="modal-header bg-primary text-white">
-                    <h5 class="modal-title" id="serviceOtpVerifyModalLabel">Verify Consumer OTP</h5>
-                    <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
-                      <span aria-hidden="true">&times;</span>
-                    </button>
-                  </div>
-                  <div class="modal-body">
-                    <div id="serviceOtpBanner" class="alert alert-info py-2" style="display:none;">
-                      <span id="serviceOtpBannerText">Sending OTP to consumer WhatsApp &amp; Email...</span>
-                    </div>
-                    <p class="mb-2">OTP is sent to the consumer email and WhatsApp number from the customer table. It is valid for 20 minutes. Enter the OTP to complete this service request.</p>
-                    <label for="serviceConsumerOtp">Consumer OTP <span style="color:red;">*</span></label>
-                    <input type="text" id="serviceConsumerOtp" class="form-control" maxlength="6" inputmode="numeric" placeholder="Enter 6-digit OTP from consumer" autocomplete="one-time-code">
-                    <small id="serviceOtpVerifyStatus" class="text-muted d-block mt-2">Service will remain In Process until OTP is verified.</small>
-                  </div>
-                  <div class="modal-footer">
-                    <button type="button" id="serviceOtpResendBtn" class="btn btn-outline-secondary">Resend OTP</button>
-                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
-                    <button type="button" id="serviceOtpVerifyBtn" class="btn btn-success">Verify OTP &amp; Complete</button>
                   </div>
                 </div>
               </div>
@@ -572,6 +545,33 @@
     </div>
   </div>
 </section>
+
+<div class="modal fade" id="serviceOtpVerifyModal" tabindex="-1" role="dialog" aria-labelledby="serviceOtpVerifyModalLabel" aria-hidden="true" data-backdrop="static" data-keyboard="false" style="z-index: 2000;">
+  <div class="modal-dialog modal-dialog-centered" role="document">
+    <div class="modal-content">
+      <div class="modal-header bg-primary text-white">
+        <h5 class="modal-title" id="serviceOtpVerifyModalLabel">Verify Consumer OTP</h5>
+        <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div id="serviceOtpBanner" class="alert alert-info py-2" style="display:none;">
+          <span id="serviceOtpBannerText">Sending OTP to consumer WhatsApp &amp; Email...</span>
+        </div>
+        <p class="mb-2">OTP is sent to the consumer email and WhatsApp number from the customer table. It is valid for 20 minutes. Enter the OTP to complete this service request.</p>
+        <label for="serviceConsumerOtp">Consumer OTP <span style="color:red;">*</span></label>
+        <input type="text" id="serviceConsumerOtp" class="form-control" maxlength="6" inputmode="numeric" placeholder="Enter 6-digit OTP from consumer" autocomplete="one-time-code">
+        <small id="serviceOtpVerifyStatus" class="text-muted d-block mt-2">Service will remain In Process until OTP is verified.</small>
+      </div>
+      <div class="modal-footer">
+        <button type="button" id="serviceOtpResendBtn" class="btn btn-outline-secondary">Resend OTP</button>
+        <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+        <button type="button" id="serviceOtpVerifyBtn" class="btn btn-success">Verify OTP &amp; Complete</button>
+      </div>
+    </div>
+  </div>
+</div>
 <script>
   (function() {
     var phaseSelect = document.getElementById('phaseType');
@@ -765,8 +765,12 @@
         requiredNames = requiredNames.concat(['ac_voltage_rn', 'ac_current_r']);
       }
       requiredNames.forEach(function(name) {
-        var el = serviceReportForm.querySelector('[name="' + name + '"]');
-        if (!el || el.disabled) return;
+        var matches = serviceReportForm.querySelectorAll('[name="' + name + '"]');
+        var el = null;
+        for (var i = 0; i < matches.length; i++) {
+          if (!matches[i].disabled) { el = matches[i]; break; }
+        }
+        if (!el) return;
         var val = (el.value || '').trim();
         if (!val) {
           hasError = true;
@@ -790,34 +794,47 @@
 
     function showOtpVerifyModal() {
       var otpInput = document.getElementById('serviceConsumerOtp');
+      var otpModalEl = document.getElementById('serviceOtpVerifyModal');
       if (otpInput) otpInput.value = '';
       setOtpVerified(false);
-      if (typeof jQuery !== 'undefined') {
-        var $reportModal = jQuery('#serviceReportModal');
-        var $otpModal = jQuery('#serviceOtpVerifyModal');
-        $otpModal
-          .off('hidden.bs.modal.serviceOtpReturn')
-          .on('hidden.bs.modal.serviceOtpReturn', function() {
-            // Cancel/close returns to the report without losing entered values.
-            if (!formReadyToComplete) {
-              $reportModal.modal('show');
-            }
-          });
-        if ($reportModal.hasClass('show')) {
-          $reportModal.one('hidden.bs.modal', function() {
-            $otpModal.modal('show');
-            setTimeout(function() {
-              if (otpInput) otpInput.focus();
-            }, 250);
-          });
-          $reportModal.modal('hide');
-        } else {
-          $otpModal.modal('show');
-          setTimeout(function() {
-            if (otpInput) otpInput.focus();
-          }, 250);
-        }
+      // Keep Service Report open; show OTP on top (nested hide/show was failing silently).
+      if (otpModalEl && otpModalEl.parentNode !== document.body) {
+        document.body.appendChild(otpModalEl);
       }
+      if (typeof jQuery !== 'undefined' && jQuery.fn && jQuery.fn.modal) {
+        var $otpModal = jQuery('#serviceOtpVerifyModal');
+        $otpModal.css('z-index', 2000);
+        $otpModal.off('shown.bs.modal.serviceOtpFocus').one('shown.bs.modal.serviceOtpFocus', function() {
+          jQuery('.modal-backdrop').last().css('z-index', 1990);
+          if (otpInput) otpInput.focus();
+        });
+        $otpModal.modal('show');
+        return;
+      }
+      if (otpModalEl) {
+        otpModalEl.classList.add('show');
+        otpModalEl.style.display = 'block';
+        otpModalEl.setAttribute('aria-hidden', 'false');
+        if (otpInput) otpInput.focus();
+      } else {
+        alert('OTP verification dialog is missing. Please refresh the page.');
+      }
+    }
+
+    function openOtpAfterValidation() {
+      formReadyToComplete = false;
+      setOtpVerified(false);
+      var validation = validateServiceReportForm();
+      if (validation.hasError) {
+        alert('Please fill all required fields before submitting the service report.');
+        if (validation.firstInvalid && typeof validation.firstInvalid.focus === 'function') validation.firstInvalid.focus();
+        return false;
+      }
+      showOtpVerifyModal();
+      if (!otpGenerated && !otpSending) {
+        sendServiceOtp(true);
+      }
+      return true;
     }
 
     function sendServiceOtp(fromUserGesture) {
@@ -926,6 +943,14 @@
     var verifyBtn = document.getElementById('serviceOtpVerifyBtn');
     if (verifyBtn) verifyBtn.addEventListener('click', function() { verifyServiceOtpAndComplete(); });
 
+    var serviceReportSubmitBtn = document.getElementById('serviceReportSubmitBtn');
+    if (serviceReportSubmitBtn) {
+      serviceReportSubmitBtn.addEventListener('click', function(e) {
+        e.preventDefault();
+        openOtpAfterValidation();
+      });
+    }
+
     if (serviceReportForm) {
       serviceReportForm.addEventListener('submit', function(e) {
         if (formReadyToComplete && otpVerified) {
@@ -933,20 +958,7 @@
           return true;
         }
         e.preventDefault();
-        formReadyToComplete = false;
-        setOtpVerified(false);
-        var validation = validateServiceReportForm();
-        if (validation.hasError) {
-          alert('Please fill all required fields before submitting the service report.');
-          if (validation.firstInvalid && typeof validation.firstInvalid.focus === 'function') validation.firstInvalid.focus();
-          return false;
-        }
-        showOtpVerifyModal();
-        // Normally OTP was already sent when Service Report opened.
-        // Retry here only if that initial delivery failed or did not run.
-        if (!otpGenerated && !otpSending) {
-          sendServiceOtp(true);
-        }
+        openOtpAfterValidation();
         return false;
       });
     }
