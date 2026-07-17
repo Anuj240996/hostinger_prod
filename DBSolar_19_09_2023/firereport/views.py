@@ -592,29 +592,32 @@ def serviceRequestsCompleted(request):
 
 
 def _resolve_service_consumer_contacts(req):
-    """Resolve consumer phone + email like the consumer QR share flow."""
+    """
+    Resolve OTP targets from the customer table (consumer form):
+    - WhatsApp: customer.phone
+    - Email: customer.email
+    Fallback to service request mobile / linked login email only if needed.
+    """
+    from django.db.models import TextField
+    from django.db.models.functions import Cast
+
     from firereport.sms_utils import normalize_indian_mobile
 
     phone = normalize_indian_mobile(req.MobileNumber)
     customer = None
-
-    phone_candidates = []
     raw_digits = re.sub(r'\D+', '', str(req.MobileNumber or ''))
-    if phone:
-        phone_candidates.append(phone)
+    last10 = raw_digits[-10:] if len(raw_digits) >= 10 else raw_digits
+
+    # Match customer.phone from consumer form (stored as integer in customer table).
+    phone_candidates = []
+    for value in (phone, last10, raw_digits):
+        if not value:
+            continue
+        phone_candidates.append(value)
         try:
-            phone_candidates.append(int(phone))
+            phone_candidates.append(int(value))
         except Exception:
             pass
-    if raw_digits:
-        phone_candidates.append(raw_digits)
-        if len(raw_digits) >= 10:
-            last10 = raw_digits[-10:]
-            phone_candidates.append(last10)
-            try:
-                phone_candidates.append(int(last10))
-            except Exception:
-                pass
 
     seen = set()
     for candidate in phone_candidates:
@@ -632,6 +635,18 @@ def _resolve_service_consumer_contacts(req):
         if customer:
             break
 
+    # Digits-end match when formatting differs (e.g. 91 prefix / type cast).
+    if not customer and last10:
+        customer = (
+            Customer.objects
+            .annotate(phone_txt=Cast('phone', TextField()))
+            .filter(phone_txt__endswith=last10)
+            .select_related('new_customer')
+            .order_by('-Cust_id')
+            .first()
+        )
+
+    # Mobile/app service requests store Account_id = consumer login user id.
     if not customer and getattr(req, 'Account_id', None):
         customer = (
             Customer.objects
@@ -642,9 +657,10 @@ def _resolve_service_consumer_contacts(req):
         )
 
     if not customer and req.FullName:
+        name = (req.FullName or '').strip()
         customer = (
             Customer.objects
-            .filter(Comp_name__icontains=req.FullName)
+            .filter(Comp_name__icontains=name)
             .select_related('new_customer')
             .order_by('-Cust_id')
             .first()
@@ -652,25 +668,24 @@ def _resolve_service_consumer_contacts(req):
         if not customer:
             customer = (
                 Customer.objects
-                .filter(Consumer__icontains=req.FullName)
+                .filter(Consumer__icontains=name)
                 .select_related('new_customer')
                 .order_by('-Cust_id')
                 .first()
             )
 
-    if not phone and customer:
-        phone = normalize_indian_mobile(customer.phone)
+    # Prefer customer table phone/email from consumer form.
+    if customer:
+        cust_phone = normalize_indian_mobile(customer.phone)
+        if cust_phone:
+            phone = cust_phone
 
     email = ''
     if customer:
-        try:
-            from customer.views import _consumer_email_for_customer
-            email = (_consumer_email_for_customer(customer) or '').strip()
-        except Exception:
-            if customer.new_customer and customer.new_customer.email:
-                email = (customer.new_customer.email or '').strip()
-            if not email:
-                email = (customer.email or '').strip()
+        # Consumer form stores email in customer.email — use this first.
+        email = (getattr(customer, 'email', None) or '').strip()
+        if not email and customer.new_customer:
+            email = (customer.new_customer.email or '').strip()
 
     if not email and getattr(req, 'Account_id', None):
         acct = User.objects.filter(id=req.Account_id).only('email').first()
@@ -682,7 +697,7 @@ def _resolve_service_consumer_contacts(req):
 
 @login_required(login_url='user-login')
 def serviceSendReportOtp(request, pid):
-    """Generate OTP and auto-send it to consumer WhatsApp number + email (not SMS)."""
+    """Generate OTP and auto-send it to customer.phone (WhatsApp) + customer.email."""
     if request.method != 'POST':
         return JsonResponse({'ok': False, 'error': 'Method not allowed'}, status=405)
 
@@ -696,6 +711,7 @@ def serviceSendReportOtp(request, pid):
     from firereport.sms_utils import (
         build_whatsapp_share_url,
         deliver_service_report_otp,
+        mask_email,
         mask_mobile,
     )
     import secrets
@@ -728,9 +744,18 @@ def serviceSendReportOtp(request, pid):
             payload['dev_otp'] = recent.otp_code
         return JsonResponse(payload)
 
-    phone, email, _customer = _resolve_service_consumer_contacts(req)
+    phone, email, customer = _resolve_service_consumer_contacts(req)
+    if not phone and not email:
+        return JsonResponse({
+            'ok': False,
+            'error': 'Customer phone/email not found in customer table for this consumer.',
+        }, status=400)
     if not phone:
-        return JsonResponse({'ok': False, 'error': 'Consumer mobile/WhatsApp number is missing or invalid'}, status=400)
+        return JsonResponse({
+            'ok': False,
+            'error': 'Customer WhatsApp/phone number missing in customer table.',
+            'masked_email': mask_email(email) if email else '',
+        }, status=400)
 
     otp = f"{secrets.randbelow(900000) + 100000}"
     expires = now + timezone.timedelta(minutes=10)
@@ -743,7 +768,12 @@ def serviceSendReportOtp(request, pid):
     delivery = deliver_service_report_otp(
         phone=phone,
         email=email or None,
-        name=req.FullName or 'Customer',
+        name=(
+            (customer.Comp_name if customer and customer.Comp_name else None)
+            or (customer.Consumer if customer and customer.Consumer else None)
+            or req.FullName
+            or 'Customer'
+        ),
         service_id=req.id,
         otp=otp,
     )
@@ -761,20 +791,23 @@ def serviceSendReportOtp(request, pid):
         send_detail=(detail or '')[:250],
         created_by=request.user,
     )
-    # Clear previous verify flag so a new OTP must be confirmed
     request.session.pop(f"service_report_otp_verified_{pid}", None)
 
+    cust_id = customer.Cust_id if customer else None
     if not sent_ok:
         return JsonResponse({
             'ok': False,
-            'error': detail or 'Failed to send OTP on WhatsApp/Email',
+            'error': detail or 'Failed to send OTP to customer email/WhatsApp',
             'masked_phone': mask_mobile(phone),
-            'masked_email': delivery.get('masked_email') or '',
+            'masked_email': delivery.get('masked_email') or (mask_email(email) if email else ''),
+            'customer_id': cust_id,
             'whatsapp_ok': bool(delivery.get('whatsapp_ok')),
             'whatsapp_browser': bool(delivery.get('whatsapp_browser')),
             'whatsapp_url': delivery.get('whatsapp_url') or '',
             'email_ok': bool(delivery.get('email_ok')),
-            'email_detail': delivery.get('email_detail') or '',
+            'email_detail': delivery.get('email_detail') or (
+                'customer.email is empty' if not email else ''
+            ),
             'otp_id': row.id,
         }, status=502)
 
@@ -788,15 +821,15 @@ def serviceSendReportOtp(request, pid):
     elif email:
         channels.append(f"Email failed ({delivery.get('email_detail') or 'error'})")
     else:
-        channels.append('Email missing on consumer profile')
-    channel_txt = " & ".join(channels) if channels else mask_mobile(phone)
+        channels.append('customer.email is empty in customer table')
 
     payload = {
         'ok': True,
-        'message': f"OTP delivered: {channel_txt}. Ask consumer for OTP and verify below.",
+        'message': f"OTP delivered using customer table contacts: {' & '.join(channels)}.",
         'detail': detail,
         'masked_phone': mask_mobile(phone),
-        'masked_email': delivery.get('masked_email') or '',
+        'masked_email': delivery.get('masked_email') or (mask_email(email) if email else ''),
+        'customer_id': cust_id,
         'whatsapp_ok': bool(delivery.get('whatsapp_ok')),
         'whatsapp_browser': bool(delivery.get('whatsapp_browser')),
         'whatsapp_url': delivery.get('whatsapp_url') or '',
