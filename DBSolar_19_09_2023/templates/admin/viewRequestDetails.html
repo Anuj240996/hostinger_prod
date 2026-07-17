@@ -243,7 +243,9 @@
                             </div>
 
                         <div class="modal fade" id="takeaction" tabindex="-1" role="dialog"
-                             aria-labelledby="exampleModalLabel" aria-hidden="true">
+                             aria-labelledby="exampleModalLabel" aria-hidden="true"
+                             data-send-otp-url="{% url 'firereport-complaint-send-action-otp' firereport.id %}"
+                             data-verify-otp-url="{% url 'firereport-complaint-verify-action-otp' firereport.id %}">
                             <div class="modal-dialog" role="document">
                                 <div class="modal-content">
                                     <div class="modal-header">
@@ -282,6 +284,23 @@
                                                     <td><textarea name="remark" id="action-remark" class="form-control" maxlength="500" rows="5" required></textarea></td>
                                                 </tr>
                                             </table>
+                                            <div id="complaint-otp-section" class="mt-3 p-3 border rounded" style="display:none;">
+                                                <div id="complaint-otp-banner" class="alert alert-info py-2" style="display:none;"></div>
+                                                <label for="complaint-otp-input">Consumer OTP <span class="text-danger">*</span></label>
+                                                <input type="text" id="complaint-otp-input" class="form-control"
+                                                       maxlength="6" inputmode="numeric" autocomplete="one-time-code"
+                                                       placeholder="Enter 6-digit OTP">
+                                                <input type="hidden" id="complaint-otp-id" value="">
+                                                <small id="complaint-otp-status" class="text-muted d-block mt-1">
+                                                    Verify consumer OTP before completing the complaint.
+                                                </small>
+                                                <div class="mt-2">
+                                                    <button type="button" id="complaint-otp-verify-btn" class="btn btn-success btn-sm">Verify OTP</button>
+                                                    <button type="button" id="complaint-otp-resend-btn" class="btn btn-outline-secondary btn-sm">Resend OTP</button>
+                                                </div>
+                                            </div>
+                                            <a id="complaint-otp-whatsapp-link" href="#" target="_blank"
+                                               rel="noopener noreferrer" style="display:none;">WhatsApp OTP</a>
                                             <div class="modal-footer">
                                                 <button type="submit" id="take-action-submit-btn" name="submit" class="btn btn-primary">Submit
                                                 </button>
@@ -316,49 +335,208 @@
 $(document).ready(function() {
     console.log('=== DEPARTMENT DROPDOWN INITIALIZATION ===');
     
-    // Add form submission error detection
     var takeActionForm = document.getElementById('take-action-form');
+    var actionStatus = document.getElementById('action-status');
+    var actionRemark = document.getElementById('action-remark');
+    var actionSubmit = document.getElementById('take-action-submit-btn');
+    var otpSection = document.getElementById('complaint-otp-section');
+    var otpInput = document.getElementById('complaint-otp-input');
+    var otpId = document.getElementById('complaint-otp-id');
+    var otpVerifyBtn = document.getElementById('complaint-otp-verify-btn');
+    var otpResendBtn = document.getElementById('complaint-otp-resend-btn');
+    var otpStatus = document.getElementById('complaint-otp-status');
+    var takeActionModal = document.getElementById('takeaction');
+    var complaintOtpVerified = false;
+    var complaintOtpSending = false;
+    var complaintWaPopup = null;
+
+    function complaintCsrfToken() {
+        var token = takeActionForm ? takeActionForm.querySelector('[name="csrfmiddlewaretoken"]') : null;
+        return token ? token.value : '';
+    }
+
+    function setComplaintOtpBanner(kind, text) {
+        var banner = document.getElementById('complaint-otp-banner');
+        if (!banner) return;
+        banner.style.display = 'block';
+        banner.className = 'alert py-2 alert-' + (kind || 'info');
+        banner.textContent = text || '';
+    }
+
+    function syncComplaintOtpUi(verified) {
+        complaintOtpVerified = !!verified;
+        var completing = actionStatus && actionStatus.value === 'Request Completed';
+        if (otpSection) otpSection.style.display = completing ? 'block' : 'none';
+        if (actionSubmit) actionSubmit.style.display = completing && !verified ? 'none' : '';
+        if (otpVerifyBtn) {
+            otpVerifyBtn.textContent = verified ? 'Verified' : 'Verify OTP';
+            otpVerifyBtn.disabled = verified;
+            otpVerifyBtn.className = verified
+                ? 'btn btn-outline-success btn-sm'
+                : 'btn btn-success btn-sm';
+        }
+        if (otpResendBtn) otpResendBtn.style.display = verified ? 'none' : '';
+        if (otpInput) otpInput.readOnly = verified;
+        if (otpStatus) {
+            otpStatus.className = verified ? 'text-success d-block mt-1' : 'text-muted d-block mt-1';
+            otpStatus.textContent = verified
+                ? 'OTP verified. Submit is now available.'
+                : 'Verify consumer OTP before completing the complaint.';
+        }
+    }
+
+    function openComplaintWhatsApp(url) {
+        if (!url) return;
+        if (complaintWaPopup && !complaintWaPopup.closed) {
+            complaintWaPopup.location.href = url;
+            complaintWaPopup.focus();
+            return;
+        }
+        var link = document.getElementById('complaint-otp-whatsapp-link');
+        if (link) {
+            link.href = url;
+            link.click();
+        }
+    }
+
+    function sendComplaintOtp(fromUserGesture) {
+        if (!takeActionModal || complaintOtpSending) return;
+        var url = takeActionModal.getAttribute('data-send-otp-url');
+        if (!url) return;
+        if (fromUserGesture) {
+            try { complaintWaPopup = window.open('about:blank', 'dbSolarComplaintOtpWa'); }
+            catch (e) { complaintWaPopup = null; }
+        }
+        complaintOtpSending = true;
+        syncComplaintOtpUi(false);
+        if (otpInput) otpInput.value = '';
+        setComplaintOtpBanner('info', 'Sending OTP to consumer WhatsApp and email...');
+        fetch(url, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': complaintCsrfToken(),
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            credentials: 'same-origin'
+        })
+        .then(function(response) {
+            return response.json().then(function(data) {
+                return { ok: response.ok, data: data };
+            });
+        })
+        .then(function(result) {
+            complaintOtpSending = false;
+            var data = result.data || {};
+            if (!result.ok || !data.ok) {
+                if (complaintWaPopup && !complaintWaPopup.closed) complaintWaPopup.close();
+                setComplaintOtpBanner('danger', data.error || 'Failed to send OTP.');
+                return;
+            }
+            if (otpId) otpId.value = data.otp_id || '';
+            if (data.whatsapp_ok && complaintWaPopup && !complaintWaPopup.closed) {
+                complaintWaPopup.close();
+            } else if (data.whatsapp_url) {
+                openComplaintWhatsApp(data.whatsapp_url);
+            }
+            var parts = [];
+            if (data.whatsapp_ok) parts.push('WhatsApp sent to ' + (data.masked_phone || 'consumer'));
+            else if (data.whatsapp_url) parts.push('WhatsApp opened for ' + (data.masked_phone || 'consumer') + ' — tap Send');
+            if (data.email_ok) parts.push('Email sent to ' + (data.masked_email || 'consumer'));
+            else if (data.email_detail) parts.push('Email: ' + data.email_detail);
+            var message = parts.join('. ') + '.';
+            if (data.dev_otp) message += ' (Dev OTP: ' + data.dev_otp + ')';
+            setComplaintOtpBanner('success', message);
+        })
+        .catch(function() {
+            complaintOtpSending = false;
+            if (complaintWaPopup && !complaintWaPopup.closed) complaintWaPopup.close();
+            setComplaintOtpBanner('danger', 'Unable to send OTP right now.');
+        });
+    }
+
+    function verifyComplaintOtp() {
+        var code = otpInput ? (otpInput.value || '').replace(/\D/g, '') : '';
+        if (code.length !== 6) {
+            alert('Enter the 6-digit OTP received by consumer.');
+            return;
+        }
+        var url = takeActionModal ? takeActionModal.getAttribute('data-verify-otp-url') : '';
+        var body = new FormData();
+        body.append('complaint_otp', code);
+        if (otpId && otpId.value) body.append('otp_id', otpId.value);
+        body.append('csrfmiddlewaretoken', complaintCsrfToken());
+        otpVerifyBtn.disabled = true;
+        fetch(url, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': complaintCsrfToken(),
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: body,
+            credentials: 'same-origin'
+        })
+        .then(function(response) {
+            return response.json().then(function(data) {
+                return { ok: response.ok, data: data };
+            });
+        })
+        .then(function(result) {
+            if (result.ok && result.data && result.data.ok) {
+                syncComplaintOtpUi(true);
+            } else {
+                syncComplaintOtpUi(false);
+                alert((result.data && result.data.error) || 'Invalid OTP');
+            }
+        })
+        .catch(function() {
+            syncComplaintOtpUi(false);
+            alert('Unable to verify OTP right now.');
+        });
+    }
+
+    if (actionStatus) {
+        actionStatus.addEventListener('change', function() {
+            syncComplaintOtpUi(false);
+            if (actionStatus.value === 'Request Completed') {
+                sendComplaintOtp(true);
+            }
+        });
+    }
+    if (otpVerifyBtn) otpVerifyBtn.addEventListener('click', verifyComplaintOtp);
+    if (otpResendBtn) otpResendBtn.addEventListener('click', function() {
+        sendComplaintOtp(true);
+    });
+    // When Take Action opens, reset OTP UI (Submit stays visible only for non-complete statuses).
+    $('#takeaction').on('shown.bs.modal', function() {
+        syncComplaintOtpUi(false);
+        if (actionStatus && actionStatus.value === 'Request Completed') {
+            sendComplaintOtp(true);
+        }
+    });
+    syncComplaintOtpUi(false);
+
     if (takeActionForm) {
         takeActionForm.addEventListener('submit', function(e) {
-            console.log('=== FORM SUBMISSION STARTED ===');
-            var status = document.getElementById('action-status');
-            var remark = document.getElementById('action-remark');
-            var errorDisplay = document.getElementById('form-error-display');
-            
-            console.log('Status value:', status ? status.value : 'NOT FOUND');
-            console.log('Remark value:', remark ? remark.value : 'NOT FOUND');
-            
-            if (!status || !status.value) {
-                console.error('Status field is missing or empty');
+            if (!actionStatus || !actionStatus.value) {
                 e.preventDefault();
-                if (errorDisplay) {
-                    errorDisplay.style.display = 'block';
-                    errorDisplay.textContent = 'Please select a status';
-                }
                 alert('Please select a status');
                 return false;
             }
-            
-            if (!remark || !remark.value.trim()) {
-                console.error('Remark field is missing or empty');
+            if (!actionRemark || !actionRemark.value.trim()) {
                 e.preventDefault();
-                if (errorDisplay) {
-                    errorDisplay.style.display = 'block';
-                    errorDisplay.textContent = 'Please enter a remark';
-                }
                 alert('Please enter a remark');
                 return false;
             }
-            
-            var submitBtn = document.getElementById('take-action-submit-btn');
-            if (submitBtn) {
-                submitBtn.disabled = true;
-                submitBtn.textContent = 'Submitting...';
+            if (actionStatus.value === 'Request Completed' && !complaintOtpVerified) {
+                e.preventDefault();
+                alert('Verify consumer OTP before completing the complaint.');
+                return false;
             }
-            console.log('Form validation passed, submitting...');
+            if (actionSubmit) {
+                actionSubmit.disabled = true;
+                actionSubmit.textContent = 'Submitting...';
+            }
         });
-    } else {
-        console.warn('Take action form not found');
     }
     
     try {

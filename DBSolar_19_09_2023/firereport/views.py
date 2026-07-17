@@ -2450,6 +2450,185 @@ def deleteRequest(request,pid):
     return redirect('allRequest')
 
 
+def _complaint_action_access_error(request, complaint):
+    """Only the assigned engineer or a superuser may mutate a complaint."""
+    if not request.user.is_staff:
+        return JsonResponse({'ok': False, 'error': 'Not authorized'}, status=403)
+    if request.user.is_superuser:
+        return None
+    from customer.staff_access import is_associate_staff
+    if is_associate_staff(request.user) or complaint.AssignTo_id != request.user.id:
+        return JsonResponse({'ok': False, 'error': 'Not authorized'}, status=403)
+    return None
+
+
+@login_required(login_url='user-login')
+def complaintSendActionOtp(request, pid):
+    """Send an OTP before changing a complaint to Request Completed."""
+    if request.method != 'POST':
+        return JsonResponse({'ok': False, 'error': 'Method not allowed'}, status=405)
+
+    complaint = get_object_or_404(Firereport, pk=pid)
+    denied = _complaint_action_access_error(request, complaint)
+    if denied:
+        return denied
+    if complaint.Status == 'Request Completed':
+        return JsonResponse({'ok': False, 'error': 'Complaint is already completed'}, status=400)
+
+    from firereport.sms_utils import (
+        build_whatsapp_share_url,
+        deliver_complaint_action_otp,
+        mask_email,
+        mask_mobile,
+    )
+    import secrets
+
+    now = now_ist()
+    recent = (
+        ComplaintActionOtp.objects
+        .filter(
+            firereport=complaint,
+            created_at__gte=now - timezone.timedelta(seconds=45),
+            expires_at__gt=now,
+            verified_at__isnull=True,
+        )
+        .first()
+    )
+    if recent:
+        request.session.pop(f"complaint_action_otp_verified_{pid}", None)
+        request.session[f"complaint_action_otp_id_{pid}"] = recent.id
+        request.session.modified = True
+        payload = {
+            'ok': True,
+            'message': 'OTP was already sent. Opening WhatsApp again.',
+            'masked_phone': mask_mobile(recent.phone),
+            'whatsapp_url': build_whatsapp_share_url(
+                recent.phone, recent.message_text or ''
+            ) or '',
+            'whatsapp_browser': True,
+            'whatsapp_ok': False,
+            'email_ok': False,
+            'otp_id': recent.id,
+            'throttled': True,
+        }
+        if request.user.is_superuser:
+            payload['dev_otp'] = recent.otp_code
+        return JsonResponse(payload)
+
+    phone, email, customer = _resolve_service_consumer_contacts(complaint)
+    if not phone:
+        return JsonResponse({
+            'ok': False,
+            'error': 'Consumer WhatsApp/phone is missing in the customer table.',
+        }, status=400)
+
+    otp = f"{secrets.randbelow(900000) + 100000}"
+    expires = now + timezone.timedelta(minutes=20)
+    ComplaintActionOtp.objects.filter(
+        firereport=complaint, verified_at__isnull=True
+    ).update(expires_at=now - timezone.timedelta(seconds=1))
+
+    consumer_name = (
+        (customer.Comp_name if customer and customer.Comp_name else None)
+        or (customer.Consumer if customer and customer.Consumer else None)
+        or complaint.FullName
+        or 'Customer'
+    )
+    delivery = deliver_complaint_action_otp(
+        phone=phone,
+        email=email or None,
+        name=consumer_name,
+        complaint_id=complaint.id,
+        otp=otp,
+    )
+    row = ComplaintActionOtp.objects.create(
+        firereport=complaint,
+        phone=phone,
+        otp_code=otp,
+        message_text=delivery.get('message_text') or '',
+        expires_at=expires,
+        sent_ok=bool(delivery.get('ok')),
+        send_detail=(delivery.get('detail') or '')[:250],
+        created_by=request.user,
+    )
+    request.session.pop(f"complaint_action_otp_verified_{pid}", None)
+    request.session[f"complaint_action_otp_id_{pid}"] = row.id
+    request.session.modified = True
+
+    if not delivery.get('ok'):
+        return JsonResponse({
+            'ok': False,
+            'error': delivery.get('detail') or 'Failed to send complaint OTP',
+        }, status=502)
+
+    payload = {
+        'ok': True,
+        'masked_phone': mask_mobile(phone),
+        'masked_email': delivery.get('masked_email') or (
+            mask_email(email) if email else ''
+        ),
+        'whatsapp_ok': bool(delivery.get('whatsapp_ok')),
+        'whatsapp_url': delivery.get('whatsapp_url') or '',
+        'email_ok': bool(delivery.get('email_ok')),
+        'email_detail': delivery.get('email_detail') or '',
+        'otp_id': row.id,
+    }
+    if request.user.is_superuser:
+        payload['dev_otp'] = otp
+    return JsonResponse(payload)
+
+
+@login_required(login_url='user-login')
+def complaintVerifyActionOtp(request, pid):
+    """Verify the complaint completion OTP and authorize the final POST."""
+    if request.method != 'POST':
+        return JsonResponse({'ok': False, 'error': 'Method not allowed'}, status=405)
+
+    complaint = get_object_or_404(Firereport, pk=pid)
+    denied = _complaint_action_access_error(request, complaint)
+    if denied:
+        return denied
+
+    otp_code = re.sub(
+        r'\D+', '', str(request.POST.get('complaint_otp') or '')
+    )
+    if len(otp_code) != 6:
+        return JsonResponse({'ok': False, 'error': 'Enter the 6-digit OTP'}, status=400)
+
+    otp_id = request.POST.get('otp_id') or request.session.get(
+        f"complaint_action_otp_id_{pid}"
+    )
+    row = None
+    try:
+        row = ComplaintActionOtp.objects.filter(
+            pk=int(otp_id),
+            firereport=complaint,
+            otp_code=otp_code,
+            verified_at__isnull=True,
+        ).first()
+    except (TypeError, ValueError):
+        pass
+    if not row:
+        row = ComplaintActionOtp.objects.filter(
+            firereport=complaint,
+            otp_code=otp_code,
+            verified_at__isnull=True,
+        ).order_by('-created_at').first()
+    if not row:
+        return JsonResponse({'ok': False, 'error': 'Invalid OTP'}, status=400)
+    if row.expires_at and row.expires_at < now_ist():
+        return JsonResponse({
+            'ok': False,
+            'error': 'OTP expired. Click Resend OTP.',
+        }, status=400)
+
+    row.verified_at = now_ist()
+    row.save(update_fields=['verified_at'])
+    request.session[f"complaint_action_otp_verified_{pid}"] = True
+    request.session.modified = True
+    return JsonResponse({'ok': True, 'message': 'OTP verified successfully'})
+
+
 @login_required(login_url='user-login')
 def viewRequestDetails(request, pid):
     from customer.staff_access import is_associate_staff
@@ -2524,8 +2703,32 @@ def viewRequestDetails(request, pid):
         elif 'status' in request.POST and 'remark' in request.POST:
             # Handle "Take Action" form submission
             try:
-                status = request.POST['status']
-                remark = request.POST['remark']
+                mutation_denied = _complaint_action_access_error(request, firereport)
+                if mutation_denied:
+                    return mutation_denied
+
+                status = (request.POST['status'] or '').strip()
+                remark = (request.POST['remark'] or '').strip()
+                allowed_transitions = {
+                    'Assigned': {'In Progress', 'Work in Progress', 'Request Completed'},
+                    'In Progress': {'Work in Progress', 'Request Completed'},
+                    'Work in Progress': {'Request Completed'},
+                }
+                if status not in allowed_transitions.get(firereport.Status, set()):
+                    messages.error(request, "Invalid complaint status transition.")
+                    return redirect('firereport-viewRequestDetails', pid=pid)
+                if not remark:
+                    messages.error(request, "Please enter the action taken.")
+                    return redirect('firereport-viewRequestDetails', pid=pid)
+                if (
+                    status == "Request Completed"
+                    and not request.session.get(f"complaint_action_otp_verified_{pid}")
+                ):
+                    messages.error(
+                        request,
+                        "Consumer OTP must be verified before completing this complaint.",
+                    )
+                    return redirect('firereport-viewRequestDetails', pid=pid)
                 
                 # Truncate remark if it exceeds model's max_length (250)
                 if len(remark) > 250:
@@ -2564,6 +2767,11 @@ def viewRequestDetails(request, pid):
                         AssignTo=firereport.AssignTo,
                         AssignBy=request.user.id
                     )
+
+                if status == "Request Completed":
+                    request.session.pop(f"complaint_action_otp_verified_{pid}", None)
+                    request.session.pop(f"complaint_action_otp_id_{pid}", None)
+                    request.session.modified = True
 
                 error1 = "no"
             except Exception as e:

@@ -56,6 +56,19 @@ def build_service_report_otp_email_subject(*, service_id: int) -> str:
     return f"DB Solar Service Report OTP - SRV/{service_id}"
 
 
+def build_complaint_action_otp_message(*, name: str, complaint_id: int, otp: str) -> str:
+    consumer = (name or "Customer").strip() or "Customer"
+    return (
+        f"Dear {consumer}, DB Solar complaint completion OTP for Complaint #{complaint_id} "
+        f"is {otp}. Share this OTP with the DB Solar engineer only after you are satisfied "
+        f"that the complaint is resolved. Valid for 20 minutes. - DB Solar"
+    )
+
+
+def build_complaint_action_otp_email_subject(*, complaint_id: int) -> str:
+    return f"DB Solar Complaint Completion OTP - #{complaint_id}"
+
+
 def build_whatsapp_share_url(phone: str, message: str) -> Optional[str]:
     """Same pattern as consumer QR page: open WhatsApp chat with prefilled text."""
     mobile = normalize_indian_mobile(phone)
@@ -310,6 +323,43 @@ def deliver_service_report_otp(
         "whatsapp_browser": wa_browser,
         "whatsapp_url": whatsapp_url or "",
         "whatsapp_detail": wa_detail,
+        "email_ok": email_ok,
+        "email_detail": email_detail,
+        "masked_phone": mask_mobile(phone),
+        "masked_email": mask_email(email) if email else "",
+    }
+
+
+def deliver_complaint_action_otp(
+    *,
+    phone: str,
+    email: Optional[str],
+    name: str,
+    complaint_id: int,
+    otp: str,
+) -> dict:
+    """Send complaint completion OTP through WhatsApp and email."""
+    message = build_complaint_action_otp_message(
+        name=name, complaint_id=complaint_id, otp=otp
+    )
+    subject = build_complaint_action_otp_email_subject(complaint_id=complaint_id)
+    whatsapp_url = build_whatsapp_share_url(phone, message)
+    wa_ok, wa_detail = send_whatsapp(phone, message)
+    wa_browser = bool(whatsapp_url) and not wa_ok
+    if wa_browser:
+        wa_detail = "WhatsApp chat ready to open"
+
+    email_ok, email_detail = (False, "No consumer email")
+    if email:
+        email_ok, email_detail = send_otp_email(email, subject=subject, message=message)
+
+    return {
+        "ok": bool(wa_ok or wa_browser or email_ok),
+        "detail": f"WhatsApp: {wa_detail} | Email: {email_detail}",
+        "message_text": message,
+        "whatsapp_ok": wa_ok,
+        "whatsapp_browser": wa_browser,
+        "whatsapp_url": whatsapp_url or "",
         "email_ok": email_ok,
         "email_detail": email_detail,
         "masked_phone": mask_mobile(phone),

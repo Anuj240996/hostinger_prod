@@ -204,3 +204,28 @@ class ServiceReportOtp(models.Model):
     def __str__(self):
         return f"ServiceReportOtp#{self.pk} SR={self.service_request_id}"
 
+
+class ComplaintActionOtp(models.Model):
+    """Consumer OTP required before a complaint can be completed."""
+    firereport = models.ForeignKey(
+        Firereport, on_delete=models.CASCADE, related_name="action_otps"
+    )
+    phone = models.CharField(max_length=20)
+    otp_code = models.CharField(max_length=6)
+    message_text = models.TextField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    expires_at = models.DateTimeField()
+    verified_at = models.DateTimeField(null=True, blank=True)
+    sent_ok = models.BooleanField(default=False)
+    send_detail = models.CharField(max_length=250, null=True, blank=True)
+    created_by = models.ForeignKey(
+        User, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name="complaint_action_otps"
+    )
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"ComplaintActionOtp#{self.pk} Complaint={self.firereport_id}"
+
