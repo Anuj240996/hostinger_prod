@@ -681,6 +681,31 @@
       bannerText.textContent = text || '';
     }
 
+    function syncOtpActionButtons() {
+      var verifyBtn = document.getElementById('serviceOtpVerifyBtn');
+      var resendBtn = document.getElementById('serviceOtpResendBtn');
+      var otpInput = document.getElementById('serviceConsumerOtp');
+      if (verifyBtn) {
+        if (otpVerified) {
+          verifyBtn.textContent = 'Verified';
+          verifyBtn.disabled = true;
+          verifyBtn.classList.remove('btn-success');
+          verifyBtn.classList.add('btn-outline-success');
+        } else {
+          verifyBtn.textContent = 'Verify OTP';
+          verifyBtn.disabled = false;
+          verifyBtn.classList.remove('btn-outline-success');
+          verifyBtn.classList.add('btn-success');
+        }
+      }
+      if (resendBtn) {
+        resendBtn.style.display = otpVerified ? 'none' : '';
+      }
+      if (otpInput) {
+        otpInput.readOnly = !!otpVerified;
+      }
+    }
+
     function syncSubmitVisibility() {
       if (!serviceReportSubmitBtn) return;
       serviceReportSubmitBtn.style.display = otpVerified ? '' : 'none';
@@ -697,6 +722,7 @@
           ? 'OTP verified. Submit button is now available to save the service report.'
           : 'Submit button stays hidden until OTP is verified. Service remains In Process until then.';
       }
+      syncOtpActionButtons();
       syncSubmitVisibility();
     }
 
