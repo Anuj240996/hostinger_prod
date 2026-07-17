@@ -269,10 +269,6 @@
                     </button>
                   </div>
                   <div class="modal-body">
-                    <div id="serviceOtpBanner" class="alert alert-info py-2" style="display:none;">
-                      <span id="serviceOtpBannerText">Sending OTP to consumer WhatsApp &amp; Email...</span>
-                      <button type="button" id="serviceOtpResendBtn" class="btn btn-sm btn-outline-primary ml-2" style="display:none;">Resend OTP</button>
-                    </div>
                     <form id="serviceReportForm" method="post" action="{% url 'firereport-service-mark-completed' service_request.id %}" novalidate>
                       {% csrf_token %}
                       <input type="hidden" name="otp_verified" id="otpVerifiedFlag" value="0">
@@ -531,24 +527,40 @@
                             <input type="date" name="engg_sign_date" class="form-control form-control-sm" value="{{ service_report.engg_sign_date|date:'Y-m-d'|default:report_date_default }}">
                           </div>
                         </div>
-                        <div class="row mt-2 align-items-end">
-                          <div class="col-md-4">
-                            <label>Consumer OTP <span style="color:red;">*</span></label>
-                            <input type="text" id="serviceConsumerOtp" class="form-control form-control-sm" maxlength="6" inputmode="numeric" placeholder="Enter 6-digit OTP from consumer" autocomplete="one-time-code">
-                          </div>
-                          <div class="col-md-3">
-                            <button type="button" id="serviceOtpVerifyBtn" class="btn btn-success btn-sm btn-block">Verify OTP</button>
-                          </div>
-                          <div class="col-md-5">
-                            <small id="serviceOtpVerifyStatus" class="text-muted">On open: OTP email is auto-sent and WhatsApp opens with the OTP for this consumer.</small>
-                          </div>
-                        </div>
+                        <small class="text-muted">Click Submit to verify consumer OTP. Service request is completed only after OTP verification.</small>
                       </fieldset>
 
                       <div class="modal-footer">
-                        <button type="submit" id="serviceReportSubmitBtn" class="btn btn-primary" disabled>Submit</button>
+                        <button type="submit" id="serviceReportSubmitBtn" class="btn btn-primary">Submit</button>
                       </div>
                     </form>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="modal fade" id="serviceOtpVerifyModal" tabindex="-1" role="dialog" aria-labelledby="serviceOtpVerifyModalLabel" aria-hidden="true" data-backdrop="static" data-keyboard="false">
+              <div class="modal-dialog modal-dialog-centered" role="document">
+                <div class="modal-content">
+                  <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title" id="serviceOtpVerifyModalLabel">Verify Consumer OTP</h5>
+                    <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                      <span aria-hidden="true">&times;</span>
+                    </button>
+                  </div>
+                  <div class="modal-body">
+                    <div id="serviceOtpBanner" class="alert alert-info py-2" style="display:none;">
+                      <span id="serviceOtpBannerText">Sending OTP to consumer WhatsApp &amp; Email...</span>
+                    </div>
+                    <p class="mb-2">OTP is sent to the consumer email and WhatsApp number from the customer table. Enter the OTP to complete this service request.</p>
+                    <label for="serviceConsumerOtp">Consumer OTP <span style="color:red;">*</span></label>
+                    <input type="text" id="serviceConsumerOtp" class="form-control" maxlength="6" inputmode="numeric" placeholder="Enter 6-digit OTP from consumer" autocomplete="one-time-code">
+                    <small id="serviceOtpVerifyStatus" class="text-muted d-block mt-2">Service will remain In Process until OTP is verified.</small>
+                  </div>
+                  <div class="modal-footer">
+                    <button type="button" id="serviceOtpResendBtn" class="btn btn-outline-secondary">Resend OTP</button>
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                    <button type="button" id="serviceOtpVerifyBtn" class="btn btn-success">Verify OTP &amp; Complete</button>
                   </div>
                 </div>
               </div>
@@ -658,6 +670,7 @@
     var serviceReportModal = document.getElementById('serviceReportModal');
     var otpVerified = false;
     var otpSending = false;
+    var formReadyToComplete = false;
     var waOtpPopup = null;
 
     function csrfToken() {
@@ -665,29 +678,25 @@
       return el ? el.value : '';
     }
 
-    function setOtpBanner(kind, text, showResend) {
+    function setOtpBanner(kind, text) {
       var banner = document.getElementById('serviceOtpBanner');
       var bannerText = document.getElementById('serviceOtpBannerText');
-      var resend = document.getElementById('serviceOtpResendBtn');
       if (!banner || !bannerText) return;
       banner.style.display = 'block';
       banner.className = 'alert py-2 alert-' + (kind || 'info');
       bannerText.textContent = text || '';
-      if (resend) resend.style.display = showResend ? 'inline-block' : 'none';
     }
 
     function setOtpVerified(ok) {
       otpVerified = !!ok;
       var flag = document.getElementById('otpVerifiedFlag');
       if (flag) flag.value = ok ? '1' : '0';
-      var submitBtn = document.getElementById('serviceReportSubmitBtn');
-      if (submitBtn) submitBtn.disabled = !ok;
       var status = document.getElementById('serviceOtpVerifyStatus');
       if (status) {
-        status.className = ok ? 'text-success' : 'text-muted';
+        status.className = ok ? 'text-success d-block mt-2' : 'text-muted d-block mt-2';
         status.textContent = ok
-          ? 'OTP verified. You can submit the service report.'
-          : 'On open: OTP email is auto-sent and WhatsApp chat opens with the OTP message.';
+          ? 'OTP verified. Saving service report as Completed...'
+          : 'Service will remain In Process until OTP is verified.';
       }
     }
 
@@ -721,210 +730,186 @@
       waOtpPopup = null;
     }
 
+    function mirrorDisabledFields() {
+      serviceReportForm.querySelectorAll('input.__mirror_disabled').forEach(function(el) { el.remove(); });
+      serviceReportForm.querySelectorAll('#consumerDetailsFieldset [name], #projectDetailsFieldset [name]').forEach(function(el) {
+        if (!el.name || !el.disabled) return;
+        var mirror = document.createElement('input');
+        mirror.type = 'hidden';
+        mirror.name = el.name;
+        mirror.value = el.value || '';
+        mirror.className = '__mirror_disabled';
+        serviceReportForm.appendChild(mirror);
+      });
+    }
+
+    function validateServiceReportForm() {
+      var hasError = false;
+      var firstInvalid = null;
+      serviceReportForm.querySelectorAll('.is-invalid').forEach(function(el) {
+        el.classList.remove('is-invalid');
+      });
+      var requiredNames = [
+        'report_date', 'report_time',
+        'acdb_pn', 'acdb_ne', 'acdb_pn2',
+        'generation_today', 'generation_yesterday', 'generation_monthly', 'generation_yearly',
+        'import_units', 'export_units', 'meter_generation_units',
+        'consumer_sign_name', 'engg_sign_name', 'engg_id', 'engg_sign_date'
+      ];
+      var phaseField = serviceReportForm.querySelector('[name="phase_type"]');
+      var phaseValue = phaseField ? (phaseField.value || '').toLowerCase() : 'single';
+      if (phaseValue === 'three') {
+        requiredNames = requiredNames.concat(['ac_voltage_rn', 'ac_voltage_yn', 'ac_voltage_bn', 'ac_current_r', 'ac_current_y', 'ac_current_b']);
+      } else {
+        requiredNames = requiredNames.concat(['ac_voltage_rn', 'ac_current_r']);
+      }
+      requiredNames.forEach(function(name) {
+        var el = serviceReportForm.querySelector('[name="' + name + '"]');
+        if (!el || el.disabled) return;
+        var val = (el.value || '').trim();
+        if (!val) {
+          hasError = true;
+          el.classList.add('is-invalid');
+          if (!firstInvalid) firstInvalid = el;
+        }
+      });
+      var checkedRemarks = serviceReportForm.querySelectorAll('input[name="selected_remark_ids"]:checked').length;
+      var remarkBox = document.getElementById('remarkOptionsBox');
+      if (checkedRemarks === 0) {
+        hasError = true;
+        if (remarkBox) {
+          remarkBox.classList.add('is-invalid');
+          if (!firstInvalid) firstInvalid = remarkBox;
+        }
+      } else if (remarkBox) {
+        remarkBox.classList.remove('is-invalid');
+      }
+      return { hasError: hasError, firstInvalid: firstInvalid };
+    }
+
+    function showOtpVerifyModal() {
+      var otpInput = document.getElementById('serviceConsumerOtp');
+      if (otpInput) otpInput.value = '';
+      setOtpVerified(false);
+      if (typeof jQuery !== 'undefined') {
+        jQuery('#serviceOtpVerifyModal').modal('show');
+      }
+    }
+
     function sendServiceOtp(fromUserGesture) {
       if (!serviceReportModal || otpSending) return;
       var url = serviceReportModal.getAttribute('data-send-otp-url');
       if (!url) return;
-
-      // Open blank window during click gesture so WhatsApp is not blocked after fetch.
       if (fromUserGesture) {
-        try {
-          waOtpPopup = window.open('about:blank', 'dbSolarServiceOtpWa');
-        } catch (e) {
-          waOtpPopup = null;
-        }
+        try { waOtpPopup = window.open('about:blank', 'dbSolarServiceOtpWa'); }
+        catch (e) { waOtpPopup = null; }
       }
-
       otpSending = true;
       setOtpVerified(false);
-      setOtpBanner('info', 'Auto-sending OTP to consumer email and WhatsApp...', false);
+      setOtpBanner('info', 'Sending OTP to consumer email and WhatsApp...');
       fetch(url, {
         method: 'POST',
-        headers: {
-          'X-CSRFToken': csrfToken(),
-          'X-Requested-With': 'XMLHttpRequest'
-        },
+        headers: { 'X-CSRFToken': csrfToken(), 'X-Requested-With': 'XMLHttpRequest' },
         credentials: 'same-origin'
       })
         .then(function(r) { return r.json().then(function(data) { return { status: r.status, data: data }; }); })
         .then(function(res) {
           var data = res.data || {};
           if (data.ok) {
-            if (data.whatsapp_ok) {
-              closeUnusedWhatsAppPopup();
-            } else if (data.whatsapp_url) {
-              openWhatsAppOtp(data.whatsapp_url);
-            } else {
-              closeUnusedWhatsAppPopup();
-            }
+            if (data.whatsapp_ok) closeUnusedWhatsAppPopup();
+            else if (data.whatsapp_url) openWhatsAppOtp(data.whatsapp_url);
+            else closeUnusedWhatsAppPopup();
             var parts = [];
-            if (data.whatsapp_ok) {
-              parts.push('WhatsApp auto-sent to ' + (data.masked_phone || 'consumer'));
-            } else if (data.whatsapp_url) {
-              parts.push('WhatsApp opened for ' + (data.masked_phone || 'consumer') + ' — tap Send');
-            }
-            if (data.email_ok) {
-              parts.push('Email auto-sent to ' + (data.masked_email || 'consumer'));
-            } else if (data.email_detail) {
-              parts.push('Email: ' + data.email_detail);
-            } else {
-              parts.push('Email missing on consumer profile');
-            }
+            if (data.whatsapp_ok) parts.push('WhatsApp auto-sent to ' + (data.masked_phone || 'consumer'));
+            else if (data.whatsapp_url) parts.push('WhatsApp opened for ' + (data.masked_phone || 'consumer') + ' — tap Send');
+            if (data.email_ok) parts.push('Email auto-sent to ' + (data.masked_email || 'consumer'));
+            else if (data.email_detail) parts.push('Email: ' + data.email_detail);
+            else parts.push('Email missing on consumer profile');
             var okText = parts.join('. ') + '.';
-            if (data.dev_otp) {
-              okText = okText + ' (Dev OTP: ' + data.dev_otp + ')';
-            }
-            setOtpBanner(
-              (data.email_ok || data.whatsapp_ok || data.whatsapp_url) ? 'success' : 'warning',
-              okText,
-              true
-            );
+            if (data.dev_otp) okText = okText + ' (Dev OTP: ' + data.dev_otp + ')';
+            setOtpBanner((data.email_ok || data.whatsapp_ok || data.whatsapp_url) ? 'success' : 'warning', okText);
           } else {
             closeUnusedWhatsAppPopup();
-            setOtpBanner(
-              'danger',
-              (data.error || 'Failed to send OTP on WhatsApp/Email') + (data.masked_phone ? (' (' + data.masked_phone + ')') : ''),
-              true
-            );
+            setOtpBanner('danger', (data.error || 'Failed to send OTP') + (data.masked_phone ? (' (' + data.masked_phone + ')') : ''));
           }
           otpSending = false;
         })
         .catch(function() {
           closeUnusedWhatsAppPopup();
           otpSending = false;
-          setOtpBanner('danger', 'Unable to send OTP right now. Check WhatsApp/Email settings / network.', true);
+          setOtpBanner('danger', 'Unable to send OTP right now. Check WhatsApp/Email settings / network.');
         });
     }
 
-    if (serviceReportModal) {
-      window.__sendServiceOtp = function() { sendServiceOtp(false); };
-      var openBtn = document.getElementById('openServiceReportBtn');
-      if (openBtn) {
-        openBtn.addEventListener('click', function() {
-          // Fire during the same user click that opens the modal.
-          setTimeout(function() { sendServiceOtp(true); }, 50);
-        });
+    function verifyServiceOtpAndComplete() {
+      var otpInput = document.getElementById('serviceConsumerOtp');
+      var otp = otpInput ? (otpInput.value || '').trim() : '';
+      var url = serviceReportModal ? serviceReportModal.getAttribute('data-verify-otp-url') : '';
+      var verifyBtn = document.getElementById('serviceOtpVerifyBtn');
+      if (!otp || otp.length !== 6) {
+        alert('Enter the 6-digit OTP received by consumer.');
+        return;
       }
-    }
-    var resendBtn = document.getElementById('serviceOtpResendBtn');
-    if (resendBtn) {
-      resendBtn.addEventListener('click', function() { sendServiceOtp(true); });
-    }
-    var verifyBtn = document.getElementById('serviceOtpVerifyBtn');
-    if (verifyBtn && serviceReportModal) {
-      verifyBtn.addEventListener('click', function() {
-        var otpInput = document.getElementById('serviceConsumerOtp');
-        var otp = otpInput ? (otpInput.value || '').trim() : '';
-        var url = serviceReportModal.getAttribute('data-verify-otp-url');
-        if (!otp || otp.length !== 6) {
-          alert('Enter the 6-digit OTP received by consumer.');
-          return;
-        }
-        var body = new FormData();
-        body.append('otp', otp);
-        body.append('csrfmiddlewaretoken', csrfToken());
-        verifyBtn.disabled = true;
-        fetch(url, {
-          method: 'POST',
-          headers: { 'X-Requested-With': 'XMLHttpRequest', 'X-CSRFToken': csrfToken() },
-          body: body,
-          credentials: 'same-origin'
-        })
-          .then(function(r) { return r.json().then(function(data) { return { status: r.status, data: data }; }); })
-          .then(function(res) {
-            verifyBtn.disabled = false;
-            if (res.data && res.data.ok) {
-              setOtpVerified(true);
-              alert(res.data.message || 'OTP verified');
-            } else {
-              setOtpVerified(false);
-              alert((res.data && res.data.error) || 'OTP verification failed');
+      if (!url || !serviceReportForm) return;
+      var body = new FormData();
+      body.append('otp', otp);
+      body.append('csrfmiddlewaretoken', csrfToken());
+      if (verifyBtn) verifyBtn.disabled = true;
+      fetch(url, {
+        method: 'POST',
+        headers: { 'X-Requested-With': 'XMLHttpRequest', 'X-CSRFToken': csrfToken() },
+        body: body,
+        credentials: 'same-origin'
+      })
+        .then(function(r) { return r.json().then(function(data) { return { status: r.status, data: data }; }); })
+        .then(function(res) {
+          if (verifyBtn) verifyBtn.disabled = false;
+          if (res.data && res.data.ok) {
+            setOtpVerified(true);
+            formReadyToComplete = true;
+            mirrorDisabledFields();
+            if (typeof jQuery !== 'undefined') {
+              jQuery('#serviceOtpVerifyModal').modal('hide');
+              jQuery('#serviceReportModal').modal('hide');
             }
-          })
-          .catch(function() {
-            verifyBtn.disabled = false;
-            alert('Unable to verify OTP right now.');
-          });
-      });
+            serviceReportForm.submit();
+          } else {
+            setOtpVerified(false);
+            formReadyToComplete = false;
+            alert((res.data && res.data.error) || 'OTP verification failed. Service request is not completed.');
+          }
+        })
+        .catch(function() {
+          if (verifyBtn) verifyBtn.disabled = false;
+          setOtpVerified(false);
+          formReadyToComplete = false;
+          alert('Unable to verify OTP right now. Service request is not completed.');
+        });
     }
+
+    var resendBtn = document.getElementById('serviceOtpResendBtn');
+    if (resendBtn) resendBtn.addEventListener('click', function() { sendServiceOtp(true); });
+    var verifyBtn = document.getElementById('serviceOtpVerifyBtn');
+    if (verifyBtn) verifyBtn.addEventListener('click', function() { verifyServiceOtpAndComplete(); });
 
     if (serviceReportForm) {
       serviceReportForm.addEventListener('submit', function(e) {
-        if (!otpVerified) {
-          e.preventDefault();
-          alert('Please verify the consumer OTP before submitting the service report.');
-          return false;
+        if (formReadyToComplete && otpVerified) {
+          mirrorDisabledFields();
+          return true;
         }
-        // Ensure disabled fieldset values are still posted to backend
-        serviceReportForm.querySelectorAll('input.__mirror_disabled').forEach(function(el) { el.remove(); });
-        serviceReportForm.querySelectorAll('#consumerDetailsFieldset [name], #projectDetailsFieldset [name]').forEach(function(el) {
-          if (!el.name || !el.disabled) return;
-          var mirror = document.createElement('input');
-          mirror.type = 'hidden';
-          mirror.name = el.name;
-          mirror.value = el.value || '';
-          mirror.className = '__mirror_disabled';
-          serviceReportForm.appendChild(mirror);
-        });
-
-        var hasError = false;
-        var firstInvalid = null;
-
-        serviceReportForm.querySelectorAll('.is-invalid').forEach(function(el) {
-          el.classList.remove('is-invalid');
-        });
-
-        var requiredNames = [
-          'report_date', 'report_time',
-          'acdb_pn', 'acdb_ne', 'acdb_pn2',
-          'generation_today', 'generation_yesterday', 'generation_monthly', 'generation_yearly',
-          'import_units', 'export_units', 'meter_generation_units',
-          'consumer_sign_name', 'engg_sign_name', 'engg_id', 'engg_sign_date'
-        ];
-
-        var phaseField = serviceReportForm.querySelector('[name="phase_type"]');
-        var phaseValue = phaseField ? (phaseField.value || '').toLowerCase() : 'single';
-        if (phaseValue === 'three') {
-          requiredNames = requiredNames.concat(['ac_voltage_rn', 'ac_voltage_yn', 'ac_voltage_bn', 'ac_current_r', 'ac_current_y', 'ac_current_b']);
-        } else {
-          requiredNames = requiredNames.concat(['ac_voltage_rn', 'ac_current_r']);
-        }
-
-        requiredNames.forEach(function(name) {
-          var el = serviceReportForm.querySelector('[name="' + name + '"]');
-          if (!el || el.disabled) return;
-          var val = (el.value || '').trim();
-          if (!val) {
-            hasError = true;
-            el.classList.add('is-invalid');
-            if (!firstInvalid) firstInvalid = el;
-          }
-        });
-
-        var checkedRemarks = serviceReportForm.querySelectorAll('input[name="selected_remark_ids"]:checked').length;
-        var remarkBox = document.getElementById('remarkOptionsBox');
-        if (checkedRemarks === 0) {
-          hasError = true;
-          if (remarkBox) {
-            remarkBox.classList.add('is-invalid');
-            if (!firstInvalid) firstInvalid = remarkBox;
-          }
-        } else if (remarkBox) {
-          remarkBox.classList.remove('is-invalid');
-        }
-
-        if (hasError) {
-          e.preventDefault();
+        e.preventDefault();
+        formReadyToComplete = false;
+        setOtpVerified(false);
+        var validation = validateServiceReportForm();
+        if (validation.hasError) {
           alert('Please fill all required fields before submitting the service report.');
-          if (firstInvalid && typeof firstInvalid.focus === 'function') firstInvalid.focus();
+          if (validation.firstInvalid && typeof validation.firstInvalid.focus === 'function') validation.firstInvalid.focus();
           return false;
         }
-
-        var ok = confirm('Are you sure you want to submit and save this Service Report?');
-        if (!ok) {
-          e.preventDefault();
-          return false;
-        }
+        showOtpVerifyModal();
+        sendServiceOtp(true);
+        return false;
       });
     }
 
@@ -951,18 +936,12 @@
   if (typeof jQuery !== 'undefined') {
     jQuery(function($) {
       bindAssignDropdown($);
-      $('#serviceReportModal').on('shown.bs.modal', function() {
-        if (typeof window.__sendServiceOtp === 'function') window.__sendServiceOtp();
-      });
     });
   } else {
     document.addEventListener('DOMContentLoaded', function() {
       if (typeof jQuery !== 'undefined') {
         jQuery(function($) {
           bindAssignDropdown($);
-          $('#serviceReportModal').on('shown.bs.modal', function() {
-            if (typeof window.__sendServiceOtp === 'function') window.__sendServiceOtp();
-          });
         });
       }
     });
