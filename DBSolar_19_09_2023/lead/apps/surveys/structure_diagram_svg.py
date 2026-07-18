@@ -831,7 +831,9 @@ def build_structure_front3d_svg_document(survey) -> Optional[str]:
         f'<rect x="{c_min_x}" y="{c_min_y}" width="{vb_w}" height="{vb_h}" fill="#ffffff"/>',
     ]
 
-    foundation_block_w = 18
+    foundation_block_w = 14
+    leg_w_front = 5
+    leg_w_back = 4
     for c in range(leg_cols):
         fx = x_at(c, leg_cols)
         bx = fx + depth_dx
@@ -853,11 +855,13 @@ def build_structure_front3d_svg_document(survey) -> Optional[str]:
         b_top = leg_base_back - back_leg_h
         if c < back_leg_count:
             svg_parts.append(
-                f'<rect x="{bx - 5}" y="{b_top}" width="10" height="{leg_base_back - b_top}" fill="#6b7280" opacity="0.95"/>'
+                f'<rect x="{bx - leg_w_back / 2}" y="{b_top}" width="{leg_w_back}" '
+                f'height="{leg_base_back - b_top}" fill="#6b7280" opacity="0.95"/>'
             )
         if c < front_leg_count:
             svg_parts.append(
-                f'<rect x="{fx - 6}" y="{f_top}" width="12" height="{leg_base_front - f_top}" fill="#57534e"/>'
+                f'<rect x="{fx - leg_w_front / 2}" y="{f_top}" width="{leg_w_front}" '
+                f'height="{leg_base_front - f_top}" fill="#57534e"/>'
             )
 
     for r in range(rafter_cols):
@@ -866,90 +870,15 @@ def build_structure_front3d_svg_document(survey) -> Optional[str]:
         fy = leg_base_front - front_leg_h
         by = leg_base_back - back_leg_h
         svg_parts.append(
-            f'<line x1="{fx}" y1="{fy}" x2="{bx}" y2="{by}" stroke="#ea580c" stroke-width="2.8" stroke-linecap="round"/>'
+            f'<line x1="{fx}" y1="{fy}" x2="{bx}" y2="{by}" stroke="#ea580c" stroke-width="2.2" stroke-linecap="round"/>'
         )
-
-    # Walkway: lower left/right horizontal WR + deck in row gap (+ ladder).
-    if has_walkway:
-        walk_frac = 0.42
-        walk_y_front = leg_base_front - front_leg_h * walk_frac
-        walk_y_back = leg_base_back - back_leg_h * walk_frac
-        # Keep clearly below the lower of the front/back roof lines.
-        walk_y_front = min(walk_y_front, (leg_base_front - front_leg_h) + 28)
-        walk_y_back = min(walk_y_back, (leg_base_back - back_leg_h) + 28)
-        # Level horizontal members (average height) attached to left/right legs.
-        walk_y = (walk_y_front + walk_y_back) / 2
-        x_left = x_at(0, leg_cols)
-        x_right = x_at(max(leg_cols - 1, 0), leg_cols)
-        for wx in (x_left, x_right):
-            svg_parts.append(
-                f'<line x1="{wx}" y1="{walk_y}" x2="{wx + depth_dx}" y2="{walk_y}" '
-                f'stroke="#ea580c" stroke-width="2.4" stroke-linecap="round"/>'
-            )
-        if panel_grid['rows'] > 1:
-            t0a, t1a = panel_row_depth_frac(0, panel_grid['rows'])
-            t0b, t1b = panel_row_depth_frac(1, panel_grid['rows'])
-            wt0, wt1 = t1a, t0b
-        else:
-            wt0, wt1 = 0.42, 0.58
-        # Deck quad in the gap between rows (on WR height).
-        d0l = roof_pt(wt0, 0.04)
-        d0r = roof_pt(wt0, 0.96)
-        d1r = roof_pt(wt1, 0.96)
-        d1l = roof_pt(wt1, 0.04)
-        p0 = (d0l[0], walk_y - 4)
-        p1 = (d0r[0], walk_y - 4)
-        p2 = (d1r[0], walk_y - 4)
-        p3 = (d1l[0], walk_y - 4)
-        svg_parts.append(
-            f'<polygon points="{p0[0]},{p0[1]} {p1[0]},{p1[1]} {p2[0]},{p2[1]} {p3[0]},{p3[1]}" '
-            f'fill="#9ca3af" fill-opacity="0.85" stroke="#1f2937" stroke-width="1.2"/>'
-        )
-        # Grate lines
-        for gi in range(1, 6):
-            u = gi / 6
-            gx0 = p0[0] + (p1[0] - p0[0]) * u
-            gx1 = p3[0] + (p2[0] - p3[0]) * u
-            svg_parts.append(
-                f'<line x1="{gx0}" y1="{p0[1]}" x2="{gx1}" y2="{p3[1]}" stroke="#4b5563" stroke-width="0.7"/>'
-            )
-        svg_parts.append(
-            f'<text x="{(p0[0] + p1[0]) / 2}" y="{walk_y - 10}" text-anchor="middle" '
-            f'font-size="11" font-weight="700" fill="#111827">WALKWAY</text>'
-        )
-        if has_ladder:
-            # Ladder from ground at front left toward walkway front edge.
-            top_x = (p0[0] + p1[0]) / 2 - 18
-            top_y = walk_y - 2
-            bot_x = top_x - 8
-            bot_y = leg_base_front + 2
-            half = 5
-            svg_parts.extend([
-                f'<line x1="{top_x - half}" y1="{top_y}" x2="{bot_x - half}" y2="{bot_y}" '
-                f'stroke="#b91c1c" stroke-width="2"/>',
-                f'<line x1="{top_x + half}" y1="{top_y}" x2="{bot_x + half}" y2="{bot_y}" '
-                f'stroke="#b91c1c" stroke-width="2"/>',
-            ])
-            rungs = max(4, min(square_pipe or 6, 10))
-            for ri in range(1, rungs + 1):
-                u = ri / (rungs + 1)
-                lx0 = (top_x - half) + ((bot_x - half) - (top_x - half)) * u
-                lx1 = (top_x + half) + ((bot_x + half) - (top_x + half)) * u
-                ly = top_y + (bot_y - top_y) * u
-                svg_parts.append(
-                    f'<line x1="{lx0}" y1="{ly}" x2="{lx1}" y2="{ly}" stroke="#dc2626" stroke-width="1.3"/>'
-                )
-            svg_parts.append(
-                f'<text x="{bot_x - 10}" y="{bot_y + 14}" text-anchor="end" '
-                f'font-size="11" font-weight="700" fill="#b91c1c">Ladder</text>'
-            )
 
     for p in range(purlins):
         t = purlin_t(p)
         lx, ly = roof_pt(t, 0.0)
         rx, ry = roof_pt(t, 1.0)
         svg_parts.append(
-            f'<line x1="{lx}" y1="{ly}" x2="{rx}" y2="{ry}" stroke="#2563eb" stroke-width="4" stroke-linecap="round"/>'
+            f'<line x1="{lx}" y1="{ly}" x2="{rx}" y2="{ry}" stroke="#2563eb" stroke-width="3.2" stroke-linecap="round"/>'
         )
 
     if panel_count > 0 and panel_grid['rows'] > 0 and panel_grid['cols'] > 0:
@@ -976,7 +905,6 @@ def build_structure_front3d_svg_document(survey) -> Optional[str]:
                     f'fill="url(#panelG)" stroke="#c5ced8" stroke-width="0.9"/>'
                 )
                 idx += 1
-        # Inter-row gap dimension (edge of row N to edge of row N+1).
         if rows > 1:
             for gap_row in range(rows - 1):
                 a0, a1 = panel_row_depth_frac(gap_row, rows)
@@ -992,6 +920,91 @@ def build_structure_front3d_svg_document(survey) -> Optional[str]:
                     f'<text x="{gx + 8}" y="{mid_y + 4}" font-size="13" font-weight="700" fill="#0369a1">'
                     f'{_format_ft(PANEL_ROW_GAP_FT)} ft</text>',
                 ])
+
+    # Walkway + ladder (match survey 3D: lower L/R WR, deck in row gap, ladder to ground).
+    if has_walkway:
+        walk_h_px = min(front_leg_h, back_leg_h) * 0.45
+        walk_h_px = max(walk_h_px, 36)
+
+        def walk_pt(t_depth: float, width_frac: float) -> Tuple[float, float]:
+            x = left_x + span_w * width_frac + depth_dx * t_depth
+            y = (leg_base_front - walk_h_px) + depth_dy * t_depth
+            return (x, y)
+
+        x_left = x_at(0, leg_cols)
+        x_right = x_at(max(leg_cols - 1, 0), leg_cols)
+        # Full-depth horizontal WR on left + right legs.
+        for wx in (x_left, x_right):
+            a = walk_pt(0.0, (wx - left_x) / span_w if span_w else 0.0)
+            b = walk_pt(1.0, (wx - left_x) / span_w if span_w else 0.0)
+            # Force exact leg X at front/back.
+            a = (wx, leg_base_front - walk_h_px)
+            b = (wx + depth_dx, leg_base_back - walk_h_px)
+            svg_parts.append(
+                f'<line x1="{a[0]}" y1="{a[1]}" x2="{b[0]}" y2="{b[1]}" '
+                f'stroke="#ea580c" stroke-width="2.2" stroke-linecap="round"/>'
+            )
+
+        if panel_grid['rows'] > 1:
+            _t0a, t1a = panel_row_depth_frac(0, panel_grid['rows'])
+            t0b, _t1b = panel_row_depth_frac(1, panel_grid['rows'])
+            wt0, wt1 = t1a, t0b
+        else:
+            wt0, wt1 = 0.42, 0.58
+
+        p0 = walk_pt(wt0, 0.06)
+        p1 = walk_pt(wt0, 0.94)
+        p2 = walk_pt(wt1, 0.94)
+        p3 = walk_pt(wt1, 0.06)
+        svg_parts.append(
+            f'<polygon points="{p0[0]},{p0[1]} {p1[0]},{p1[1]} {p2[0]},{p2[1]} {p3[0]},{p3[1]}" '
+            f'fill="#cbd5e1" stroke="#1f2937" stroke-width="1.2"/>'
+        )
+        for gi in range(1, 7):
+            u = gi / 7
+            a = walk_pt(wt0, 0.06 + 0.88 * u)
+            b = walk_pt(wt1, 0.06 + 0.88 * u)
+            svg_parts.append(
+                f'<line x1="{a[0]}" y1="{a[1]}" x2="{b[0]}" y2="{b[1]}" stroke="#64748b" stroke-width="0.7"/>'
+            )
+        for gi in range(1, 4):
+            u = gi / 4
+            t = wt0 + (wt1 - wt0) * u
+            a = walk_pt(t, 0.06)
+            b = walk_pt(t, 0.94)
+            svg_parts.append(
+                f'<line x1="{a[0]}" y1="{a[1]}" x2="{b[0]}" y2="{b[1]}" stroke="#1d4ed8" stroke-width="1.5"/>'
+            )
+        mid = walk_pt((wt0 + wt1) / 2, 0.5)
+        svg_parts.append(
+            f'<text x="{mid[0]}" y="{mid[1] - 6}" text-anchor="middle" '
+            f'font-size="11" font-weight="700" fill="#111827">WALKWAY</text>'
+        )
+
+        if has_ladder:
+            top = walk_pt(wt0, 0.22)
+            bot_x = x_left + 10
+            bot_y = leg_base_front
+            half = 4.5
+            svg_parts.extend([
+                f'<line x1="{top[0] - half}" y1="{top[1]}" x2="{bot_x - half}" y2="{bot_y}" '
+                f'stroke="#b91c1c" stroke-width="2"/>',
+                f'<line x1="{top[0] + half}" y1="{top[1]}" x2="{bot_x + half}" y2="{bot_y}" '
+                f'stroke="#b91c1c" stroke-width="2"/>',
+            ])
+            rungs = max(4, min(square_pipe or 6, 10))
+            for ri in range(1, rungs + 1):
+                u = ri / (rungs + 1)
+                lx0 = (top[0] - half) + ((bot_x - half) - (top[0] - half)) * u
+                lx1 = (top[0] + half) + ((bot_x + half) - (top[0] + half)) * u
+                ly = top[1] + (bot_y - top[1]) * u
+                svg_parts.append(
+                    f'<line x1="{lx0}" y1="{ly}" x2="{lx1}" y2="{ly}" stroke="#dc2626" stroke-width="1.3"/>'
+                )
+            svg_parts.append(
+                f'<text x="{bot_x - 8}" y="{bot_y + 14}" text-anchor="end" '
+                f'font-size="11" font-weight="700" fill="#b91c1c">Ladder</text>'
+            )
 
     # Height dims — keep full "N ft" text inside padded viewBox.
     svg_parts.extend([

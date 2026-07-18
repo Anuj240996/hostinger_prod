@@ -630,11 +630,14 @@
 
             var png = cached3dPng;
             if (!png) {
-                // Keep download responsive: short wait for preview, then continue.
+                // Wait for live Three.js capture so PDF matches survey 3D (walkway/ladder).
                 png = await Promise.race([
-                    capture3dPreviewAsync(6000),
-                    new Promise(function (resolve) { setTimeout(function () { resolve(''); }, 1500); })
+                    capture3dPreviewAsync(10000),
+                    new Promise(function (resolve) { setTimeout(function () { resolve(''); }, 8000); })
                 ]);
+            }
+            if (!png) {
+                png = cached3dPng || '';
             }
 
             var form = new FormData();
