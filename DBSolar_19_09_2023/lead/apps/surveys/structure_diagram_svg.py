@@ -9,6 +9,35 @@ import io
 import math
 from typing import Any, Dict, Optional, Tuple
 
+PANEL_WIDTH_FT = 4.0
+PANEL_LENGTH_FT = 8.0
+PANEL_ROW_GAP_FT = 2.0
+
+
+def _format_ft(value: Any) -> str:
+    try:
+        num = float(value)
+    except (TypeError, ValueError):
+        return str(value) if value is not None else '—'
+    if abs(num % 1) < 0.000001:
+        return str(int(round(num)))
+    text = ('%s' % num).rstrip('0').rstrip('.')
+    return text or '0'
+
+
+def solar_structure_depth_ft(rows: int) -> float:
+    r = max(int(rows or 0), 0)
+    if r < 1:
+        return PANEL_LENGTH_FT
+    return r * PANEL_LENGTH_FT + max(r - 1, 0) * PANEL_ROW_GAP_FT
+
+
+def panel_row_depth_frac(row: int, rows: int) -> Tuple[float, float]:
+    r = max(int(rows or 1), 1)
+    total_ft = solar_structure_depth_ft(r)
+    start_ft = row * (PANEL_LENGTH_FT + PANEL_ROW_GAP_FT)
+    return start_ft / total_ft, (start_ft + PANEL_LENGTH_FT) / total_ft
+
 
 def survey_has_structure_layout(survey) -> bool:
     return bool(
@@ -549,6 +578,13 @@ def structure_measurement_rows(survey):
             'Panels',
             f'{layout["panel_count"]} ({layout["panel_grid"]["cols"]}×{layout["panel_grid"]["rows"]})',
         ))
+        if layout['panel_grid']['rows'] > 1:
+            rows.append(('Row gap', f'{_format_ft(PANEL_ROW_GAP_FT)} ft'))
+        rows.append((
+            'Array',
+            f'{_format_ft(max(layout["panel_grid"]["cols"], 1) * PANEL_WIDTH_FT)}×'
+            f'{_format_ft(solar_structure_depth_ft(layout["panel_grid"]["rows"]))} ft',
+        ))
     return rows
 
 
@@ -576,8 +612,8 @@ def structure_diagram_summary_text(survey) -> str:
 
 def build_structure_front3d_svg_document(survey) -> Optional[str]:
     """
-    Build a static front-side 3D-style SVG (non-interactive) for PDF reports.
-    This intentionally mirrors the front-view intent from the interactive 3D widget.
+    Static 3D-style SVG for print/PDF when live Three.js capture is unavailable.
+    Matches Survey Details: portrait modules, inter-row gap, readable height labels.
     """
     opts = get_survey_diagram_opts(survey)
     if not opts:
@@ -597,27 +633,24 @@ def build_structure_front3d_svg_document(survey) -> Optional[str]:
     back_leg_count = layout['back_leg_count']
     leg_cols = layout['leg_cols']
     rafter_cols = layout['rafter_cols']
-    span_cols = layout['span_cols']
     purlin_t = layout['purlin_t']
-    rafter_bay_col = layout['rafter_bay_col']
 
-    w = 700
-    h = 360
     foundation_y = 300
-    left_x = 90
-    span_w = 250
-    # Keep a very small depth offset so the figure reads as FRONT view,
-    # not an isometric top/side view.
-    depth_dx = 22
-    depth_dy = -12
+    left_x = 120
+    span_w = 280
+    # Stronger depth so both panel rows are visible (matches interactive 3/4 view).
+    depth_dx = 78
+    depth_dy = -42
     max_h_ft = max(front_h, back_h, 1.0)
     h_px_per_ft = 145.0 / max_h_ft
     front_leg_h = front_h * h_px_per_ft
     back_leg_h = back_h * h_px_per_ft
-    panel_lift = 4.0
+    panel_lift = 5.0
     foundation_block_h = 12
     leg_base_front = foundation_y
     leg_base_back = foundation_y + depth_dy
+    struct_depth_ft = solar_structure_depth_ft(panel_grid['rows'] or 1)
+    struct_width_ft = max(panel_grid['cols'] or 1, 1) * PANEL_WIDTH_FT
 
     def x_at(col: int, total: int) -> float:
         if total <= 1:
@@ -625,47 +658,30 @@ def build_structure_front3d_svg_document(survey) -> Optional[str]:
         return left_x + (span_w * col / (total - 1))
 
     def roof_pt(t_depth: float, width_frac: float) -> Tuple[float, float]:
-        # Linear across full structure width (do not collapse via rafter→leg mapping).
-        if rafter_cols <= 1:
-            x = left_x + span_w / 2 + depth_dx * t_depth
-        else:
-            x = left_x + span_w * width_frac + depth_dx * t_depth
+        x = left_x + span_w * width_frac + depth_dx * t_depth
         y_front = leg_base_front - front_leg_h
         y_back = leg_base_back - back_leg_h
         y = y_front + (y_back - y_front) * t_depth
         return (x, y)
 
-    def panel_span(row: int) -> Tuple[float, float]:
-        rows = max(panel_grid['rows'], 1)
-        p0 = row * 2
-        p1 = min(p0 + 1, purlins - 1)
-        if p0 >= purlins:
-            return (row / rows, (row + 1) / rows)
-        if p0 == p1 and p0 > 0:
-            p0 -= 1
-        t0 = purlin_t(p0)
-        t1 = purlin_t(p1)
-        if t1 < t0:
-            t0, t1 = t1, t0
-        gap = t1 - t0 or 0.15
-        over = max(gap * 0.22, 0.03)
-        return (max(0.0, t0 - over), min(1.0, t1 + over))
-
-    fx_dim = left_x - 28
-    bx_dim = left_x + depth_dx + span_w + 18
+    fx_dim = left_x - 42
+    bx_dim = left_x + depth_dx + span_w + 36
     f_top_y = leg_base_front - front_leg_h
     b_top_y = leg_base_back - back_leg_h
-    structure_top = min(f_top_y, b_top_y) - 48
-    structure_bottom = max(leg_base_front, leg_base_back) + foundation_block_h
-    c_min_x = fx_dim - 20
-    c_max_x = bx_dim + 36
-    c_min_y = structure_top - 6
-    c_max_y = structure_bottom + 10
+    structure_top = min(f_top_y, b_top_y) - 36
+    structure_bottom = max(leg_base_front, leg_base_back) + foundation_block_h + 28
+    # Generous padding so "6 ft" / "8 ft" are never clipped by the viewBox.
+    c_min_x = fx_dim - 70
+    c_max_x = bx_dim + 70
+    c_min_y = structure_top - 18
+    c_max_y = structure_bottom + 18
     vb_w = c_max_x - c_min_x
     vb_h = c_max_y - c_min_y
+    front_label = f'{_format_ft(front_h)} ft'
+    back_label = f'{_format_ft(back_h)} ft'
     svg_parts = [
         '<?xml version="1.0" encoding="UTF-8"?>',
-        f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="{c_min_x} {c_min_y} {vb_w} {vb_h}" role="img" aria-label="Front side 3D structure view">',
+        f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="{c_min_x} {c_min_y} {vb_w} {vb_h}" role="img" aria-label="3D structure view">',
         '<defs>'
         '<linearGradient id="panelG" x1="0" y1="0" x2="1" y2="1">'
         '<stop offset="0%" stop-color="#1e3a5f"/>'
@@ -721,25 +737,12 @@ def build_structure_front3d_svg_document(survey) -> Optional[str]:
             f'<line x1="{lx}" y1="{ly}" x2="{rx}" y2="{ry}" stroke="#2563eb" stroke-width="4" stroke-linecap="round"/>'
         )
 
-    # Prominent dimension lines for fallback image.
-    svg_parts.extend([
-        f'<line x1="{fx_dim}" y1="{f_top_y}" x2="{fx_dim}" y2="{leg_base_front}" stroke="#16a34a" stroke-width="2"/>',
-        f'<line x1="{fx_dim - 4}" y1="{f_top_y}" x2="{fx_dim + 4}" y2="{f_top_y}" stroke="#16a34a" stroke-width="2"/>',
-        f'<line x1="{fx_dim - 4}" y1="{leg_base_front}" x2="{fx_dim + 4}" y2="{leg_base_front}" stroke="#16a34a" stroke-width="2"/>',
-        f'<text x="{fx_dim - 10}" y="{(f_top_y + leg_base_front) / 2}" text-anchor="end" font-size="16" font-weight="700" fill="#16a34a">{front_h or "—"} ft</text>',
-        f'<line x1="{bx_dim}" y1="{b_top_y}" x2="{bx_dim}" y2="{leg_base_back}" stroke="#16a34a" stroke-width="2"/>',
-        f'<line x1="{bx_dim - 4}" y1="{b_top_y}" x2="{bx_dim + 4}" y2="{b_top_y}" stroke="#16a34a" stroke-width="2"/>',
-        f'<line x1="{bx_dim - 4}" y1="{leg_base_back}" x2="{bx_dim + 4}" y2="{leg_base_back}" stroke="#16a34a" stroke-width="2"/>',
-        f'<text x="{bx_dim + 10}" y="{(b_top_y + leg_base_back) / 2}" font-size="16" font-weight="700" fill="#16a34a">{back_h or "—"} ft</text>',
-    ])
-
     if panel_count > 0 and panel_grid['rows'] > 0 and panel_grid['cols'] > 0:
         idx = 0
-        rows = max(panel_grid['rows'], 1)
         cols = max(panel_grid['cols'], 1)
+        rows = max(panel_grid['rows'], 1)
         for row in range(panel_grid['rows']):
-            t0 = row / rows
-            t1 = (row + 1) / rows
+            t0, t1 = panel_row_depth_frac(row, rows)
             for col in range(panel_grid['cols']):
                 if idx >= panel_count:
                     break
@@ -747,19 +750,57 @@ def build_structure_front3d_svg_document(survey) -> Optional[str]:
                 u1 = (col + 1) / cols
                 a = roof_pt(t0, u0)
                 b = roof_pt(t0, u1)
-                c = roof_pt(t1, u1)
+                cpt = roof_pt(t1, u1)
                 d = roof_pt(t1, u0)
                 a = (a[0], a[1] - panel_lift)
                 b = (b[0], b[1] - panel_lift)
-                c = (c[0], c[1] - panel_lift)
+                cpt = (cpt[0], cpt[1] - panel_lift)
                 d = (d[0], d[1] - panel_lift)
                 svg_parts.append(
-                    f'<polygon points="{a[0]},{a[1]} {b[0]},{b[1]} {c[0]},{c[1]} {d[0]},{d[1]}" fill="url(#panelG)" stroke="#c5ced8" stroke-width="0.9"/>'
+                    f'<polygon points="{a[0]},{a[1]} {b[0]},{b[1]} {cpt[0]},{cpt[1]} {d[0]},{d[1]}" '
+                    f'fill="url(#panelG)" stroke="#c5ced8" stroke-width="0.9"/>'
                 )
                 idx += 1
+        # Inter-row gap dimension (edge of row N to edge of row N+1).
+        if rows > 1:
+            for gap_row in range(rows - 1):
+                a0, a1 = panel_row_depth_frac(gap_row, rows)
+                b0, b1 = panel_row_depth_frac(gap_row + 1, rows)
+                g0 = roof_pt(a1, 1.0)
+                g1 = roof_pt(b0, 1.0)
+                gx = max(g0[0], g1[0]) + 18
+                mid_y = (g0[1] + g1[1]) / 2
+                svg_parts.extend([
+                    f'<line x1="{gx}" y1="{g0[1]}" x2="{gx}" y2="{g1[1]}" stroke="#0369a1" stroke-width="1.6"/>',
+                    f'<line x1="{gx - 4}" y1="{g0[1]}" x2="{gx + 4}" y2="{g0[1]}" stroke="#0369a1" stroke-width="1.6"/>',
+                    f'<line x1="{gx - 4}" y1="{g1[1]}" x2="{gx + 4}" y2="{g1[1]}" stroke="#0369a1" stroke-width="1.6"/>',
+                    f'<text x="{gx + 8}" y="{mid_y + 4}" font-size="13" font-weight="700" fill="#0369a1">'
+                    f'{_format_ft(PANEL_ROW_GAP_FT)} ft</text>',
+                ])
+
+    # Height dims — keep full "N ft" text inside padded viewBox.
+    svg_parts.extend([
+        f'<line x1="{fx_dim}" y1="{f_top_y}" x2="{fx_dim}" y2="{leg_base_front}" stroke="#16a34a" stroke-width="2"/>',
+        f'<line x1="{fx_dim - 4}" y1="{f_top_y}" x2="{fx_dim + 4}" y2="{f_top_y}" stroke="#16a34a" stroke-width="2"/>',
+        f'<line x1="{fx_dim - 4}" y1="{leg_base_front}" x2="{fx_dim + 4}" y2="{leg_base_front}" stroke="#16a34a" stroke-width="2"/>',
+        f'<text x="{fx_dim - 12}" y="{(f_top_y + leg_base_front) / 2}" text-anchor="end" '
+        f'dominant-baseline="middle" font-size="15" font-weight="700" fill="#16a34a">{front_label}</text>',
+        f'<line x1="{bx_dim}" y1="{b_top_y}" x2="{bx_dim}" y2="{leg_base_back}" stroke="#16a34a" stroke-width="2"/>',
+        f'<line x1="{bx_dim - 4}" y1="{b_top_y}" x2="{bx_dim + 4}" y2="{b_top_y}" stroke="#16a34a" stroke-width="2"/>',
+        f'<line x1="{bx_dim - 4}" y1="{leg_base_back}" x2="{bx_dim + 4}" y2="{leg_base_back}" stroke="#16a34a" stroke-width="2"/>',
+        f'<text x="{bx_dim + 12}" y="{(b_top_y + leg_base_back) / 2}" '
+        f'dominant-baseline="middle" font-size="15" font-weight="700" fill="#16a34a">{back_label}</text>',
+        f'<text x="{left_x + span_w / 2}" y="{leg_base_front + foundation_block_h + 16}" '
+        f'text-anchor="middle" font-size="12" font-weight="700" fill="#16a34a">FRONT</text>',
+        f'<text x="{left_x + span_w / 2 + depth_dx}" y="{leg_base_back - 8}" '
+        f'text-anchor="middle" font-size="12" font-weight="700" fill="#16a34a">BACK</text>',
+        f'<text x="{left_x + span_w / 2}" y="{structure_top + 14}" text-anchor="middle" '
+        f'font-size="12" fill="#0369a1">{_format_ft(struct_width_ft)}×{_format_ft(struct_depth_ft)} ft · '
+        f'{panel_count} panels ({panel_grid["cols"]}×{panel_grid["rows"]})</text>' if panel_count else '',
+    ])
 
     svg_parts.append('</svg>')
-    return ''.join(svg_parts)
+    return ''.join(p for p in svg_parts if p)
 
 
 def _reportlab_image_from_svg(svg_doc: Optional[str], width: float, height: float):

@@ -17,6 +17,27 @@
         }
     }
 
+    // Keep print/embed 3D in sync with Survey Details interactive view.
+    var SOLAR_PANEL_WIDTH_FT = 4;
+    var SOLAR_PANEL_LENGTH_FT = 8;
+    var SOLAR_PANEL_ROW_GAP_FT = 2;
+
+    function solarStructureDepthFt(rows) {
+        var r = Math.max(rows || 0, 0);
+        if (r < 1) return SOLAR_PANEL_LENGTH_FT;
+        return r * SOLAR_PANEL_LENGTH_FT + Math.max(r - 1, 0) * SOLAR_PANEL_ROW_GAP_FT;
+    }
+
+    function panelRowDepthFrac(row, rows) {
+        var r = Math.max(rows, 1);
+        var totalFt = solarStructureDepthFt(r);
+        var startFt = row * (SOLAR_PANEL_LENGTH_FT + SOLAR_PANEL_ROW_GAP_FT);
+        return {
+            t0: startFt / totalFt,
+            t1: (startFt + SOLAR_PANEL_LENGTH_FT) / totalFt
+        };
+    }
+
     function buildSolarStructureLayout(opts) {
         var legs = parseInt(opts.legs, 10) || 0;
         var rafters = parseInt(opts.rafters, 10) || 0;
@@ -40,14 +61,14 @@
             total: panelCount
         } : { rows: 0, cols: 0, total: 0 };
 
-        var PANEL_WIDTH_FT = 4;
-        var PANEL_LENGTH_FT = 8;
-        var PANEL_ROW_GAP_FT = 1;
+        var PANEL_WIDTH_FT = SOLAR_PANEL_WIDTH_FT;
+        var PANEL_LENGTH_FT = SOLAR_PANEL_LENGTH_FT;
+        var PANEL_ROW_GAP_FT = SOLAR_PANEL_ROW_GAP_FT;
         var structureWidthFt = panelGrid.cols > 0
             ? panelGrid.cols * PANEL_WIDTH_FT
             : Math.max(legCols - 1, 1) * PANEL_WIDTH_FT;
         var structureDepthFt = panelGrid.rows > 0
-            ? panelGrid.rows * PANEL_LENGTH_FT + Math.max(0, panelGrid.rows - 1) * PANEL_ROW_GAP_FT
+            ? solarStructureDepthFt(panelGrid.rows)
             : PANEL_LENGTH_FT;
 
         function purlinT(index) {
@@ -140,18 +161,18 @@
         var spanW = Math.max(Math.abs(xR - xL), 1.15);
         var midY = (frontTopY + backTopY) / 2;
         var maxH = Math.max(frontTopY, backTopY, 0.5);
-        var targetY = midY * 0.92;
+        var targetY = midY * 0.9;
         var targetZ = depth * 0.45;
         controls.target.set(0, targetY, targetZ);
-        var zoomMul = layout.embedMode ? 0.48 : 0.68;
-        var viewDist = (Math.max(spanW * 0.95 + depth * 0.95, maxH * 2.8) + 1.6) * zoomMul;
+        // Match Survey Details camera framing (including print/embed capture).
+        var viewDist = (Math.max(spanW * 0.95 + depth * 0.95, maxH * 2.8) + 1.6) * 0.68;
         camera.position.set(
             spanW * 0.34 + 1.0,
-            targetY + maxH * (layout.embedMode ? 0.08 : 0.14) + 0.1,
+            targetY + maxH * 0.14 + 0.1,
             -viewDist
         );
         if (layout.embedMode) {
-            camera.fov = 30;
+            camera.fov = 34;
             camera.updateProjectionMatrix();
         }
         controls.update();
@@ -203,7 +224,7 @@
         if (maxX <= minX || maxY <= minY) {
             return { x: 0, y: 0, w: w, h: h };
         }
-        var pad = Math.max(6, Math.round(Math.min(w, h) * 0.012));
+            var pad = Math.max(18, Math.round(Math.min(w, h) * 0.035));
         minX = Math.max(0, minX - pad);
         minY = Math.max(0, minY - pad);
         maxX = Math.min(w - 1, maxX + pad);
@@ -349,9 +370,7 @@
         return tex;
     }
 
-    // Standard module size used across plan + 3D (portrait on structure).
-    var SOLAR_PANEL_WIDTH_FT = 4;
-    var SOLAR_PANEL_LENGTH_FT = 8;
+    // Module size helpers are defined near the top (shared with layout + 3D).
 
     function fitPortraitPanelInBay(xL, yTop, xR, yBot) {
         var bayW = xR - xL;
@@ -504,11 +523,11 @@
         function createTextSprite(text, opts) {
             opts = opts || {};
             var fontPx = opts.fontSize || 22;
-            var pad = 6;
+            var pad = 10;
             var canvas = document.createElement('canvas');
             var ctx = canvas.getContext('2d', { alpha: true });
             ctx.font = '700 ' + fontPx + 'px Arial, sans-serif';
-            var textW = Math.ceil(ctx.measureText(text).width);
+            var textW = Math.max(24, Math.ceil(ctx.measureText(String(text)).width));
             canvas.width = textW + pad * 2;
             canvas.height = fontPx + pad * 2;
             ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -517,7 +536,7 @@
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
             ctx.fillStyle = textColor;
-            ctx.fillText(text, canvas.width / 2, canvas.height / 2);
+            ctx.fillText(String(text), canvas.width / 2, canvas.height / 2);
             var tex = new THREE.CanvasTexture(canvas);
             tex.premultiplyAlpha = false;
             tex.needsUpdate = true;
@@ -529,51 +548,71 @@
                 alphaTest: 0.01
             });
             var spr = new THREE.Sprite(mat);
-            spr.scale.set(opts.scaleX || 0.85, opts.scaleY || 0.24, 1);
+            // Scale from pixel aspect so full label (e.g. "6 ft") stays readable.
+            var baseScaleX = opts.scaleX || 0.85;
+            var aspect = canvas.width / Math.max(canvas.height, 1);
+            spr.scale.set(baseScaleX, baseScaleX / aspect, 1);
             return spr;
         }
 
         var xL = xAt(0);
         var xR = xAt(1);
-        var dimFrontX = xL - 0.48;
-        var dimBackX = xR + 0.48;
-        var sprFront = addVerticalDim(dimFrontX, 0, frontTopY, layout.frontH + ' ft');
-        sprFront.position.set(dimFrontX - 0.52, (foundationH + frontTopY) / 2, 0);
+        var dimFrontX = xL - 0.7;
+        var dimBackX = xR + 0.95;
+        var sprFront = addVerticalDim(dimFrontX, 0, frontTopY, formatMeasureNumber(layout.frontH) + ' ft');
+        sprFront.position.set(dimFrontX - 0.55, (foundationH + frontTopY) / 2, 0);
         scene.add(sprFront);
-        var sprBack = addVerticalDim(dimBackX, depth, backTopY, layout.backH + ' ft');
-        sprBack.position.set(dimBackX + 0.52, (foundationH + backTopY) / 2, depth);
+        var sprBack = addVerticalDim(dimBackX, depth, backTopY, formatMeasureNumber(layout.backH) + ' ft');
+        sprBack.position.set(dimBackX + 0.55, (foundationH + backTopY) / 2, depth);
         scene.add(sprBack);
 
-        if (layout.embedMode) {
-            return;
-        }
-
         var footY = 0.04;
-        var wA = new THREE.Vector3(xL, footY, 0);
-        var wB = new THREE.Vector3(xR, footY, 0);
+        var wA = new THREE.Vector3(xL, footY, -0.2);
+        var wB = new THREE.Vector3(xR, footY, -0.2);
         addLine(wA, wB);
         addCap(wA, new THREE.Vector3(0, 0, 1), 0.12);
         addCap(wB, new THREE.Vector3(0, 0, 1), 0.12);
-        var widthLabel = (layout.structureWidthFt || Math.round(Math.abs(xR - xL) / 0.115)) + ' ft';
-        var sprWidth = createTextSprite(widthLabel, { color: '#16a34a', scaleX: 0.9, scaleY: 0.24, fontSize: 22 });
-        sprWidth.position.set((xL + xR) / 2, footY, -0.32);
+        var widthLabel = formatMeasureNumber(layout.structureWidthFt || Math.round(Math.abs(xR - xL) / 0.09)) + ' ft';
+        var sprWidth = createTextSprite(widthLabel, { color: '#16a34a', scaleX: 0.9, fontSize: 22 });
+        sprWidth.position.set((xL + xR) / 2, footY + 0.02, -0.48);
         scene.add(sprWidth);
 
-        var dA = new THREE.Vector3(xL - 0.38, footY, 0);
-        var dB = new THREE.Vector3(xL - 0.38, footY, depth);
+        var dA = new THREE.Vector3(xL - 0.55, footY, 0);
+        var dB = new THREE.Vector3(xL - 0.55, footY, depth);
         addLine(dA, dB);
         addCap(dA, new THREE.Vector3(1, 0, 0), 0.12);
         addCap(dB, new THREE.Vector3(1, 0, 0), 0.12);
-        var depthLabel = (layout.structureDepthFt || Math.round(depth / 0.115)) + ' ft';
-        var sprDepth = createTextSprite(depthLabel, { color: '#16a34a', scaleX: 0.9, scaleY: 0.24, fontSize: 20 });
-        sprDepth.position.set(xL - 0.78, footY, depth / 2);
+        var depthLabel = formatMeasureNumber(layout.structureDepthFt || Math.round(depth / 0.09)) + ' ft';
+        var sprDepth = createTextSprite(depthLabel, { color: '#16a34a', scaleX: 0.9, fontSize: 20 });
+        sprDepth.position.set(xL - 0.95, footY, depth / 2);
         scene.add(sprDepth);
 
-        var sprFrontLbl = createTextSprite('FRONT', { color: '#16a34a', scaleX: 0.68, scaleY: 0.22, fontSize: 22 });
-        sprFrontLbl.position.set((xL + xR) / 2, footY, -0.55);
+        var rows = layout.panelGrid && layout.panelGrid.rows ? layout.panelGrid.rows : 0;
+        var rowGapFt = layout.panelRowGapFt || SOLAR_PANEL_ROW_GAP_FT;
+        if (rows > 1 && rowGapFt > 0) {
+            var gapRi;
+            for (gapRi = 0; gapRi < rows - 1; gapRi++) {
+                var rowA = panelRowDepthFrac(gapRi, rows);
+                var rowB = panelRowDepthFrac(gapRi + 1, rows);
+                var zGap0 = rowA.t1 * depth;
+                var zGap1 = rowB.t0 * depth;
+                var gapX = xR + 0.42;
+                var gA = new THREE.Vector3(gapX, footY, zGap0);
+                var gB = new THREE.Vector3(gapX, footY, zGap1);
+                addLine(gA, gB);
+                addCap(gA, new THREE.Vector3(1, 0, 0), 0.1);
+                addCap(gB, new THREE.Vector3(1, 0, 0), 0.1);
+                var sprGap = createTextSprite(formatMeasureNumber(rowGapFt) + ' ft', { color: '#0369a1', scaleX: 0.78, fontSize: 18 });
+                sprGap.position.set(gapX + 0.38, footY + 0.08, (zGap0 + zGap1) / 2);
+                scene.add(sprGap);
+            }
+        }
+
+        var sprFrontLbl = createTextSprite('FRONT', { color: '#16a34a', scaleX: 0.68, fontSize: 22 });
+        sprFrontLbl.position.set((xL + xR) / 2, footY, -0.82);
         scene.add(sprFrontLbl);
-        var sprBackLbl = createTextSprite('BACK', { color: '#16a34a', scaleX: 0.65, scaleY: 0.22, fontSize: 22 });
-        sprBackLbl.position.set((xL + xR) / 2, footY, depth + 0.5);
+        var sprBackLbl = createTextSprite('BACK', { color: '#16a34a', scaleX: 0.65, fontSize: 22 });
+        sprBackLbl.position.set((xL + xR) / 2, footY, depth + 0.55);
         scene.add(sprBackLbl);
     }
 
@@ -603,14 +642,14 @@
             if (dirsEl) viewportEl.appendChild(dirsEl);
         }
 
-        var hScale = 0.115;
+        var hScale = 0.09;
         var foundationH = 0.1;
         var frontY = layout.frontH * hScale;
         var backY = layout.backH * hScale;
         var frontTopY = foundationH + frontY;
         var backTopY = foundationH + backY;
         var structureWidthFt = layout.structureWidthFt || Math.max(layout.panelGrid.cols, 1) * SOLAR_PANEL_WIDTH_FT;
-        var structureDepthFt = layout.structureDepthFt || Math.max(layout.panelGrid.rows, 1) * SOLAR_PANEL_LENGTH_FT;
+        var structureDepthFt = layout.structureDepthFt || solarStructureDepthFt(layout.panelGrid.rows || 1);
         var totalWidth = Math.max(structureWidthFt * hScale, 0.6);
         var depth = Math.max(structureDepthFt * hScale, 0.6);
         var legCols = layout.legCols;
@@ -741,12 +780,9 @@
         var rows3d = Math.max(layout.panelGrid.rows, 1);
 
         for (row3d = 0; row3d < layout.panelGrid.rows; row3d++) {
-            var panelLenFt = layout.panelLengthFt || SOLAR_PANEL_LENGTH_FT;
-            var rowGapFt = layout.panelRowGapFt != null ? layout.panelRowGapFt : 1;
-            var depthFt = structureDepthFt;
-            var startFt = row3d * (panelLenFt + rowGapFt);
-            t0 = startFt / Math.max(depthFt, 0.001);
-            t1 = (startFt + panelLenFt) / Math.max(depthFt, 0.001);
+            var rowFrac = panelRowDepthFrac(row3d, rows3d);
+            t0 = rowFrac.t0;
+            t1 = rowFrac.t1;
             for (col3d = 0; col3d < layout.panelGrid.cols; col3d++) {
                 idx3d = row3d * layout.panelGrid.cols + col3d;
                 if (idx3d >= layout.panelCount) continue;
