@@ -885,6 +885,7 @@
         flex: 0 0 28%;
         max-width: 280px;
         min-width: 200px;
+        position: relative;
     }
     @media (max-width: 991px) {
         .solar-diagram-2d-wrap {
@@ -892,18 +893,121 @@
             max-width: 100%;
         }
     }
+    .solar-diagram-2d-inner {
+        position: relative;
+        background: #fff;
+        border: 1px solid #e2e8f0;
+        border-radius: 6px;
+        overflow: hidden;
+    }
     .solar-diagram-2d-wrap svg {
         display: block;
         width: 100%;
         height: auto;
         max-height: 320px;
         background: #fff;
-        border-radius: 6px;
+        pointer-events: none;
     }
     @media (max-width: 991px) {
         .solar-diagram-2d-wrap svg {
             max-height: none;
         }
+    }
+    .solar-2d-hit {
+        position: absolute;
+        left: 0;
+        right: 0;
+        border: 0;
+        padding: 0;
+        margin: 0;
+        background: transparent;
+        cursor: zoom-in;
+        z-index: 2;
+    }
+    .solar-2d-hit:hover {
+        background: rgba(37, 99, 235, 0.06);
+    }
+    .solar-2d-hit:focus {
+        outline: 2px solid #93c5fd;
+        outline-offset: -2px;
+    }
+    .solar-2d-hit-plan {
+        top: 0;
+        height: 42%;
+    }
+    .solar-2d-hit-side {
+        top: 42%;
+        bottom: 0;
+        height: auto;
+    }
+    .solar-2d-hit-label {
+        position: absolute;
+        right: 6px;
+        bottom: 6px;
+        font-size: 9px;
+        font-weight: 600;
+        color: #64748b;
+        background: rgba(255, 255, 255, 0.9);
+        border: 1px solid #e2e8f0;
+        border-radius: 4px;
+        padding: 1px 5px;
+        pointer-events: none;
+    }
+    .solar-2d-lightbox {
+        display: none;
+        position: fixed;
+        inset: 0;
+        z-index: 11000;
+        align-items: center;
+        justify-content: center;
+        padding: 16px;
+        box-sizing: border-box;
+    }
+    .solar-2d-lightbox.is-open {
+        display: flex;
+    }
+    .solar-2d-lightbox-backdrop {
+        position: absolute;
+        inset: 0;
+        background: rgba(15, 23, 42, 0.62);
+    }
+    .solar-2d-lightbox-dialog {
+        position: relative;
+        z-index: 1;
+        width: min(920px, 96vw);
+        max-height: 92vh;
+        overflow: auto;
+        background: #fff;
+        border-radius: 10px;
+        box-shadow: 0 16px 48px rgba(15, 23, 42, 0.28);
+        padding: 16px 16px 20px;
+    }
+    .solar-2d-lightbox-title {
+        font-size: 15px;
+        font-weight: 700;
+        color: #1e293b;
+        margin: 0 36px 10px 0;
+    }
+    .solar-2d-lightbox-close {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        width: 32px;
+        height: 32px;
+        border: 1px solid #e2e8f0;
+        border-radius: 6px;
+        background: #f8fafc;
+        color: #334155;
+        font-size: 20px;
+        line-height: 1;
+        cursor: pointer;
+    }
+    .solar-2d-lightbox-dialog svg {
+        display: block;
+        width: 100%;
+        height: auto;
+        max-height: calc(92vh - 70px);
+        background: #fff;
     }
     .solar-diagram-3d-wrap {
         flex: 1 1 68%;
@@ -935,7 +1039,7 @@
         display: flex;
         flex-direction: row;
         align-items: stretch;
-        gap: 10px;
+        gap: 12px;
         width: 100%;
         min-height: 340px;
     }
@@ -960,44 +1064,39 @@
         width: 100% !important;
         height: 100% !important;
     }
-    .solar-3d-overlay {
-        position: relative;
-        flex: 0 0 200px;
-        width: 200px;
-        max-width: 200px;
-        pointer-events: none;
-        z-index: 2;
-        display: flex;
-        flex-direction: column;
-        gap: 8px;
-    }
-    .solar-3d-overlay-summary {
-        position: static;
-        top: auto;
-        right: auto;
-        max-width: none;
-        width: 100%;
+    .solar-3d-summary-panel {
+        flex: 0 0 210px;
+        width: 210px;
+        max-width: 210px;
+        align-self: flex-start;
         box-sizing: border-box;
         padding: 10px 12px;
-        background: rgba(255, 255, 255, 0.98);
+        background: #fff;
         border: 1px solid #e2e8f0;
         border-radius: 6px;
         font-size: 12px;
         color: #475569;
         line-height: 1.5;
-        box-shadow: 0 1px 4px rgba(15, 23, 42, 0.08);
+        box-shadow: 0 1px 4px rgba(15, 23, 42, 0.06);
     }
-    .solar-3d-overlay-summary strong {
-        color: #1e293b;
-        font-weight: 700;
-        font-size: 13px;
-    }
-    .solar-3d-overlay-summary .solar-3d-summary-title {
+    .solar-3d-summary-panel .solar-3d-summary-title {
         display: block;
         font-size: 14px;
         font-weight: 700;
         color: #1e293b;
         margin-bottom: 6px;
+    }
+    .solar-3d-summary-panel strong {
+        color: #1e293b;
+        font-weight: 700;
+        font-size: 13px;
+    }
+    /* Legacy overlay classes kept for dispose cleanup; summary lives in .solar-3d-summary-panel */
+    .solar-3d-overlay {
+        display: none;
+    }
+    .solar-3d-overlay-summary {
+        display: none;
     }
     .solar-3d-overlay-dirs {
         position: absolute;
@@ -1048,6 +1147,10 @@
     .solar-3d-zoom-btn:active {
         transform: scale(0.96);
     }
+    .solar-3d-overlay-dirs span {
+        color: #16a34a;
+        font-weight: 600;
+    }
     .solar-3d-summary {
         display: none;
     }
@@ -1057,7 +1160,7 @@
         }
         .solar-3d-stage {
             flex-direction: column;
-            gap: 0;
+            gap: 10px;
             min-height: 0;
         }
         .solar-3d-viewport {
@@ -1066,32 +1169,19 @@
             min-height: 260px;
             height: 260px;
         }
-        .solar-3d-overlay {
-            position: static;
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
+        .solar-3d-summary-panel {
             flex: none;
             width: 100%;
             max-width: none;
-            margin-top: 10px;
-            z-index: auto;
         }
-        .solar-3d-overlay-summary {
-            position: static;
-            top: auto;
-            right: auto;
-            max-width: none;
-            width: 100%;
-            box-sizing: border-box;
-            margin: 0;
+        .solar-3d-overlay {
+            display: none;
         }
         .solar-3d-overlay-dirs {
             position: static;
             bottom: auto;
             left: auto;
             padding: 0 2px 4px;
-            order: 2;
         }
         .solar-3d-title .solar-3d-hint {
             display: block;
@@ -1616,11 +1706,6 @@
             return;
         }
 
-        var overlayWrap = document.createElement('div');
-        overlayWrap.className = 'solar-3d-overlay';
-        overlayWrap.innerHTML =
-            '<div class="solar-3d-overlay-summary">' + build3dSummaryOverlayHtml(layout) + '</div>';
-
         var dirsEl = document.createElement('div');
         dirsEl.className = 'solar-3d-overlay-dirs';
         dirsEl.innerHTML = '<span>↑</span> Height · <span>→</span> Width · <span>↕</span> Front→Back depth · scroll/+− zoom';
@@ -1801,11 +1886,6 @@
         addSolar3DMeasurements(scene, layout, xAt, frontTopY, backTopY, depth, foundationH);
 
         setSolar3DFrontView(camera, controls, layout, xAt, frontTopY, backTopY, depth);
-
-        var stageEl = viewportEl.parentElement && viewportEl.parentElement.classList.contains('solar-3d-stage')
-            ? viewportEl.parentElement
-            : viewportEl;
-        stageEl.appendChild(overlayWrap);
 
         var zoomScale = 1.12;
         if (zoomWrap) {
@@ -2201,12 +2281,7 @@
         svg += '<text x="' + rbX + '" y="' + (sgy + 14) + '" text-anchor="middle" font-size="7" fill="#16a34a" font-weight="600">BACK</text>';
 
         var layout3d = buildSolarStructureLayout(opts);
-        var summaryHtml = '<strong>Front ' + (frontH || '—') + ' ft</strong> · <strong>Back ' + (backH || '—') + ' ft</strong>';
-        if (panelCount > 0) {
-            summaryHtml += '<br>Panels ' + panelCount + ' (' + panelGrid.cols + '×' + panelGrid.rows + ') · Purlin ' + purlins + ' · Rafter ' + rafters;
-        } else {
-            summaryHtml += '<br>Purlin ' + purlins + ' · Rafter ' + rafters;
-        }
+        var summaryPanelHtml = build3dSummaryOverlayHtml(layout3d);
 
         var legendSvg =
             '<svg viewBox="0 0 820 36" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Structure legend">' +
@@ -2220,21 +2295,28 @@
             (panelCount > 0 ? ' (' + panelGrid.cols + '×' + panelGrid.rows + ')' : '') + '</text>' +
             '</svg>';
 
+        var diagramSvgInner =
+            '<rect x="0" y="0" width="280" height="400" fill="#ffffff" rx="6"/>' + svg;
         var oldViewport = container.querySelector('.solar-3d-viewport');
         if (oldViewport) disposeSolar3DView(oldViewport);
         container.innerHTML =
             '<div class="solar-diagram-composite">' +
             '<div class="solar-diagram-2d-wrap">' +
-            '<svg viewBox="0 0 280 400" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Plan and side elevation">' +
-            '<rect x="0" y="0" width="280" height="400" fill="#ffffff" rx="6"/>' +
-            svg +
-            '</svg></div>' +
+            '<div class="solar-diagram-2d-inner">' +
+            '<svg class="solar-2d-source-svg" viewBox="0 0 280 400" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Plan and side elevation">' +
+            diagramSvgInner +
+            '</svg>' +
+            '<button type="button" class="solar-2d-hit solar-2d-hit-plan" data-solar-2d-zoom="plan" title="Click to zoom plan view" aria-label="Zoom plan view">' +
+            '<span class="solar-2d-hit-label">Zoom</span></button>' +
+            '<button type="button" class="solar-2d-hit solar-2d-hit-side" data-solar-2d-zoom="side" title="Click to zoom side elevation" aria-label="Zoom side elevation">' +
+            '<span class="solar-2d-hit-label">Zoom</span></button>' +
+            '</div></div>' +
             '<div class="solar-diagram-3d-wrap">' +
             '<div class="solar-3d-title">3D structure <span class="solar-3d-hint">— drag to rotate 360°, scroll to zoom</span></div>' +
             '<div class="solar-3d-stage">' +
             '<div class="solar-3d-viewport" role="img" aria-label="Interactive 3D solar structure"></div>' +
+            '<aside class="solar-3d-summary-panel">' + summaryPanelHtml + '</aside>' +
             '</div>' +
-            '<div class="solar-3d-summary" aria-hidden="true">' + summaryHtml + '</div>' +
             '</div></div>' +
             '<div class="solar-diagram-legend">' + legendSvg + '</div>';
 
@@ -2242,6 +2324,73 @@
         if (viewport) {
             initSolarStructure3DView(viewport, layout3d);
         }
+        bindSolar2dZoom(container);
+    }
+
+    function ensureSolar2dLightbox() {
+        var lb = document.getElementById('solar-2d-lightbox');
+        if (lb) return lb;
+        lb = document.createElement('div');
+        lb.id = 'solar-2d-lightbox';
+        lb.className = 'solar-2d-lightbox';
+        lb.setAttribute('role', 'dialog');
+        lb.setAttribute('aria-modal', 'true');
+        lb.innerHTML =
+            '<div class="solar-2d-lightbox-backdrop" data-solar-2d-close="1"></div>' +
+            '<div class="solar-2d-lightbox-dialog">' +
+            '<button type="button" class="solar-2d-lightbox-close" data-solar-2d-close="1" aria-label="Close">×</button>' +
+            '<div class="solar-2d-lightbox-title"></div>' +
+            '<div class="solar-2d-lightbox-body"></div>' +
+            '</div>';
+        document.body.appendChild(lb);
+        lb.addEventListener('click', function (e) {
+            if (e.target && e.target.getAttribute('data-solar-2d-close') === '1') {
+                closeSolar2dLightbox();
+            }
+        });
+        document.addEventListener('keydown', function (e) {
+            if (e.key === 'Escape') closeSolar2dLightbox();
+        });
+        return lb;
+    }
+
+    function closeSolar2dLightbox() {
+        var lb = document.getElementById('solar-2d-lightbox');
+        if (!lb) return;
+        lb.classList.remove('is-open');
+        var body = lb.querySelector('.solar-2d-lightbox-body');
+        if (body) body.innerHTML = '';
+    }
+
+    function openSolar2dLightbox(title, svgInnerHtml, viewBox) {
+        var lb = ensureSolar2dLightbox();
+        var titleEl = lb.querySelector('.solar-2d-lightbox-title');
+        var body = lb.querySelector('.solar-2d-lightbox-body');
+        if (titleEl) titleEl.textContent = title;
+        if (body) {
+            body.innerHTML =
+                '<svg viewBox="' + viewBox + '" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="' + title + '">' +
+                svgInnerHtml +
+                '</svg>';
+        }
+        lb.classList.add('is-open');
+    }
+
+    function bindSolar2dZoom(container) {
+        var source = container.querySelector('.solar-2d-source-svg');
+        if (!source) return;
+        var svgInner = source.innerHTML;
+        container.querySelectorAll('[data-solar-2d-zoom]').forEach(function (btn) {
+            btn.addEventListener('click', function (e) {
+                e.preventDefault();
+                var mode = btn.getAttribute('data-solar-2d-zoom');
+                if (mode === 'plan') {
+                    openSolar2dLightbox('Plan view (top)', svgInner, '0 30 280 150');
+                } else {
+                    openSolar2dLightbox('Side elevation', svgInner, '0 168 280 232');
+                }
+            });
+        });
     }
 
     (function () {
