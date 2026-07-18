@@ -250,6 +250,14 @@ def survey_report_pdf(request, pk):
     except ImportError:
         messages.error(request, 'PDF generation is not available. Please install reportlab.')
         return redirect('survey_report', pk=pk)
+    except Exception:
+        # Retry once without structure image so the rest of the report still downloads.
+        try:
+            branding = get_survey_report_branding(request)
+            buffer = build_survey_report_pdf(survey, branding, structure_3d_png=None)
+        except Exception:
+            messages.error(request, 'Could not generate PDF. Please try again.')
+            return redirect('survey_report', pk=pk)
 
     return FileResponse(
         buffer,

@@ -622,10 +622,10 @@
             var status = document.getElementById('pdfStatusText');
             if (btn) {
                 btn.disabled = true;
-                btn.textContent = 'Generating PDFâ€¦';
+                btn.textContent = 'Generating PDF...';
             }
             if (status) {
-                status.textContent = 'Preparing previewâ€¦';
+                status.textContent = 'Preparing preview...';
             }
 
             var png = cached3dPng;
@@ -638,14 +638,14 @@
             }
 
             var form = new FormData();
-            form.append('structure_3d_png', png);
+            form.append('structure_3d_png', png || '');
             var csrf = getCookie('csrftoken');
             if (csrf) {
                 form.append('csrfmiddlewaretoken', csrf);
             }
 
             if (status) {
-                status.textContent = 'Building PDFâ€¦';
+                status.textContent = 'Building PDF...';
             }
 
             try {
@@ -653,9 +653,14 @@
                     method: 'POST',
                     body: form,
                     credentials: 'same-origin',
+                    headers: csrf ? { 'X-CSRFToken': csrf } : {},
                 });
                 if (!resp.ok) {
                     throw new Error('PDF request failed');
+                }
+                var contentType = (resp.headers.get('content-type') || '').toLowerCase();
+                if (contentType.indexOf('application/pdf') === -1) {
+                    throw new Error('Unexpected PDF response');
                 }
                 var blob = await resp.blob();
                 var url = URL.createObjectURL(blob);

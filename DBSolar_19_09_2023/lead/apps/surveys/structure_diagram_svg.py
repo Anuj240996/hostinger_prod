@@ -1019,27 +1019,53 @@ def build_structure_front3d_svg_document(survey) -> Optional[str]:
 
 
 def _reportlab_image_from_svg(svg_doc: Optional[str], width: float, height: float):
+    """Convert SVG to a ReportLab flowable (PNG image preferred, Drawing fallback)."""
     if not svg_doc:
         return None
     try:
         from svglib.svglib import svg2rlg
-        from reportlab.graphics import renderPM
-        from reportlab.platypus import Image as RLImage
-        from reportlab.lib.utils import ImageReader
     except ImportError:
         return None
 
-    drawing = svg2rlg(io.BytesIO(svg_doc.encode('utf-8')))
+    try:
+        drawing = svg2rlg(io.BytesIO(svg_doc.encode('utf-8')))
+    except Exception:
+        return None
     if not drawing:
         return None
 
-    pil_img = renderPM.drawToPIL(drawing)
-    buf = io.BytesIO()
-    pil_img.save(buf, format='PNG')
-    buf.seek(0)
-    aspect = pil_img.height / pil_img.width if pil_img.width else 1
-    img_h = width * aspect
-    return RLImage(ImageReader(buf), width=width, height=min(img_h, height))
+    dw = float(getattr(drawing, 'width', 0) or 0) or 1.0
+    dh = float(getattr(drawing, 'height', 0) or 0) or 1.0
+    scale = width / dw
+    out_w = width
+    out_h = dh * scale
+    if out_h > height and dh > 0:
+        scale = height / dh
+        out_h = height
+        out_w = dw * scale
+
+    # Prefer raster PNG when renderPM backend is available.
+    try:
+        from reportlab.graphics import renderPM
+        from reportlab.platypus import Image as RLImage
+        from reportlab.lib.utils import ImageReader
+
+        pil_img = renderPM.drawToPIL(drawing)
+        buf = io.BytesIO()
+        pil_img.save(buf, format='PNG')
+        buf.seek(0)
+        return RLImage(ImageReader(buf), width=out_w, height=out_h)
+    except Exception:
+        pass
+
+    # Drawing itself is a valid flowable for PDF (no renderPM needed).
+    try:
+        drawing.width = out_w
+        drawing.height = out_h
+        drawing.scale(scale, scale)
+        return drawing
+    except Exception:
+        return None
 
 
 def structure_diagram_reportlab_image(survey, width: float = 480, height: float = 320):

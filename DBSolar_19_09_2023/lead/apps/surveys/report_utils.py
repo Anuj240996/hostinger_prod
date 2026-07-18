@@ -304,14 +304,22 @@ def build_survey_report_pdf(survey, branding, structure_3d_png=None):
 
     if survey_has_structure_layout(survey) and not structure_3d_png:
         # Prefer static 3D SVG (includes optional walkway/ladder) over 2D plan+side.
-        front3d_img = structure_front3d_reportlab_image(survey, width=420, height=320)
+        front3d_img = None
+        diagram_img = None
+        try:
+            front3d_img = structure_front3d_reportlab_image(survey, width=420, height=320)
+        except Exception:
+            front3d_img = None
         if front3d_img:
             elements.append(Paragraph('3D Structure (Front View)', section_style))
             elements.append(Spacer(1, 4))
             elements.append(front3d_img)
             elements.append(Spacer(1, 8))
         else:
-            diagram_img = structure_diagram_reportlab_image(survey)
+            try:
+                diagram_img = structure_diagram_reportlab_image(survey)
+            except Exception:
+                diagram_img = None
             if diagram_img:
                 summary = structure_diagram_summary_text(survey)
                 elements.append(Paragraph('Solar Structure Layout', section_style))
