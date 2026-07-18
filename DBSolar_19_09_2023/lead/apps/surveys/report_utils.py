@@ -275,6 +275,7 @@ def build_survey_report_pdf(survey, branding, structure_3d_png=None):
 
     from .structure_diagram_svg import (
         structure_diagram_reportlab_image,
+        structure_front3d_reportlab_image,
         structure_diagram_summary_text,
         survey_has_structure_layout,
     )
@@ -302,15 +303,23 @@ def build_survey_report_pdf(survey, branding, structure_3d_png=None):
             pass
 
     if survey_has_structure_layout(survey) and not structure_3d_png:
-        diagram_img = structure_diagram_reportlab_image(survey)
-        if diagram_img:
-            summary = structure_diagram_summary_text(survey)
-            elements.append(Paragraph('Solar Structure Layout', section_style))
-            if summary:
-                elements.append(Paragraph(summary, normal))
-                elements.append(Spacer(1, 4))
-            elements.append(diagram_img)
+        # Prefer static 3D SVG (includes optional walkway/ladder) over 2D plan+side.
+        front3d_img = structure_front3d_reportlab_image(survey, width=420, height=320)
+        if front3d_img:
+            elements.append(Paragraph('3D Structure (Front View)', section_style))
+            elements.append(Spacer(1, 4))
+            elements.append(front3d_img)
             elements.append(Spacer(1, 8))
+        else:
+            diagram_img = structure_diagram_reportlab_image(survey)
+            if diagram_img:
+                summary = structure_diagram_summary_text(survey)
+                elements.append(Paragraph('Solar Structure Layout', section_style))
+                if summary:
+                    elements.append(Paragraph(summary, normal))
+                    elements.append(Spacer(1, 4))
+                elements.append(diagram_img)
+                elements.append(Spacer(1, 8))
 
     def wall_label(direction, length, used):
         used_txt = ' (Used)' if used else ''

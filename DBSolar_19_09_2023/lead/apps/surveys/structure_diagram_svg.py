@@ -150,6 +150,11 @@ def _build_layout(opts: Dict[str, Any]) -> Optional[Dict[str, Any]]:
     solar_panels = int(opts.get('solarPanels') or 0)
     front_h = float(opts.get('frontHeight') or 0)
     back_h = float(opts.get('backHeight') or 0)
+    has_walkway = bool(opts.get('hasWalkway'))
+    has_ladder = bool(opts.get('hasLadder'))
+    square_pipe = int(opts.get('squarePipeCount') or 0)
+    if square_pipe < 1:
+        square_pipe = 6 if has_ladder else 0
     max_h = max(front_h, back_h, 1)
     front_px = 22 + (front_h / max_h) * 72
     back_px = 22 + (back_h / max_h) * 72
@@ -157,10 +162,18 @@ def _build_layout(opts: Dict[str, Any]) -> Optional[Dict[str, Any]]:
     front_leg_count = math.ceil(legs / 2)
     back_leg_count = math.floor(legs / 2)
     leg_cols = max(front_leg_count, back_leg_count, 1)
-    rafter_cols = rafters
+    walkway_purlin_bonus = 4 if has_walkway else 0
+    panel_purlins = max(0, purlins - walkway_purlin_bonus)
+    if panel_purlins < 1 and purlins >= 1:
+        panel_purlins = purlins
+    # Upper panel rafters only; walkway +2 are separate lower left/right members.
+    main_rafter_cols = max(1, math.ceil(legs / 2) or 1)
+    if not has_walkway and rafters >= 1:
+        main_rafter_cols = rafters
+    rafter_cols = main_rafter_cols
     span_cols = max(leg_cols, rafter_cols)
     panel_count = solar_panels if solar_panels >= 1 else 0
-    panel_rows = max(1, math.floor(purlins / 2))
+    panel_rows = max(1, math.floor(panel_purlins / 2))
     panel_cols_w = max(1, math.ceil(panel_count / panel_rows)) if panel_count > 0 else 0
     panel_grid = (
         {'rows': panel_rows, 'cols': panel_cols_w, 'total': panel_count}
@@ -169,20 +182,20 @@ def _build_layout(opts: Dict[str, Any]) -> Optional[Dict[str, Any]]:
     )
 
     def purlin_t(index: int) -> float:
-        return 0.5 if purlins == 1 else index / (purlins - 1)
+        return 0.5 if panel_purlins == 1 else index / (panel_purlins - 1)
 
     def panel_depth_span(row: int) -> Dict[str, Any]:
         p0 = row * 2
         p1 = p0 + 1
-        if p0 >= purlins:
+        if p0 >= panel_purlins:
             return {
                 't0': row / panel_grid['rows'],
                 't1': (row + 1) / panel_grid['rows'],
                 'p0': -1,
                 'p1': -1,
             }
-        if p1 >= purlins:
-            p1 = purlins - 1
+        if p1 >= panel_purlins:
+            p1 = panel_purlins - 1
         if p0 == p1 and p0 > 0:
             p0 -= 1
         ta, tb = purlin_t(p0), purlin_t(p1)
@@ -213,6 +226,7 @@ def _build_layout(opts: Dict[str, Any]) -> Optional[Dict[str, Any]]:
         'legs': legs,
         'rafters': rafters,
         'purlins': purlins,
+        'panel_purlins': panel_purlins,
         'panel_count': panel_count,
         'front_h': front_h,
         'back_h': back_h,
@@ -224,6 +238,9 @@ def _build_layout(opts: Dict[str, Any]) -> Optional[Dict[str, Any]]:
         'rafter_cols': rafter_cols,
         'span_cols': span_cols,
         'panel_grid': panel_grid,
+        'has_walkway': has_walkway,
+        'has_ladder': has_ladder,
+        'square_pipe_count': square_pipe,
         'purlin_t': purlin_t,
         'panel_portrait_span': panel_portrait_span,
         'rafter_bay_col': rafter_bay_col,
@@ -237,7 +254,7 @@ def build_structure_diagram_inner_svg(opts: Dict[str, Any]) -> Optional[str]:
 
     legs = layout['legs']
     rafters = layout['rafters']
-    purlins = layout['purlins']
+    purlins = layout.get('panel_purlins') or layout['purlins']
     panel_count = layout['panel_count']
     front_h = layout['front_h']
     back_h = layout['back_h']
@@ -744,7 +761,7 @@ def build_structure_front3d_svg_document(survey) -> Optional[str]:
 
     legs = layout['legs']
     rafters = layout['rafters']
-    purlins = layout['purlins']
+    purlins = layout.get('panel_purlins') or layout['purlins']
     panel_count = layout['panel_count']
     panel_grid = layout['panel_grid']
     front_h = layout['front_h']
@@ -754,6 +771,9 @@ def build_structure_front3d_svg_document(survey) -> Optional[str]:
     leg_cols = layout['leg_cols']
     rafter_cols = layout['rafter_cols']
     purlin_t = layout['purlin_t']
+    has_walkway = bool(layout.get('has_walkway'))
+    has_ladder = bool(layout.get('has_ladder'))
+    square_pipe = int(layout.get('square_pipe_count') or 0)
 
     foundation_y = 300
     left_x = 120
@@ -846,8 +866,83 @@ def build_structure_front3d_svg_document(survey) -> Optional[str]:
         fy = leg_base_front - front_leg_h
         by = leg_base_back - back_leg_h
         svg_parts.append(
-            f'<line x1="{fx}" y1="{fy}" x2="{bx}" y2="{by}" stroke="#ea580c" stroke-width="4.5" stroke-linecap="round"/>'
+            f'<line x1="{fx}" y1="{fy}" x2="{bx}" y2="{by}" stroke="#ea580c" stroke-width="2.8" stroke-linecap="round"/>'
         )
+
+    # Walkway: lower left/right horizontal WR + deck in row gap (+ ladder).
+    if has_walkway:
+        walk_frac = 0.42
+        walk_y_front = leg_base_front - front_leg_h * walk_frac
+        walk_y_back = leg_base_back - back_leg_h * walk_frac
+        # Keep clearly below the lower of the front/back roof lines.
+        walk_y_front = min(walk_y_front, (leg_base_front - front_leg_h) + 28)
+        walk_y_back = min(walk_y_back, (leg_base_back - back_leg_h) + 28)
+        # Level horizontal members (average height) attached to left/right legs.
+        walk_y = (walk_y_front + walk_y_back) / 2
+        x_left = x_at(0, leg_cols)
+        x_right = x_at(max(leg_cols - 1, 0), leg_cols)
+        for wx in (x_left, x_right):
+            svg_parts.append(
+                f'<line x1="{wx}" y1="{walk_y}" x2="{wx + depth_dx}" y2="{walk_y}" '
+                f'stroke="#ea580c" stroke-width="2.4" stroke-linecap="round"/>'
+            )
+        if panel_grid['rows'] > 1:
+            t0a, t1a = panel_row_depth_frac(0, panel_grid['rows'])
+            t0b, t1b = panel_row_depth_frac(1, panel_grid['rows'])
+            wt0, wt1 = t1a, t0b
+        else:
+            wt0, wt1 = 0.42, 0.58
+        # Deck quad in the gap between rows (on WR height).
+        d0l = roof_pt(wt0, 0.04)
+        d0r = roof_pt(wt0, 0.96)
+        d1r = roof_pt(wt1, 0.96)
+        d1l = roof_pt(wt1, 0.04)
+        p0 = (d0l[0], walk_y - 4)
+        p1 = (d0r[0], walk_y - 4)
+        p2 = (d1r[0], walk_y - 4)
+        p3 = (d1l[0], walk_y - 4)
+        svg_parts.append(
+            f'<polygon points="{p0[0]},{p0[1]} {p1[0]},{p1[1]} {p2[0]},{p2[1]} {p3[0]},{p3[1]}" '
+            f'fill="#9ca3af" fill-opacity="0.85" stroke="#1f2937" stroke-width="1.2"/>'
+        )
+        # Grate lines
+        for gi in range(1, 6):
+            u = gi / 6
+            gx0 = p0[0] + (p1[0] - p0[0]) * u
+            gx1 = p3[0] + (p2[0] - p3[0]) * u
+            svg_parts.append(
+                f'<line x1="{gx0}" y1="{p0[1]}" x2="{gx1}" y2="{p3[1]}" stroke="#4b5563" stroke-width="0.7"/>'
+            )
+        svg_parts.append(
+            f'<text x="{(p0[0] + p1[0]) / 2}" y="{walk_y - 10}" text-anchor="middle" '
+            f'font-size="11" font-weight="700" fill="#111827">WALKWAY</text>'
+        )
+        if has_ladder:
+            # Ladder from ground at front left toward walkway front edge.
+            top_x = (p0[0] + p1[0]) / 2 - 18
+            top_y = walk_y - 2
+            bot_x = top_x - 8
+            bot_y = leg_base_front + 2
+            half = 5
+            svg_parts.extend([
+                f'<line x1="{top_x - half}" y1="{top_y}" x2="{bot_x - half}" y2="{bot_y}" '
+                f'stroke="#b91c1c" stroke-width="2"/>',
+                f'<line x1="{top_x + half}" y1="{top_y}" x2="{bot_x + half}" y2="{bot_y}" '
+                f'stroke="#b91c1c" stroke-width="2"/>',
+            ])
+            rungs = max(4, min(square_pipe or 6, 10))
+            for ri in range(1, rungs + 1):
+                u = ri / (rungs + 1)
+                lx0 = (top_x - half) + ((bot_x - half) - (top_x - half)) * u
+                lx1 = (top_x + half) + ((bot_x + half) - (top_x + half)) * u
+                ly = top_y + (bot_y - top_y) * u
+                svg_parts.append(
+                    f'<line x1="{lx0}" y1="{ly}" x2="{lx1}" y2="{ly}" stroke="#dc2626" stroke-width="1.3"/>'
+                )
+            svg_parts.append(
+                f'<text x="{bot_x - 10}" y="{bot_y + 14}" text-anchor="end" '
+                f'font-size="11" font-weight="700" fill="#b91c1c">Ladder</text>'
+            )
 
     for p in range(purlins):
         t = purlin_t(p)
