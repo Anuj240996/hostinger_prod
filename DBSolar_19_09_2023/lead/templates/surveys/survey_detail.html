@@ -1046,49 +1046,62 @@
         width: 100% !important;
         height: 100% !important;
     }
-    /* Summary is an inner column of the SAME card — never overlays the 3D canvas */
+    /* 3D + details in ONE card: canvas on top, specs strip below (not a separate table) */
     .solar-common-pane[data-solar-pane="3d"].is-active {
-        flex-direction: row;
+        flex-direction: column;
         align-items: stretch;
         padding: 0;
         gap: 0;
     }
     .solar-common-pane[data-solar-pane="3d"] .solar-3d-viewport {
         flex: 1 1 auto;
+        width: 100%;
         min-width: 0;
         border-radius: 0;
         height: 400px;
         min-height: 380px;
     }
     .solar-3d-summary-panel {
-        flex: 0 0 230px;
-        width: 230px;
-        max-width: 230px;
+        flex: 0 0 auto;
+        width: 100%;
+        max-width: none;
         box-sizing: border-box;
-        padding: 14px 16px;
+        padding: 10px 14px 12px;
         background: #fff;
         border: 0;
-        border-left: 1px solid #f0f2f2;
-        font-size: 13px;
+        border-top: 1px solid #f0f2f2;
+        font-size: 12px;
         color: #0f1111;
-        line-height: 1.55;
+        line-height: 1.4;
         box-shadow: none;
         border-radius: 0;
         position: static !important;
         z-index: auto;
         pointer-events: auto;
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 6px 14px;
     }
     .solar-3d-summary-panel .solar-3d-summary-title {
-        display: block;
-        font-size: 16px;
-        font-weight: 700;
+        display: none;
+    }
+    .solar-3d-summary-panel .solar-3d-spec {
+        display: inline-flex;
+        align-items: baseline;
+        gap: 4px;
+        white-space: nowrap;
+        color: #565959;
+    }
+    .solar-3d-summary-panel .solar-3d-spec strong {
         color: #0f1111;
-        margin-bottom: 10px;
+        font-weight: 700;
+        font-size: 12px;
     }
     .solar-3d-summary-panel strong {
         color: #0f1111;
         font-weight: 700;
-        font-size: 13px;
+        font-size: 12px;
     }
     /* Kill any legacy absolute summary overlay so it can never cover the 3D view */
     .solar-3d-overlay,
@@ -1209,15 +1222,10 @@
         .solar-common-body {
             flex-direction: column;
         }
-        .solar-common-pane[data-solar-pane="3d"].is-active {
-            flex-direction: column;
-        }
         .solar-3d-summary-panel {
             flex: none;
             width: 100%;
             max-width: none;
-            border-left: none;
-            border-top: 1px solid #f0f2f2;
         }
         .solar-3d-viewport {
             min-height: 260px;
@@ -1440,16 +1448,16 @@
     }
 
     function build3dSummaryOverlayHtml(layout) {
-        var html = '<span class="solar-3d-summary-title">Summary</span>';
-        html += '<div>Front <strong>' + layout.frontH + ' ft</strong></div>';
-        html += '<div>Back <strong>' + layout.backH + ' ft</strong></div>';
+        var html = '';
+        html += '<span class="solar-3d-spec">Front <strong>' + layout.frontH + ' ft</strong></span>';
+        html += '<span class="solar-3d-spec">Back <strong>' + layout.backH + ' ft</strong></span>';
         if (layout.panelCount > 0) {
-            html += '<div>Panels <strong>' + layout.panelCount + '</strong> (' + layout.panelGrid.cols + '×' + layout.panelGrid.rows + ')</div>';
-            html += '<div>Array <strong>' + layout.structureWidthFt + ' × ' + layout.structureDepthFt + ' ft</strong></div>';
-            html += '<div>Module <strong>' + layout.panelWidthFt + ' × ' + layout.panelLengthFt + ' ft</strong></div>';
+            html += '<span class="solar-3d-spec">Panels <strong>' + layout.panelCount + '</strong> (' + layout.panelGrid.cols + '×' + layout.panelGrid.rows + ')</span>';
+            html += '<span class="solar-3d-spec">Array <strong>' + layout.structureWidthFt + ' × ' + layout.structureDepthFt + ' ft</strong></span>';
+            html += '<span class="solar-3d-spec">Module <strong>' + layout.panelWidthFt + ' × ' + layout.panelLengthFt + ' ft</strong></span>';
         }
-        html += '<div>Purlin <strong>' + layout.purlins + '</strong> · Rafter <strong>' + layout.rafters + '</strong></div>';
-        html += '<div>Legs <strong>' + layout.legs + '</strong> (' + layout.frontLegCount + ' front + ' + layout.backLegCount + ' back)</div>';
+        html += '<span class="solar-3d-spec">Purlin <strong>' + layout.purlins + '</strong> · Rafter <strong>' + layout.rafters + '</strong></span>';
+        html += '<span class="solar-3d-spec">Legs <strong>' + layout.legs + '</strong> (' + layout.frontLegCount + ' front + ' + layout.backLegCount + ' back)</span>';
         return html;
     }
 
