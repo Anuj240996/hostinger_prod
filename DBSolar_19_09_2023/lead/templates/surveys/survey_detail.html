@@ -1419,8 +1419,11 @@
         // Panel grid uses structure purlins only (exclude walkway's +4).
         var panelPurlins = Math.max(0, purlins - walkwayPurlinBonus);
         if (panelPurlins < 1 && purlins >= 1) panelPurlins = purlins;
-        var mainRafterCols = Math.max(0, rafters - walkwayRafterBonus);
-        if (mainRafterCols < 1 && rafters >= 1) mainRafterCols = rafters;
+        // Full-span main rafters = 1 per leg column. Walkway's +2 are short gap members only.
+        var mainRafterCols = Math.max(1, Math.ceil(legs / 2) || 1);
+        if (!hasWalkway && rafters >= 1) {
+            mainRafterCols = rafters;
+        }
         rafterCols = mainRafterCols;
         spanCols = Math.max(legCols, rafterCols);
         var panelRowsFromPurlins = Math.max(1, Math.floor(Math.max(panelPurlins, 1) / 2));
@@ -1763,11 +1766,8 @@
      * Ladder (square pipe) attaches from ground up onto the walkway.
      */
     /**
-     * Walkway + ladder matching survey sketch:
-     * - Grated walkway deck in the gap between panel rows (below panels, on rafter line)
-     * - 2 orange walkway rafters under the deck, attached at the last leg columns
-     * - 4 blue walkway purlins across the deck
-     * - Slanted ladder from ground up onto the walkway edge
+     * Walkway sits in the gap BETWEEN panel rows, BELOW the panel face (on/under rafter line).
+     * Ladder leans from ground and attaches to the walkway deck edge — not to a main rafter.
      */
     function addSolarWalkwayAndLadder(scene, layout, xAtLeg, roofPoint, alignMemberAlong, depth, frontTopY, backTopY, foundationH) {
         if (!layout.hasWalkway) return;
@@ -1775,142 +1775,137 @@
         var t0;
         var t1;
         if (rows >= 2) {
-            var rowA = panelRowDepthFrac(0, rows);
-            var rowB = panelRowDepthFrac(1, rows);
-            t0 = rowA.t1;
-            t1 = rowB.t0;
+            t0 = panelRowDepthFrac(0, rows).t1;
+            t1 = panelRowDepthFrac(1, rows).t0;
         } else {
-            t0 = 0.42;
-            t1 = 0.58;
+            t0 = 0.40;
+            t1 = 0.60;
         }
-        if (t1 - t0 < 0.04) {
-            t0 = Math.max(0, 0.45);
-            t1 = Math.min(1, 0.55);
+        // Keep a usable gap so the walkway reads clearly between rows.
+        if (t1 - t0 < 0.06) {
+            var mid = (t0 + t1) / 2;
+            t0 = Math.max(0.05, mid - 0.06);
+            t1 = Math.min(0.95, mid + 0.06);
         }
         var midT = (t0 + t1) / 2;
-        var pL0 = roofPoint(t0, 0);
-        var pR0 = roofPoint(t0, 1);
-        var pL1 = roofPoint(t1, 0);
-        var pR1 = roofPoint(t1, 1);
-        // Sit on rafter line (below panel face), matching the sketch.
-        var deckY = ((pL0.y + pR0.y + pL1.y + pR1.y) / 4) - 0.02;
-        var xL = Math.min(pL0.x, pL1.x);
-        var xR = Math.max(pR0.x, pR1.x);
-        var deckW = Math.max(Math.abs(xR - xL) * 0.96, 0.4);
-        var deckD = Math.max(Math.abs((t1 - t0) * depth) * 0.95, 0.16);
+        var roofMid = roofPoint(midT, 0.5);
+        // Below solar panels (panelLift ~0.11), above main purlin (+0.05).
+        var deckY = roofMid.y + 0.055;
+        var pL = roofPoint(midT, 0);
+        var pR = roofPoint(midT, 1);
+        var deckW = Math.max(Math.abs(pR.x - pL.x) * 0.98, 0.5);
+        var deckD = Math.max((t1 - t0) * depth * 0.98, 0.22);
         var zMid = midT * depth;
+        var z0 = t0 * depth;
+        var z1 = t1 * depth;
         var axisY = new THREE.Vector3(0, 1, 0);
         var axisX = new THREE.Vector3(1, 0, 0);
-        var axisZ = new THREE.Vector3(0, 0, 1);
 
-        // --- Two orange walkway rafters under the deck (last leg columns) ---
+        // Solid walkway plate (highly visible) + grate bars on top.
+        var plateMat = new THREE.MeshLambertMaterial({
+            color: 0x9ca3af,
+            transparent: true,
+            opacity: 0.92
+        });
+        var plate = new THREE.Mesh(new THREE.BoxGeometry(deckW, 0.045, deckD), plateMat);
+        plate.position.set(0, deckY, zMid);
+        scene.add(plate);
+
+        var frameMat = new THREE.MeshLambertMaterial({ color: 0x1f2937 });
+        var barMat = new THREE.MeshLambertMaterial({ color: 0x374151 });
+        var ft = 0.04;
+        [
+            [0, deckD / 2, deckW + 0.02, ft, ft],
+            [0, -deckD / 2, deckW + 0.02, ft, ft],
+            [-deckW / 2, 0, ft, ft, deckD + 0.02],
+            [deckW / 2, 0, ft, ft, deckD + 0.02]
+        ].forEach(function (f) {
+            var fm = new THREE.Mesh(new THREE.BoxGeometry(f[2], f[3], f[4]), frameMat);
+            fm.position.set(f[0], deckY + 0.03, zMid + f[1]);
+            scene.add(fm);
+        });
+        var nLong = Math.max(8, Math.round(deckW / 0.1));
+        var li;
+        for (li = 1; li < nLong; li++) {
+            var gx = -deckW / 2 + (deckW * li) / nLong;
+            var bar = new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.028, deckD * 0.92), barMat);
+            bar.position.set(gx, deckY + 0.035, zMid);
+            scene.add(bar);
+        }
+        var nCross = Math.max(4, Math.round(deckD / 0.07));
+        var cxi;
+        for (cxi = 1; cxi < nCross; cxi++) {
+            var gz = -deckD / 2 + (deckD * cxi) / nCross;
+            var cbar = new THREE.Mesh(new THREE.BoxGeometry(deckW * 0.92, 0.024, 0.03), barMat);
+            cbar.position.set(0, deckY + 0.038, zMid + gz);
+            scene.add(cbar);
+        }
+
+        // 2 orange walkway rafters ONLY under the walkway (last leg columns) — short span in the gap.
         var walkRafterMat = new THREE.MeshLambertMaterial({ color: 0xea580c });
-        var lastCols;
-        if (layout.legCols <= 1) lastCols = [0];
-        else if (layout.legCols === 2) lastCols = [0, 1];
-        else lastCols = [layout.legCols - 2, layout.legCols - 1];
+        var lastCols = layout.legCols <= 2
+            ? [0, Math.max(0, layout.legCols - 1)]
+            : [layout.legCols - 2, layout.legCols - 1];
         lastCols.forEach(function (ci) {
             var x = xAtLeg(ci);
-            // Follow roof slope through the gap (same as main rafters).
-            var a = roofPoint(t0, (x - xL) / Math.max(xR - xL, 0.001));
-            var b = roofPoint(t1, (x - xL) / Math.max(xR - xL, 0.001));
-            // Prefer exact X at last legs:
-            a = new THREE.Vector3(x, roofPoint(t0, 0.5).y, t0 * depth);
-            b = new THREE.Vector3(x, roofPoint(t1, 0.5).y, t1 * depth);
-            a.y -= 0.06;
-            b.y -= 0.06;
-            var len = a.distanceTo(b);
-            if (len < 0.05) return;
-            var mesh = new THREE.Mesh(new THREE.BoxGeometry(0.11, len, 0.11), walkRafterMat);
+            var y0 = roofPoint(t0, 0.5).y - 0.04;
+            var y1 = roofPoint(t1, 0.5).y - 0.04;
+            var a = new THREE.Vector3(x, y0, z0);
+            var b = new THREE.Vector3(x, y1, z1);
+            if (a.distanceTo(b) < 0.05) return;
+            var mesh = new THREE.Mesh(new THREE.BoxGeometry(0.12, a.distanceTo(b), 0.12), walkRafterMat);
             alignMemberAlong(mesh, a, b, axisY);
             scene.add(mesh);
         });
 
-        // --- 4 walkway purlins across (blue) under the grate ---
-        var walkPurlinMat = new THREE.MeshLambertMaterial({ color: 0x2563eb });
+        // 4 blue walkway purlins across the plate (under grate).
+        var walkPurlinMat = new THREE.MeshLambertMaterial({ color: 0x1d4ed8 });
         var wp;
         for (wp = 0; wp < 4; wp++) {
             var zt = t0 + (t1 - t0) * (wp + 0.5) / 4;
             var left = roofPoint(zt, 0.02);
             var right = roofPoint(zt, 0.98);
-            left.y = deckY - 0.01;
-            right.y = deckY - 0.01;
-            var pm = new THREE.Mesh(new THREE.BoxGeometry(left.distanceTo(right), 0.055, 0.07), walkPurlinMat);
+            left.y = deckY - 0.015;
+            right.y = deckY - 0.015;
+            var pm = new THREE.Mesh(new THREE.BoxGeometry(left.distanceTo(right), 0.06, 0.08), walkPurlinMat);
             alignMemberAlong(pm, left, right, axisX);
             scene.add(pm);
         }
 
-        // --- Grated walkway deck (cross-hatch like the sketch) ---
-        var frameMat = new THREE.MeshLambertMaterial({ color: 0x374151 });
-        var barMat = new THREE.MeshLambertMaterial({ color: 0x4b5563 });
-        var frameT = 0.035;
-        // Outer frame
-        var frameSpecs = [
-            [0, deckD / 2, deckW, frameT, frameT],
-            [0, -deckD / 2, deckW, frameT, frameT],
-            [-deckW / 2, 0, frameT, frameT, deckD],
-            [deckW / 2, 0, frameT, frameT, deckD]
-        ];
-        frameSpecs.forEach(function (f) {
-            var fm = new THREE.Mesh(new THREE.BoxGeometry(f[2], f[3], f[4]), frameMat);
-            fm.position.set(f[0], deckY + 0.02, zMid + f[1]);
-            scene.add(fm);
-        });
-        // Lengthwise grate bars (front→back)
-        var nLong = Math.max(6, Math.round(deckW / 0.12));
-        var li;
-        for (li = 1; li < nLong; li++) {
-            var gx = -deckW / 2 + (deckW * li) / nLong;
-            var bar = new THREE.Mesh(new THREE.BoxGeometry(0.022, 0.02, deckD * 0.94), barMat);
-            bar.position.set(gx, deckY + 0.025, zMid);
-            scene.add(bar);
-        }
-        // Cross grate bars (left→right) — hatch look
-        var nCross = Math.max(3, Math.round(deckD / 0.08));
-        var ci;
-        for (ci = 1; ci < nCross; ci++) {
-            var gz = -deckD / 2 + (deckD * ci) / nCross;
-            var cbar = new THREE.Mesh(new THREE.BoxGeometry(deckW * 0.94, 0.018, 0.022), barMat);
-            cbar.position.set(0, deckY + 0.03, zMid + gz);
-            scene.add(cbar);
-        }
-
         if (!layout.hasLadder) return;
 
-        // --- Slanted ladder from ground up to walkway (right / last-leg side) ---
+        // Ladder attaches to the FRONT edge of the walkway deck (gap side toward FRONT), not a rafter.
         var pipeN = Math.max(5, Math.min(layout.squarePipeCount || 8, 28));
         var railMat = new THREE.MeshLambertMaterial({ color: 0xb91c1c });
         var rungMat = new THREE.MeshLambertMaterial({ color: 0xdc2626 });
-        var topX = xAtLeg(layout.legCols - 1);
-        var topZ = zMid;
-        var topY = deckY + 0.04;
-        // Foot of ladder on ground, outward + toward front so it reads as leaning (sketch).
-        var botX = topX + 0.55;
-        var botZ = Math.max(0.05, zMid - depth * 0.28);
-        var botY = foundationH + 0.03;
-        var halfW = 0.14;
-        var railOff = [
+        var halfW = 0.15;
+        // Top on walkway front edge, near the right third of the deck.
+        var topX = deckW * 0.28;
+        var topZ = z0 + 0.02;
+        var topY = deckY + 0.05;
+        // Foot on ground in front of the walkway (toward FRONT / z=0).
+        var botX = topX + 0.35;
+        var botZ = Math.max(0.08, z0 - depth * 0.22);
+        var botY = foundationH + 0.04;
+        [
             new THREE.Vector3(-halfW, 0, 0),
             new THREE.Vector3(halfW, 0, 0)
-        ];
-        railOff.forEach(function (off) {
-            var a = new THREE.Vector3(botX, botY, botZ).add(off);
-            var b = new THREE.Vector3(topX, topY, topZ).add(off);
-            var rail = new THREE.Mesh(new THREE.BoxGeometry(0.04, a.distanceTo(b), 0.04), railMat);
+        ].forEach(function (off) {
+            var a = new THREE.Vector3(botX + off.x, botY, botZ);
+            var b = new THREE.Vector3(topX + off.x, topY, topZ);
+            var rail = new THREE.Mesh(new THREE.BoxGeometry(0.045, a.distanceTo(b), 0.045), railMat);
             alignMemberAlong(rail, a, b, axisY);
             scene.add(rail);
         });
         var ri;
         for (ri = 1; ri <= pipeN; ri++) {
             var u = ri / (pipeN + 1);
-            var c = new THREE.Vector3(
+            var rung = new THREE.Mesh(new THREE.BoxGeometry(halfW * 2 + 0.05, 0.035, 0.035), rungMat);
+            rung.position.set(
                 botX + (topX - botX) * u,
                 botY + (topY - botY) * u,
                 botZ + (topZ - botZ) * u
             );
-            var rung = new THREE.Mesh(new THREE.BoxGeometry(halfW * 2 + 0.04, 0.032, 0.032), rungMat);
-            rung.position.copy(c);
-            // Orient rung roughly horizontal across rails
             scene.add(rung);
         }
     }
