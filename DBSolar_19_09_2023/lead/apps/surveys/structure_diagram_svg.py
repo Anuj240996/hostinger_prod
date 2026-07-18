@@ -238,8 +238,8 @@ def build_structure_diagram_inner_svg(opts: Dict[str, Any]) -> Optional[str]:
     plan_front_y = py0 + pd - 16
     plan_back_y = py0 + 16
     plan_depth_span = plan_front_y - plan_back_y
-    plan_u_gap = 3 if panel_grid['cols'] > 1 else 0
-    plan_row_gap = 4 if panel_grid['rows'] > 1 else 0
+    plan_u_gap = 0
+    plan_row_gap = 0
 
     def plan_x_at(col: int, total: int) -> float:
         if total > 1:
@@ -284,7 +284,7 @@ def build_structure_diagram_inner_svg(opts: Dict[str, Any]) -> Optional[str]:
             svg += draw_plan_leg_foundation(lx, plan_back_y)
 
     for r in range(rafter_cols):
-        rcx = plan_x_at(rafter_bay_col(r), leg_cols)
+        rcx = plan_x_at(r, rafter_cols)
         svg += (
             f'<line x1="{rcx}" y1="{plan_front_y + 2}" x2="{rcx}" y2="{plan_back_y - 2}" '
             f'stroke="#ea580c" stroke-width="5" stroke-linecap="round" opacity="0.95"/>'
@@ -318,9 +318,9 @@ def build_structure_diagram_inner_svg(opts: Dict[str, Any]) -> Optional[str]:
             x_r = plan_inner_l + (plan_inner_r - plan_inner_l) * u1 - plan_u_gap
             w, h = x_r - x_l, y_bot - y_top
             if w >= 4 and h >= 4:
-                # Fill bay almost fully so adjacent modules connect across width.
-                pad_x = max(1.0, w * 0.02)
-                pad_y = max(1.0, h * 0.02)
+                # Cover bay including border rafter/purlin edges.
+                pad_x = max(0.35, w * 0.004)
+                pad_y = max(0.35, h * 0.004)
                 x0 = x_l + pad_x
                 y0 = y_top + pad_y
                 draw_w = max(3.0, w - pad_x * 2)
@@ -334,8 +334,8 @@ def build_structure_diagram_inner_svg(opts: Dict[str, Any]) -> Optional[str]:
                         f'stroke="#0f1f33" stroke-width="0.4">M{idx + 1}</text>'
                     )
 
-    for r in range(min(rafter_cols, 4)):
-        rlx = plan_x_at(rafter_bay_col(r), leg_cols)
+    for r in range(min(rafter_cols, 8)):
+        rlx = plan_x_at(r, rafter_cols)
         svg += (
             f'<text x="{rlx}" y="{plan_front_y + 14}" text-anchor="middle" font-size="7" '
             f'fill="#c2410c" font-weight="600">R{r + 1}</text>'
@@ -625,13 +625,11 @@ def build_structure_front3d_svg_document(survey) -> Optional[str]:
         return left_x + (span_w * col / (total - 1))
 
     def roof_pt(t_depth: float, width_frac: float) -> Tuple[float, float]:
-        rf = width_frac * (rafter_cols - 1)
-        r0 = int(math.floor(rf))
-        r1 = min(r0 + 1, rafter_cols - 1)
-        rw = 0 if rafter_cols <= 1 else (rf - r0)
-        x0 = x_at(rafter_bay_col(r0), span_cols)
-        x1 = x_at(rafter_bay_col(r1), span_cols)
-        x = x0 * (1 - rw) + x1 * rw + depth_dx * t_depth
+        # Linear across full structure width (do not collapse via rafter→leg mapping).
+        if rafter_cols <= 1:
+            x = left_x + span_w / 2 + depth_dx * t_depth
+        else:
+            x = left_x + span_w * width_frac + depth_dx * t_depth
         y_front = leg_base_front - front_leg_h
         y_back = leg_base_back - back_leg_h
         y = y_front + (y_back - y_front) * t_depth
@@ -707,8 +705,7 @@ def build_structure_front3d_svg_document(survey) -> Optional[str]:
             )
 
     for r in range(rafter_cols):
-        col = rafter_bay_col(r)
-        fx = x_at(col, span_cols)
+        fx = x_at(r, rafter_cols)
         bx = fx + depth_dx
         fy = leg_base_front - front_leg_h
         by = leg_base_back - back_leg_h
@@ -738,27 +735,20 @@ def build_structure_front3d_svg_document(survey) -> Optional[str]:
 
     if panel_count > 0 and panel_grid['rows'] > 0 and panel_grid['cols'] > 0:
         idx = 0
+        rows = max(panel_grid['rows'], 1)
+        cols = max(panel_grid['cols'], 1)
         for row in range(panel_grid['rows']):
-            t0, t1 = panel_span(row)
+            t0 = row / rows
+            t1 = (row + 1) / rows
             for col in range(panel_grid['cols']):
                 if idx >= panel_count:
                     break
-                u0 = col / panel_grid['cols']
-                u1 = (col + 1) / panel_grid['cols']
-                # Fallback portrait module shaping (narrow width, longer height).
-                u_mid = (u0 + u1) / 2
-                u_half = (u1 - u0) * 0.49
-                pu0 = max(0.0, u_mid - u_half)
-                pu1 = min(1.0, u_mid + u_half)
-                t_mid = (t0 + t1) / 2
-                t_half = (t1 - t0) * 0.7
-                pt0 = max(0.0, t_mid - t_half)
-                pt1 = min(1.0, t_mid + t_half)
-
-                a = roof_pt(pt0, pu0)
-                b = roof_pt(pt0, pu1)
-                c = roof_pt(pt1, pu1)
-                d = roof_pt(pt1, pu0)
+                u0 = col / cols
+                u1 = (col + 1) / cols
+                a = roof_pt(t0, u0)
+                b = roof_pt(t0, u1)
+                c = roof_pt(t1, u1)
+                d = roof_pt(t1, u0)
                 a = (a[0], a[1] - panel_lift)
                 b = (b[0], b[1] - panel_lift)
                 c = (c[0], c[1] - panel_lift)

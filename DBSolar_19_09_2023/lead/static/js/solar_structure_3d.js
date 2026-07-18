@@ -42,6 +42,15 @@ function buildSolarStructureLayout(opts) {
         total: panelCount
     } : { rows: 0, cols: 0, total: 0 };
 
+    var PANEL_WIDTH_FT = 4;
+    var PANEL_LENGTH_FT = 8;
+    var structureWidthFt = panelGrid.cols > 0
+        ? panelGrid.cols * PANEL_WIDTH_FT
+        : Math.max(legCols - 1, 1) * PANEL_WIDTH_FT;
+    var structureDepthFt = panelGrid.rows > 0
+        ? panelGrid.rows * PANEL_LENGTH_FT
+        : PANEL_LENGTH_FT;
+
     function purlinT(index) {
         return purlins === 1 ? 0.5 : index / (purlins - 1);
     }
@@ -99,6 +108,10 @@ function buildSolarStructureLayout(opts) {
         rafterCols: rafterCols,
         spanCols: spanCols,
         panelGrid: panelGrid,
+        panelWidthFt: PANEL_WIDTH_FT,
+        panelLengthFt: PANEL_LENGTH_FT,
+        structureWidthFt: structureWidthFt,
+        structureDepthFt: structureDepthFt,
         purlinT: purlinT,
         panelDepthSpan: panelDepthSpan,
         panelPortraitSpan: panelPortraitSpan,
@@ -119,9 +132,8 @@ function build3dSummaryOverlayHtml(layout) {
 }
 
 function setSolar3DFrontView(camera, controls, layout, xAt, frontTopY, backTopY, depth) {
-    var spanCols = layout.spanCols;
     var xL = xAt(0);
-    var xR = xAt(spanCols - 1);
+    var xR = xAt(1);
     var spanW = Math.max(Math.abs(xR - xL), 1.15);
     var midY = (frontTopY + backTopY) / 2;
     var maxH = Math.max(frontTopY, backTopY, 0.5);
@@ -297,8 +309,6 @@ function addSolar3DMeasurements(scene, layout, xAt, frontTopY, backTopY, depth, 
     var dimColor = 0x16a34a;
     var dimMat = new THREE.LineBasicMaterial({ color: dimColor, linewidth: 2 });
     var capMat = new THREE.LineBasicMaterial({ color: dimColor });
-    var spanCols = layout.spanCols;
-    var legCols = layout.legCols;
 
     function addLine(a, b, mat) {
         var g = new THREE.BufferGeometry().setFromPoints([a, b]);
@@ -350,8 +360,11 @@ function addSolar3DMeasurements(scene, layout, xAt, frontTopY, backTopY, depth, 
         return spr;
     }
 
-    var dimFrontX = xAt(0) - 0.48;
-    var dimBackX = xAt(legCols - 1) + 0.48;
+    // xAt(0)=left edge, xAt(1)=right edge of full structure width.
+    var xL = xAt(0);
+    var xR = xAt(1);
+    var dimFrontX = xL - 0.48;
+    var dimBackX = xR + 0.48;
     var sprFront = addVerticalDim(dimFrontX, 0, frontTopY, layout.frontH + ' ft');
     sprFront.position.set(dimFrontX - 0.52, (foundationH + frontTopY) / 2, 0);
     scene.add(sprFront);
@@ -360,14 +373,13 @@ function addSolar3DMeasurements(scene, layout, xAt, frontTopY, backTopY, depth, 
     scene.add(sprBack);
 
     var footY = 0.04;
-    var xL = xAt(0);
-    var xR = xAt(spanCols - 1);
     var wA = new THREE.Vector3(xL, footY, 0);
     var wB = new THREE.Vector3(xR, footY, 0);
     addLine(wA, wB);
     addCap(wA, new THREE.Vector3(0, 0, 1), 0.12);
     addCap(wB, new THREE.Vector3(0, 0, 1), 0.12);
-    var sprWidth = createTextSprite('Width →', { color: '#475569', scaleX: 0.82, scaleY: 0.22, fontSize: 20 });
+    var widthLabel = (layout.structureWidthFt || Math.round(Math.abs(xR - xL) / 0.09)) + ' ft';
+    var sprWidth = createTextSprite(widthLabel, { color: '#16a34a', scaleX: 0.9, scaleY: 0.24, fontSize: 22 });
     sprWidth.position.set((xL + xR) / 2, footY, -0.32);
     scene.add(sprWidth);
 
@@ -376,7 +388,8 @@ function addSolar3DMeasurements(scene, layout, xAt, frontTopY, backTopY, depth, 
     addLine(dA, dB);
     addCap(dA, new THREE.Vector3(1, 0, 0), 0.12);
     addCap(dB, new THREE.Vector3(1, 0, 0), 0.12);
-    var sprDepth = createTextSprite('Front → Back', { color: '#475569', scaleX: 1.0, scaleY: 0.24, fontSize: 18 });
+    var depthLabel = (layout.structureDepthFt || Math.round(depth / 0.09)) + ' ft';
+    var sprDepth = createTextSprite(depthLabel, { color: '#16a34a', scaleX: 0.9, scaleY: 0.24, fontSize: 20 });
     sprDepth.position.set(xL - 0.78, footY, depth / 2);
     scene.add(sprDepth);
 
@@ -400,8 +413,11 @@ function initSolarStructure3DView(viewportEl, layout, options) {
     var overlayWrap = document.createElement('div');
     overlayWrap.className = 'solar-3d-overlay';
     overlayWrap.innerHTML =
-        '<div class="solar-3d-overlay-summary">' + build3dSummaryOverlayHtml(layout) + '</div>' +
-        '<div class="solar-3d-overlay-dirs"><span>↑</span> Height · <span>→</span> Width · <span>↕</span> Front→Back depth · scroll/+− zoom</div>';
+        '<div class="solar-3d-overlay-summary">' + build3dSummaryOverlayHtml(layout) + '</div>';
+
+    var dirsEl = document.createElement('div');
+    dirsEl.className = 'solar-3d-overlay-dirs';
+    dirsEl.innerHTML = '<span>↑</span> Height · <span>→</span> Width · <span>↕</span> Front→Back depth · scroll/+− zoom';
 
     var zoomWrap = document.createElement('div');
     zoomWrap.className = 'solar-3d-zoom-controls';
@@ -410,6 +426,7 @@ function initSolarStructure3DView(viewportEl, layout, options) {
         '<button type="button" class="solar-3d-zoom-btn" data-solar-3d-zoom="in" title="Zoom in" aria-label="Zoom in">+</button>' +
         '<button type="button" class="solar-3d-zoom-btn" data-solar-3d-zoom="out" title="Zoom out" aria-label="Zoom out">−</button>';
     viewportEl.appendChild(zoomWrap);
+    viewportEl.appendChild(dirsEl);
 
     var hScale = 0.09;
     var foundationH = 0.1;
@@ -419,27 +436,30 @@ function initSolarStructure3DView(viewportEl, layout, options) {
     var backTopY = foundationH + backY;
     var PANEL_WIDTH_FT = 4;
     var PANEL_LENGTH_FT = 8;
-    var structureWidthFt = (layout.panelGrid && layout.panelGrid.cols)
+    var structureWidthFt = layout.structureWidthFt || ((layout.panelGrid && layout.panelGrid.cols)
         ? layout.panelGrid.cols * PANEL_WIDTH_FT
-        : Math.max(layout.spanCols - 1, 1) * PANEL_WIDTH_FT;
-    var structureDepthFt = (layout.panelGrid && layout.panelGrid.rows)
+        : Math.max(layout.spanCols - 1, 1) * PANEL_WIDTH_FT);
+    var structureDepthFt = layout.structureDepthFt || ((layout.panelGrid && layout.panelGrid.rows)
         ? layout.panelGrid.rows * PANEL_LENGTH_FT
-        : PANEL_LENGTH_FT;
+        : PANEL_LENGTH_FT);
     var totalWidth = Math.max(structureWidthFt * hScale, 0.6);
     var depth = Math.max(structureDepthFt * hScale, 0.6);
-    var spanCols = layout.spanCols;
     var legCols = layout.legCols;
-    var widthStep = spanCols > 1 ? totalWidth / (spanCols - 1) : totalWidth;
 
-    function xAt(col) {
-        return (col - (spanCols - 1) / 2) * widthStep;
+    function xAtFrac(frac) {
+        return (frac - 0.5) * totalWidth;
+    }
+    function xAtLeg(c) {
+        return legCols > 1 ? xAtFrac(c / (legCols - 1)) : 0;
+    }
+    function xAtRafter(r) {
+        return layout.rafterCols > 1 ? xAtFrac(r / (layout.rafterCols - 1)) : 0;
+    }
+    function xAt(edge) {
+        return xAtFrac(edge);
     }
     function roofPoint(tDepth, widthFrac) {
-        var rf = widthFrac * (layout.rafterCols - 1);
-        var r0 = Math.floor(rf);
-        var r1 = Math.min(r0 + 1, layout.rafterCols - 1);
-        var w = layout.rafterCols > 1 ? rf - r0 : 0;
-        var x = xAt(layout.rafterBayCol(r0)) * (1 - w) + xAt(layout.rafterBayCol(r1)) * w;
+        var x = xAtFrac(widthFrac);
         var z = tDepth * depth;
         var y = frontTopY + (backTopY - frontTopY) * tDepth;
         return new THREE.Vector3(x, y, z);
@@ -496,22 +516,23 @@ function initSolarStructure3DView(viewportEl, layout, options) {
     var foundationD = 0.28;
     var purlinMat = new THREE.MeshLambertMaterial({ color: 0x2563eb });
 
-    var c, r, p, col;
+    var c, r, p;
     for (c = 0; c < legCols; c++) {
+        var legX = xAtLeg(c);
         if (c < layout.frontLegCount) {
             var fBase = new THREE.Mesh(new THREE.BoxGeometry(foundationW, foundationH, foundationD), foundationMat);
-            fBase.position.set(xAt(c), foundationH / 2, 0);
+            fBase.position.set(legX, foundationH / 2, 0);
             scene.add(fBase);
             var fLeg = new THREE.Mesh(new THREE.BoxGeometry(0.14, frontY, 0.14), legMat);
-            fLeg.position.set(xAt(c), foundationH + frontY / 2, 0);
+            fLeg.position.set(legX, foundationH + frontY / 2, 0);
             scene.add(fLeg);
         }
         if (c < layout.backLegCount) {
             var bBase = new THREE.Mesh(new THREE.BoxGeometry(foundationW, foundationH, foundationD), foundationMat);
-            bBase.position.set(xAt(c), foundationH / 2, depth);
+            bBase.position.set(legX, foundationH / 2, depth);
             scene.add(bBase);
             var bLeg = new THREE.Mesh(new THREE.BoxGeometry(0.14, backY, 0.14), legMat);
-            bLeg.position.set(xAt(c), foundationH + backY / 2, depth);
+            bLeg.position.set(legX, foundationH + backY / 2, depth);
             scene.add(bLeg);
         }
     }
@@ -519,9 +540,9 @@ function initSolarStructure3DView(viewportEl, layout, options) {
     var axisY = new THREE.Vector3(0, 1, 0);
     var axisX = new THREE.Vector3(1, 0, 0);
     for (r = 0; r < layout.rafterCols; r++) {
-        col = layout.rafterBayCol(r);
-        var pFront = new THREE.Vector3(xAt(col), frontTopY, 0);
-        var pBack = new THREE.Vector3(xAt(col), backTopY, depth);
+        var raftX = xAtRafter(r);
+        var pFront = new THREE.Vector3(raftX, frontTopY, 0);
+        var pBack = new THREE.Vector3(raftX, backTopY, depth);
         var rafterLen = pFront.distanceTo(pBack);
         var rafterMesh = new THREE.Mesh(new THREE.BoxGeometry(0.12, rafterLen, 0.12), rafterMat);
         alignMemberAlong(rafterMesh, pFront, pBack, axisY);
@@ -540,25 +561,21 @@ function initSolarStructure3DView(viewportEl, layout, options) {
         scene.add(purlinMesh);
     }
 
-    var uGap = 0.008;
     var panelThick = 0.032;
     var panelLift = 0.11;
-    var panelPitchW = PANEL_WIDTH_FT * hScale;
-    var panelPitchL = PANEL_LENGTH_FT * hScale;
-    var fixedPanelW = Math.max(panelPitchW * (1 - uGap * 2), 0.05);
-    var fixedPanelLen = Math.max(panelPitchL * 0.96, 0.05);
-    var row3d, col3d, idx3d, mount, u0, u1, t0, t1;
-    var pA, pB, pC, pD, panelGroup, panelFront, panelBack, along, mid, halfLen, start, end;
+    var row3d, col3d, idx3d, u0, u1, t0, t1;
+    var pA, pB, pC, pD, panelGroup, panelFront, panelBack, faceW, faceL;
+    var cols3d = Math.max(layout.panelGrid.cols, 1);
+    var rows3d = Math.max(layout.panelGrid.rows, 1);
 
     for (row3d = 0; row3d < layout.panelGrid.rows; row3d++) {
-        mount = layout.panelPortraitSpan(row3d);
-        t0 = row3d / Math.max(layout.panelGrid.rows, 1);
-        t1 = (row3d + 1) / Math.max(layout.panelGrid.rows, 1);
+        t0 = row3d / rows3d;
+        t1 = (row3d + 1) / rows3d;
         for (col3d = 0; col3d < layout.panelGrid.cols; col3d++) {
             idx3d = row3d * layout.panelGrid.cols + col3d;
             if (idx3d >= layout.panelCount) continue;
-            u0 = col3d / layout.panelGrid.cols + uGap;
-            u1 = (col3d + 1) / layout.panelGrid.cols - uGap;
+            u0 = col3d / cols3d;
+            u1 = (col3d + 1) / cols3d;
             pA = roofPoint(t0, u0);
             pB = roofPoint(t0, u1);
             pC = roofPoint(t1, u1);
@@ -567,15 +584,11 @@ function initSolarStructure3DView(viewportEl, layout, options) {
             panelBack = pC.clone().add(pD).multiplyScalar(0.5);
             panelFront.y += panelLift;
             panelBack.y += panelLift;
-            along = new THREE.Vector3().subVectors(panelBack, panelFront);
-            if (along.length() < 0.001) continue;
-            along.normalize();
-            mid = panelFront.clone().add(panelBack).multiplyScalar(0.5);
-            halfLen = fixedPanelLen / 2;
-            start = mid.clone().addScaledVector(along, -halfLen);
-            end = mid.clone().addScaledVector(along, halfLen);
-            panelGroup = buildSolarPanel3DGroup(fixedPanelW, fixedPanelLen, panelThick);
-            alignMemberAlong(panelGroup, start, end, new THREE.Vector3(0, 0, 1));
+            if (panelFront.distanceTo(panelBack) < 0.001) continue;
+            faceW = Math.max(pA.distanceTo(pB) * 0.998, 0.05);
+            faceL = Math.max(panelFront.distanceTo(panelBack) * 0.998, 0.05);
+            panelGroup = buildSolarPanel3DGroup(faceW, faceL, panelThick);
+            alignMemberAlong(panelGroup, panelFront, panelBack, new THREE.Vector3(0, 0, 1));
             scene.add(panelGroup);
         }
     }
