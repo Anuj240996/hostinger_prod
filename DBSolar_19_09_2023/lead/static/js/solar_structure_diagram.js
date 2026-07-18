@@ -53,7 +53,19 @@
         var rafterCols = rafters;
         var spanCols = Math.max(legCols, rafterCols);
         var panelCount = isNaN(solarPanels) || solarPanels < 1 ? 0 : solarPanels;
-        var panelRowsFromPurlins = Math.max(1, Math.floor(purlins / 2));
+        var hasWalkway = !!opts.hasWalkway;
+        var hasLadder = !!opts.hasLadder;
+        var squarePipeCount = parseInt(opts.squarePipeCount, 10);
+        if (isNaN(squarePipeCount) || squarePipeCount < 1) squarePipeCount = hasLadder ? 6 : 0;
+        var walkwayRafterBonus = hasWalkway ? 2 : 0;
+        var walkwayPurlinBonus = hasWalkway ? 4 : 0;
+        var panelPurlins = Math.max(0, purlins - walkwayPurlinBonus);
+        if (panelPurlins < 1 && purlins >= 1) panelPurlins = purlins;
+        var mainRafterCols = Math.max(0, rafters - walkwayRafterBonus);
+        if (mainRafterCols < 1 && rafters >= 1) mainRafterCols = rafters;
+        rafterCols = mainRafterCols;
+        spanCols = Math.max(legCols, rafterCols);
+        var panelRowsFromPurlins = Math.max(1, Math.floor(Math.max(panelPurlins, 1) / 2));
         var panelColsWidth = panelCount > 0 ? Math.max(1, Math.ceil(panelCount / panelRowsFromPurlins)) : 0;
         var panelGrid = panelCount > 0 ? {
             rows: panelRowsFromPurlins,
@@ -72,15 +84,15 @@
             : PANEL_LENGTH_FT;
 
         function purlinT(index) {
-            return purlins === 1 ? 0.5 : index / (purlins - 1);
+            return panelPurlins === 1 ? 0.5 : index / (panelPurlins - 1);
         }
         function panelDepthSpan(row) {
             var p0 = row * 2;
             var p1 = p0 + 1;
-            if (p0 >= purlins) {
+            if (p0 >= panelPurlins) {
                 return { t0: row / panelGrid.rows, t1: (row + 1) / panelGrid.rows, p0: -1, p1: -1 };
             }
-            if (p1 >= purlins) p1 = purlins - 1;
+            if (p1 >= panelPurlins) p1 = panelPurlins - 1;
             if (p0 === p1 && p0 > 0) p0 = p0 - 1;
             var tA = purlinT(p0);
             var tB = purlinT(p1);
@@ -131,8 +143,14 @@
             panelWidthFt: PANEL_WIDTH_FT,
             panelLengthFt: PANEL_LENGTH_FT,
             panelRowGapFt: PANEL_ROW_GAP_FT,
+            panelPurlins: panelPurlins,
             structureWidthFt: structureWidthFt,
             structureDepthFt: structureDepthFt,
+            hasWalkway: hasWalkway,
+            hasLadder: hasLadder,
+            squarePipeCount: squarePipeCount,
+            walkwayRafterBonus: walkwayRafterBonus,
+            walkwayPurlinBonus: walkwayPurlinBonus,
             purlinT: purlinT,
             panelDepthSpan: panelDepthSpan,
             panelPortraitSpan: panelPortraitSpan,
@@ -497,6 +515,76 @@
         };
     }
 
+    function addSolarWalkwayAndLadder(scene, layout, xAtLeg, roofPoint, alignMemberAlong, depth, frontTopY, backTopY, foundationH) {
+        if (!layout.hasWalkway || !layout.panelGrid || layout.panelGrid.rows < 2) return;
+        var rows = layout.panelGrid.rows;
+        var rowA = panelRowDepthFrac(0, rows);
+        var rowB = panelRowDepthFrac(1, rows);
+        var t0 = rowA.t1;
+        var t1 = rowB.t0;
+        if (t1 <= t0) {
+            t0 = 0.45;
+            t1 = 0.55;
+        }
+        var midT = (t0 + t1) / 2;
+        var pSW = roofPoint(t0, 0);
+        var pSE = roofPoint(t0, 1);
+        var pNE = roofPoint(t1, 1);
+        var pNW = roofPoint(t1, 0);
+        var deckY = ((pSW.y + pSE.y + pNE.y + pNW.y) / 4) + 0.02;
+        var deckW = Math.abs(pSE.x - pSW.x) * 0.92;
+        var deckD = Math.max(Math.abs((t1 - t0) * depth) * 0.9, 0.12);
+        var deck = new THREE.Mesh(new THREE.BoxGeometry(deckW, 0.04, deckD), new THREE.MeshLambertMaterial({ color: 0x94a3b8 }));
+        deck.position.set(0, deckY, midT * depth);
+        scene.add(deck);
+        var walkRafterMat = new THREE.MeshLambertMaterial({ color: 0xc2410c });
+        var lastCols = layout.legCols <= 2 ? [0, Math.max(0, layout.legCols - 1)] : [layout.legCols - 2, layout.legCols - 1];
+        var axisY = new THREE.Vector3(0, 1, 0);
+        lastCols.forEach(function (ci) {
+            var x = xAtLeg(ci);
+            var a = new THREE.Vector3(x, deckY + 0.02, t0 * depth);
+            var b = new THREE.Vector3(x, deckY + 0.02, t1 * depth);
+            if (a.distanceTo(b) < 0.05) return;
+            var mesh = new THREE.Mesh(new THREE.BoxGeometry(0.1, a.distanceTo(b), 0.1), walkRafterMat);
+            alignMemberAlong(mesh, a, b, axisY);
+            scene.add(mesh);
+        });
+        var walkPurlinMat = new THREE.MeshLambertMaterial({ color: 0x1d4ed8 });
+        var wp;
+        for (wp = 0; wp < 4; wp++) {
+            var zt = t0 + (t1 - t0) * (wp + 0.5) / 4;
+            var left = roofPoint(zt, 0);
+            var right = roofPoint(zt, 1);
+            left.y = deckY + 0.035;
+            right.y = deckY + 0.035;
+            var pm = new THREE.Mesh(new THREE.BoxGeometry(left.distanceTo(right), 0.05, 0.06), walkPurlinMat);
+            alignMemberAlong(pm, left, right, new THREE.Vector3(1, 0, 0));
+            scene.add(pm);
+        }
+        if (!layout.hasLadder) return;
+        var pipeN = Math.max(4, Math.min(layout.squarePipeCount || 6, 24));
+        var ladderMat = new THREE.MeshLambertMaterial({ color: 0x64748b });
+        var railMat = new THREE.MeshLambertMaterial({ color: 0x475569 });
+        var lx = xAtLeg(layout.legCols - 1) + 0.18;
+        var zAttach = midT * depth;
+        var topY = deckY;
+        var botY = foundationH + 0.02;
+        var railH = Math.max(topY - botY, 0.3);
+        var railL = new THREE.Mesh(new THREE.BoxGeometry(0.045, railH, 0.045), railMat);
+        railL.position.set(lx - 0.12, botY + railH / 2, zAttach);
+        scene.add(railL);
+        var railR = new THREE.Mesh(new THREE.BoxGeometry(0.045, railH, 0.045), railMat);
+        railR.position.set(lx + 0.12, botY + railH / 2, zAttach);
+        scene.add(railR);
+        var ri;
+        for (ri = 0; ri < pipeN; ri++) {
+            var ry = botY + (railH * (ri + 1)) / (pipeN + 1);
+            var rung = new THREE.Mesh(new THREE.BoxGeometry(0.28, 0.035, 0.035), ladderMat);
+            rung.position.set(lx, ry, zAttach);
+            scene.add(rung);
+        }
+    }
+
     function addSolar3DMeasurements(scene, layout, xAt, frontTopY, backTopY, depth, foundationH) {
         var dimColor = 0x16a34a;
         var dimMat = new THREE.LineBasicMaterial({ color: dimColor, linewidth: 2 });
@@ -760,7 +848,7 @@
             scene.add(rafterMesh);
         }
 
-        for (p = 0; p < layout.purlins; p++) {
+        for (p = 0; p < (layout.panelPurlins || layout.purlins); p++) {
             var t = layout.purlinT(p);
             var purlinLeft = roofPoint(t, 0);
             var purlinRight = roofPoint(t, 1);
@@ -805,6 +893,7 @@
             }
         }
 
+        addSolarWalkwayAndLadder(scene, layout, xAtLeg, roofPoint, alignMemberAlong, depth, frontTopY, backTopY, foundationH);
         addSolar3DMeasurements(scene, layout, xAt, frontTopY, backTopY, depth, foundationH);
 
         setSolar3DFrontView(camera, controls, layout, xAt, frontTopY, backTopY, depth);

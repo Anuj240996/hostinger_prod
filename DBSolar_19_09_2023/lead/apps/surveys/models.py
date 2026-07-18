@@ -174,6 +174,19 @@ class Survey(TenantAwareModel, TimeStampedModel):
         blank=True,
         help_text='Physical PV modules mounted on structure (typically 1 per 2 purlins)',
     )
+    structure_has_walkway = models.BooleanField(
+        default=False,
+        help_text='Optional walkway between panel rows (+2 rafters, +4 purlins)',
+    )
+    structure_has_ladder = models.BooleanField(
+        default=False,
+        help_text='Optional ladder attached to the walkway',
+    )
+    structure_square_pipe_count = models.PositiveIntegerField(
+        null=True,
+        blank=True,
+        help_text='Square pipe quantity for ladder (shown when ladder is selected)',
+    )
 
     has_shadow_issues = models.BooleanField(default=False)
     structural_feasible = models.BooleanField(default=True)

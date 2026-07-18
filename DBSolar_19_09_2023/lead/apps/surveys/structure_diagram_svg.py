@@ -63,6 +63,11 @@ def get_survey_diagram_opts(survey) -> Optional[Dict[str, Any]]:
         'solarPanels': int(panels) if panels else 0,
         'frontHeight': front_h,
         'backHeight': back_h,
+        'hasWalkway': bool(getattr(survey, 'structure_has_walkway', False)),
+        'hasLadder': bool(getattr(survey, 'structure_has_ladder', False)),
+        'squarePipeCount': int(survey.structure_square_pipe_count or 0)
+        if getattr(survey, 'structure_square_pipe_count', None)
+        else 0,
     }
 
 
@@ -585,6 +590,12 @@ def structure_measurement_rows(survey):
             f'{_format_ft(max(layout["panel_grid"]["cols"], 1) * PANEL_WIDTH_FT)}×'
             f'{_format_ft(solar_structure_depth_ft(layout["panel_grid"]["rows"]))} ft',
         ))
+    if opts.get('hasWalkway'):
+        rows.append(('Walkway', 'Yes (+2 rafters, +4 purlins)'))
+    if opts.get('hasLadder'):
+        rows.append(('Ladder', 'Yes'))
+        if opts.get('squarePipeCount'):
+            rows.append(('Square pipe', f'{opts["squarePipeCount"]} Nos.'))
     return rows
 
 

@@ -206,6 +206,9 @@ class SurveyCompletionForm(forms.ModelForm):
             'structure_rafter_count',
             'structure_purlin_count',
             'structure_solar_panel_count',
+            'structure_has_walkway',
+            'structure_has_ladder',
+            'structure_square_pipe_count',
             'has_shadow_issues',
             'structural_feasible',
             'technical_notes',
@@ -226,6 +229,9 @@ class SurveyCompletionForm(forms.ModelForm):
             'structure_rafter_count': 'No. of rafters',
             'structure_purlin_count': 'No. of purlins',
             'structure_solar_panel_count': 'No. of solar panels on structure',
+            'structure_has_walkway': 'Walkway (optional)',
+            'structure_has_ladder': 'Ladder (optional)',
+            'structure_square_pipe_count': 'Square pipe quantity',
             'has_shadow_issues': 'Has shadow issues',
             'structural_feasible': 'Structure feasible',
         }
@@ -257,11 +263,29 @@ class SurveyCompletionForm(forms.ModelForm):
                 'max': '50',
                 'step': '1',
             })
+        self.fields['structure_rafter_count'].widget.attrs.update({
+            'readonly': 'readonly',
+            'class': 'form-control bg-light',
+            'title': 'Auto-calculated from legs (+2 when walkway is selected)',
+        })
+        self.fields['structure_square_pipe_count'].help_text = ''
+        self.fields['structure_square_pipe_count'].widget.attrs.update({
+            'class': 'form-control',
+            'min': '1',
+            'max': '100',
+            'step': '1',
+        })
         self.fields['structure_type'].widget.attrs.update({'class': 'form-select'})
         self.fields['structure_type'].empty_label = '--- Select structure type ---'
         self.fields['technical_notes'].widget.attrs.update({'class': 'form-control', 'rows': 4})
-        for cb in ('has_shadow_issues', 'structural_feasible'):
+        for cb in ('has_shadow_issues', 'structural_feasible', 'structure_has_walkway', 'structure_has_ladder'):
             self.fields[cb].widget.attrs.update({'class': 'form-check-input'})
+        self.fields['structure_has_walkway'].widget.attrs.update({
+            'class': 'form-check-input js-structure-walkway',
+        })
+        self.fields['structure_has_ladder'].widget.attrs.update({
+            'class': 'form-check-input js-structure-ladder',
+        })
         for cb in ('area_use_north', 'area_use_south', 'area_use_east', 'area_use_west'):
             self.fields[cb].widget.attrs.update({'class': 'form-check-input js-area-side-check'})
         for fname in ('length_north_ft', 'length_south_ft', 'length_east_ft', 'length_west_ft'):
@@ -312,6 +336,15 @@ class SurveyCompletionForm(forms.ModelForm):
             cleaned['structure_rafter_count'] = None
             cleaned['structure_purlin_count'] = None
             cleaned['structure_solar_panel_count'] = None
+            cleaned['structure_has_walkway'] = False
+            cleaned['structure_has_ladder'] = False
+            cleaned['structure_square_pipe_count'] = None
+
+        if not cleaned.get('structure_has_ladder'):
+            cleaned['structure_square_pipe_count'] = None
+        elif cleaned.get('structure_type') in Survey.STRUCTURE_TYPES_REQUIRING_HEIGHT and cleaned.get('structure_has_ladder'):
+            if cleaned.get('structure_square_pipe_count') in (None, ''):
+                self.add_error('structure_square_pipe_count', 'Enter square pipe quantity when ladder is selected.')
 
         files = []
         if self.files:
@@ -366,6 +399,8 @@ class SurveyCompletionForm(forms.ModelForm):
             survey.area_use_south = 'area_use_south' in self.data
             survey.area_use_east = 'area_use_east' in self.data
             survey.area_use_west = 'area_use_west' in self.data
+            survey.structure_has_walkway = 'structure_has_walkway' in self.data
+            survey.structure_has_ladder = 'structure_has_ladder' in self.data
             if survey.structure_type not in Survey.STRUCTURE_TYPES_REQUIRING_HEIGHT:
                 survey.structure_back_height_ft = None
                 survey.structure_front_height_ft = None
@@ -373,6 +408,11 @@ class SurveyCompletionForm(forms.ModelForm):
                 survey.structure_rafter_count = None
                 survey.structure_purlin_count = None
                 survey.structure_solar_panel_count = None
+                survey.structure_has_walkway = False
+                survey.structure_has_ladder = False
+                survey.structure_square_pipe_count = None
+            elif not survey.structure_has_ladder:
+                survey.structure_square_pipe_count = None
         if commit:
             survey.save()
         return survey

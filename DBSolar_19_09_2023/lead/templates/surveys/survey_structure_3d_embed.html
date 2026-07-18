@@ -57,12 +57,15 @@
              data-purlins="{{ survey.structure_purlin_count }}"
              data-panels="{{ survey.structure_solar_panel_count|default:'' }}"
              data-front="{{ survey.structure_front_height_ft|default:'' }}"
-             data-back="{{ survey.structure_back_height_ft|default:'' }}"></div>
+             data-back="{{ survey.structure_back_height_ft|default:'' }}"
+             data-walkway="{% if survey.structure_has_walkway %}1{% else %}0{% endif %}"
+             data-ladder="{% if survey.structure_has_ladder %}1{% else %}0{% endif %}"
+             data-square-pipe="{{ survey.structure_square_pipe_count|default:'' }}"></div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
-    <script src="{% static 'js/solar_structure_diagram.js' %}?v=20260718a"></script>
+    <script src="{% static 'js/solar_structure_diagram.js' %}?v=20260718b"></script>
     <script>
         (function () {
             var surveyId = {{ survey.pk }};
@@ -94,7 +97,10 @@
                     purlins: el.getAttribute('data-purlins'),
                     solarPanels: el.getAttribute('data-panels'),
                     frontHeight: el.getAttribute('data-front'),
-                    backHeight: el.getAttribute('data-back')
+                    backHeight: el.getAttribute('data-back'),
+                    hasWalkway: el.getAttribute('data-walkway') === '1',
+                    hasLadder: el.getAttribute('data-ladder') === '1',
+                    squarePipeCount: el.getAttribute('data-square-pipe')
                 });
 
                 setTimeout(function () {

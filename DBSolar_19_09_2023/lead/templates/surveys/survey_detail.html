@@ -104,6 +104,20 @@
                                     <td>No. of solar panels on structure:</td>
                                     <td>{{ survey.structure_solar_panel_count|default:'-' }}{% if survey.structure_solar_panel_count %} Nos.{% endif %}</td>
                                 </tr>
+                                <tr>
+                                    <td>Walkway:</td>
+                                    <td>{% if survey.structure_has_walkway %}Yes (+2 rafters, +4 purlins){% else %}No{% endif %}</td>
+                                </tr>
+                                <tr>
+                                    <td>Ladder:</td>
+                                    <td>{% if survey.structure_has_ladder %}Yes{% else %}No{% endif %}</td>
+                                </tr>
+                                {% if survey.structure_has_ladder %}
+                                <tr>
+                                    <td>Square pipe quantity:</td>
+                                    <td>{{ survey.structure_square_pipe_count|default:'-' }}{% if survey.structure_square_pipe_count %} Nos.{% endif %}</td>
+                                </tr>
+                                {% endif %}
                                 {% endif %}
                             </table>
                         </div>
@@ -247,7 +261,10 @@
                          data-purlins="{{ survey.structure_purlin_count }}"
                          data-panels="{{ survey.structure_solar_panel_count|default:'' }}"
                          data-front="{{ survey.structure_front_height_ft|default:'' }}"
-                         data-back="{{ survey.structure_back_height_ft|default:'' }}"></div>
+                         data-back="{{ survey.structure_back_height_ft|default:'' }}"
+                         data-walkway="{% if survey.structure_has_walkway %}1{% else %}0{% endif %}"
+                         data-ladder="{% if survey.structure_has_ladder %}1{% else %}0{% endif %}"
+                         data-square-pipe="{{ survey.structure_square_pipe_count|default:'' }}"></div>
                     {% endif %}
 
                     <hr>
@@ -623,6 +640,7 @@
                                         <span class="input-group-text">Nos.</span>
                                     </div>
                                     {% if completion_form.structure_leg_count.errors %}<div class="invalid-feedback d-block">{{ completion_form.structure_leg_count.errors }}</div>{% endif %}
+                                    <div class="form-text">Rafters auto-fill from legs (1 per leg column).</div>
                                 </div>
                                 <div class="col-md-3 mb-3">
                                     <label class="form-label" for="{{ completion_form.structure_rafter_count.id_for_label }}">{{ completion_form.structure_rafter_count.label }}</label>
@@ -631,6 +649,7 @@
                                         <span class="input-group-text">Nos.</span>
                                     </div>
                                     {% if completion_form.structure_rafter_count.errors %}<div class="invalid-feedback d-block">{{ completion_form.structure_rafter_count.errors }}</div>{% endif %}
+                                    <div class="form-text">Auto from legs; +2 if walkway.</div>
                                 </div>
                                 <div class="col-md-3 mb-3">
                                     <label class="form-label" for="{{ completion_form.structure_purlin_count.id_for_label }}">{{ completion_form.structure_purlin_count.label }}</label>
@@ -639,6 +658,7 @@
                                         <span class="input-group-text">Nos.</span>
                                     </div>
                                     {% if completion_form.structure_purlin_count.errors %}<div class="invalid-feedback d-block">{{ completion_form.structure_purlin_count.errors }}</div>{% endif %}
+                                    <div class="form-text">+4 auto when walkway is selected.</div>
                                 </div>
                                 <div class="col-md-3 mb-3">
                                     <label class="form-label" for="{{ completion_form.structure_solar_panel_count.id_for_label }}">{{ completion_form.structure_solar_panel_count.label }}</label>
@@ -647,6 +667,30 @@
                                         <span class="input-group-text">Nos.</span>
                                     </div>
                                     {% if completion_form.structure_solar_panel_count.errors %}<div class="invalid-feedback d-block">{{ completion_form.structure_solar_panel_count.errors }}</div>{% endif %}
+                                </div>
+                            </div>
+                            <div class="row align-items-end">
+                                <div class="col-md-3 mb-3">
+                                    <div class="form-check mt-1">
+                                        {{ completion_form.structure_has_walkway }}
+                                        <label class="form-check-label" for="{{ completion_form.structure_has_walkway.id_for_label }}">{{ completion_form.structure_has_walkway.label }}</label>
+                                    </div>
+                                    <div class="form-text">Between panel rows; adds 2 rafters &amp; 4 purlins.</div>
+                                </div>
+                                <div class="col-md-3 mb-3">
+                                    <div class="form-check mt-1">
+                                        {{ completion_form.structure_has_ladder }}
+                                        <label class="form-check-label" for="{{ completion_form.structure_has_ladder.id_for_label }}">{{ completion_form.structure_has_ladder.label }}</label>
+                                    </div>
+                                    <div class="form-text">Attaches to the walkway.</div>
+                                </div>
+                                <div class="col-md-3 mb-3" id="structureSquarePipeWrap" style="display:none;">
+                                    <label class="form-label" for="{{ completion_form.structure_square_pipe_count.id_for_label }}">{{ completion_form.structure_square_pipe_count.label }}</label>
+                                    <div class="input-group">
+                                        {{ completion_form.structure_square_pipe_count }}
+                                        <span class="input-group-text">Nos.</span>
+                                    </div>
+                                    {% if completion_form.structure_square_pipe_count.errors %}<div class="invalid-feedback d-block">{{ completion_form.structure_square_pipe_count.errors }}</div>{% endif %}
                                 </div>
                             </div>
                             <div class="row" id="structureLayoutDiagramRow" style="display:none;">
@@ -1366,7 +1410,20 @@
         var rafterCols = rafters;
         var spanCols = Math.max(legCols, rafterCols);
         var panelCount = isNaN(solarPanels) || solarPanels < 1 ? 0 : solarPanels;
-        var panelRowsFromPurlins = Math.max(1, Math.floor(purlins / 2));
+        var hasWalkway = !!opts.hasWalkway;
+        var hasLadder = !!opts.hasLadder;
+        var squarePipeCount = parseInt(opts.squarePipeCount, 10);
+        if (isNaN(squarePipeCount) || squarePipeCount < 1) squarePipeCount = hasLadder ? 6 : 0;
+        var walkwayRafterBonus = hasWalkway ? 2 : 0;
+        var walkwayPurlinBonus = hasWalkway ? 4 : 0;
+        // Panel grid uses structure purlins only (exclude walkway's +4).
+        var panelPurlins = Math.max(0, purlins - walkwayPurlinBonus);
+        if (panelPurlins < 1 && purlins >= 1) panelPurlins = purlins;
+        var mainRafterCols = Math.max(0, rafters - walkwayRafterBonus);
+        if (mainRafterCols < 1 && rafters >= 1) mainRafterCols = rafters;
+        rafterCols = mainRafterCols;
+        spanCols = Math.max(legCols, rafterCols);
+        var panelRowsFromPurlins = Math.max(1, Math.floor(Math.max(panelPurlins, 1) / 2));
         var panelColsWidth = panelCount > 0 ? Math.max(1, Math.ceil(panelCount / panelRowsFromPurlins)) : 0;
         var panelGrid = panelCount > 0 ? {
             rows: panelRowsFromPurlins,
@@ -1386,15 +1443,15 @@
             : PANEL_LENGTH_FT;
 
         function purlinT(index) {
-            return purlins === 1 ? 0.5 : index / (purlins - 1);
+            return panelPurlins === 1 ? 0.5 : index / (panelPurlins - 1);
         }
         function panelDepthSpan(row) {
             var p0 = row * 2;
             var p1 = p0 + 1;
-            if (p0 >= purlins) {
+            if (p0 >= panelPurlins) {
                 return { t0: row / panelGrid.rows, t1: (row + 1) / panelGrid.rows, p0: -1, p1: -1 };
             }
-            if (p1 >= purlins) p1 = purlins - 1;
+            if (p1 >= panelPurlins) p1 = panelPurlins - 1;
             if (p0 === p1 && p0 > 0) p0 = p0 - 1;
             var tA = purlinT(p0);
             var tB = purlinT(p1);
@@ -1433,6 +1490,7 @@
             legs: legs,
             rafters: rafters,
             purlins: purlins,
+            panelPurlins: panelPurlins,
             panelCount: panelCount,
             frontH: frontH,
             backH: backH,
@@ -1440,6 +1498,7 @@
             backLegCount: backLegCount,
             legCols: legCols,
             rafterCols: rafterCols,
+            mainRafterCols: mainRafterCols,
             spanCols: spanCols,
             panelGrid: panelGrid,
             panelWidthFt: PANEL_WIDTH_FT,
@@ -1447,6 +1506,11 @@
             panelRowGapFt: PANEL_ROW_GAP_FT,
             structureWidthFt: structureWidthFt,
             structureDepthFt: structureDepthFt,
+            hasWalkway: hasWalkway,
+            hasLadder: hasLadder,
+            squarePipeCount: squarePipeCount,
+            walkwayRafterBonus: walkwayRafterBonus,
+            walkwayPurlinBonus: walkwayPurlinBonus,
             purlinT: purlinT,
             panelDepthSpan: panelDepthSpan,
             panelPortraitSpan: panelPortraitSpan,
@@ -1472,6 +1536,12 @@
         }
         html += '<div class="solar-3d-spec">Purlin <strong>' + layout.purlins + '</strong> · Rafter <strong>' + layout.rafters + '</strong></div>';
         html += '<div class="solar-3d-spec">Legs <strong>' + layout.legs + '</strong> (' + layout.frontLegCount + ' front + ' + layout.backLegCount + ' back)</div>';
+        if (layout.hasWalkway) {
+            html += '<div class="solar-3d-spec">Walkway <strong>Yes</strong> (+2 rafter · +4 purlin)</div>';
+        }
+        if (layout.hasLadder) {
+            html += '<div class="solar-3d-spec">Ladder <strong>Yes</strong> · square pipe <strong>' + (layout.squarePipeCount || '—') + '</strong></div>';
+        }
         return html;
     }
 
@@ -1686,6 +1756,96 @@
             x: pt.x + up.x * liftAlongUp,
             y: pt.y + up.y * liftAlongUp
         };
+    }
+
+    /**
+     * Walkway sits in the gap between panel rows; its 2 rafters attach to the last leg columns.
+     * Ladder (square pipe) attaches from ground up onto the walkway.
+     */
+    function addSolarWalkwayAndLadder(scene, layout, xAtLeg, roofPoint, alignMemberAlong, depth, frontTopY, backTopY, foundationH) {
+        if (!layout.hasWalkway || !layout.panelGrid || layout.panelGrid.rows < 2) return;
+        var rows = layout.panelGrid.rows;
+        var rowA = panelRowDepthFrac(0, rows);
+        var rowB = panelRowDepthFrac(1, rows);
+        var t0 = rowA.t1;
+        var t1 = rowB.t0;
+        if (t1 <= t0) {
+            t0 = Math.max(0, 0.45);
+            t1 = Math.min(1, 0.55);
+        }
+        var midT = (t0 + t1) / 2;
+        var pSW = roofPoint(t0, 0);
+        var pSE = roofPoint(t0, 1);
+        var pNE = roofPoint(t1, 1);
+        var pNW = roofPoint(t1, 0);
+        var deckY = ((pSW.y + pSE.y + pNE.y + pNW.y) / 4) + 0.02;
+        var deckW = Math.abs(pSE.x - pSW.x) * 0.92;
+        var deckD = Math.max(Math.abs((t1 - t0) * depth) * 0.9, 0.12);
+        var deckMat = new THREE.MeshLambertMaterial({ color: 0x94a3b8 });
+        var deck = new THREE.Mesh(new THREE.BoxGeometry(deckW, 0.04, deckD), deckMat);
+        deck.position.set(0, deckY, midT * depth);
+        scene.add(deck);
+
+        // Two walkway rafters attached to the last (outermost) leg columns.
+        var walkRafterMat = new THREE.MeshLambertMaterial({ color: 0xc2410c });
+        var lastCols = [];
+        if (layout.legCols <= 1) {
+            lastCols = [0];
+        } else if (layout.legCols === 2) {
+            lastCols = [0, 1];
+        } else {
+            lastCols = [layout.legCols - 2, layout.legCols - 1];
+        }
+        var axisY = new THREE.Vector3(0, 1, 0);
+        lastCols.forEach(function (ci) {
+            var x = xAtLeg(ci);
+            var a = new THREE.Vector3(x, deckY + 0.02, t0 * depth);
+            var b = new THREE.Vector3(x, deckY + 0.02, t1 * depth);
+            var len = a.distanceTo(b);
+            if (len < 0.05) return;
+            var mesh = new THREE.Mesh(new THREE.BoxGeometry(0.1, len, 0.1), walkRafterMat);
+            alignMemberAlong(mesh, a, b, axisY);
+            scene.add(mesh);
+        });
+
+        // Walkway purlins across the deck (visual for the +4 purlins).
+        var walkPurlinMat = new THREE.MeshLambertMaterial({ color: 0x1d4ed8 });
+        var wp;
+        for (wp = 0; wp < 4; wp++) {
+            var zt = t0 + (t1 - t0) * (wp + 0.5) / 4;
+            var left = roofPoint(zt, 0);
+            var right = roofPoint(zt, 1);
+            left.y = deckY + 0.035;
+            right.y = deckY + 0.035;
+            var plen = left.distanceTo(right);
+            var pm = new THREE.Mesh(new THREE.BoxGeometry(plen, 0.05, 0.06), walkPurlinMat);
+            alignMemberAlong(pm, left, right, new THREE.Vector3(1, 0, 0));
+            scene.add(pm);
+        }
+
+        if (!layout.hasLadder) return;
+        var pipeN = Math.max(4, Math.min(layout.squarePipeCount || 6, 24));
+        var ladderMat = new THREE.MeshLambertMaterial({ color: 0x64748b });
+        var railMat = new THREE.MeshLambertMaterial({ color: 0x475569 });
+        // Attach ladder at the last-leg side of the walkway (right / outer edge).
+        var lx = xAtLeg(layout.legCols - 1) + 0.18;
+        var zAttach = midT * depth;
+        var topY = deckY;
+        var botY = foundationH + 0.02;
+        var railH = Math.max(topY - botY, 0.3);
+        var railL = new THREE.Mesh(new THREE.BoxGeometry(0.045, railH, 0.045), railMat);
+        railL.position.set(lx - 0.12, botY + railH / 2, zAttach);
+        scene.add(railL);
+        var railR = new THREE.Mesh(new THREE.BoxGeometry(0.045, railH, 0.045), railMat);
+        railR.position.set(lx + 0.12, botY + railH / 2, zAttach);
+        scene.add(railR);
+        var ri;
+        for (ri = 0; ri < pipeN; ri++) {
+            var ry = botY + (railH * (ri + 1)) / (pipeN + 1);
+            var rung = new THREE.Mesh(new THREE.BoxGeometry(0.28, 0.035, 0.035), ladderMat);
+            rung.position.set(lx, ry, zAttach);
+            scene.add(rung);
+        }
     }
 
     function addSolar3DMeasurements(scene, layout, xAt, frontTopY, backTopY, depth, foundationH) {
@@ -1947,7 +2107,7 @@
             scene.add(rafterMesh);
         }
 
-        for (p = 0; p < layout.purlins; p++) {
+        for (p = 0; p < (layout.panelPurlins || layout.purlins); p++) {
             var t = layout.purlinT(p);
             var purlinLeft = roofPoint(t, 0);
             var purlinRight = roofPoint(t, 1);
@@ -1992,6 +2152,8 @@
                 scene.add(panelGroup);
             }
         }
+
+        addSolarWalkwayAndLadder(scene, layout, xAtLeg, roofPoint, alignMemberAlong, depth, frontTopY, backTopY, foundationH);
 
         addSolar3DMeasurements(scene, layout, xAt, frontTopY, backTopY, depth, foundationH);
 
@@ -2070,13 +2232,15 @@
 
     function renderSolarStructureDiagram(container, opts) {
         if (!container) return;
-        var legs = parseInt(opts.legs, 10) || 0;
-        var rafters = parseInt(opts.rafters, 10) || 0;
-        var purlins = parseInt(opts.purlins, 10) || 0;
-        var solarPanels = parseInt(opts.solarPanels, 10);
-        var frontH = parseFloat(opts.frontHeight);
-        var backH = parseFloat(opts.backHeight);
-        if (legs < 1 || rafters < 1 || purlins < 1) {
+        var layoutOpts = opts || {};
+        var layout3dPreview = buildSolarStructureLayout(layoutOpts);
+        var legs = layout3dPreview.legs;
+        var rafters = layout3dPreview.rafters;
+        var purlins = layout3dPreview.panelPurlins || layout3dPreview.purlins;
+        var solarPanels = layout3dPreview.panelCount;
+        var frontH = layout3dPreview.frontH;
+        var backH = layout3dPreview.backH;
+        if (legs < 1 || rafters < 1 || (layout3dPreview.purlins || 0) < 1) {
             container.innerHTML = '';
             return;
         }
@@ -2086,61 +2250,27 @@
         var frontPx = 22 + (frontH / maxH) * 72;
         var backPx = 22 + (backH / maxH) * 72;
 
-        var frontLegCount = Math.ceil(legs / 2);
-        var backLegCount = Math.floor(legs / 2);
-        var legCols = Math.max(frontLegCount, backLegCount, 1);
-        var rafterCols = rafters;
-        var spanCols = Math.max(legCols, rafterCols);
-        var panelCount = isNaN(solarPanels) || solarPanels < 1 ? 0 : solarPanels;
-        /* Rows = purlin pairs (front→back); cols = panels per row from total count */
-        var panelRowsFromPurlins = Math.max(1, Math.floor(purlins / 2));
-        var panelColsWidth = panelCount > 0 ? Math.max(1, Math.ceil(panelCount / panelRowsFromPurlins)) : 0;
-        var panelGrid = panelCount > 0 ? {
-            rows: panelRowsFromPurlins,
-            cols: panelColsWidth,
-            total: panelCount
-        } : { rows: 0, cols: 0, total: 0 };
+        var frontLegCount = layout3dPreview.frontLegCount;
+        var backLegCount = layout3dPreview.backLegCount;
+        var legCols = layout3dPreview.legCols;
+        var rafterCols = layout3dPreview.rafterCols;
+        var spanCols = layout3dPreview.spanCols;
+        var panelCount = layout3dPreview.panelCount;
+        var panelGrid = layout3dPreview.panelGrid;
+        var hasWalkway = layout3dPreview.hasWalkway;
+        var hasLadder = layout3dPreview.hasLadder;
 
         function purlinT(index) {
-            return purlins === 1 ? 0.5 : index / (purlins - 1);
+            return layout3dPreview.purlinT(index);
         }
 
         /* Row 0 → P1+P2; row 1 → P3+P4; portrait panel extends slightly past both purlins. */
         function panelDepthSpan(row) {
-            var p0 = row * 2;
-            var p1 = p0 + 1;
-            if (p0 >= purlins) {
-                return { t0: row / panelGrid.rows, t1: (row + 1) / panelGrid.rows, p0: -1, p1: -1 };
-            }
-            if (p1 >= purlins) p1 = purlins - 1;
-            if (p0 === p1 && p0 > 0) p0 = p0 - 1;
-            var tA = purlinT(p0);
-            var tB = purlinT(p1);
-            return { t0: Math.min(tA, tB), t1: Math.max(tA, tB), p0: p0, p1: p1 };
+            return layout3dPreview.panelDepthSpan(row);
         }
 
         function panelPortraitSpan(row) {
-            var mount = panelDepthSpan(row);
-            var gap = mount.t1 - mount.t0 || 0.15;
-            var overhang = Math.max(gap * 0.24, 0.035);
-            var t0 = Math.max(0, mount.t0 - overhang);
-            var t1 = Math.min(1, mount.t1 + overhang);
-            if (row > 0) {
-                var prev = panelDepthSpan(row - 1);
-                t0 = Math.max(t0, prev.t1 + 0.012);
-            }
-            if (row < panelGrid.rows - 1) {
-                var next = panelDepthSpan(row + 1);
-                t1 = Math.min(t1, next.t0 - 0.012);
-            }
-            return {
-                t0: t0,
-                t1: t1,
-                mountT0: mount.t0,
-                mountT1: mount.t1,
-                p0: mount.p0,
-                p1: mount.p1
-            };
+            return layout3dPreview.panelPortraitSpan(row);
         }
 
         function panelVisualSpan(row) {
@@ -2286,6 +2416,20 @@
                 svg += '<line x1="' + (xGap - 3) + '" y1="' + yGap1 + '" x2="' + (xGap + 3) + '" y2="' + yGap1 + '" stroke="#0369a1" stroke-width="1.2"/>';
                 svg += '<text x="' + (xGap + 6) + '" y="' + ((yGap0 + yGap1) / 2 + 3) + '" font-size="8" fill="#0369a1" font-weight="700">' +
                     rowGapFt + ' ft</text>';
+                // Walkway deck in the first inter-row gap (between panel rows).
+                if (hasWalkway && gapRow === 0) {
+                    svg += '<rect x="' + planInnerL + '" y="' + yGap0 + '" width="' + (planInnerR - planInnerL) +
+                        '" height="' + Math.max(4, yGap1 - yGap0) + '" fill="#94a3b8" fill-opacity="0.55" stroke="#64748b" stroke-width="0.8"/>';
+                    svg += '<text x="' + planMidX + '" y="' + ((yGap0 + yGap1) / 2 + 3) +
+                        '" text-anchor="middle" font-size="7" fill="#334155" font-weight="700">WALKWAY</text>';
+                    if (hasLadder) {
+                        var ladderX = planInnerR - 8;
+                        svg += '<line x1="' + ladderX + '" y1="' + yGap1 + '" x2="' + ladderX + '" y2="' + (planFrontY + 8) +
+                            '" stroke="#475569" stroke-width="2"/>';
+                        svg += '<text x="' + (ladderX - 2) + '" y="' + (planFrontY + 18) +
+                            '" text-anchor="end" font-size="6" fill="#475569">Ladder</text>';
+                    }
+                }
             }
         }
         svg += '<text x="' + planMidX + '" y="' + (planBackY - 5) + '" text-anchor="middle" font-size="8" fill="#16a34a" font-weight="700">BACK</text>';
@@ -2641,6 +2785,9 @@
             var purlins = parseInt(document.getElementById('id_structure_purlin_count') && document.getElementById('id_structure_purlin_count').value, 10) || 0;
             var panelsEl = document.getElementById('id_structure_solar_panel_count');
             var solarPanels = panelsEl && panelsEl.value !== '' ? parseInt(panelsEl.value, 10) : NaN;
+            var walkwayEl = document.getElementById('id_structure_has_walkway');
+            var ladderEl = document.getElementById('id_structure_has_ladder');
+            var squareEl = document.getElementById('id_structure_square_pipe_count');
             updateSolarPanelHint();
             if (legs >= 1 && rafters >= 1 && purlins >= 1) {
                 diagramRow.style.display = '';
@@ -2650,12 +2797,71 @@
                     purlins: purlins,
                     solarPanels: solarPanels,
                     frontHeight: parseNum('id_structure_front_height_ft'),
-                    backHeight: parseNum('id_structure_back_height_ft')
+                    backHeight: parseNum('id_structure_back_height_ft'),
+                    hasWalkway: !!(walkwayEl && walkwayEl.checked),
+                    hasLadder: !!(ladderEl && ladderEl.checked),
+                    squarePipeCount: squareEl && squareEl.value !== '' ? parseInt(squareEl.value, 10) : NaN
                 });
             } else {
                 diagramRow.style.display = 'none';
                 diagram.innerHTML = '';
             }
+        }
+
+        function syncStructureAutoCounts(fromPurlinEdit) {
+            var legEl = document.getElementById('id_structure_leg_count');
+            var rafterEl = document.getElementById('id_structure_rafter_count');
+            var purlinEl = document.getElementById('id_structure_purlin_count');
+            var walkwayEl = document.getElementById('id_structure_has_walkway');
+            var ladderEl = document.getElementById('id_structure_has_ladder');
+            var squareWrap = document.getElementById('structureSquarePipeWrap');
+            var squareEl = document.getElementById('id_structure_square_pipe_count');
+            if (!legEl || !rafterEl || !purlinEl) return;
+
+            var legs = parseInt(legEl.value, 10) || 0;
+            var walkway = !!(walkwayEl && walkwayEl.checked);
+            var ladder = !!(ladderEl && ladderEl.checked);
+
+            if (squareWrap) squareWrap.style.display = ladder ? '' : 'none';
+            if (!ladder && squareEl) squareEl.value = '';
+
+            // Rafters = one per leg column (+2 walkway rafters on last legs).
+            if (legs >= 1) {
+                var baseRafters = Math.ceil(legs / 2);
+                rafterEl.value = String(baseRafters + (walkway ? 2 : 0));
+            } else {
+                rafterEl.value = '';
+            }
+
+            // Track panel purlins separately; walkway adds +4 to the displayed total.
+            var basePurlins = parseInt(purlinEl.getAttribute('data-base-purlins') || '', 10);
+            if (fromPurlinEdit) {
+                var typed = parseInt(purlinEl.value, 10);
+                if (!isNaN(typed) && typed >= 0) {
+                    basePurlins = walkway ? Math.max(0, typed - 4) : typed;
+                    purlinEl.setAttribute('data-base-purlins', String(basePurlins));
+                }
+            } else if (isNaN(basePurlins)) {
+                var current = parseInt(purlinEl.value, 10);
+                if (!isNaN(current) && current >= 0) {
+                    basePurlins = walkway ? Math.max(0, current - 4) : current;
+                } else {
+                    basePurlins = 0;
+                }
+                purlinEl.setAttribute('data-base-purlins', String(basePurlins));
+            }
+
+            if (!isNaN(basePurlins) && (basePurlins > 0 || walkway)) {
+                purlinEl.value = String(basePurlins + (walkway ? 4 : 0));
+            }
+
+            // Ladder requires walkway visually; keep walkway if ladder alone was checked.
+            if (ladder && walkwayEl && !walkwayEl.checked) {
+                walkwayEl.checked = true;
+                return syncStructureAutoCounts(false);
+            }
+
+            updateStructureLayoutDiagram();
         }
 
         function toggleStructureHeightFields() {
@@ -2665,10 +2871,18 @@
             var show = STRUCTURE_TYPES_WITH_HEIGHT.indexOf(select.value) >= 0;
             wrap.style.display = show ? '' : 'none';
             if (!show) {
-                ['id_structure_back_height_ft', 'id_structure_front_height_ft', 'id_structure_leg_count', 'id_structure_rafter_count', 'id_structure_purlin_count', 'id_structure_solar_panel_count'].forEach(function (id) {
+                ['id_structure_back_height_ft', 'id_structure_front_height_ft', 'id_structure_leg_count', 'id_structure_rafter_count', 'id_structure_purlin_count', 'id_structure_solar_panel_count', 'id_structure_square_pipe_count'].forEach(function (id) {
                     var el = document.getElementById(id);
                     if (el) el.value = '';
                 });
+                ['id_structure_has_walkway', 'id_structure_has_ladder'].forEach(function (id) {
+                    var el = document.getElementById(id);
+                    if (el) el.checked = false;
+                });
+                var purlinEl = document.getElementById('id_structure_purlin_count');
+                if (purlinEl) purlinEl.removeAttribute('data-base-purlins');
+                var squareWrap = document.getElementById('structureSquarePipeWrap');
+                if (squareWrap) squareWrap.style.display = 'none';
                 updateStructureLayoutDiagram();
             }
         }
@@ -2811,19 +3025,30 @@
         }
 
         function bindStructureInputs() {
-            ['id_structure_leg_count', 'id_structure_rafter_count', 'id_structure_purlin_count', 'id_structure_solar_panel_count', 'id_structure_front_height_ft', 'id_structure_back_height_ft'].forEach(function (id) {
+            var legEl = document.getElementById('id_structure_leg_count');
+            if (legEl) {
+                legEl.addEventListener('input', function () { syncStructureAutoCounts(false); });
+                legEl.addEventListener('change', function () { syncStructureAutoCounts(false); });
+            }
+            var purlinEl = document.getElementById('id_structure_purlin_count');
+            if (purlinEl) {
+                purlinEl.addEventListener('input', function () { syncStructureAutoCounts(true); });
+                purlinEl.addEventListener('change', function () { syncStructureAutoCounts(true); });
+            }
+            ['id_structure_solar_panel_count', 'id_structure_front_height_ft', 'id_structure_back_height_ft', 'id_structure_square_pipe_count'].forEach(function (id) {
                 var el = document.getElementById(id);
                 if (el) {
                     el.addEventListener('input', updateStructureLayoutDiagram);
                     el.addEventListener('change', updateStructureLayoutDiagram);
                 }
             });
-            var panelEl = document.getElementById('id_structure_solar_panel_count');
-            if (panelEl) {
-                panelEl.addEventListener('input', function () {
-                    updateSolarPanelHint();
-                    updateStructureLayoutDiagram();
-                });
+            var walkwayEl = document.getElementById('id_structure_has_walkway');
+            if (walkwayEl) {
+                walkwayEl.addEventListener('change', function () { syncStructureAutoCounts(false); });
+            }
+            var ladderEl = document.getElementById('id_structure_has_ladder');
+            if (ladderEl) {
+                ladderEl.addEventListener('change', function () { syncStructureAutoCounts(false); });
             }
         }
 
@@ -2832,7 +3057,7 @@
             if (select) {
                 select.addEventListener('change', function () {
                     toggleStructureHeightFields();
-                    updateStructureLayoutDiagram();
+                    syncStructureAutoCounts(false);
                 });
                 toggleStructureHeightFields();
             }
@@ -2840,6 +3065,7 @@
             initYearlyGenerationAutoFill();
             initRoofAreaWallLengths();
             initSurveyLiveLocationPicker();
+            syncStructureAutoCounts(false);
             updateSolarPanelHint();
             updateStructureLayoutDiagram();
 
@@ -2851,7 +3077,10 @@
                     purlins: readonly.getAttribute('data-purlins'),
                     solarPanels: readonly.getAttribute('data-panels'),
                     frontHeight: readonly.getAttribute('data-front'),
-                    backHeight: readonly.getAttribute('data-back')
+                    backHeight: readonly.getAttribute('data-back'),
+                    hasWalkway: readonly.getAttribute('data-walkway') === '1',
+                    hasLadder: readonly.getAttribute('data-ladder') === '1',
+                    squarePipeCount: readonly.getAttribute('data-square-pipe')
                 });
             }
         });
@@ -2863,6 +3092,7 @@
                 initYearlyGenerationAutoFill();
                 initRoofAreaWallLengths();
                 initSurveyLiveLocationPicker();
+                syncStructureAutoCounts(false);
                 updateSolarPanelHint();
                 updateStructureLayoutDiagram();
                 setTimeout(function () {
