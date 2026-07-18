@@ -1023,8 +1023,10 @@
         width: 100%;
         height: auto;
         min-height: 340px;
+        max-height: 520px;
         background: #fff;
         pointer-events: none;
+        object-fit: contain;
     }
     .solar-3d-viewport {
         position: relative;
@@ -1744,47 +1746,48 @@
         // xAt(0)=left edge, xAt(1)=right edge of full structure width.
         var xL = xAt(0);
         var xR = xAt(1);
-        var dimFrontX = xL - 0.48;
-        var dimBackX = xR + 0.48;
+        // Keep height dims, width, depth, and row-gap labels in separate lanes.
+        var dimFrontX = xL - 0.7;
+        var dimBackX = xR + 0.95;
         var sprFront = addVerticalDim(dimFrontX, 0, frontTopY, layout.frontH + ' ft');
-        sprFront.position.set(dimFrontX - 0.52, (foundationH + frontTopY) / 2, 0);
+        sprFront.position.set(dimFrontX - 0.55, (foundationH + frontTopY) / 2, 0);
         scene.add(sprFront);
         var sprBack = addVerticalDim(dimBackX, depth, backTopY, layout.backH + ' ft');
-        sprBack.position.set(dimBackX + 0.52, (foundationH + backTopY) / 2, depth);
+        sprBack.position.set(dimBackX + 0.55, (foundationH + backTopY) / 2, depth);
         scene.add(sprBack);
 
         var footY = 0.04;
-        var wA = new THREE.Vector3(xL, footY, 0);
-        var wB = new THREE.Vector3(xR, footY, 0);
+        var wA = new THREE.Vector3(xL, footY, -0.2);
+        var wB = new THREE.Vector3(xR, footY, -0.2);
         addLine(wA, wB);
         addCap(wA, new THREE.Vector3(0, 0, 1), 0.12);
         addCap(wB, new THREE.Vector3(0, 0, 1), 0.12);
         var widthLabel = (layout.structureWidthFt || Math.round(Math.abs(xR - xL) / 0.09)) + ' ft';
         var sprWidth = createTextSprite(widthLabel, { color: '#16a34a', scaleX: 0.9, scaleY: 0.24, fontSize: 22 });
-        sprWidth.position.set((xL + xR) / 2, footY, -0.32);
+        sprWidth.position.set((xL + xR) / 2, footY + 0.02, -0.48);
         scene.add(sprWidth);
 
-        var dA = new THREE.Vector3(xL - 0.38, footY, 0);
-        var dB = new THREE.Vector3(xL - 0.38, footY, depth);
+        var dA = new THREE.Vector3(xL - 0.55, footY, 0);
+        var dB = new THREE.Vector3(xL - 0.55, footY, depth);
         addLine(dA, dB);
         addCap(dA, new THREE.Vector3(1, 0, 0), 0.12);
         addCap(dB, new THREE.Vector3(1, 0, 0), 0.12);
         var depthLabel = (layout.structureDepthFt || Math.round(depth / 0.09)) + ' ft';
         var sprDepth = createTextSprite(depthLabel, { color: '#16a34a', scaleX: 0.9, scaleY: 0.24, fontSize: 20 });
-        sprDepth.position.set(xL - 0.78, footY, depth / 2);
+        sprDepth.position.set(xL - 0.95, footY, depth / 2);
         scene.add(sprDepth);
 
         // Inter-row gap only (edge of row N to edge of row N+1) — not outer border of both rows.
         var rows = layout.panelGrid && layout.panelGrid.rows ? layout.panelGrid.rows : 0;
         var rowGapFt = layout.panelRowGapFt || SOLAR_PANEL_ROW_GAP_FT;
         if (rows > 1 && rowGapFt > 0) {
-            var hScaleDim = 0.09;
             var gapRi;
             for (gapRi = 0; gapRi < rows - 1; gapRi++) {
                 var rowA = panelRowDepthFrac(gapRi, rows);
                 var rowB = panelRowDepthFrac(gapRi + 1, rows);
                 var zGap0 = rowA.t1 * depth;
                 var zGap1 = rowB.t0 * depth;
+                // Gap lane inside of back-height dim so the two labels do not collide.
                 var gapX = xR + 0.42;
                 var gA = new THREE.Vector3(gapX, footY, zGap0);
                 var gB = new THREE.Vector3(gapX, footY, zGap1);
@@ -1792,16 +1795,16 @@
                 addCap(gA, new THREE.Vector3(1, 0, 0), 0.1);
                 addCap(gB, new THREE.Vector3(1, 0, 0), 0.1);
                 var sprGap = createTextSprite(rowGapFt + ' ft', { color: '#0369a1', scaleX: 0.78, scaleY: 0.22, fontSize: 18 });
-                sprGap.position.set(gapX + 0.42, footY + 0.08, (zGap0 + zGap1) / 2);
+                sprGap.position.set(gapX + 0.38, footY + 0.08, (zGap0 + zGap1) / 2);
                 scene.add(sprGap);
             }
         }
 
         var sprFrontLbl = createTextSprite('FRONT', { color: '#16a34a', scaleX: 0.68, scaleY: 0.22, fontSize: 22 });
-        sprFrontLbl.position.set((xL + xR) / 2, footY, -0.55);
+        sprFrontLbl.position.set((xL + xR) / 2, footY, -0.82);
         scene.add(sprFrontLbl);
         var sprBackLbl = createTextSprite('BACK', { color: '#16a34a', scaleX: 0.65, scaleY: 0.22, fontSize: 22 });
-        sprBackLbl.position.set((xL + xR) / 2, footY, depth + 0.5);
+        sprBackLbl.position.set((xL + xR) / 2, footY, depth + 0.55);
         scene.add(sprBackLbl);
     }
 
@@ -2175,22 +2178,26 @@
 
         var svg = '';
         var c, r, p, bay;
+        var SVG_W = 320;
 
         svg += '<defs><marker id="planArrow" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#64748b"/></marker>' +
             solarPanelSvgDefs() + '</defs>';
-        // Remove the inner “card” rectangle so the background looks merged and we don't create extra margins.
-        svg += '<rect x="0" y="34" width="280" height="318" fill="#fff" stroke="none" rx="0"/>';
+        svg += '<rect x="0" y="0" width="' + SVG_W + '" height="420" fill="#fff" stroke="none" rx="0"/>';
 
         /* ========== Plan view (top — matches 3D looking down: width ↔ X, depth ↔ front/back) ========== */
-        // Plan view: footprint aspect = (cols×4 ft) × (rows×8 ft) so portrait panels fill full width.
-        var px0 = 8, py0 = 48, pw = 264, pd = 118;
+        // Leave left margin for P labels, right for row-gap dims, bottom for R/FRONT/width — avoid label pile-up.
+        var px0 = 28, py0 = 52, pw = 240, pd = 100;
         var structWft = Math.max(1, panelGrid.cols || 1) * SOLAR_PANEL_WIDTH_FT;
         var structDft = solarStructureDepthFt(panelGrid.rows || 1);
         var rowGapFt = SOLAR_PANEL_ROW_GAP_FT;
-        svg += '<text x="138" y="46" text-anchor="middle" font-size="12" font-weight="600" fill="#1e293b">Plan view (top)</text>';
+        svg += '<text x="' + (SVG_W / 2) + '" y="28" text-anchor="middle" font-size="11" font-weight="600" fill="#1e293b">Plan view (top)</text>';
+        if (panelCount > 0) {
+            svg += '<text x="' + (SVG_W / 2) + '" y="42" text-anchor="middle" font-size="8" fill="#0369a1">' +
+                panelCount + ' panels · ' + panelGrid.cols + '×' + panelGrid.rows + ' · ' + structWft + '×' + structDft + ' ft</text>';
+        }
         var planPad = 2;
         var availW = pw - planPad * 2;
-        var availH = pd - 32;
+        var availH = pd - 8;
         var footprintAspect = structDft / structWft;
         var drawW = availW;
         var drawH = drawW * footprintAspect;
@@ -2200,10 +2207,11 @@
         }
         var planInnerL = px0 + planPad + (availW - drawW) / 2;
         var planInnerR = planInnerL + drawW;
-        var planBackY = py0 + 16 + (availH - drawH) / 2;
+        var planBackY = py0 + 10 + (availH - drawH) / 2;
         var planFrontY = planBackY + drawH;
         var planDepthSpan = planFrontY - planBackY;
         var planUGap = 0;
+        var planMidX = (planInnerL + planInnerR) / 2;
 
         var planXAt = function (col, total) {
             return planInnerL + (total > 1 ? (planInnerR - planInnerL) * col / (total - 1) : (planInnerR - planInnerL) / 2);
@@ -2245,7 +2253,8 @@
             var py = planPurlinY(p);
             svg += '<rect x="' + planInnerL + '" y="' + (py - 5) + '" width="' + (planInnerR - planInnerL) + '" height="10" fill="#2563eb" stroke="#1d4ed8" stroke-width="0.8" rx="1" opacity="0.9"/>';
             if (purlins <= 6) {
-                svg += '<text x="' + (planInnerR + 4) + '" y="' + (py + 3) + '" font-size="6" fill="#1e40af">P' + (p + 1) + '</text>';
+                // P labels on the LEFT — keep clear of row-gap dims on the right.
+                svg += '<text x="' + (planInnerL - 6) + '" y="' + (py + 3) + '" text-anchor="end" font-size="7" fill="#1e40af" font-weight="600">P' + (p + 1) + '</text>';
             }
         }
         drawAllPanelCells(function (t0, t1, u0, u1, label, row, visual) {
@@ -2271,35 +2280,33 @@
                 var fb = panelRowDepthFrac(gapRow + 1, panelGrid.rows);
                 var yGap0 = planBackY + planDepthSpan * fa.t1;
                 var yGap1 = planBackY + planDepthSpan * fb.t0;
-                var xGap = planInnerR + 10;
+                var xGap = planInnerR + 14;
                 svg += '<line x1="' + xGap + '" y1="' + yGap0 + '" x2="' + xGap + '" y2="' + yGap1 + '" stroke="#0369a1" stroke-width="1.2"/>';
                 svg += '<line x1="' + (xGap - 3) + '" y1="' + yGap0 + '" x2="' + (xGap + 3) + '" y2="' + yGap0 + '" stroke="#0369a1" stroke-width="1.2"/>';
                 svg += '<line x1="' + (xGap - 3) + '" y1="' + yGap1 + '" x2="' + (xGap + 3) + '" y2="' + yGap1 + '" stroke="#0369a1" stroke-width="1.2"/>';
-                svg += '<text x="' + (xGap + 5) + '" y="' + ((yGap0 + yGap1) / 2 + 3) + '" font-size="7" fill="#0369a1" font-weight="700">' +
+                svg += '<text x="' + (xGap + 6) + '" y="' + ((yGap0 + yGap1) / 2 + 3) + '" font-size="8" fill="#0369a1" font-weight="700">' +
                     rowGapFt + ' ft</text>';
             }
         }
+        svg += '<text x="' + planMidX + '" y="' + (planBackY - 5) + '" text-anchor="middle" font-size="8" fill="#16a34a" font-weight="700">BACK</text>';
+        svg += '<text x="' + planMidX + '" y="' + (planFrontY + 12) + '" text-anchor="middle" font-size="8" fill="#16a34a" font-weight="700">FRONT</text>';
         for (r = 0; r < rafterCols && rafterCols <= 8; r++) {
             var rlx = planXAt(r, rafterCols);
-            svg += '<text x="' + rlx + '" y="' + (planFrontY + 14) + '" text-anchor="middle" font-size="7" fill="#c2410c" font-weight="600">R' + (r + 1) + '</text>';
+            svg += '<text x="' + rlx + '" y="' + (planFrontY + 24) + '" text-anchor="middle" font-size="7" fill="#c2410c" font-weight="600">R' + (r + 1) + '</text>';
         }
-        svg += '<text x="' + ((planInnerL + planInnerR) / 2) + '" y="' + (planFrontY + 12) + '" text-anchor="middle" font-size="7" fill="#16a34a" font-weight="600">FRONT</text>';
-        svg += '<text x="' + ((planInnerL + planInnerR) / 2) + '" y="' + (planBackY - 6) + '" text-anchor="middle" font-size="7" fill="#16a34a" font-weight="600">BACK</text>';
-        svg += '<line x1="' + ((planInnerL + planInnerR) / 2) + '" y1="' + (planFrontY + 16) + '" x2="' + ((planInnerL + planInnerR) / 2) + '" y2="' + (planBackY - 8) +
+        // Width dim below structure (not on the right — that lane is for row gap only).
+        var widthDimY = planFrontY + 36;
+        svg += '<line x1="' + planInnerL + '" y1="' + widthDimY + '" x2="' + planInnerR + '" y2="' + widthDimY +
             '" stroke="#64748b" stroke-width="1" marker-end="url(#planArrow)"/>';
-        svg += '<line x1="' + planInnerL + '" y1="' + (py0 + pd / 2) + '" x2="' + planInnerR + '" y2="' + (py0 + pd / 2) +
-            '" stroke="#64748b" stroke-width="1" marker-end="url(#planArrow)"/>';
-        svg += '<text x="' + (planInnerR + 2) + '" y="' + (py0 + pd / 2 + 3) + '" font-size="7" fill="#64748b">Width ' + structWft + ' ft →</text>';
-        if (panelCount > 0) {
-            svg += '<text x="' + ((planInnerL + planInnerR) / 2) + '" y="' + (planBackY - 8) + '" text-anchor="middle" font-size="7" fill="#0369a1">' +
-                panelCount + ' panels · ' + panelGrid.cols + '×' + panelGrid.rows + ' · ' + structWft + '×' + structDft + ' ft</text>';
-        }
+        svg += '<line x1="' + planInnerL + '" y1="' + (widthDimY - 3) + '" x2="' + planInnerL + '" y2="' + (widthDimY + 3) + '" stroke="#64748b" stroke-width="1"/>';
+        svg += '<line x1="' + planInnerR + '" y1="' + (widthDimY - 3) + '" x2="' + planInnerR + '" y2="' + (widthDimY + 3) + '" stroke="#64748b" stroke-width="1"/>';
+        svg += '<text x="' + planMidX + '" y="' + (widthDimY + 12) + '" text-anchor="middle" font-size="8" fill="#64748b" font-weight="600">Width ' + structWft + ' ft</text>';
 
         /* ========== Side elevation (purlins ⊥ rafter; panels between purlin pairs) ========== */
-        // Side elevation: slightly widen to match enlarged plan view
-        var sideMid = 140;
-        var sgy = 318;
-        var rfX = 86, rbX = 194;
+        // Start well below plan labels so plan viewBox never crops side text.
+        var sideMid = SVG_W / 2;
+        var sgy = 390;
+        var rfX = 100, rbX = 220;
         var sfTop = sgy - frontPx, sbTop = sgy - backPx;
         var rdx = rbX - rfX, rdy = sbTop - sfTop;
         var rLen = Math.sqrt(rdx * rdx + rdy * rdy) || 1;
@@ -2317,16 +2324,17 @@
             return { x: rfX + rdx * t, y: sfTop + rdy * t };
         }
 
-        svg += '<text x="' + sideMid + '" y="180" text-anchor="middle" font-size="12" font-weight="600" fill="#1e293b">Side elevation</text>';
-        svg += '<line x1="48" y1="' + sgy + '" x2="228" y2="' + sgy + '" stroke="#94a3b8" stroke-width="2"/>';
+        var sideTitleY = 212;
+        svg += '<text x="' + sideMid + '" y="' + sideTitleY + '" text-anchor="middle" font-size="11" font-weight="600" fill="#1e293b">Side elevation</text>';
+        svg += '<line x1="56" y1="' + sgy + '" x2="264" y2="' + sgy + '" stroke="#94a3b8" stroke-width="2"/>';
         var sideFoundH = 12;
         svg += '<rect x="' + (rfX - 16) + '" y="' + (sgy - sideFoundH) + '" width="32" height="' + sideFoundH +
             '" fill="#78716c" stroke="#44403c" stroke-width="1" rx="1"/>';
         svg += '<rect x="' + (rbX - 16) + '" y="' + (sgy - sideFoundH) + '" width="32" height="' + sideFoundH +
             '" fill="#78716c" stroke="#44403c" stroke-width="1" rx="1"/>';
-        svg += '<text x="54" y="' + (sgy - 2) + '" font-size="6" fill="#57534e">Foundation</text>';
-        svg += '<rect x="88" y="' + sfTop + '" width="8" height="' + (sgy - sideFoundH - sfTop) + '" fill="#64748b"/>';
-        svg += '<rect x="172" y="' + sbTop + '" width="8" height="' + (sgy - sideFoundH - sbTop) + '" fill="#64748b"/>';
+        svg += '<text x="48" y="' + (sgy - 2) + '" font-size="6" fill="#57534e">Foundation</text>';
+        svg += '<rect x="' + (rfX - 4) + '" y="' + sfTop + '" width="8" height="' + (sgy - sideFoundH - sfTop) + '" fill="#64748b"/>';
+        svg += '<rect x="' + (rbX - 4) + '" y="' + sbTop + '" width="8" height="' + (sgy - sideFoundH - sbTop) + '" fill="#64748b"/>';
         svg += '<line x1="' + rfX + '" y1="' + sfTop + '" x2="' + rbX + '" y2="' + sbTop + '" stroke="#ea580c" stroke-width="4"/>';
 
         function drawSideCChannel(pt, label) {
@@ -2341,7 +2349,8 @@
                 '" x2="' + (bx - tangX + panelUpNx * 0.4) + '" y2="' + (by - tangY + panelUpNy * 0.4 - lip) +
                 '" stroke="#1e40af" stroke-width="1.5"/>';
             if (label) {
-                svg += '<text x="' + (bx + panelUpNx * 0.5 + 8) + '" y="' + (by + panelUpNy * 0.5) + '" font-size="7" fill="#1d4ed8">' + label + '</text>';
+                // Place P labels below the purlin so they stay clear of panel/gap text above the rafter.
+                svg += '<text x="' + bx + '" y="' + (by + 14) + '" text-anchor="middle" font-size="7" fill="#1d4ed8" font-weight="600">' + label + '</text>';
             }
         }
         var sidePurlinTopLift = PURLIN_ON_RAFTER + PURLIN_TOP_3D;
@@ -2392,26 +2401,27 @@
                 var sfb = panelRowDepthFrac(sGap + 1, panelGrid.rows);
                 var gp0 = sidePointOnPanelBottom(sfa.t1);
                 var gp1 = sidePointOnPanelBottom(sfb.t0);
-                var gmx = (gp0.x + gp1.x) / 2 + panelUpNx * 0.15;
-                var gmy = (gp0.y + gp1.y) / 2 + panelUpNy * 0.15;
+                // Gap label above the panel band so it does not sit on the panel face.
+                var gmx = (gp0.x + gp1.x) / 2 + panelUpNx * 1.15;
+                var gmy = (gp0.y + gp1.y) / 2 + panelUpNy * 1.15;
                 svg += '<line x1="' + gp0.x + '" y1="' + gp0.y + '" x2="' + gp1.x + '" y2="' + gp1.y + '" stroke="#0369a1" stroke-width="1.2"/>';
-                svg += '<text x="' + gmx + '" y="' + gmy + '" font-size="7" fill="#0369a1" font-weight="700">' + rowGapFt + ' ft</text>';
+                svg += '<text x="' + gmx + '" y="' + gmy + '" text-anchor="middle" font-size="8" fill="#0369a1" font-weight="700">' + rowGapFt + ' ft</text>';
             }
         }
         for (p = 0; p < purlins; p++) {
             drawSideCChannel(sideOnRafter(purlinT(p)), 'P' + (p + 1));
         }
-        svg += '<text x="52" y="170" font-size="7" fill="#1d4ed8">⊏ C-channel purlin</text>';
-        svg += '<line x1="52" y1="' + sfTop + '" x2="52" y2="' + sgy + '" stroke="#16a34a" stroke-width="1"/>';
-        svg += '<line x1="48" y1="' + sfTop + '" x2="56" y2="' + sfTop + '" stroke="#16a34a" stroke-width="1"/>';
-        svg += '<line x1="48" y1="' + sgy + '" x2="56" y2="' + sgy + '" stroke="#16a34a" stroke-width="1"/>';
-        svg += '<text x="38" y="' + ((sgy + sfTop) / 2) + '" font-size="9" fill="#16a34a" text-anchor="end">' + (frontH || '—') + ' ft</text>';
-        svg += '<line x1="212" y1="' + sbTop + '" x2="212" y2="' + sgy + '" stroke="#16a34a" stroke-width="1"/>';
-        svg += '<line x1="208" y1="' + sbTop + '" x2="216" y2="' + sbTop + '" stroke="#16a34a" stroke-width="1"/>';
-        svg += '<line x1="208" y1="' + sgy + '" x2="216" y2="' + sgy + '" stroke="#16a34a" stroke-width="1"/>';
-        svg += '<text x="222" y="' + ((sgy + sbTop) / 2) + '" font-size="9" fill="#16a34a">' + (backH || '—') + ' ft</text>';
-        svg += '<line x1="60" y1="' + (sgy + 6) + '" x2="216" y2="' + (sgy + 6) + '" stroke="#64748b" stroke-width="1" marker-end="url(#planArrow)"/>';
-        svg += '<text x="138" y="' + (sgy + 18) + '" text-anchor="middle" font-size="7" fill="#64748b">Front → Back</text>';
+        svg += '<text x="56" y="' + (sideTitleY + 14) + '" font-size="7" fill="#1d4ed8">⊏ C-channel purlin</text>';
+        svg += '<line x1="56" y1="' + sfTop + '" x2="56" y2="' + sgy + '" stroke="#16a34a" stroke-width="1"/>';
+        svg += '<line x1="52" y1="' + sfTop + '" x2="60" y2="' + sfTop + '" stroke="#16a34a" stroke-width="1"/>';
+        svg += '<line x1="52" y1="' + sgy + '" x2="60" y2="' + sgy + '" stroke="#16a34a" stroke-width="1"/>';
+        svg += '<text x="46" y="' + ((sgy + sfTop) / 2) + '" font-size="9" fill="#16a34a" text-anchor="end">' + (frontH || '—') + ' ft</text>';
+        svg += '<line x1="248" y1="' + sbTop + '" x2="248" y2="' + sgy + '" stroke="#16a34a" stroke-width="1"/>';
+        svg += '<line x1="244" y1="' + sbTop + '" x2="252" y2="' + sbTop + '" stroke="#16a34a" stroke-width="1"/>';
+        svg += '<line x1="244" y1="' + sgy + '" x2="252" y2="' + sgy + '" stroke="#16a34a" stroke-width="1"/>';
+        svg += '<text x="258" y="' + ((sgy + sbTop) / 2) + '" font-size="9" fill="#16a34a">' + (backH || '—') + ' ft</text>';
+        svg += '<line x1="70" y1="' + (sgy + 22) + '" x2="250" y2="' + (sgy + 22) + '" stroke="#64748b" stroke-width="1" marker-end="url(#planArrow)"/>';
+        svg += '<text x="' + sideMid + '" y="' + (sgy + 34) + '" text-anchor="middle" font-size="7" fill="#64748b">Front → Back</text>';
         svg += '<text x="' + rfX + '" y="' + (sgy + 14) + '" text-anchor="middle" font-size="7" fill="#16a34a" font-weight="600">FRONT</text>';
         svg += '<text x="' + rbX + '" y="' + (sgy + 14) + '" text-anchor="middle" font-size="7" fill="#16a34a" font-weight="600">BACK</text>';
 
@@ -2431,15 +2441,18 @@
             '</svg>';
 
         var diagramSvgInner =
-            '<rect x="0" y="0" width="280" height="400" fill="#ffffff" rx="6"/>' + svg;
+            '<rect x="0" y="0" width="' + SVG_W + '" height="430" fill="#ffffff" rx="6"/>' + svg;
+        // Plan ends before side title (y≈212). Side starts just above that title.
+        var planViewBox = '0 0 ' + SVG_W + ' 208';
+        var sideViewBox = '0 208 ' + SVG_W + ' 222';
         var planThumbSvg =
-            '<svg viewBox="0 30 280 150" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">' + diagramSvgInner + '</svg>';
+            '<svg viewBox="' + planViewBox + '" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">' + diagramSvgInner + '</svg>';
         var sideThumbSvg =
-            '<svg viewBox="0 168 280 232" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">' + diagramSvgInner + '</svg>';
+            '<svg viewBox="' + sideViewBox + '" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">' + diagramSvgInner + '</svg>';
         var planMainSvg =
-            '<svg viewBox="0 30 280 150" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Plan view">' + diagramSvgInner + '</svg>';
+            '<svg viewBox="' + planViewBox + '" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Plan view">' + diagramSvgInner + '</svg>';
         var sideMainSvg =
-            '<svg viewBox="0 168 280 232" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Side elevation">' + diagramSvgInner + '</svg>';
+            '<svg viewBox="' + sideViewBox + '" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Side elevation">' + diagramSvgInner + '</svg>';
 
         var oldViewport = container.querySelector('.solar-3d-viewport');
         if (oldViewport) disposeSolar3DView(oldViewport);
@@ -2578,9 +2591,9 @@
             el.addEventListener('click', function () {
                 var mode = el.getAttribute('data-solar-zoom-open');
                 if (mode === 'plan') {
-                    openSolar2dLightbox('Plan view (top)', diagramSvgInner, '0 30 280 150');
+                    openSolar2dLightbox('Plan view (top)', diagramSvgInner, '0 0 320 208');
                 } else if (mode === 'side') {
-                    openSolar2dLightbox('Side elevation', diagramSvgInner, '0 168 280 232');
+                    openSolar2dLightbox('Side elevation', diagramSvgInner, '0 208 320 222');
                 }
             });
         });
