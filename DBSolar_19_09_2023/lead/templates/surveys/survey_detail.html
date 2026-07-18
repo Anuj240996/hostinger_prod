@@ -501,19 +501,20 @@
                             <div class="col-12">
                                 <label class="form-label" for="survey_live_location">Current Site Location</label>
                                 <div class="input-group mb-2">
-                                    <input type="text" class="form-control form-control-sm" id="survey_live_location" name="survey_live_location" placeholder="Select current location from device GPS" readonly>
+                                    <input type="text" class="form-control form-control-sm" id="survey_live_location" name="survey_live_location" placeholder="GPS address or paste lat, lng" {% if survey.lead.latitude is not None and survey.lead.longitude is not None %}value="{{ survey.lead.latitude }}, {{ survey.lead.longitude }}"{% endif %}>
                                     <button type="button" class="btn btn-outline-primary btn-sm" id="btnUseCurrentLocation">
                                         <i class="fas fa-map-marker-alt me-1"></i>Use Current Location
                                     </button>
                                 </div>
+                                <div class="form-text small mb-2">Click the button for GPS, or type Latitude / Longitude manually.</div>
                                 <div class="row g-2">
                                     <div class="col-md-6">
                                         <label class="form-label small mb-1" for="survey_latitude">Latitude</label>
-                                        <input type="text" class="form-control form-control-sm" id="survey_latitude" name="survey_latitude" readonly>
+                                        <input type="text" class="form-control form-control-sm" id="survey_latitude" name="survey_latitude" inputmode="decimal" autocomplete="off" placeholder="e.g. 19.579276" {% if survey.lead.latitude is not None %}value="{{ survey.lead.latitude }}"{% endif %}>
                                     </div>
                                     <div class="col-md-6">
                                         <label class="form-label small mb-1" for="survey_longitude">Longitude</label>
-                                        <input type="text" class="form-control form-control-sm" id="survey_longitude" name="survey_longitude" readonly>
+                                        <input type="text" class="form-control form-control-sm" id="survey_longitude" name="survey_longitude" inputmode="decimal" autocomplete="off" placeholder="e.g. 74.459398" {% if survey.lead.longitude is not None %}value="{{ survey.lead.longitude }}"{% endif %}>
                                     </div>
                                 </div>
                                 <div class="d-flex justify-content-end align-items-center mt-1">
@@ -3293,13 +3294,53 @@
             if (!btn || !latEl || !lngEl || !locEl) return;
             if (btn.dataset.locationBound === '1') return;
             btn.dataset.locationBound = '1';
-            var REQUIRED_ACCURACY_METERS = 2;
-            var MAX_LOCATION_WAIT_MS = 30000;
+            var REQUIRED_ACCURACY_METERS = 50;
+            var MAX_LOCATION_WAIT_MS = 20000;
             var googleMapsApiKey = "{{ google_maps_api_key|default:''|escapejs }}";
             var googleMap = null;
             var googleMapMarker = null;
             var pendingMapLatLng = null;
             var currentMapMode = 'normal';
+            var btnDefaultHtml = btn.innerHTML;
+
+            function showLocationMessage(msg) {
+                if (!msg) return;
+                window.alert(msg);
+            }
+
+            function syncMapLinkFromInputs() {
+                if (!mapLinkEl) return;
+                var lat = parseFloat(latEl.value);
+                var lng = parseFloat(lngEl.value);
+                if (!isFinite(lat) || !isFinite(lng)) {
+                    mapLinkEl.classList.add('d-none');
+                    return;
+                }
+                mapLinkEl.href = 'https://www.google.com/maps?q=' + encodeURIComponent(lat + ',' + lng);
+                mapLinkEl.classList.remove('d-none');
+            }
+
+            function syncFromManualLatLng() {
+                var lat = parseFloat(String(latEl.value).trim());
+                var lng = parseFloat(String(lngEl.value).trim());
+                if (!isFinite(lat) || !isFinite(lng)) return;
+                if (lat < -90 || lat > 90 || lng < -180 || lng > 180) return;
+                if (!locEl.value || /^\s*-?\d/.test(locEl.value)) {
+                    locEl.value = lat.toFixed(8) + ', ' + lng.toFixed(8);
+                }
+                if (leadLatDisplay) leadLatDisplay.innerHTML = '<span class="badge bg-info text-dark">' + lat.toFixed(8) + '</span>';
+                if (leadLngDisplay) leadLngDisplay.innerHTML = '<span class="badge bg-info text-dark">' + lng.toFixed(8) + '</span>';
+                syncMapLinkFromInputs();
+            }
+
+            latEl.addEventListener('change', syncFromManualLatLng);
+            lngEl.addEventListener('change', syncFromManualLatLng);
+            latEl.addEventListener('blur', syncFromManualLatLng);
+            lngEl.addEventListener('blur', syncFromManualLatLng);
+            locEl.addEventListener('change', function () {
+                applyManualCoords(locEl.value);
+            });
+            syncMapLinkFromInputs();
 
             function loadGoogleMapsAssets() {
                 if (window.google && window.google.maps && window.google.maps.Map) return Promise.resolve();
@@ -3428,58 +3469,93 @@
 
             btn.addEventListener('click', function () {
                 if (!navigator.geolocation) {
+                    showLocationMessage('Location is not supported in this browser. Enter Latitude and Longitude manually.');
+                    return;
+                }
+                if (window.isSecureContext === false) {
+                    showLocationMessage('Location needs HTTPS. Enter Latitude and Longitude manually, or open the site over HTTPS.');
                     return;
                 }
                 btn.disabled = true;
+                btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>Getting location…';
 
                 var bestPos = null;
                 var watchId = null;
                 var finished = false;
 
-                function completeWithBestPosition() {
+                function finishButton() {
+                    btn.disabled = false;
+                    btn.innerHTML = btnDefaultHtml;
+                }
+
+                function completeWithBestPosition(force) {
                     if (finished) return;
+                    if (!bestPos && !force) return;
                     finished = true;
                     if (watchId != null) {
-                        navigator.geolocation.clearWatch(watchId);
+                        try { navigator.geolocation.clearWatch(watchId); } catch (e) {}
+                        watchId = null;
                     }
                     if (!bestPos) {
-                        btn.disabled = false;
+                        finishButton();
+                        showLocationMessage('Could not get GPS location. Allow location permission, or enter Latitude / Longitude manually.');
                         return;
                     }
                     var lat = bestPos.coords.latitude;
                     var lng = bestPos.coords.longitude;
                     setCoords(lat, lng);
-                    reverseGeocode(lat, lng).finally(function () {
-                        btn.disabled = false;
-                    });
+                    reverseGeocode(lat, lng).finally(finishButton);
                 }
 
-                watchId = navigator.geolocation.watchPosition(
+                // Fast first fix, then refine with watch until accuracy is good enough.
+                navigator.geolocation.getCurrentPosition(
                     function (pos) {
-                        if (!bestPos || pos.coords.accuracy < bestPos.coords.accuracy) {
-                            bestPos = pos;
-                            setCoords(pos.coords.latitude, pos.coords.longitude);
+                        bestPos = pos;
+                        setCoords(pos.coords.latitude, pos.coords.longitude);
+                        if (pos.coords.accuracy && pos.coords.accuracy <= REQUIRED_ACCURACY_METERS) {
+                            completeWithBestPosition(true);
+                            return;
                         }
-                        // Wait for very high precision close to Google live-location quality.
-                        if (pos.coords.accuracy <= REQUIRED_ACCURACY_METERS) {
-                            completeWithBestPosition();
-                        }
+                        watchId = navigator.geolocation.watchPosition(
+                            function (wpos) {
+                                if (!bestPos || wpos.coords.accuracy < bestPos.coords.accuracy) {
+                                    bestPos = wpos;
+                                    setCoords(wpos.coords.latitude, wpos.coords.longitude);
+                                }
+                                if (wpos.coords.accuracy <= REQUIRED_ACCURACY_METERS) {
+                                    completeWithBestPosition(true);
+                                }
+                            },
+                            function () {
+                                completeWithBestPosition(true);
+                            },
+                            {
+                                enableHighAccuracy: true,
+                                timeout: MAX_LOCATION_WAIT_MS,
+                                maximumAge: 0
+                            }
+                        );
+                        setTimeout(function () { completeWithBestPosition(true); }, MAX_LOCATION_WAIT_MS);
                     },
                     function (err) {
-                        if (watchId != null) {
-                            navigator.geolocation.clearWatch(watchId);
+                        finishButton();
+                        var code = err && err.code;
+                        if (code === 1) {
+                            showLocationMessage('Location permission denied. Allow location for this site, or enter Latitude / Longitude manually.');
+                        } else if (code === 2) {
+                            showLocationMessage('Location unavailable. Check GPS/network, or enter Latitude / Longitude manually.');
+                        } else if (code === 3) {
+                            showLocationMessage('Location timed out. Try again, or enter Latitude / Longitude manually.');
+                        } else {
+                            showLocationMessage('Could not get location. Enter Latitude / Longitude manually.');
                         }
-                        btn.disabled = false;
                     },
                     {
                         enableHighAccuracy: true,
                         timeout: MAX_LOCATION_WAIT_MS,
-                        maximumAge: 0
+                        maximumAge: 60000
                     }
                 );
-
-                // Stop watching after a short window and use best accuracy fix.
-                setTimeout(completeWithBestPosition, MAX_LOCATION_WAIT_MS);
             });
 
             if (mapLinkEl && mapPanelEl) {
