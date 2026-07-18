@@ -1,4 +1,4 @@
-    function disposeSolar3DView(container) {
+﻿    function disposeSolar3DView(container) {
         var state = container._solar3dState;
         if (state) {
             if (state.rafId) cancelAnimationFrame(state.rafId);
@@ -560,7 +560,7 @@
             var b = new THREE.Vector3(x, walkY, depth + legHalf);
             var len = a.distanceTo(b);
             if (len < 0.05) return;
-            var mesh = new THREE.Mesh(new THREE.BoxGeometry(0.14, len, 0.14), walkRafterMat);
+            var mesh = new THREE.Mesh(new THREE.BoxGeometry(0.09, len, 0.09), walkRafterMat);
             alignMemberAlong(mesh, a, b, axisY);
             scene.add(mesh);
         });
