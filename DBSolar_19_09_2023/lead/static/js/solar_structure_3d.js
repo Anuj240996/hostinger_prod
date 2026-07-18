@@ -417,10 +417,19 @@ function initSolarStructure3DView(viewportEl, layout, options) {
     var backY = layout.backH * hScale;
     var frontTopY = foundationH + frontY;
     var backTopY = foundationH + backY;
-    var depth = 2.4;
-    var widthStep = 1.15;
+    var PANEL_WIDTH_FT = 4;
+    var PANEL_LENGTH_FT = 8;
+    var structureWidthFt = (layout.panelGrid && layout.panelGrid.cols)
+        ? layout.panelGrid.cols * PANEL_WIDTH_FT
+        : Math.max(layout.spanCols - 1, 1) * PANEL_WIDTH_FT;
+    var structureDepthFt = (layout.panelGrid && layout.panelGrid.rows)
+        ? layout.panelGrid.rows * PANEL_LENGTH_FT
+        : PANEL_LENGTH_FT;
+    var totalWidth = Math.max(structureWidthFt * hScale, 0.6);
+    var depth = Math.max(structureDepthFt * hScale, 0.6);
     var spanCols = layout.spanCols;
     var legCols = layout.legCols;
+    var widthStep = spanCols > 1 ? totalWidth / (spanCols - 1) : totalWidth;
 
     function xAt(col) {
         return (col - (spanCols - 1) / 2) * widthStep;
@@ -531,20 +540,20 @@ function initSolarStructure3DView(viewportEl, layout, options) {
         scene.add(purlinMesh);
     }
 
-    var uGap = layout.panelGrid.cols > 1 ? 0.02 : 0;
+    var uGap = 0.008;
     var panelThick = 0.032;
     var panelLift = 0.11;
-    var PANEL_WIDTH_FT = 4;
-    var PANEL_LENGTH_FT = 8;
-    var fixedPanelW = PANEL_WIDTH_FT * hScale;
-    var fixedPanelLen = PANEL_LENGTH_FT * hScale;
+    var panelPitchW = PANEL_WIDTH_FT * hScale;
+    var panelPitchL = PANEL_LENGTH_FT * hScale;
+    var fixedPanelW = Math.max(panelPitchW * (1 - uGap * 2), 0.05);
+    var fixedPanelLen = Math.max(panelPitchL * 0.96, 0.05);
     var row3d, col3d, idx3d, mount, u0, u1, t0, t1;
     var pA, pB, pC, pD, panelGroup, panelFront, panelBack, along, mid, halfLen, start, end;
 
     for (row3d = 0; row3d < layout.panelGrid.rows; row3d++) {
         mount = layout.panelPortraitSpan(row3d);
-        t0 = mount.t0;
-        t1 = mount.t1;
+        t0 = row3d / Math.max(layout.panelGrid.rows, 1);
+        t1 = (row3d + 1) / Math.max(layout.panelGrid.rows, 1);
         for (col3d = 0; col3d < layout.panelGrid.cols; col3d++) {
             idx3d = row3d * layout.panelGrid.cols + col3d;
             if (idx3d >= layout.panelCount) continue;

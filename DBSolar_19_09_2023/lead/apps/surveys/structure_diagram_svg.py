@@ -302,31 +302,29 @@ def build_structure_diagram_inner_svg(opts: Dict[str, Any]) -> Optional[str]:
             )
 
     for row in range(panel_grid['rows']):
-        visual = panel_portrait_span(row)
         for col in range(panel_grid['cols']):
             idx = row * panel_grid['cols'] + col
             if idx >= panel_count:
                 continue
-            t0, t1 = visual['t0'], visual['t1']
+            t0 = row / max(panel_grid['rows'], 1)
+            t1 = (row + 1) / max(panel_grid['rows'], 1)
             u0 = col / panel_grid['cols']
             u1 = (col + 1) / panel_grid['cols']
-            y_top = plan_back_y + plan_depth_span * t0 + (plan_row_gap / 2 if row > 0 else 1)
+            y_top = plan_back_y + plan_depth_span * t0 + (plan_row_gap / 2 if row > 0 else 0)
             y_bot = plan_back_y + plan_depth_span * t1 - (
-                plan_row_gap / 2 if row < panel_grid['rows'] - 1 else 1
+                plan_row_gap / 2 if row < panel_grid['rows'] - 1 else 0
             )
             x_l = plan_inner_l + (plan_inner_r - plan_inner_l) * u0 + plan_u_gap
             x_r = plan_inner_l + (plan_inner_r - plan_inner_l) * u1 - plan_u_gap
             w, h = x_r - x_l, y_bot - y_top
             if w >= 4 and h >= 4:
-                # Portrait module: 4 ft wide × 8 ft deep (front→back), centered in bay.
-                aspect = 4.0 / 8.0
-                draw_h = h * 0.9
-                draw_w = draw_h * aspect
-                if draw_w > w * 0.9:
-                    draw_w = w * 0.9
-                    draw_h = draw_w / aspect
-                x0 = (x_l + x_r) / 2 - draw_w / 2
-                y0 = (y_top + y_bot) / 2 - draw_h / 2
+                # Fill bay almost fully so adjacent modules connect across width.
+                pad_x = max(1.0, w * 0.02)
+                pad_y = max(1.0, h * 0.02)
+                x0 = x_l + pad_x
+                y0 = y_top + pad_y
+                draw_w = max(3.0, w - pad_x * 2)
+                draw_h = max(3.0, h - pad_y * 2)
                 svg += _svg_solar_panel_rect(x0, y0, draw_w, draw_h)
                 if panel_count <= 12:
                     fs = 6 if panel_grid['cols'] > 4 else 7

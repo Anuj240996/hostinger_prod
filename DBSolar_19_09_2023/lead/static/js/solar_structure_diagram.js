@@ -40,6 +40,15 @@
             total: panelCount
         } : { rows: 0, cols: 0, total: 0 };
 
+        var PANEL_WIDTH_FT = 4;
+        var PANEL_LENGTH_FT = 8;
+        var structureWidthFt = panelGrid.cols > 0
+            ? panelGrid.cols * PANEL_WIDTH_FT
+            : Math.max(legCols - 1, 1) * PANEL_WIDTH_FT;
+        var structureDepthFt = panelGrid.rows > 0
+            ? panelGrid.rows * PANEL_LENGTH_FT
+            : PANEL_LENGTH_FT;
+
         function purlinT(index) {
             return purlins === 1 ? 0.5 : index / (purlins - 1);
         }
@@ -97,6 +106,10 @@
             rafterCols: rafterCols,
             spanCols: spanCols,
             panelGrid: panelGrid,
+            panelWidthFt: PANEL_WIDTH_FT,
+            panelLengthFt: PANEL_LENGTH_FT,
+            structureWidthFt: structureWidthFt,
+            structureDepthFt: structureDepthFt,
             purlinT: purlinT,
             panelDepthSpan: panelDepthSpan,
             panelPortraitSpan: panelPortraitSpan,
@@ -110,7 +123,9 @@
         html += '<div>Front <strong>' + layout.frontH + ' ft</strong></div>';
         html += '<div>Back <strong>' + layout.backH + ' ft</strong></div>';
         if (layout.panelCount > 0) {
-            html += '<div>Panels <strong>' + layout.panelCount + '</strong> (' + layout.panelGrid.cols + 'Ã—' + layout.panelGrid.rows + ')</div>';
+            html += '<div>Panels <strong>' + layout.panelCount + '</strong> (' + layout.panelGrid.cols + '\u00d7' + layout.panelGrid.rows + ')</div>';
+            html += '<div>Array <strong>' + layout.structureWidthFt + ' \u00d7 ' + layout.structureDepthFt + ' ft</strong></div>';
+            html += '<div>Module <strong>' + layout.panelWidthFt + ' \u00d7 ' + layout.panelLengthFt + ' ft</strong></div>';
         }
         html += '<div>Purlin <strong>' + layout.purlins + '</strong> Â· Rafter <strong>' + layout.rafters + '</strong></div>';
         html += '<div>Legs <strong>' + layout.legs + '</strong> (' + layout.frontLegCount + ' front + ' + layout.backLegCount + ' back)</div>';
@@ -341,18 +356,13 @@
         var bayW = xR - xL;
         var bayH = yBot - yTop;
         if (bayW < 4 || bayH < 4) return null;
-        var aspect = SOLAR_PANEL_WIDTH_FT / SOLAR_PANEL_LENGTH_FT;
-        var drawH = bayH * 0.9;
-        var drawW = drawH * aspect;
-        if (drawW > bayW * 0.9) {
-            drawW = bayW * 0.9;
-            drawH = drawW / aspect;
-        }
+        var padX = Math.max(1, bayW * 0.02);
+        var padY = Math.max(1, bayH * 0.02);
         return {
-            x: (xL + xR) / 2 - drawW / 2,
-            y: (yTop + yBot) / 2 - drawH / 2,
-            w: drawW,
-            h: drawH
+            x: xL + padX,
+            y: yTop + padY,
+            w: Math.max(3, bayW - padX * 2),
+            h: Math.max(3, bayH - padY * 2)
         };
     }
 
@@ -545,7 +555,8 @@
         addLine(wA, wB);
         addCap(wA, new THREE.Vector3(0, 0, 1), 0.12);
         addCap(wB, new THREE.Vector3(0, 0, 1), 0.12);
-        var sprWidth = createTextSprite('Width â†’', { color: '#475569', scaleX: 0.82, scaleY: 0.22, fontSize: 20 });
+        var widthLabel = (layout.structureWidthFt || Math.round(Math.abs(xR - xL) / 0.115)) + ' ft';
+        var sprWidth = createTextSprite(widthLabel, { color: '#16a34a', scaleX: 0.9, scaleY: 0.24, fontSize: 22 });
         sprWidth.position.set((xL + xR) / 2, footY, -0.32);
         scene.add(sprWidth);
 
@@ -554,7 +565,8 @@
         addLine(dA, dB);
         addCap(dA, new THREE.Vector3(1, 0, 0), 0.12);
         addCap(dB, new THREE.Vector3(1, 0, 0), 0.12);
-        var sprDepth = createTextSprite('Front â†’ Back', { color: '#475569', scaleX: 1.0, scaleY: 0.24, fontSize: 18 });
+        var depthLabel = (layout.structureDepthFt || Math.round(depth / 0.115)) + ' ft';
+        var sprDepth = createTextSprite(depthLabel, { color: '#16a34a', scaleX: 0.9, scaleY: 0.24, fontSize: 20 });
         sprDepth.position.set(xL - 0.78, footY, depth / 2);
         scene.add(sprDepth);
 
@@ -598,10 +610,13 @@
         var backY = layout.backH * hScale;
         var frontTopY = foundationH + frontY;
         var backTopY = foundationH + backY;
-        var depth = 4.45;
-        var widthStep = 0.52;
+        var structureWidthFt = layout.structureWidthFt || Math.max(layout.panelGrid.cols, 1) * SOLAR_PANEL_WIDTH_FT;
+        var structureDepthFt = layout.structureDepthFt || Math.max(layout.panelGrid.rows, 1) * SOLAR_PANEL_LENGTH_FT;
+        var totalWidth = Math.max(structureWidthFt * hScale, 0.6);
+        var depth = Math.max(structureDepthFt * hScale, 0.6);
         var spanCols = layout.spanCols;
         var legCols = layout.legCols;
+        var widthStep = spanCols > 1 ? totalWidth / (spanCols - 1) : totalWidth;
 
         function xAt(col) {
             return (col - (spanCols - 1) / 2) * widthStep;
@@ -715,19 +730,20 @@
             scene.add(purlinMesh);
         }
 
-        var uGap = 0;
+        var uGap = 0.008;
         var panelThick = 0.032;
         var panelLift = 0.11;
-        var panelFtScale = hScale;
-        var fixedPanelW = SOLAR_PANEL_WIDTH_FT * panelFtScale;
-        var fixedPanelLen = SOLAR_PANEL_LENGTH_FT * panelFtScale;
+        var panelPitchW = SOLAR_PANEL_WIDTH_FT * hScale;
+        var panelPitchL = SOLAR_PANEL_LENGTH_FT * hScale;
+        var fixedPanelW = Math.max(panelPitchW * (1 - uGap * 2), 0.05);
+        var fixedPanelLen = Math.max(panelPitchL * 0.96, 0.05);
         var row3d, col3d, idx3d, mount, u0, u1, t0, t1;
         var pA, pB, pC, pD, panelGroup, panelFront, panelBack, along, mid, halfLen, start, end;
 
         for (row3d = 0; row3d < layout.panelGrid.rows; row3d++) {
             mount = layout.panelPortraitSpan(row3d);
-            t0 = mount.t0;
-            t1 = mount.t1;
+            t0 = row3d / Math.max(layout.panelGrid.rows, 1);
+            t1 = (row3d + 1) / Math.max(layout.panelGrid.rows, 1);
             for (col3d = 0; col3d < layout.panelGrid.cols; col3d++) {
                 idx3d = row3d * layout.panelGrid.cols + col3d;
                 if (idx3d >= layout.panelCount) continue;
@@ -953,18 +969,28 @@
         // Remove the inner â€œcardâ€ rectangle so the background looks merged and we don't create extra margins.
         svg += '<rect x="0" y="34" width="280" height="318" fill="#fff" stroke="none" rx="0"/>';
 
-        /* ========== Plan view (top â€” matches 3D looking down: width â†” X, depth â†” front/back) ========== */
-        // Plan view: fill available width (minimize left/right whitespace)
+        /* ========== Plan view (top) ========== */
         var px0 = 8, py0 = 48, pw = 264, pd = 118;
+        var structWft = Math.max(1, panelGrid.cols || 1) * 4;
+        var structDft = Math.max(1, panelGrid.rows || 1) * 8;
         svg += '<text x="138" y="46" text-anchor="middle" font-size="12" font-weight="600" fill="#1e293b">Plan view (top)</text>';
         var planPad = 2;
-        var planInnerL = px0 + planPad;
-        var planInnerR = px0 + pw - planPad;
-        var planFrontY = py0 + pd - 16;
-        var planBackY = py0 + 16;
+        var availW = pw - planPad * 2;
+        var availH = pd - 32;
+        var footprintAspect = structDft / structWft;
+        var drawW = availW;
+        var drawH = drawW * footprintAspect;
+        if (drawH > availH) {
+            drawH = availH;
+            drawW = drawH / footprintAspect;
+        }
+        var planInnerL = px0 + planPad + (availW - drawW) / 2;
+        var planInnerR = planInnerL + drawW;
+        var planBackY = py0 + 16 + (availH - drawH) / 2;
+        var planFrontY = planBackY + drawH;
         var planDepthSpan = planFrontY - planBackY;
-        var planUGap = panelGrid.cols > 1 ? 3 : 0;
-        var planRowGap = panelGrid.rows > 1 ? 4 : 0;
+        var planUGap = 1;
+        var planRowGap = 1;
 
         var planXAt = function (col, total) {
             return planInnerL + (total > 1 ? (planInnerR - planInnerL) * col / (total - 1) : (planInnerR - planInnerL) / 2);
@@ -1010,8 +1036,10 @@
             }
         }
         drawAllPanelCells(function (t0, t1, u0, u1, label, row, visual) {
-            var yTop = planBackY + planDepthSpan * t0 + (row > 0 ? planRowGap / 2 : 1);
-            var yBot = planBackY + planDepthSpan * t1 - (row < panelGrid.rows - 1 ? planRowGap / 2 : 1);
+            var t0eq = row / Math.max(panelGrid.rows, 1);
+            var t1eq = (row + 1) / Math.max(panelGrid.rows, 1);
+            var yTop = planBackY + planDepthSpan * t0eq + (row > 0 ? planRowGap / 2 : 0);
+            var yBot = planBackY + planDepthSpan * t1eq - (row < panelGrid.rows - 1 ? planRowGap / 2 : 0);
             var xL = planInnerL + (planInnerR - planInnerL) * u0 + planUGap;
             var xR = planInnerL + (planInnerR - planInnerL) * u1 - planUGap;
             var fitted = fitPortraitPanelInBay(xL, yTop, xR, yBot);
