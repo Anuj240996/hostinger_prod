@@ -61,8 +61,11 @@
         var walkwayPurlinBonus = hasWalkway ? 4 : 0;
         var panelPurlins = Math.max(0, purlins - walkwayPurlinBonus);
         if (panelPurlins < 1 && purlins >= 1) panelPurlins = purlins;
-        // All rafters (including walkway +2) are full front→back members, same style.
-        var mainRafterCols = Math.max(1, rafters || Math.ceil(legs / 2) || 1);
+        // Upper panel rafters only (1 per leg column). Walkway +2 are separate lower left/right rafters.
+        var mainRafterCols = Math.max(1, Math.ceil(legs / 2) || 1);
+        if (!hasWalkway && rafters >= 1) {
+            mainRafterCols = rafters;
+        }
         rafterCols = mainRafterCols;
         spanCols = Math.max(legCols, rafterCols);
         var panelRowsFromPurlins = Math.max(1, Math.floor(Math.max(panelPurlins, 1) / 2));
@@ -520,40 +523,58 @@
         var rows = (layout.panelGrid && layout.panelGrid.rows) ? layout.panelGrid.rows : 0;
         var t0;
         var t1;
-        // Place walkway under the panels in the middle (between front & back), resting on rafters.
         if (rows >= 2) {
-            var gap0 = panelRowDepthFrac(0, rows).t1;
-            var gap1 = panelRowDepthFrac(1, rows).t0;
-            var mid = (gap0 + gap1) / 2;
-            var half = Math.max((gap1 - gap0) * 0.5, 0.08);
-            t0 = Math.max(0.18, mid - half - 0.06);
-            t1 = Math.min(0.82, mid + half + 0.06);
+            t0 = panelRowDepthFrac(0, rows).t1;
+            t1 = panelRowDepthFrac(1, rows).t0;
         } else {
-            t0 = 0.28;
-            t1 = 0.72;
+            t0 = 0.38;
+            t1 = 0.62;
+        }
+        if (t1 - t0 < 0.07) {
+            var midGap = (t0 + t1) / 2;
+            t0 = Math.max(0.2, midGap - 0.08);
+            t1 = Math.min(0.8, midGap + 0.08);
         }
         var midT = (t0 + t1) / 2;
-        var roofMid = roofPoint(midT, 0.5);
-        // Rest ON the rafters, clearly BELOW panel face (panelLift ~0.11).
-        var deckY = roofMid.y + 0.02;
-        var pL = roofPoint(midT, 0);
-        var pR = roofPoint(midT, 1);
-        var deckW = Math.max(Math.abs(pR.x - pL.x) * 0.92, 0.5);
-        var deckD = Math.max((t1 - t0) * depth, 0.35);
+        var z0 = t0 * depth;
+        var z1 = t1 * depth;
         var zMid = midT * depth;
-        var zFront = t0 * depth;
+        var roofAtGap = roofPoint(midT, 0.5).y;
+        // Level walkway height — clearly BELOW the sloping panel rafters above.
+        var walkY = Math.max(foundationH + 0.55, roofAtGap - 0.52);
+        var xLeft = xAtLeg(0);
+        var xRight = xAtLeg(Math.max(layout.legCols - 1, 0));
         var axisY = new THREE.Vector3(0, 1, 0);
         var axisX = new THREE.Vector3(1, 0, 0);
+        var axisZ = new THREE.Vector3(0, 0, 1);
 
+        // --- 2 walkway rafters: LEFT + RIGHT legs, HORIZONTAL, below panel rafters ---
+        var walkRafterMat = new THREE.MeshLambertMaterial({ color: 0xea580c });
+        [xLeft, xRight].forEach(function (x) {
+            var a = new THREE.Vector3(x, walkY, z0);
+            var b = new THREE.Vector3(x, walkY, z1);
+            var len = a.distanceTo(b);
+            if (len < 0.05) return;
+            // Box local Y is length axis after alignMemberAlong with axisY.
+            var mesh = new THREE.Mesh(new THREE.BoxGeometry(0.13, len, 0.13), walkRafterMat);
+            alignMemberAlong(mesh, a, b, axisY);
+            scene.add(mesh);
+        });
+
+        // --- Walkway grate RESTS on the 2 lower rafters (between panel rows) ---
+        var deckW = Math.max(Math.abs(xRight - xLeft) * 0.92, 0.5);
+        var deckD = Math.max(Math.abs(z1 - z0) * 0.95, 0.28);
+        var deckY = walkY + 0.09;
         var plate = new THREE.Mesh(
             new THREE.BoxGeometry(deckW, 0.05, deckD),
             new THREE.MeshLambertMaterial({ color: 0xcbd5e1 })
         );
-        plate.position.set(0, deckY, zMid);
+        plate.position.set((xLeft + xRight) / 2, deckY, zMid);
         scene.add(plate);
 
         var frameMat = new THREE.MeshLambertMaterial({ color: 0x1f2937 });
         var barMat = new THREE.MeshLambertMaterial({ color: 0x4b5563 });
+        var cx = (xLeft + xRight) / 2;
         var ft = 0.045;
         [
             [0, deckD / 2, deckW + 0.02, ft, ft],
@@ -562,7 +583,7 @@
             [deckW / 2, 0, ft, ft, deckD + 0.02]
         ].forEach(function (f) {
             var fm = new THREE.Mesh(new THREE.BoxGeometry(f[2], f[3], f[4]), frameMat);
-            fm.position.set(f[0], deckY + 0.032, zMid + f[1]);
+            fm.position.set(cx + f[0], deckY + 0.032, zMid + f[1]);
             scene.add(fm);
         });
         var nLong = Math.max(10, Math.round(deckW / 0.09));
@@ -570,27 +591,25 @@
         for (li = 1; li < nLong; li++) {
             var gx = -deckW / 2 + (deckW * li) / nLong;
             var bar = new THREE.Mesh(new THREE.BoxGeometry(0.028, 0.03, deckD * 0.92), barMat);
-            bar.position.set(gx, deckY + 0.036, zMid);
+            bar.position.set(cx + gx, deckY + 0.036, zMid);
             scene.add(bar);
         }
-        var nCross = Math.max(5, Math.round(deckD / 0.08));
+        var nCross = Math.max(4, Math.round(deckD / 0.07));
         var cxi;
         for (cxi = 1; cxi < nCross; cxi++) {
             var gz = -deckD / 2 + (deckD * cxi) / nCross;
             var cbar = new THREE.Mesh(new THREE.BoxGeometry(deckW * 0.92, 0.026, 0.028), barMat);
-            cbar.position.set(0, deckY + 0.04, zMid + gz);
+            cbar.position.set(cx, deckY + 0.04, zMid + gz);
             scene.add(cbar);
         }
 
-        // +4 walkway purlins across the deck (under grate).
+        // +4 walkway purlins across the deck.
         var walkPurlinMat = new THREE.MeshLambertMaterial({ color: 0x1d4ed8 });
         var wp;
         for (wp = 0; wp < 4; wp++) {
-            var zt = t0 + (t1 - t0) * (wp + 0.5) / 4;
-            var left = roofPoint(zt, 0.04);
-            var right = roofPoint(zt, 0.96);
-            left.y = deckY - 0.02;
-            right.y = deckY - 0.02;
+            var zt = z0 + (z1 - z0) * (wp + 0.5) / 4;
+            var left = new THREE.Vector3(xLeft + 0.05, deckY - 0.02, zt);
+            var right = new THREE.Vector3(xRight - 0.05, deckY - 0.02, zt);
             var pm = new THREE.Mesh(new THREE.BoxGeometry(left.distanceTo(right), 0.055, 0.075), walkPurlinMat);
             alignMemberAlong(pm, left, right, axisX);
             scene.add(pm);
@@ -598,15 +617,16 @@
 
         if (!layout.hasLadder) return;
 
+        // Ladder from ground up to walkway (attaches to walkway, not panel rafter).
         var pipeN = Math.max(4, Math.min(layout.squarePipeCount || 8, 28));
         var railMat = new THREE.MeshLambertMaterial({ color: 0xb91c1c });
         var rungMat = new THREE.MeshLambertMaterial({ color: 0xdc2626 });
         var halfW = 0.15;
-        var topX = deckW * 0.22;
-        var topZ = zFront + 0.03;
-        var topY = deckY + 0.06;
-        var botX = topX + 0.4;
-        var botZ = Math.max(0.06, zFront - depth * 0.2);
+        var topX = cx - deckW * 0.15;
+        var topZ = z0 + 0.04;
+        var topY = deckY + 0.05;
+        var botX = topX - 0.25;
+        var botZ = Math.max(0.06, z0 - depth * 0.18);
         var botY = foundationH + 0.04;
         [
             new THREE.Vector3(-halfW, 0, 0),
