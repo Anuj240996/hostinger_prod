@@ -1372,15 +1372,15 @@
             total: panelCount
         } : { rows: 0, cols: 0, total: 0 };
 
-        // Module size: 4 ft wide × 8 ft deep (portrait). Leave a clear walkway gap between panel rows.
-        var PANEL_WIDTH_FT = 4;
-        var PANEL_LENGTH_FT = 8;
-        var PANEL_ROW_GAP_FT = 1;
+        // Module size: 4 ft wide × 8 ft deep (portrait). Leave a clear gap between panel rows.
+        var PANEL_WIDTH_FT = SOLAR_PANEL_WIDTH_FT;
+        var PANEL_LENGTH_FT = SOLAR_PANEL_LENGTH_FT;
+        var PANEL_ROW_GAP_FT = SOLAR_PANEL_ROW_GAP_FT;
         var structureWidthFt = panelGrid.cols > 0
             ? panelGrid.cols * PANEL_WIDTH_FT
             : Math.max(legCols - 1, 1) * PANEL_WIDTH_FT;
         var structureDepthFt = panelGrid.rows > 0
-            ? panelGrid.rows * PANEL_LENGTH_FT + Math.max(0, panelGrid.rows - 1) * PANEL_ROW_GAP_FT
+            ? solarStructureDepthFt(panelGrid.rows)
             : PANEL_LENGTH_FT;
 
         function purlinT(index) {
@@ -1464,6 +1464,9 @@
             if (layout.panelWidthFt && layout.panelLengthFt) {
                 html += '<div class="solar-3d-spec">Module <strong>' + layout.panelWidthFt + ' × ' + layout.panelLengthFt + ' ft</strong></div>';
             }
+            if (layout.panelGrid.rows > 1 && layout.panelRowGapFt) {
+                html += '<div class="solar-3d-spec">Row gap <strong>' + layout.panelRowGapFt + ' ft</strong></div>';
+            }
         }
         html += '<div class="solar-3d-spec">Purlin <strong>' + layout.purlins + '</strong> · Rafter <strong>' + layout.rafters + '</strong></div>';
         html += '<div class="solar-3d-spec">Legs <strong>' + layout.legs + '</strong> (' + layout.frontLegCount + ' front + ' + layout.backLegCount + ' back)</div>';
@@ -1537,6 +1540,25 @@
     // Standard module size used across plan + 3D (portrait on structure).
     var SOLAR_PANEL_WIDTH_FT = 4;
     var SOLAR_PANEL_LENGTH_FT = 8;
+    // Clear space between panel rows (edge of row N to edge of row N+1) — not outer border span.
+    var SOLAR_PANEL_ROW_GAP_FT = 2;
+
+    function solarStructureDepthFt(rows) {
+        var r = Math.max(rows || 0, 0);
+        if (r < 1) return SOLAR_PANEL_LENGTH_FT;
+        return r * SOLAR_PANEL_LENGTH_FT + Math.max(r - 1, 0) * SOLAR_PANEL_ROW_GAP_FT;
+    }
+
+    /** Depth fractions [t0,t1] for a panel row including inter-row gaps (0=front, 1=back). */
+    function panelRowDepthFrac(row, rows) {
+        var r = Math.max(rows, 1);
+        var totalFt = solarStructureDepthFt(r);
+        var startFt = row * (SOLAR_PANEL_LENGTH_FT + SOLAR_PANEL_ROW_GAP_FT);
+        return {
+            t0: startFt / totalFt,
+            t1: (startFt + SOLAR_PANEL_LENGTH_FT) / totalFt
+        };
+    }
 
     function fitPortraitPanelInBay(xL, yTop, xR, yBot) {
         var bayW = xR - xL;
@@ -1752,6 +1774,29 @@
         sprDepth.position.set(xL - 0.78, footY, depth / 2);
         scene.add(sprDepth);
 
+        // Inter-row gap only (edge of row N to edge of row N+1) — not outer border of both rows.
+        var rows = layout.panelGrid && layout.panelGrid.rows ? layout.panelGrid.rows : 0;
+        var rowGapFt = layout.panelRowGapFt || SOLAR_PANEL_ROW_GAP_FT;
+        if (rows > 1 && rowGapFt > 0) {
+            var hScaleDim = 0.09;
+            var gapRi;
+            for (gapRi = 0; gapRi < rows - 1; gapRi++) {
+                var rowA = panelRowDepthFrac(gapRi, rows);
+                var rowB = panelRowDepthFrac(gapRi + 1, rows);
+                var zGap0 = rowA.t1 * depth;
+                var zGap1 = rowB.t0 * depth;
+                var gapX = xR + 0.42;
+                var gA = new THREE.Vector3(gapX, footY, zGap0);
+                var gB = new THREE.Vector3(gapX, footY, zGap1);
+                addLine(gA, gB);
+                addCap(gA, new THREE.Vector3(1, 0, 0), 0.1);
+                addCap(gB, new THREE.Vector3(1, 0, 0), 0.1);
+                var sprGap = createTextSprite(rowGapFt + ' ft', { color: '#0369a1', scaleX: 0.78, scaleY: 0.22, fontSize: 18 });
+                sprGap.position.set(gapX + 0.42, footY + 0.08, (zGap0 + zGap1) / 2);
+                scene.add(sprGap);
+            }
+        }
+
         var sprFrontLbl = createTextSprite('FRONT', { color: '#16a34a', scaleX: 0.68, scaleY: 0.22, fontSize: 22 });
         sprFrontLbl.position.set((xL + xR) / 2, footY, -0.55);
         scene.add(sprFrontLbl);
@@ -1911,28 +1956,18 @@
             scene.add(purlinMesh);
         }
 
-        // Panels with a clear walkway gap between rows (exact bay count = panelCount).
+        // Panels with clear inter-row gap (edge-to-edge gap between row N and N+1).
         var panelThick = 0.032;
         var panelLift = 0.11;
         var row3d, col3d, idx3d, u0, u1, t0, t1;
         var pA, pB, pC, pD, panelGroup, panelFront, panelBack, faceW, faceL;
         var cols3d = Math.max(layout.panelGrid.cols, 1);
         var rows3d = Math.max(layout.panelGrid.rows, 1);
-        var panelLenFt = layout.panelLengthFt || SOLAR_PANEL_LENGTH_FT;
-        var rowGapFt = layout.panelRowGapFt != null ? layout.panelRowGapFt : 1;
-        var depthFt = structureDepthFt;
-        function rowDepthSpanFt(row) {
-            var startFt = row * (panelLenFt + rowGapFt);
-            return {
-                t0: startFt / Math.max(depthFt, 0.001),
-                t1: (startFt + panelLenFt) / Math.max(depthFt, 0.001)
-            };
-        }
 
         for (row3d = 0; row3d < layout.panelGrid.rows; row3d++) {
-            var span3d = rowDepthSpanFt(row3d);
-            t0 = span3d.t0;
-            t1 = span3d.t1;
+            var rowFrac = panelRowDepthFrac(row3d, rows3d);
+            t0 = rowFrac.t0;
+            t1 = rowFrac.t1;
             for (col3d = 0; col3d < layout.panelGrid.cols; col3d++) {
                 idx3d = row3d * layout.panelGrid.cols + col3d;
                 if (idx3d >= layout.panelCount) continue;
@@ -2147,15 +2182,11 @@
         svg += '<rect x="0" y="34" width="280" height="318" fill="#fff" stroke="none" rx="0"/>';
 
         /* ========== Plan view (top — matches 3D looking down: width ↔ X, depth ↔ front/back) ========== */
-        // Plan view: footprint includes 1 ft walkway gap between panel rows.
-        var PANEL_WIDTH_FT_PLAN = 4;
-        var PANEL_LENGTH_FT_PLAN = 8;
-        var PANEL_ROW_GAP_FT_PLAN = 1;
+        // Plan view: footprint aspect = (cols×4 ft) × (rows×8 ft) so portrait panels fill full width.
         var px0 = 8, py0 = 48, pw = 264, pd = 118;
-        var structWft = Math.max(1, panelGrid.cols || 1) * PANEL_WIDTH_FT_PLAN;
-        var structDft = panelGrid.rows > 0
-            ? panelGrid.rows * PANEL_LENGTH_FT_PLAN + Math.max(0, panelGrid.rows - 1) * PANEL_ROW_GAP_FT_PLAN
-            : PANEL_LENGTH_FT_PLAN;
+        var structWft = Math.max(1, panelGrid.cols || 1) * SOLAR_PANEL_WIDTH_FT;
+        var structDft = solarStructureDepthFt(panelGrid.rows || 1);
+        var rowGapFt = SOLAR_PANEL_ROW_GAP_FT;
         svg += '<text x="138" y="46" text-anchor="middle" font-size="12" font-weight="600" fill="#1e293b">Plan view (top)</text>';
         var planPad = 2;
         var availW = pw - planPad * 2;
@@ -2173,20 +2204,12 @@
         var planFrontY = planBackY + drawH;
         var planDepthSpan = planFrontY - planBackY;
         var planUGap = 0;
-        var planFtToY = planDepthSpan / Math.max(structDft, 0.001);
 
         var planXAt = function (col, total) {
             return planInnerL + (total > 1 ? (planInnerR - planInnerL) * col / (total - 1) : (planInnerR - planInnerL) / 2);
         };
         var planPurlinY = function (idx) {
             return purlins === 1 ? (planFrontY + planBackY) / 2 : planBackY + (planDepthSpan * idx / (purlins - 1));
-        };
-        var planRowSpanY = function (row) {
-            var startFt = row * (PANEL_LENGTH_FT_PLAN + PANEL_ROW_GAP_FT_PLAN);
-            return {
-                yTop: planBackY + startFt * planFtToY,
-                yBot: planBackY + (startFt + PANEL_LENGTH_FT_PLAN) * planFtToY
-            };
         };
 
         svg += '<rect x="' + planInnerL + '" y="' + planBackY + '" width="' + (planInnerR - planInnerL) + '" height="' + planDepthSpan +
@@ -2226,9 +2249,10 @@
             }
         }
         drawAllPanelCells(function (t0, t1, u0, u1, label, row, visual) {
-            var spanY = planRowSpanY(row);
-            var yTop = spanY.yTop;
-            var yBot = spanY.yBot;
+            // Place each row using panel length + inter-row gap (not equal outer slots).
+            var frac = panelRowDepthFrac(row, Math.max(panelGrid.rows, 1));
+            var yTop = planBackY + planDepthSpan * frac.t0;
+            var yBot = planBackY + planDepthSpan * frac.t1;
             var xL = planInnerL + (planInnerR - planInnerL) * u0 + planUGap;
             var xR = planInnerL + (planInnerR - planInnerL) * u1 - planUGap;
             var fitted = fitPortraitPanelInBay(xL, yTop, xR, yBot);
@@ -2239,16 +2263,20 @@
                     (panelGrid.cols > 4 ? 6 : 7) + '" fill="#e2e8f0" font-weight="600" stroke="#0f1f33" stroke-width="0.4">' + label + '</text>';
             }
         });
-        // Dimension the walkway gap between each pair of panel rows.
-        if (panelGrid.rows > 1 && PANEL_ROW_GAP_FT_PLAN > 0) {
-            for (var gapRow = 0; gapRow < panelGrid.rows - 1; gapRow++) {
-                var gapStartFt = (gapRow + 1) * PANEL_LENGTH_FT_PLAN + gapRow * PANEL_ROW_GAP_FT_PLAN;
-                var gapMidY = planBackY + (gapStartFt + PANEL_ROW_GAP_FT_PLAN / 2) * planFtToY;
-                var gapX = planInnerR - 2;
-                svg += '<line x1="' + (planInnerL + 4) + '" y1="' + gapMidY + '" x2="' + (planInnerR - 4) + '" y2="' + gapMidY +
-                    '" stroke="#94a3b8" stroke-width="0.7" stroke-dasharray="3,2"/>';
-                svg += '<text x="' + gapX + '" y="' + (gapMidY - 2) + '" text-anchor="end" font-size="6" fill="#0369a1" font-weight="600">' +
-                    PANEL_ROW_GAP_FT_PLAN + ' ft gap</text>';
+        // Dimension only the gap between consecutive rows (not outer border of both rows).
+        if (panelGrid.rows > 1 && rowGapFt > 0) {
+            var gapRow;
+            for (gapRow = 0; gapRow < panelGrid.rows - 1; gapRow++) {
+                var fa = panelRowDepthFrac(gapRow, panelGrid.rows);
+                var fb = panelRowDepthFrac(gapRow + 1, panelGrid.rows);
+                var yGap0 = planBackY + planDepthSpan * fa.t1;
+                var yGap1 = planBackY + planDepthSpan * fb.t0;
+                var xGap = planInnerR + 10;
+                svg += '<line x1="' + xGap + '" y1="' + yGap0 + '" x2="' + xGap + '" y2="' + yGap1 + '" stroke="#0369a1" stroke-width="1.2"/>';
+                svg += '<line x1="' + (xGap - 3) + '" y1="' + yGap0 + '" x2="' + (xGap + 3) + '" y2="' + yGap0 + '" stroke="#0369a1" stroke-width="1.2"/>';
+                svg += '<line x1="' + (xGap - 3) + '" y1="' + yGap1 + '" x2="' + (xGap + 3) + '" y2="' + yGap1 + '" stroke="#0369a1" stroke-width="1.2"/>';
+                svg += '<text x="' + (xGap + 5) + '" y="' + ((yGap0 + yGap1) / 2 + 3) + '" font-size="7" fill="#0369a1" font-weight="700">' +
+                    rowGapFt + ' ft</text>';
             }
         }
         for (r = 0; r < rafterCols && rafterCols <= 8; r++) {
@@ -2332,16 +2360,10 @@
         }
 
         function drawSidePanelRow(sideRow) {
-            var rowsSide = Math.max(panelGrid.rows, 1);
-            var gapSideFt = PANEL_ROW_GAP_FT_PLAN;
-            var lenSideFt = PANEL_LENGTH_FT_PLAN;
-            var depthSideFt = rowsSide * lenSideFt + Math.max(0, rowsSide - 1) * gapSideFt;
-            var startFt = sideRow * (lenSideFt + gapSideFt);
-            var t0s = startFt / Math.max(depthSideFt, 0.001);
-            var t1s = (startFt + lenSideFt) / Math.max(depthSideFt, 0.001);
+            var frac = panelRowDepthFrac(sideRow, Math.max(panelGrid.rows, 1));
             var up = sidePanelUpUnit(panelUpNx, panelUpNy);
-            var b0 = sidePointOnPanelBottom(t0s);
-            var b1 = sidePointOnPanelBottom(t1s);
+            var b0 = sidePointOnPanelBottom(frac.t0);
+            var b1 = sidePointOnPanelBottom(frac.t1);
             var cols = panelGrid.cols;
             var rowStartIdx = sideRow * cols;
             var halfT = sidePanelEdgeThickPx / 2;
@@ -2362,6 +2384,19 @@
 
         for (var sideRow = 0; sideRow < panelGrid.rows; sideRow++) {
             drawSidePanelRow(sideRow);
+        }
+        if (panelGrid.rows > 1 && rowGapFt > 0) {
+            var sGap;
+            for (sGap = 0; sGap < panelGrid.rows - 1; sGap++) {
+                var sfa = panelRowDepthFrac(sGap, panelGrid.rows);
+                var sfb = panelRowDepthFrac(sGap + 1, panelGrid.rows);
+                var gp0 = sidePointOnPanelBottom(sfa.t1);
+                var gp1 = sidePointOnPanelBottom(sfb.t0);
+                var gmx = (gp0.x + gp1.x) / 2 + panelUpNx * 0.15;
+                var gmy = (gp0.y + gp1.y) / 2 + panelUpNy * 0.15;
+                svg += '<line x1="' + gp0.x + '" y1="' + gp0.y + '" x2="' + gp1.x + '" y2="' + gp1.y + '" stroke="#0369a1" stroke-width="1.2"/>';
+                svg += '<text x="' + gmx + '" y="' + gmy + '" font-size="7" fill="#0369a1" font-weight="700">' + rowGapFt + ' ft</text>';
+            }
         }
         for (p = 0; p < purlins; p++) {
             drawSideCChannel(sideOnRafter(purlinT(p)), 'P' + (p + 1));
