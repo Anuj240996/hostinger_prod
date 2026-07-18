@@ -516,71 +516,125 @@
     }
 
     function addSolarWalkwayAndLadder(scene, layout, xAtLeg, roofPoint, alignMemberAlong, depth, frontTopY, backTopY, foundationH) {
-        if (!layout.hasWalkway || !layout.panelGrid || layout.panelGrid.rows < 2) return;
-        var rows = layout.panelGrid.rows;
-        var rowA = panelRowDepthFrac(0, rows);
-        var rowB = panelRowDepthFrac(1, rows);
-        var t0 = rowA.t1;
-        var t1 = rowB.t0;
-        if (t1 <= t0) {
-            t0 = 0.45;
-            t1 = 0.55;
+        if (!layout.hasWalkway) return;
+        var rows = (layout.panelGrid && layout.panelGrid.rows) ? layout.panelGrid.rows : 0;
+        var t0;
+        var t1;
+        if (rows >= 2) {
+            var rowA = panelRowDepthFrac(0, rows);
+            var rowB = panelRowDepthFrac(1, rows);
+            t0 = rowA.t1;
+            t1 = rowB.t0;
+        } else {
+            t0 = 0.42;
+            t1 = 0.58;
+        }
+        if (t1 - t0 < 0.04) {
+            t0 = Math.max(0, 0.45);
+            t1 = Math.min(1, 0.55);
         }
         var midT = (t0 + t1) / 2;
-        var pSW = roofPoint(t0, 0);
-        var pSE = roofPoint(t0, 1);
-        var pNE = roofPoint(t1, 1);
-        var pNW = roofPoint(t1, 0);
-        var deckY = ((pSW.y + pSE.y + pNE.y + pNW.y) / 4) + 0.02;
-        var deckW = Math.abs(pSE.x - pSW.x) * 0.92;
-        var deckD = Math.max(Math.abs((t1 - t0) * depth) * 0.9, 0.12);
-        var deck = new THREE.Mesh(new THREE.BoxGeometry(deckW, 0.04, deckD), new THREE.MeshLambertMaterial({ color: 0x94a3b8 }));
-        deck.position.set(0, deckY, midT * depth);
-        scene.add(deck);
-        var walkRafterMat = new THREE.MeshLambertMaterial({ color: 0xc2410c });
-        var lastCols = layout.legCols <= 2 ? [0, Math.max(0, layout.legCols - 1)] : [layout.legCols - 2, layout.legCols - 1];
+        var pL0 = roofPoint(t0, 0);
+        var pR0 = roofPoint(t0, 1);
+        var pL1 = roofPoint(t1, 0);
+        var pR1 = roofPoint(t1, 1);
+        var deckY = ((pL0.y + pR0.y + pL1.y + pR1.y) / 4) - 0.02;
+        var xL = Math.min(pL0.x, pL1.x);
+        var xR = Math.max(pR0.x, pR1.x);
+        var deckW = Math.max(Math.abs(xR - xL) * 0.96, 0.4);
+        var deckD = Math.max(Math.abs((t1 - t0) * depth) * 0.95, 0.16);
+        var zMid = midT * depth;
         var axisY = new THREE.Vector3(0, 1, 0);
+        var axisX = new THREE.Vector3(1, 0, 0);
+
+        var walkRafterMat = new THREE.MeshLambertMaterial({ color: 0xea580c });
+        var lastCols;
+        if (layout.legCols <= 1) lastCols = [0];
+        else if (layout.legCols === 2) lastCols = [0, 1];
+        else lastCols = [layout.legCols - 2, layout.legCols - 1];
         lastCols.forEach(function (ci) {
             var x = xAtLeg(ci);
-            var a = new THREE.Vector3(x, deckY + 0.02, t0 * depth);
-            var b = new THREE.Vector3(x, deckY + 0.02, t1 * depth);
+            var a = new THREE.Vector3(x, roofPoint(t0, 0.5).y - 0.06, t0 * depth);
+            var b = new THREE.Vector3(x, roofPoint(t1, 0.5).y - 0.06, t1 * depth);
             if (a.distanceTo(b) < 0.05) return;
-            var mesh = new THREE.Mesh(new THREE.BoxGeometry(0.1, a.distanceTo(b), 0.1), walkRafterMat);
+            var mesh = new THREE.Mesh(new THREE.BoxGeometry(0.11, a.distanceTo(b), 0.11), walkRafterMat);
             alignMemberAlong(mesh, a, b, axisY);
             scene.add(mesh);
         });
-        var walkPurlinMat = new THREE.MeshLambertMaterial({ color: 0x1d4ed8 });
+
+        var walkPurlinMat = new THREE.MeshLambertMaterial({ color: 0x2563eb });
         var wp;
         for (wp = 0; wp < 4; wp++) {
             var zt = t0 + (t1 - t0) * (wp + 0.5) / 4;
-            var left = roofPoint(zt, 0);
-            var right = roofPoint(zt, 1);
-            left.y = deckY + 0.035;
-            right.y = deckY + 0.035;
-            var pm = new THREE.Mesh(new THREE.BoxGeometry(left.distanceTo(right), 0.05, 0.06), walkPurlinMat);
-            alignMemberAlong(pm, left, right, new THREE.Vector3(1, 0, 0));
+            var left = roofPoint(zt, 0.02);
+            var right = roofPoint(zt, 0.98);
+            left.y = deckY - 0.01;
+            right.y = deckY - 0.01;
+            var pm = new THREE.Mesh(new THREE.BoxGeometry(left.distanceTo(right), 0.055, 0.07), walkPurlinMat);
+            alignMemberAlong(pm, left, right, axisX);
             scene.add(pm);
         }
+
+        var frameMat = new THREE.MeshLambertMaterial({ color: 0x374151 });
+        var barMat = new THREE.MeshLambertMaterial({ color: 0x4b5563 });
+        var frameT = 0.035;
+        [
+            [0, deckD / 2, deckW, frameT, frameT],
+            [0, -deckD / 2, deckW, frameT, frameT],
+            [-deckW / 2, 0, frameT, frameT, deckD],
+            [deckW / 2, 0, frameT, frameT, deckD]
+        ].forEach(function (f) {
+            var fm = new THREE.Mesh(new THREE.BoxGeometry(f[2], f[3], f[4]), frameMat);
+            fm.position.set(f[0], deckY + 0.02, zMid + f[1]);
+            scene.add(fm);
+        });
+        var nLong = Math.max(6, Math.round(deckW / 0.12));
+        var li;
+        for (li = 1; li < nLong; li++) {
+            var gx = -deckW / 2 + (deckW * li) / nLong;
+            var bar = new THREE.Mesh(new THREE.BoxGeometry(0.022, 0.02, deckD * 0.94), barMat);
+            bar.position.set(gx, deckY + 0.025, zMid);
+            scene.add(bar);
+        }
+        var nCross = Math.max(3, Math.round(deckD / 0.08));
+        var ci;
+        for (ci = 1; ci < nCross; ci++) {
+            var gz = -deckD / 2 + (deckD * ci) / nCross;
+            var cbar = new THREE.Mesh(new THREE.BoxGeometry(deckW * 0.94, 0.018, 0.022), barMat);
+            cbar.position.set(0, deckY + 0.03, zMid + gz);
+            scene.add(cbar);
+        }
+
         if (!layout.hasLadder) return;
-        var pipeN = Math.max(4, Math.min(layout.squarePipeCount || 6, 24));
-        var ladderMat = new THREE.MeshLambertMaterial({ color: 0x64748b });
-        var railMat = new THREE.MeshLambertMaterial({ color: 0x475569 });
-        var lx = xAtLeg(layout.legCols - 1) + 0.18;
-        var zAttach = midT * depth;
-        var topY = deckY;
-        var botY = foundationH + 0.02;
-        var railH = Math.max(topY - botY, 0.3);
-        var railL = new THREE.Mesh(new THREE.BoxGeometry(0.045, railH, 0.045), railMat);
-        railL.position.set(lx - 0.12, botY + railH / 2, zAttach);
-        scene.add(railL);
-        var railR = new THREE.Mesh(new THREE.BoxGeometry(0.045, railH, 0.045), railMat);
-        railR.position.set(lx + 0.12, botY + railH / 2, zAttach);
-        scene.add(railR);
+        var pipeN = Math.max(5, Math.min(layout.squarePipeCount || 8, 28));
+        var railMat = new THREE.MeshLambertMaterial({ color: 0xb91c1c });
+        var rungMat = new THREE.MeshLambertMaterial({ color: 0xdc2626 });
+        var topX = xAtLeg(layout.legCols - 1);
+        var topZ = zMid;
+        var topY = deckY + 0.04;
+        var botX = topX + 0.55;
+        var botZ = Math.max(0.05, zMid - depth * 0.28);
+        var botY = foundationH + 0.03;
+        var halfW = 0.14;
+        [
+            new THREE.Vector3(-halfW, 0, 0),
+            new THREE.Vector3(halfW, 0, 0)
+        ].forEach(function (off) {
+            var a = new THREE.Vector3(botX, botY, botZ).add(off);
+            var b = new THREE.Vector3(topX, topY, topZ).add(off);
+            var rail = new THREE.Mesh(new THREE.BoxGeometry(0.04, a.distanceTo(b), 0.04), railMat);
+            alignMemberAlong(rail, a, b, axisY);
+            scene.add(rail);
+        });
         var ri;
-        for (ri = 0; ri < pipeN; ri++) {
-            var ry = botY + (railH * (ri + 1)) / (pipeN + 1);
-            var rung = new THREE.Mesh(new THREE.BoxGeometry(0.28, 0.035, 0.035), ladderMat);
-            rung.position.set(lx, ry, zAttach);
+        for (ri = 1; ri <= pipeN; ri++) {
+            var u = ri / (pipeN + 1);
+            var rung = new THREE.Mesh(new THREE.BoxGeometry(halfW * 2 + 0.04, 0.032, 0.032), rungMat);
+            rung.position.set(
+                botX + (topX - botX) * u,
+                botY + (topY - botY) * u,
+                botZ + (topZ - botZ) * u
+            );
             scene.add(rung);
         }
     }
