@@ -414,27 +414,27 @@ def build_structure_diagram_inner_svg(opts: Dict[str, Any]) -> Optional[str]:
             f'font-size="7" fill="#111827" font-weight="700">WALKWAY</text>'
         )
         if has_ladder:
-            lad_cx = (wr_l + wr_r) / 2 - (wr_r - wr_l) * 0.12
-            lad_top_y = plan_wy0 + plan_wh * 0.35
-            lad_bot_y = plan_front_y + 8
-            lad_half = 5
+            lad_cx = wr_l - 16
+            lad_top_y = plan_wy0 + plan_wh * 0.5
+            lad_bot_y = plan_front_y + 10
+            lad_half = 4
             svg += (
                 f'<line x1="{lad_cx - lad_half}" y1="{lad_top_y}" '
-                f'x2="{lad_cx - lad_half - 2}" y2="{lad_bot_y}" stroke="#b91c1c" stroke-width="2"/>'
+                f'x2="{lad_cx - lad_half}" y2="{lad_bot_y}" stroke="#b91c1c" stroke-width="2"/>'
                 f'<line x1="{lad_cx + lad_half}" y1="{lad_top_y}" '
-                f'x2="{lad_cx + lad_half + 2}" y2="{lad_bot_y}" stroke="#b91c1c" stroke-width="2"/>'
+                f'x2="{lad_cx + lad_half}" y2="{lad_bot_y}" stroke="#b91c1c" stroke-width="2"/>'
+                f'<line x1="{lad_cx + lad_half}" y1="{lad_top_y}" x2="{wr_l}" y2="{lad_top_y}" '
+                f'stroke="#b91c1c" stroke-width="1.5" stroke-dasharray="2,2"/>'
             )
             for lri in range(1, 6):
                 lu = lri / 6
                 ly = lad_top_y + (lad_bot_y - lad_top_y) * lu
-                lx0 = (lad_cx - lad_half) + ((lad_cx - lad_half - 2) - (lad_cx - lad_half)) * lu
-                lx1 = (lad_cx + lad_half) + ((lad_cx + lad_half + 2) - (lad_cx + lad_half)) * lu
                 svg += (
-                    f'<line x1="{lx0}" y1="{ly}" x2="{lx1}" y2="{ly}" '
+                    f'<line x1="{lad_cx - lad_half}" y1="{ly}" x2="{lad_cx + lad_half}" y2="{ly}" '
                     f'stroke="#dc2626" stroke-width="1.4"/>'
                 )
             svg += (
-                f'<text x="{lad_cx + 14}" y="{lad_bot_y + 2}" font-size="6" '
+                f'<text x="{lad_cx}" y="{lad_bot_y + 10}" text-anchor="middle" font-size="6" '
                 f'fill="#b91c1c" font-weight="700">Ladder</text>'
             )
 
@@ -503,10 +503,10 @@ def build_structure_diagram_inner_svg(opts: Dict[str, Any]) -> Optional[str]:
             _a0, a1 = panel_row_depth_frac(0, panel_grid['rows'])
             b0, _b1 = panel_row_depth_frac(1, panel_grid['rows'])
             side_walk_t0, side_walk_t1 = a1, b0
-        front_leg_h = max(20.0, sgy - side_found_h - sf_top)
-        side_walk_y = sgy - side_found_h - front_leg_h * 0.48
-        side_walk_y = max(side_walk_y, min(sf_top, sb_top) + 28)
-        side_walk_y = min(side_walk_y, sgy - side_found_h - 24)
+        front_leg_span = max(24.0, (sgy - side_found_h) - sf_top)
+        side_walk_y = sf_top + front_leg_span * 0.42
+        side_walk_y = min(side_walk_y, (sgy - side_found_h) - 30)
+        side_walk_y = max(side_walk_y, sf_top + 22)
         svg += (
             f'<line x1="{rf_x}" y1="{side_walk_y}" x2="{rb_x}" y2="{side_walk_y}" '
             f'stroke="#ea580c" stroke-width="2.4" stroke-linecap="round"/>'
@@ -582,27 +582,27 @@ def build_structure_diagram_inner_svg(opts: Dict[str, Any]) -> Optional[str]:
             f'font-size="6" fill="#111827" font-weight="700">WALKWAY</text>'
         )
         if has_ladder:
-            lad_top_x = swx0 + 4
+            lad_top_x = swx0 + 6
             lad_top_y = side_walk_y - 1
-            lad_bot_x = rf_x - 18
-            lad_bot_y = sgy - side_found_h
+            lad_bot_x = max(42.0, rf_x - 36)
+            lad_bot_y = sgy
             svg += (
-                f'<line x1="{lad_top_x - 4}" y1="{lad_top_y}" x2="{lad_bot_x - 4}" y2="{lad_bot_y}" '
-                f'stroke="#b91c1c" stroke-width="2"/>'
-                f'<line x1="{lad_top_x + 4}" y1="{lad_top_y}" x2="{lad_bot_x + 4}" y2="{lad_bot_y}" '
-                f'stroke="#b91c1c" stroke-width="2"/>'
+                f'<line x1="{lad_top_x - 5}" y1="{lad_top_y}" x2="{lad_bot_x - 5}" y2="{lad_bot_y}" '
+                f'stroke="#b91c1c" stroke-width="2.2"/>'
+                f'<line x1="{lad_top_x + 5}" y1="{lad_top_y}" x2="{lad_bot_x + 5}" y2="{lad_bot_y}" '
+                f'stroke="#b91c1c" stroke-width="2.2"/>'
             )
-            for sri in range(1, 7):
-                su = sri / 7
-                srx0 = (lad_top_x - 4) + ((lad_bot_x - 4) - (lad_top_x - 4)) * su
-                srx1 = (lad_top_x + 4) + ((lad_bot_x + 4) - (lad_top_x + 4)) * su
+            for sri in range(1, 8):
+                su = sri / 8
+                srx0 = (lad_top_x - 5) + ((lad_bot_x - 5) - (lad_top_x - 5)) * su
+                srx1 = (lad_top_x + 5) + ((lad_bot_x + 5) - (lad_top_x + 5)) * su
                 sry = lad_top_y + (lad_bot_y - lad_top_y) * su
                 svg += (
                     f'<line x1="{srx0}" y1="{sry}" x2="{srx1}" y2="{sry}" '
-                    f'stroke="#dc2626" stroke-width="1.3"/>'
+                    f'stroke="#dc2626" stroke-width="1.4"/>'
                 )
             svg += (
-                f'<text x="{lad_bot_x - 6}" y="{lad_bot_y - 4}" font-size="6" '
+                f'<text x="{lad_bot_x}" y="{lad_bot_y + 12}" text-anchor="middle" font-size="6" '
                 f'fill="#b91c1c" font-weight="700">Ladder</text>'
             )
 
