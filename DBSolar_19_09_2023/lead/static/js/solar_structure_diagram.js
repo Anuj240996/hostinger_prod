@@ -560,7 +560,7 @@
             var b = new THREE.Vector3(x, walkY, depth + legHalf);
             var len = a.distanceTo(b);
             if (len < 0.05) return;
-            var mesh = new THREE.Mesh(new THREE.BoxGeometry(0.09, len, 0.09), walkRafterMat);
+            var mesh = new THREE.Mesh(new THREE.BoxGeometry(0.07, len, 0.07), walkRafterMat);
             alignMemberAlong(mesh, a, b, axisY);
             scene.add(mesh);
         });
@@ -880,8 +880,8 @@
 
         var legMat = new THREE.MeshLambertMaterial({ color: 0x57534e });
         var rafterMat = new THREE.MeshLambertMaterial({ color: 0xea580c });
-        var foundationW = 0.32;
-        var foundationD = 0.28;
+        var foundationW = 0.22;
+        var foundationD = 0.2;
         var foundationMat = new THREE.MeshLambertMaterial({ color: 0x78716c });
         var purlinMat = new THREE.MeshLambertMaterial({ color: 0x2563eb });
 
@@ -892,7 +892,7 @@
                 var fBase = new THREE.Mesh(new THREE.BoxGeometry(foundationW, foundationH, foundationD), foundationMat);
                 fBase.position.set(legX, foundationH / 2, 0);
                 scene.add(fBase);
-                var fLeg = new THREE.Mesh(new THREE.BoxGeometry(0.14, frontY, 0.14), legMat);
+                var fLeg = new THREE.Mesh(new THREE.BoxGeometry(0.08, frontY, 0.08), legMat);
                 fLeg.position.set(legX, foundationH + frontY / 2, 0);
                 scene.add(fLeg);
             }
@@ -900,7 +900,7 @@
                 var bBase = new THREE.Mesh(new THREE.BoxGeometry(foundationW, foundationH, foundationD), foundationMat);
                 bBase.position.set(legX, foundationH / 2, depth);
                 scene.add(bBase);
-                var bLeg = new THREE.Mesh(new THREE.BoxGeometry(0.14, backY, 0.14), legMat);
+                var bLeg = new THREE.Mesh(new THREE.BoxGeometry(0.08, backY, 0.08), legMat);
                 bLeg.position.set(legX, foundationH + backY / 2, depth);
                 scene.add(bLeg);
             }
@@ -913,7 +913,7 @@
             var pFront = new THREE.Vector3(raftX, frontTopY, 0);
             var pBack = new THREE.Vector3(raftX, backTopY, depth);
             var rafterLen = pFront.distanceTo(pBack);
-            var rafterMesh = new THREE.Mesh(new THREE.BoxGeometry(0.12, rafterLen, 0.12), rafterMat);
+            var rafterMesh = new THREE.Mesh(new THREE.BoxGeometry(0.07, rafterLen, 0.07), rafterMat);
             alignMemberAlong(rafterMesh, pFront, pBack, axisY);
             scene.add(rafterMesh);
         }
