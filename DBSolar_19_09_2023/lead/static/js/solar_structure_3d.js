@@ -185,7 +185,7 @@ function getSolarPanelTexture() {
 
 function buildSolarPanel3DGroup(panelW, panelLen, panelThick) {
     var group = new THREE.Group();
-    var faceW = panelW * 0.92;
+    var faceW = panelW;
     var faceL = panelLen;
     var panelTex = getSolarPanelTexture();
     var faceMat = new THREE.MeshPhongMaterial({
@@ -534,8 +534,12 @@ function initSolarStructure3DView(viewportEl, layout, options) {
     var uGap = layout.panelGrid.cols > 1 ? 0.02 : 0;
     var panelThick = 0.032;
     var panelLift = 0.11;
+    var PANEL_WIDTH_FT = 4;
+    var PANEL_LENGTH_FT = 8;
+    var fixedPanelW = PANEL_WIDTH_FT * hScale;
+    var fixedPanelLen = PANEL_LENGTH_FT * hScale;
     var row3d, col3d, idx3d, mount, u0, u1, t0, t1;
-    var pA, pB, pC, pD, panelLen, panelW, dir, panelGroup;
+    var pA, pB, pC, pD, panelGroup, panelFront, panelBack, along, mid, halfLen, start, end;
 
     for (row3d = 0; row3d < layout.panelGrid.rows; row3d++) {
         mount = layout.panelPortraitSpan(row3d);
@@ -550,15 +554,19 @@ function initSolarStructure3DView(viewportEl, layout, options) {
             pB = roofPoint(t0, u1);
             pC = roofPoint(t1, u1);
             pD = roofPoint(t1, u0);
-            dir = new THREE.Vector3().subVectors(pD, pA);
-            panelLen = dir.length() || 0.3;
-            panelW = pA.distanceTo(pB) || 0.3;
-            var panelFront = pA.clone().add(pB).multiplyScalar(0.5);
-            var panelBack = pC.clone().add(pD).multiplyScalar(0.5);
+            panelFront = pA.clone().add(pB).multiplyScalar(0.5);
+            panelBack = pC.clone().add(pD).multiplyScalar(0.5);
             panelFront.y += panelLift;
             panelBack.y += panelLift;
-            panelGroup = buildSolarPanel3DGroup(panelW, panelLen, panelThick);
-            alignMemberAlong(panelGroup, panelFront, panelBack, new THREE.Vector3(0, 0, 1));
+            along = new THREE.Vector3().subVectors(panelBack, panelFront);
+            if (along.length() < 0.001) continue;
+            along.normalize();
+            mid = panelFront.clone().add(panelBack).multiplyScalar(0.5);
+            halfLen = fixedPanelLen / 2;
+            start = mid.clone().addScaledVector(along, -halfLen);
+            end = mid.clone().addScaledVector(along, halfLen);
+            panelGroup = buildSolarPanel3DGroup(fixedPanelW, fixedPanelLen, panelThick);
+            alignMemberAlong(panelGroup, start, end, new THREE.Vector3(0, 0, 1));
             scene.add(panelGroup);
         }
     }

@@ -1353,9 +1353,34 @@
         return tex;
     }
 
+    // Standard module size used across plan + 3D (portrait on structure).
+    var SOLAR_PANEL_WIDTH_FT = 4;
+    var SOLAR_PANEL_LENGTH_FT = 8;
+
+    function fitPortraitPanelInBay(xL, yTop, xR, yBot) {
+        var bayW = xR - xL;
+        var bayH = yBot - yTop;
+        if (bayW < 4 || bayH < 4) return null;
+        // Portrait: short edge across width (4 ft), long edge front→back (8 ft).
+        var aspect = SOLAR_PANEL_WIDTH_FT / SOLAR_PANEL_LENGTH_FT;
+        var drawH = bayH * 0.9;
+        var drawW = drawH * aspect;
+        if (drawW > bayW * 0.9) {
+            drawW = bayW * 0.9;
+            drawH = drawW / aspect;
+        }
+        return {
+            x: (xL + xR) / 2 - drawW / 2,
+            y: (yTop + yBot) / 2 - drawH / 2,
+            w: drawW,
+            h: drawH
+        };
+    }
+
     function buildSolarPanel3DGroup(panelW, panelLen, panelThick) {
         var group = new THREE.Group();
-        var faceW = panelW * 0.92;
+        // Exact module face — all panels share the same 4 ft × 8 ft size.
+        var faceW = panelW;
         var faceL = panelLen;
         var panelTex = getSolarPanelTexture();
         var faceMat = new THREE.MeshPhongMaterial({
@@ -1702,8 +1727,12 @@
         var uGap = layout.panelGrid.cols > 1 ? 0.02 : 0;
         var panelThick = 0.032;
         var panelLift = 0.11;
+        // Same scene scale as structure heights so 4×8 ft modules are consistent.
+        var panelFtScale = hScale;
+        var fixedPanelW = SOLAR_PANEL_WIDTH_FT * panelFtScale;
+        var fixedPanelLen = SOLAR_PANEL_LENGTH_FT * panelFtScale;
         var row3d, col3d, idx3d, mount, u0, u1, t0, t1;
-        var pA, pB, pC, pD, panelLen, panelW, dir, panelGroup;
+        var pA, pB, pC, pD, panelGroup, panelFront, panelBack, along, mid, halfLen, start, end;
 
         for (row3d = 0; row3d < layout.panelGrid.rows; row3d++) {
             mount = layout.panelPortraitSpan(row3d);
@@ -1718,15 +1747,19 @@
                 pB = roofPoint(t0, u1);
                 pC = roofPoint(t1, u1);
                 pD = roofPoint(t1, u0);
-                dir = new THREE.Vector3().subVectors(pD, pA);
-                panelLen = dir.length() || 0.3;
-                panelW = pA.distanceTo(pB) || 0.3;
-                var panelFront = pA.clone().add(pB).multiplyScalar(0.5);
-                var panelBack = pC.clone().add(pD).multiplyScalar(0.5);
+                panelFront = pA.clone().add(pB).multiplyScalar(0.5);
+                panelBack = pC.clone().add(pD).multiplyScalar(0.5);
                 panelFront.y += panelLift;
                 panelBack.y += panelLift;
-                panelGroup = buildSolarPanel3DGroup(panelW, panelLen, panelThick);
-                alignMemberAlong(panelGroup, panelFront, panelBack, new THREE.Vector3(0, 0, 1));
+                along = new THREE.Vector3().subVectors(panelBack, panelFront);
+                if (along.length() < 0.001) continue;
+                along.normalize();
+                mid = panelFront.clone().add(panelBack).multiplyScalar(0.5);
+                halfLen = fixedPanelLen / 2;
+                start = mid.clone().addScaledVector(along, -halfLen);
+                end = mid.clone().addScaledVector(along, halfLen);
+                panelGroup = buildSolarPanel3DGroup(fixedPanelW, fixedPanelLen, panelThick);
+                alignMemberAlong(panelGroup, start, end, new THREE.Vector3(0, 0, 1));
                 scene.add(panelGroup);
             }
         }
@@ -1988,12 +2021,11 @@
             var yBot = planBackY + planDepthSpan * t1 - (row < panelGrid.rows - 1 ? planRowGap / 2 : 1);
             var xL = planInnerL + (planInnerR - planInnerL) * u0 + planUGap;
             var xR = planInnerL + (planInnerR - planInnerL) * u1 - planUGap;
-            var w = xR - xL;
-            var h = yBot - yTop;
-            if (w < 4 || h < 4) return;
-            svg += svgSolarPanelRect(xL, yTop, w, h);
+            var fitted = fitPortraitPanelInBay(xL, yTop, xR, yBot);
+            if (!fitted) return;
+            svg += svgSolarPanelRect(fitted.x, fitted.y, fitted.w, fitted.h);
             if (panelCount <= 12) {
-                svg += '<text x="' + ((xL + xR) / 2) + '" y="' + ((yTop + yBot) / 2 + 4) + '" text-anchor="middle" font-size="' +
+                svg += '<text x="' + (fitted.x + fitted.w / 2) + '" y="' + (fitted.y + fitted.h / 2 + 4) + '" text-anchor="middle" font-size="' +
                     (panelGrid.cols > 4 ? 6 : 7) + '" fill="#e2e8f0" font-weight="600" stroke="#0f1f33" stroke-width="0.4">' + label + '</text>';
             }
         });

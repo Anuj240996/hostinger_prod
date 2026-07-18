@@ -318,11 +318,20 @@ def build_structure_diagram_inner_svg(opts: Dict[str, Any]) -> Optional[str]:
             x_r = plan_inner_l + (plan_inner_r - plan_inner_l) * u1 - plan_u_gap
             w, h = x_r - x_l, y_bot - y_top
             if w >= 4 and h >= 4:
-                svg += _svg_solar_panel_rect(x_l, y_top, w, h)
+                # Portrait module: 4 ft wide × 8 ft deep (front→back), centered in bay.
+                aspect = 4.0 / 8.0
+                draw_h = h * 0.9
+                draw_w = draw_h * aspect
+                if draw_w > w * 0.9:
+                    draw_w = w * 0.9
+                    draw_h = draw_w / aspect
+                x0 = (x_l + x_r) / 2 - draw_w / 2
+                y0 = (y_top + y_bot) / 2 - draw_h / 2
+                svg += _svg_solar_panel_rect(x0, y0, draw_w, draw_h)
                 if panel_count <= 12:
                     fs = 6 if panel_grid['cols'] > 4 else 7
                     svg += (
-                        f'<text x="{(x_l + x_r) / 2}" y="{(y_top + y_bot) / 2 + 4}" '
+                        f'<text x="{x0 + draw_w / 2}" y="{y0 + draw_h / 2 + 4}" '
                         f'text-anchor="middle" font-size="{fs}" fill="#e2e8f0" font-weight="600" '
                         f'stroke="#0f1f33" stroke-width="0.4">M{idx + 1}</text>'
                     )
