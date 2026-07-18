@@ -256,7 +256,7 @@ def build_survey_report_pdf(survey, branding, structure_3d_png=None):
 
     section_table('Technical Details', [
         ('Recommended Size', _display(survey.recommended_size, ' kW')),
-        ('Panel Capacity', _display(survey.panel_count, ' kW')),
+        ('Panel Capacity', _display(survey.panel_count, ' W')),
         ('Inverter Capacity', _display(survey.inverter_capacity, ' kW')),
         ('Est. Yearly Generation', _display(survey.estimated_generation, ' Units/year')),
         ('Building Height', _display(survey.building_height, ' Mtr')),

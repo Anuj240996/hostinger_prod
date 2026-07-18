@@ -374,7 +374,7 @@
             <h2>Technical Details</h2>
             <table class="data">
                 <tr><th>Recommended Size</th><td>{% if survey.recommended_size %}{{ survey.recommended_size|floatformat:'-2' }} kW{% else %}â€”{% endif %}</td></tr>
-                <tr><th>Panel Capacity</th><td>{% if survey.panel_count %}{{ survey.panel_count }} kW{% else %}&mdash;{% endif %}</td></tr>
+                <tr><th>Panel Capacity</th><td>{% if survey.panel_count %}{{ survey.panel_count }} W{% else %}&mdash;{% endif %}</td></tr>
                 <tr><th>Inverter Capacity</th><td>{% if survey.inverter_capacity %}{{ survey.inverter_capacity|floatformat:'-2' }} kW{% else %}â€”{% endif %}</td></tr>
                 <tr><th>Est. Yearly Generation</th><td>{% if survey.estimated_generation %}{{ survey.estimated_generation|floatformat:'-2' }} Units/year{% else %}â€”{% endif %}</td></tr>
                 <tr><th>Building Height</th><td>{% if survey.building_height %}{{ survey.building_height|floatformat:'-2' }} Mtr{% else %}â€”{% endif %}</td></tr>

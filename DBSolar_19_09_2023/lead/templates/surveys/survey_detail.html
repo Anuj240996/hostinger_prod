@@ -60,7 +60,7 @@
                                 </tr>
                                 <tr>
                                     <td>Panel capacity:</td>
-                                    <td>{{ survey.panel_count|default:'-' }}{% if survey.panel_count %} kW{% endif %}</td>
+                                    <td>{{ survey.panel_count|default:'-' }}{% if survey.panel_count %} W{% endif %}</td>
                                 </tr>
                                 <tr>
                                     <td>Inverter Capacity:</td>
@@ -464,7 +464,7 @@
                                 <label class="form-label" for="{{ completion_form.panel_count.id_for_label }}">{{ completion_form.panel_count.label }}</label>
                                 <div class="input-group">
                                     {{ completion_form.panel_count }}
-                                    <span class="input-group-text">kW</span>
+                                    <span class="input-group-text">W</span>
                                 </div>
                                 {% if completion_form.panel_count.errors %}<div class="invalid-feedback d-block">{{ completion_form.panel_count.errors }}</div>{% endif %}
                             </div>

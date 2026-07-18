@@ -126,7 +126,7 @@ class Survey(TenantAwareModel, TimeStampedModel):
 
     feasibility = models.CharField(max_length=10, choices=FEASIBILITY_CHOICES, null=True, blank=True)
     recommended_size = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True, help_text="kW")
-    panel_count = models.CharField(max_length=32, null=True, blank=True, help_text="kW")
+    panel_count = models.CharField(max_length=32, null=True, blank=True, help_text="W")
     inverter_capacity = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True, help_text="kW")
     estimated_generation = models.IntegerField(null=True, blank=True, help_text="Units/year")
     roof_area_required = models.DecimalField(max_digits=7, decimal_places=2, null=True, blank=True, help_text="sq.ft")
