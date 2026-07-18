@@ -1763,7 +1763,8 @@
 
     /**
      * Walkway design (matches survey sketch):
-     * - 2 HORIZONTAL rafters on LEFT + RIGHT legs, BELOW the main panel rafters
+     * - 2 HORIZONTAL rafters on LEFT + RIGHT leg columns, BELOW panel rafters
+     * - Each rafter runs FRONT→BACK and is ATTACHED into the front + back legs
      * - Grated walkway rests on those 2 rafters, in the gap between panel rows
      * - Ladder attaches to the walkway
      */
@@ -1789,23 +1790,27 @@
         var z1 = t1 * depth;
         var zMid = midT * depth;
         var roofAtGap = roofPoint(midT, 0.5).y;
-        // Level walkway height — clearly BELOW the sloping panel rafters above.
+        // Level height on the legs — clearly BELOW sloping panel rafters (marked attachment line).
         var walkY = Math.max(foundationH + 0.55, roofAtGap - 0.52);
+        // Keep below the lower of front/back leg tops so members sit on the posts.
+        walkY = Math.min(walkY, Math.min(frontTopY, backTopY) - 0.35);
+        walkY = Math.max(walkY, foundationH + 0.45);
         var xLeft = xAtLeg(0);
         var xRight = xAtLeg(Math.max(layout.legCols - 1, 0));
         var axisY = new THREE.Vector3(0, 1, 0);
         var axisX = new THREE.Vector3(1, 0, 0);
         var axisZ = new THREE.Vector3(0, 0, 1);
 
-        // --- 2 walkway rafters: LEFT + RIGHT legs, HORIZONTAL, below panel rafters ---
+        // --- 2 walkway rafters ATTACHED to LEFT + RIGHT legs (full front→back) ---
         var walkRafterMat = new THREE.MeshLambertMaterial({ color: 0xea580c });
+        var legHalf = 0.07;
         [xLeft, xRight].forEach(function (x) {
-            var a = new THREE.Vector3(x, walkY, z0);
-            var b = new THREE.Vector3(x, walkY, z1);
+            // Span through front leg (z=0) to back leg (z=depth) so ends sit in the posts.
+            var a = new THREE.Vector3(x, walkY, -legHalf);
+            var b = new THREE.Vector3(x, walkY, depth + legHalf);
             var len = a.distanceTo(b);
             if (len < 0.05) return;
-            // Box local Y is length axis after alignMemberAlong with axisY.
-            var mesh = new THREE.Mesh(new THREE.BoxGeometry(0.13, len, 0.13), walkRafterMat);
+            var mesh = new THREE.Mesh(new THREE.BoxGeometry(0.14, len, 0.14), walkRafterMat);
             alignMemberAlong(mesh, a, b, axisY);
             scene.add(mesh);
         });
