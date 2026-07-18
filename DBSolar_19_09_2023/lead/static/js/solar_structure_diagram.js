@@ -1,4 +1,4 @@
-    function disposeSolar3DView(container) {
+﻿    function disposeSolar3DView(container) {
         var state = container._solar3dState;
         if (state) {
             if (state.rafId) cancelAnimationFrame(state.rafId);
@@ -621,31 +621,31 @@
 
         if (!layout.hasLadder) return;
 
-        // Ladder from GROUND up to walkway (gentle lean, rests on ground in front).
+        // Ladder from ground up to walkway (attaches to walkway, not panel rafter).
         var pipeN = Math.max(4, Math.min(layout.squarePipeCount || 8, 28));
         var railMat = new THREE.MeshLambertMaterial({ color: 0xb91c1c });
         var rungMat = new THREE.MeshLambertMaterial({ color: 0xdc2626 });
-        var halfW = 0.18;
-        var topX = xLeft + Math.max(deckW * 0.18, 0.35);
-        var topZ = z0 + 0.02;
-        var topY = deckY + 0.04;
-        var botX = topX - 0.12;
-        var botZ = -Math.max(0.35, depth * 0.08);
-        var botY = 0.02;
+        var halfW = 0.15;
+        var topX = cx - deckW * 0.15;
+        var topZ = z0 + 0.04;
+        var topY = deckY + 0.05;
+        var botX = topX - 0.25;
+        var botZ = Math.max(0.06, z0 - depth * 0.18);
+        var botY = foundationH + 0.04;
         [
             new THREE.Vector3(-halfW, 0, 0),
             new THREE.Vector3(halfW, 0, 0)
         ].forEach(function (off) {
             var a = new THREE.Vector3(botX + off.x, botY, botZ);
             var b = new THREE.Vector3(topX + off.x, topY, topZ);
-            var rail = new THREE.Mesh(new THREE.BoxGeometry(0.055, a.distanceTo(b), 0.055), railMat);
+            var rail = new THREE.Mesh(new THREE.BoxGeometry(0.045, a.distanceTo(b), 0.045), railMat);
             alignMemberAlong(rail, a, b, axisY);
             scene.add(rail);
         });
         var ri;
         for (ri = 1; ri <= pipeN; ri++) {
             var u = ri / (pipeN + 1);
-            var rung = new THREE.Mesh(new THREE.BoxGeometry(halfW * 2 + 0.06, 0.04, 0.04), rungMat);
+            var rung = new THREE.Mesh(new THREE.BoxGeometry(halfW * 2 + 0.05, 0.035, 0.035), rungMat);
             rung.position.set(
                 botX + (topX - botX) * u,
                 botY + (topY - botY) * u,
@@ -931,7 +931,7 @@
         }
 
         var panelThick = 0.032;
-        var panelLift = 0.095;
+        var panelLift = 0.14;
         var row3d, col3d, idx3d, u0, u1, t0, t1;
         var pA, pB, pC, pD, panelGroup, panelFront, panelBack, faceW, faceL;
         var cols3d = Math.max(layout.panelGrid.cols, 1);
