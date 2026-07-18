@@ -44,11 +44,12 @@ function buildSolarStructureLayout(opts) {
 
     var PANEL_WIDTH_FT = 4;
     var PANEL_LENGTH_FT = 8;
+    var PANEL_ROW_GAP_FT = 1;
     var structureWidthFt = panelGrid.cols > 0
         ? panelGrid.cols * PANEL_WIDTH_FT
         : Math.max(legCols - 1, 1) * PANEL_WIDTH_FT;
     var structureDepthFt = panelGrid.rows > 0
-        ? panelGrid.rows * PANEL_LENGTH_FT
+        ? panelGrid.rows * PANEL_LENGTH_FT + Math.max(0, panelGrid.rows - 1) * PANEL_ROW_GAP_FT
         : PANEL_LENGTH_FT;
 
     function purlinT(index) {
@@ -110,6 +111,7 @@ function buildSolarStructureLayout(opts) {
         panelGrid: panelGrid,
         panelWidthFt: PANEL_WIDTH_FT,
         panelLengthFt: PANEL_LENGTH_FT,
+        panelRowGapFt: PANEL_ROW_GAP_FT,
         structureWidthFt: structureWidthFt,
         structureDepthFt: structureDepthFt,
         purlinT: purlinT,
@@ -562,10 +564,21 @@ function initSolarStructure3DView(viewportEl, layout, options) {
     var pA, pB, pC, pD, panelGroup, panelFront, panelBack, faceW, faceL;
     var cols3d = Math.max(layout.panelGrid.cols, 1);
     var rows3d = Math.max(layout.panelGrid.rows, 1);
+    var panelLenFt = layout.panelLengthFt || PANEL_LENGTH_FT;
+    var rowGapFt = layout.panelRowGapFt != null ? layout.panelRowGapFt : 1;
+    var depthFt = structureDepthFt;
+    function rowDepthSpanFt(row) {
+        var startFt = row * (panelLenFt + rowGapFt);
+        return {
+            t0: startFt / Math.max(depthFt, 0.001),
+            t1: (startFt + panelLenFt) / Math.max(depthFt, 0.001)
+        };
+    }
 
     for (row3d = 0; row3d < layout.panelGrid.rows; row3d++) {
-        t0 = row3d / rows3d;
-        t1 = (row3d + 1) / rows3d;
+        var span3d = rowDepthSpanFt(row3d);
+        t0 = span3d.t0;
+        t1 = span3d.t1;
         for (col3d = 0; col3d < layout.panelGrid.cols; col3d++) {
             idx3d = row3d * layout.panelGrid.cols + col3d;
             if (idx3d >= layout.panelCount) continue;

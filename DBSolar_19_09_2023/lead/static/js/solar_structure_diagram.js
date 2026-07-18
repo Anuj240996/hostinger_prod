@@ -42,11 +42,12 @@
 
         var PANEL_WIDTH_FT = 4;
         var PANEL_LENGTH_FT = 8;
+        var PANEL_ROW_GAP_FT = 1;
         var structureWidthFt = panelGrid.cols > 0
             ? panelGrid.cols * PANEL_WIDTH_FT
             : Math.max(legCols - 1, 1) * PANEL_WIDTH_FT;
         var structureDepthFt = panelGrid.rows > 0
-            ? panelGrid.rows * PANEL_LENGTH_FT
+            ? panelGrid.rows * PANEL_LENGTH_FT + Math.max(0, panelGrid.rows - 1) * PANEL_ROW_GAP_FT
             : PANEL_LENGTH_FT;
 
         function purlinT(index) {
@@ -108,6 +109,7 @@
             panelGrid: panelGrid,
             panelWidthFt: PANEL_WIDTH_FT,
             panelLengthFt: PANEL_LENGTH_FT,
+            panelRowGapFt: PANEL_ROW_GAP_FT,
             structureWidthFt: structureWidthFt,
             structureDepthFt: structureDepthFt,
             purlinT: purlinT,
@@ -739,8 +741,12 @@
         var rows3d = Math.max(layout.panelGrid.rows, 1);
 
         for (row3d = 0; row3d < layout.panelGrid.rows; row3d++) {
-            t0 = row3d / rows3d;
-            t1 = (row3d + 1) / rows3d;
+            var panelLenFt = layout.panelLengthFt || SOLAR_PANEL_LENGTH_FT;
+            var rowGapFt = layout.panelRowGapFt != null ? layout.panelRowGapFt : 1;
+            var depthFt = structureDepthFt;
+            var startFt = row3d * (panelLenFt + rowGapFt);
+            t0 = startFt / Math.max(depthFt, 0.001);
+            t1 = (startFt + panelLenFt) / Math.max(depthFt, 0.001);
             for (col3d = 0; col3d < layout.panelGrid.cols; col3d++) {
                 idx3d = row3d * layout.panelGrid.cols + col3d;
                 if (idx3d >= layout.panelCount) continue;

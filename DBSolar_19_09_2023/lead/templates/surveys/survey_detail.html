@@ -1372,15 +1372,15 @@
             total: panelCount
         } : { rows: 0, cols: 0, total: 0 };
 
-        // Module size: 4 ft wide × 8 ft deep (portrait). Structure size follows the panel grid
-        // so panels sit side-by-side and fill the full array width/depth.
+        // Module size: 4 ft wide × 8 ft deep (portrait). Leave a clear walkway gap between panel rows.
         var PANEL_WIDTH_FT = 4;
         var PANEL_LENGTH_FT = 8;
+        var PANEL_ROW_GAP_FT = 1;
         var structureWidthFt = panelGrid.cols > 0
             ? panelGrid.cols * PANEL_WIDTH_FT
             : Math.max(legCols - 1, 1) * PANEL_WIDTH_FT;
         var structureDepthFt = panelGrid.rows > 0
-            ? panelGrid.rows * PANEL_LENGTH_FT
+            ? panelGrid.rows * PANEL_LENGTH_FT + Math.max(0, panelGrid.rows - 1) * PANEL_ROW_GAP_FT
             : PANEL_LENGTH_FT;
 
         function purlinT(index) {
@@ -1442,6 +1442,7 @@
             panelGrid: panelGrid,
             panelWidthFt: PANEL_WIDTH_FT,
             panelLengthFt: PANEL_LENGTH_FT,
+            panelRowGapFt: PANEL_ROW_GAP_FT,
             structureWidthFt: structureWidthFt,
             structureDepthFt: structureDepthFt,
             purlinT: purlinT,
@@ -1910,17 +1911,28 @@
             scene.add(purlinMesh);
         }
 
-        // Edge-to-edge panels covering outer rafters and purlins (exact bay count = panelCount).
+        // Panels with a clear walkway gap between rows (exact bay count = panelCount).
         var panelThick = 0.032;
         var panelLift = 0.11;
         var row3d, col3d, idx3d, u0, u1, t0, t1;
         var pA, pB, pC, pD, panelGroup, panelFront, panelBack, faceW, faceL;
         var cols3d = Math.max(layout.panelGrid.cols, 1);
         var rows3d = Math.max(layout.panelGrid.rows, 1);
+        var panelLenFt = layout.panelLengthFt || SOLAR_PANEL_LENGTH_FT;
+        var rowGapFt = layout.panelRowGapFt != null ? layout.panelRowGapFt : 1;
+        var depthFt = structureDepthFt;
+        function rowDepthSpanFt(row) {
+            var startFt = row * (panelLenFt + rowGapFt);
+            return {
+                t0: startFt / Math.max(depthFt, 0.001),
+                t1: (startFt + panelLenFt) / Math.max(depthFt, 0.001)
+            };
+        }
 
         for (row3d = 0; row3d < layout.panelGrid.rows; row3d++) {
-            t0 = row3d / rows3d;
-            t1 = (row3d + 1) / rows3d;
+            var span3d = rowDepthSpanFt(row3d);
+            t0 = span3d.t0;
+            t1 = span3d.t1;
             for (col3d = 0; col3d < layout.panelGrid.cols; col3d++) {
                 idx3d = row3d * layout.panelGrid.cols + col3d;
                 if (idx3d >= layout.panelCount) continue;
@@ -2135,10 +2147,15 @@
         svg += '<rect x="0" y="34" width="280" height="318" fill="#fff" stroke="none" rx="0"/>';
 
         /* ========== Plan view (top — matches 3D looking down: width ↔ X, depth ↔ front/back) ========== */
-        // Plan view: footprint aspect = (cols×4 ft) × (rows×8 ft) so portrait panels fill full width.
+        // Plan view: footprint includes 1 ft walkway gap between panel rows.
+        var PANEL_WIDTH_FT_PLAN = 4;
+        var PANEL_LENGTH_FT_PLAN = 8;
+        var PANEL_ROW_GAP_FT_PLAN = 1;
         var px0 = 8, py0 = 48, pw = 264, pd = 118;
-        var structWft = Math.max(1, panelGrid.cols || 1) * 4;
-        var structDft = Math.max(1, panelGrid.rows || 1) * 8;
+        var structWft = Math.max(1, panelGrid.cols || 1) * PANEL_WIDTH_FT_PLAN;
+        var structDft = panelGrid.rows > 0
+            ? panelGrid.rows * PANEL_LENGTH_FT_PLAN + Math.max(0, panelGrid.rows - 1) * PANEL_ROW_GAP_FT_PLAN
+            : PANEL_LENGTH_FT_PLAN;
         svg += '<text x="138" y="46" text-anchor="middle" font-size="12" font-weight="600" fill="#1e293b">Plan view (top)</text>';
         var planPad = 2;
         var availW = pw - planPad * 2;
@@ -2156,13 +2173,20 @@
         var planFrontY = planBackY + drawH;
         var planDepthSpan = planFrontY - planBackY;
         var planUGap = 0;
-        var planRowGap = 0;
+        var planFtToY = planDepthSpan / Math.max(structDft, 0.001);
 
         var planXAt = function (col, total) {
             return planInnerL + (total > 1 ? (planInnerR - planInnerL) * col / (total - 1) : (planInnerR - planInnerL) / 2);
         };
         var planPurlinY = function (idx) {
             return purlins === 1 ? (planFrontY + planBackY) / 2 : planBackY + (planDepthSpan * idx / (purlins - 1));
+        };
+        var planRowSpanY = function (row) {
+            var startFt = row * (PANEL_LENGTH_FT_PLAN + PANEL_ROW_GAP_FT_PLAN);
+            return {
+                yTop: planBackY + startFt * planFtToY,
+                yBot: planBackY + (startFt + PANEL_LENGTH_FT_PLAN) * planFtToY
+            };
         };
 
         svg += '<rect x="' + planInnerL + '" y="' + planBackY + '" width="' + (planInnerR - planInnerL) + '" height="' + planDepthSpan +
@@ -2202,11 +2226,9 @@
             }
         }
         drawAllPanelCells(function (t0, t1, u0, u1, label, row, visual) {
-            // Equal row/col slots so each module is the same portrait cell and fills width.
-            var t0eq = row / Math.max(panelGrid.rows, 1);
-            var t1eq = (row + 1) / Math.max(panelGrid.rows, 1);
-            var yTop = planBackY + planDepthSpan * t0eq + (row > 0 ? planRowGap / 2 : 0);
-            var yBot = planBackY + planDepthSpan * t1eq - (row < panelGrid.rows - 1 ? planRowGap / 2 : 0);
+            var spanY = planRowSpanY(row);
+            var yTop = spanY.yTop;
+            var yBot = spanY.yBot;
             var xL = planInnerL + (planInnerR - planInnerL) * u0 + planUGap;
             var xR = planInnerL + (planInnerR - planInnerL) * u1 - planUGap;
             var fitted = fitPortraitPanelInBay(xL, yTop, xR, yBot);
@@ -2217,6 +2239,18 @@
                     (panelGrid.cols > 4 ? 6 : 7) + '" fill="#e2e8f0" font-weight="600" stroke="#0f1f33" stroke-width="0.4">' + label + '</text>';
             }
         });
+        // Dimension the walkway gap between each pair of panel rows.
+        if (panelGrid.rows > 1 && PANEL_ROW_GAP_FT_PLAN > 0) {
+            for (var gapRow = 0; gapRow < panelGrid.rows - 1; gapRow++) {
+                var gapStartFt = (gapRow + 1) * PANEL_LENGTH_FT_PLAN + gapRow * PANEL_ROW_GAP_FT_PLAN;
+                var gapMidY = planBackY + (gapStartFt + PANEL_ROW_GAP_FT_PLAN / 2) * planFtToY;
+                var gapX = planInnerR - 2;
+                svg += '<line x1="' + (planInnerL + 4) + '" y1="' + gapMidY + '" x2="' + (planInnerR - 4) + '" y2="' + gapMidY +
+                    '" stroke="#94a3b8" stroke-width="0.7" stroke-dasharray="3,2"/>';
+                svg += '<text x="' + gapX + '" y="' + (gapMidY - 2) + '" text-anchor="end" font-size="6" fill="#0369a1" font-weight="600">' +
+                    PANEL_ROW_GAP_FT_PLAN + ' ft gap</text>';
+            }
+        }
         for (r = 0; r < rafterCols && rafterCols <= 8; r++) {
             var rlx = planXAt(r, rafterCols);
             svg += '<text x="' + rlx + '" y="' + (planFrontY + 14) + '" text-anchor="middle" font-size="7" fill="#c2410c" font-weight="600">R' + (r + 1) + '</text>';
@@ -2298,10 +2332,16 @@
         }
 
         function drawSidePanelRow(sideRow) {
-            var mount = panelPortraitSpan(sideRow);
+            var rowsSide = Math.max(panelGrid.rows, 1);
+            var gapSideFt = PANEL_ROW_GAP_FT_PLAN;
+            var lenSideFt = PANEL_LENGTH_FT_PLAN;
+            var depthSideFt = rowsSide * lenSideFt + Math.max(0, rowsSide - 1) * gapSideFt;
+            var startFt = sideRow * (lenSideFt + gapSideFt);
+            var t0s = startFt / Math.max(depthSideFt, 0.001);
+            var t1s = (startFt + lenSideFt) / Math.max(depthSideFt, 0.001);
             var up = sidePanelUpUnit(panelUpNx, panelUpNy);
-            var b0 = sidePointOnPanelBottom(mount.t0);
-            var b1 = sidePointOnPanelBottom(mount.t1);
+            var b0 = sidePointOnPanelBottom(t0s);
+            var b1 = sidePointOnPanelBottom(t1s);
             var cols = panelGrid.cols;
             var rowStartIdx = sideRow * cols;
             var halfT = sidePanelEdgeThickPx / 2;
