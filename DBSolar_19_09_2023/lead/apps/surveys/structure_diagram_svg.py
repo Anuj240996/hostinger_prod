@@ -375,6 +375,69 @@ def build_structure_diagram_inner_svg(opts: Dict[str, Any]) -> Optional[str]:
             f'fill="#c2410c" font-weight="600">R{r + 1}</text>'
         )
 
+    has_walkway = bool(opts.get('hasWalkway'))
+    has_ladder = bool(opts.get('hasLadder'))
+    if has_walkway:
+        if panel_grid['rows'] > 1:
+            t0a, t1a = panel_row_depth_frac(0, panel_grid['rows'])
+            t0b, t1b = panel_row_depth_frac(1, panel_grid['rows'])
+            plan_wy0 = plan_back_y + plan_depth_span * t1a + 1
+            plan_wy1 = plan_back_y + plan_depth_span * t0b - 1
+        else:
+            plan_wy0 = plan_back_y + plan_depth_span * 0.42
+            plan_wy1 = plan_back_y + plan_depth_span * 0.58
+        plan_wh = max(8.0, plan_wy1 - plan_wy0)
+        wr_l = plan_x_at(0, leg_cols)
+        wr_r = plan_x_at(max(leg_cols - 1, 0), leg_cols)
+        svg += (
+            f'<line x1="{wr_l}" y1="{plan_back_y - 1}" x2="{wr_l}" y2="{plan_front_y + 1}" '
+            f'stroke="#ea580c" stroke-width="2.4" stroke-linecap="round"/>'
+            f'<line x1="{wr_r}" y1="{plan_back_y - 1}" x2="{wr_r}" y2="{plan_front_y + 1}" '
+            f'stroke="#ea580c" stroke-width="2.4" stroke-linecap="round"/>'
+            f'<rect x="{wr_l}" y="{plan_wy0}" width="{wr_r - wr_l}" height="{plan_wh}" '
+            f'fill="#9ca3af" fill-opacity="0.55" stroke="#1f2937" stroke-width="1.3"/>'
+        )
+        for gi in range(1, 8):
+            gx = wr_l + (wr_r - wr_l) * gi / 8
+            svg += (
+                f'<line x1="{gx}" y1="{plan_wy0}" x2="{gx}" y2="{plan_wy0 + plan_wh}" '
+                f'stroke="#4b5563" stroke-width="0.7"/>'
+            )
+        for gi in range(4):
+            wpy = plan_wy0 + plan_wh * (gi + 0.5) / 4
+            svg += (
+                f'<line x1="{wr_l}" y1="{wpy}" x2="{wr_r}" y2="{wpy}" '
+                f'stroke="#1d4ed8" stroke-width="1.6"/>'
+            )
+        svg += (
+            f'<text x="{(wr_l + wr_r) / 2}" y="{plan_wy0 + plan_wh / 2 + 3}" text-anchor="middle" '
+            f'font-size="7" fill="#111827" font-weight="700">WALKWAY</text>'
+        )
+        if has_ladder:
+            lad_cx = (wr_l + wr_r) / 2 - (wr_r - wr_l) * 0.12
+            lad_top_y = plan_wy0 + plan_wh * 0.35
+            lad_bot_y = plan_front_y + 8
+            lad_half = 5
+            svg += (
+                f'<line x1="{lad_cx - lad_half}" y1="{lad_top_y}" '
+                f'x2="{lad_cx - lad_half - 2}" y2="{lad_bot_y}" stroke="#b91c1c" stroke-width="2"/>'
+                f'<line x1="{lad_cx + lad_half}" y1="{lad_top_y}" '
+                f'x2="{lad_cx + lad_half + 2}" y2="{lad_bot_y}" stroke="#b91c1c" stroke-width="2"/>'
+            )
+            for lri in range(1, 6):
+                lu = lri / 6
+                ly = lad_top_y + (lad_bot_y - lad_top_y) * lu
+                lx0 = (lad_cx - lad_half) + ((lad_cx - lad_half - 2) - (lad_cx - lad_half)) * lu
+                lx1 = (lad_cx + lad_half) + ((lad_cx + lad_half + 2) - (lad_cx + lad_half)) * lu
+                svg += (
+                    f'<line x1="{lx0}" y1="{ly}" x2="{lx1}" y2="{ly}" '
+                    f'stroke="#dc2626" stroke-width="1.4"/>'
+                )
+            svg += (
+                f'<text x="{lad_cx + 14}" y="{lad_bot_y + 2}" font-size="6" '
+                f'fill="#b91c1c" font-weight="700">Ladder</text>'
+            )
+
     mid_x = (plan_inner_l + plan_inner_r) / 2
     svg += (
         f'<text x="{mid_x}" y="{plan_front_y + 12}" text-anchor="middle" font-size="7" '
@@ -433,6 +496,24 @@ def build_structure_diagram_inner_svg(opts: Dict[str, Any]) -> Optional[str]:
         f'<line x1="{rf_x}" y1="{sf_top}" x2="{rb_x}" y2="{sb_top}" stroke="#ea580c" stroke-width="4"/>'
     )
 
+    side_walk_y = 0.0
+    side_walk_t0, side_walk_t1 = 0.38, 0.62
+    if has_walkway:
+        if panel_grid['rows'] > 1:
+            _a0, a1 = panel_row_depth_frac(0, panel_grid['rows'])
+            b0, _b1 = panel_row_depth_frac(1, panel_grid['rows'])
+            side_walk_t0, side_walk_t1 = a1, b0
+        front_leg_h = max(20.0, sgy - side_found_h - sf_top)
+        side_walk_y = sgy - side_found_h - front_leg_h * 0.48
+        side_walk_y = max(side_walk_y, min(sf_top, sb_top) + 28)
+        side_walk_y = min(side_walk_y, sgy - side_found_h - 24)
+        svg += (
+            f'<line x1="{rf_x}" y1="{side_walk_y}" x2="{rb_x}" y2="{side_walk_y}" '
+            f'stroke="#ea580c" stroke-width="2.4" stroke-linecap="round"/>'
+            f'<text x="{rf_x - 10}" y="{side_walk_y + 3}" text-anchor="end" font-size="6" '
+            f'fill="#c2410c" font-weight="700">WR</text>'
+        )
+
     def draw_side_c_channel(pt: Tuple[float, float], label: str) -> str:
         bx, by = pt
         lip = 11
@@ -472,6 +553,57 @@ def build_structure_diagram_inner_svg(opts: Dict[str, Any]) -> Optional[str]:
             svg += (
                 f'<text x="{lx}" y="{ly}" text-anchor="middle" font-size="6" fill="#e2e8f0" '
                 f'font-weight="600" stroke="#0f1f33" stroke-width="0.35">{side_label}</text>'
+            )
+
+    if has_walkway and side_walk_y:
+        swx0 = rf_x + rdx * side_walk_t0
+        swx1 = rf_x + rdx * side_walk_t1
+        if swx1 < swx0:
+            swx0, swx1 = swx1, swx0
+        sw_deck_h = 7
+        svg += (
+            f'<rect x="{swx0}" y="{side_walk_y - sw_deck_h}" width="{max(10, swx1 - swx0)}" '
+            f'height="{sw_deck_h}" fill="#9ca3af" fill-opacity="0.85" stroke="#1f2937" stroke-width="1.2"/>'
+        )
+        for swi in range(1, 5):
+            swgx = swx0 + (swx1 - swx0) * swi / 5
+            svg += (
+                f'<line x1="{swgx}" y1="{side_walk_y - sw_deck_h}" x2="{swgx}" y2="{side_walk_y}" '
+                f'stroke="#4b5563" stroke-width="0.7"/>'
+            )
+        for swi in range(4):
+            swpx = swx0 + (swx1 - swx0) * (swi + 0.5) / 4
+            svg += (
+                f'<line x1="{swpx}" y1="{side_walk_y - sw_deck_h - 1}" x2="{swpx}" '
+                f'y2="{side_walk_y + 1}" stroke="#1d4ed8" stroke-width="1.8"/>'
+            )
+        svg += (
+            f'<text x="{(swx0 + swx1) / 2}" y="{side_walk_y - sw_deck_h - 4}" text-anchor="middle" '
+            f'font-size="6" fill="#111827" font-weight="700">WALKWAY</text>'
+        )
+        if has_ladder:
+            lad_top_x = swx0 + 4
+            lad_top_y = side_walk_y - 1
+            lad_bot_x = rf_x - 18
+            lad_bot_y = sgy - side_found_h
+            svg += (
+                f'<line x1="{lad_top_x - 4}" y1="{lad_top_y}" x2="{lad_bot_x - 4}" y2="{lad_bot_y}" '
+                f'stroke="#b91c1c" stroke-width="2"/>'
+                f'<line x1="{lad_top_x + 4}" y1="{lad_top_y}" x2="{lad_bot_x + 4}" y2="{lad_bot_y}" '
+                f'stroke="#b91c1c" stroke-width="2"/>'
+            )
+            for sri in range(1, 7):
+                su = sri / 7
+                srx0 = (lad_top_x - 4) + ((lad_bot_x - 4) - (lad_top_x - 4)) * su
+                srx1 = (lad_top_x + 4) + ((lad_bot_x + 4) - (lad_top_x + 4)) * su
+                sry = lad_top_y + (lad_bot_y - lad_top_y) * su
+                svg += (
+                    f'<line x1="{srx0}" y1="{sry}" x2="{srx1}" y2="{sry}" '
+                    f'stroke="#dc2626" stroke-width="1.3"/>'
+                )
+            svg += (
+                f'<text x="{lad_bot_x - 6}" y="{lad_bot_y - 4}" font-size="6" '
+                f'fill="#b91c1c" font-weight="700">Ladder</text>'
             )
 
     for p in range(purlins):
