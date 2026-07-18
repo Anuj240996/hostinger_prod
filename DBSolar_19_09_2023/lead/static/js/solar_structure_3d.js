@@ -410,11 +410,6 @@ function initSolarStructure3DView(viewportEl, layout, options) {
         return;
     }
 
-    var overlayWrap = document.createElement('div');
-    overlayWrap.className = 'solar-3d-overlay';
-    overlayWrap.innerHTML =
-        '<div class="solar-3d-overlay-summary">' + build3dSummaryOverlayHtml(layout) + '</div>';
-
     var dirsEl = document.createElement('div');
     dirsEl.className = 'solar-3d-overlay-dirs';
     dirsEl.innerHTML = '<span>↑</span> Height · <span>→</span> Width · <span>↕</span> Front→Back depth · scroll/+− zoom';
@@ -596,11 +591,6 @@ function initSolarStructure3DView(viewportEl, layout, options) {
     addSolar3DMeasurements(scene, layout, xAt, frontTopY, backTopY, depth, foundationH);
 
     setSolar3DFrontView(camera, controls, layout, xAt, frontTopY, backTopY, depth);
-
-    var stageEl = viewportEl.parentElement && viewportEl.parentElement.classList.contains('solar-3d-stage')
-        ? viewportEl.parentElement
-        : viewportEl;
-    stageEl.appendChild(overlayWrap);
 
     var zoomScale = 1.12;
     if (zoomWrap) {

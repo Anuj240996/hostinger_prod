@@ -582,13 +582,6 @@
             return;
         }
 
-        var overlayWrap = document.createElement('div');
-        overlayWrap.className = 'solar-3d-overlay';
-        if (!layout.embedMode) {
-            overlayWrap.innerHTML =
-                '<div class="solar-3d-overlay-summary">' + build3dSummaryOverlayHtml(layout) + '</div>';
-        }
-
         var dirsEl = null;
         if (!layout.embedMode) {
             dirsEl = document.createElement('div');
@@ -773,13 +766,6 @@
         addSolar3DMeasurements(scene, layout, xAt, frontTopY, backTopY, depth, foundationH);
 
         setSolar3DFrontView(camera, controls, layout, xAt, frontTopY, backTopY, depth);
-
-        var stageEl = viewportEl.parentElement && viewportEl.parentElement.classList.contains('solar-3d-stage')
-            ? viewportEl.parentElement
-            : viewportEl;
-        if (!layout.embedMode) {
-            stageEl.appendChild(overlayWrap);
-        }
 
         var zoomScale = 1.12;
         if (zoomWrap && !layout.embedMode) {
