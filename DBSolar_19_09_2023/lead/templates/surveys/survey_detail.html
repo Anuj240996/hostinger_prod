@@ -2523,28 +2523,7 @@
             }
             svg += '<text x="' + ((wrL + wrR) / 2) + '" y="' + (planWy0 + planWh / 2 + 3) +
                 '" text-anchor="middle" font-size="7" fill="#111827" font-weight="700">WALKWAY</text>';
-            if (hasLadder) {
-                // Top view: ladder rails from FRONT toward walkway edge.
-                var ladCx = (wrL + wrR) / 2 - (wrR - wrL) * 0.12;
-                var ladTopY = planWy0 + planWh * 0.35;
-                var ladBotY = planFrontY + 8;
-                var ladHalf = 5;
-                svg += '<line x1="' + (ladCx - ladHalf) + '" y1="' + ladTopY + '" x2="' + (ladCx - ladHalf - 2) +
-                    '" y2="' + ladBotY + '" stroke="#b91c1c" stroke-width="2"/>';
-                svg += '<line x1="' + (ladCx + ladHalf) + '" y1="' + ladTopY + '" x2="' + (ladCx + ladHalf + 2) +
-                    '" y2="' + ladBotY + '" stroke="#b91c1c" stroke-width="2"/>';
-                var lri;
-                for (lri = 1; lri <= 5; lri++) {
-                    var lu = lri / 6;
-                    var ly = ladTopY + (ladBotY - ladTopY) * lu;
-                    var lx0 = (ladCx - ladHalf) + ((ladCx - ladHalf - 2) - (ladCx - ladHalf)) * lu;
-                    var lx1 = (ladCx + ladHalf) + ((ladCx + ladHalf + 2) - (ladCx + ladHalf)) * lu;
-                    svg += '<line x1="' + lx0 + '" y1="' + ly + '" x2="' + lx1 + '" y2="' + ly +
-                        '" stroke="#dc2626" stroke-width="1.4"/>';
-                }
-                svg += '<text x="' + (ladCx + 14) + '" y="' + (ladBotY + 2) +
-                    '" font-size="6" fill="#b91c1c" font-weight="700">Ladder</text>';
-            }
+            // Ladder is not shown in plan (top) view — only in side / 3D.
         }
         svg += '<text x="' + planMidX + '" y="' + (planBackY - 5) + '" text-anchor="middle" font-size="8" fill="#16a34a" font-weight="700">BACK</text>';
         svg += '<text x="' + planMidX + '" y="' + (planFrontY + 12) + '" text-anchor="middle" font-size="8" fill="#16a34a" font-weight="700">FRONT</text>';
@@ -2593,7 +2572,7 @@
         svg += '<text x="48" y="' + (sgy - 2) + '" font-size="6" fill="#57534e">Foundation</text>';
         svg += '<rect x="' + (rfX - 4) + '" y="' + sfTop + '" width="8" height="' + (sgy - sideFoundH - sfTop) + '" fill="#64748b"/>';
         svg += '<rect x="' + (rbX - 4) + '" y="' + sbTop + '" width="8" height="' + (sgy - sideFoundH - sbTop) + '" fill="#64748b"/>';
-        svg += '<line x1="' + rfX + '" y1="' + sfTop + '" x2="' + rbX + '" y2="' + sbTop + '" stroke="#ea580c" stroke-width="4"/>';
+        svg += '<line x1="' + rfX + '" y1="' + sfTop + '" x2="' + rbX + '" y2="' + sbTop + '" stroke="#ea580c" stroke-width="2.5"/>';
 
         // Side: lower walkway rafter attached to legs (horizontal, below panel rafter).
         var sideWalkY = 0;
@@ -2711,10 +2690,11 @@
             svg += '<text x="' + ((swx0 + swx1) / 2) + '" y="' + (sideWalkY - swDeckH - 4) +
                 '" text-anchor="middle" font-size="6" fill="#111827" font-weight="700">WALKWAY</text>';
             if (hasLadder) {
-                var ladTopX = swx0 + 4;
+                // Ladder under the structure: foot at front leg on ground, top at walkway.
+                var ladTopX = swx0 + 2;
                 var ladTopY = sideWalkY - 1;
-                var ladBotX = rfX - 18;
-                var ladBotY = sgy - sideFoundH;
+                var ladBotX = rfX;
+                var ladBotY = sgy;
                 svg += '<line x1="' + (ladTopX - 4) + '" y1="' + ladTopY + '" x2="' + (ladBotX - 4) +
                     '" y2="' + ladBotY + '" stroke="#b91c1c" stroke-width="2"/>';
                 svg += '<line x1="' + (ladTopX + 4) + '" y1="' + ladTopY + '" x2="' + (ladBotX + 4) +
@@ -2728,8 +2708,8 @@
                     svg += '<line x1="' + srx0 + '" y1="' + sry + '" x2="' + srx1 + '" y2="' + sry +
                         '" stroke="#dc2626" stroke-width="1.3"/>';
                 }
-                svg += '<text x="' + (ladBotX - 6) + '" y="' + (ladBotY - 4) +
-                    '" font-size="6" fill="#b91c1c" font-weight="700">Ladder</text>';
+                svg += '<text x="' + ((ladTopX + ladBotX) / 2 - 10) + '" y="' + ((ladTopY + ladBotY) / 2) +
+                    '" text-anchor="end" font-size="6" fill="#b91c1c" font-weight="700">Ladder</text>';
             }
         }
         for (p = 0; p < purlins; p++) {

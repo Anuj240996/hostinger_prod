@@ -413,30 +413,7 @@ def build_structure_diagram_inner_svg(opts: Dict[str, Any]) -> Optional[str]:
             f'<text x="{(wr_l + wr_r) / 2}" y="{plan_wy0 + plan_wh / 2 + 3}" text-anchor="middle" '
             f'font-size="7" fill="#111827" font-weight="700">WALKWAY</text>'
         )
-        if has_ladder:
-            lad_cx = (wr_l + wr_r) / 2 - (wr_r - wr_l) * 0.12
-            lad_top_y = plan_wy0 + plan_wh * 0.35
-            lad_bot_y = plan_front_y + 8
-            lad_half = 5
-            svg += (
-                f'<line x1="{lad_cx - lad_half}" y1="{lad_top_y}" '
-                f'x2="{lad_cx - lad_half - 2}" y2="{lad_bot_y}" stroke="#b91c1c" stroke-width="2"/>'
-                f'<line x1="{lad_cx + lad_half}" y1="{lad_top_y}" '
-                f'x2="{lad_cx + lad_half + 2}" y2="{lad_bot_y}" stroke="#b91c1c" stroke-width="2"/>'
-            )
-            for lri in range(1, 6):
-                lu = lri / 6
-                ly = lad_top_y + (lad_bot_y - lad_top_y) * lu
-                lx0 = (lad_cx - lad_half) + ((lad_cx - lad_half - 2) - (lad_cx - lad_half)) * lu
-                lx1 = (lad_cx + lad_half) + ((lad_cx + lad_half + 2) - (lad_cx + lad_half)) * lu
-                svg += (
-                    f'<line x1="{lx0}" y1="{ly}" x2="{lx1}" y2="{ly}" '
-                    f'stroke="#dc2626" stroke-width="1.4"/>'
-                )
-            svg += (
-                f'<text x="{lad_cx + 14}" y="{lad_bot_y + 2}" font-size="6" '
-                f'fill="#b91c1c" font-weight="700">Ladder</text>'
-            )
+        # Ladder is not shown in plan (top) view — only in side / 3D.
 
     mid_x = (plan_inner_l + plan_inner_r) / 2
     svg += (
@@ -493,7 +470,7 @@ def build_structure_diagram_inner_svg(opts: Dict[str, Any]) -> Optional[str]:
     svg += (
         f'<rect x="88" y="{sf_top}" width="8" height="{sgy - sf_top}" fill="#64748b"/>'
         f'<rect x="172" y="{sb_top}" width="8" height="{sgy - sb_top}" fill="#64748b"/>'
-        f'<line x1="{rf_x}" y1="{sf_top}" x2="{rb_x}" y2="{sb_top}" stroke="#ea580c" stroke-width="4"/>'
+        f'<line x1="{rf_x}" y1="{sf_top}" x2="{rb_x}" y2="{sb_top}" stroke="#ea580c" stroke-width="2.5"/>'
     )
 
     side_walk_y = 0.0
@@ -582,10 +559,10 @@ def build_structure_diagram_inner_svg(opts: Dict[str, Any]) -> Optional[str]:
             f'font-size="6" fill="#111827" font-weight="700">WALKWAY</text>'
         )
         if has_ladder:
-            lad_top_x = swx0 + 4
+            lad_top_x = swx0 + 2
             lad_top_y = side_walk_y - 1
-            lad_bot_x = rf_x - 18
-            lad_bot_y = sgy - side_found_h
+            lad_bot_x = rf_x
+            lad_bot_y = sgy
             svg += (
                 f'<line x1="{lad_top_x - 4}" y1="{lad_top_y}" x2="{lad_bot_x - 4}" y2="{lad_bot_y}" '
                 f'stroke="#b91c1c" stroke-width="2"/>'
@@ -602,8 +579,8 @@ def build_structure_diagram_inner_svg(opts: Dict[str, Any]) -> Optional[str]:
                     f'stroke="#dc2626" stroke-width="1.3"/>'
                 )
             svg += (
-                f'<text x="{lad_bot_x - 6}" y="{lad_bot_y - 4}" font-size="6" '
-                f'fill="#b91c1c" font-weight="700">Ladder</text>'
+                f'<text x="{(lad_top_x + lad_bot_x) / 2 - 10}" y="{(lad_top_y + lad_bot_y) / 2}" '
+                f'text-anchor="end" font-size="6" fill="#b91c1c" font-weight="700">Ladder</text>'
             )
 
     for p in range(purlins):
