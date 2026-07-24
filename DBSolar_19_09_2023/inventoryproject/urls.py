@@ -101,8 +101,11 @@ from django.views.generic import RedirectView
 from django.views.static import serve as media_serve
 
 from inventoryproject.legacy_redirects import redirect_legacy_leads_path
+from inventoryproject.health_views import health_check
 
 urlpatterns = [
+    # EasyPanel / load-balancer probe — must stay outside auth and host-sensitive pages
+    path('health/', health_check, name='health-check'),
     path('admin/', admin.site.urls),
     path('', include('dashboard.urls')),
     path('quotation/', include('quotation.urls')),
