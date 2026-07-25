@@ -18,5 +18,11 @@ def api_status(request):
                 "profile": "/api/get-profile/",
                 "jwt_obtain": "/api/token/",
             },
+            "associate": {
+                "login": "/api/v1/associate/login/",
+                "dashboard": "/api/v1/associate/dashboard/",
+                "projects": "/api/v1/associate/projects/",
+                "tasks": "/api/v1/associate/tasks/",
+            },
         }
     )
