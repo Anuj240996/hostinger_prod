@@ -54,22 +54,29 @@ EasyPanel’s proxy cannot connect to Gunicorn. Check in order:
 5. **`CSRF_TRUSTED_ORIGINS`** (optional): full URLs only, e.g. `https://db-solar-db-solar-v2.fhibgf.easypanel.host` — or omit and settings will add `https://` from `ALLOWED_HOSTS`. Do **not** copy `ALLOWED_HOSTS` verbatim (no `.easypanel.host` wildcards).
 6. **Rebuild** the image after git push (not only restart) so Dockerfile `collectstatic` runs.
 
-### Environment variables (V2 service)
+### Environment variables (V2 / version-3 service)
 
 | Variable | Example / notes |
 |----------|-----------------|
-| `DATABASE_URL` | `postgres://USER:PASS@HOST:5432/db_solar_v2` — **separate from V1** |
+| `DATABASE_URL` | `postgres://USER:PASS@database:5432/db_solar_v2` — host must be EasyPanel Postgres service name (**`database`**, not `db_solar_database`) |
 | `SECRET_KEY` | New random string |
 | `DEBUG` | `False` |
-| `ALLOWED_HOSTS` | `db-solar-db-solar-v2.fhibgf.easypanel.host,.easypanel.host,72.60.98.248,localhost` |
+| `ALLOWED_HOSTS` | `app.db-solar.co.in,db-solar-db-solar-v2.fhibgf.easypanel.host,.easypanel.host,72.60.98.248,localhost` |
 | `VPS_PUBLIC_IP` | `72.60.98.248` (optional; adds IP to `ALLOWED_HOSTS`) |
 | `WEB_CONCURRENCY` | `1` (default; use `2` only if RAM allows) |
-| `CSRF_TRUSTED_ORIGINS` | **Leave unset** (or `https://db-solar-db-solar-v2.fhibgf.easypanel.host` only) |
+| `CSRF_TRUSTED_ORIGINS` | **Leave unset** (or `https://app.db-solar.co.in` only) |
 | `EMAIL_*` | Same pattern as V1 if email is required |
 
 **Do not set** `CSRF_TRUSTED_ORIGINS` to the same value as `ALLOWED_HOSTS`.
 
 `entrypoint.sh` requires **`DATABASE_URL`** (not only `DB_*`).
+
+### Option A (phone + web share data)
+
+- **Django owns** `db_solar_v2` and runs all migrations.
+- **Phone app must NOT** set `DATABASE_URL` to this database.
+- Phone app calls HTTPS APIs under `/api/` (status: `/api/v1/status/`).
+- Bring **web** up first; change phone app only after web is stable.
 
 ### Health check (fixes “domain correct but page never loads”)
 

@@ -45,6 +45,7 @@ for viewset_name, viewset_class in viewsets_dict.items():
 
 # Define urlpatterns
 urlpatterns = [
+    path("v1/", include("api.v1_urls")),  # Option A: phone-app API namespace
     path("", include(router.urls)),  # Auto-register all models' endpoints
     path('api-token-auth/', obtain_auth_token, name='api_token_auth'),
     path("get-profile/", CustomerLoginView.as_view(), name="get-profile"),

@@ -48,9 +48,10 @@ def _normalize_allowed_host(entry: str) -> str:
     return host
 
 
+# Option A: Django is the only DB owner. Phone app must use /api/* over HTTPS.
 ALLOWED_HOSTS_ENV = os.environ.get(
     "ALLOWED_HOSTS",
-    "www.db-solar.co.in,db-solar.co.in,localhost,127.0.0.1,testserver,.easypanel.host",
+    "app.db-solar.co.in,www.db-solar.co.in,db-solar.co.in,localhost,127.0.0.1,testserver,.easypanel.host",
 )
 ALLOWED_HOSTS = list(
     dict.fromkeys(
