@@ -24,5 +24,15 @@ def api_status(request):
                 "projects": "/api/v1/associate/projects/",
                 "tasks": "/api/v1/associate/tasks/",
             },
+            "consumer": {
+                "login": "/api/v1/auth/login/",
+                "signup": "/api/v1/auth/signup/",
+                "projects": "/api/v1/projects/",
+                "complaints": "/api/v1/complaints/",
+                "complaints_create": "/api/v1/complaints/create/",
+                "services": "/api/v1/services/",
+                "services_create": "/api/v1/services/create/",
+                "services_remarks": "/api/v1/services/remarks/",
+            },
         }
     )
