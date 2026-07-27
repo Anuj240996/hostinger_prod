@@ -4483,8 +4483,10 @@ def search(request):
     status_filter = ''  # Default to an empty string for status_filter
     consumer_search_data = None
     customer = None
+    search_performed = False
 
     if request.method == 'POST':
+        search_performed = True
         search_by = request.POST.get('search_by', 'staff')  # Get the selected option from the form
 
         if search_by == 'staff':
@@ -4512,16 +4514,18 @@ def search(request):
             if status_filter:
                 customer = customer.filter(Cust_type=status_filter)
 
+            customer = customer.select_related('Engg_Assign', 'Assoc_Assign')
+
         elif search_by == 'associate_staff':
-            staff_assignee_id = request.POST.get('staff_assignee', '')
-            report_filter = request.POST.get('report_filter', 'all')
-            status_filter = request.POST.get('status_filter', '')
+            associate_assignee_id = request.POST.get('associate_assignee', '')
+            report_filter = request.POST.get('associate_report_filter', 'all')
+            status_filter = request.POST.get('associate_status_filter', '')
 
             customer = Customer.objects.filter(Assoc_Assign__isnull=False)
 
-            if staff_assignee_id and staff_assignee_id != 'all':
-                associate_assignee = User.objects.get(pk=staff_assignee_id)
-                customer = customer.filter(Assoc_Assign_id=staff_assignee_id)
+            if associate_assignee_id and associate_assignee_id != 'all':
+                associate_assignee = User.objects.get(pk=associate_assignee_id)
+                customer = customer.filter(Assoc_Assign_id=associate_assignee_id)
 
             if report_filter == 'week':
                 start_of_week = timezone.now().date() - timezone.timedelta(days=timezone.now().date().weekday())
@@ -4533,9 +4537,12 @@ def search(request):
             if status_filter:
                 customer = customer.filter(Cust_type=status_filter)
 
+            customer = customer.select_related('Assoc_Assign', 'Engg_Assign')
+
         else:
-            consumer_search_data = request.POST.get('consumer_search_data', '')
+            consumer_search_data = request.POST.get('consumer_search_data', '').strip()
             status_filter = request.POST.get('status_filter', '')  # Get status_filter for consumer search
+            customer = Customer.objects.none()
             if consumer_search_data:
                 customer = Customer.objects.filter(
                     Q(Comp_name__icontains=consumer_search_data) |
@@ -4545,6 +4552,8 @@ def search(request):
                 # Apply status_filter based on the selected option
                 if status_filter:
                     customer = customer.filter(Cust_type=status_filter)
+
+                customer = customer.select_related('Engg_Assign', 'Assoc_Assign')
 
     else:
         customer = None
@@ -4559,6 +4568,7 @@ def search(request):
         'report_filter': report_filter,
         'status_filter': status_filter,  # Add status_filter to the context
         'consumer_search_data': consumer_search_data,
+        'search_performed': search_performed,
         'notification1': notification1,
         'count1': count1,
     }

@@ -40,7 +40,7 @@
             <!-- general form elements -->
             <div class="card card-primary">
                <div class="card-header">
-                  <h3 class="card-title">Search</h3>
+                  <h3 class="card-title">Search Staff / Associate / Consumer</h3>
                </div>
                <form method="post" id="searchForm">
                   {% csrf_token %}
@@ -98,7 +98,7 @@
                   </div>
                   <div class="card-footer">
                   {% if user.is_superuser %}
-                  {% if search_by == "staff" %}
+                  <div id="filter-staff" class="search-filter-panel"{% if search_by != "staff" %} style="display:none;"{% endif %}>
                    <div class="form-group row">
                       <label for="staff_assignee" class="col-sm-2 col-form-label"><b>Select Staff to Search:</b></label>
                     <div class="col-sm-10">
@@ -135,12 +135,13 @@
                              </select>
                          </div>
                         </div>
+                  </div>
 
-                  {% elif search_by == "associate_staff" %}
+                  <div id="filter-associate" class="search-filter-panel"{% if search_by != "associate_staff" %} style="display:none;"{% endif %}>
                    <div class="form-group row">
-                      <label for="staff_assignee" class="col-sm-2 col-form-label"><b>Select Associate Staff to Search:</b></label>
+                      <label for="associate_assignee" class="col-sm-2 col-form-label"><b>Select Associate Staff to Search:</b></label>
                     <div class="col-sm-10">
-                        <select name="staff_assignee" id="staff_assignee" class="form-control" style="width: 100%;">
+                        <select name="associate_assignee" id="associate_assignee" class="form-control" style="width: 100%;">
                            <option value="" {% if not associate_assignee %}selected{% endif %}>All</option>
                            {% for associate in associate_list %}
                            <option value="{{ associate.id }}" {% if associate_assignee and associate_assignee.id == associate.id %}selected{% endif %}>{{ associate.get_full_name }}</option>
@@ -152,7 +153,7 @@
                         <div class="form-group row">
                            <label class="col-md-2 col-form-label"><b>Filter By Days:</b></label><br>
                            <div class="col-md-4">
-                              <select name="report_filter" class="form-control">
+                              <select name="associate_report_filter" class="form-control">
                                  <option value="all" {% if report_filter == 'all' %}selected{% endif %}> All </option>
                                  <option value="week" {% if report_filter == 'week' %}selected{% endif %}>Weekly</option>
                                  <option value="month" {% if report_filter == 'month' %}selected{% endif %}>Monthly</option>
@@ -163,7 +164,7 @@
 
                            <label class="col-md-2 col-form-label"><b>Filter by Status:</b></label><br>
                          <div class="col-md-4">
-                             <select name="status_filter" class="form-control">
+                             <select name="associate_status_filter" class="form-control">
                                  <option value="" {% if status_filter == "" %}selected{% endif %}>All</option>
                                  <option value="Commersial" {% if status_filter == "Commersial" %}selected{% endif %}>Commersial</option>
                                  <option value="Goverment" {% if status_filter == "Goverment" %}selected{% endif %}>Goverment</option>
@@ -173,15 +174,17 @@
                              </select>
                          </div>
                         </div>
+                  </div>
 
-                  {% elif search_by == "consumer" %}
+                  <div id="filter-consumer" class="search-filter-panel"{% if search_by != "consumer" %} style="display:none;"{% endif %}>
                   <div class="form-group row">
                      <label><b>Search Consumer by Name/Mobile No/Location:</b></label>
                       <div class="col-sm-8">
-                     <input type="text" name="consumer_search_data" placeholder="Enter Consumer Name/Mobile No./Location" class="form-control">
+                     <input type="text" name="consumer_search_data" value="{{ consumer_search_data|default:'' }}" placeholder="Enter Consumer Name/Mobile No./Location" class="form-control">
                   </div>
                   </div>
-                  {% endif %}
+                  </div>
+
                   {% else %}
                   {% if search_by == "consumer" %}
                   <div class="form-group row">
@@ -199,10 +202,10 @@
                </form>
 
             </div>
-               {% if customer %}
+               {% if search_performed %}
                <div class="card-body">
                   {% if search_by == "staff" %}
-                  <h4 align="center">Result against Staff Name "<span style="color: red">{{ staff_assignee.get_full_name }}</span>" keyword</h4>
+                  <h4 align="center">Result against Staff Name "<span style="color: red">{% if staff_assignee %}{{ staff_assignee.get_full_name }}{% else %}All{% endif %}</span>"</h4>
                   {% elif search_by == "associate_staff" %}
                   <h4 align="center">Result against Associate Staff "<span style="color: red">{% if associate_assignee %}{{ associate_assignee.get_full_name }}{% else %}All{% endif %}</span>"</h4>
                   {% elif search_by == "consumer" %}
@@ -245,10 +248,14 @@
                               <td>{{i.Cust_type}}</td>
 
                                {% if search_by == "associate_staff" %}
-                               <td>{{i.Assoc_Assign.first_name}} {{i.Assoc_Assign.last_name}}</td>
+                               <td>{% if i.Assoc_Assign %}{{ i.Assoc_Assign.get_full_name|default:i.Assoc_Assign.username }}{% else %}—{% endif %}</td>
                                {% else %}
-                               <td>{{i.Engg_Assign.first_name}} {{i.Engg_Assign.last_name}}</td>
+                               <td>{% if i.Engg_Assign %}{{ i.Engg_Assign.get_full_name|default:i.Engg_Assign.username }}{% else %}—{% endif %}</td>
                                {% endif %}
+                           </tr>
+                           {% empty %}
+                           <tr>
+                              <td colspan="9" style="color: red;">No consumer records found for selected criteria.</td>
                            </tr>
                            {% endfor %}
                            {% else %}
@@ -271,6 +278,10 @@
                                </td>
                            </tr>
                            {% endif %}
+                           {% empty %}
+                           <tr>
+                              <td colspan="9" style="color: red;">No consumer records found for selected criteria.</td>
+                           </tr>
                            {% endfor %}
                            {% endif%}
                         </tbody>
@@ -287,39 +298,35 @@
    </div>
 </section>
 <script>
-   // JavaScript to automatically submit the form when radio button is changed
-   const searchForm = document.getElementById('searchForm');
-   const radioInputs = document.querySelectorAll('input[type="radio"][name="search_by"]');
-   radioInputs.forEach((radio) => {
-       radio.addEventListener('change', () => {
-           searchForm.submit();
-       });
-   });
-</script>
+   function toggleSearchFilterPanels(selectedValue) {
+      const staffPanel = document.getElementById('filter-staff');
+      const associatePanel = document.getElementById('filter-associate');
+      const consumerPanel = document.getElementById('filter-consumer');
+      if (staffPanel) staffPanel.style.display = selectedValue === 'staff' ? 'block' : 'none';
+      if (associatePanel) associatePanel.style.display = selectedValue === 'associate_staff' ? 'block' : 'none';
+      if (consumerPanel) consumerPanel.style.display = selectedValue === 'consumer' ? 'block' : 'none';
+   }
 
-<script>
-   const searchByRadios = document.querySelectorAll('input[name="search_by"]');
-   const staffDropdown = document.getElementById('staffDropdown');
-   const reportFilterDropdown = document.getElementById('reportFilterDropdown');
-   const statusFilterDropdown = document.getElementById('statusFilterDropdown');
-
-   searchByRadios.forEach((radio) => {
-      radio.addEventListener('change', () => {
-         const selectedValue = radio.value;
-         if (selectedValue === 'staff') {
-            staffDropdown.style.display = 'block';
-            reportFilterDropdown.style.display = 'block';
-            statusFilterDropdown.style.display = 'block';
-         } else {
-            staffDropdown.style.display = 'none';
-            reportFilterDropdown.style.display = 'none';
-            statusFilterDropdown.style.display = 'none';
-         }
+   document.addEventListener('DOMContentLoaded', function () {
+      const selectedRadio = document.querySelector('input[type="radio"][name="search_by"]:checked');
+      if (selectedRadio) {
+         toggleSearchFilterPanels(selectedRadio.value);
+      }
+      document.querySelectorAll('input[type="radio"][name="search_by"]').forEach((radio) => {
+         radio.addEventListener('change', () => {
+            toggleSearchFilterPanels(radio.value);
+         });
       });
    });
 </script>
 
 <style>
+   .checkbox-column .checkbox-label {
+      display: inline-flex;
+      align-items: center;
+      margin-right: 24px;
+      margin-bottom: 8px;
+   }
    .badge {
    border: 2px solid black ;
    background-color: white;
@@ -622,11 +629,18 @@ function printTable() {
         let selectedName = '';
 
         if ($('input[name="search_by"]:checked').val() === 'staff' || $('input[name="search_by"]:checked').val() === 'associate_staff') {
-            selectedName = $('#staff_assignee option:selected').text();
+            const isAssociate = $('input[name="search_by"]:checked').val() === 'associate_staff';
+            selectedName = isAssociate
+                ? $('#associate_assignee option:selected').text()
+                : $('#staff_assignee option:selected').text();
 
 		  // Get the selected report_filter and status_filter values
-            const reportFilter = $('select[name="report_filter"]').val();
-            const statusFilter = $('select[name="status_filter"]').val();
+            const reportFilter = isAssociate
+                ? $('select[name="associate_report_filter"]').val()
+                : $('select[name="report_filter"]').val();
+            const statusFilter = isAssociate
+                ? $('select[name="associate_status_filter"]').val()
+                : $('select[name="status_filter"]').val();
 
             // Capitalize the first character of reportFilter
             const capitalizedReportFilter = reportFilter.charAt(0).toUpperCase() + reportFilter.slice(1);
