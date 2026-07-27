@@ -50,45 +50,21 @@
 <!--                        <div class="question">-->
                           <div class="checkbox-column">
                               {% if user.is_superuser %}
-                                <label>Search Staff / Associate / Consumer</label><br><br>
-
-                                <!-- Check if 'search_by' is 'staff' -->
-                                {% if search_by == 'staff' %}
-                                    <label class="checkbox-label">
-                                        <input type="radio" class="checkbox-input" name="search_by" value="staff" id="radio_1" checked>
+                                <label class="search-section-label"><b>Search Staff / Associate / Consumer</b></label>
+                                <div class="search-type-row">
+                                    <label class="search-type-option">
+                                        <input type="radio" class="checkbox-input" name="search_by" value="staff" id="radio_1"{% if search_by == 'staff' %} checked{% endif %}>
                                         <b>Search by Staff</b>
                                     </label>
-                                {% else %}
-                                    <label class="checkbox-label">
-                                        <input type="radio" class="checkbox-input" name="search_by" value="staff" id="radio_1">
-                                        <b>Search by Staff</b>
-                                    </label>
-                                {% endif %}
-
-                                <!-- Check if 'search_by' is 'consumer' -->
-                                {% if search_by == 'consumer' %}
-                                    <label class="checkbox-label">
-                                        <input type="radio" class="checkbox-input" name="search_by" value="consumer" id="radio_2" checked>
+                                    <label class="search-type-option">
+                                        <input type="radio" class="checkbox-input" name="search_by" value="consumer" id="radio_2"{% if search_by == 'consumer' %} checked{% endif %}>
                                         <b>Search by Consumer</b>
                                     </label>
-                                {% else %}
-                                    <label class="checkbox-label">
-                                        <input type="radio" class="checkbox-input" name="search_by" value="consumer" id="radio_2">
-                                        <b>Search by Consumer</b>
-                                    </label>
-                                {% endif %}
-
-                                {% if search_by == 'associate_staff' %}
-                                    <label class="checkbox-label">
-                                        <input type="radio" class="checkbox-input" name="search_by" value="associate_staff" id="radio_3" checked>
+                                    <label class="search-type-option">
+                                        <input type="radio" class="checkbox-input" name="search_by" value="associate_staff" id="radio_3"{% if search_by == 'associate_staff' %} checked{% endif %}>
                                         <b>Associate Staff</b>
                                     </label>
-                                {% else %}
-                                    <label class="checkbox-label">
-                                        <input type="radio" class="checkbox-input" name="search_by" value="associate_staff" id="radio_3">
-                                        <b>Associate Staff</b>
-                                    </label>
-                                {% endif %}
+                                </div>
                             {% endif %}
 
 <!--                           <label for="radio_2"><span><b>Search by Consumer</b></span></label>-->
@@ -321,6 +297,31 @@
 </script>
 
 <style>
+   .search-section-label {
+      display: block;
+      margin-bottom: 12px;
+   }
+   .search-type-row {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 24px;
+      margin-bottom: 8px;
+   }
+   .search-type-row .search-type-option {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      margin: 0;
+      cursor: pointer;
+      white-space: nowrap;
+   }
+   .search-type-row input[type="radio"] {
+      display: inline-block !important;
+      width: 18px;
+      height: 18px;
+      margin: 0;
+   }
    .checkbox-column .checkbox-label {
       display: inline-flex;
       align-items: center;

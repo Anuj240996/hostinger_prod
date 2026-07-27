@@ -34,5 +34,9 @@ def api_status(request):
                 "services_create": "/api/v1/services/create/",
                 "services_remarks": "/api/v1/services/remarks/",
             },
+            "web": {
+                "search_associate_staff": True,
+                "build": "search-associate-v3-20260327",
+            },
         }
     )
