@@ -50,7 +50,7 @@
 <!--                        <div class="question">-->
                           <div class="checkbox-column">
                               {% if user.is_superuser %}
-                                <label>Search Staff / Consumer</label><br><br>
+                                <label>Search Staff / Associate / Consumer</label><br><br>
 
                                 <!-- Check if 'search_by' is 'staff' -->
                                 {% if search_by == 'staff' %}
@@ -77,6 +77,18 @@
                                         <b>Search by Consumer</b>
                                     </label>
                                 {% endif %}
+
+                                {% if search_by == 'associate_staff' %}
+                                    <label class="checkbox-label">
+                                        <input type="radio" class="checkbox-input" name="search_by" value="associate_staff" id="radio_3" checked>
+                                        <b>Associate Staff</b>
+                                    </label>
+                                {% else %}
+                                    <label class="checkbox-label">
+                                        <input type="radio" class="checkbox-input" name="search_by" value="associate_staff" id="radio_3">
+                                        <b>Associate Staff</b>
+                                    </label>
+                                {% endif %}
                             {% endif %}
 
 <!--                           <label for="radio_2"><span><b>Search by Consumer</b></span></label>-->
@@ -94,6 +106,44 @@
                            <option value="" {% if not staff_assignee %}selected{% endif %}>All</option>
                            {% for staff in staff_list %}
                            <option value="{{ staff.id }}" {% if staff_assignee and staff_assignee.id == staff.id %}selected{% endif %}>{{ staff.get_full_name }}</option>
+                           {% endfor %}
+                        </select>
+                     </div>
+                  </div>
+
+                        <div class="form-group row">
+                           <label class="col-md-2 col-form-label"><b>Filter By Days:</b></label><br>
+                           <div class="col-md-4">
+                              <select name="report_filter" class="form-control">
+                                 <option value="all" {% if report_filter == 'all' %}selected{% endif %}> All </option>
+                                 <option value="week" {% if report_filter == 'week' %}selected{% endif %}>Weekly</option>
+                                 <option value="month" {% if report_filter == 'month' %}selected{% endif %}>Monthly</option>
+                              </select>
+                           </div>
+
+
+
+                           <label class="col-md-2 col-form-label"><b>Filter by Status:</b></label><br>
+                         <div class="col-md-4">
+                             <select name="status_filter" class="form-control">
+                                 <option value="" {% if status_filter == "" %}selected{% endif %}>All</option>
+                                 <option value="Commersial" {% if status_filter == "Commersial" %}selected{% endif %}>Commersial</option>
+                                 <option value="Goverment" {% if status_filter == "Goverment" %}selected{% endif %}>Goverment</option>
+                                 <option value="Industrial" {% if status_filter == "Industrial" %}selected{% endif %}>Industrial</option>
+                                 <option value="Residential" {% if status_filter == "Residential" %}selected{% endif %}>Residential</option>
+
+                             </select>
+                         </div>
+                        </div>
+
+                  {% elif search_by == "associate_staff" %}
+                   <div class="form-group row">
+                      <label for="staff_assignee" class="col-sm-2 col-form-label"><b>Select Associate Staff to Search:</b></label>
+                    <div class="col-sm-10">
+                        <select name="staff_assignee" id="staff_assignee" class="form-control" style="width: 100%;">
+                           <option value="" {% if not associate_assignee %}selected{% endif %}>All</option>
+                           {% for associate in associate_list %}
+                           <option value="{{ associate.id }}" {% if associate_assignee and associate_assignee.id == associate.id %}selected{% endif %}>{{ associate.get_full_name }}</option>
                            {% endfor %}
                         </select>
                      </div>
@@ -153,6 +203,8 @@
                <div class="card-body">
                   {% if search_by == "staff" %}
                   <h4 align="center">Result against Staff Name "<span style="color: red">{{ staff_assignee.get_full_name }}</span>" keyword</h4>
+                  {% elif search_by == "associate_staff" %}
+                  <h4 align="center">Result against Associate Staff "<span style="color: red">{% if associate_assignee %}{{ associate_assignee.get_full_name }}{% else %}All{% endif %}</span>"</h4>
                   {% elif search_by == "consumer" %}
                   <h4 align="center">Result against Consumer Name "<span style="color: red">{{consumer_search_data}}</span>" keyword </h4>
                   {% endif %}
@@ -169,7 +221,11 @@
                               <th>Location</th>
                               <th>PO Date</th>
                               <th>Consumer Type</th>
+                               {% if search_by == "associate_staff" %}
+                               <th>Assign Associate</th>
+                               {% else %}
                                <th> Assign Engineer</th>
+                               {% endif %}
 <!--                              <th>Current Status</th>-->
 <!--                                                              <th>Action</th>-->
                            </tr>
@@ -188,7 +244,11 @@
 
                               <td>{{i.Cust_type}}</td>
 
+                               {% if search_by == "associate_staff" %}
+                               <td>{{i.Assoc_Assign.first_name}} {{i.Assoc_Assign.last_name}}</td>
+                               {% else %}
                                <td>{{i.Engg_Assign.first_name}} {{i.Engg_Assign.last_name}}</td>
+                               {% endif %}
                            </tr>
                            {% endfor %}
                            {% else %}
@@ -561,7 +621,7 @@ function printTable() {
         // Get the selected staff name or consumer name
         let selectedName = '';
 
-        if ($('input[name="search_by"]:checked').val() === 'staff') {
+        if ($('input[name="search_by"]:checked').val() === 'staff' || $('input[name="search_by"]:checked').val() === 'associate_staff') {
             selectedName = $('#staff_assignee option:selected').text();
 
 		  // Get the selected report_filter and status_filter values
@@ -571,8 +631,9 @@ function printTable() {
             // Capitalize the first character of reportFilter
             const capitalizedReportFilter = reportFilter.charAt(0).toUpperCase() + reportFilter.slice(1);
 
+            const staffLabel = $('input[name="search_by"]:checked').val() === 'associate_staff' ? 'associate staff' : 'staff';
             // Include staff_assignee in bold
-            printWindow.document.write('<h1 style="margin: 0; text-align: center;">Search Report for staff <span style="font-weight: bold; margin-top: 15px;">' + selectedName + '</span></h1>');
+            printWindow.document.write('<h1 style="margin: 0; text-align: center;">Search Report for ' + staffLabel + ' <span style="font-weight: bold; margin-top: 15px;">' + selectedName + '</span></h1>');
 
             // Include capitalizedReportFilter and status_filter in smaller font, centered
             printWindow.document.write('<p style="font-size: 120%; text-align: center;  margin-top: 20px;">Report Filtered By: ' + capitalizedReportFilter + '  |  Status Filter: ' + statusFilter + '</p> <br>');

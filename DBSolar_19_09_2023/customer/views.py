@@ -48,7 +48,7 @@ from django.shortcuts import render, get_object_or_404
 from django.contrib.auth import get_user, logout, login
 from .decorators import auth_users, allowed_users
 from django.contrib import messages
-from .staff_access import customer_queryset_for_request
+from .staff_access import associate_users_for_quotation_dropdown, customer_queryset_for_request
 
 
 def _resolve_quotation_id_from_request(request):
@@ -4471,12 +4471,14 @@ def search(request):
 
     search_by = 'staff'  # Default to 'staff' when the page is loaded for the first time
     staff_list = User.objects.filter(is_staff=True)
+    associate_list = associate_users_for_quotation_dropdown(request.user)
 
     if not request.user.is_superuser:
         staff_list = staff_list.filter(id=request.user.id)  # Filter staff_list based on the logged-in user
 
     staff_assignee_id = None
     staff_assignee = None  # Initialize staff_assignee as None
+    associate_assignee = None
     report_filter = 'all'  # Default to 'all' when the page is loaded for the first time
     status_filter = ''  # Default to an empty string for status_filter
     consumer_search_data = None
@@ -4510,6 +4512,27 @@ def search(request):
             if status_filter:
                 customer = customer.filter(Cust_type=status_filter)
 
+        elif search_by == 'associate_staff':
+            staff_assignee_id = request.POST.get('staff_assignee', '')
+            report_filter = request.POST.get('report_filter', 'all')
+            status_filter = request.POST.get('status_filter', '')
+
+            customer = Customer.objects.filter(Assoc_Assign__isnull=False)
+
+            if staff_assignee_id and staff_assignee_id != 'all':
+                associate_assignee = User.objects.get(pk=staff_assignee_id)
+                customer = customer.filter(Assoc_Assign_id=staff_assignee_id)
+
+            if report_filter == 'week':
+                start_of_week = timezone.now().date() - timezone.timedelta(days=timezone.now().date().weekday())
+                customer = customer.filter(po_date__gte=start_of_week)
+            elif report_filter == 'month':
+                start_of_month = timezone.now().date().replace(day=1)
+                customer = customer.filter(po_date__gte=start_of_month)
+
+            if status_filter:
+                customer = customer.filter(Cust_type=status_filter)
+
         else:
             consumer_search_data = request.POST.get('consumer_search_data', '')
             status_filter = request.POST.get('status_filter', '')  # Get status_filter for consumer search
@@ -4529,8 +4552,10 @@ def search(request):
     context = {
         'search_by': search_by,
         'staff_list': staff_list,
+        'associate_list': associate_list,
         'customer': customer,
         'staff_assignee': staff_assignee,
+        'associate_assignee': associate_assignee,
         'report_filter': report_filter,
         'status_filter': status_filter,  # Add status_filter to the context
         'consumer_search_data': consumer_search_data,
