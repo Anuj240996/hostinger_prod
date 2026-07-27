@@ -8,36 +8,44 @@ This folder is the **deploy copy**. The original offline project (`DBSolar_19_09
 - `requirements.txt` — production pins + `crispy-bootstrap4==2024.1`, `django-formtools==2.3`, `dj-database-url==2.1.0`
 - `inventoryproject/settings.py` — env-based config, CRM apps, `formtools`, `Asia/Kolkata`
 
-## Git — push to `hostinger_prod` (branch `version-2`)
+## Git — push to `hostinger_prod` (branch `version-3`)
 
-Run from a machine with network access to GitHub (VPS recommended if Windows checkout fails).
+**Local source folder:** `DBSolar_19_09_2023_v2_deploy` (edit code here).
+
+GitHub repo layout:
+
+```
+hostinger_prod/
+  DBSolar_19_09_2023/    ← EasyPanel build path (copy v2_deploy contents here)
+    Dockerfile
+    customer/
+    templates/
+    ...
+```
+
+Run from a machine with network access to GitHub:
 
 ```bash
-# 1) Clone production repo (shallow)
-git clone --depth 1 --branch rollback-version https://github.com/Anuj240996/hostinger_prod.git
+# 1) Clone / checkout version-3
+git clone -b version-3 https://github.com/Anuj240996/hostinger_prod.git
 cd hostinger_prod
 
-# 2) Create Version 2 branch (does not touch rollback-version)
-git checkout -b version-2
-
-# 3) Replace app folder with this deploy copy
-#    (adjust source path to where you uploaded DBSolar_19_09_2023_v2_deploy)
+# 2) Replace app folder with v2_deploy copy
 rm -rf DBSolar_19_09_2023
 cp -r /path/to/DBSolar_19_09_2023_v2_deploy DBSolar_19_09_2023
 
-# 4) Commit and push
+# 3) Commit and push
 git add DBSolar_19_09_2023
-git status
-git commit -m "Deploy Version 2: CRM merge, Docker, production-safe requirements"
-git push -u origin version-2
+git commit -m "Sync from DBSolar_19_09_2023_v2_deploy"
+git push origin version-3
 ```
 
-**Do not** push to `rollback-version`, `main`, or `master`.
+**Do not** push to `rollback-version` or overwrite production V1 without a plan.
 
 ## EasyPanel — new service (keep V1 running)
 
 1. **Add new app** (e.g. `db-solar-v2`) — do not modify the existing V1 app.
-2. **Source:** GitHub `Anuj240996/hostinger_prod`, branch **`version-3`** (use `version-3` for Option A + associate search; `version-2` is older).
+2. **Source:** GitHub `Anuj240996/hostinger_prod`, branch **`version-2`**.
 3. **Build context / root:** `DBSolar_19_09_2023` (folder containing `Dockerfile`).
 4. **Build:** Dockerfile (auto-detected).
 5. **Port:** `8000` (internal). EasyPanel “HTTP port” / target port must be **8000**, not 80.
@@ -54,29 +62,22 @@ EasyPanel’s proxy cannot connect to Gunicorn. Check in order:
 5. **`CSRF_TRUSTED_ORIGINS`** (optional): full URLs only, e.g. `https://db-solar-db-solar-v2.fhibgf.easypanel.host` — or omit and settings will add `https://` from `ALLOWED_HOSTS`. Do **not** copy `ALLOWED_HOSTS` verbatim (no `.easypanel.host` wildcards).
 6. **Rebuild** the image after git push (not only restart) so Dockerfile `collectstatic` runs.
 
-### Environment variables (V2 / version-3 service)
+### Environment variables (V2 service)
 
 | Variable | Example / notes |
 |----------|-----------------|
-| `DATABASE_URL` | `postgres://USER:PASS@database:5432/db_solar_v2` — host must be EasyPanel Postgres service name (**`database`**, not `db_solar_database`) |
+| `DATABASE_URL` | `postgres://USER:PASS@HOST:5432/db_solar_v2` — **separate from V1** |
 | `SECRET_KEY` | New random string |
 | `DEBUG` | `False` |
-| `ALLOWED_HOSTS` | `app.db-solar.co.in,db-solar-db-solar-v2.fhibgf.easypanel.host,.easypanel.host,72.60.98.248,localhost` |
+| `ALLOWED_HOSTS` | `db-solar-db-solar-v2.fhibgf.easypanel.host,.easypanel.host,72.60.98.248,localhost` |
 | `VPS_PUBLIC_IP` | `72.60.98.248` (optional; adds IP to `ALLOWED_HOSTS`) |
 | `WEB_CONCURRENCY` | `1` (default; use `2` only if RAM allows) |
-| `CSRF_TRUSTED_ORIGINS` | **Leave unset** (or `https://app.db-solar.co.in` only) |
+| `CSRF_TRUSTED_ORIGINS` | **Leave unset** (or `https://db-solar-db-solar-v2.fhibgf.easypanel.host` only) |
 | `EMAIL_*` | Same pattern as V1 if email is required |
 
 **Do not set** `CSRF_TRUSTED_ORIGINS` to the same value as `ALLOWED_HOSTS`.
 
 `entrypoint.sh` requires **`DATABASE_URL`** (not only `DB_*`).
-
-### Option A (phone + web share data)
-
-- **Django owns** `db_solar_v2` and runs all migrations.
-- **Phone app must NOT** set `DATABASE_URL` to this database.
-- Phone app calls HTTPS APIs under `/api/` (status: `/api/v1/status/`).
-- Bring **web** up first; change phone app only after web is stable.
 
 ### Health check (fixes “domain correct but page never loads”)
 
