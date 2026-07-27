@@ -37,7 +37,7 @@ git push -u origin version-2
 ## EasyPanel — new service (keep V1 running)
 
 1. **Add new app** (e.g. `db-solar-v2`) — do not modify the existing V1 app.
-2. **Source:** GitHub `Anuj240996/hostinger_prod`, branch **`version-2`**.
+2. **Source:** GitHub `Anuj240996/hostinger_prod`, branch **`version-3`** (use `version-3` for Option A + associate search; `version-2` is older).
 3. **Build context / root:** `DBSolar_19_09_2023` (folder containing `Dockerfile`).
 4. **Build:** Dockerfile (auto-detected).
 5. **Port:** `8000` (internal). EasyPanel “HTTP port” / target port must be **8000**, not 80.
