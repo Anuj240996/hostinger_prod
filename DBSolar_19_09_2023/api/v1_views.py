@@ -35,8 +35,9 @@ def api_status(request):
                 "services_remarks": "/api/v1/services/remarks/",
             },
             "web": {
-                "search_associate_staff": True,
-                "build": "search-associate-v3-20260327",
+                "search_by_associate": True,
+                "build": "search-by-associate-20260728",
+                "page_title": "Search Staff / Consumer / Associate",
             },
         }
     )
