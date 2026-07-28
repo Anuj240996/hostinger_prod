@@ -40,35 +40,28 @@
             <!-- general form elements -->
             <div class="card card-primary">
                <div class="card-header">
-                  <h3 class="card-title">Search Staff / Consumer</h3>
+                  <h3 class="card-title">Search Staff / Consumer / Associate</h3>
                </div>
                <form method="post" id="searchForm">
                   {% csrf_token %}
                   <div class="row mb-1">
                      <div class="col-md-12">
-<!--                   question class static script address     static/css/main.css 74-->
-<!--                        <div class="question">-->
-                          <div class="checkbox-column">
+                          <div class="checkbox-column" style="padding: 12px 20px;">
                               {% if user.is_superuser %}
-                                <label class="search-section-label"><b>Search Staff / Consumer</b></label>
-                                <div class="search-type-row">
-                                    <label class="search-type-option">
-                                        <input type="radio" class="checkbox-input" name="search_by" value="staff" id="radio_1"{% if search_by == 'staff' %} checked{% endif %}>
-                                        <b>Search by Staff</b>
-                                    </label>
-                                    <label class="search-type-option">
-                                        <input type="radio" class="checkbox-input" name="search_by" value="consumer" id="radio_2"{% if search_by == 'consumer' %} checked{% endif %}>
-                                        <b>Search by Consumer</b>
-                                    </label>
-                                    <label class="search-type-option">
-                                        <input type="radio" class="checkbox-input" name="search_by" value="associate_staff" id="radio_3"{% if search_by == 'associate_staff' %} checked{% endif %}>
-                                        <b>Search by Associate</b>
-                                    </label>
-                                </div>
+                                <label><b>Search Staff / Consumer / Associate</b></label><br><br>
+                                <label class="checkbox-label" style="display:inline-flex;align-items:center;margin-right:28px;">
+                                    <input type="radio" class="checkbox-input" name="search_by" value="staff" id="radio_1"{% if search_by == 'staff' or not search_by %} checked{% endif %} style="display:inline-block;width:18px;height:18px;margin-right:8px;">
+                                    <b>Search by Staff</b>
+                                </label>
+                                <label class="checkbox-label" style="display:inline-flex;align-items:center;margin-right:28px;">
+                                    <input type="radio" class="checkbox-input" name="search_by" value="consumer" id="radio_2"{% if search_by == 'consumer' %} checked{% endif %} style="display:inline-block;width:18px;height:18px;margin-right:8px;">
+                                    <b>Search by Consumer</b>
+                                </label>
+                                <label class="checkbox-label" style="display:inline-flex;align-items:center;margin-right:28px;">
+                                    <input type="radio" class="checkbox-input" name="search_by" value="associate_staff" id="radio_3"{% if search_by == 'associate_staff' %} checked{% endif %} style="display:inline-block;width:18px;height:18px;margin-right:8px;">
+                                    <b>Search by Associate</b>
+                                </label>
                             {% endif %}
-
-<!--                           <label for="radio_2"><span><b>Search by Consumer</b></span></label>-->
-<!--                          </div>-->
                            </div>
                      </div>
                   </div>
