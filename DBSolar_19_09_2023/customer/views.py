@@ -5,6 +5,8 @@ from django.contrib.auth.forms import UserCreationForm
 from django.db.models.functions import Trim, Lower, Cast
 from django.http import HttpResponseRedirect
 from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.clickjacking import xframe_options_exempt
+from django.views.decorators.http import require_POST
 
 from detect_barcodes.models import BarcodeImage
 from user.models import Profile
@@ -12,6 +14,7 @@ from .models import customer_technical_Details, Meter, Meters, GenerationMeter, 
     SolarPump
 from django.shortcuts import redirect
 from .models import MSEB
+from .release_agreement import ensure_release_agreement_for_customer
 
 from datetime import datetime, timedelta, date
 # import datetime
@@ -46,6 +49,166 @@ from django.contrib.auth import get_user, logout, login
 from .decorators import auth_users, allowed_users
 from django.contrib import messages
 from .staff_access import associate_users_for_quotation_dropdown, customer_queryset_for_request
+
+
+def _resolve_quotation_id_from_request(request):
+    return (
+        request.GET.get('quotation_id')
+        or request.POST.get('quotation_id')
+        or (request.session.get('quotation_data', {}) or {}).get('quotation_id')
+    )
+
+
+def _mark_quotation_converted_after_consumer_save(request, quotation_id):
+    if not quotation_id:
+        return
+    try:
+        from quotation.conversion_utils import finalize_quotation_conversion_by_id
+
+        finalize_quotation_conversion_by_id(
+            quotation_id,
+            converted_by=request.user if request.user.is_authenticated else None,
+        )
+    except Exception as e:
+        print(f"Failed to mark quotation {quotation_id} as converted: {e}")
+
+
+def _resync_customer_result_id_sequence():
+    """Keep customer_result.id sequence ahead of existing rows (import/manual lag)."""
+    from django.db import connection
+
+    if connection.vendor != "postgresql":
+        return
+    with connection.cursor() as cursor:
+        cursor.execute(
+            """
+            DO $$
+            DECLARE
+                seq_name text;
+                max_id bigint;
+            BEGIN
+                SELECT pg_get_serial_sequence('customer_result', 'id') INTO seq_name;
+                IF seq_name IS NULL THEN
+                    RETURN;
+                END IF;
+                SELECT COALESCE(MAX(id), 0) INTO max_id FROM customer_result;
+                IF max_id > 0 THEN
+                    PERFORM setval(seq_name, max_id, true);
+                ELSE
+                    PERFORM setval(seq_name, 1, false);
+                END IF;
+            END $$;
+            """
+        )
+
+
+def _create_customer_result(*, consumer, consumer_id, assign_to=None):
+    """Create Result row; resync sequence once on duplicate-key IntegrityError."""
+    from django.db import IntegrityError
+    from .models import Result
+
+    payload = {
+        "consumer": consumer,
+        "consumer_id": consumer_id,
+        "AssignTo": assign_to,
+    }
+    try:
+        return Result.objects.create(**payload)
+    except IntegrityError:
+        _resync_customer_result_id_sequence()
+        return Result.objects.create(**payload)
+
+
+DEFAULT_CUSTOMER_MOBILE_PASSWORD = 'admin@123'
+
+
+def _parse_post_int(value, default=0):
+    """Parse form numeric values; accepts whole numbers and decimals (e.g. 3.3 -> 3)."""
+    if value is None:
+        return default
+    text = str(value).strip()
+    if not text:
+        return default
+    try:
+        return int(text)
+    except (ValueError, TypeError):
+        try:
+            return int(float(text))
+        except (ValueError, TypeError):
+            return default
+
+
+def _customer_plain_password_from_request(request):
+    return (request.POST.get('password1') or request.POST.get('password') or '').strip()
+
+
+def _auth_user_record_for_customer(cust):
+    """Load consumer login row from auth_user via Customer.new_customer_id."""
+    from api.models import AuthUser
+
+    if not cust or not cust.new_customer_id:
+        return None
+    return AuthUser.objects.filter(pk=cust.new_customer_id).first()
+
+
+def _resolve_customer_login_password(username, cust):
+    """Find the plain password that authenticates against auth_user for this consumer."""
+    from django.contrib.auth import authenticate
+
+    candidates = []
+    stored = (getattr(cust, 'mobile_app_password', None) or '').strip()
+    if stored:
+        candidates.append(stored)
+    candidates.extend([
+        DEFAULT_CUSTOMER_MOBILE_PASSWORD,
+        str(cust.phone or '').strip(),
+        str(cust.Consumer or '').strip(),
+        str(cust.Cust_id or '').strip(),
+        (username or '').strip(),
+    ])
+    seen = set()
+    for pwd in candidates:
+        if not pwd or pwd in seen:
+            continue
+        seen.add(pwd)
+        if authenticate(username=username, password=pwd):
+            return pwd
+    return None
+
+
+def _customer_api_token_from_auth_user(auth_user, cust):
+    """
+    Return DRF API token for the consumer auth_user (same as /api/get-profile/).
+    Tries stored/candidate passwords first; falls back to the linked User row
+    when legacy consumers have no mobile_app_password on file.
+    """
+    from django.contrib.auth import authenticate
+    from django.contrib.auth.models import User
+    from rest_framework.authtoken.models import Token
+
+    username = (auth_user.username or '').strip()
+    if not username:
+        return None, None
+
+    user = None
+    password = _resolve_customer_login_password(username, cust)
+    if password:
+        user = authenticate(username=username, password=password)
+
+    if not user:
+        user = User.objects.filter(pk=auth_user.pk, username=username).first()
+        if not user:
+            user = User.objects.filter(pk=auth_user.pk).first()
+
+    if not user or user.pk != auth_user.pk:
+        return None, None
+
+    if password and not (getattr(cust, 'mobile_app_password', None) or '').strip():
+        Customer.objects.filter(pk=cust.pk).update(mobile_app_password=password)
+
+    token, _ = Token.objects.get_or_create(user=user)
+    return token.key, username
+
 
 @login_required(login_url='user-login')
 def cust(request):
@@ -682,20 +845,20 @@ def Cust_emp(request):
             user.groups.add(group)
 
             # Retrieve phase value from POST data
-            phase = int(request.POST.get('phase', 0))  # Default to 0 if not provided
+            phase = _parse_post_int(request.POST.get('phase'), 0)
             Comp_name = request.POST['first_name'] + " " + request.POST['last_name']
             first_name = request.POST['first_name']
             middle_name = request.POST['middle_name']
             last_name = request.POST['last_name']
             Address = request.POST['Address']
-            Plant_Capacity = int(request.POST['Plant_Capacity'])
+            Plant_Capacity = _parse_post_int(request.POST.get('Plant_Capacity'))
             Ups_Soft = request.POST['Ups_Soft']
             email = request.POST['email']
-            phone = int(request.POST['phone'])
+            phone = _parse_post_int(request.POST.get('phone'))
             solar_comp = request.POST['solar_comp']
             UPSC = request.POST['UPSC']
             state = request.POST['state']
-            Pincode = int(request.POST['Pincode'])
+            Pincode = _parse_post_int(request.POST.get('Pincode'))
             # po_date = (request.POST['po_date'])
             # Date
             po_date_str = request.POST.get('po_date')
@@ -704,7 +867,7 @@ def Cust_emp(request):
             po_order = request.POST['po_order']
             qunt_solar = request.POST['qunt_solar']
             qunt_inv = request.POST['qunt_inv']
-            Teamid = request.POST['Engineer_Assigned']
+            Teamid = request.POST.get('Engineer_Assigned')
             AssocId = request.POST.get('Associate_Assigned')
             city_name = request.POST.get('city_name')
             new_city_name = request.POST.get('new_city_name')
@@ -730,8 +893,8 @@ def Cust_emp(request):
                 pump_warranty = request.POST.get('pump_warranty')
             else:
                 Consumer = request.POST.get('Consumer')
-                current_load = request.POST.get('Bill_unit')
-                loadsancution = request.POST.get('loadsancution')
+                current_load = _parse_post_int(request.POST.get('Bill_unit'))
+                loadsancution = _parse_post_int(request.POST.get('loadsancution'))
 
             if city_name == "Other" and new_city_name:
                 # Check if the new city already exists in the database
@@ -757,17 +920,14 @@ def Cust_emp(request):
                                 Engg_Assign=team1, Assoc_Assign=assoc_user, qunt_solar=qunt_solar, qunt_inv=qunt_inv, sol_warranty=sol_warranty,
                                 inv_warranty=inv_warranty, com_warranty=com_warranty,
                                 project_type=project_type, solar_pump=solar_pump, pump_qunt=pump_qunt,
-                                pump_warranty=pump_warranty, phase=phase, advance_paid=advance_paid)
+                                pump_warranty=pump_warranty, phase=phase, advance_paid=advance_paid,
+                                mobile_app_password=_customer_plain_password_from_request(request) or DEFAULT_CUSTOMER_MOBILE_PASSWORD)
             new_cust.save()
 
             # If this customer was created from a quotation conversion, mark the quotation converted
-            quotation_id = request.GET.get('quotation_id') or request.POST.get('quotation_id') or \
-                           (request.session.get('quotation_data', {}) or {}).get('quotation_id')
+            quotation_id = _resolve_quotation_id_from_request(request)
             if quotation_id:
-                try:
-                    Quotation.objects.filter(pk=quotation_id).update(convert_consumer=True)
-                except Exception as e:
-                    print(f"Failed to mark quotation {quotation_id} as converted: {e}")
+                _mark_quotation_converted_after_consumer_save(request, quotation_id)
 
             # # If this customer was created from a quotation conversion, mark the quotation converted
             # quotation_id = request.GET.get('quotation_id') or request.POST.get('quotation_id') or \
@@ -779,27 +939,17 @@ def Cust_emp(request):
             #         print(f"Failed to mark quotation {quotation_id} as converted: {e}")
 
             # After saving Customer, create related Result entry
-            result = Result.objects.create(
-                consumer=Comp_name,  # Or any other field like customer name
-                consumer_id=new_cust,  # Link to newly created Customer
-                AssignTo=Emp_id if isinstance(Emp_id, User) else None  # Assign the engineer if available
+            _create_customer_result(
+                consumer=Comp_name,
+                consumer_id=new_cust,
+                assign_to=Emp_id if isinstance(Emp_id, User) else None,
             )
-            result.save()
             messages.info(request, 'New Customer enrolled Successfully')
 
-            cust = customer_queryset_for_request(request.user)
-            if Cust_id:
-                cust = cust.filter(Cust_id=Cust_id)
-                context = {
-                    'cust': cust,
-                    'count1': count1,
-                    'notification1': notification1,
-                    'engineers': engineers,
-                    'associates': associates,
-                    'cities': cities,
-                }
-                return render(request, 'customer/Cust_emp.html', context)
-            return HttpResponseRedirect("customer/Cust_emp")
+            # Save & Exit → leave the form; Save & New / default → fresh form (PRG)
+            if request.POST.get('save_exit'):
+                return redirect('customer-cust')
+            return redirect('customer-Cust_emp')
         else:
             context['form'] = form
             return render(request, 'customer/Cust_emp.html', context)
@@ -1051,35 +1201,19 @@ def Comm_Cust(request):
                 Address = request.POST['Address']
 
                 # SAFELY convert Plant_Capacity to int
-                Plant_Capacity = 0
-                try:
-                    Plant_Capacity = int(request.POST['Plant_Capacity'])
-                except (ValueError, TypeError):
-                    # Try float first, then convert to int
-                    try:
-                        Plant_Capacity = int(float(request.POST['Plant_Capacity']))
-                    except:
-                        Plant_Capacity = 0
+                Plant_Capacity = _parse_post_int(request.POST.get('Plant_Capacity'))
 
                 Ups_Soft = request.POST['Ups_Soft']
 
                 # SAFELY convert phone to int
-                phone = 0
-                try:
-                    phone = int(request.POST['phone'])
-                except (ValueError, TypeError):
-                    phone = 0
+                phone = _parse_post_int(request.POST.get('phone'))
 
                 solar_comp = request.POST['solar_comp']
                 UPSC = request.POST['UPSC']
                 state = request.POST['state']
 
                 # SAFELY convert Pincode to int
-                Pincode = 0
-                try:
-                    Pincode = int(request.POST['Pincode'])
-                except (ValueError, TypeError):
-                    Pincode = 0
+                Pincode = _parse_post_int(request.POST.get('Pincode'))
 
                 po_date = request.POST['po_date']
                 po_order = request.POST['po_order']
@@ -1097,7 +1231,7 @@ def Comm_Cust(request):
                 except (ValueError, TypeError):
                     qunt_inv = 0
 
-                Teamid = request.POST['Engineer_Assigned']
+                Teamid = request.POST.get('Engineer_Assigned')
                 AssocId = request.POST.get('Associate_Assigned')
                 city_name = request.POST.get('city_name')
                 new_city_name = request.POST.get('new_city_name')
@@ -1139,8 +1273,8 @@ def Comm_Cust(request):
                     pump_warranty = request.POST.get('pump_warranty')
                 else:
                     Consumer = request.POST.get('Consumer')
-                    current_load = request.POST.get('Bill_unit')
-                    loadsancution = request.POST.get('loadsancution')
+                    current_load = _parse_post_int(request.POST.get('Bill_unit'))
+                    loadsancution = _parse_post_int(request.POST.get('loadsancution'))
 
                 if city_name == "Other" and new_city_name:
                     # Check if the new city already exists in the database
@@ -1194,26 +1328,22 @@ def Comm_Cust(request):
                     pump_qunt=pump_qunt,
                     pump_warranty=pump_warranty,
                     phase=phase,
-                    advance_paid=advance_paid
+                    advance_paid=advance_paid,
+                    mobile_app_password=_customer_plain_password_from_request(request) or DEFAULT_CUSTOMER_MOBILE_PASSWORD,
                 )
                 new_cust.save()
 
                 # If this customer was created from a quotation conversion, mark the quotation converted
-                quotation_id = request.GET.get('quotation_id') or request.POST.get('quotation_id') or \
-                               (request.session.get('quotation_data', {}) or {}).get('quotation_id')
+                quotation_id = _resolve_quotation_id_from_request(request)
                 if quotation_id:
-                    try:
-                        Quotation.objects.filter(pk=quotation_id).update(convert_consumer=True)
-                    except Exception as e:
-                        print(f"Failed to mark quotation {quotation_id} as converted: {e}")
+                    _mark_quotation_converted_after_consumer_save(request, quotation_id)
 
                 # After saving Customer, create related Result entry
-                result = Result.objects.create(
+                _create_customer_result(
                     consumer=Comp_name,
                     consumer_id=new_cust,
-                    AssignTo=Emp_id if isinstance(Emp_id, User) else None
+                    assign_to=Emp_id if isinstance(Emp_id, User) else None,
                 )
-                result.save()
 
                 messages.info(request, 'New Customer enrolled Successfully')
                 cust = customer_queryset_for_request(request.user)
@@ -1830,15 +1960,15 @@ def Comp_Cust(request):
         advance_paid = request.POST.get('advance_paid', 'not_paid')
 
         # Integers (safe)
-        Plant_Capacity = int(request.POST.get('Plant_Capacity', 0))
-        phone = int(request.POST.get('phone', 0))
-        Pincode = int(request.POST.get('Pincode', 0))
-        qunt_solar = int(request.POST.get('qunt_solar', 0))
-        qunt_inv = int(request.POST.get('qunt_inv', 0))
-        sol_warranty = int(request.POST.get('sol_warranty', 0))
-        inv_warranty = int(request.POST.get('inv_warranty', 0))
-        com_warranty = int(request.POST.get('com_warranty', 0))
-        phase = int(request.POST.get('phase', 0))
+        Plant_Capacity = _parse_post_int(request.POST.get('Plant_Capacity'))
+        phone = _parse_post_int(request.POST.get('phone'))
+        Pincode = _parse_post_int(request.POST.get('Pincode'))
+        qunt_solar = _parse_post_int(request.POST.get('qunt_solar'))
+        qunt_inv = _parse_post_int(request.POST.get('qunt_inv'))
+        sol_warranty = _parse_post_int(request.POST.get('sol_warranty'))
+        inv_warranty = _parse_post_int(request.POST.get('inv_warranty'))
+        com_warranty = _parse_post_int(request.POST.get('com_warranty'))
+        phase = _parse_post_int(request.POST.get('phase'))
 
         # Date
         po_date_str = request.POST.get('po_date')
@@ -1853,7 +1983,10 @@ def Comp_Cust(request):
 
         # ---------------- ENGINEER ----------------
         Teamid = request.POST.get('Engineer_Assigned')
-        team1 = User.objects.get(id=Teamid) if Teamid else None
+        if Teamid:
+            team1 = User.objects.get(id=Teamid)
+        else:
+            team1 = User.objects.get(id=1)
         AssocId = request.POST.get('Associate_Assigned')
         assoc_user = User.objects.get(id=AssocId) if AssocId else None
 
@@ -1867,12 +2000,12 @@ def Comp_Cust(request):
 
         if project_type == "Water Pump":
             solar_pump = request.POST.get('solar_pump')
-            pump_qunt = int(request.POST.get('pump_qunt', 0))
-            pump_warranty = int(request.POST.get('pump_warranty', 0))
+            pump_qunt = _parse_post_int(request.POST.get('pump_qunt'))
+            pump_warranty = _parse_post_int(request.POST.get('pump_warranty'))
         else:
             Consumer = request.POST.get('Consumer')
-            current_load = int(request.POST.get('Bill_unit', 0))
-            loadsancution = int(request.POST.get('loadsancution', 0))
+            current_load = _parse_post_int(request.POST.get('Bill_unit'))
+            loadsancution = _parse_post_int(request.POST.get('loadsancution'))
 
         # ---------------- CUSTOMER SAVE ----------------
         Cust_id = 1001 if Customer.objects.count() == 0 else Customer.objects.aggregate(max=Max('Cust_id'))["max"] + 1
@@ -1910,7 +2043,8 @@ def Comp_Cust(request):
             pump_qunt=pump_qunt,
             pump_warranty=pump_warranty,
             phase=phase,
-            advance_paid=advance_paid
+            advance_paid=advance_paid,
+            mobile_app_password=_customer_plain_password_from_request(request) or DEFAULT_CUSTOMER_MOBILE_PASSWORD,
         )
 
         # # If this customer was created from a quotation conversion, mark the quotation converted
@@ -1931,21 +2065,16 @@ def Comp_Cust(request):
         new_cust.save()
 
         # If this customer was created from a quotation conversion, mark the quotation converted
-        quotation_id = request.GET.get('quotation_id') or request.POST.get('quotation_id') or \
-                       (request.session.get('quotation_data', {}) or {}).get('quotation_id')
+        quotation_id = _resolve_quotation_id_from_request(request)
         if quotation_id:
-            try:
-                Quotation.objects.filter(pk=quotation_id).update(convert_consumer=True)
-            except Exception as e:
-                print(f"Failed to mark quotation {quotation_id} as converted: {e}")
+            _mark_quotation_converted_after_consumer_save(request, quotation_id)
 
         # After saving Customer, create related Result entry
-        result = Result.objects.create(
+        _create_customer_result(
             consumer=Comp_name,
             consumer_id=new_cust,
-            AssignTo=request.user
+            assign_to=request.user,
         )
-        result.save()
 
         messages.success(request, "New Customer enrolled Successfully")
         return HttpResponseRedirect(reverse('customer-cust'))
@@ -2073,21 +2202,21 @@ def Govt_Cust(request):
             user.groups.add(group)
 
             # Retrieve phase value from POST data
-            phase = int(request.POST.get('phase', 0))  # Default to 0 if not provided
+            phase = _parse_post_int(request.POST.get('phase'), 0)
 
             Comp_name = request.POST['Comp_name']
             Consumer = request.POST['Consumer']
-            current_load = request.POST['Bill_unit']
+            current_load = _parse_post_int(request.POST.get('Bill_unit'))
             Address = request.POST['Address']
-            Plant_Capacity = int(request.POST['Plant_Capacity'])
+            Plant_Capacity = _parse_post_int(request.POST.get('Plant_Capacity'))
             Ups_Soft = request.POST['Ups_Soft']
             email = request.POST['email']
-            phone = int(request.POST['phone'])
+            phone = _parse_post_int(request.POST.get('phone'))
             solar_comp = request.POST['solar_comp']
             UPSC = request.POST['UPSC']
             state = request.POST['state']
-            Pincode = int(request.POST['Pincode'])
-            loadsancution = request.POST['loadsancution']
+            Pincode = _parse_post_int(request.POST.get('Pincode'))
+            loadsancution = _parse_post_int(request.POST.get('loadsancution'))
             # po_date = (request.POST['po_date'])
             # Date
             po_date_str = request.POST.get('po_date')
@@ -2096,7 +2225,7 @@ def Govt_Cust(request):
             po_order = request.POST['po_order']
             qunt_solar = request.POST['qunt_solar']
             qunt_inv = request.POST['qunt_inv']
-            Teamid = request.POST['Engineer_Assigned']
+            Teamid = request.POST.get('Engineer_Assigned')
             AssocId = request.POST.get('Associate_Assigned')
             city_name = request.POST.get('city_name')
             new_city_name = request.POST.get('new_city_name')
@@ -2122,8 +2251,8 @@ def Govt_Cust(request):
                 pump_warranty = request.POST.get('pump_warranty')
             else:
                 Consumer = request.POST.get('Consumer')
-                current_load = request.POST.get('Bill_unit')
-                loadsancution = request.POST.get('loadsancution')
+                current_load = _parse_post_int(request.POST.get('Bill_unit'))
+                loadsancution = _parse_post_int(request.POST.get('loadsancution'))
 
             if city_name == "Other" and new_city_name:
                 # Check if the new city already exists in the database
@@ -2173,27 +2302,23 @@ def Govt_Cust(request):
                 pump_qunt=pump_qunt,
                 pump_warranty=pump_warranty,
                 phase=phase,
-                advance_paid=advance_paid
+                advance_paid=advance_paid,
+                mobile_app_password=_customer_plain_password_from_request(request) or DEFAULT_CUSTOMER_MOBILE_PASSWORD,
             )
             new_cust.save()
 
             # If this customer was created from a quotation conversion, mark the quotation converted
-            quotation_id = request.GET.get('quotation_id') or request.POST.get('quotation_id') or \
-                           (request.session.get('quotation_data', {}) or {}).get('quotation_id')
+            quotation_id = _resolve_quotation_id_from_request(request)
             if quotation_id:
-                try:
-                    Quotation.objects.filter(pk=quotation_id).update(convert_consumer=True)
-                except Exception as e:
-                    print(f"Failed to mark quotation {quotation_id} as converted: {e}")
+                _mark_quotation_converted_after_consumer_save(request, quotation_id)
 
 
             # After saving Customer, create related Result entry
-            result = Result.objects.create(
+            _create_customer_result(
                 consumer=Comp_name,
                 consumer_id=new_cust,
-                AssignTo=Emp_id if isinstance(Emp_id, User) else None
+                assign_to=Emp_id if isinstance(Emp_id, User) else None,
             )
-            result.save()
 
             messages.info(request, 'New Consumer enrolled Successfully')
             cust = customer_queryset_for_request(request.user)
@@ -2236,6 +2361,222 @@ def showresults(request):
 
 from django.db.models import Q
 from django.utils import timezone
+
+from customer.mobile_app_links import (
+    attach_mobile_app_links,
+    delete_app_auth_link,
+    mobile_app_link_payload,
+)
+
+
+def _compute_project_status_from_result(project_type, result):
+    """
+    Project Status from customer_result flags, gated by consumer.project_type:
+    - Rooftop: solar_panel, inverter, net_meter, mseb, inspection_report
+    - Water Pump: solar_panel, solar_pump, inspection_report, controller
+    """
+    if not result:
+        return 'Pending'
+
+    pt = (project_type or '').strip().lower().replace('_', ' ')
+    if 'water' in pt and 'pump' in pt:
+        fields = ('solar_panel', 'solar_pump', 'inspection_report', 'controller')
+    elif 'rooftop' in pt:
+        fields = ('solar_panel', 'inverter', 'net_meter', 'mseb', 'inspection_report')
+    else:
+        return 'Pending'
+
+    if all(bool(getattr(result, field, False)) for field in fields):
+        return 'Completed'
+    return 'Pending'
+
+
+def _attach_project_statuses(emps):
+    """Set emp.project_status from latest customer_result row per consumer."""
+    from .models import Result
+
+    customers = list(emps)
+    if not customers:
+        return customers
+
+    cust_ids = [c.Cust_id for c in customers]
+    results = (
+        Result.objects.filter(consumer_id_id__in=cust_ids)
+        .order_by('consumer_id_id', '-id')
+    )
+    latest = {}
+    for row in results:
+        if row.consumer_id_id not in latest:
+            latest[row.consumer_id_id] = row
+
+    for cust in customers:
+        cust.project_status = _compute_project_status_from_result(
+            getattr(cust, 'project_type', None),
+            latest.get(cust.Cust_id),
+        )
+    return customers
+
+
+def _attach_release_agreements(emps):
+    """Attach latest Release/Agreement doc + Result readiness onto each customer."""
+    from .models import ConsumerReleaseAgreement, Result
+    from .release_agreement import result_is_release_ready
+
+    customers = list(emps)
+    if not customers:
+        return customers
+
+    cust_ids = [c.Cust_id for c in customers]
+    docs = (
+        ConsumerReleaseAgreement.objects.filter(customer_id__in=cust_ids)
+        .order_by('customer_id', '-created_at')
+    )
+    latest_docs = {}
+    for doc in docs:
+        if doc.customer_id not in latest_docs:
+            latest_docs[doc.customer_id] = doc
+
+    results = (
+        Result.objects.filter(consumer_id_id__in=cust_ids)
+        .order_by('consumer_id_id', '-id')
+    )
+    latest_results = {}
+    for row in results:
+        cid = row.consumer_id_id
+        if cid not in latest_results:
+            latest_results[cid] = row
+
+    for cust in customers:
+        cust.release_agreement = latest_docs.get(cust.Cust_id)
+        result = latest_results.get(cust.Cust_id)
+        cust.customer_result = result
+        cust.release_ready = result_is_release_ready(result)
+    return customers
+
+
+@login_required(login_url='user-login')
+@xframe_options_exempt
+def download_release_agreement(request, cust_id, doc_type='release'):
+    """Serve Release or Agreement PDF for a consumer (embeddable in modal iframe)."""
+    from io import BytesIO
+    from django.http import FileResponse, Http404
+    from .models import Customer, ConsumerReleaseAgreement
+
+    customer = get_object_or_404(Customer, Cust_id=cust_id)
+    doc_type = (doc_type or request.GET.get('type') or 'release').strip().lower()
+    if doc_type not in ('release', 'agreement'):
+        doc_type = 'release'
+
+    doc = (
+        ConsumerReleaseAgreement.objects.filter(customer=customer)
+        .order_by('-created_at')
+        .first()
+    )
+    if not doc:
+        raise Http404('No Release & Agreement documents found for this consumer.')
+
+    pdf_bytes = doc.get_pdf_bytes(doc_type)
+    if not pdf_bytes:
+        raise Http404(
+            f'{doc_type.title()} PDF is not available for this consumer yet. '
+            'Please upload it again from the Attached Doc Add button.'
+        )
+
+    filename = f'{doc_type}_{cust_id}.pdf'
+    response = FileResponse(
+        BytesIO(pdf_bytes),
+        as_attachment=False,
+        filename=filename,
+        content_type='application/pdf',
+    )
+    response['Content-Disposition'] = f'inline; filename="{filename}"'
+    response['X-Frame-Options'] = 'SAMEORIGIN'
+    response['Content-Security-Policy'] = "frame-ancestors 'self'"
+    response['Content-Length'] = str(len(pdf_bytes))
+    response['Cache-Control'] = 'private, max-age=300'
+    return response
+
+
+@login_required(login_url='user-login')
+@require_POST
+def upload_release_agreement_docs(request, cust_id):
+    """Upload Release and/or Agreement PDFs separately for a consumer."""
+    from .models import Customer, Result
+    from .release_agreement import save_uploaded_doc, result_is_release_ready
+
+    customer = get_object_or_404(Customer, Cust_id=cust_id)
+    result = Result.objects.filter(consumer_id=customer).order_by('-id').first()
+    if not result_is_release_ready(result):
+        return JsonResponse(
+            {
+                'ok': False,
+                'error': (
+                    'Add is allowed only when solar_panel, inverter, net_meter, '
+                    'mseb and inspection_report are all True in customer_result.'
+                ),
+            },
+            status=400,
+        )
+
+    release_file = request.FILES.get('release_pdf')
+    agreement_file = request.FILES.get('agreement_pdf')
+    if not release_file and not agreement_file:
+        return JsonResponse({'ok': False, 'error': 'Please select at least one PDF to upload.'}, status=400)
+
+    try:
+        doc = None
+        if release_file:
+            doc = save_uploaded_doc(customer, 'release', release_file, user=request.user)
+        if agreement_file:
+            doc = save_uploaded_doc(customer, 'agreement', agreement_file, user=request.user)
+    except ValueError as exc:
+        return JsonResponse({'ok': False, 'error': str(exc)}, status=400)
+    except Exception as exc:
+        return JsonResponse({'ok': False, 'error': str(exc)}, status=500)
+
+    return JsonResponse({
+        'ok': True,
+        'cust_id': customer.Cust_id,
+        'release_ready': True,
+        'has_release': bool(doc and doc.has_release_pdf),
+        'has_agreement': bool(doc and doc.has_agreement_pdf),
+        'has_both': bool(doc and doc.has_both_pdfs),
+        'release_url': f'/customer/release_agreement/{customer.Cust_id}/release/',
+        'agreement_url': f'/customer/release_agreement/{customer.Cust_id}/agreement/',
+    })
+
+
+@login_required(login_url='user-login')
+@require_POST
+def delete_release_agreement_doc(request, cust_id, doc_type):
+    """Delete Release or Agreement PDF for a consumer."""
+    from .models import Customer, Result
+    from .release_agreement import delete_uploaded_doc, result_is_release_ready
+
+    customer = get_object_or_404(Customer, Cust_id=cust_id)
+    doc_type = (doc_type or '').strip().lower()
+    if doc_type not in ('release', 'agreement'):
+        return JsonResponse({'ok': False, 'error': 'Invalid document type.'}, status=400)
+
+    try:
+        doc = delete_uploaded_doc(customer, doc_type)
+    except ValueError as exc:
+        return JsonResponse({'ok': False, 'error': str(exc)}, status=400)
+    except Exception as exc:
+        return JsonResponse({'ok': False, 'error': str(exc)}, status=500)
+
+    result = Result.objects.filter(consumer_id=customer).order_by('-id').first()
+    return JsonResponse({
+        'ok': True,
+        'cust_id': customer.Cust_id,
+        'deleted': doc_type,
+        'release_ready': result_is_release_ready(result),
+        'has_release': bool(doc and doc.has_release_pdf),
+        'has_agreement': bool(doc and doc.has_agreement_pdf),
+        'has_both': bool(doc and doc.has_both_pdfs),
+        'release_url': f'/customer/release_agreement/{customer.Cust_id}/release/',
+        'agreement_url': f'/customer/release_agreement/{customer.Cust_id}/agreement/',
+    })
 
 
 @login_required(login_url='user-login')
@@ -2354,44 +2695,11 @@ def view_all_cust(request):
                 current_month = today.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
                 emps = _po_date_cast(emps).filter(_po_d_cast__gte=current_month.date())
 
-        # Calculate project status (all users; queryset already scoped above)
-        project_status_list = []
-        for cust in emps:
-            solar_condition = BarcodeImage.objects.filter(product_name='SolarPanel',
-                                                          AssignTo_id=cust.new_customer_id).count() >= cust.qunt_solar
-
-            inverter_condition = BarcodeImage.objects.filter(product_name='Inverter',
-                                                             AssignTo_id=cust.new_customer_id).count() >= cust.qunt_inv
-
-            meter_condition = (
-                    Meters.objects.annotate(trimmed=Trim('comp_name'))
-                    .filter(trimmed=cust.Comp_name.strip()).exists()
-                    and
-                    GenerationMeter.objects.annotate(trimmed=Trim('comp_name'))
-                    .filter(trimmed=cust.Comp_name.strip()).exists()
-            )
-
-            mseb_condition = MSEB.objects.filter(
-                customer__Cust_id=cust.Cust_id,
-                installation_date_date__isnull=False
-            ).exists()
-
-            if solar_condition and inverter_condition and meter_condition and mseb_condition:
-                project_status = "Completed"
-            else:
-                project_status = "Pending"
-
-            project_status_list.append({
-                'Cust_id': cust.Cust_id,
-                'project_status': project_status
-            })
-
+        # Project status from customer_result flags by project_type (Rooftop / Water Pump)
         emps = list(emps)
-        for emp in emps:
-            for status in project_status_list:
-                if emp.Cust_id == status['Cust_id']:
-                    emp.project_status = status['project_status']
-                    break
+        emps = _attach_project_statuses(emps)
+        emps = attach_mobile_app_links(emps)
+        emps = _attach_release_agreements(emps)
 
         context = {
 
@@ -2404,45 +2712,10 @@ def view_all_cust(request):
         }
         return render(request, 'customer/view_all_cust.html', context)
     elif request.method == 'GET':
-        project_status_list = []
-        for cust in emps:
-
-            solar_condition = BarcodeImage.objects.filter(product_name='SolarPanel',
-                                                          AssignTo_id=cust.new_customer_id).count() >= cust.qunt_solar
-            inverter_condition = BarcodeImage.objects.filter(product_name='Inverter',
-                                                             AssignTo_id=cust.new_customer_id).count() >= cust.qunt_inv
-
-            meter_condition = (
-                    Meters.objects.annotate(trimmed=Trim('comp_name'))
-                    .filter(trimmed=cust.Comp_name.strip()).exists()
-                    and
-                    GenerationMeter.objects.annotate(trimmed=Trim('comp_name'))
-                    .filter(trimmed=cust.Comp_name.strip()).exists()
-            )
-
-            mseb_condition = MSEB.objects.filter(
-                customer__Cust_id=cust.Cust_id,
-                installation_date_date__isnull=False
-            ).exists()
-
-            # Determine project status
-            if solar_condition and inverter_condition and meter_condition and mseb_condition:
-                project_status = "Completed"
-            else:
-                project_status = "Pending"
-
-            project_status_list.append({
-                'Cust_id': cust.Cust_id,
-                'project_status': project_status
-            })
-
-        # Merge status list with customers
         emps = list(emps)
-        for emp in emps:
-            for status in project_status_list:
-                if emp.Cust_id == status['Cust_id']:
-                    emp.project_status = status['project_status']
-                    break
+        emps = _attach_project_statuses(emps)
+        emps = attach_mobile_app_links(emps)
+        emps = _attach_release_agreements(emps)
 
         context = {
 
@@ -2458,6 +2731,283 @@ def view_all_cust(request):
         return render(request, 'customer/view_all_cust.html', context)
     else:
         return HttpResponse('An Exception Occurred')
+
+
+def _consumer_email_for_customer(cust):
+    if cust.new_customer and getattr(cust.new_customer, 'email', None):
+        return (cust.new_customer.email or '').strip()
+    return (cust.email or '').strip()
+
+
+def _resolve_mobile_qr_logo_path():
+    import os
+
+    from django.conf import settings
+
+    candidates = [
+        os.path.join(settings.BASE_DIR, 'static', 'images', 'db_logo_200.png'),
+        os.path.join(settings.BASE_DIR, 'static', 'images', 'dblogosmall.png'),
+        os.path.join(getattr(settings, 'STATIC_ROOT', '') or '', 'images', 'db_logo_200.png'),
+    ]
+    for path in candidates:
+        if path and os.path.isfile(path):
+            return path
+    return None
+
+
+def _is_opaque_logo_backdrop(red, green, blue, alpha):
+    """Opaque flat backdrop only; transparent pixels are kept out of flood-fill."""
+    if alpha < 20:
+        return False
+    if red > 230 and green > 230 and blue > 230:
+        return True
+    if red < 55 and green < 55 and blue < 55:
+        return True
+    return False
+
+
+def _strip_flat_logo_background(logo):
+    """Remove connected black/white backdrop from logo edges; keep SOLAR text and artwork."""
+    rgba = logo.convert('RGBA')
+    pixels = rgba.load()
+    width, height = rgba.size
+
+    visited = set()
+    stack = []
+    for seed_x, seed_y in ((0, 0), (width - 1, 0), (0, height - 1), (width - 1, height - 1)):
+        if _is_opaque_logo_backdrop(*pixels[seed_x, seed_y]):
+            stack.append((seed_x, seed_y))
+
+    while stack:
+        x, y = stack.pop()
+        if (x, y) in visited or x < 0 or y < 0 or x >= width or y >= height:
+            continue
+        red, green, blue, alpha = pixels[x, y]
+        if not _is_opaque_logo_backdrop(red, green, blue, alpha):
+            continue
+        visited.add((x, y))
+        pixels[x, y] = (red, green, blue, 0)
+        stack.extend(((x + 1, y), (x - 1, y), (x, y + 1), (x, y - 1)))
+
+    bbox = rgba.getbbox()
+    return rgba.crop(bbox) if bbox else rgba
+
+
+def _apply_company_logo_to_qr_image(qr_img):
+    """Clear QR center (white space), then overlay transparent logo artwork only."""
+    from PIL import Image, ImageDraw
+
+    logo_path = _resolve_mobile_qr_logo_path()
+    if not logo_path:
+        return qr_img.convert('RGB') if qr_img.mode != 'RGB' else qr_img
+
+    base = qr_img.convert('RGB')
+    qr_width, qr_height = base.size
+    resample = getattr(getattr(Image, 'Resampling', Image), 'LANCZOS', Image.LANCZOS)
+
+    # White center space in QR; logo is smaller and has no background of its own.
+    clear_size = int(min(qr_width, qr_height) * 0.18)
+    pad = max(6, int(clear_size * 0.16))
+    clear_box = clear_size + (pad * 2)
+    clear_x = (qr_width - clear_box) // 2
+    clear_y = (qr_height - clear_box) // 2
+
+    ImageDraw.Draw(base).rectangle(
+        (clear_x, clear_y, clear_x + clear_box, clear_y + clear_box),
+        fill='white',
+    )
+
+    logo = _strip_flat_logo_background(Image.open(logo_path))
+    # Fill the white center square; do not change clear_box size above.
+    logo_max = int(clear_box * 0.92)
+    logo.thumbnail((logo_max, logo_max), resample)
+
+    logo_w, logo_h = logo.size
+    logo_x = clear_x + ((clear_box - logo_w) // 2)
+    logo_y = clear_y + ((clear_box - logo_h) // 2)
+    base.paste(logo, (logo_x, logo_y), logo)
+    return base
+
+
+def _build_customer_mobile_qr_data(cust):
+    """Build mobile app QR payload and PNG bytes for a consumer."""
+    import base64
+    import json
+
+    import qrcode
+
+    if not cust or not cust.new_customer_id:
+        return None, 'This customer has no login user account.'
+
+    auth_user = _auth_user_record_for_customer(cust)
+    if not auth_user:
+        return None, 'Login user not found in auth_user table.'
+
+    api_token, username = _customer_api_token_from_auth_user(auth_user, cust)
+    if not api_token:
+        return None, (
+            'Could not create API token. Verify username/password in auth_user for this consumer.'
+        )
+
+    display_name = (
+        cust.Comp_name or f'{cust.first_name or ""} {cust.last_name or ""}'.strip() or username
+    ).strip()
+    payload = {
+        'type': 'dbsolar_project_add',
+        'token': api_token,
+        'cust_id': cust.Cust_id,
+        'customer_name': display_name,
+        'username': username,
+        'auth_user_id': auth_user.pk,
+    }
+    qr_data = json.dumps(payload, separators=(',', ':'))
+
+    qr = qrcode.QRCode(
+        version=None,
+        error_correction=qrcode.constants.ERROR_CORRECT_H,
+        box_size=8,
+        border=2,
+    )
+    qr.add_data(qr_data)
+    qr.make(fit=True)
+    img = _apply_company_logo_to_qr_image(qr.make_image(fill_color='black', back_color='white'))
+
+    buffer = BytesIO()
+    img.save(buffer, format='PNG')
+    png_bytes = buffer.getvalue()
+    qr_base64 = base64.b64encode(png_bytes).decode('ascii')
+
+    return {
+        'username': username,
+        'token': api_token,
+        'auth_user_id': auth_user.pk,
+        'cust_id': cust.Cust_id,
+        'customer_name': display_name,
+        'consumer_phone': str(cust.phone or ''),
+        'consumer_email': _consumer_email_for_customer(cust),
+        'png_bytes': png_bytes,
+        'qr_image': f'data:image/png;base64,{qr_base64}',
+        'qr_payload': qr_data,
+    }, None
+
+
+def _mobile_qr_email_body(qr_data):
+    return (
+        'Dear Consumer,\n\n'
+        'Please find attached the DB SOLAR mobile app QR code for your project.\n\n'
+        f'Company / Consumer: {qr_data["customer_name"]}\n'
+        f'Customer ID: {qr_data["cust_id"]}\n'
+        f'Username: {qr_data["username"]}\n\n'
+        'Open the DB SOLAR mobile app and scan the attached QR code to add this project '
+        'to your project list.\n\n'
+        'Regards,\n'
+        'DB SOLAR Team'
+    )
+
+
+def _mobile_qr_attachment_filename(qr_data):
+    safe_name = re.sub(r'[^\w\s-]', '', qr_data['customer_name']).strip().replace(' ', '_') or 'consumer'
+    return f'DB_Solar_QR_{safe_name}_{qr_data["cust_id"]}.png'
+
+
+@login_required(login_url='user-login')
+def generate_customer_mobile_qr(request, cust_id):
+    """Generate QR with API token from auth_user login for mobile project list."""
+    cust = (
+        customer_queryset_for_request(request.user)
+        .filter(Cust_id=cust_id)
+        .first()
+    )
+    if not cust:
+        return JsonResponse({'error': 'Customer not found or access denied.'}, status=404)
+
+    qr_data, error = _build_customer_mobile_qr_data(cust)
+    if error:
+        return JsonResponse({'error': error}, status=400)
+
+    return JsonResponse({
+        'username': qr_data['username'],
+        'token': qr_data['token'],
+        'auth_user_id': qr_data['auth_user_id'],
+        'cust_id': qr_data['cust_id'],
+        'customer_name': qr_data['customer_name'],
+        'consumer_phone': qr_data['consumer_phone'],
+        'consumer_email': qr_data['consumer_email'],
+        'qr_image': qr_data['qr_image'],
+        'qr_payload': qr_data['qr_payload'],
+    })
+
+
+@login_required(login_url='user-login')
+@require_POST
+def send_customer_mobile_qr_email(request, cust_id):
+    """Email the mobile app QR PNG as an attachment to the consumer."""
+    from django.conf import settings
+    from django.core.mail import EmailMessage
+
+    cust = (
+        customer_queryset_for_request(request.user)
+        .filter(Cust_id=cust_id)
+        .first()
+    )
+    if not cust:
+        return JsonResponse({'error': 'Customer not found or access denied.'}, status=404)
+
+    qr_data, error = _build_customer_mobile_qr_data(cust)
+    if error:
+        return JsonResponse({'error': error}, status=400)
+
+    to_email = (request.POST.get('email') or qr_data['consumer_email'] or '').strip()
+    if not to_email:
+        return JsonResponse(
+            {'error': 'Consumer email is not available. Please update the consumer email first.'},
+            status=400,
+        )
+
+    subject = f'DB SOLAR Mobile App QR - {qr_data["customer_name"]}'
+    body = _mobile_qr_email_body(qr_data)
+    from_email = getattr(settings, 'DEFAULT_FROM_EMAIL', None) or settings.EMAIL_HOST_USER
+    filename = _mobile_qr_attachment_filename(qr_data)
+
+    try:
+        message = EmailMessage(subject, body, from_email, [to_email])
+        message.attach(filename, qr_data['png_bytes'], 'image/png')
+        message.send(fail_silently=False)
+    except Exception as exc:
+        return JsonResponse({'error': f'Failed to send email: {exc}'}, status=500)
+
+    return JsonResponse({
+        'success': True,
+        'message': f'QR code with attachment sent to {to_email}',
+        'email': to_email,
+    })
+
+
+@login_required(login_url='user-login')
+@require_POST
+def delete_customer_mobile_app_link(request, link_id):
+    """Remove one app_auth_links row so the project unlinks from the mobile app."""
+    cust_id = request.POST.get('cust_id')
+    if not cust_id:
+        return JsonResponse({'error': 'cust_id is required.'}, status=400)
+
+    cust = (
+        customer_queryset_for_request(request.user)
+        .filter(Cust_id=cust_id)
+        .first()
+    )
+    if not cust:
+        return JsonResponse({'error': 'Customer not found or access denied.'}, status=404)
+    if not cust.new_customer_id:
+        return JsonResponse({'error': 'This customer has no login user account.'}, status=400)
+
+    if not delete_app_auth_link(link_id, cust.new_customer_id):
+        return JsonResponse({'error': 'Mobile app link not found.'}, status=404)
+
+    attach_mobile_app_links([cust])
+    payload = mobile_app_link_payload(cust)
+    payload.update({'success': True, 'cust_id': cust.Cust_id})
+    return JsonResponse(payload)
 
 
 @login_required(login_url='user-login')
@@ -2597,7 +3147,7 @@ def customer_update(request, Cust_id):
         us = request.POST['upssoft']
         qunt_solar = request.POST['qunt_solar']
         qunt_inv = request.POST['qunt_inv']
-        Teamid = request.POST['Engineer_Assigned']
+        Teamid = request.POST.get('Engineer_Assigned')
         AssocId = request.POST.get('Associate_Assigned')
         sol_warranty = request.POST['sol_warranty']
         inv_warranty = request.POST['inv_warranty']
@@ -2624,8 +3174,8 @@ def customer_update(request, Cust_id):
             customer.loadsancution = None
         else:
             consumer = request.POST.get('consumer')
-            current_load = request.POST.get('current_load')
-            loadsancution = request.POST.get('loadsancution')
+            current_load = _parse_post_int(request.POST.get('current_load'))
+            loadsancution = _parse_post_int(request.POST.get('loadsancution'))
 
             customer.Consumer = consumer
             customer.current_load = current_load
@@ -2759,10 +3309,15 @@ def Site_Technical_Details(request):
                 }
             )
 
-            # If the record already exists, update the inspection_report field
             if not created:
                 result_instance.inspection_report = True
                 result_instance.save()
+
+            try:
+                from .release_agreement import ensure_release_agreement_for_customer
+                ensure_release_agreement_for_customer(customer_instance, user=request.user)
+            except Exception:
+                pass
 
             messages.success(request, 'Data saved successfully and inspection report updated.')
             return redirect('customer-Site_Technical_Details')
@@ -2947,6 +3502,11 @@ def _site_inspection_page(request, default_mode='new'):
         )
 
         Result.objects.filter(consumer_id=customer).update(inspection_report=True)
+        try:
+            from .release_agreement import ensure_release_agreement_for_customer
+            ensure_release_agreement_for_customer(customer, user=request.user)
+        except Exception:
+            pass
         messages.success(request, "Inspection details successfully saved.")
         return redirect(f"{reverse('customer-Site_Inspection_Details')}?mode=new")
 
@@ -3957,7 +4517,6 @@ def search(request):
             customer = customer.select_related('Engg_Assign', 'Assoc_Assign')
 
         elif search_by == 'associate_staff':
-            # Same filters as staff search; filter consumers by Assoc_Assign
             associate_assignee_id = request.POST.get('associate_assignee', '')
             report_filter = request.POST.get('associate_report_filter', 'all')
             status_filter = request.POST.get('associate_status_filter', '')
@@ -4285,6 +4844,22 @@ def _mseb_step_save_post(request):
     mseb_instance.AssignBy = request.user
     mseb_instance.comp_name = comp_name
     mseb_instance.save()
+
+    # Keep customer_result.net_meter / mseb in sync for release-agreement gating
+    try:
+        from .models import Result
+        from .release_agreement import ensure_release_agreement_for_customer
+
+        result_updates = {}
+        if field_name == 'net_meter' and field_value:
+            result_updates['net_meter'] = True
+        if field_name in ('release', 'installation_date') and field_value:
+            result_updates['mseb'] = True
+        if result_updates:
+            Result.objects.filter(consumer_id=customer).update(**result_updates)
+        ensure_release_agreement_for_customer(customer, user=request.user)
+    except Exception:
+        pass
 
     return JsonResponse({'status': 'success', 'message': 'Record saved successfully'})
 
