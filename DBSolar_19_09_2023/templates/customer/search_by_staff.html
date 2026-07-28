@@ -40,7 +40,7 @@
             <!-- general form elements -->
             <div class="card card-primary">
                <div class="card-header">
-                  <h3 class="card-title">Search Staff / Associate / Consumer</h3>
+                  <h3 class="card-title">Search Staff / Consumer</h3>
                </div>
                <form method="post" id="searchForm">
                   {% csrf_token %}
@@ -50,7 +50,7 @@
 <!--                        <div class="question">-->
                           <div class="checkbox-column">
                               {% if user.is_superuser %}
-                                <label class="search-section-label"><b>Search Staff / Associate / Consumer</b></label>
+                                <label class="search-section-label"><b>Search Staff / Consumer</b></label>
                                 <div class="search-type-row">
                                     <label class="search-type-option">
                                         <input type="radio" class="checkbox-input" name="search_by" value="staff" id="radio_1"{% if search_by == 'staff' %} checked{% endif %}>
@@ -62,7 +62,7 @@
                                     </label>
                                     <label class="search-type-option">
                                         <input type="radio" class="checkbox-input" name="search_by" value="associate_staff" id="radio_3"{% if search_by == 'associate_staff' %} checked{% endif %}>
-                                        <b>Associate Staff</b>
+                                        <b>Search by Associate</b>
                                     </label>
                                 </div>
                             {% endif %}
@@ -115,7 +115,7 @@
 
                   <div id="filter-associate" class="search-filter-panel"{% if search_by != "associate_staff" %} style="display:none;"{% endif %}>
                    <div class="form-group row">
-                      <label for="associate_assignee" class="col-sm-2 col-form-label"><b>Select Associate Staff to Search:</b></label>
+                      <label for="associate_assignee" class="col-sm-2 col-form-label"><b>Select Associate to Search:</b></label>
                     <div class="col-sm-10">
                         <select name="associate_assignee" id="associate_assignee" class="form-control" style="width: 100%;">
                            <option value="" {% if not associate_assignee %}selected{% endif %}>All</option>
@@ -183,7 +183,7 @@
                   {% if search_by == "staff" %}
                   <h4 align="center">Result against Staff Name "<span style="color: red">{% if staff_assignee %}{{ staff_assignee.get_full_name }}{% else %}All{% endif %}</span>"</h4>
                   {% elif search_by == "associate_staff" %}
-                  <h4 align="center">Result against Associate Staff "<span style="color: red">{% if associate_assignee %}{{ associate_assignee.get_full_name }}{% else %}All{% endif %}</span>"</h4>
+                  <h4 align="center">Result against Associate Name "<span style="color: red">{% if associate_assignee %}{{ associate_assignee.get_full_name }}{% else %}All{% endif %}</span>"</h4>
                   {% elif search_by == "consumer" %}
                   <h4 align="center">Result against Consumer Name "<span style="color: red">{{consumer_search_data}}</span>" keyword </h4>
                   {% endif %}
@@ -200,11 +200,7 @@
                               <th>Location</th>
                               <th>PO Date</th>
                               <th>Consumer Type</th>
-                               {% if search_by == "associate_staff" %}
-                               <th>Assign Associate</th>
-                               {% else %}
                                <th> Assign Engineer</th>
-                               {% endif %}
 <!--                              <th>Current Status</th>-->
 <!--                                                              <th>Action</th>-->
                            </tr>
@@ -223,11 +219,7 @@
 
                               <td>{{i.Cust_type}}</td>
 
-                               {% if search_by == "associate_staff" %}
-                               <td>{% if i.Assoc_Assign %}{{ i.Assoc_Assign.get_full_name|default:i.Assoc_Assign.username }}{% else %}—{% endif %}</td>
-                               {% else %}
                                <td>{% if i.Engg_Assign %}{{ i.Engg_Assign.get_full_name|default:i.Engg_Assign.username }}{% else %}—{% endif %}</td>
-                               {% endif %}
                            </tr>
                            {% empty %}
                            <tr>
@@ -646,7 +638,7 @@ function printTable() {
             // Capitalize the first character of reportFilter
             const capitalizedReportFilter = reportFilter.charAt(0).toUpperCase() + reportFilter.slice(1);
 
-            const staffLabel = $('input[name="search_by"]:checked').val() === 'associate_staff' ? 'associate staff' : 'staff';
+            const staffLabel = $('input[name="search_by"]:checked').val() === 'associate_staff' ? 'associate' : 'staff';
             // Include staff_assignee in bold
             printWindow.document.write('<h1 style="margin: 0; text-align: center;">Search Report for ' + staffLabel + ' <span style="font-weight: bold; margin-top: 15px;">' + selectedName + '</span></h1>');
 
