@@ -338,6 +338,7 @@
                                             <th scope="col" class="col-default-hide">Pincode</th>
                                             <th scope="col" class="col-default-hide">Consumer Number</th>
                                             <th scope="col" class="col-default-hide">Assign Engineer</th>
+                                            <th scope="col" class="col-default-hide">Assign Associate</th>
                                             <th scope="col" class="text-center col-mobile-qr">Mobile QR</th>
                                             <th scope="col" class="text-center">Link Status</th>
                                             <th scope="col" class="text-center">Attached Doc</th>
@@ -390,6 +391,7 @@
                                             <td>{{Cust.Pincode|default:"-"}}</td>
                                             <td>{{Cust.Consumer|default:"-"}}</td>
                                             <td>{% if Cust.Engg_Assign %}{{Cust.Engg_Assign.username}}{% else %}-{% endif %}</td>
+                                            <td>{% if Cust.Assoc_Assign %}{{ Cust.Assoc_Assign.get_full_name|default:Cust.Assoc_Assign.username }}{% else %}-{% endif %}</td>
                                             <td class="text-center col-mobile-qr">
                                                 {% if Cust.new_customer %}
                                                 <div class="actions text-center">

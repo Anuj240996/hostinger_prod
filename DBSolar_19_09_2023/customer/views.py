@@ -2640,7 +2640,9 @@ def view_all_cust(request):
         caption_text1 = ""
 
     # Filter by user's permissions (Associates: Assoc_Assign; other staff: Engg_Assign)
-    emps = customer_queryset_for_request(request.user)
+    emps = customer_queryset_for_request(request.user).select_related(
+        'Engg_Assign', 'Assoc_Assign', 'new_customer'
+    )
 
     # Define a variable to store the filtered data
     today = timezone.now().replace(hour=0, minute=0, second=0, microsecond=0)  # Set time to midnight
