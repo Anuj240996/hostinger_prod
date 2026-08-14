@@ -353,6 +353,44 @@
     {% endfor %}
   {% endif %}
 
+  <div class="card master-card" id="quotation-templates-card">
+    <div class="card-header">Quotation Templates — Standard / Industrial / Standard &amp; Industrial</div>
+    <div class="card-body">
+      <p class="help-text mb-3">Select the template used by default when generating quotation PDFs. Existing Standard and Industrial templates stay available. Choose <b>Standard &amp; Industrial Quotation</b> to use the new 6-page proposal.</p>
+      <form method="post">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="save_pdf_template">
+        <div class="row g-3">
+          <div class="col-md-4">
+            <label class="tpl-card{% if default_pdf_template == 'quotation' %} is-selected{% endif %}">
+              <input type="radio" name="default_pdf_template" value="quotation" {% if default_pdf_template == 'quotation' %}checked{% endif %} style="width:18px;height:18px;margin-right:8px;vertical-align:middle;">
+              <span class="tpl-label">Standard Quotation</span>
+              <div class="tpl-hint mt-1">Existing standard invoice PDF already in the project.</div>
+            </label>
+          </div>
+          <div class="col-md-4">
+            <label class="tpl-card{% if default_pdf_template == 'industrial' %} is-selected{% endif %}">
+              <input type="radio" name="default_pdf_template" value="industrial" {% if default_pdf_template == 'industrial' %}checked{% endif %} style="width:18px;height:18px;margin-right:8px;vertical-align:middle;">
+              <span class="tpl-label">Industrial Quotation</span>
+              <div class="tpl-hint mt-1">Existing industrial quotation PDF already in the project.</div>
+            </label>
+          </div>
+          <div class="col-md-4">
+            <label class="tpl-card{% if default_pdf_template == 'standard_industrial' %} is-selected{% endif %}" style="border-color:#f9a825;">
+              <input type="radio" name="default_pdf_template" value="standard_industrial" {% if default_pdf_template == 'standard_industrial' %}checked{% endif %} style="width:18px;height:18px;margin-right:8px;vertical-align:middle;">
+              <span class="tpl-label">Standard &amp; Industrial Quotation</span>
+              <span class="term-badge on-yellow">NEW</span>
+              <div class="tpl-hint mt-1">New 6-page proposal. Cover shows Heramb Industries and address. Page 3 uses the existing standard invoice table.</div>
+            </label>
+          </div>
+        </div>
+        <div class="master-add-actions mt-3">
+          <button type="submit" class="btn btn-sm btn-success">Save Default Template</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <div class="row">
     <div class="col-lg-6">
       <div class="card master-card">
@@ -546,46 +584,6 @@
           </div>
         </div>
       </div>
-    </div>
-  </div>
-
-  <div class="card master-card">
-    <div class="card-header">Quotation Templates</div>
-    <div class="card-body">
-      <p class="help-text mb-3">Select the template used by default when generating quotation PDFs. Existing Standard and Industrial templates stay available; Standard &amp; Industrial is the new 6-page proposal.</p>
-      <form method="post">
-        {% csrf_token %}
-        <input type="hidden" name="action" value="save_pdf_template">
-        <div class="row g-3">
-          <div class="col-md-4">
-            <label class="tpl-card{% if default_pdf_template == 'quotation' %} is-selected{% endif %}">
-              <input type="radio" name="default_pdf_template" value="quotation" class="d-none" {% if default_pdf_template == 'quotation' %}checked{% endif %}>
-              <img src="{% static 'images/quotation_bg1.jpg' %}" alt="Standard Quotation">
-              <div class="tpl-label">Standard Quotation</div>
-              <div class="tpl-hint">Existing standard invoice PDF already in the project.</div>
-            </label>
-          </div>
-          <div class="col-md-4">
-            <label class="tpl-card{% if default_pdf_template == 'industrial' %} is-selected{% endif %}">
-              <input type="radio" name="default_pdf_template" value="industrial" class="d-none" {% if default_pdf_template == 'industrial' %}checked{% endif %}>
-              <img src="{% static 'images/quotation_bg1.jpg' %}" alt="Industrial Quotation">
-              <div class="tpl-label">Industrial Quotation</div>
-              <div class="tpl-hint">Existing industrial quotation PDF already in the project.</div>
-            </label>
-          </div>
-          <div class="col-md-4">
-            <label class="tpl-card{% if default_pdf_template == 'standard_industrial' %} is-selected{% endif %}">
-              <input type="radio" name="default_pdf_template" value="standard_industrial" class="d-none" {% if default_pdf_template == 'standard_industrial' %}checked{% endif %}>
-              <img src="{% static 'quotation/proposal/cover_preview.png' %}" alt="Standard and Industrial Quotation">
-              <div class="tpl-label">Standard &amp; Industrial Quotation</div>
-              <div class="tpl-hint">New 6-page proposal. Cover shows Heramb Industries and address. Page 3 uses the existing standard invoice table.</div>
-            </label>
-          </div>
-        </div>
-        <div class="master-add-actions mt-3">
-          <button type="submit" class="btn btn-sm btn-success">Save Default Template</button>
-        </div>
-      </form>
     </div>
   </div>
 

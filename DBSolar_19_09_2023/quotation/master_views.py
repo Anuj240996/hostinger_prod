@@ -4,6 +4,8 @@ from functools import wraps
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required, user_passes_test
+from django.db import connection
+from django.db.utils import OperationalError, ProgrammingError
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 
@@ -54,7 +56,7 @@ def _ensure_master_defaults(master):
         master.pan_no = 'ABC12358G'
         changed = True
     if changed:
-        master.save()
+        master.save(update_fields=['from_address', 'subsidy_notes', 'gst_no', 'pan_no'])
     if not QuotationBankDetail.objects.exists():
         QuotationBankDetail.objects.create(
             account_name='Heramb Industries',
@@ -70,7 +72,20 @@ def _ensure_master_defaults(master):
 
 @control_panel_session_required
 def quotation_master(request):
-    master = QuotationMaster.get_solo()
+    try:
+        master = QuotationMaster.get_solo()
+    except (ProgrammingError, OperationalError):
+        try:
+            connection.rollback()
+        except Exception:
+            pass
+        master = QuotationMaster.objects.defer('default_pdf_template').filter(pk=1).first()
+        if master is None:
+            master = QuotationMaster(pk=1, company_name='Heramb Industries')
+        messages.warning(
+            request,
+            'Run database migrate for quotation so Standard & Industrial can be saved as the default template.',
+        )
     _ensure_master_defaults(master)
 
     if request.method == 'POST':
@@ -99,10 +114,20 @@ def quotation_master(request):
             if selected not in valid:
                 messages.error(request, 'Please select a valid quotation template.')
             else:
-                master.default_pdf_template = selected
-                master.save(update_fields=['default_pdf_template'])
-                label = next(item['label'] for item in PDF_TEMPLATE_OPTIONS if item['key'] == selected)
-                messages.success(request, f'Default quotation template set to {label}.')
+                try:
+                    master.default_pdf_template = selected
+                    master.save(update_fields=['default_pdf_template'])
+                    label = next(item['label'] for item in PDF_TEMPLATE_OPTIONS if item['key'] == selected)
+                    messages.success(request, f'Default quotation template set to {label}.')
+                except (ProgrammingError, OperationalError):
+                    try:
+                        connection.rollback()
+                    except Exception:
+                        pass
+                    messages.error(
+                        request,
+                        'Could not save the template. Run: python manage.py migrate quotation',
+                    )
 
         elif action == 'save_term':
             term_id = request.POST.get('term_id')

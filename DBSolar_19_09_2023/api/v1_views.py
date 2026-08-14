@@ -36,7 +36,8 @@ def api_status(request):
             },
             "web": {
                 "search_by_associate": True,
-                "build": "search-by-associate-20260728",
+                "standard_industrial_quotation": True,
+                "build": "standard-industrial-quotation-20260814",
                 "page_title": "Search Staff / Consumer / Associate",
             },
         }
