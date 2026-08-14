@@ -51,7 +51,7 @@ RUN SECRET_KEY=build-collectstatic-only DEBUG=False \
 
 # Copy entrypoint script
 COPY entrypoint.sh /app/entrypoint.sh
-RUN chmod +x /app/entrypoint.sh
+RUN sed -i 's/\r$//' /app/entrypoint.sh && chmod +x /app/entrypoint.sh
 
 # Expose port (map host 8001→8000 in EasyPanel if V1 already uses host :8000)
 EXPOSE 8000

@@ -45,7 +45,7 @@ ENV DJANGO_SETTINGS_MODULE=inventoryproject.settings
 RUN SECRET_KEY=build-collectstatic-only DEBUG=False \
     python manage.py collectstatic --noinput
 
-RUN chmod +x /app/entrypoint.sh
+RUN sed -i 's/\r$//' /app/entrypoint.sh && chmod +x /app/entrypoint.sh
 
 EXPOSE 8000
 
