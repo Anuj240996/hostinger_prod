@@ -30,6 +30,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libzbar0 \
     libcairo2-dev \
     pkg-config \
+    bash \
     && rm -rf /var/lib/apt/lists/*
 
 COPY DBSolar_19_09_2023/requirements.txt /app/
@@ -51,6 +52,8 @@ EXPOSE 8000
 
 ENV WEB_CONCURRENCY=1
 
-ENTRYPOINT ["/app/entrypoint.sh"]
+# Run via /bin/sh so Docker never execs the script as a binary (avoids
+# "exec format error" from CRLF shebang or missing /bin/bash on slim).
+ENTRYPOINT ["/bin/sh", "/app/entrypoint.sh"]
 
 CMD ["sh", "-c", "exec gunicorn --bind 0.0.0.0:8000 --workers ${WEB_CONCURRENCY:-1} --timeout 120 --access-logfile - --error-logfile - inventoryproject.wsgi:application"]
