@@ -10,7 +10,14 @@
   <style>
     @page {
       size: A4;
-      margin: 0;
+      margin: 0pt;
+      @frame cover_full_frame {
+        -pdf-frame-content: cover_full;
+        left: 0pt;
+        top: 0pt;
+        width: 595.27pt;
+        height: 841.89pt;
+      }
     }
     @page inner {
       size: A4;
@@ -68,56 +75,13 @@
 <body>
 {% now "y" as this_year %}
 
-{# PAGE 1 — Cover only: 50% A4-width image + yellow panel (not full height). No footer. #}
-{# Height must stay under A4 (841.89pt) or xhtml2pdf raises LayoutError → Django 500. #}
-<table class="no-border" cellpadding="0" cellspacing="0" style="width:595pt;">
-  <tr>
-    <td style="border:none; width:297pt; padding:0; margin:0; vertical-align:top;">
-      {% if quotation_master and quotation_master.proposal_cover_image %}
-      <img src="{{ quotation_master.proposal_cover_image.url }}" style="width:297pt; height:830pt;">
-      {% else %}
-      <img src="{% static 'quotation/proposal/cover_left.png' %}" style="width:297pt; height:830pt;">
-      {% endif %}
-    </td>
-    <td style="border:none; width:298pt; padding:0; margin:0; vertical-align:top; background:#ffffff;">
-      <div class="cover-yellow" style="padding:22px 16px 18px 16px;">
-        <div style="font-size:22px; font-weight:bold; text-align:right; line-height:1.15; margin-bottom:14px;">Roof Top Solar Proposal</div>
-        {% if quotation_master and quotation_master.company_logo %}
-        <img src="{{ quotation_master.company_logo.url }}" style="height:48pt; margin-bottom:8px;">
-        {% endif %}
-        <div style="font-size:16px; font-weight:bold; margin-bottom:6px;">{{ quotation_master.company_name|default:"Heramb Industries" }}</div>
-        <div style="font-size:11px; line-height:1.45; margin-bottom:14px;">
-          {% if quotation_master.from_address %}
-            {{ quotation_master.from_address|linebreaksbr }}
-          {% elif quotation_master.address %}
-            {{ quotation_master.address|linebreaksbr }}
-          {% else %}
-            Bhagya Banglow, Near Sant Eknath Rang Mandir,<br>
-            New Osman Pura, Chh. Sambhajinagar (MH) - 431001
-          {% endif %}
-        </div>
-        <div style="border-top:1px solid #000; margin:8px 0;"></div>
-        <div style="font-size:16px; font-weight:bold; margin-bottom:6px;">{{ quotation.title }} {{ quotation.consumer_name }}</div>
-        <div style="font-size:11px; line-height:1.4; margin-bottom:12px;">
-          {{ quotation.consumer_address1 }}{% if quotation.consumer_address1 %},{% endif %}<br>
-          {{ quotation.consumer_address2 }}
-        </div>
-        <div style="font-size:11px; line-height:1.6;">
-          <b>ID :</b>
-          {% if quotation.consumer_type == 'Residential' %}DB/Res/{{ quotation.quotation_no }}/{{ this_year }}
-          {% elif quotation.consumer_type == 'Commercial' %}DB/Comm/{{ quotation.quotation_no }}/{{ this_year }}
-          {% elif quotation.consumer_type == 'Industrial' %}DB/Ind/{{ quotation.quotation_no }}/{{ this_year }}
-          {% else %}{{ quotation.quotation_no }}{% endif %}<br>
-          <b>Date :</b> {{ formatted_date }}<br>
-          <b>By :</b> {{ quotation.employee_name|default:"" }}
-        </div>
-      </div>
-    </td>
-  </tr>
-</table>
+{# PAGE 1 — full-bleed EST-001 cover (painted PNG: 50% photo + yellow/navy/yellow). #}
+<div id="cover_full">
+  <img src="{{ proposal_cover_png }}" style="width:595pt; height:841pt;">
+</div>
 
-<div class="page-break"></div>
 <pdf:nexttemplate name="inner"/>
+<div class="page-break"></div>
 
 <div id="proposal_footer">
   <table class="no-border footer-bar" style="width:595pt; background:#0A2540; color:#fff;">

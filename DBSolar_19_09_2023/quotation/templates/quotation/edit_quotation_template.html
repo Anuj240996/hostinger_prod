@@ -50,20 +50,38 @@
     height:100%;
     background:#fff;
     flex:0 0 50%;
-    display:block;
+    display:flex;
+    flex-direction:column;
   }
-  .cover-yellow {
+  .cover-yellow-top {
     background:#FFD200;
     color:#111;
-    padding:22px 18px 18px 18px;
+    padding:22px 18px;
+    text-align:right;
+    font-size:22px;
+    font-weight:800;
+    line-height:1.15;
   }
-  .cover-yellow img.logo {
-    max-height:64px;
-    max-width:160px;
+  .cover-navy {
+    background:#0A2540;
+    color:#fff;
+    padding:22px 18px;
+    flex: 0 0 34%;
+  }
+  .cover-navy img.logo {
+    max-height:52px;
+    max-width:140px;
     margin-bottom:8px;
     background:#fff;
     padding:4px;
     border-radius:4px;
+  }
+  .cover-yellow-bottom {
+    background:#FFD200;
+    color:#111;
+    padding:22px 18px;
+    text-align:right;
+    flex:1;
   }
   .page-thumb { width:100%; border:1px solid #eee; border-radius:6px; }
   .help-text { font-size:.85rem; color:#666; }
@@ -93,7 +111,7 @@
 
   <div class="page-sheet">
     <div class="page-label">Page 1 / 6 — Cover</div>
-    <p class="help-text mb-3">A4 cover: left image is 50% width and full page height. Right side is a yellow block that does not fill the full height. Cover page has no footer.</p>
+    <p class="help-text mb-3">A4 cover matches the proposal template: left photo is 50% width and full page height. Right column is yellow, navy, then yellow. Cover page has no footer.</p>
 
     <div class="cover-preview mb-3">
       <div class="cover-preview-left">
@@ -104,18 +122,20 @@
         {% endif %}
       </div>
       <div class="cover-preview-right">
-        <div class="cover-yellow">
-          <div style="font-size:22px;font-weight:800;text-align:right;line-height:1.15;margin-bottom:14px;">Roof Top Solar Proposal</div>
+        <div class="cover-yellow-top">Roof Top Solar Proposal</div>
+        <div class="cover-navy">
           {% if master.company_logo %}
             <img class="logo" src="{{ master.company_logo.url }}" alt="Company logo">
           {% endif %}
           <div style="font-size:18px;font-weight:700;margin-bottom:6px;">{{ master.company_name|default:"Heramb Industries" }}</div>
-          <div style="font-size:13px;line-height:1.45;white-space:pre-wrap;margin-bottom:14px;">
+          <div style="font-size:13px;line-height:1.45;white-space:pre-wrap;">
             {% if master.from_address %}{{ master.from_address }}{% elif master.address %}{{ master.address }}{% else %}Bhagya Banglow, Near Sant Eknath Rang Mandir, New Osman Pura, Chh. Sambhajinagar (MH) - 431001{% endif %}
           </div>
-          <div style="border-top:1px solid #000;margin:8px 0;"></div>
+        </div>
+        <div class="cover-yellow-bottom">
           <div style="font-size:18px;font-weight:800;margin-bottom:6px;">Consumer Name</div>
           <div style="font-size:13px;line-height:1.4;margin-bottom:12px;">Consumer Address Line 1<br>Consumer Address Line 2</div>
+          <div style="border-top:1px solid #000;margin:8px 0;"></div>
           <div style="font-size:13px;line-height:1.6;">
             <b>ID :</b> quotation number<br>
             <b>Date :</b> quotation date<br>

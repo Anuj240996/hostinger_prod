@@ -5330,6 +5330,21 @@ def industrial_quotation_pdf(request, pk):
     template_name = getattr(request, '_quotation_pdf_template', 'quotation/industrial_quotation.html')
     filename = getattr(request, '_quotation_pdf_filename', f'industrial_quotation_{quotation.pk}.pdf')
 
+    if template_name.endswith('standard_industrial_quotation.html'):
+        try:
+            from .cover_render import render_proposal_cover_png
+            this_year = timezone.now().strftime('%y')
+            context['proposal_cover_png'] = render_proposal_cover_png(
+                quotation,
+                context.get('quotation_master'),
+                context.get('formatted_date'),
+                this_year,
+            )
+        except Exception:
+            import logging
+            logging.getLogger(__name__).exception("Cover PNG render failed")
+            context['proposal_cover_png'] = ''
+
     html = render_to_string(template_name, context)
     if getattr(request, '_quotation_pdf_skip_sanitize', False):
         sanitized_html = html
@@ -5580,6 +5595,10 @@ def link_callback(uri, rel):
     Convert HTML URIs (e.g. /static/img/foo.png) to absolute system paths
     so xhtml2pdf can access them both in dev and prod.
     """
+    # 0. Absolute filesystem path (generated cover PNG)
+    if os.path.isfile(uri):
+        return uri
+
     # 1. Fully-qualified URL? Return directly
     if uri.startswith('http://') or uri.startswith('https://'):
         return uri
