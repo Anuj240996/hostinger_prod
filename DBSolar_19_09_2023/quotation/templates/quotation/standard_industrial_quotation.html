@@ -75,19 +75,26 @@
   </table>
 </div>
 
-{# PAGE 1 — Cover. Company name/address replace consumer name in the main brand block. #}
+{# PAGE 1 — Cover: left photo column, right yellow/navy/yellow column. #}
 <table class="no-border" style="width:100%;">
   <tr>
     <td style="border:none; width:58%; padding:0; vertical-align:top;">
-      <img src="{% static 'images/quotation_bg1.jpg' %}" style="width:320pt; height:760pt;">
+      {% if quotation_master.proposal_cover_image %}
+      <img src="{{ quotation_master.proposal_cover_image.url }}" style="width:320pt; height:760pt;">
+      {% else %}
+      <img src="{% static 'quotation/proposal/cover_left.png' %}" style="width:320pt; height:760pt;">
+      {% endif %}
     </td>
     <td style="border:none; width:42%; padding:0; vertical-align:top;">
-      <div class="cover-yellow" style="padding:28px 18px 22px 18px; text-align:right; min-height:160px;">
+      <div class="cover-yellow" style="padding:28px 18px 22px 18px; text-align:right; min-height:150px;">
         <div style="font-size:26px; font-weight:bold; line-height:1.15;">Roof Top Solar</div>
         <div style="font-size:26px; font-weight:bold; line-height:1.15;">Proposal</div>
       </div>
-      <div class="cover-navy" style="padding:36px 16px; text-align:center; min-height:220px;">
-        <div style="font-size:20px; font-weight:bold; margin-bottom:10px;">{{ quotation_master.company_name|default:"Heramb Industries" }}</div>
+      <div class="cover-navy" style="padding:22px 14px; text-align:center; min-height:230px;">
+        {% if quotation_master.company_logo %}
+        <img src="{{ quotation_master.company_logo.url }}" style="height:52pt; margin-bottom:8px;">
+        {% endif %}
+        <div style="font-size:18px; font-weight:bold; margin-bottom:8px;">{{ quotation_master.company_name|default:"Heramb Industries" }}</div>
         <div style="font-size:11px; line-height:1.45;">
           {% if quotation_master.from_address %}
             {{ quotation_master.from_address|linebreaksbr }}
@@ -99,12 +106,14 @@
           {% endif %}
         </div>
       </div>
-      <div class="cover-yellow" style="padding:22px 18px; text-align:right; min-height:200px;">
-        <div style="font-size:20px; font-weight:bold;">{{ quotation_master.company_name|default:"Heramb Industries" }}</div>
-        <div style="margin-top:4px;">Maharashtra</div>
+      <div class="cover-yellow" style="padding:18px 16px; text-align:right; min-height:210px;">
+        <div style="font-size:18px; font-weight:bold;">{{ quotation.title }} {{ quotation.consumer_name }}</div>
+        <div style="margin-top:6px; font-size:12px; line-height:1.4;">
+          {{ quotation.consumer_address1 }}{% if quotation.consumer_address1 %},{% endif %}<br>
+          {{ quotation.consumer_address2 }}
+        </div>
         <div style="border-top:2px solid #000; margin:10px 0 8px 40%;"></div>
-        <div style="text-align:left; margin-left:20px; font-size:12px; line-height:1.6;">
-          <b>Lead :</b> {{ quotation.consumer_name|default:"" }}<br>
+        <div style="text-align:left; margin-left:12px; font-size:12px; line-height:1.6;">
           <b>ID :</b>
           {% if quotation.consumer_type == 'Residential' %}DB/Res/{{ quotation.quotation_no }}/{{ this_year }}
           {% elif quotation.consumer_type == 'Commercial' %}DB/Comm/{{ quotation.quotation_no }}/{{ this_year }}

@@ -79,7 +79,9 @@ def quotation_master(request):
             connection.rollback()
         except Exception:
             pass
-        master = QuotationMaster.objects.defer('default_pdf_template').filter(pk=1).first()
+        master = QuotationMaster.objects.defer(
+            'default_pdf_template', 'proposal_cover_image'
+        ).filter(pk=1).first()
         if master is None:
             master = QuotationMaster(pk=1, company_name='Heramb Industries')
         messages.warning(
@@ -220,5 +222,53 @@ def quotation_master(request):
         'all_banks': all_banks,
         'bank_count': all_banks.count(),
         'pdf_template_options': PDF_TEMPLATE_OPTIONS,
+        'default_pdf_template': get_default_pdf_template(),
+    })
+
+
+@control_panel_session_required
+def edit_quotation_template(request, template_key):
+    """Edit a quotation PDF template. Standard & Industrial shows the 6-page cover layout."""
+    from .master_helpers import PDF_TEMPLATE_OPTIONS, get_default_pdf_template
+
+    valid = {item['key'] for item in PDF_TEMPLATE_OPTIONS}
+    if template_key not in valid:
+        messages.error(request, 'Unknown quotation template.')
+        return redirect('quotation:quotation_master')
+
+    try:
+        master = QuotationMaster.get_solo()
+    except (ProgrammingError, OperationalError):
+        try:
+            connection.rollback()
+        except Exception:
+            pass
+        master = QuotationMaster.objects.defer(
+            'default_pdf_template', 'proposal_cover_image'
+        ).filter(pk=1).first()
+        if master is None:
+            master = QuotationMaster(pk=1, company_name='Heramb Industries')
+
+    if request.method == 'POST' and template_key == 'standard_industrial':
+        if request.FILES.get('proposal_cover_image'):
+            try:
+                master.proposal_cover_image = request.FILES['proposal_cover_image']
+                master.save(update_fields=['proposal_cover_image'])
+                messages.success(request, 'Cover page image saved.')
+            except (ProgrammingError, OperationalError):
+                try:
+                    connection.rollback()
+                except Exception:
+                    pass
+                messages.error(request, 'Could not save cover image. Run: python manage.py migrate quotation')
+            return redirect('quotation:edit_quotation_template', template_key=template_key)
+        messages.error(request, 'Please choose a cover page image.')
+        return redirect('quotation:edit_quotation_template', template_key=template_key)
+
+    label = next(item['label'] for item in PDF_TEMPLATE_OPTIONS if item['key'] == template_key)
+    return render(request, 'quotation/edit_quotation_template.html', {
+        'master': master,
+        'template_key': template_key,
+        'template_label': label,
         'default_pdf_template': get_default_pdf_template(),
     })

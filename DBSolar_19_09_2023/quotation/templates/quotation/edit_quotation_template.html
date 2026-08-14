@@ -1,0 +1,191 @@
+{% extends 'partials/base.html' %}
+{% load static %}
+
+{% block title %}Edit {{ template_label }} — DB SOLAR{% endblock %}
+
+{% block content %}
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+<style>
+  .tpl-edit-header { background:#00897B; color:#fff; font-weight:600; }
+  .page-sheet {
+    background:#fff;
+    border:1px solid #dce3ea;
+    border-radius:10px;
+    padding:16px;
+    margin-bottom:20px;
+    box-shadow:0 2px 8px rgba(0,0,0,.06);
+  }
+  .page-label {
+    font-size:.8rem;
+    font-weight:700;
+    color:#00897B;
+    margin-bottom:10px;
+    text-transform:uppercase;
+    letter-spacing:.04em;
+  }
+  .cover-preview {
+    display:flex;
+    min-height:520px;
+    border:1px solid #ccc;
+    overflow:hidden;
+    background:#111;
+  }
+  .cover-preview-left {
+    flex: 0 0 58%;
+    max-width:58%;
+    background:#123;
+  }
+  .cover-preview-left img {
+    width:100%;
+    height:100%;
+    object-fit:cover;
+    display:block;
+    min-height:520px;
+  }
+  .cover-preview-right {
+    flex: 1 1 42%;
+    display:flex;
+    flex-direction:column;
+    min-height:520px;
+  }
+  .cover-yellow {
+    background:#FFD200;
+    color:#111;
+    padding:22px 18px;
+  }
+  .cover-navy {
+    background:#0A2540;
+    color:#fff;
+    padding:20px 16px;
+    text-align:center;
+    flex:1;
+  }
+  .cover-navy img.logo {
+    max-height:64px;
+    max-width:160px;
+    margin-bottom:8px;
+    background:#fff;
+    padding:4px;
+    border-radius:4px;
+  }
+  .cover-bottom { text-align:right; }
+  .page-thumb { width:100%; border:1px solid #eee; border-radius:6px; }
+  .help-text { font-size:.85rem; color:#666; }
+</style>
+
+<div class="container-fluid my-3">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <div>
+      <h3 class="mb-0">Edit {{ template_label }}</h3>
+      <p class="text-muted mb-0">Modify the PDF pages used by this quotation template.</p>
+    </div>
+    <a href="{% url 'quotation:quotation_master' %}" class="btn btn-outline-secondary btn-sm">
+      <i class="fas fa-arrow-left"></i> Back to Quotation Master
+    </a>
+  </div>
+
+  {% if messages %}
+    {% for message in messages %}
+      <div class="alert alert-{{ message.tags|default:'info' }} alert-dismissible fade show" role="alert">
+        {{ message }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+      </div>
+    {% endfor %}
+  {% endif %}
+
+  {% if template_key == 'standard_industrial' %}
+
+  <div class="page-sheet">
+    <div class="page-label">Page 1 / 6 — Cover</div>
+    <p class="help-text mb-3">Same two-column cover as the proposal: photo on the left, yellow / navy / yellow on the right. <b>Quickest Support</b> is replaced by company logo, company name and address. <b>Heramb Industries / Maharashtra</b> is replaced by consumer name and address.</p>
+
+    <div class="cover-preview mb-3">
+      <div class="cover-preview-left">
+        {% if master.proposal_cover_image %}
+          <img src="{{ master.proposal_cover_image.url }}" alt="Cover photo">
+        {% else %}
+          <img src="{% static 'quotation/proposal/cover_left.png' %}" alt="Cover photo">
+        {% endif %}
+      </div>
+      <div class="cover-preview-right">
+        <div class="cover-yellow" style="text-align:right;">
+          <div style="font-size:28px;font-weight:800;line-height:1.15;">Roof Top Solar</div>
+          <div style="font-size:28px;font-weight:800;line-height:1.15;">Proposal</div>
+        </div>
+        <div class="cover-navy">
+          {% if master.company_logo %}
+            <img class="logo" src="{{ master.company_logo.url }}" alt="Company logo">
+          {% endif %}
+          <div style="font-size:20px;font-weight:700;margin-bottom:8px;">{{ master.company_name|default:"Heramb Industries" }}</div>
+          <div style="font-size:13px;line-height:1.45;white-space:pre-wrap;">
+            {% if master.from_address %}{{ master.from_address }}{% elif master.address %}{{ master.address }}{% else %}Bhagya Banglow, Near Sant Eknath Rang Mandir, New Osman Pura, Chh. Sambhajinagar (MH) - 431001{% endif %}
+          </div>
+        </div>
+        <div class="cover-yellow cover-bottom">
+          <div style="font-size:20px;font-weight:800;">Consumer Name</div>
+          <div style="margin-top:6px;font-size:13px;line-height:1.4;">Consumer Address Line 1<br>Consumer Address Line 2</div>
+          <div style="border-top:2px solid #000;margin:10px 0 8px 40%;"></div>
+          <div style="text-align:left;font-size:13px;line-height:1.6;">
+            <b>ID :</b> quotation number<br>
+            <b>Date :</b> quotation date<br>
+            <b>By :</b> created by
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <form method="post" enctype="multipart/form-data" style="max-width:none;width:100%;background:transparent;box-shadow:none;padding:0;margin:0;border:none;">
+      {% csrf_token %}
+      <label class="form-label"><b>Change cover page image (left column)</b></label>
+      <input type="file" name="proposal_cover_image" class="form-control" accept="image/*" required>
+      <div class="help-text mt-1 mb-2">Use a solar rooftop / panel photo. It fills the left column of page 1, same as the attached proposal cover.</div>
+      <button type="submit" class="btn btn-success btn-sm">Save Cover Image</button>
+    </form>
+  </div>
+
+  <div class="page-sheet">
+    <div class="page-label">Page 2 / 6 — About company</div>
+    <img class="page-thumb" src="{% static 'quotation/proposal/about_preview.png' %}" alt="About page">
+  </div>
+  <div class="page-sheet">
+    <div class="page-label">Page 3 / 6 — Invoice table (same as standard quotation)</div>
+    <img class="page-thumb" src="{% static 'quotation/proposal/invoice_preview.png' %}" alt="Invoice page">
+  </div>
+  <div class="page-sheet">
+    <div class="page-label">Page 4 / 6 — Terms &amp; Condition</div>
+    <img class="page-thumb" src="{% static 'quotation/proposal/terms_preview.png' %}" alt="Terms page">
+  </div>
+  <div class="page-sheet">
+    <div class="page-label">Page 5 / 6 — Testimonials</div>
+    <img class="page-thumb" src="{% static 'quotation/proposal/testimonials_preview.png' %}" alt="Testimonials page">
+  </div>
+  <div class="page-sheet">
+    <div class="page-label">Page 6 / 6 — Thank you</div>
+    <img class="page-thumb" src="{% static 'quotation/proposal/thankyou_preview.png' %}" alt="Thank you page">
+  </div>
+
+  {% elif template_key == 'industrial' %}
+  <div class="page-sheet">
+    <div class="page-label">Industrial Quotation PDF</div>
+    <p class="help-text">This is the existing industrial quotation already in the project. Header/footer images are edited from Company Details on Quotation Master.</p>
+    {% if master.header_image %}
+      <img class="page-thumb mb-2" src="{{ master.header_image.url }}" alt="Header">
+    {% endif %}
+    {% if master.footer_image %}
+      <img class="page-thumb" src="{{ master.footer_image.url }}" alt="Footer">
+    {% endif %}
+  </div>
+  {% else %}
+  <div class="page-sheet">
+    <div class="page-label">Standard Quotation PDF</div>
+    <p class="help-text">This is the existing standard quotation already in the project. Header/footer images are edited from Company Details on Quotation Master.</p>
+    {% if master.header_image %}
+      <img class="page-thumb mb-2" src="{{ master.header_image.url }}" alt="Header">
+    {% endif %}
+    {% if master.footer_image %}
+      <img class="page-thumb" src="{{ master.footer_image.url }}" alt="Footer">
+    {% endif %}
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

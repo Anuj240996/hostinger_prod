@@ -177,7 +177,7 @@ def required_permission(url_name: Optional[str], request: HttpRequest) -> Option
         return ("quotation", "add")
     if url_name in {"edit_quotation", "revise_quotation"}:
         return ("quotation", "edit")
-    if url_name in {"quotation_master"}:
+    if url_name in {"quotation_master", "edit_quotation_template"}:
         return ("quotation", "edit")
 
     # FIREREPORT

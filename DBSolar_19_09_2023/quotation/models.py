@@ -219,6 +219,12 @@ class QuotationMaster(models.Model):
         default=PDF_TEMPLATE_STANDARD,
         help_text='Default quotation PDF template used in the software.',
     )
+    proposal_cover_image = models.ImageField(
+        upload_to='quotation/master/',
+        blank=True,
+        null=True,
+        help_text='Left-column cover photo for Standard & Industrial quotation.',
+    )
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:

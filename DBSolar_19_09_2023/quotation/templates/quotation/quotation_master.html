@@ -367,6 +367,9 @@
               <span class="tpl-label">Standard Quotation</span>
               <div class="tpl-hint mt-1">Existing standard invoice PDF already in the project.</div>
             </label>
+            <div class="text-center mt-2">
+              <a href="{% url 'quotation:edit_quotation_template' 'quotation' %}" class="btn btn-sm btn-primary">Edit</a>
+            </div>
           </div>
           <div class="col-md-4">
             <label class="tpl-card{% if default_pdf_template == 'industrial' %} is-selected{% endif %}">
@@ -374,14 +377,20 @@
               <span class="tpl-label">Industrial Quotation</span>
               <div class="tpl-hint mt-1">Existing industrial quotation PDF already in the project.</div>
             </label>
+            <div class="text-center mt-2">
+              <a href="{% url 'quotation:edit_quotation_template' 'industrial' %}" class="btn btn-sm btn-primary">Edit</a>
+            </div>
           </div>
           <div class="col-md-4">
             <label class="tpl-card{% if default_pdf_template == 'standard_industrial' %} is-selected{% endif %}" style="border-color:#f9a825;">
               <input type="radio" name="default_pdf_template" value="standard_industrial" {% if default_pdf_template == 'standard_industrial' %}checked{% endif %} style="width:18px;height:18px;margin-right:8px;vertical-align:middle;">
               <span class="tpl-label">Standard &amp; Industrial Quotation</span>
               <span class="term-badge on-yellow">NEW</span>
-              <div class="tpl-hint mt-1">New 6-page proposal. Cover shows Heramb Industries and address. Page 3 uses the existing standard invoice table.</div>
+              <div class="tpl-hint mt-1">New 6-page proposal. Cover shows company logo/name/address and consumer name/address.</div>
             </label>
+            <div class="text-center mt-2">
+              <a href="{% url 'quotation:edit_quotation_template' 'standard_industrial' %}" class="btn btn-sm btn-primary">Edit</a>
+            </div>
           </div>
         </div>
         <div class="master-add-actions mt-3">

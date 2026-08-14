@@ -45,6 +45,7 @@ urlpatterns = [
     # path('confirm/<int:quotation_id>/', views.confirm_quotation, name='confirm_quotation'),
     path('quotation/new/', views.create_quotation, name='create_quotation'),
     path('master/', master_views.quotation_master, name='quotation_master'),
+    path('master/template/<str:template_key>/', master_views.edit_quotation_template, name='edit_quotation_template'),
     path('add_other_item/', views.add_other_item_api, name='add_other_item_api'),
 
     path('quotation/<int:pk>/edit/', views.edit_quotation, name='edit_quotation'),
