@@ -11,8 +11,7 @@
     @page {
       size: A4;
       margin: 0pt;
-      @frame cover_full_frame {
-        -pdf-frame-content: cover_full;
+      @frame content {
         left: 0pt;
         top: 0pt;
         width: 595.27pt;
@@ -21,7 +20,13 @@
     }
     @page inner {
       size: A4;
-      margin: 18pt 18pt 36pt 18pt;
+      margin: 0pt;
+      @frame inner_content {
+        left: 18pt;
+        top: 18pt;
+        width: 559pt;
+        height: 788pt;
+      }
       @frame footer_frame {
         -pdf-frame-content: proposal_footer;
         bottom: 0pt;
@@ -75,10 +80,29 @@
 <body>
 {% now "y" as this_year %}
 
-{# PAGE 1 — full-bleed EST-001 cover (painted PNG: 50% photo + yellow/navy/yellow). #}
-<div id="cover_full">
-  <img src="{{ proposal_cover_png }}" style="width:595pt; height:841pt;">
-</div>
+{# PAGE 1 — full-bleed EST-001 cover. Image stays in the page body (not a PDF frame). #}
+{% if proposal_cover_png %}
+<img src="{{ proposal_cover_png }}" style="width:595pt; height:830pt;">
+{% else %}
+<table cellpadding="0" cellspacing="0" border="0" width="595">
+  <tr>
+    <td bgcolor="#FFD200" width="297" height="200" valign="middle" align="right" style="border:none; background:#FFD200; padding:16pt;">
+      <b>Roof Top Solar Proposal</b>
+    </td>
+    <td bgcolor="#0A2540" width="298" height="200" valign="top" style="border:none; background:#0A2540; color:#fff; padding:16pt;">
+      <font color="white"><b>{{ quotation_master.company_name|default:"Heramb Industries" }}</b><br>
+      {{ quotation_master.from_address|default:quotation_master.address|default:"" }}</font>
+    </td>
+  </tr>
+  <tr>
+    <td bgcolor="#FFD200" colspan="2" height="200" align="right" valign="top" style="border:none; background:#FFD200; padding:16pt;">
+      <b>{{ quotation.title }} {{ quotation.consumer_name }}</b><br>
+      {{ quotation.consumer_address1 }} {{ quotation.consumer_address2 }}<br>
+      ID : {{ quotation.quotation_no }} &nbsp; Date : {{ formatted_date }} &nbsp; By : {{ quotation.employee_name }}
+    </td>
+  </tr>
+</table>
+{% endif %}
 
 <pdf:nexttemplate name="inner"/>
 <div class="page-break"></div>

@@ -31,6 +31,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libcairo2-dev \
     pkg-config \
     bash \
+    fonts-dejavu-core \
     && rm -rf /var/lib/apt/lists/*
 
 COPY DBSolar_19_09_2023/requirements.txt /app/

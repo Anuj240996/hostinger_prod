@@ -5595,9 +5595,10 @@ def link_callback(uri, rel):
     Convert HTML URIs (e.g. /static/img/foo.png) to absolute system paths
     so xhtml2pdf can access them both in dev and prod.
     """
-    # 0. Absolute filesystem path (generated cover PNG)
-    if os.path.isfile(uri):
-        return uri
+    # 0. Absolute filesystem path or file:// URI (generated cover)
+    raw = (uri or "").replace("file://", "").split("?")[0]
+    if raw and os.path.isfile(raw):
+        return raw
 
     # 1. Fully-qualified URL? Return directly
     if uri.startswith('http://') or uri.startswith('https://'):

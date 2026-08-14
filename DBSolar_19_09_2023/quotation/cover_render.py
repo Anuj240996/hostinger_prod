@@ -231,8 +231,17 @@ def render_proposal_cover_png(quotation, master, formatted_date, this_year):
     cy += 22
     _draw_right(draw, x_right, cy, meta, body_font, BLACK, 30)
 
-    out_dir = os.path.join(str(settings.MEDIA_ROOT), "quotation", "generated")
-    os.makedirs(out_dir, exist_ok=True)
-    out_path = os.path.join(out_dir, "cover_{}.png".format(quotation.pk))
-    canvas.save(out_path, "PNG", optimize=True)
-    return out_path
+    out_name = "cover_{}.jpg".format(quotation.pk)
+    try:
+        out_dir = os.path.join(str(settings.MEDIA_ROOT), "quotation", "generated")
+        os.makedirs(out_dir, exist_ok=True)
+        out_path = os.path.join(out_dir, out_name)
+        canvas.convert("RGB").save(out_path, "JPEG", quality=85)
+        media_url = settings.MEDIA_URL.rstrip("/") + "/quotation/generated/" + out_name
+        return media_url
+    except Exception:
+        import tempfile
+        fd, out_path = tempfile.mkstemp(prefix="cover_", suffix=".jpg")
+        os.close(fd)
+        canvas.convert("RGB").save(out_path, "JPEG", quality=85)
+        return out_path
