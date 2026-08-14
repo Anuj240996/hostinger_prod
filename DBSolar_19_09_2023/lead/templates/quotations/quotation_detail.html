@@ -71,7 +71,7 @@
         <div style="background:white; margin:auto; padding:30px; border-radius:10px; max-width:500px; box-shadow:0 6px 18px rgba(0,0,0,0.3);">
             <h3 style="color:#1e41d1;">Generate PDF</h3>
             <p style="margin-bottom:20px;">Choose a template (same style as generated quotation flow):</p>
-            <div style="display:flex; gap:15px; margin-bottom:25px; flex-wrap:wrap;">
+            <div style="display:flex; gap:12px; margin-bottom:25px; flex-wrap:wrap;">
                 <button type="button" id="leadPdfStandardBtn" class="pdf-option-btn-lead" style="flex:1; min-width:140px; padding:15px; background:#4a6cf7; color:white; border:none; border-radius:5px; cursor:pointer;">
                     <strong>Standard quotation</strong><br>
                     <small>Default layout</small>
@@ -79,6 +79,10 @@
                 <button type="button" id="leadPdfCompanyBtn" class="pdf-option-btn-lead" style="flex:1; min-width:140px; padding:15px; background:#1e41d1; color:white; border:none; border-radius:5px; cursor:pointer;">
                     <strong>Company quotation</strong><br>
                     <small>Company-branded layout</small>
+                </button>
+                <button type="button" id="leadPdfStandardIndustrialBtn" class="pdf-option-btn-lead" style="flex:1; min-width:140px; padding:15px; background:#0A2540; color:white; border:none; border-radius:5px; cursor:pointer;">
+                    <strong>Standard &amp; Industrial</strong><br>
+                    <small>6-page proposal</small>
                 </button>
             </div>
             <div style="text-align:right;">
@@ -96,7 +100,9 @@
         var closeBtn = document.getElementById('closeLeadQuotationPdfModal');
         var stdBtn = document.getElementById('leadPdfStandardBtn');
         var coBtn = document.getElementById('leadPdfCompanyBtn');
+        var siBtn = document.getElementById('leadPdfStandardIndustrialBtn');
         var basePdfUrl = "{% url 'quotation_pdf' quotation.id %}";
+        var standardIndustrialPdfUrl = "/quotation/{{ quotation.id }}/standard_industrial_pdf/";
         if (!modal || !openBtn) return;
         openBtn.addEventListener('click', function () {
             modal.style.display = 'flex';
@@ -113,6 +119,10 @@
         });
         if (coBtn) coBtn.addEventListener('click', function () {
             window.open(basePdfUrl + '?template=company', '_blank');
+            modal.style.display = 'none';
+        });
+        if (siBtn) siBtn.addEventListener('click', function () {
+            window.open(standardIndustrialPdfUrl, '_blank');
             modal.style.display = 'none';
         });
     });

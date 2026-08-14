@@ -205,6 +205,20 @@ class QuotationMaster(models.Model):
         blank=True,
         help_text='Subsidy note text shown on quotation PDF.',
     )
+    PDF_TEMPLATE_STANDARD = 'quotation'
+    PDF_TEMPLATE_INDUSTRIAL = 'industrial'
+    PDF_TEMPLATE_STANDARD_INDUSTRIAL = 'standard_industrial'
+    PDF_TEMPLATE_CHOICES = [
+        (PDF_TEMPLATE_STANDARD, 'Standard Quotation'),
+        (PDF_TEMPLATE_INDUSTRIAL, 'Industrial Quotation'),
+        (PDF_TEMPLATE_STANDARD_INDUSTRIAL, 'Standard & Industrial Quotation'),
+    ]
+    default_pdf_template = models.CharField(
+        max_length=40,
+        choices=PDF_TEMPLATE_CHOICES,
+        default=PDF_TEMPLATE_STANDARD,
+        help_text='Default quotation PDF template used in the software.',
+    )
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:

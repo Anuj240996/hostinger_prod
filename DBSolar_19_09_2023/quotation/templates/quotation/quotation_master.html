@@ -307,23 +307,37 @@
     color: #78909c;
     margin-bottom: 2px;
   }
-  .company-view-grid .company-field-value {
-    font-size: 0.95rem;
-    font-weight: 600;
-    color: #263238;
-    margin-bottom: 10px;
-    word-break: break-word;
-    white-space: pre-wrap;
-    line-height: 1.45;
-    min-height: 1.2em;
+  .tpl-card {
+    border: 2px solid #dce3ea;
+    border-radius: 12px;
+    padding: 14px;
+    height: 100%;
+    background: #fff;
+    cursor: pointer;
+    transition: border-color .15s, box-shadow .15s;
   }
+  .tpl-card.is-selected {
+    border-color: #00897B;
+    box-shadow: 0 0 0 3px rgba(0,137,123,.18);
+  }
+  .tpl-card img {
+    width: 100%;
+    height: 160px;
+    object-fit: cover;
+    object-position: top;
+    border-radius: 8px;
+    border: 1px solid #eee;
+    background: #f5f5f5;
+  }
+  .tpl-card .tpl-label { font-weight: 700; color: #263238; margin-top: 8px; }
+  .tpl-card .tpl-hint { font-size: 0.82rem; color: #607d8b; }
 </style>
 
 <div class="container-fluid my-3">
   <div class="d-flex justify-content-between align-items-center mb-3">
     <div>
       <h3 class="mb-0">Quotation Master</h3>
-      <p class="text-muted mb-0">Manage company details, bank info, subsidy notes, and terms for quotation forms &amp; PDF.</p>
+      <p class="text-muted mb-0">Manage company details, bank info, subsidy notes, quotation templates, and terms for quotation forms &amp; PDF.</p>
     </div>
     <a href="{% url 'user:control_panel_home' %}" class="btn btn-outline-secondary btn-sm">
       <i class="fas fa-arrow-left"></i> Back to Control Panel
@@ -532,6 +546,46 @@
           </div>
         </div>
       </div>
+    </div>
+  </div>
+
+  <div class="card master-card">
+    <div class="card-header">Quotation Templates</div>
+    <div class="card-body">
+      <p class="help-text mb-3">Select the template used by default when generating quotation PDFs. Existing Standard and Industrial templates stay available; Standard &amp; Industrial is the new 6-page proposal.</p>
+      <form method="post">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="save_pdf_template">
+        <div class="row g-3">
+          <div class="col-md-4">
+            <label class="tpl-card{% if default_pdf_template == 'quotation' %} is-selected{% endif %}">
+              <input type="radio" name="default_pdf_template" value="quotation" class="d-none" {% if default_pdf_template == 'quotation' %}checked{% endif %}>
+              <img src="{% static 'images/quotation_bg1.jpg' %}" alt="Standard Quotation">
+              <div class="tpl-label">Standard Quotation</div>
+              <div class="tpl-hint">Existing standard invoice PDF already in the project.</div>
+            </label>
+          </div>
+          <div class="col-md-4">
+            <label class="tpl-card{% if default_pdf_template == 'industrial' %} is-selected{% endif %}">
+              <input type="radio" name="default_pdf_template" value="industrial" class="d-none" {% if default_pdf_template == 'industrial' %}checked{% endif %}>
+              <img src="{% static 'images/quotation_bg1.jpg' %}" alt="Industrial Quotation">
+              <div class="tpl-label">Industrial Quotation</div>
+              <div class="tpl-hint">Existing industrial quotation PDF already in the project.</div>
+            </label>
+          </div>
+          <div class="col-md-4">
+            <label class="tpl-card{% if default_pdf_template == 'standard_industrial' %} is-selected{% endif %}">
+              <input type="radio" name="default_pdf_template" value="standard_industrial" class="d-none" {% if default_pdf_template == 'standard_industrial' %}checked{% endif %}>
+              <img src="{% static 'quotation/proposal/cover_preview.png' %}" alt="Standard and Industrial Quotation">
+              <div class="tpl-label">Standard &amp; Industrial Quotation</div>
+              <div class="tpl-hint">New 6-page proposal. Cover shows Heramb Industries and address. Page 3 uses the existing standard invoice table.</div>
+            </label>
+          </div>
+        </div>
+        <div class="master-add-actions mt-3">
+          <button type="submit" class="btn btn-sm btn-success">Save Default Template</button>
+        </div>
+      </form>
     </div>
   </div>
 
@@ -811,6 +865,13 @@
     if (e.target && e.target.classList.contains('bank-round-check')) {
       var wrap = e.target.closest('.bank-round-check-wrap');
       if (wrap) wrap.classList.toggle('is-checked', e.target.checked);
+    }
+    if (e.target && e.target.name === 'default_pdf_template') {
+      document.querySelectorAll('.tpl-card').forEach(function (card) {
+        card.classList.remove('is-selected');
+      });
+      var selectedCard = e.target.closest('.tpl-card');
+      if (selectedCard) selectedCard.classList.add('is-selected');
     }
   });
 </script>

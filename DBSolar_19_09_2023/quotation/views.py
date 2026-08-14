@@ -1993,11 +1993,8 @@ def revise_quotation(request, pk):
             try:
                 # We already saved the quotation, just redirect to PDF
                 new_quotation = get_quotation_or_404_for_request(request, int(saved_quotation_id))
-                pdf_template = request.POST.get('pdf_template', 'quotation')
-                if pdf_template == 'industrial':
-                    return redirect("quotation:industrial_quotation_pdf", pk=new_quotation.pk)
-                else:
-                    return redirect("quotation:quotation_pdf", pk=new_quotation.pk)
+                from .master_helpers import redirect_quotation_pdf
+                return redirect_quotation_pdf(new_quotation.pk, request.POST.get('pdf_template'))
             except Quotation.DoesNotExist:
                 pass  # Continue with normal save process
 
@@ -2239,12 +2236,8 @@ def revise_quotation(request, pk):
                     payload['skip_pdf_modal'] = True
                 return JsonResponse(payload)
 
-            # If this is a normal POST with pdf_template selected, redirect to PDF
-            pdf_template = request.POST.get('pdf_template', 'quotation')
-            if pdf_template == 'industrial':
-                return redirect("quotation:industrial_quotation_pdf", pk=new_quotation.pk)
-            else:
-                return redirect("quotation:quotation_pdf", pk=new_quotation.pk)
+            from .master_helpers import redirect_quotation_pdf
+            return redirect_quotation_pdf(new_quotation.pk, request.POST.get('pdf_template'))
 
         else:
             # Form has errors
@@ -2365,6 +2358,8 @@ def revise_quotation(request, pk):
     # CRM list/detail URLs (e.g. quotation_detail) exist only under /new-lead/quotations/.
     show_crm_quotation_family_links = "/new-lead/" in (getattr(request, "path", "") or "")
 
+    from .master_helpers import get_default_pdf_template
+
     context = {
         "form": form,
         "original_quotation": original_quotation,
@@ -2378,6 +2373,7 @@ def revise_quotation(request, pk):
         "show_crm_quotation_family_links": show_crm_quotation_family_links,
         "lock_consumer_details": True,
         "skip_pdf_after_save": is_crm_revise,
+        "default_pdf_template": get_default_pdf_template(),
     }
     template_name = "quotation/revise_quotation.html"
     if getattr(request, "path", "") and "/new-lead/" in request.path:
@@ -4932,7 +4928,7 @@ def create_quotation(request):
     if getattr(request, 'path', '') and '/new-lead/' in request.path:
         template_name = 'quotations/crm_create_quotation.html'
 
-    from .master_helpers import get_default_selected_term_ids
+    from .master_helpers import get_default_selected_term_ids, get_default_pdf_template
 
     context = {
         'form': form,
@@ -4945,6 +4941,7 @@ def create_quotation(request):
         'passed_consumer_no': consumer_no,  # Pass to template for display
         'survey_lead_rows': _survey_lead_rows_for_quotation_template(),
         'after_save_list_url': after_save_list_url,
+        'default_pdf_template': get_default_pdf_template(),
     }
     return render(request, template_name, context)
 
@@ -5330,7 +5327,10 @@ def industrial_quotation_pdf(request, pk):
     from .master_helpers import get_quotation_pdf_context_extras
     context.update(get_quotation_pdf_context_extras())
 
-    html = render_to_string('quotation/industrial_quotation.html', context)
+    template_name = getattr(request, '_quotation_pdf_template', 'quotation/industrial_quotation.html')
+    filename = getattr(request, '_quotation_pdf_filename', f'industrial_quotation_{quotation.pk}.pdf')
+
+    html = render_to_string(template_name, context)
     sanitized_html = sanitize_css_units(html, content_width_pts=525)
 
     result = BytesIO()
@@ -5348,8 +5348,15 @@ def industrial_quotation_pdf(request, pk):
         )
 
     response = HttpResponse(result.getvalue(), content_type='application/pdf')
-    response['Content-Disposition'] = f'filename="industrial_quotation_{quotation.pk}.pdf"'
+    response['Content-Disposition'] = f'filename="{filename}"'
     return response
+
+
+def standard_industrial_quotation_pdf(request, pk):
+    """6-page Standard & Industrial proposal PDF."""
+    request._quotation_pdf_template = 'quotation/standard_industrial_quotation.html'
+    request._quotation_pdf_filename = f'standard_industrial_quotation_{pk}.pdf'
+    return industrial_quotation_pdf(request, pk)
 
 
 
@@ -7616,6 +7623,7 @@ def edit_quotation(request, pk):
     """
     quotation = get_quotation_or_404_for_request(request, pk)
     is_crm_edit = '/new-lead/' in (getattr(request, 'path', '') or '')
+    from .master_helpers import get_default_pdf_template
 
     panel_companies = list(SolarPanelCompany.objects.all())
     inverter_companies = list(InverterCompany.objects.all())
@@ -7830,12 +7838,8 @@ def edit_quotation(request, pk):
                     payload['skip_pdf_modal'] = True
                 return JsonResponse(payload)
 
-            # If this is a normal POST with pdf_template selected, redirect to PDF
-            pdf_template = request.POST.get('pdf_template', 'quotation')
-            if pdf_template == 'industrial':
-                return redirect("quotation:industrial_quotation_pdf", pk=quotation.pk)
-            else:
-                return redirect("quotation:quotation_pdf", pk=quotation.pk)
+            from .master_helpers import redirect_quotation_pdf
+            return redirect_quotation_pdf(quotation.pk, request.POST.get('pdf_template'))
 
         else:
             # Form has errors
@@ -7939,6 +7943,7 @@ def edit_quotation(request, pk):
         "representatives": Representative.objects.all().order_by('name'),
         "survey_lead_rows": _survey_lead_rows_for_quotation_template(),
         "skip_pdf_after_save": is_crm_edit,
+        "default_pdf_template": get_default_pdf_template(),
     }
     template_name = "quotation/edit_quotation.html"
     if is_crm_edit:

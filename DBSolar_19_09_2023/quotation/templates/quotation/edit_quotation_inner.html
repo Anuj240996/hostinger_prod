@@ -236,7 +236,7 @@ document.addEventListener("DOMContentLoaded", function () {
 <div class="testbox">
 <form method="post" id="quotationForm">
   {% csrf_token %}
-  <input type="hidden" name="pdf_template" id="id_pdf_template" value="quotation">
+  <input type="hidden" name="pdf_template" id="id_pdf_template" value="{{ default_pdf_template|default:'quotation' }}">
 
   <fieldset>
     <legend>Consumer Details</legend>
@@ -1716,12 +1716,16 @@ document.addEventListener('DOMContentLoaded', function(){
 
         <div class="radio-group" style="margin: 20px 0;">
             <label class="radio-label" style="display: block; margin: 10px 0;">
-                <input type="radio" name="pdf_template_radio" value="quotation" checked>
+                <input type="radio" name="pdf_template_radio" value="quotation"{% if default_pdf_template != 'industrial' and default_pdf_template != 'standard_industrial' %} checked{% endif %}>
                 Standard Quotation Template
             </label>
             <label class="radio-label" style="display: block; margin: 10px 0;">
-                <input type="radio" name="pdf_template_radio" value="industrial">
+                <input type="radio" name="pdf_template_radio" value="industrial"{% if default_pdf_template == 'industrial' %} checked{% endif %}>
                 Industrial Quotation Template
+            </label>
+            <label class="radio-label" style="display: block; margin: 10px 0;">
+                <input type="radio" name="pdf_template_radio" value="standard_industrial"{% if default_pdf_template == 'standard_industrial' %} checked{% endif %}>
+                Standard &amp; Industrial Quotation Template
             </label>
         </div>
 

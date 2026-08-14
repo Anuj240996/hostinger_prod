@@ -71,7 +71,7 @@
         <div style="background:white; margin:auto; padding:30px; border-radius:10px; max-width:500px; box-shadow:0 6px 18px rgba(0,0,0,0.3);">
             <h3 style="color:#1e41d1;">Generate PDF</h3>
             <p style="margin-bottom:20px;">Choose a template for PDF generation:</p>
-            <div style="display:flex; gap:15px; margin-bottom:25px; flex-wrap:wrap;">
+            <div style="display:flex; gap:12px; margin-bottom:25px; flex-wrap:wrap;">
                 <button type="button" id="leadPdfRegularBtn" class="pdf-option-btn" style="flex:1; min-width:140px; padding:15px; background:#4a6cf7; color:white; border:none; border-radius:5px; cursor:pointer;">
                     <strong>Regular Quotation</strong><br>
                     <small>Standard template</small>
@@ -79,6 +79,10 @@
                 <button type="button" id="leadPdfIndustrialBtn" class="pdf-option-btn" style="flex:1; min-width:140px; padding:15px; background:#1e41d1; color:white; border:none; border-radius:5px; cursor:pointer;">
                     <strong>Industrial Quotation</strong><br>
                     <small>Industrial template</small>
+                </button>
+                <button type="button" id="leadPdfStandardIndustrialBtn" class="pdf-option-btn" style="flex:1; min-width:140px; padding:15px; background:#0A2540; color:white; border:none; border-radius:5px; cursor:pointer;">
+                    <strong>Standard &amp; Industrial</strong><br>
+                    <small>6-page proposal</small>
                 </button>
             </div>
             <div style="text-align:right;">
@@ -724,9 +728,11 @@ document.addEventListener('DOMContentLoaded', function () {
     var closeBtn = document.getElementById('closeLeadQuotationPdfModal');
     var regularBtn = document.getElementById('leadPdfRegularBtn');
     var industrialBtn = document.getElementById('leadPdfIndustrialBtn');
+    var standardIndustrialBtn = document.getElementById('leadPdfStandardIndustrialBtn');
     /* Same endpoints as create quotation body after save: /quotation/<id>/pdf/ and industrial_pdf */
     var regularPdfUrl = "{% url 'quotation:quotation_pdf' quotation.pk %}";
     var industrialPdfUrl = "{% url 'quotation:industrial_quotation_pdf' quotation.pk %}";
+    var standardIndustrialPdfUrl = "{% url 'quotation:standard_industrial_quotation_pdf' quotation.pk %}";
     if (modal && openBtn) {
         openBtn.addEventListener('click', function () {
             modal.style.display = 'flex';
@@ -743,6 +749,10 @@ document.addEventListener('DOMContentLoaded', function () {
         });
         if (industrialBtn) industrialBtn.addEventListener('click', function () {
             window.open(industrialPdfUrl, '_blank');
+            modal.style.display = 'none';
+        });
+        if (standardIndustrialBtn) standardIndustrialBtn.addEventListener('click', function () {
+            window.open(standardIndustrialPdfUrl, '_blank');
             modal.style.display = 'none';
         });
     }

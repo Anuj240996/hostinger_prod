@@ -801,7 +801,7 @@
     <div style="background:white; margin:auto; padding:30px; border-radius:10px; max-width:500px; width:92%; box-shadow:0 6px 18px rgba(0,0,0,0.3);">
         <h3 style="color:#1e41d1;">Generate PDF</h3>
         <p style="margin-bottom:20px;">Choose a template for PDF generation:</p>
-        <div style="display:flex; gap:15px; margin-bottom:25px; flex-wrap:wrap;">
+        <div style="display:flex; gap:12px; margin-bottom:25px; flex-wrap:wrap;">
             <button type="button" id="crmPdfRegularBtn" class="crm-pdf-option-btn" style="flex:1; min-width:140px; padding:15px; background:#4a6cf7; color:white; border:none; border-radius:5px; cursor:pointer;">
                 <strong>Regular Quotation</strong><br>
                 <small>Standard template</small>
@@ -809,6 +809,10 @@
             <button type="button" id="crmPdfIndustrialBtn" class="crm-pdf-option-btn" style="flex:1; min-width:140px; padding:15px; background:#1e41d1; color:white; border:none; border-radius:5px; cursor:pointer;">
                 <strong>Industrial Quotation</strong><br>
                 <small>Industrial template</small>
+            </button>
+            <button type="button" id="crmPdfStandardIndustrialBtn" class="crm-pdf-option-btn" style="flex:1; min-width:140px; padding:15px; background:#0A2540; color:white; border:none; border-radius:5px; cursor:pointer;">
+                <strong>Standard &amp; Industrial</strong><br>
+                <small>6-page proposal</small>
             </button>
         </div>
         <div style="text-align:right;">
@@ -984,6 +988,7 @@
     var pdfCloseBtn = document.getElementById('closeCrmQuotationPdfChoiceModal');
     var pdfRegularBtn = document.getElementById('crmPdfRegularBtn');
     var pdfIndustrialBtn = document.getElementById('crmPdfIndustrialBtn');
+    var pdfStandardIndustrialBtn = document.getElementById('crmPdfStandardIndustrialBtn');
     var activeQuoteId = null;
 
     document.querySelectorAll('.openCrmPdfChoiceModal').forEach(function (btn) {
@@ -1020,6 +1025,13 @@
       pdfIndustrialBtn.addEventListener('click', function () {
         if (!activeQuoteId) return;
         window.open('/quotation/' + encodeURIComponent(activeQuoteId) + '/industrial_pdf/', '_blank');
+        if (pdfModal) pdfModal.style.display = 'none';
+      });
+    }
+    if (pdfStandardIndustrialBtn) {
+      pdfStandardIndustrialBtn.addEventListener('click', function () {
+        if (!activeQuoteId) return;
+        window.open('/quotation/' + encodeURIComponent(activeQuoteId) + '/standard_industrial_pdf/', '_blank');
         if (pdfModal) pdfModal.style.display = 'none';
       });
     }

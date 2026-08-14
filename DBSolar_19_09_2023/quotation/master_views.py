@@ -92,6 +92,18 @@ def quotation_master(request):
             master.save()
             messages.success(request, 'Company details saved.')
 
+        elif action == 'save_pdf_template':
+            from .master_helpers import PDF_TEMPLATE_OPTIONS
+            selected = request.POST.get('default_pdf_template', '')
+            valid = {item['key'] for item in PDF_TEMPLATE_OPTIONS}
+            if selected not in valid:
+                messages.error(request, 'Please select a valid quotation template.')
+            else:
+                master.default_pdf_template = selected
+                master.save(update_fields=['default_pdf_template'])
+                label = next(item['label'] for item in PDF_TEMPLATE_OPTIONS if item['key'] == selected)
+                messages.success(request, f'Default quotation template set to {label}.')
+
         elif action == 'save_term':
             term_id = request.POST.get('term_id')
             content = request.POST.get('content', '').strip()
@@ -174,10 +186,14 @@ def quotation_master(request):
             only.is_active = True
             only.save(update_fields=['show_in_quotation_form', 'is_default', 'is_active'])
 
+    from .master_helpers import PDF_TEMPLATE_OPTIONS, get_default_pdf_template
+
     return render(request, 'quotation/quotation_master.html', {
         'master': master,
         'terms': terms,
         'banks': banks,
         'all_banks': all_banks,
         'bank_count': all_banks.count(),
+        'pdf_template_options': PDF_TEMPLATE_OPTIONS,
+        'default_pdf_template': get_default_pdf_template(),
     })

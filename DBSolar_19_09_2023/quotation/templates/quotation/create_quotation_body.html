@@ -1800,14 +1800,18 @@ document.addEventListener('DOMContentLoaded', function(){
     <h3 style="color:#1e41d1;">Generate PDF</h3>
     <p style="margin-bottom:20px;">Choose a template for PDF generation:</p>
 
-    <div style="display:flex; gap:15px; margin-bottom:25px;">
-      <button type="button" id="generateRegularPDF" class="pdf-option-btn" style="flex:1; padding:15px; background:#4a6cf7; color:white; border:none; border-radius:5px; cursor:pointer;">
+    <div style="display:flex; gap:12px; margin-bottom:25px; flex-wrap:wrap;">
+      <button type="button" id="generateRegularPDF" class="pdf-option-btn" style="flex:1; min-width:140px; padding:15px; background:{% if default_pdf_template == 'quotation' %}#00897B{% else %}#4a6cf7{% endif %}; color:white; border:none; border-radius:5px; cursor:pointer;">
         <strong>Regular Quotation</strong><br>
         <small>Standard template</small>
       </button>
-      <button type="button" id="generateIndustrialPDF" class="pdf-option-btn" style="flex:1; padding:15px; background:#1e41d1; color:white; border:none; border-radius:5px; cursor:pointer;">
+      <button type="button" id="generateIndustrialPDF" class="pdf-option-btn" style="flex:1; min-width:140px; padding:15px; background:{% if default_pdf_template == 'industrial' %}#00897B{% else %}#1e41d1{% endif %}; color:white; border:none; border-radius:5px; cursor:pointer;">
         <strong>Industrial Quotation</strong><br>
         <small>Industrial template</small>
+      </button>
+      <button type="button" id="generateStandardIndustrialPDF" class="pdf-option-btn" style="flex:1; min-width:140px; padding:15px; background:{% if default_pdf_template == 'standard_industrial' %}#00897B{% else %}#0A2540{% endif %}; color:white; border:none; border-radius:5px; cursor:pointer;">
+        <strong>Standard &amp; Industrial</strong><br>
+        <small>6-page proposal</small>
       </button>
     </div>
 
@@ -1835,6 +1839,7 @@ document.addEventListener('DOMContentLoaded', function() {
   const closePdfModal = document.getElementById('closePdfModal');
   const generateRegularPDF = document.getElementById('generateRegularPDF');
   const generateIndustrialPDF = document.getElementById('generateIndustrialPDF');
+  const generateStandardIndustrialPDF = document.getElementById('generateStandardIndustrialPDF');
   const savedQuotationId = document.getElementById('savedQuotationId');
 
   // Form submission handler
@@ -1912,6 +1917,17 @@ document.addEventListener('DOMContentLoaded', function() {
       window.location.href = "{{ after_save_list_url }}";
     }
   };
+
+  if (generateStandardIndustrialPDF) {
+    generateStandardIndustrialPDF.onclick = function() {
+      const quotationId = savedQuotationId.value;
+      if (quotationId) {
+        window.open(`/quotation/${quotationId}/standard_industrial_pdf/`, '_blank');
+        pdfModal.style.display = 'none';
+        window.location.href = "{{ after_save_list_url }}";
+      }
+    };
+  }
 
   // Close modal when clicking outside
   window.onclick = function(event) {

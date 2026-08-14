@@ -92,9 +92,64 @@ def get_default_bank_detail():
     )
 
 
+PDF_TEMPLATE_STANDARD = 'quotation'
+PDF_TEMPLATE_INDUSTRIAL = 'industrial'
+PDF_TEMPLATE_STANDARD_INDUSTRIAL = 'standard_industrial'
+
+PDF_TEMPLATE_OPTIONS = [
+    {
+        'key': PDF_TEMPLATE_STANDARD,
+        'label': 'Standard Quotation',
+        'hint': 'Existing standard quotation PDF',
+        'template': 'quotation/quotation_template.html',
+        'url_name': 'quotation:quotation_pdf',
+    },
+    {
+        'key': PDF_TEMPLATE_INDUSTRIAL,
+        'label': 'Industrial Quotation',
+        'hint': 'Existing industrial quotation PDF',
+        'template': 'quotation/industrial_quotation.html',
+        'url_name': 'quotation:industrial_quotation_pdf',
+    },
+    {
+        'key': PDF_TEMPLATE_STANDARD_INDUSTRIAL,
+        'label': 'Standard & Industrial Quotation',
+        'hint': '6-page proposal (cover, about, invoice, terms, testimonials, thank you)',
+        'template': 'quotation/standard_industrial_quotation.html',
+        'url_name': 'quotation:standard_industrial_quotation_pdf',
+    },
+]
+
+
+def get_default_pdf_template():
+    try:
+        master = get_quotation_master()
+        key = getattr(master, 'default_pdf_template', None) or PDF_TEMPLATE_STANDARD
+    except Exception:
+        return PDF_TEMPLATE_STANDARD
+    valid = {item['key'] for item in PDF_TEMPLATE_OPTIONS}
+    if key not in valid:
+        return PDF_TEMPLATE_STANDARD
+    return key
+
+
+def pdf_url_name_for_template(template_key=None):
+    key = template_key or get_default_pdf_template()
+    for item in PDF_TEMPLATE_OPTIONS:
+        if item['key'] == key:
+            return item['url_name']
+    return 'quotation:quotation_pdf'
+
+
+def redirect_quotation_pdf(pk, template_key=None):
+    from django.shortcuts import redirect
+    return redirect(pdf_url_name_for_template(template_key), pk=pk)
+
+
 def get_quotation_pdf_context_extras():
     master = get_quotation_master()
     return {
         'quotation_master': master,
         'bank_detail': get_default_bank_detail(),
+        'default_pdf_template': get_default_pdf_template(),
     }

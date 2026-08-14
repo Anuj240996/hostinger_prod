@@ -1,5 +1,5 @@
 {% extends 'partials/base.html' %}
-{% load static number_filters permission_filters %}
+{% load static number_filters permission_filters quotation_master_tags %}
 {% block title %}Quotations — DB SOLAR{% endblock %}
 
 {% block content %}
@@ -275,7 +275,7 @@
         </button>
         {% endif %}
     {% endif %}
-<a href="{% url 'quotation:quotation_pdf' q.pk %}"
+<a href="{% default_quotation_pdf_url q.pk %}"
    target="_blank"
    class="btn btn-sm btn-outline-primary">PDF</a>
 
