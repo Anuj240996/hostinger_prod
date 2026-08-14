@@ -5331,15 +5331,23 @@ def industrial_quotation_pdf(request, pk):
     filename = getattr(request, '_quotation_pdf_filename', f'industrial_quotation_{quotation.pk}.pdf')
 
     html = render_to_string(template_name, context)
-    sanitized_html = sanitize_css_units(html, content_width_pts=525)
+    if getattr(request, '_quotation_pdf_skip_sanitize', False):
+        sanitized_html = html
+    else:
+        sanitized_html = sanitize_css_units(html, content_width_pts=525)
 
     result = BytesIO()
-    pisa_status = pisa.CreatePDF(
-        sanitized_html,
-        dest=result,
-        encoding='utf-8',
-        link_callback=link_callback,
-    )
+    try:
+        pisa_status = pisa.CreatePDF(
+            sanitized_html,
+            dest=result,
+            encoding='utf-8',
+            link_callback=link_callback,
+        )
+    except Exception as exc:
+        import logging
+        logging.getLogger(__name__).exception("PDF generation failed for %s", template_name)
+        return HttpResponse("Error creating PDF: %s" % exc, status=500)
 
     if pisa_status.err:
         return HttpResponse(
@@ -5356,6 +5364,7 @@ def standard_industrial_quotation_pdf(request, pk):
     """6-page Standard & Industrial proposal PDF."""
     request._quotation_pdf_template = 'quotation/standard_industrial_quotation.html'
     request._quotation_pdf_filename = f'standard_industrial_quotation_{pk}.pdf'
+    request._quotation_pdf_skip_sanitize = True
     return industrial_quotation_pdf(request, pk)
 
 

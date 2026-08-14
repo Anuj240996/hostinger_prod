@@ -30,7 +30,7 @@
       color: #111;
     }
     h1, h2, h3, h4 { margin: 4px 0; }
-    table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+    table { border-collapse: collapse; }
     th, td { border: 1px solid #000; padding: 3px 4px; vertical-align: top; word-wrap: break-word; }
     th { background: #0A2540; color: #fff; }
     .no-border td, .no-border th { border: none !important; }
@@ -38,9 +38,9 @@
     .right { text-align: right; }
     .bold { font-weight: bold; }
     .indent-left { padding-left: 5px; }
-    .offer-table th:nth-child(1), .offer-table td:nth-child(1) { width: 58%; }
-    .offer-table th:nth-child(2), .offer-table td:nth-child(2) { width: 18%; text-align: center; }
-    .offer-table th:nth-child(3), .offer-table td:nth-child(3) { width: 24%; text-align: right; }
+    .offer-col-desc { width: 305pt; }
+    .offer-col-units { width: 95pt; text-align: center; }
+    .offer-col-amt { width: 125pt; text-align: right; }
     .page-break { page-break-before: always; }
     .section-bar {
       background: #0A66C2;
@@ -68,20 +68,21 @@
 <body>
 {% now "y" as this_year %}
 
-{# PAGE 1 — Cover only: 50% full-height image + yellow panel (not full height). No footer. #}
-<table class="no-border" cellpadding="0" cellspacing="0" style="width:595pt; height:842pt;">
+{# PAGE 1 — Cover only: 50% A4-width image + yellow panel (not full height). No footer. #}
+{# Height must stay under A4 (841.89pt) or xhtml2pdf raises LayoutError → Django 500. #}
+<table class="no-border" cellpadding="0" cellspacing="0" style="width:595pt;">
   <tr>
-    <td style="border:none; width:50%; padding:0; margin:0; vertical-align:top;">
-      {% if quotation_master.proposal_cover_image %}
-      <img src="{{ quotation_master.proposal_cover_image.url }}" style="width:297pt; height:842pt;">
+    <td style="border:none; width:297pt; padding:0; margin:0; vertical-align:top;">
+      {% if quotation_master and quotation_master.proposal_cover_image %}
+      <img src="{{ quotation_master.proposal_cover_image.url }}" style="width:297pt; height:830pt;">
       {% else %}
-      <img src="{% static 'quotation/proposal/cover_left.png' %}" style="width:297pt; height:842pt;">
+      <img src="{% static 'quotation/proposal/cover_left.png' %}" style="width:297pt; height:830pt;">
       {% endif %}
     </td>
-    <td style="border:none; width:50%; padding:0; margin:0; vertical-align:top; background:#ffffff;">
+    <td style="border:none; width:298pt; padding:0; margin:0; vertical-align:top; background:#ffffff;">
       <div class="cover-yellow" style="padding:22px 16px 18px 16px;">
         <div style="font-size:22px; font-weight:bold; text-align:right; line-height:1.15; margin-bottom:14px;">Roof Top Solar Proposal</div>
-        {% if quotation_master.company_logo %}
+        {% if quotation_master and quotation_master.company_logo %}
         <img src="{{ quotation_master.company_logo.url }}" style="height:48pt; margin-bottom:8px;">
         {% endif %}
         <div style="font-size:16px; font-weight:bold; margin-bottom:6px;">{{ quotation_master.company_name|default:"Heramb Industries" }}</div>
@@ -115,21 +116,20 @@
   </tr>
 </table>
 
-<pdf:nexttemplate name="inner"/>
 <div class="page-break"></div>
+<pdf:nexttemplate name="inner"/>
 
 <div id="proposal_footer">
   <table class="no-border footer-bar" style="width:595pt; background:#0A2540; color:#fff;">
     <tr>
-      <td style="border:none; color:#fff; padding:8px 16px; width:40%;">{{ quotation_master.company_name|default:"Heramb Industries" }}</td>
-      <td style="border:none; color:#fff; padding:8px 16px; text-align:center; width:20%;"><pdf:pagenumber/> / <pdf:pagecount/></td>
-      <td style="border:none; color:#fff; padding:8px 16px; text-align:right; width:40%;">Roof Top Solar Proposal</td>
+      <td style="border:none; color:#fff; padding:8px 16px; width:238pt;">{{ quotation_master.company_name|default:"Heramb Industries" }}</td>
+      <td style="border:none; color:#fff; padding:8px 16px; text-align:center; width:119pt;"><pdf:pagenumber/> / <pdf:pagecount/></td>
+      <td style="border:none; color:#fff; padding:8px 16px; text-align:right; width:238pt;">Roof Top Solar Proposal</td>
     </tr>
   </table>
 </div>
 
 {# PAGE 2 — About company #}
-<div class="page-break"></div>
 <table class="no-border">
   <tr>
     <td style="border:none; text-align:right;">
@@ -141,7 +141,7 @@
     </td>
   </tr>
 </table>
-<img src="{% static 'quotation/proposal/about_hero.png' %}" style="width:100%; height:260pt;">
+<img src="{% static 'quotation/proposal/about_hero.png' %}" style="width:559pt; height:260pt;">
 <div style="background:#FFD200; text-align:right; padding:6px 12px; font-weight:bold;">Award Winning Company</div>
 <h2 style="margin-top:16px;">About {{ quotation_master.company_name|default:"Heramb Industries" }}</h2>
 <p>
@@ -165,7 +165,7 @@
     <td style="border:none; text-align:center;" colspan="2">
       <h1 style="color:#0A2540; font-size:26px; margin:0;">Quotation</h1>
     </td>
-    <td style="border:none; text-align:right; width:90px;">
+    <td style="border:none; text-align:right; width:68pt;">
       {% if quotation_master.company_logo %}
         <img src="{{ quotation_master.company_logo.url }}" style="height:36pt;">
       {% endif %}
@@ -175,7 +175,7 @@
 
 <table class="party-info-table" style="margin-top:8px;">
   <tr>
-    <td style="padding:6px; line-height:1.4; vertical-align:top;" width="34%">
+    <td style="padding:6px; line-height:1.4; vertical-align:top; width:190pt;">
       <b>From,</b><br>
       <b>{{ quotation_master.company_name|default:"Heramb Industries" }},</b><br>
       {% if quotation_master.from_address %}
@@ -185,14 +185,14 @@
         New Osman Pura, Chh. Sambhajinagar (MH) - 431001
       {% endif %}
     </td>
-    <td style="padding:6px; line-height:1.4; vertical-align:top;" width="33%">
+    <td style="padding:6px; line-height:1.4; vertical-align:top; width:184pt;">
       <b>Bill To,</b><br>
       <b>{{ quotation.title }} {{ quotation.consumer_name }}</b><br>
       {{ quotation.consumer_address1 }}{% if quotation.consumer_address1 %},{% endif %}<br>
       {{ quotation.consumer_address2 }}<br>
       Mobile: {{ quotation.consumer_mobile }}
     </td>
-    <td style="padding:6px; line-height:1.4; vertical-align:top;" width="33%">
+    <td style="padding:6px; line-height:1.4; vertical-align:top; width:185pt;">
       <b>Date - </b>{{ formatted_date }}<br>
       <b>Quotation No. - </b>
       {% if quotation.consumer_type == 'Residential' %}DB/Res/{{ quotation.quotation_no }}/{{ this_year }}
@@ -212,9 +212,9 @@
 
 <table class="offer-table" id="offer_details" align="center">
   <tr align="center">
-    <th>Product Description</th>
-    <th class="center">Units</th>
-    <th class="center">Amount (INR)</th>
+    <th class="offer-col-desc">Product Description</th>
+    <th class="offer-col-units">Units</th>
+    <th class="offer-col-amt">Amount (INR)</th>
   </tr>
   <tr>
     <td class="indent-left"><b>{{ quotation.panel_type }}</b> Solar PV Panels {{ quotation.panel_capacity_watt }} watt<br><b>Make - </b> {{ quotation.panel_company_names }} &nbsp;(Approx.{{ quotation.panel_qty }} qty)</td>
@@ -299,7 +299,7 @@
 
 <table class="no-border" style="margin-top:12px;">
   <tr>
-    <td style="border:none; width:55%; vertical-align:top;">
+    <td style="border:none; width:307pt; vertical-align:top;">
       <div class="section-bar">Bank Details</div>
       <div style="line-height:1.7; margin-top:6px;">
         {% if bank_detail %}
@@ -316,7 +316,7 @@
         {% endif %}
       </div>
     </td>
-    <td style="border:none; width:45%; vertical-align:top; text-align:center;">
+    <td style="border:none; width:252pt; vertical-align:top; text-align:center;">
       <img src="{% static 'images/sign.jpeg' %}" style="width:90pt; height:70pt;"><br>
       <b>Authorized Signature</b><br>
       <b>M/S {{ quotation_master.company_name|default:"HERAMB INDUSTRIES"|upper }}</b>
@@ -329,7 +329,7 @@
 <table class="no-border">
   <tr>
     <td style="border:none;"><h1 style="text-align:center;">Terms &amp; Condition</h1></td>
-    <td style="border:none; width:90px; text-align:right;">
+    <td style="border:none; width:68pt; text-align:right;">
       {% if quotation_master.company_logo %}
         <img src="{{ quotation_master.company_logo.url }}" style="height:36pt;">
       {% endif %}
@@ -382,7 +382,7 @@
 <table class="no-border">
   <tr>
     <td style="border:none;"><h1 style="text-align:center;">Testimonials</h1></td>
-    <td style="border:none; width:90px; text-align:right;">
+    <td style="border:none; width:68pt; text-align:right;">
       {% if quotation_master.company_logo %}
         <img src="{{ quotation_master.company_logo.url }}" style="height:36pt;">
       {% endif %}
@@ -390,32 +390,17 @@
   </tr>
 </table>
 
-<table class="no-border" style="margin-top:16px;">
-  <tr>
-    <td style="border:none; width:28%; vertical-align:top;">
-      <img src="{% static 'quotation/proposal/testimonials_preview.png' %}" style="width:130pt; height:90pt;">
-    </td>
-    <td style="border:none; width:72%; vertical-align:top; padding-left:10px;">
-      <i>"I recently installed solar on my rooftop. Thank You team for neat and clean Installation on my rooftop. Also, received my subsidy. Great Work team. Thanks"</i>
-      <p><b>- Rahulbhai Patel</b></p>
-    </td>
-  </tr>
-  <tr><td colspan="2" style="border:none; border-bottom:1px solid #ddd; height:8px;"></td></tr>
-  <tr>
-    <td style="border:none; vertical-align:top; padding-top:12px;">
-      <i>"When you have empty roof then why to pay for electricity bill? Thank You for end to end guidance. Your staff is very professional and friendly. Thanks for making my roof solarize! Superb Work by Team."</i>
-      <p><b>- Payalben Hirpara</b></p>
-    </td>
-    <td style="border:none;"></td>
-  </tr>
-  <tr><td colspan="2" style="border:none; border-bottom:1px solid #ddd; height:8px;"></td></tr>
-  <tr>
-    <td style="border:none; vertical-align:top; padding-top:12px;" colspan="2">
-      <i>"One of the best decision of my life to go solar! I really appreciate your product quality and workmanship. I strongly recommend everyone to go solar as soon as possible. Thank You"</i>
-      <p><b>- Kiranbhai Prajapati</b></p>
-    </td>
-  </tr>
-</table>
+<div style="margin-top:16px;">
+  <img src="{% static 'quotation/proposal/testimonials_preview.png' %}" style="width:130pt; height:90pt;"><br><br>
+  <i>"I recently installed solar on my rooftop. Thank You team for neat and clean Installation on my rooftop. Also, received my subsidy. Great Work team. Thanks"</i>
+  <p><b>- Rahulbhai Patel</b></p>
+  <div style="border-top:1pt solid #ddd; margin:10px 0;"></div>
+  <i>"When you have empty roof then why to pay for electricity bill? Thank You for end to end guidance. Your staff is very professional and friendly. Thanks for making my roof solarize! Superb Work by Team."</i>
+  <p><b>- Payalben Hirpara</b></p>
+  <div style="border-top:1pt solid #ddd; margin:10px 0;"></div>
+  <i>"One of the best decision of my life to go solar! I really appreciate your product quality and workmanship. I strongly recommend everyone to go solar as soon as possible. Thank You"</i>
+  <p><b>- Kiranbhai Prajapati</b></p>
+</div>
 
 {# PAGE 6 — Thank you #}
 <div class="page-break"></div>
@@ -435,11 +420,11 @@
 </div>
 <table class="no-border" style="margin-top:40px;">
   <tr>
-    <td style="border:none; width:33%; text-align:center; border-right:1px solid #ccc !important;">
+    <td style="border:none; width:185pt; text-align:center; border-right:1pt solid #ccc;">
       <b>{{ quotation_master.company_name|default:"HERAMB INDUSTRIES"|upper }}</b><br>
       {% if quotation_master.address %}{{ quotation_master.address }}{% else %}Maharashtra{% endif %}
     </td>
-    <td style="border:none; width:34%; text-align:center; border-right:1px solid #ccc !important;">
+    <td style="border:none; width:189pt; text-align:center; border-right:1pt solid #ccc;">
       <b>MOBILE</b><br>
       {% if representatives %}
         {% for rep in representatives %}{% if forloop.first %}{{ rep.contact|default:"—" }}{% endif %}{% endfor %}
@@ -447,7 +432,7 @@
         —
       {% endif %}
     </td>
-    <td style="border:none; width:33%; text-align:center;">
+    <td style="border:none; width:185pt; text-align:center;">
       <b>EMAIL</b><br>
       herambasd1@gmail.com
     </td>
