@@ -5331,19 +5331,14 @@ def industrial_quotation_pdf(request, pk):
     filename = getattr(request, '_quotation_pdf_filename', f'industrial_quotation_{quotation.pk}.pdf')
 
     if template_name.endswith('standard_industrial_quotation.html'):
+        context['cover_left_src'] = ''
         try:
-            from .cover_render import render_proposal_cover_png
-            this_year = timezone.now().strftime('%y')
-            context['proposal_cover_png'] = render_proposal_cover_png(
-                quotation,
-                context.get('quotation_master'),
-                context.get('formatted_date'),
-                this_year,
-            )
+            from .cover_render import render_cover_left_photo
+            context['cover_left_src'] = render_cover_left_photo(context.get('quotation_master')) or ''
         except Exception:
             import logging
-            logging.getLogger(__name__).exception("Cover PNG render failed")
-            context['proposal_cover_png'] = ''
+            logging.getLogger(__name__).exception("Cover left photo render failed")
+            context['cover_left_src'] = ''
 
     html = render_to_string(template_name, context)
     if getattr(request, '_quotation_pdf_skip_sanitize', False):

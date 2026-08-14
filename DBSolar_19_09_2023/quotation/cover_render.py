@@ -231,17 +231,26 @@ def render_proposal_cover_png(quotation, master, formatted_date, this_year):
     cy += 22
     _draw_right(draw, x_right, cy, meta, body_font, BLACK, 30)
 
-    out_name = "cover_{}.jpg".format(quotation.pk)
-    try:
-        out_dir = os.path.join(str(settings.MEDIA_ROOT), "quotation", "generated")
-        os.makedirs(out_dir, exist_ok=True)
-        out_path = os.path.join(out_dir, out_name)
-        canvas.convert("RGB").save(out_path, "JPEG", quality=85)
-        media_url = settings.MEDIA_URL.rstrip("/") + "/quotation/generated/" + out_name
-        return media_url
-    except Exception:
-        import tempfile
-        fd, out_path = tempfile.mkstemp(prefix="cover_", suffix=".jpg")
-        os.close(fd)
-        canvas.convert("RGB").save(out_path, "JPEG", quality=85)
-        return out_path
+    import tempfile
+    fd, out_path = tempfile.mkstemp(prefix="dbsolar_cover_", suffix=".jpg")
+    os.close(fd)
+    canvas.convert("RGB").save(out_path, "JPEG", quality=85)
+    return out_path.replace("\\", "/")
+
+
+def render_cover_left_photo(master):
+    """Portrait-crop the cover photo and save a temp JPEG. Empty string if unavailable."""
+    import tempfile
+    photo = None
+    if master is not None:
+        photo = _open_image(getattr(master, "proposal_cover_image", None))
+    if photo is None:
+        photo = _open_image(_static_cover_path())
+    if photo is None:
+        return ""
+    fitted = _cover_fit(photo, 594, 1560)
+    photo.close()
+    fd, out_path = tempfile.mkstemp(prefix="dbsolar_cover_left_", suffix=".jpg")
+    os.close(fd)
+    fitted.convert("RGB").save(out_path, "JPEG", quality=85)
+    return out_path.replace("\\", "/")
