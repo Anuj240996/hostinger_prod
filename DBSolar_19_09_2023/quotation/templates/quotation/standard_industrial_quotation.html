@@ -83,6 +83,15 @@
     .est-col-img { width: 38pt; text-align: center; }
     .est-col-qty { width: 42pt; text-align: center; }
     .est-col-num { width: 50pt; text-align: center; }
+    /* Pages 2, 4, 5, 6 — larger body text (page 3 quotation table stays 11px) */
+    .si-large { font-size: 15px; line-height: 1.5; }
+    .si-large h1 { font-size: 24px; }
+    .si-large h2 { font-size: 20px; }
+    .si-large p, .si-large li, .si-large ol { font-size: 15px; }
+    .si-large .subhead { font-size: 16px; }
+    .si-large .award-bar { font-size: 15px; }
+    .si-large .thank-you-banner { font-size: 42px; }
+    .si-large .contact-row { font-size: 15px; }
   </style>
 </head>
 <body>
@@ -124,13 +133,14 @@
 </div>
 
 {# PAGE 2 — About company: photo (editable) then written text. No company logo. #}
+<div class="si-large" style="font-size:15px; line-height:1.5;">
 {% if about_photo_src %}
 <img src="{{ about_photo_src }}" style="width:520pt; height:240pt;">
 {% else %}
 <img src="{% static 'quotation/proposal/about_page.jpg' %}" style="width:520pt; height:240pt;">
 {% endif %}
-<div style="background:#FFD200; text-align:right; padding:6px 12px; font-weight:bold;">Award Winning Company</div>
-<h2 style="margin-top:16px;">About {{ quotation_master.company_name|default:"Heramb Industries" }}</h2>
+<div class="award-bar" style="background:#FFD200; text-align:right; padding:6px 12px; font-weight:bold;">Award Winning Company</div>
+<h2 style="margin-top:16px; font-size:20px;">About {{ quotation_master.company_name|default:"Heramb Industries" }}</h2>
 <p>
   {{ quotation_master.company_name|default:"Heramb Industries" }} provides end-to-end rooftop solar solutions
   for residential, commercial and industrial consumers across Maharashtra.
@@ -144,6 +154,7 @@
   This proposal includes system design, major components, commercial offer, terms and
   after-sales support so the consumer can take a clear decision quickly.
 </p>
+</div>
 
 {# PAGE 3 — Quotation (attached EST layout; Sample 1 header/footer stay) #}
 <div class="page-break"></div>
@@ -314,9 +325,10 @@
 
 {# PAGE 4 — Terms #}
 <div class="page-break"></div>
+<div class="si-large" style="font-size:15px; line-height:1.5;">
 <table class="no-border">
   <tr>
-    <td style="border:none;"><h1 style="text-align:center;">Terms &amp; Condition</h1></td>
+    <td style="border:none;"><h1 style="text-align:center; font-size:24px;">Terms &amp; Condition</h1></td>
   </tr>
 </table>
 
@@ -358,12 +370,14 @@
   <li>Force majeure events or third-party interference.</li>
   <li>Subject to Chh. Sambhajinagar / Maharashtra jurisdiction.</li>
 </ol>
+</div>
 
 {# PAGE 5 — Testimonials #}
 <div class="page-break"></div>
+<div class="si-large" style="font-size:15px; line-height:1.5;">
 <table class="no-border">
   <tr>
-    <td style="border:none;"><h1 style="text-align:center;">Testimonials</h1></td>
+    <td style="border:none;"><h1 style="text-align:center; font-size:24px;">Testimonials</h1></td>
   </tr>
 </table>
 
@@ -378,13 +392,15 @@
   <i>"One of the best decision of my life to go solar! I really appreciate your product quality and workmanship. I strongly recommend everyone to go solar as soon as possible. Thank You"</i>
   <p><b>- Kiranbhai Prajapati</b></p>
 </div>
+</div>
 
 {# PAGE 6 — Thank you #}
 <div class="page-break"></div>
+<div class="si-large" style="font-size:15px; line-height:1.5;">
 <div style="text-align:center; margin-top:80px; margin-bottom:60px;">
-  <div style="background:#0A66C2; color:#fff; display:inline-block; padding:28px 48px; font-size:36px; font-weight:bold;">THANK YOU</div>
+  <div class="thank-you-banner" style="background:#0A66C2; color:#fff; display:inline-block; padding:28px 48px; font-size:42px; font-weight:bold;">THANK YOU</div>
 </div>
-<table class="no-border" style="margin-top:40px;">
+<table class="no-border contact-row" style="margin-top:40px; font-size:15px;">
   <tr>
     <td style="border:none; width:185pt; text-align:center; border-right:1pt solid #ccc;">
       <b>{{ quotation_master.company_name|default:"HERAMB INDUSTRIES"|upper }}</b><br>
@@ -404,6 +420,7 @@
     </td>
   </tr>
 </table>
+</div>
 
 </body>
 </html>
