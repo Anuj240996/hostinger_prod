@@ -83,7 +83,7 @@
     .est-col-img { width: 38pt; text-align: center; }
     .est-col-qty { width: 42pt; text-align: center; }
     .est-col-num { width: 50pt; text-align: center; }
-    /* Pages 2, 4, 5, 6 — larger body text (page 3 quotation table stays 11px) */
+    /* Pages 2–6 — same larger body text */
     .si-large { font-size: 15px; line-height: 1.5; }
     .si-large h1 { font-size: 24px; }
     .si-large h2 { font-size: 20px; }
@@ -92,6 +92,11 @@
     .si-large .award-bar { font-size: 15px; }
     .si-large .thank-you-banner { font-size: 42px; }
     .si-large .contact-row { font-size: 15px; }
+    .si-large .est-title { font-size: 24px; }
+    .si-large .est-meta td { font-size: 15px; line-height: 1.5; }
+    .si-large .offer-table th,
+    .si-large .offer-table td { font-size: 15px; }
+    .si-large .section-bar { font-size: 16px; }
   </style>
 </head>
 <body>
@@ -158,15 +163,16 @@
 
 {# PAGE 3 — Quotation (attached EST layout; Sample 1 header/footer stay) #}
 <div class="page-break"></div>
+<div class="si-large" style="font-size:15px; line-height:1.5;">
 <table class="no-border" align="center" width="525">
   <tr>
     <td style="border:none; text-align:center;">
-      <div class="est-title">Quotation</div>
+      <div class="est-title" style="font-size:24px;">Quotation</div>
     </td>
   </tr>
 </table>
 
-<table class="no-border est-meta" align="center" width="525" style="margin-bottom:8px;">
+<table class="no-border est-meta" align="center" width="525" style="margin-bottom:8px; font-size:15px;">
   <tr>
     <td style="width:180pt;">
       <b>From</b><br>
@@ -206,7 +212,7 @@
   </tr>
 </table>
 
-<table class="offer-table" id="offer_details" align="center" width="525">
+<table class="offer-table" id="offer_details" align="center" width="525" style="font-size:15px;">
   <tr align="center">
     <th class="offer-col-desc">Product Description</th>
     <th class="offer-col-units">Units</th>
@@ -286,17 +292,17 @@
 </table>
 
 {% if quotation.consumer_type == 'Residential' %}
-<div style="background-color:yellow; margin-top:8px; padding:4px;">
+<div style="background-color:yellow; margin-top:8px; padding:4px; font-size:15px;">
   <b>Note-</b>
   {% if quotation_master.subsidy_notes %}{{ quotation_master.subsidy_notes }}
   {% else %}Exact subsidy depends on your electricity load approval. Maximum up to ₹ 78,000 is available.{% endif %}
 </div>
 {% endif %}
 
-<table class="no-border" style="margin-top:12px;">
+<table class="no-border" style="margin-top:12px; font-size:15px;">
   <tr>
     <td style="border:none; width:307pt; vertical-align:top;">
-      <div class="section-bar">Bank Details</div>
+      <div class="section-bar" style="font-size:16px;">Bank Details</div>
       <div style="line-height:1.7; margin-top:6px;">
         {% if bank_detail %}
           {% if bank_detail.account_name %}<b>A/C Name -</b> {{ bank_detail.account_name }}<br>{% endif %}
@@ -322,6 +328,7 @@
     </td>
   </tr>
 </table>
+</div>
 
 {# PAGE 4 — Terms #}
 <div class="page-break"></div>
