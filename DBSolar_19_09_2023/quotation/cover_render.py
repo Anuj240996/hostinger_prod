@@ -127,44 +127,37 @@ def _draw_left(draw, x, y, lines, font, fill, line_gap):
 
 def render_proposal_cover_png(quotation, master, formatted_date, this_year):
     """
-    Full A4 JPEG with equal white margins painted in (no PDF footer gap).
-    Left photo + yellow / navy / yellow like the Sample 2 edit preview.
+    Return filesystem path of a generated A4 cover PNG.
+    Left: full-height photo (50% width). Right: yellow / navy / yellow like EST-001.
     """
-    import tempfile
-
-    m = 36  # ~18pt at 2x so the image can sit edge-to-edge on A4
-    ox, oy = m, m
-    cw, ch = A4_W - 2 * m, A4_H - 2 * m
-    mid = ox + cw // 2
-
     canvas = Image.new("RGB", (A4_W, A4_H), WHITE)
+    mid = A4_W // 2
 
     photo = None
     if master is not None:
         photo = _open_image(getattr(master, "proposal_cover_image", None))
     if photo is None:
         photo = _open_image(_static_cover_path())
-    left_w = mid - ox
     if photo is not None:
-        canvas.paste(_cover_fit(photo, left_w, ch), (ox, oy))
+        canvas.paste(_cover_fit(photo, mid, A4_H), (0, 0))
         photo.close()
     else:
-        ImageDraw.Draw(canvas).rectangle((ox, oy, mid, oy + ch), fill=(20, 60, 90))
+        ImageDraw.Draw(canvas).rectangle((0, 0, mid, A4_H), fill=(20, 60, 90))
 
-    y1 = oy + int(ch * 0.18)
-    y2 = oy + int(ch * 0.50)
+    y1 = int(A4_H * 0.18)
+    y2 = int(A4_H * 0.50)
     draw = ImageDraw.Draw(canvas)
-    draw.rectangle((mid, oy, ox + cw, y1), fill=YELLOW)
-    draw.rectangle((mid, y1, ox + cw, y2), fill=NAVY)
-    draw.rectangle((mid, y2, ox + cw, oy + ch), fill=YELLOW)
+    draw.rectangle((mid, 0, A4_W, y1), fill=YELLOW)
+    draw.rectangle((mid, y1, A4_W, y2), fill=NAVY)
+    draw.rectangle((mid, y2, A4_W, A4_H), fill=YELLOW)
 
     pad = 36
     x_left = mid + pad
-    x_right = ox + cw - pad
-    col_w = max(40, x_right - x_left)
+    x_right = A4_W - pad
+    col_w = x_right - x_left
 
     title_font = _font(42, bold=True)
-    ty = oy + 48
+    ty = 48
     for line in ("Roof Top Solar", "Proposal"):
         draw.text((x_right - _text_w(title_font, line), ty), line, font=title_font, fill=BLACK)
         ty += 52
@@ -238,9 +231,10 @@ def render_proposal_cover_png(quotation, master, formatted_date, this_year):
     cy += 22
     _draw_right(draw, x_right, cy, meta, body_font, BLACK, 30)
 
+    import tempfile
     fd, out_path = tempfile.mkstemp(prefix="dbsolar_cover_", suffix=".jpg")
     os.close(fd)
-    canvas.convert("RGB").save(out_path, "JPEG", quality=88)
+    canvas.convert("RGB").save(out_path, "JPEG", quality=85)
     return out_path.replace("\\", "/")
 
 
