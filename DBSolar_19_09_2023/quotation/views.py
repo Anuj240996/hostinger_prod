@@ -8518,8 +8518,9 @@ def quotation_pdf(request, pk):
         'representatives': reps,
         'terms_with_yellow': terms_with_yellow,  # Set of term IDs with yellow background
     }
-    from .master_helpers import get_quotation_pdf_context_extras
+    from .master_helpers import get_quotation_pdf_context_extras, get_pdf_selected_terms
     context.update(get_quotation_pdf_context_extras())
+    context['selected_terms'] = get_pdf_selected_terms(quotation)
 
     html = render_to_string('quotation/quotation_template.html', context)
     sanitized_html = sanitize_css_units(html, content_width_pts=525)

@@ -74,16 +74,18 @@ def get_form_visible_term_ids():
 
 
 def get_pdf_selected_terms(quotation=None):
-    """Terms checked on the quotation, else master default-selected terms."""
-    terms = []
+    """PDF extra terms: checked on this quotation, and still active + on-form in master.
+
+    Default-selected only pre-checks the create form. Unchecked terms must not appear.
+    """
+    allowed_ids = {t.id for t in get_active_terms_conditions()}
+    selected = []
     if quotation is not None:
         try:
-            terms = list(quotation.terms_conditions.all())
+            selected = list(quotation.terms_conditions.all())
         except Exception:
-            terms = []
-    if not terms:
-        terms = [t for t in get_active_terms_conditions() if getattr(t, 'default_selected', False)]
-    return terms
+            selected = []
+    return [t for t in selected if t.id in allowed_ids]
 
 
 def get_quotation_master():

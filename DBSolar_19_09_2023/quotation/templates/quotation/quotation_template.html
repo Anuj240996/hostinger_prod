@@ -616,8 +616,8 @@
     <li><span style="background-color: yellow;">Load extension Charges is in consumer's scope.</span></li>
     <li>After load extension, Net-metering process takes 30 days.</li>
 
-    <!-- CUSTOM TERMS (From database) -->
-    {% for term in quotation.terms_conditions.all %}
+    <!-- CUSTOM TERMS: only active + on-form + checked on this quotation -->
+    {% for term in selected_terms %}
         <li>
             {% if term.id in terms_with_yellow %}
                 <span style="background-color: yellow;">{{ term.content }}</span>

@@ -778,10 +778,12 @@
      <li><h4 style="line-height: 1.5; margin-left: 35px;">6. Dispute Resolution:</h4></li>
     <div style="line-height: 1.5; margin-left: 60px; margin-right: 40px; text-indent: 40px; padding-top: -8px;">Any disputes arising shall be resolved amicably through discussion. Failing which, they shall be subject to the exclusive jurisdiction of courts in CHH Sambhaji Nagar MH.</div>
 
-    <!-- CUSTOM TERMS (From database) -->
-    {% for term in quotation.terms_conditions.all %}
+    <!-- CUSTOM TERMS: only active + on-form + checked on this quotation -->
+    {% for term in selected_terms %}
          <li style="padding-left: 60px; line-height: 1.5;">
-            {% if term.has_yellow_background %}
+            {% if term.id in terms_with_yellow %}
+                <span style="background-color: yellow; line-height: 1.8; margin-left: 35px;">{{ term.content }}</span>
+            {% elif term.has_yellow_background %}
                 <span style="background-color: yellow; line-height: 1.8; margin-left: 35px;">{{ term.content }}</span>
             {% else %}
               {{ term.content }}
