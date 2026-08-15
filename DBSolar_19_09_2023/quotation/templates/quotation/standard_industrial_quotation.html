@@ -19,16 +19,16 @@
         height: 841.89pt;
       }
     }
-    /* Pages 2+: same header/footer frames as Sample 1 (Standard Invoice) */
+    /* Pages 2+: company logo top-right (editable) + Sample 1 footer */
     @page inner {
       size: A4;
-      margin: 150px 30px 70px 30px;
+      margin: 56pt 28pt 70pt 28pt;
       @frame header_frame {
         -pdf-frame-content: header_content;
-        top: 0px;
-        left: 0px;
-        width: 885px;
-        height: 180px;
+        top: 10pt;
+        left: 457pt;
+        width: 120pt;
+        height: 42pt;
       }
       @frame footer_frame {
         -pdf-frame-content: footer_content;
@@ -87,14 +87,12 @@
 <pdf:nexttemplate name="inner"/>
 <div class="page-break"></div>
 
-{# Same header/footer as Sample 1 Standard Invoice — used on pages 2 to last #}
-<div id="header_content" style="margin:0; padding:0;">
-  {% if quotation_master.header_image %}
-  <img src="{{ quotation_master.header_image.url }}"
-       style="width:595pt; height:100pt; display:block; margin:0; padding:0;">
-  {% else %}
-  <img src="{% static 'images/quotation_bg1.jpg' %}"
-       style="width:595pt; height:100pt; display:block; margin:0; padding:0;">
+{# Header on pages 2+: company logo only, top right (editable from Sample 2 edit page) #}
+<div id="header_content" style="margin:0; padding:0; text-align:right;">
+  {% if header_logo_src %}
+  <img src="{{ header_logo_src }}" style="height:36pt;">
+  {% elif quotation_master.company_logo %}
+  <img src="{{ quotation_master.company_logo.url }}" style="height:36pt;">
   {% endif %}
 </div>
 <div id="footer_content" style="margin:0; padding:0;">
@@ -112,16 +110,7 @@
   {% endif %}
 </div>
 
-{# PAGE 2 — About company: photo (editable) then written text. No Logo rectangle. #}
-<table class="no-border">
-  <tr>
-    <td style="border:none; text-align:right;">
-      {% if quotation_master.company_logo %}
-        <img src="{{ quotation_master.company_logo.url }}" style="height:42pt;">
-      {% endif %}
-    </td>
-  </tr>
-</table>
+{# PAGE 2 — About company: photo (editable) then written text. Logo is in the header (top right). #}
 {% if about_photo_src %}
 <img src="{{ about_photo_src }}" style="width:520pt; height:240pt;">
 {% else %}
@@ -145,18 +134,7 @@
 
 {# PAGE 3 — Existing standard quotation invoice table #}
 <div class="page-break"></div>
-<table class="no-border">
-  <tr>
-    <td style="border:none; text-align:center;" colspan="2">
-      <h1 style="color:#0A2540; font-size:26px; margin:0;">Quotation</h1>
-    </td>
-    <td style="border:none; text-align:right; width:68pt;">
-      {% if quotation_master.company_logo %}
-        <img src="{{ quotation_master.company_logo.url }}" style="height:36pt;">
-      {% endif %}
-    </td>
-  </tr>
-</table>
+<h1 style="color:#0A2540; font-size:26px; margin:0; text-align:center;">Quotation</h1>
 
 <table class="party-info-table" style="margin-top:8px;">
   <tr>
@@ -311,16 +289,7 @@
 
 {# PAGE 4 — Terms #}
 <div class="page-break"></div>
-<table class="no-border">
-  <tr>
-    <td style="border:none;"><h1 style="text-align:center;">Terms &amp; Condition</h1></td>
-    <td style="border:none; width:68pt; text-align:right;">
-      {% if quotation_master.company_logo %}
-        <img src="{{ quotation_master.company_logo.url }}" style="height:36pt;">
-      {% endif %}
-    </td>
-  </tr>
-</table>
+<h1 style="text-align:center; margin:0;">Terms &amp; Condition</h1>
 
 <div class="subhead">Terms &amp; Condition</div>
 <ol>
@@ -364,16 +333,7 @@
 
 {# PAGE 5 — Testimonials #}
 <div class="page-break"></div>
-<table class="no-border">
-  <tr>
-    <td style="border:none;"><h1 style="text-align:center;">Testimonials</h1></td>
-    <td style="border:none; width:68pt; text-align:right;">
-      {% if quotation_master.company_logo %}
-        <img src="{{ quotation_master.company_logo.url }}" style="height:36pt;">
-      {% endif %}
-    </td>
-  </tr>
-</table>
+<h1 style="text-align:center; margin:0;">Testimonials</h1>
 
 <div style="margin-top:16px;">
   <img src="{% static 'quotation/proposal/testimonials_preview.png' %}" style="width:130pt; height:90pt;"><br><br>
@@ -389,17 +349,6 @@
 
 {# PAGE 6 — Thank you #}
 <div class="page-break"></div>
-<table class="no-border">
-  <tr>
-    <td style="border:none; text-align:right;">
-      {% if quotation_master.company_logo %}
-        <img src="{{ quotation_master.company_logo.url }}" style="height:42pt;">
-      {% else %}
-        <div style="display:inline-block; border:1px solid #bbb; padding:8px 18px; color:#666;">Logo</div>
-      {% endif %}
-    </td>
-  </tr>
-</table>
 <div style="text-align:center; margin-top:80px; margin-bottom:60px;">
   <div style="background:#0A66C2; color:#fff; display:inline-block; padding:28px 48px; font-size:36px; font-weight:bold;">THANK YOU</div>
 </div>
