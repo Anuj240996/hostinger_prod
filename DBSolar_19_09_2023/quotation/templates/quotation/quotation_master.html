@@ -684,6 +684,9 @@
             {% else %}
               <span class="term-badge off">Hidden on form</span>
             {% endif %}
+            {% if term.default_selected %}
+              <span class="term-badge on-default">Default selected</span>
+            {% endif %}
             {% if term.is_active %}
               <span class="term-badge on-active">Active</span>
             {% else %}
@@ -715,6 +718,10 @@
             <div class="form-check">
               <input class="form-check-input" type="checkbox" name="show_in_quotation_form" id="show_{{ term.id }}" {% if term.show_in_quotation_form %}checked{% endif %}>
               <label class="form-check-label" for="show_{{ term.id }}">Show in quotation form</label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" name="default_selected" id="default_{{ term.id }}" {% if term.default_selected %}checked{% endif %}>
+              <label class="form-check-label" for="default_{{ term.id }}">Default selected</label>
             </div>
             <div class="form-check">
               <input class="form-check-input" type="checkbox" name="is_active" id="active_{{ term.id }}" {% if term.is_active %}checked{% endif %}>
@@ -820,6 +827,10 @@
             <div class="form-check">
               <input class="form-check-input" type="checkbox" name="show_in_quotation_form" id="new_show" checked>
               <label class="form-check-label" for="new_show">Show in quotation form</label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" name="default_selected" id="new_default">
+              <label class="form-check-label" for="new_default">Default selected</label>
             </div>
             <div class="form-check">
               <input class="form-check-input" type="checkbox" name="is_active" id="new_active" checked>

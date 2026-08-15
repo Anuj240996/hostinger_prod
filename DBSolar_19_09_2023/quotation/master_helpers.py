@@ -48,7 +48,7 @@ def get_active_terms_conditions():
             rows = cursor.fetchall()
         terms_list = []
         for row in rows:
-            if _is_truthy(row[3]) and _is_truthy(row[4]):
+            if _is_truthy(row[3]) and (_is_truthy(row[4]) or _is_truthy(row[5])):
                 terms_list.append(_term_from_row(row))
         return terms_list
     except Exception:
@@ -57,16 +57,24 @@ def get_active_terms_conditions():
         logger = logging.getLogger(__name__)
         logger.error("Error fetching quotation form terms: %s", traceback.format_exc())
         try:
+            from django.db.models import Q
             return list(
-                TermsAndCondition.objects.filter(is_active=True, show_in_quotation_form=True)
+                TermsAndCondition.objects.filter(is_active=True).filter(
+                    Q(show_in_quotation_form=True) | Q(default_selected=True)
+                )
             )
         except Exception:
-            return []
+            try:
+                return list(
+                    TermsAndCondition.objects.filter(is_active=True, show_in_quotation_form=True)
+                )
+            except Exception:
+                return []
 
 
 def get_default_selected_term_ids():
-    """Terms shown on the quotation form are pre-checked on new quotations."""
-    return [t.id for t in get_active_terms_conditions()]
+    """IDs of terms pre-selected on new quotation forms."""
+    return [t.id for t in get_active_terms_conditions() if t.default_selected]
 
 
 def get_form_visible_term_ids():
@@ -74,18 +82,16 @@ def get_form_visible_term_ids():
 
 
 def get_pdf_selected_terms(quotation=None):
-    """PDF extra terms: checked on this quotation, and still active + on-form in master.
-
-    Default-selected only pre-checks the create form. Unchecked terms must not appear.
-    """
-    allowed_ids = {t.id for t in get_active_terms_conditions()}
-    selected = []
+    """Terms checked on the quotation, else master default-selected terms."""
+    terms = []
     if quotation is not None:
         try:
-            selected = list(quotation.terms_conditions.all())
+            terms = list(quotation.terms_conditions.all())
         except Exception:
-            selected = []
-    return [t for t in selected if t.id in allowed_ids]
+            terms = []
+    if not terms:
+        terms = [t for t in get_active_terms_conditions() if getattr(t, 'default_selected', False)]
+    return terms
 
 
 def get_quotation_master():

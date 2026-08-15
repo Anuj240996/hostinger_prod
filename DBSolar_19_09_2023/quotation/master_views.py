@@ -164,7 +164,7 @@ def quotation_master(request):
                 term.has_yellow_background = request.POST.get('has_yellow_background') == 'on'
                 term.is_active = request.POST.get('is_active') == 'on'
                 term.show_in_quotation_form = request.POST.get('show_in_quotation_form') == 'on'
-                term.default_selected = term.show_in_quotation_form
+                term.default_selected = request.POST.get('default_selected') == 'on'
                 term.save()
                 messages.success(request, 'Terms & condition saved.')
 
