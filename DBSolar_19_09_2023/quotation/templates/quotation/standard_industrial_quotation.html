@@ -8,15 +8,15 @@
   <meta charset="utf-8">
   <title>Standard &amp; Industrial Quotation</title>
   <style>
-    /* Cover: equal white margin on all sides */
+    /* Cover: one full-page image (white margins painted in — no leftover footer gap) */
     @page {
       size: A4;
-      margin: 24pt;
+      margin: 0;
       @frame content {
-        left: 24pt;
-        top: 24pt;
-        width: 547.27pt;
-        height: 793.89pt;
+        left: 0;
+        top: 0;
+        width: 595.27pt;
+        height: 841.89pt;
       }
     }
     /* Pages 2+: same header/footer frames as Sample 1 (Standard Invoice) */
@@ -77,60 +77,12 @@
 <body>
 {% now "y" as this_year %}
 
-{# PAGE 1 — Cover with equal white margins on all sides #}
-<table class="no-border" width="547" cellpadding="0" cellspacing="0" border="0">
-  <tr>
-    <td width="273" rowspan="3" valign="top" style="border:none; padding:0; margin:0;">
-      {% if cover_left_src %}
-      <img src="{{ cover_left_src }}" style="width:273pt; height:760pt;">
-      {% elif quotation_master.proposal_cover_image %}
-      <img src="{{ quotation_master.proposal_cover_image.url }}" style="width:273pt; height:760pt;">
-      {% else %}
-      <img src="{% static 'quotation/proposal/cover_left.png' %}" style="width:273pt; height:760pt;">
-      {% endif %}
-    </td>
-    <td width="274" bgcolor="#FFD200" valign="middle" align="right" style="border:none; padding:14pt 12pt; background:#FFD200;">
-      <font size="5"><b>Roof Top Solar<br/>Proposal</b></font>
-    </td>
-  </tr>
-  <tr>
-    <td width="274" bgcolor="#0A2540" valign="top" style="border:none; padding:14pt 12pt; background:#0A2540;">
-      {% if quotation_master.company_logo %}
-      <img src="{{ quotation_master.company_logo.url }}" style="height:40pt;"><br/><br/>
-      {% endif %}
-      <font color="white" size="4"><b>{{ quotation_master.company_name|default:"Heramb Industries" }}</b></font><br/><br/>
-      <font color="white" size="2">
-        {% if quotation_master.from_address %}
-          {{ quotation_master.from_address|linebreaksbr }}
-        {% elif quotation_master.address %}
-          {{ quotation_master.address|linebreaksbr }}
-        {% else %}
-          Bhagya Banglow, Near Sant Eknath Rang Mandir,<br/>
-          New Osman Pura, Chh. Sambhajinagar (MH) - 431001
-        {% endif %}
-      </font>
-    </td>
-  </tr>
-  <tr>
-    <td width="274" bgcolor="#FFD200" valign="top" align="right" style="border:none; padding:14pt 12pt; background:#FFD200;">
-      <font size="4"><b>{{ quotation.title }} {{ quotation.consumer_name }}</b></font><br/><br/>
-      <font size="2">
-        {{ quotation.consumer_address1 }}{% if quotation.consumer_address1 %},{% endif %}<br/>
-        {{ quotation.consumer_address2 }}
-      </font>
-      <br/><br/>
-      <font size="2">
-        <b>ID :</b>
-        {% if quotation.consumer_type == 'Residential' %}DB/Res/{{ quotation.quotation_no }}/{{ this_year }}
-        {% elif quotation.consumer_type == 'Commercial' %}DB/Comm/{{ quotation.quotation_no }}/{{ this_year }}
-        {% elif quotation.consumer_type == 'Industrial' %}DB/Ind/{{ quotation.quotation_no }}/{{ this_year }}
-        {% else %}{{ quotation.quotation_no }}{% endif %}<br/>
-        <b>Date :</b> {{ formatted_date }}<br/>
-        <b>By :</b> {{ quotation.employee_name|default:"" }}
-      </font>
-    </td>
-  </tr>
-</table>
+{# PAGE 1 — Full A4 cover image (equal white margins painted; no leftover footer space) #}
+{% if cover_full_src %}
+<img src="{{ cover_full_src }}" style="width:595.27pt; height:841.89pt; display:block; margin:0; padding:0;">
+{% else %}
+<img src="{% static 'quotation/proposal/cover_left.png' %}" style="width:595.27pt; height:841.89pt; display:block; margin:0; padding:0;">
+{% endif %}
 
 <pdf:nexttemplate name="inner"/>
 <div class="page-break"></div>
