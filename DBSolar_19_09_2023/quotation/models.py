@@ -235,6 +235,12 @@ class QuotationMaster(models.Model):
         null=True,
         help_text='Left-column cover photo for Standard & Industrial quotation.',
     )
+    proposal_about_image = models.ImageField(
+        upload_to='quotation/master/',
+        blank=True,
+        null=True,
+        help_text='About-page photo for Sample 2 (Standard & Industrial) quotation.',
+    )
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:

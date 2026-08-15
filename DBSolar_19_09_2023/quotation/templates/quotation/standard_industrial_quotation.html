@@ -8,28 +8,21 @@
   <meta charset="utf-8">
   <title>Standard &amp; Industrial Quotation</title>
   <style>
-    /* Cover: equal white margin on all sides */
+    /* Cover: full-page painted image (white margins baked in — no footer gap) */
     @page {
       size: A4;
-      margin: 24pt;
+      margin: 0;
       @frame content {
-        left: 24pt;
-        top: 24pt;
-        width: 547.27pt;
-        height: 793.89pt;
+        left: 0;
+        top: 0;
+        width: 595.27pt;
+        height: 841.89pt;
       }
     }
-    /* Pages 2+: same header/footer frames as Sample 1 (Standard Invoice) */
+    /* Pages 2+: company logo top-right in content + Sample 1 footer */
     @page inner {
       size: A4;
-      margin: 150px 30px 70px 30px;
-      @frame header_frame {
-        -pdf-frame-content: header_content;
-        top: 0px;
-        left: 0px;
-        width: 885px;
-        height: 180px;
-      }
+      margin: 28pt 28pt 70pt 28pt;
       @frame footer_frame {
         -pdf-frame-content: footer_content;
         top: 785pt;
@@ -72,79 +65,23 @@
     }
     .cover-yellow { background: #FFD200; }
     .rupee-symbol { font-family: DejaVu Sans, Arial, sans-serif; }
+    .page-logo-row { text-align: right; margin: 0 0 10pt 0; padding: 0; }
   </style>
 </head>
 <body>
 {% now "y" as this_year %}
 
-{# PAGE 1 — Cover with equal white margins on all sides #}
-<table class="no-border" width="547" cellpadding="0" cellspacing="0" border="0">
-  <tr>
-    <td width="273" rowspan="3" valign="top" style="border:none; padding:0; margin:0;">
-      {% if cover_left_src %}
-      <img src="{{ cover_left_src }}" style="width:273pt; height:760pt;">
-      {% elif quotation_master.proposal_cover_image %}
-      <img src="{{ quotation_master.proposal_cover_image.url }}" style="width:273pt; height:760pt;">
-      {% else %}
-      <img src="{% static 'quotation/proposal/cover_left.png' %}" style="width:273pt; height:760pt;">
-      {% endif %}
-    </td>
-    <td width="274" bgcolor="#FFD200" valign="middle" align="right" style="border:none; padding:14pt 12pt; background:#FFD200;">
-      <font size="5"><b>Roof Top Solar<br/>Proposal</b></font>
-    </td>
-  </tr>
-  <tr>
-    <td width="274" bgcolor="#0A2540" valign="top" style="border:none; padding:14pt 12pt; background:#0A2540;">
-      {% if quotation_master.company_logo %}
-      <img src="{{ quotation_master.company_logo.url }}" style="height:40pt;"><br/><br/>
-      {% endif %}
-      <font color="white" size="4"><b>{{ quotation_master.company_name|default:"Heramb Industries" }}</b></font><br/><br/>
-      <font color="white" size="2">
-        {% if quotation_master.from_address %}
-          {{ quotation_master.from_address|linebreaksbr }}
-        {% elif quotation_master.address %}
-          {{ quotation_master.address|linebreaksbr }}
-        {% else %}
-          Bhagya Banglow, Near Sant Eknath Rang Mandir,<br/>
-          New Osman Pura, Chh. Sambhajinagar (MH) - 431001
-        {% endif %}
-      </font>
-    </td>
-  </tr>
-  <tr>
-    <td width="274" bgcolor="#FFD200" valign="top" align="right" style="border:none; padding:14pt 12pt; background:#FFD200;">
-      <font size="4"><b>{{ quotation.title }} {{ quotation.consumer_name }}</b></font><br/><br/>
-      <font size="2">
-        {{ quotation.consumer_address1 }}{% if quotation.consumer_address1 %},{% endif %}<br/>
-        {{ quotation.consumer_address2 }}
-      </font>
-      <br/><br/>
-      <font size="2">
-        <b>ID :</b>
-        {% if quotation.consumer_type == 'Residential' %}DB/Res/{{ quotation.quotation_no }}/{{ this_year }}
-        {% elif quotation.consumer_type == 'Commercial' %}DB/Comm/{{ quotation.quotation_no }}/{{ this_year }}
-        {% elif quotation.consumer_type == 'Industrial' %}DB/Ind/{{ quotation.quotation_no }}/{{ this_year }}
-        {% else %}{{ quotation.quotation_no }}{% endif %}<br/>
-        <b>Date :</b> {{ formatted_date }}<br/>
-        <b>By :</b> {{ quotation.employee_name|default:"" }}
-      </font>
-    </td>
-  </tr>
-</table>
+{# PAGE 1 — Full A4 cover image (equal white margins painted; no leftover footer space) #}
+{% if cover_full_src %}
+<img src="{{ cover_full_src }}" style="width:595.27pt; height:841.89pt; display:block; margin:0; padding:0;">
+{% else %}
+<img src="{% static 'quotation/proposal/cover_left.png' %}" style="width:595.27pt; height:841.89pt; display:block; margin:0; padding:0;">
+{% endif %}
 
 <pdf:nexttemplate name="inner"/>
 <div class="page-break"></div>
 
-{# Same header/footer as Sample 1 Standard Invoice — used on pages 2 to last #}
-<div id="header_content" style="margin:0; padding:0;">
-  {% if quotation_master.header_image %}
-  <img src="{{ quotation_master.header_image.url }}"
-       style="width:595pt; height:100pt; display:block; margin:0; padding:0;">
-  {% else %}
-  <img src="{% static 'images/quotation_bg1.jpg' %}"
-       style="width:595pt; height:100pt; display:block; margin:0; padding:0;">
-  {% endif %}
-</div>
+{# Footer on pages 2+: same as Sample 1 #}
 <div id="footer_content" style="margin:0; padding:0;">
   {% if quotation_master.footer_image %}
   <img src="{{ quotation_master.footer_image.url }}"
@@ -160,21 +97,21 @@
   {% endif %}
 </div>
 
-{# PAGE 2 — About company #}
-<table class="no-border">
-  <tr>
-    <td style="border:none; text-align:right;">
-      {% if quotation_master.company_logo %}
-        <img src="{{ quotation_master.company_logo.url }}" style="height:42pt;">
-      {% else %}
-        <div style="display:inline-block; border:1px solid #bbb; padding:8px 18px; color:#666;">Logo</div>
-      {% endif %}
-    </td>
-  </tr>
-</table>
-<img src="{% static 'quotation/proposal/about_hero.png' %}" style="width:520pt; height:240pt;">
-<div style="background:#FFD200; text-align:right; padding:6px 12px; font-weight:bold;">Award Winning Company</div>
-<h2 style="margin-top:16px;">About {{ quotation_master.company_name|default:"Heramb Industries" }}</h2>
+{# PAGE 2 — company logo top-right; photo; then written About text (not image-with-text) #}
+<div class="page-logo-row">
+  {% if header_logo_src %}
+  <img src="{{ header_logo_src }}" style="height:36pt;">
+  {% elif quotation_master.company_logo %}
+  <img src="{{ quotation_master.company_logo.url }}" style="height:36pt;">
+  {% endif %}
+</div>
+{% if about_photo_src %}
+<img src="{{ about_photo_src }}" style="width:520pt; height:220pt;">
+{% else %}
+<img src="{% static 'quotation/proposal/about_photo.jpg' %}" style="width:520pt; height:220pt;">
+{% endif %}
+<div style="background:#FFD200; text-align:right; padding:6px 12px; font-weight:bold; margin-top:0;">Award Winning Company</div>
+<h2 style="margin-top:14px;">About {{ quotation_master.company_name|default:"Heramb Industries" }}</h2>
 <p>
   {{ quotation_master.company_name|default:"Heramb Industries" }} provides end-to-end rooftop solar solutions
   for residential, commercial and industrial consumers across Maharashtra.
@@ -182,7 +119,7 @@
   competitive offers and complete documentation support.
 </p>
 <p>
-  {% if quotation_master.from_address %}{{ quotation_master.from_address|linebreaksbr }}{% else %}Bhagya Banglow, Near Sant Eknath Rang Mandir, New Osman Pura, Chh. Sambhajinagar (MH) - 431001{% endif %}
+  {% if quotation_master.from_address %}{{ quotation_master.from_address|linebreaksbr }}{% elif quotation_master.address %}{{ quotation_master.address|linebreaksbr }}{% else %}Bhagya Banglow, Near Sant Eknath Rang Mandir, New Osman Pura, Chh. Sambhajinagar (MH) - 431001{% endif %}
 </p>
 <p>
   This proposal includes system design, major components, commercial offer, terms and
@@ -191,18 +128,14 @@
 
 {# PAGE 3 — Existing standard quotation invoice table #}
 <div class="page-break"></div>
-<table class="no-border">
-  <tr>
-    <td style="border:none; text-align:center;" colspan="2">
-      <h1 style="color:#0A2540; font-size:26px; margin:0;">Quotation</h1>
-    </td>
-    <td style="border:none; text-align:right; width:68pt;">
-      {% if quotation_master.company_logo %}
-        <img src="{{ quotation_master.company_logo.url }}" style="height:36pt;">
-      {% endif %}
-    </td>
-  </tr>
-</table>
+<div class="page-logo-row">
+  {% if header_logo_src %}
+  <img src="{{ header_logo_src }}" style="height:36pt;">
+  {% elif quotation_master.company_logo %}
+  <img src="{{ quotation_master.company_logo.url }}" style="height:36pt;">
+  {% endif %}
+</div>
+<h1 style="color:#0A2540; font-size:26px; margin:0; text-align:center;">Quotation</h1>
 
 <table class="party-info-table" style="margin-top:8px;">
   <tr>
@@ -357,16 +290,14 @@
 
 {# PAGE 4 — Terms #}
 <div class="page-break"></div>
-<table class="no-border">
-  <tr>
-    <td style="border:none;"><h1 style="text-align:center;">Terms &amp; Condition</h1></td>
-    <td style="border:none; width:68pt; text-align:right;">
-      {% if quotation_master.company_logo %}
-        <img src="{{ quotation_master.company_logo.url }}" style="height:36pt;">
-      {% endif %}
-    </td>
-  </tr>
-</table>
+<div class="page-logo-row">
+  {% if header_logo_src %}
+  <img src="{{ header_logo_src }}" style="height:36pt;">
+  {% elif quotation_master.company_logo %}
+  <img src="{{ quotation_master.company_logo.url }}" style="height:36pt;">
+  {% endif %}
+</div>
+<h1 style="text-align:center; margin:0;">Terms &amp; Condition</h1>
 
 <div class="subhead">Terms &amp; Condition</div>
 <ol>
@@ -410,16 +341,14 @@
 
 {# PAGE 5 — Testimonials #}
 <div class="page-break"></div>
-<table class="no-border">
-  <tr>
-    <td style="border:none;"><h1 style="text-align:center;">Testimonials</h1></td>
-    <td style="border:none; width:68pt; text-align:right;">
-      {% if quotation_master.company_logo %}
-        <img src="{{ quotation_master.company_logo.url }}" style="height:36pt;">
-      {% endif %}
-    </td>
-  </tr>
-</table>
+<div class="page-logo-row">
+  {% if header_logo_src %}
+  <img src="{{ header_logo_src }}" style="height:36pt;">
+  {% elif quotation_master.company_logo %}
+  <img src="{{ quotation_master.company_logo.url }}" style="height:36pt;">
+  {% endif %}
+</div>
+<h1 style="text-align:center; margin:0;">Testimonials</h1>
 
 <div style="margin-top:16px;">
   <img src="{% static 'quotation/proposal/testimonials_preview.png' %}" style="width:130pt; height:90pt;"><br><br>
@@ -435,17 +364,13 @@
 
 {# PAGE 6 — Thank you #}
 <div class="page-break"></div>
-<table class="no-border">
-  <tr>
-    <td style="border:none; text-align:right;">
-      {% if quotation_master.company_logo %}
-        <img src="{{ quotation_master.company_logo.url }}" style="height:42pt;">
-      {% else %}
-        <div style="display:inline-block; border:1px solid #bbb; padding:8px 18px; color:#666;">Logo</div>
-      {% endif %}
-    </td>
-  </tr>
-</table>
+<div class="page-logo-row">
+  {% if header_logo_src %}
+  <img src="{{ header_logo_src }}" style="height:36pt;">
+  {% elif quotation_master.company_logo %}
+  <img src="{{ quotation_master.company_logo.url }}" style="height:36pt;">
+  {% endif %}
+</div>
 <div style="text-align:center; margin-top:80px; margin-bottom:60px;">
   <div style="background:#0A66C2; color:#fff; display:inline-block; padding:28px 48px; font-size:36px; font-weight:bold;">THANK YOU</div>
 </div>
