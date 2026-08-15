@@ -106,10 +106,38 @@
     object-fit:cover;
     object-position:top;
   }
+  .pdf-page-frame .page-header-logo {
+    display:flex;
+    justify-content:flex-end;
+    padding:8px 12px 0;
+    background:#fff;
+    min-height:42px;
+  }
+  .pdf-page-frame .page-header-logo img {
+    max-height:36px;
+    max-width:120px;
+    object-fit:contain;
+  }
   .pdf-page-frame .page-body {
     padding:10px;
     background:#fafafa;
   }
+  .about-preview-photo {
+    width:100%;
+    max-height:180px;
+    object-fit:cover;
+    display:block;
+    border:1px solid #eee;
+  }
+  .about-award-bar {
+    background:#FFD200;
+    text-align:right;
+    padding:6px 12px;
+    font-weight:700;
+    font-size:.9rem;
+  }
+  .about-preview-text h5 { margin:12px 0 8px; font-weight:700; }
+  .about-preview-text p { font-size:.85rem; color:#333; line-height:1.45; margin-bottom:8px; }
   .help-text { font-size:.85rem; color:#666; }
 </style>
 
@@ -178,24 +206,42 @@
 
     <form method="post" enctype="multipart/form-data" style="max-width:none;width:100%;background:transparent;box-shadow:none;padding:0;margin:0;border:none;">
       {% csrf_token %}
+      <input type="hidden" name="action" value="cover">
       <label class="form-label"><b>Change cover page image (left column)</b></label>
       <input type="file" name="proposal_cover_image" class="form-control" accept="image/*" required>
-      <div class="help-text mt-1 mb-2">Left column is 50% of the cover content area (inside white margins).</div>
+      <div class="help-text mt-1 mb-2">PDF cover is a full-page image with equal white margins (no footer gap).</div>
       <button type="submit" class="btn btn-success btn-sm">Save Cover Image</button>
     </form>
   </div>
 
   <div class="page-sheet">
     <div class="page-label">Page 2 / 6 — About company</div>
-    <p class="help-text mb-2">Pages 2–6 use the same header and footer images as Sample 1 (Standard Invoice).</p>
+    <p class="help-text mb-2">
+      Company logo top-right (editable below). Photo separate; About text is written under the photo (not baked into the image).
+    </p>
     <div class="pdf-page-frame">
-      {% if master.header_image %}
-        <img class="hf-img" src="{{ master.header_image.url }}" alt="Header">
-      {% else %}
-        <img class="hf-img" src="{% static 'images/quotation_bg1.jpg' %}" alt="Header">
-      {% endif %}
+      <div class="page-header-logo">
+        {% if master.company_logo %}
+          <img src="{{ master.company_logo.url }}" alt="Company logo">
+        {% endif %}
+      </div>
       <div class="page-body">
-        <img class="page-thumb" src="{% static 'quotation/proposal/about_preview.png' %}" alt="About page">
+        {% if about_image_url %}
+          <img class="about-preview-photo" src="{{ about_image_url }}" alt="About photo">
+        {% else %}
+          <img class="about-preview-photo" src="{% static 'quotation/proposal/about_photo.jpg' %}" alt="About photo">
+        {% endif %}
+        <div class="about-award-bar">Award Winning Company</div>
+        <div class="about-preview-text">
+          <h5>About {{ master.company_name|default:"Heramb Industries" }}</h5>
+          <p>
+            {{ master.company_name|default:"Heramb Industries" }} provides end-to-end rooftop solar solutions
+            for residential, commercial and industrial consumers across Maharashtra.
+          </p>
+          <p>
+            {% if master.from_address %}{{ master.from_address }}{% elif master.address %}{{ master.address }}{% else %}Bhagya Banglow, Near Sant Eknath Rang Mandir, New Osman Pura, Chh. Sambhajinagar (MH) - 431001{% endif %}
+          </p>
+        </div>
       </div>
       {% if master.footer_image %}
         <img class="hf-img" src="{{ master.footer_image.url }}" alt="Footer">
@@ -203,16 +249,35 @@
         <img class="hf-img" src="{% static 'images/address.jpg' %}" alt="Footer">
       {% endif %}
     </div>
+    <form method="post" enctype="multipart/form-data" class="mt-3" style="max-width:none;width:100%;background:transparent;box-shadow:none;padding:0;margin:0;border:none;">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="about">
+      <label class="form-label"><b>Change About page image (photo only)</b></label>
+      <input type="file" name="proposal_about_image" class="form-control" accept="image/*" required>
+      <div class="help-text mt-1 mb-2">Upload a photo only. About company text stays written under the image in the PDF.</div>
+      <button type="submit" class="btn btn-success btn-sm">Save About Image</button>
+    </form>
+    <form method="post" enctype="multipart/form-data" class="mt-3" style="max-width:none;width:100%;background:transparent;box-shadow:none;padding:0;margin:0;border:none;">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="logo">
+      <label class="form-label"><b>Change company logo (pages 2–6 top-right)</b></label>
+      {% if master.company_logo %}
+        <div class="mb-2"><img src="{{ master.company_logo.url }}" alt="Logo" style="max-height:48px;"></div>
+      {% endif %}
+      <input type="file" name="company_logo" class="form-control" accept="image/*" required>
+      <div class="help-text mt-1 mb-2">Shown only after the cover page (top-right). No Logo rectangle placeholder.</div>
+      <button type="submit" class="btn btn-success btn-sm">Save Company Logo</button>
+    </form>
   </div>
+
   <div class="page-sheet">
     <div class="page-label">Page 3 / 6 — Invoice table (same as standard quotation)</div>
     <div class="pdf-page-frame">
-      {% if master.header_image %}
-        <img class="hf-img" src="{{ master.header_image.url }}" alt="Header">
-      {% else %}
-        <img class="hf-img" src="{% static 'images/quotation_bg1.jpg' %}" alt="Header">
-      {% endif %}
-      <div class="page-body">
+      <div class="page-header-logo">
+        {% if master.company_logo %}
+          <img src="{{ master.company_logo.url }}" alt="Company logo">
+        {% endif %}
+      </div>      <div class="page-body">
         <img class="page-thumb" src="{% static 'quotation/proposal/invoice_preview.png' %}" alt="Invoice page">
       </div>
       {% if master.footer_image %}
@@ -225,12 +290,11 @@
   <div class="page-sheet">
     <div class="page-label">Page 4 / 6 — Terms &amp; Condition</div>
     <div class="pdf-page-frame">
-      {% if master.header_image %}
-        <img class="hf-img" src="{{ master.header_image.url }}" alt="Header">
-      {% else %}
-        <img class="hf-img" src="{% static 'images/quotation_bg1.jpg' %}" alt="Header">
-      {% endif %}
-      <div class="page-body">
+      <div class="page-header-logo">
+        {% if master.company_logo %}
+          <img src="{{ master.company_logo.url }}" alt="Company logo">
+        {% endif %}
+      </div>      <div class="page-body">
         <img class="page-thumb" src="{% static 'quotation/proposal/terms_preview.png' %}" alt="Terms page">
       </div>
       {% if master.footer_image %}
@@ -243,12 +307,11 @@
   <div class="page-sheet">
     <div class="page-label">Page 5 / 6 — Testimonials</div>
     <div class="pdf-page-frame">
-      {% if master.header_image %}
-        <img class="hf-img" src="{{ master.header_image.url }}" alt="Header">
-      {% else %}
-        <img class="hf-img" src="{% static 'images/quotation_bg1.jpg' %}" alt="Header">
-      {% endif %}
-      <div class="page-body">
+      <div class="page-header-logo">
+        {% if master.company_logo %}
+          <img src="{{ master.company_logo.url }}" alt="Company logo">
+        {% endif %}
+      </div>      <div class="page-body">
         <img class="page-thumb" src="{% static 'quotation/proposal/testimonials_preview.png' %}" alt="Testimonials page">
       </div>
       {% if master.footer_image %}
@@ -261,12 +324,11 @@
   <div class="page-sheet">
     <div class="page-label">Page 6 / 6 — Thank you</div>
     <div class="pdf-page-frame">
-      {% if master.header_image %}
-        <img class="hf-img" src="{{ master.header_image.url }}" alt="Header">
-      {% else %}
-        <img class="hf-img" src="{% static 'images/quotation_bg1.jpg' %}" alt="Header">
-      {% endif %}
-      <div class="page-body">
+      <div class="page-header-logo">
+        {% if master.company_logo %}
+          <img src="{{ master.company_logo.url }}" alt="Company logo">
+        {% endif %}
+      </div>      <div class="page-body">
         <img class="page-thumb" src="{% static 'quotation/proposal/thankyou_preview.png' %}" alt="Thank you page">
       </div>
       {% if master.footer_image %}
