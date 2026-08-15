@@ -72,6 +72,16 @@
     }
     .cover-yellow { background: #FFD200; }
     .rupee-symbol { font-family: DejaVu Sans, Arial, sans-serif; }
+    .est-title { color: #0A2540; font-size: 26px; font-weight: bold; text-align: center; margin: 0 0 10px 0; }
+    .est-meta td { border: none !important; vertical-align: top; font-size: 10px; line-height: 1.45; }
+    .est-items { width: 100%; }
+    .est-items th { background: #0A2540; color: #fff; font-size: 8px; text-align: center; padding: 5px 2px; }
+    .est-items td { font-size: 8px; padding: 4px 3px; border: 1px solid #c8c8c8; }
+    .est-col-no { width: 18pt; text-align: center; }
+    .est-col-item { width: 200pt; text-align: left; }
+    .est-col-img { width: 38pt; text-align: center; }
+    .est-col-qty { width: 42pt; text-align: center; }
+    .est-col-num { width: 50pt; text-align: center; }
   </style>
 </head>
 <body>
@@ -143,134 +153,142 @@
   after-sales support so the consumer can take a clear decision quickly.
 </p>
 
-{# PAGE 3 — Existing standard quotation invoice table #}
+{# PAGE 3 — Quotation (attached EST layout; Sample 1 header/footer stay) #}
 <div class="page-break"></div>
-<table class="no-border">
-  <tr>
-    <td style="border:none; text-align:center;" colspan="2">
-      <h1 style="color:#0A2540; font-size:26px; margin:0;">Quotation</h1>
-    </td>
-    <td style="border:none; text-align:right; width:68pt;">
-      {% if quotation_master.company_logo %}
-        <img src="{{ quotation_master.company_logo.url }}" style="height:36pt;">
-      {% endif %}
-    </td>
-  </tr>
-</table>
+<div class="est-title">Quotation</div>
 
-<table class="party-info-table" style="margin-top:8px;">
+<table class="no-border est-meta" width="520" style="margin-bottom:8px;">
   <tr>
-    <td style="padding:6px; line-height:1.4; vertical-align:top; width:190pt;">
-      <b>From,</b><br>
-      <b>{{ quotation_master.company_name|default:"Heramb Industries" }},</b><br>
+    <td style="width:175pt;">
+      <b>From</b><br>
+      <b>{{ quotation_master.company_name|default:"Heramb Industries" }}</b><br>
       {% if quotation_master.from_address %}
         {{ quotation_master.from_address|linebreaksbr }}
+      {% elif quotation_master.address %}
+        {{ quotation_master.address|linebreaksbr }}
       {% else %}
         Bhagya Banglow, Near Sant Eknath Rang Mandir,<br>
         New Osman Pura, Chh. Sambhajinagar (MH) - 431001
       {% endif %}
     </td>
-    <td style="padding:6px; line-height:1.4; vertical-align:top; width:184pt;">
-      <b>Bill To,</b><br>
+    <td style="width:185pt;">
+      <b>Bill To</b><br>
       <b>{{ quotation.title }} {{ quotation.consumer_name }}</b><br>
-      {{ quotation.consumer_address1 }}{% if quotation.consumer_address1 %},{% endif %}<br>
+      {{ quotation.consumer_address1 }}{% if quotation.consumer_address1 %}<br>{% endif %}
       {{ quotation.consumer_address2 }}<br>
-      Mobile: {{ quotation.consumer_mobile }}
+      {% if quotation.consumer_mobile %}Mobile : {{ quotation.consumer_mobile }}<br>{% endif %}
+      {% if quotation.consumer_email %}Email : {{ quotation.consumer_email }}{% endif %}
     </td>
-    <td style="padding:6px; line-height:1.4; vertical-align:top; width:185pt;">
-      <b>Date - </b>{{ formatted_date }}<br>
-      <b>Quotation No. - </b>
+    <td style="width:160pt;">
+      <b>Date:</b> {{ formatted_date_long|default:formatted_date }}<br>
+      <b>Expiry Date:</b> {{ formatted_expiry_date|default:formatted_date }}<br>
+      <b>Estimate#:</b>
       {% if quotation.consumer_type == 'Residential' %}DB/Res/{{ quotation.quotation_no }}/{{ this_year }}
       {% elif quotation.consumer_type == 'Commercial' %}DB/Comm/{{ quotation.quotation_no }}/{{ this_year }}
       {% elif quotation.consumer_type == 'Industrial' %}DB/Ind/{{ quotation.quotation_no }}/{{ this_year }}
       {% else %}{{ quotation.quotation_no }}{% endif %}<br>
-      <b>Consumer No. - </b>{{ quotation.consumer_no }}<br>
-      <b>Consumer Type - </b>{{ quotation.consumer_type }}<br>
-      <b>Created by - </b>{{ quotation.employee_name }}
+      <b>Created by:</b> {{ quotation.employee_name }}<br>
+      {% if representatives %}
+        {% for rep in representatives %}{% if forloop.first %}<b>Contact:</b> {{ rep.contact|default:quotation.consumer_mobile }}{% endif %}{% endfor %}
+      {% elif quotation.consumer_mobile %}
+        <b>Contact:</b> {{ quotation.consumer_mobile }}
+      {% endif %}
     </td>
   </tr>
 </table>
 
-<h4 style="margin-top:10px; margin-bottom:4px; text-align:center;">
-  Offer for <span class="bold">{{ quotation.plant_capacity_kw|clean_decimal }}</span> KW Rooftop Grid Solar Plant.
-</h4>
-
-<table class="offer-table" id="offer_details" align="center">
-  <tr align="center">
-    <th class="offer-col-desc">Product Description</th>
-    <th class="offer-col-units">Units</th>
-    <th class="offer-col-amt">Amount (INR)</th>
+<table class="est-items" width="520" id="offer_details">
+  <tr>
+    <th class="est-col-no">#</th>
+    <th class="est-col-item">Item &amp; Description</th>
+    <th class="est-col-img">Image</th>
+    <th class="est-col-qty">Qty</th>
+    <th class="est-col-num">Rate</th>
+    <th class="est-col-num">Discount</th>
+    <th class="est-col-num">IGST</th>
+    <th class="est-col-num">Total</th>
   </tr>
   <tr>
-    <td class="indent-left"><b>{{ quotation.panel_type }}</b> Solar PV Panels {{ quotation.panel_capacity_watt }} watt<br><b>Make - </b> {{ quotation.panel_company_names }} &nbsp;(Approx.{{ quotation.panel_qty }} qty)</td>
-    <td class="center"><b>{{ quotation.plant_capacity_kw|clean_decimal }} KW</b></td>
-    <td rowspan="9" class="right" style="vertical-align:middle; padding-right:12px;">
-      {{ quotation.net_amount|indian_format_with_decimals }}
-    </td>
+    <td class="est-col-no">1</td>
+    <td class="est-col-item"><b>{{ quotation.panel_type }}</b> Solar PV Panels {{ quotation.panel_capacity_watt }} watt<br>Make - {{ quotation.panel_company_names }} (Approx. {{ quotation.panel_qty }} qty)</td>
+    <td class="est-col-img">&nbsp;</td>
+    <td class="est-col-qty"><b>{{ quotation.plant_capacity_kw|clean_decimal }} KW</b></td>
+    <td class="est-col-num" rowspan="9">{{ quotation.net_amount|indian_format_with_decimals }}</td>
+    <td class="est-col-num" rowspan="9">{% if quotation.discount_percentage %}{{ quotation.discount_percentage }} %{% elif quotation.special_discount %}{{ quotation.special_discount|indian_format_with_decimals }} ₹{% else %}0 ₹{% endif %}</td>
+    <td class="est-col-num" rowspan="9">5% / 18%</td>
+    <td class="est-col-num" rowspan="9"><span class="rupee-symbol">₹</span> {{ quotation.final_amount|indian_format_with_decimals }}</td>
   </tr>
   <tr>
-    <td class="indent-left"><b>{{ quotation.inv_phase }}</b> Solar Grid <b>Inverter</b><br><b>Make -</b> {{ quotation.inverter_company_names }} &nbsp;(Approx.{{ quotation.inverter_qty }} qty)</td>
-    <td class="center"><b>{{ quotation.inv_capacity_kw|clean_decimal }} KW</b></td>
+    <td class="est-col-no">2</td>
+    <td class="est-col-item"><b>{{ quotation.inv_phase }}</b> Solar Grid Inverter<br>Make - {{ quotation.inverter_company_names }} (Approx. {{ quotation.inverter_qty }} qty)</td>
+    <td class="est-col-img">&nbsp;</td>
+    <td class="est-col-qty"><b>{{ quotation.inv_capacity_kw|clean_decimal }} KW</b></td>
   </tr>
   <tr>
-    <td class="indent-left">
+    <td class="est-col-no">3</td>
+    <td class="est-col-item">
       {% if quotation.structure_type == 'Tin Shade' %}
-        <b>{{ quotation.structure_type }} Structure</b>
-        {% if formatted_other_details %}, {{ formatted_other_details }}{% endif %}
+        <b>{{ quotation.structure_type }} Structure</b>{% if formatted_other_details %}, {{ formatted_other_details }}{% endif %}
       {% else %}
-        <b>{{ quotation.structure_type }} - </b>
-        {{ quotation.structure_front_height_ft|clean_decimal }} X
-        {{ quotation.structure_back_height_ft|clean_decimal }} Feet
-        {% if formatted_other_details %}, {{ formatted_other_details }}{% endif %}
+        <b>{{ quotation.structure_type }}</b> {{ quotation.structure_front_height_ft|clean_decimal }} X {{ quotation.structure_back_height_ft|clean_decimal }} Feet{% if formatted_other_details %}, {{ formatted_other_details }}{% endif %}
       {% endif %}
     </td>
-    <td class="center"><b>For {{ quotation.plant_capacity_kw|clean_decimal }} KW</b></td>
+    <td class="est-col-img">&nbsp;</td>
+    <td class="est-col-qty"><b>For {{ quotation.plant_capacity_kw|clean_decimal }} KW</b></td>
   </tr>
   <tr>
-    <td class="indent-left">Generation Meter (Make Secure / L&amp;T)<br><b style="background-color:yellow;">(Net Meter will be providing by MSEDCL)</b></td>
-    <td class="center"><b>2 Nos.</b></td>
+    <td class="est-col-no">4</td>
+    <td class="est-col-item">Generation Meter (Make Secure / L&amp;T)<br><b style="background-color:yellow;">(Net Meter will be providing by MSEDCL)</b></td>
+    <td class="est-col-img">&nbsp;</td>
+    <td class="est-col-qty"><b>2 Nos.</b></td>
   </tr>
   <tr>
-    <td class="indent-left">Earthing with Lighting Arrestor- with 16 mm &amp; 25 mm Conductor<br>Cable.AC Cable 65 feet &amp; DC Cable. <b>Make -</b> TCI / Polycab / Apar</td>
-    <td class="center">Entire Project</td>
+    <td class="est-col-no">5</td>
+    <td class="est-col-item">Earthing with Lighting Arrestor- with 16 mm &amp; 25 mm Conductor Cable. AC Cable 65 feet &amp; DC Cable. Make - TCI / Polycab / Apar</td>
+    <td class="est-col-img">&nbsp;</td>
+    <td class="est-col-qty">Entire Project</td>
   </tr>
   <tr>
-    <td class="indent-left">AC Surge Protection Device &amp; MCCB. Make L&amp;T / ABB<br>DC Protection Device.ACDB &amp; DCDB with IP 65 Distribution Boxes</td>
-    <td class="center">Entire Project</td>
+    <td class="est-col-no">6</td>
+    <td class="est-col-item">AC Surge Protection Device &amp; MCCB. Make L&amp;T / ABB. DC Protection Device. ACDB &amp; DCDB with IP 65 Distribution Boxes</td>
+    <td class="est-col-img">&nbsp;</td>
+    <td class="est-col-qty">Entire Project</td>
   </tr>
   <tr>
-    <td class="indent-left">Installation</td>
-    <td class="center">Entire Project</td>
+    <td class="est-col-no">7</td>
+    <td class="est-col-item">Installation</td>
+    <td class="est-col-img">&nbsp;</td>
+    <td class="est-col-qty">Entire Project</td>
   </tr>
   <tr>
-    <td class="indent-left">Transportation</td>
-    <td class="center">Included</td>
+    <td class="est-col-no">8</td>
+    <td class="est-col-item">Transportation</td>
+    <td class="est-col-img">&nbsp;</td>
+    <td class="est-col-qty">Included</td>
   </tr>
   <tr>
-    <td class="indent-left">Lessoning</td>
-    <td class="center">Included</td>
+    <td class="est-col-no">9</td>
+    <td class="est-col-item">Liaisoning</td>
+    <td class="est-col-img">&nbsp;</td>
+    <td class="est-col-qty">Included</td>
   </tr>
   {% if quotation.special_discount and quotation.special_discount > 0 %}
   <tr>
-    <td colspan="2" class="bold indent-left"><span style="background-color:yellow;">SPECIAL DISCOUNT</span></td>
-    <td class="right bold">{{ quotation.special_discount|indian_format_with_decimals }}</td>
-  </tr>
-  <tr>
-    <td colspan="2" class="bold indent-left">AFTER DISCOUNT AMOUNT</td>
-    <td class="right">{{ after_discount_amount|indian_format_with_decimals }}</td>
+    <td colspan="4" class="bold"><span style="background-color:yellow;">SPECIAL DISCOUNT</span></td>
+    <td colspan="4" class="right bold">{{ quotation.special_discount|indian_format_with_decimals }}</td>
   </tr>
   {% endif %}
   <tr>
-    <td colspan="2" class="bold indent-left">GST 5&#37; (70&#37; of Basic Amount)</td>
-    <td class="right">{{ quotation.gst_5_amount|indian_format_with_decimals }}</td>
+    <td colspan="4" class="bold">GST 5&#37; (70&#37; of Basic Amount)</td>
+    <td colspan="4" class="right">{{ quotation.gst_5_amount|indian_format_with_decimals }}</td>
   </tr>
   <tr>
-    <td colspan="2" class="bold indent-left">GST 18&#37; (30&#37; of Basic Amount)</td>
-    <td class="right">{{ quotation.gst_18_amount|indian_format_with_decimals }}</td>
+    <td colspan="4" class="bold">GST 18&#37; (30&#37; of Basic Amount)</td>
+    <td colspan="4" class="right">{{ quotation.gst_18_amount|indian_format_with_decimals }}</td>
   </tr>
   <tr>
-    <td colspan="2" class="bold indent-left">Net Amount – INR – {{ amount_words }}</td>
-    <td class="right bold"><span class="rupee-symbol">₹</span> {{ quotation.final_amount|indian_format_with_decimals }}</td>
+    <td colspan="4" class="bold">Indian Rupee {{ amount_words }} Only</td>
+    <td colspan="4" class="right bold"><span class="rupee-symbol">₹</span> {{ quotation.final_amount|indian_format_with_decimals }}</td>
   </tr>
 </table>
 
