@@ -66,43 +66,21 @@
         </a>
     </div>
 
-    {# PDF choice: Standard samples + Industrial samples; default from Quotation Master #}
+    {# PDF choice: only Standard + Industrial; each opens that card's default sample #}
     <div id="leadQuotationPdfModal" style="display:none; position:fixed; z-index:99999; left:0; top:0; right:0; bottom:0; background:rgba(0,0,0,0.5); align-items:center; justify-content:center;">
-        <div style="background:white; margin:auto; padding:30px; border-radius:10px; max-width:560px; width:94%; box-shadow:0 6px 18px rgba(0,0,0,0.3);">
+        <div style="background:white; margin:auto; padding:30px; border-radius:10px; max-width:480px; width:94%; box-shadow:0 6px 18px rgba(0,0,0,0.3);">
             <h3 style="color:#1e41d1;">Generate PDF</h3>
-            <p style="margin-bottom:12px;">Default from Quotation Master:
-              <b>{{ default_pdf_option.sample_label|default:"Sample 1" }} — {{ default_pdf_option.label|default:"Standard Invoice" }}</b>
-            </p>
-            <button type="button" id="leadPdfDefaultBtn" style="width:100%; margin-bottom:18px; padding:12px; background:#00897B; color:white; border:none; border-radius:5px; cursor:pointer;">
-              <strong>Open Default PDF</strong>
-            </button>
-            {% for group in pdf_template_groups %}
-            <div style="margin-bottom:14px;">
-              <div style="font-weight:700; color:#263238; margin-bottom:8px;">{{ group.label }}</div>
-              <div style="display:flex; gap:10px; flex-wrap:wrap;">
-                {% for sample in group.samples %}
-                <button type="button"
-                  class="lead-pdf-sample-btn"
-                  data-pdf-path="{{ sample.pdf_path }}"
-                  style="flex:1; min-width:150px; padding:12px; background:{% if default_pdf_template == sample.key %}#00897B{% elif sample.group == 'industrial' %}#1e41d1{% else %}#4a6cf7{% endif %}; color:white; border:none; border-radius:5px; cursor:pointer;">
-                  <strong>{{ sample.sample_label }}</strong><br>
-                  <small>{{ sample.label }}</small>
-                </button>
-                {% endfor %}
-              </div>
-            </div>
-            {% empty %}
+            <p style="margin-bottom:20px;">Choose Standard or Industrial. Each opens the default sample set on Quotation Master.</p>
             <div style="display:flex; gap:12px; margin-bottom:25px; flex-wrap:wrap;">
-                <button type="button" id="leadPdfRegularBtn" class="pdf-option-btn" style="flex:1; min-width:140px; padding:15px; background:#4a6cf7; color:white; border:none; border-radius:5px; cursor:pointer;">
-                    <strong>Regular Quotation</strong><br>
-                    <small>Standard template</small>
+                <button type="button" id="leadPdfStandardBtn" style="flex:1; min-width:160px; padding:16px; background:#00897B; color:white; border:none; border-radius:5px; cursor:pointer;">
+                    <strong>Standard Quotation</strong><br>
+                    <small>{{ default_standard_pdf_option.sample_label|default:"Sample 1" }} — {{ default_standard_pdf_option.label|default:"Standard Invoice" }}</small>
                 </button>
-                <button type="button" id="leadPdfIndustrialBtn" class="pdf-option-btn" style="flex:1; min-width:140px; padding:15px; background:#1e41d1; color:white; border:none; border-radius:5px; cursor:pointer;">
+                <button type="button" id="leadPdfIndustrialBtn" style="flex:1; min-width:160px; padding:16px; background:#1e41d1; color:white; border:none; border-radius:5px; cursor:pointer;">
                     <strong>Industrial Quotation</strong><br>
-                    <small>Industrial template</small>
+                    <small>{{ default_industrial_pdf_option.sample_label|default:"Sample 1" }} — {{ default_industrial_pdf_option.label|default:"Industrial Quotation" }}</small>
                 </button>
             </div>
-            {% endfor %}
             <div style="text-align:right;">
                 <button type="button" id="closeLeadQuotationPdfModal" style="padding:8px 20px; background:#6c757d; color:white; border:none; border-radius:4px;">Cancel</button>
             </div>
@@ -744,11 +722,13 @@ document.addEventListener('DOMContentLoaded', function () {
     var modal = document.getElementById('leadQuotationPdfModal');
     var openBtn = document.getElementById('openLeadQuotationPdfModal');
     var closeBtn = document.getElementById('closeLeadQuotationPdfModal');
-    var defaultBtn = document.getElementById('leadPdfDefaultBtn');
-    var defaultPdfPath = "{{ default_pdf_option.pdf_path|default:'/quotation/{pk}/pdf/' }}".replace('{pk}', '{{ quotation.pk }}');
+    var standardBtn = document.getElementById('leadPdfStandardBtn');
+    var industrialBtn = document.getElementById('leadPdfIndustrialBtn');
+    var standardPdfPath = "{{ standard_pdf_path_tpl|default:'/quotation/{pk}/pdf/' }}".replace('{pk}', '{{ quotation.pk }}');
+    var industrialPdfPath = "{{ industrial_pdf_path_tpl|default:'/quotation/{pk}/industrial_pdf/' }}".replace('{pk}', '{{ quotation.pk }}');
     function openLeadPdf(path) {
         if (!path) return;
-        window.open(path.replace('{pk}', '{{ quotation.pk }}'), '_blank');
+        window.open(path, '_blank');
         if (modal) modal.style.display = 'none';
     }
     if (modal && openBtn) {
@@ -761,21 +741,11 @@ document.addEventListener('DOMContentLoaded', function () {
         modal.addEventListener('click', function (e) {
             if (e.target === modal) modal.style.display = 'none';
         });
-        if (defaultBtn) defaultBtn.addEventListener('click', function () {
-            openLeadPdf(defaultPdfPath);
-        });
-        document.querySelectorAll('.lead-pdf-sample-btn').forEach(function (btn) {
-            btn.addEventListener('click', function () {
-                openLeadPdf(this.getAttribute('data-pdf-path'));
-            });
-        });
-        var regularBtn = document.getElementById('leadPdfRegularBtn');
-        var industrialBtn = document.getElementById('leadPdfIndustrialBtn');
-        if (regularBtn) regularBtn.addEventListener('click', function () {
-            openLeadPdf('/quotation/{{ quotation.pk }}/pdf/');
+        if (standardBtn) standardBtn.addEventListener('click', function () {
+            openLeadPdf(standardPdfPath);
         });
         if (industrialBtn) industrialBtn.addEventListener('click', function () {
-            openLeadPdf('/quotation/{{ quotation.pk }}/industrial_pdf/');
+            openLeadPdf(industrialPdfPath);
         });
     }
 

@@ -375,8 +375,8 @@
     <div class="card-header">Quotation Templates — Standard / Industrial</div>
     <div class="card-body">
       <p class="help-text mb-3">
-        Only two template groups. Under <b>Standard</b>, pick Sample 1 / Sample 2 (and more later) with
-        <b>Default</b> radio and <b>Edit</b>. The default sample is used on Lead CRM generated quotation PDF.
+        Each card has its own default sample. Lead CRM PDF shows only
+        <b>Standard Quotation</b> and <b>Industrial Quotation</b> buttons, and each opens that card’s selected sample.
       </p>
       <form method="post">
         {% csrf_token %}
@@ -389,10 +389,12 @@
               <div class="tpl-hint mt-1">{{ group.hint }}</div>
               <ul class="tpl-sample-list">
                 {% for sample in group.samples %}
-                <li class="tpl-sample-row{% if default_pdf_template == sample.key %} is-default{% endif %}">
+                {% if group.key == 'standard' %}
+                  {% with is_default=default_standard_pdf_template|default:default_pdf_template %}
+                <li class="tpl-sample-row{% if is_default == sample.key %} is-default{% endif %}">
                   <label class="default-radio">
-                    <input type="radio" name="default_pdf_template" value="{{ sample.key }}"
-                      {% if default_pdf_template == sample.key %}checked{% endif %}
+                    <input type="radio" name="{{ group.radio_name }}" value="{{ sample.key }}"
+                      {% if is_default == sample.key %}checked{% endif %}
                       style="width:16px;height:16px;">
                     Default
                   </label>
@@ -402,6 +404,22 @@
                   </div>
                   <a href="{% url 'quotation:edit_quotation_template' sample.key %}" class="btn btn-sm btn-primary">Edit</a>
                 </li>
+                  {% endwith %}
+                {% else %}
+                <li class="tpl-sample-row{% if default_industrial_pdf_template == sample.key %} is-default{% endif %}">
+                  <label class="default-radio">
+                    <input type="radio" name="{{ group.radio_name }}" value="{{ sample.key }}"
+                      {% if default_industrial_pdf_template == sample.key %}checked{% endif %}
+                      style="width:16px;height:16px;">
+                    Default
+                  </label>
+                  <div class="sample-meta">
+                    <div class="sample-name">{{ sample.sample_label }} — {{ sample.label }}</div>
+                    <div class="sample-desc">{{ sample.hint }}</div>
+                  </div>
+                  <a href="{% url 'quotation:edit_quotation_template' sample.key %}" class="btn btn-sm btn-primary">Edit</a>
+                </li>
+                {% endif %}
                 {% endfor %}
               </ul>
             </div>
@@ -409,7 +427,7 @@
           {% endfor %}
         </div>
         <div class="master-add-actions mt-3">
-          <button type="submit" class="btn btn-sm btn-success">Save Default Template</button>
+          <button type="submit" class="btn btn-sm btn-success">Save Default Templates</button>
         </div>
       </form>
     </div>
@@ -888,10 +906,16 @@
       var wrap = e.target.closest('.bank-round-check-wrap');
       if (wrap) wrap.classList.toggle('is-checked', e.target.checked);
     }
-    if (e.target && e.target.name === 'default_pdf_template') {
-      document.querySelectorAll('.tpl-sample-row').forEach(function (row) {
-        row.classList.remove('is-default');
-      });
+    if (e.target && (
+      e.target.name === 'default_standard_pdf_template' ||
+      e.target.name === 'default_industrial_pdf_template'
+    )) {
+      var card = e.target.closest('.tpl-card');
+      if (card) {
+        card.querySelectorAll('.tpl-sample-row').forEach(function (row) {
+          row.classList.remove('is-default');
+        });
+      }
       var selectedRow = e.target.closest('.tpl-sample-row');
       if (selectedRow) selectedRow.classList.add('is-default');
     }

@@ -130,37 +130,57 @@ PDF_TEMPLATE_OPTIONS = [
     },
 ]
 
+STANDARD_TEMPLATE_KEYS = {o['key'] for o in PDF_TEMPLATE_OPTIONS if o['group'] == 'standard'}
+INDUSTRIAL_TEMPLATE_KEYS = {o['key'] for o in PDF_TEMPLATE_OPTIONS if o['group'] == 'industrial'}
+
 # Two master cards: Standard (with samples) and Industrial (with samples).
 PDF_TEMPLATE_GROUPS = [
     {
         'key': 'standard',
         'label': 'Standard Quotation',
-        'hint': 'Standard quotation samples. Set one as default for Lead CRM PDF.',
+        'radio_name': 'default_standard_pdf_template',
+        'hint': 'Choose the default sample for the Standard Quotation PDF button.',
         'samples': [o for o in PDF_TEMPLATE_OPTIONS if o['group'] == 'standard'],
     },
     {
         'key': 'industrial',
         'label': 'Industrial Quotation',
-        'hint': 'Industrial quotation samples. Set one as default for Lead CRM PDF.',
+        'radio_name': 'default_industrial_pdf_template',
+        'hint': 'Choose the default sample for the Industrial Quotation PDF button.',
         'samples': [o for o in PDF_TEMPLATE_OPTIONS if o['group'] == 'industrial'],
     },
 ]
 
 
-def get_default_pdf_template():
+def get_default_standard_pdf_template():
     try:
         master = get_quotation_master()
         key = getattr(master, 'default_pdf_template', None) or PDF_TEMPLATE_STANDARD
     except Exception:
         return PDF_TEMPLATE_STANDARD
-    valid = {item['key'] for item in PDF_TEMPLATE_OPTIONS}
-    if key not in valid:
+    if key not in STANDARD_TEMPLATE_KEYS:
         return PDF_TEMPLATE_STANDARD
     return key
 
 
+def get_default_industrial_pdf_template():
+    try:
+        master = get_quotation_master()
+        key = getattr(master, 'default_industrial_pdf_template', None) or PDF_TEMPLATE_INDUSTRIAL
+    except Exception:
+        return PDF_TEMPLATE_INDUSTRIAL
+    if key not in INDUSTRIAL_TEMPLATE_KEYS:
+        return PDF_TEMPLATE_INDUSTRIAL
+    return key
+
+
+def get_default_pdf_template():
+    """Backward-compatible: returns Standard-card default sample. """
+    return get_default_standard_pdf_template()
+
+
 def get_pdf_template_option(template_key=None):
-    key = template_key or get_default_pdf_template()
+    key = template_key or get_default_standard_pdf_template()
     for item in PDF_TEMPLATE_OPTIONS:
         if item['key'] == key:
             return item
@@ -183,12 +203,22 @@ def redirect_quotation_pdf(pk, template_key=None):
 
 def get_quotation_pdf_context_extras():
     master = get_quotation_master()
-    default_key = get_default_pdf_template()
+    standard_key = get_default_standard_pdf_template()
+    try:
+        industrial_key = get_default_industrial_pdf_template()
+    except Exception:
+        industrial_key = PDF_TEMPLATE_INDUSTRIAL
     return {
         'quotation_master': master,
         'bank_detail': get_default_bank_detail(),
-        'default_pdf_template': default_key,
+        'default_pdf_template': standard_key,
+        'default_standard_pdf_template': standard_key,
+        'default_industrial_pdf_template': industrial_key,
         'pdf_template_options': PDF_TEMPLATE_OPTIONS,
         'pdf_template_groups': PDF_TEMPLATE_GROUPS,
-        'default_pdf_option': get_pdf_template_option(default_key),
+        'default_pdf_option': get_pdf_template_option(standard_key),
+        'default_standard_pdf_option': get_pdf_template_option(standard_key),
+        'default_industrial_pdf_option': get_pdf_template_option(industrial_key),
+        'standard_pdf_path_tpl': get_pdf_template_option(standard_key)['pdf_path'],
+        'industrial_pdf_path_tpl': get_pdf_template_option(industrial_key)['pdf_path'],
     }

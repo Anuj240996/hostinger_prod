@@ -80,7 +80,7 @@ def quotation_master(request):
         except Exception:
             pass
         master = QuotationMaster.objects.defer(
-            'default_pdf_template', 'proposal_cover_image'
+            'default_pdf_template', 'default_industrial_pdf_template', 'proposal_cover_image'
         ).filter(pk=1).first()
         if master is None:
             master = QuotationMaster(pk=1, company_name='Heramb Industries')
@@ -110,21 +110,36 @@ def quotation_master(request):
             messages.success(request, 'Company details saved.')
 
         elif action == 'save_pdf_template':
-            from .master_helpers import PDF_TEMPLATE_OPTIONS, get_pdf_template_option
-            selected = request.POST.get('default_pdf_template', '')
-            valid = {item['key'] for item in PDF_TEMPLATE_OPTIONS}
-            if selected not in valid:
-                messages.error(request, 'Please select a valid quotation template.')
+            from .master_helpers import (
+                INDUSTRIAL_TEMPLATE_KEYS,
+                STANDARD_TEMPLATE_KEYS,
+                get_pdf_template_option,
+            )
+            standard_selected = request.POST.get('default_standard_pdf_template', '')
+            industrial_selected = request.POST.get('default_industrial_pdf_template', '')
+            if standard_selected not in STANDARD_TEMPLATE_KEYS:
+                messages.error(request, 'Please select a valid Standard Quotation sample.')
+            elif industrial_selected not in INDUSTRIAL_TEMPLATE_KEYS:
+                messages.error(request, 'Please select a valid Industrial Quotation sample.')
             else:
                 try:
-                    master.default_pdf_template = selected
-                    master.save(update_fields=['default_pdf_template'])
-                    option = get_pdf_template_option(selected)
-                    label = '{} — {}'.format(
-                        option.get('sample_label', ''),
-                        option.get('label', selected),
-                    ).strip(' —')
-                    messages.success(request, f'Default quotation template set to {label}.')
+                    update_fields = ['default_pdf_template']
+                    master.default_pdf_template = standard_selected
+                    if hasattr(master, 'default_industrial_pdf_template'):
+                        master.default_industrial_pdf_template = industrial_selected
+                        update_fields.append('default_industrial_pdf_template')
+                    master.save(update_fields=update_fields)
+                    std = get_pdf_template_option(standard_selected)
+                    ind = get_pdf_template_option(industrial_selected)
+                    messages.success(
+                        request,
+                        'Defaults saved — Standard: {} — {}; Industrial: {} — {}.'.format(
+                            std.get('sample_label', ''),
+                            std.get('label', standard_selected),
+                            ind.get('sample_label', ''),
+                            ind.get('label', industrial_selected),
+                        ),
+                    )
                 except (ProgrammingError, OperationalError):
                     try:
                         connection.rollback()
@@ -217,24 +232,17 @@ def quotation_master(request):
             only.is_active = True
             only.save(update_fields=['show_in_quotation_form', 'is_default', 'is_active'])
 
-    from .master_helpers import (
-        PDF_TEMPLATE_GROUPS,
-        PDF_TEMPLATE_OPTIONS,
-        get_default_pdf_template,
-        get_pdf_template_option,
-    )
+    from .master_helpers import get_quotation_pdf_context_extras
 
-    return render(request, 'quotation/quotation_master.html', {
+    context = {
         'master': master,
         'terms': terms,
         'banks': banks,
         'all_banks': all_banks,
         'bank_count': all_banks.count(),
-        'pdf_template_options': PDF_TEMPLATE_OPTIONS,
-        'pdf_template_groups': PDF_TEMPLATE_GROUPS,
-        'default_pdf_template': get_default_pdf_template(),
-        'default_pdf_option': get_pdf_template_option(),
-    })
+    }
+    context.update(get_quotation_pdf_context_extras())
+    return render(request, 'quotation/quotation_master.html', context)
 
 
 @control_panel_session_required
@@ -255,7 +263,7 @@ def edit_quotation_template(request, template_key):
         except Exception:
             pass
         master = QuotationMaster.objects.defer(
-            'default_pdf_template', 'proposal_cover_image'
+            'default_pdf_template', 'default_industrial_pdf_template', 'proposal_cover_image'
         ).filter(pk=1).first()
         if master is None:
             master = QuotationMaster(pk=1, company_name='Heramb Industries')

@@ -208,16 +208,26 @@ class QuotationMaster(models.Model):
     PDF_TEMPLATE_STANDARD = 'quotation'
     PDF_TEMPLATE_INDUSTRIAL = 'industrial'
     PDF_TEMPLATE_STANDARD_INDUSTRIAL = 'standard_industrial'
-    PDF_TEMPLATE_CHOICES = [
-        (PDF_TEMPLATE_STANDARD, 'Standard Quotation'),
-        (PDF_TEMPLATE_INDUSTRIAL, 'Industrial Quotation'),
-        (PDF_TEMPLATE_STANDARD_INDUSTRIAL, 'Standard & Industrial Quotation'),
+    PDF_TEMPLATE_STANDARD_CHOICES = [
+        (PDF_TEMPLATE_STANDARD, 'Sample 1 — Standard Invoice'),
+        (PDF_TEMPLATE_STANDARD_INDUSTRIAL, 'Sample 2 — Standard & Industrial Quotation'),
     ]
+    PDF_TEMPLATE_INDUSTRIAL_CHOICES = [
+        (PDF_TEMPLATE_INDUSTRIAL, 'Sample 1 — Industrial Quotation'),
+    ]
+    # Legacy combined choices kept for older rows / admin display.
+    PDF_TEMPLATE_CHOICES = PDF_TEMPLATE_STANDARD_CHOICES + PDF_TEMPLATE_INDUSTRIAL_CHOICES
     default_pdf_template = models.CharField(
         max_length=40,
-        choices=PDF_TEMPLATE_CHOICES,
+        choices=PDF_TEMPLATE_STANDARD_CHOICES,
         default=PDF_TEMPLATE_STANDARD,
-        help_text='Default quotation PDF template used in the software.',
+        help_text='Default sample inside the Standard Quotation card.',
+    )
+    default_industrial_pdf_template = models.CharField(
+        max_length=40,
+        choices=PDF_TEMPLATE_INDUSTRIAL_CHOICES,
+        default=PDF_TEMPLATE_INDUSTRIAL,
+        help_text='Default sample inside the Industrial Quotation card.',
     )
     proposal_cover_image = models.ImageField(
         upload_to='quotation/master/',
