@@ -65,4 +65,4 @@ ENV WEB_CONCURRENCY=1
 ENTRYPOINT ["/bin/sh", "/app/entrypoint.sh"]
 
 # Default command (1 worker by default — lowers RAM on small VPS)
-CMD ["sh", "-c", "exec gunicorn --bind 0.0.0.0:8000 --workers ${WEB_CONCURRENCY:-1} --timeout 120 --access-logfile - --error-logfile - inventoryproject.wsgi:application"]
+CMD ["sh", "-c", "exec gunicorn --chdir /app --bind 0.0.0.0:8000 --workers ${WEB_CONCURRENCY:-1} --timeout 120 --access-logfile - --error-logfile - gunicorn_wsgi:application"]

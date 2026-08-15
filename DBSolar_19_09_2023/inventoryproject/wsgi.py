@@ -8,9 +8,14 @@ https://docs.djangoproject.com/en/3.1/howto/deployment/wsgi/
 """
 
 import os
+import traceback
 
 from django.core.wsgi import get_wsgi_application
 
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'inventoryproject.settings')
 
-application = get_wsgi_application()
+try:
+    application = get_wsgi_application()
+except Exception:
+    traceback.print_exc()
+    raise

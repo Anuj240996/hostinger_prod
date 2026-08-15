@@ -57,4 +57,4 @@ ENV WEB_CONCURRENCY=1
 # "exec format error" from CRLF shebang or missing /bin/bash on slim).
 ENTRYPOINT ["/bin/sh", "/app/entrypoint.sh"]
 
-CMD ["sh", "-c", "exec gunicorn --bind 0.0.0.0:8000 --workers ${WEB_CONCURRENCY:-1} --timeout 120 --access-logfile - --error-logfile - inventoryproject.wsgi:application"]
+CMD ["sh", "-c", "exec gunicorn --chdir /app --bind 0.0.0.0:8000 --workers ${WEB_CONCURRENCY:-1} --timeout 120 --access-logfile - --error-logfile - gunicorn_wsgi:application"]
