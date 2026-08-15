@@ -8,31 +8,34 @@
   <meta charset="utf-8">
   <title>Standard &amp; Industrial Quotation</title>
   <style>
+    /* Cover: equal white margin on all sides */
     @page {
       size: A4;
-      margin: 0pt;
+      margin: 24pt;
       @frame content {
-        left: 0pt;
-        top: 0pt;
-        width: 595.27pt;
-        height: 841.89pt;
+        left: 24pt;
+        top: 24pt;
+        width: 547.27pt;
+        height: 793.89pt;
       }
     }
+    /* Pages 2+: same header/footer frames as Sample 1 (Standard Invoice) */
     @page inner {
       size: A4;
-      margin: 0pt;
-      @frame inner_content {
-        left: 18pt;
-        top: 18pt;
-        width: 559pt;
-        height: 788pt;
+      margin: 150px 30px 70px 30px;
+      @frame header_frame {
+        -pdf-frame-content: header_content;
+        top: 0px;
+        left: 0px;
+        width: 885px;
+        height: 180px;
       }
       @frame footer_frame {
-        -pdf-frame-content: proposal_footer;
-        bottom: 0pt;
+        -pdf-frame-content: footer_content;
+        top: 785pt;
         left: 0pt;
-        width: 595pt;
-        height: 32pt;
+        width: 597pt;
+        height: 100pt;
       }
     }
     body {
@@ -68,36 +71,30 @@
       margin-top: 10px;
     }
     .cover-yellow { background: #FFD200; }
-    .footer-bar {
-      background: #0A2540;
-      color: #fff;
-      font-size: 10px;
-      height: 28pt;
-    }
     .rupee-symbol { font-family: DejaVu Sans, Arial, sans-serif; }
   </style>
 </head>
 <body>
 {% now "y" as this_year %}
 
-{# PAGE 1 — EST-001 cover: left photo 50% x full height, right yellow / navy / yellow. #}
-<table class="no-border" width="595" cellpadding="0" cellspacing="0" border="0">
+{# PAGE 1 — Cover with equal white margins on all sides #}
+<table class="no-border" width="547" cellpadding="0" cellspacing="0" border="0">
   <tr>
-    <td width="297" rowspan="3" valign="top" style="border:none; padding:0; margin:0;">
+    <td width="273" rowspan="3" valign="top" style="border:none; padding:0; margin:0;">
       {% if cover_left_src %}
-      <img src="{{ cover_left_src }}" style="width:297pt; height:780pt;">
+      <img src="{{ cover_left_src }}" style="width:273pt; height:760pt;">
       {% elif quotation_master.proposal_cover_image %}
-      <img src="{{ quotation_master.proposal_cover_image.url }}" style="width:297pt; height:780pt;">
+      <img src="{{ quotation_master.proposal_cover_image.url }}" style="width:273pt; height:760pt;">
       {% else %}
-      <img src="{% static 'quotation/proposal/cover_left.png' %}" style="width:297pt; height:780pt;">
+      <img src="{% static 'quotation/proposal/cover_left.png' %}" style="width:273pt; height:760pt;">
       {% endif %}
     </td>
-    <td width="298" bgcolor="#FFD200" valign="middle" align="right" style="border:none; padding:16pt 14pt; background:#FFD200;">
+    <td width="274" bgcolor="#FFD200" valign="middle" align="right" style="border:none; padding:14pt 12pt; background:#FFD200;">
       <font size="5"><b>Roof Top Solar<br/>Proposal</b></font>
     </td>
   </tr>
   <tr>
-    <td width="298" bgcolor="#0A2540" valign="top" style="border:none; padding:16pt 14pt; background:#0A2540;">
+    <td width="274" bgcolor="#0A2540" valign="top" style="border:none; padding:14pt 12pt; background:#0A2540;">
       {% if quotation_master.company_logo %}
       <img src="{{ quotation_master.company_logo.url }}" style="height:40pt;"><br/><br/>
       {% endif %}
@@ -115,7 +112,7 @@
     </td>
   </tr>
   <tr>
-    <td width="298" bgcolor="#FFD200" valign="top" align="right" style="border:none; padding:16pt 14pt; background:#FFD200;">
+    <td width="274" bgcolor="#FFD200" valign="top" align="right" style="border:none; padding:14pt 12pt; background:#FFD200;">
       <font size="4"><b>{{ quotation.title }} {{ quotation.consumer_name }}</b></font><br/><br/>
       <font size="2">
         {{ quotation.consumer_address1 }}{% if quotation.consumer_address1 %},{% endif %}<br/>
@@ -138,14 +135,29 @@
 <pdf:nexttemplate name="inner"/>
 <div class="page-break"></div>
 
-<div id="proposal_footer">
-  <table class="no-border footer-bar" style="width:595pt; background:#0A2540; color:#fff;">
-    <tr>
-      <td style="border:none; color:#fff; padding:8px 16px; width:238pt;">{{ quotation_master.company_name|default:"Heramb Industries" }}</td>
-      <td style="border:none; color:#fff; padding:8px 16px; text-align:center; width:119pt;"><pdf:pagenumber/> / <pdf:pagecount/></td>
-      <td style="border:none; color:#fff; padding:8px 16px; text-align:right; width:238pt;">Roof Top Solar Proposal</td>
-    </tr>
-  </table>
+{# Same header/footer as Sample 1 Standard Invoice — used on pages 2 to last #}
+<div id="header_content" style="margin:0; padding:0;">
+  {% if quotation_master.header_image %}
+  <img src="{{ quotation_master.header_image.url }}"
+       style="width:595pt; height:100pt; display:block; margin:0; padding:0;">
+  {% else %}
+  <img src="{% static 'images/quotation_bg1.jpg' %}"
+       style="width:595pt; height:100pt; display:block; margin:0; padding:0;">
+  {% endif %}
+</div>
+<div id="footer_content" style="margin:0; padding:0;">
+  {% if quotation_master.footer_image %}
+  <img src="{{ quotation_master.footer_image.url }}"
+       style="width:595pt; height:60pt; display:block; margin:0; padding:0;">
+  {% elif quotation_master.address %}
+  <div style="width:595pt; height:60pt; font-size:11px; padding:8px 12px; border-top:1px solid #ccc;">
+    <b>{{ quotation_master.company_name }}</b><br>
+    {{ quotation_master.address|linebreaksbr }}
+  </div>
+  {% else %}
+  <img src="{% static 'images/address.jpg' %}"
+       style="width:595pt; height:60pt; display:block; margin:0; padding:0;">
+  {% endif %}
 </div>
 
 {# PAGE 2 — About company #}
@@ -160,7 +172,7 @@
     </td>
   </tr>
 </table>
-<img src="{% static 'quotation/proposal/about_hero.png' %}" style="width:559pt; height:260pt;">
+<img src="{% static 'quotation/proposal/about_hero.png' %}" style="width:520pt; height:240pt;">
 <div style="background:#FFD200; text-align:right; padding:6px 12px; font-weight:bold;">Award Winning Company</div>
 <h2 style="margin-top:16px;">About {{ quotation_master.company_name|default:"Heramb Industries" }}</h2>
 <p>

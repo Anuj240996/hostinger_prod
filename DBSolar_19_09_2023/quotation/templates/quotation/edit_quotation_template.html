@@ -32,6 +32,15 @@
     border:1px solid #ccc;
     overflow:hidden;
     background:#fff;
+    padding:18px;
+    box-sizing:border-box;
+  }
+  .cover-preview-inner {
+    display:flex;
+    width:100%;
+    height:100%;
+    overflow:hidden;
+    border:1px solid #e0e0e0;
   }
   .cover-preview-left {
     width:50%;
@@ -84,6 +93,23 @@
     flex:1;
   }
   .page-thumb { width:100%; border:1px solid #eee; border-radius:6px; }
+  .pdf-page-frame {
+    border:1px solid #dce3ea;
+    border-radius:8px;
+    overflow:hidden;
+    background:#fff;
+  }
+  .pdf-page-frame .hf-img {
+    width:100%;
+    display:block;
+    max-height:90px;
+    object-fit:cover;
+    object-position:top;
+  }
+  .pdf-page-frame .page-body {
+    padding:10px;
+    background:#fafafa;
+  }
   .help-text { font-size:.85rem; color:#666; }
 </style>
 
@@ -111,35 +137,40 @@
 
   <div class="page-sheet">
     <div class="page-label">Page 1 / 6 — Cover</div>
-    <p class="help-text mb-3">A4 cover matches the proposal template: left photo is 50% width and full page height. Right column is yellow, navy, then yellow. Cover page has no footer.</p>
+    <p class="help-text mb-3">
+      Same as generated PDF: equal white margin on all sides. Left photo + yellow / navy / yellow.
+      Cover has no Sample 1 header/footer.
+    </p>
 
     <div class="cover-preview mb-3">
-      <div class="cover-preview-left">
-        {% if master.proposal_cover_image %}
-          <img src="{{ master.proposal_cover_image.url }}" alt="Cover photo">
-        {% else %}
-          <img src="{% static 'quotation/proposal/cover_left.png' %}" alt="Cover photo">
-        {% endif %}
-      </div>
-      <div class="cover-preview-right">
-        <div class="cover-yellow-top">Roof Top Solar Proposal</div>
-        <div class="cover-navy">
-          {% if master.company_logo %}
-            <img class="logo" src="{{ master.company_logo.url }}" alt="Company logo">
+      <div class="cover-preview-inner">
+        <div class="cover-preview-left">
+          {% if master.proposal_cover_image %}
+            <img src="{{ master.proposal_cover_image.url }}" alt="Cover photo">
+          {% else %}
+            <img src="{% static 'quotation/proposal/cover_left.png' %}" alt="Cover photo">
           {% endif %}
-          <div style="font-size:18px;font-weight:700;margin-bottom:6px;">{{ master.company_name|default:"Heramb Industries" }}</div>
-          <div style="font-size:13px;line-height:1.45;white-space:pre-wrap;">
-            {% if master.from_address %}{{ master.from_address }}{% elif master.address %}{{ master.address }}{% else %}Bhagya Banglow, Near Sant Eknath Rang Mandir, New Osman Pura, Chh. Sambhajinagar (MH) - 431001{% endif %}
-          </div>
         </div>
-        <div class="cover-yellow-bottom">
-          <div style="font-size:18px;font-weight:800;margin-bottom:6px;">Consumer Name</div>
-          <div style="font-size:13px;line-height:1.4;margin-bottom:12px;">Consumer Address Line 1<br>Consumer Address Line 2</div>
-          <div style="border-top:1px solid #000;margin:8px 0;"></div>
-          <div style="font-size:13px;line-height:1.6;">
-            <b>ID :</b> quotation number<br>
-            <b>Date :</b> quotation date<br>
-            <b>By :</b> created by
+        <div class="cover-preview-right">
+          <div class="cover-yellow-top">Roof Top Solar Proposal</div>
+          <div class="cover-navy">
+            {% if master.company_logo %}
+              <img class="logo" src="{{ master.company_logo.url }}" alt="Company logo">
+            {% endif %}
+            <div style="font-size:18px;font-weight:700;margin-bottom:6px;">{{ master.company_name|default:"Heramb Industries" }}</div>
+            <div style="font-size:13px;line-height:1.45;white-space:pre-wrap;">
+              {% if master.from_address %}{{ master.from_address }}{% elif master.address %}{{ master.address }}{% else %}Bhagya Banglow, Near Sant Eknath Rang Mandir, New Osman Pura, Chh. Sambhajinagar (MH) - 431001{% endif %}
+            </div>
+          </div>
+          <div class="cover-yellow-bottom">
+            <div style="font-size:18px;font-weight:800;margin-bottom:6px;">Consumer Name</div>
+            <div style="font-size:13px;line-height:1.4;margin-bottom:12px;">Consumer Address Line 1<br>Consumer Address Line 2</div>
+            <div style="border-top:1px solid #000;margin:8px 0;"></div>
+            <div style="font-size:13px;line-height:1.6;">
+              <b>ID :</b> quotation number<br>
+              <b>Date :</b> quotation date<br>
+              <b>By :</b> created by
+            </div>
           </div>
         </div>
       </div>
@@ -149,30 +180,101 @@
       {% csrf_token %}
       <label class="form-label"><b>Change cover page image (left column)</b></label>
       <input type="file" name="proposal_cover_image" class="form-control" accept="image/*" required>
-      <div class="help-text mt-1 mb-2">Left column is 50% of A4 width and full A4 height.</div>
+      <div class="help-text mt-1 mb-2">Left column is 50% of the cover content area (inside white margins).</div>
       <button type="submit" class="btn btn-success btn-sm">Save Cover Image</button>
     </form>
   </div>
 
   <div class="page-sheet">
     <div class="page-label">Page 2 / 6 — About company</div>
-    <img class="page-thumb" src="{% static 'quotation/proposal/about_preview.png' %}" alt="About page">
+    <p class="help-text mb-2">Pages 2–6 use the same header and footer images as Sample 1 (Standard Invoice).</p>
+    <div class="pdf-page-frame">
+      {% if master.header_image %}
+        <img class="hf-img" src="{{ master.header_image.url }}" alt="Header">
+      {% else %}
+        <img class="hf-img" src="{% static 'images/quotation_bg1.jpg' %}" alt="Header">
+      {% endif %}
+      <div class="page-body">
+        <img class="page-thumb" src="{% static 'quotation/proposal/about_preview.png' %}" alt="About page">
+      </div>
+      {% if master.footer_image %}
+        <img class="hf-img" src="{{ master.footer_image.url }}" alt="Footer">
+      {% else %}
+        <img class="hf-img" src="{% static 'images/address.jpg' %}" alt="Footer">
+      {% endif %}
+    </div>
   </div>
   <div class="page-sheet">
     <div class="page-label">Page 3 / 6 — Invoice table (same as standard quotation)</div>
-    <img class="page-thumb" src="{% static 'quotation/proposal/invoice_preview.png' %}" alt="Invoice page">
+    <div class="pdf-page-frame">
+      {% if master.header_image %}
+        <img class="hf-img" src="{{ master.header_image.url }}" alt="Header">
+      {% else %}
+        <img class="hf-img" src="{% static 'images/quotation_bg1.jpg' %}" alt="Header">
+      {% endif %}
+      <div class="page-body">
+        <img class="page-thumb" src="{% static 'quotation/proposal/invoice_preview.png' %}" alt="Invoice page">
+      </div>
+      {% if master.footer_image %}
+        <img class="hf-img" src="{{ master.footer_image.url }}" alt="Footer">
+      {% else %}
+        <img class="hf-img" src="{% static 'images/address.jpg' %}" alt="Footer">
+      {% endif %}
+    </div>
   </div>
   <div class="page-sheet">
     <div class="page-label">Page 4 / 6 — Terms &amp; Condition</div>
-    <img class="page-thumb" src="{% static 'quotation/proposal/terms_preview.png' %}" alt="Terms page">
+    <div class="pdf-page-frame">
+      {% if master.header_image %}
+        <img class="hf-img" src="{{ master.header_image.url }}" alt="Header">
+      {% else %}
+        <img class="hf-img" src="{% static 'images/quotation_bg1.jpg' %}" alt="Header">
+      {% endif %}
+      <div class="page-body">
+        <img class="page-thumb" src="{% static 'quotation/proposal/terms_preview.png' %}" alt="Terms page">
+      </div>
+      {% if master.footer_image %}
+        <img class="hf-img" src="{{ master.footer_image.url }}" alt="Footer">
+      {% else %}
+        <img class="hf-img" src="{% static 'images/address.jpg' %}" alt="Footer">
+      {% endif %}
+    </div>
   </div>
   <div class="page-sheet">
     <div class="page-label">Page 5 / 6 — Testimonials</div>
-    <img class="page-thumb" src="{% static 'quotation/proposal/testimonials_preview.png' %}" alt="Testimonials page">
+    <div class="pdf-page-frame">
+      {% if master.header_image %}
+        <img class="hf-img" src="{{ master.header_image.url }}" alt="Header">
+      {% else %}
+        <img class="hf-img" src="{% static 'images/quotation_bg1.jpg' %}" alt="Header">
+      {% endif %}
+      <div class="page-body">
+        <img class="page-thumb" src="{% static 'quotation/proposal/testimonials_preview.png' %}" alt="Testimonials page">
+      </div>
+      {% if master.footer_image %}
+        <img class="hf-img" src="{{ master.footer_image.url }}" alt="Footer">
+      {% else %}
+        <img class="hf-img" src="{% static 'images/address.jpg' %}" alt="Footer">
+      {% endif %}
+    </div>
   </div>
   <div class="page-sheet">
     <div class="page-label">Page 6 / 6 — Thank you</div>
-    <img class="page-thumb" src="{% static 'quotation/proposal/thankyou_preview.png' %}" alt="Thank you page">
+    <div class="pdf-page-frame">
+      {% if master.header_image %}
+        <img class="hf-img" src="{{ master.header_image.url }}" alt="Header">
+      {% else %}
+        <img class="hf-img" src="{% static 'images/quotation_bg1.jpg' %}" alt="Header">
+      {% endif %}
+      <div class="page-body">
+        <img class="page-thumb" src="{% static 'quotation/proposal/thankyou_preview.png' %}" alt="Thank you page">
+      </div>
+      {% if master.footer_image %}
+        <img class="hf-img" src="{{ master.footer_image.url }}" alt="Footer">
+      {% else %}
+        <img class="hf-img" src="{% static 'images/address.jpg' %}" alt="Footer">
+      {% endif %}
+    </div>
   </div>
 
   {% elif template_key == 'industrial' %}

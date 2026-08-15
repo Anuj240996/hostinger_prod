@@ -37,7 +37,7 @@ def api_status(request):
             "web": {
                 "search_by_associate": True,
                 "standard_industrial_quotation": True,
-                "build": "separate-card-defaults-20260815",
+                "build": "sample2-header-footer-margins-20260815",
                 "page_title": "Search Staff / Consumer / Associate",
             },
         }
