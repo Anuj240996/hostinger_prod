@@ -254,3 +254,50 @@ def render_cover_left_photo(master):
     os.close(fd)
     fitted.convert("RGB").save(out_path, "JPEG", quality=85)
     return out_path.replace("\\", "/")
+
+
+PROPOSAL_ABOUT_MEDIA = "quotation/master/proposal_about.jpg"
+
+
+def _uploaded_about_path():
+    try:
+        path = os.path.join(str(settings.MEDIA_ROOT), PROPOSAL_ABOUT_MEDIA.replace("/", os.sep))
+    except Exception:
+        return None
+    return path if os.path.isfile(path) else None
+
+
+def _static_about_path():
+    candidates = [
+        settings.BASE_DIR / "static" / "quotation" / "proposal" / "about_photo.jpg",
+        settings.BASE_DIR / "asert" / "quotation" / "proposal" / "about_photo.jpg",
+        settings.BASE_DIR / "staticfiles" / "quotation" / "proposal" / "about_photo.jpg",
+    ]
+    for path in candidates:
+        if os.path.isfile(path):
+            return str(path)
+    return None
+
+
+def render_about_photo(master=None):
+    """Landscape about photo as temp JPEG for PDF (uploaded media or static default)."""
+    import tempfile
+    photo = _open_image(_uploaded_about_path())
+    if photo is None:
+        photo = _open_image(_static_about_path())
+    if photo is None:
+        return ""
+    fitted = _cover_fit(photo, 1040, 440)
+    photo.close()
+    fd, out_path = tempfile.mkstemp(prefix="dbsolar_about_", suffix=".jpg")
+    os.close(fd)
+    fitted.convert("RGB").save(out_path, "JPEG", quality=88)
+    return out_path.replace("\\", "/")
+
+
+def about_image_public_url():
+    """URL for edit-page preview of uploaded about photo, or empty string."""
+    if not _uploaded_about_path():
+        return ""
+    base = (getattr(settings, "MEDIA_URL", "/media/") or "/media/").rstrip("/")
+    return "{}/{}".format(base, PROPOSAL_ABOUT_MEDIA)

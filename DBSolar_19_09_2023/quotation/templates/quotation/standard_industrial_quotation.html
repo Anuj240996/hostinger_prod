@@ -160,19 +160,21 @@
   {% endif %}
 </div>
 
-{# PAGE 2 — About company #}
+{# PAGE 2 — Photo image, then written About company text (not baked into the image) #}
 <table class="no-border">
   <tr>
     <td style="border:none; text-align:right;">
       {% if quotation_master.company_logo %}
         <img src="{{ quotation_master.company_logo.url }}" style="height:42pt;">
-      {% else %}
-        <div style="display:inline-block; border:1px solid #bbb; padding:8px 18px; color:#666;">Logo</div>
       {% endif %}
     </td>
   </tr>
 </table>
-<img src="{% static 'quotation/proposal/about_hero.png' %}" style="width:520pt; height:240pt;">
+{% if about_photo_src %}
+<img src="{{ about_photo_src }}" style="width:520pt; height:220pt;">
+{% else %}
+<img src="{% static 'quotation/proposal/about_photo.jpg' %}" style="width:520pt; height:220pt;">
+{% endif %}
 <div style="background:#FFD200; text-align:right; padding:6px 12px; font-weight:bold;">Award Winning Company</div>
 <h2 style="margin-top:16px;">About {{ quotation_master.company_name|default:"Heramb Industries" }}</h2>
 <p>
@@ -182,7 +184,7 @@
   competitive offers and complete documentation support.
 </p>
 <p>
-  {% if quotation_master.from_address %}{{ quotation_master.from_address|linebreaksbr }}{% else %}Bhagya Banglow, Near Sant Eknath Rang Mandir, New Osman Pura, Chh. Sambhajinagar (MH) - 431001{% endif %}
+  {% if quotation_master.from_address %}{{ quotation_master.from_address|linebreaksbr }}{% elif quotation_master.address %}{{ quotation_master.address|linebreaksbr }}{% else %}Bhagya Banglow, Near Sant Eknath Rang Mandir, New Osman Pura, Chh. Sambhajinagar (MH) - 431001{% endif %}
 </p>
 <p>
   This proposal includes system design, major components, commercial offer, terms and
