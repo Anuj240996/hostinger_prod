@@ -218,13 +218,22 @@
     </form>
   </div>
   <div class="page-sheet">
-    <div class="page-label">Page 3 / 6 — Quotation (EST layout)</div>
+    <div class="page-label">Page 3 / 6 — Invoice table (same as standard quotation)</div>
     <div class="pdf-page-frame">
+      {% if master.header_image %}
+        <img class="hf-img" src="{{ master.header_image.url }}" alt="Header">
+      {% else %}
+        <img class="hf-img" src="{% static 'images/quotation_bg1.jpg' %}" alt="Header">
+      {% endif %}
       <div class="page-body">
-        <img class="page-thumb" src="{% static 'quotation/proposal/est_quotation_preview.png' %}" alt="Quotation page">
+        <img class="page-thumb" src="{% static 'quotation/proposal/invoice_preview.png' %}" alt="Invoice page">
       </div>
+      {% if master.footer_image %}
+        <img class="hf-img" src="{{ master.footer_image.url }}" alt="Footer">
+      {% else %}
+        <img class="hf-img" src="{% static 'images/address.jpg' %}" alt="Footer">
+      {% endif %}
     </div>
-    <p class="help-text mt-2 mb-0">Page 3 uses the EST quotation layout (From / Bill To, item table, bank details, signature). Header from Sample 1 is not shown on this page.</p>
   </div>
   <div class="page-sheet">
     <div class="page-label">Page 4 / 6 — Terms &amp; Condition</div>

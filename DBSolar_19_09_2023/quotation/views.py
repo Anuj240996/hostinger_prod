@@ -5306,33 +5306,10 @@ def industrial_quotation_pdf(request, pk):
         logger.warning(f"Error formatting date: {e}")
         formatted_date = timezone.now().strftime('%d/%m/%Y')
 
-    from datetime import timedelta
-    formatted_date_long = formatted_date
-    formatted_expiry_date = formatted_date
-    try:
-        if hasattr(date_value, 'strftime') and callable(getattr(date_value, 'strftime', None)):
-            formatted_date_long = date_value.strftime('%d %b, %Y')
-            expiry_value = getattr(quotation, 'valid_until', None)
-            if expiry_value and hasattr(expiry_value, 'strftime'):
-                formatted_expiry_date = expiry_value.strftime('%d %b, %Y')
-            else:
-                formatted_expiry_date = (date_value + timedelta(days=7)).strftime('%d %b, %Y')
-    except Exception:
-        formatted_date_long = formatted_date
-        formatted_expiry_date = formatted_date
-
-    try:
-        gst_total = float(quotation.gst_5_amount or 0) + float(quotation.gst_18_amount or 0)
-    except Exception:
-        gst_total = 0
-
     context = {
         'quotation': quotation,
         'quotation_date': date_value,  # Pass date object for template
         'formatted_date': formatted_date,  # Pass pre-formatted date string
-        'formatted_date_long': formatted_date_long,
-        'formatted_expiry_date': formatted_expiry_date,
-        'gst_total': gst_total,
         'formatted_other_details': formatted_other_details,  # Add the formatted version
         'units_generated_per_year': units_generated_per_year,
         'yearly_saving': yearly_saving,
