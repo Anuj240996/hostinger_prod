@@ -127,45 +127,37 @@ def _draw_left(draw, x, y, lines, font, fill, line_gap):
 
 def render_proposal_cover_png(quotation, master, formatted_date, this_year):
     """
-    Full A4 JPEG cover with equal white margins baked in (no PDF footer gap).
-    Content: left photo + yellow / navy / yellow (EST layout).
+    Return filesystem path of a generated A4 cover PNG.
+    Left: full-height photo (50% width). Right: yellow / navy / yellow like EST-001.
     """
-    import tempfile
-
-    # ~18pt margin at 2x scale so the image can be placed edge-to-edge on A4
-    m = 36
-    ox, oy = m, m
-    cw, ch = A4_W - 2 * m, A4_H - 2 * m
-    mid = ox + cw // 2
-
     canvas = Image.new("RGB", (A4_W, A4_H), WHITE)
+    mid = A4_W // 2
 
     photo = None
     if master is not None:
         photo = _open_image(getattr(master, "proposal_cover_image", None))
     if photo is None:
         photo = _open_image(_static_cover_path())
-    left_w = mid - ox
     if photo is not None:
-        canvas.paste(_cover_fit(photo, left_w, ch), (ox, oy))
+        canvas.paste(_cover_fit(photo, mid, A4_H), (0, 0))
         photo.close()
     else:
-        ImageDraw.Draw(canvas).rectangle((ox, oy, mid, oy + ch), fill=(20, 60, 90))
+        ImageDraw.Draw(canvas).rectangle((0, 0, mid, A4_H), fill=(20, 60, 90))
 
-    y1 = oy + int(ch * 0.18)
-    y2 = oy + int(ch * 0.50)
+    y1 = int(A4_H * 0.18)
+    y2 = int(A4_H * 0.50)
     draw = ImageDraw.Draw(canvas)
-    draw.rectangle((mid, oy, ox + cw, y1), fill=YELLOW)
-    draw.rectangle((mid, y1, ox + cw, y2), fill=NAVY)
-    draw.rectangle((mid, y2, ox + cw, oy + ch), fill=YELLOW)
+    draw.rectangle((mid, 0, A4_W, y1), fill=YELLOW)
+    draw.rectangle((mid, y1, A4_W, y2), fill=NAVY)
+    draw.rectangle((mid, y2, A4_W, A4_H), fill=YELLOW)
 
     pad = 36
     x_left = mid + pad
-    x_right = ox + cw - pad
-    col_w = max(40, x_right - x_left)
+    x_right = A4_W - pad
+    col_w = x_right - x_left
 
     title_font = _font(42, bold=True)
-    ty = oy + 48
+    ty = 48
     for line in ("Roof Top Solar", "Proposal"):
         draw.text((x_right - _text_w(title_font, line), ty), line, font=title_font, fill=BLACK)
         ty += 52
@@ -239,9 +231,10 @@ def render_proposal_cover_png(quotation, master, formatted_date, this_year):
     cy += 22
     _draw_right(draw, x_right, cy, meta, body_font, BLACK, 30)
 
+    import tempfile
     fd, out_path = tempfile.mkstemp(prefix="dbsolar_cover_", suffix=".jpg")
     os.close(fd)
-    canvas.convert("RGB").save(out_path, "JPEG", quality=88)
+    canvas.convert("RGB").save(out_path, "JPEG", quality=85)
     return out_path.replace("\\", "/")
 
 
@@ -260,59 +253,4 @@ def render_cover_left_photo(master):
     fd, out_path = tempfile.mkstemp(prefix="dbsolar_cover_left_", suffix=".jpg")
     os.close(fd)
     fitted.convert("RGB").save(out_path, "JPEG", quality=85)
-    return out_path.replace("\\", "/")
-
-
-def _static_about_path():
-    candidates = [
-        settings.BASE_DIR / "static" / "quotation" / "proposal" / "about_photo.jpg",
-        settings.BASE_DIR / "asert" / "quotation" / "proposal" / "about_photo.jpg",
-        settings.BASE_DIR / "staticfiles" / "quotation" / "proposal" / "about_photo.jpg",
-    ]
-    for path in candidates:
-        if os.path.isfile(path):
-            return str(path)
-    return None
-
-
-def render_about_photo(master):
-    """Landscape about photo as temp JPEG for PDF. Uses uploaded image or static default."""
-    import tempfile
-    photo = None
-    if master is not None:
-        photo = _open_image(getattr(master, "proposal_about_image", None))
-    if photo is None:
-        photo = _open_image(_static_about_path())
-    if photo is None:
-        return ""
-    fitted = _cover_fit(photo, 1040, 440)
-    photo.close()
-    fd, out_path = tempfile.mkstemp(prefix="dbsolar_about_", suffix=".jpg")
-    os.close(fd)
-    fitted.convert("RGB").save(out_path, "JPEG", quality=88)
-    return out_path.replace("\\", "/")
-
-
-def render_header_logo(master):
-    """Company logo as temp JPEG for pages 2+ header (reliable for xhtml2pdf)."""
-    import tempfile
-    logo = _open_image(getattr(master, "company_logo", None) if master else None)
-    if logo is None:
-        return ""
-    logo = logo.convert("RGBA")
-    max_h, max_w = 72, 200
-    scale = min(max_w / float(logo.width), max_h / float(logo.height), 1.0)
-    logo = logo.resize(
-        (max(1, int(logo.width * scale)), max(1, int(logo.height * scale))),
-        Image.Resampling.LANCZOS if hasattr(Image, "Resampling") else Image.LANCZOS,
-    )
-    bg = Image.new("RGB", (logo.width, logo.height), WHITE)
-    if logo.mode == "RGBA":
-        bg.paste(logo, (0, 0), logo)
-    else:
-        bg.paste(logo.convert("RGB"), (0, 0))
-    logo.close()
-    fd, out_path = tempfile.mkstemp(prefix="dbsolar_logo_", suffix=".jpg")
-    os.close(fd)
-    bg.save(out_path, "JPEG", quality=92)
     return out_path.replace("\\", "/")
