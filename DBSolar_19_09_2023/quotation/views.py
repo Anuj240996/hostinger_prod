@@ -5347,8 +5347,9 @@ def industrial_quotation_pdf(request, pk):
         'terms_with_yellow': terms_with_yellow,  # Set of term IDs with yellow background
         'co2_reduction_tons_per_year': round(co2_reduction_tons_per_year, 1),  # Rounded to 1 decimal
     }
-    from .master_helpers import get_quotation_pdf_context_extras
+    from .master_helpers import get_quotation_pdf_context_extras, get_pdf_selected_terms
     context.update(get_quotation_pdf_context_extras())
+    context['selected_terms'] = get_pdf_selected_terms(quotation)
 
     template_name = getattr(request, '_quotation_pdf_template', 'quotation/industrial_quotation.html')
     filename = getattr(request, '_quotation_pdf_filename', f'industrial_quotation_{quotation.pk}.pdf')

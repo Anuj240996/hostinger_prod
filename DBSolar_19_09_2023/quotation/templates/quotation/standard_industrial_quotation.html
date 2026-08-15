@@ -288,17 +288,20 @@
       <div class="section-bar">Bank Details</div>
       <div style="line-height:1.7; margin-top:6px;">
         {% if bank_detail %}
-          {% if bank_detail.bank_name %}<b>Bank Name:</b> {{ bank_detail.bank_name }}<br>{% endif %}
-          {% if bank_detail.account_name %}<b>Account Name:</b> {{ bank_detail.account_name }}<br>{% endif %}
-          {% if bank_detail.account_no %}<b>Account No.:</b> {{ bank_detail.account_no }}<br>{% endif %}
-          {% if bank_detail.ifsc_code %}<b>IFSC:</b> {{ bank_detail.ifsc_code }}<br>{% endif %}
-          {% if bank_detail.branch_name %}<b>Branch:</b> {{ bank_detail.branch_name }}<br>{% endif %}
+          {% if bank_detail.account_name %}<b>A/C Name -</b> {{ bank_detail.account_name }}<br>{% endif %}
+          {% if bank_detail.account_no %}<b>A/C No -</b> {{ bank_detail.account_no }}<br>{% endif %}
+          {% if bank_detail.bank_name %}<b>Bank Name -</b> {{ bank_detail.bank_name }}<br>{% endif %}
+          {% if bank_detail.branch_name %}<b>Branch Name -</b> {{ bank_detail.branch_name }}<br>{% endif %}
+          {% if bank_detail.ifsc_code %}<b>IFSC CODE -</b> {{ bank_detail.ifsc_code }}<br>{% endif %}
         {% else %}
-          <b>Bank Name:</b> SVC CO-OP Bank<br>
-          <b>Account Name:</b> Heramb Industries<br>
-          <b>Account No.:</b> 112233665544778<br>
-          <b>IFSC:</b> SVSB000123
+          <b>A/C Name -</b> Heramb Industries<br>
+          <b>A/C No -</b> 112233665544778<br>
+          <b>Bank Name -</b> SVC CO-OP Bank<br>
+          <b>Branch Name -</b> Aurangabad / Chh. SambhajiNagar<br>
+          <b>IFSC CODE -</b> SVSB000123
         {% endif %}
+        {% if quotation_master.gst_no %}<b>GST No -</b> {{ quotation_master.gst_no }}<br>{% endif %}
+        {% if quotation_master.pan_no %}<b>PAN No -</b> {{ quotation_master.pan_no }}{% endif %}
       </div>
     </td>
     <td style="border:none; width:252pt; vertical-align:top; text-align:center;">
@@ -319,14 +322,10 @@
 
 <div class="subhead">Terms &amp; Condition</div>
 <ol>
-  <li>Installation starts only after DISCOM approval.</li>
-  <li>Customer must clean solar panels twice a week.</li>
-  <li>Company handles concealed wiring if possible; otherwise the customer provides wiremen while the company provides materials.</li>
-  <li>Low power generation due to non-cleaning may result in additional service charges for the customer.</li>
-  <li>Manufacturing warranty exists for all electronics; the company assists in claims.</li>
-  <li>Up to 30 meters of wire is included. 25-year warranty on PV Modules, 10-year warranty on Inverters, and 5 years of O&amp;M by the company.</li>
+  {# Permanent list — same as Sample 1 Standard Invoice #}
   <li><span style="background-color:yellow;">Included GST.</span></li>
-  <li>Payment terms &amp; Conditions:
+  <li>
+    Payment terms &amp; Conditions:
     <ol>
       <li>80 &#37; with Purchase Order</li>
       <li>10 &#37; After dispatch of Material</li>
@@ -334,7 +333,10 @@
       <li>5 &#37; After complete net metering process</li>
     </ol>
   </li>
-  {% for term in quotation.terms_conditions.all %}
+  <li><span style="background-color:yellow;">Load extension Charges is in consumer's scope.</span></li>
+  <li>After load extension, Net-metering process takes 30 days.</li>
+  {# Selected terms from Quotation Master / quotation form, below the permanent list #}
+  {% for term in selected_terms %}
   <li>{% if term.id in terms_with_yellow %}<span style="background-color:yellow;">{{ term.content }}</span>{% else %}{{ term.content }}{% endif %}</li>
   {% endfor %}
 </ol>

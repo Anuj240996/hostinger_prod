@@ -73,6 +73,19 @@ def get_form_visible_term_ids():
     return [t.id for t in get_active_terms_conditions()]
 
 
+def get_pdf_selected_terms(quotation=None):
+    """Terms checked on the quotation, else master default-selected terms."""
+    terms = []
+    if quotation is not None:
+        try:
+            terms = list(quotation.terms_conditions.all())
+        except Exception:
+            terms = []
+    if not terms:
+        terms = [t for t in get_active_terms_conditions() if getattr(t, 'default_selected', False)]
+    return terms
+
+
 def get_quotation_master():
     return QuotationMaster.get_solo()
 
