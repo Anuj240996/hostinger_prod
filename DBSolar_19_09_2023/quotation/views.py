@@ -5331,15 +5331,30 @@ def industrial_quotation_pdf(request, pk):
     filename = getattr(request, '_quotation_pdf_filename', f'industrial_quotation_{quotation.pk}.pdf')
 
     if template_name.endswith('standard_industrial_quotation.html'):
+        context['cover_full_src'] = ''
         context['cover_left_src'] = ''
         context['about_photo_src'] = ''
+        master = context.get('quotation_master')
         try:
-            from .cover_render import render_cover_left_photo, render_about_photo
-            context['cover_left_src'] = render_cover_left_photo(context.get('quotation_master')) or ''
+            from .cover_render import (
+                render_proposal_cover_png,
+                render_cover_left_photo,
+                render_about_photo,
+            )
+            from datetime import datetime
+            this_year = datetime.now().strftime('%y')
+            context['cover_full_src'] = render_proposal_cover_png(
+                context.get('quotation'),
+                master,
+                context.get('formatted_date'),
+                this_year,
+            ) or ''
+            context['cover_left_src'] = render_cover_left_photo(master) or ''
             context['about_photo_src'] = render_about_photo() or ''
         except Exception:
             import logging
-            logging.getLogger(__name__).exception("Cover/about photo render failed")
+            logging.getLogger(__name__).exception("Sample 2 cover/about render failed")
+            context['cover_full_src'] = ''
             context['cover_left_src'] = ''
             context['about_photo_src'] = ''
 
