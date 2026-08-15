@@ -197,98 +197,86 @@
   </tr>
 </table>
 
-<table class="est-items" width="520" id="offer_details">
-  <tr>
-    <th class="est-col-no">#</th>
-    <th class="est-col-item">Item &amp; Description</th>
-    <th class="est-col-img">Image</th>
-    <th class="est-col-qty">Qty</th>
-    <th class="est-col-num">Rate</th>
-    <th class="est-col-num">Discount</th>
-    <th class="est-col-num">IGST</th>
-    <th class="est-col-num">Total</th>
+<h4 style="margin-top:10px; margin-bottom:4px; text-align:center;">
+  Offer for <span class="bold">{{ quotation.plant_capacity_kw|clean_decimal }}</span> KW Rooftop Grid Solar Plant.
+</h4>
+
+<table class="offer-table" id="offer_details" align="center">
+  <tr align="center">
+    <th class="offer-col-desc">Product Description</th>
+    <th class="offer-col-units">Units</th>
+    <th class="offer-col-amt">Amount (INR)</th>
   </tr>
   <tr>
-    <td class="est-col-no">1</td>
-    <td class="est-col-item"><b>{{ quotation.panel_type }}</b> Solar PV Panels {{ quotation.panel_capacity_watt }} watt<br>Make - {{ quotation.panel_company_names }} (Approx. {{ quotation.panel_qty }} qty)</td>
-    <td class="est-col-img">&nbsp;</td>
-    <td class="est-col-qty"><b>{{ quotation.plant_capacity_kw|clean_decimal }} KW</b></td>
-    <td class="est-col-num" rowspan="9">{{ quotation.net_amount|indian_format_with_decimals }}</td>
-    <td class="est-col-num" rowspan="9">{% if quotation.discount_percentage %}{{ quotation.discount_percentage }} %{% elif quotation.special_discount %}{{ quotation.special_discount|indian_format_with_decimals }} ₹{% else %}0 ₹{% endif %}</td>
-    <td class="est-col-num" rowspan="9">5% / 18%</td>
-    <td class="est-col-num" rowspan="9"><span class="rupee-symbol">₹</span> {{ quotation.final_amount|indian_format_with_decimals }}</td>
+    <td class="indent-left"><b>{{ quotation.panel_type }}</b> Solar PV Panels {{ quotation.panel_capacity_watt }} watt<br><b>Make - </b> {{ quotation.panel_company_names }} &nbsp;(Approx.{{ quotation.panel_qty }} qty)</td>
+    <td class="center"><b>{{ quotation.plant_capacity_kw|clean_decimal }} KW</b></td>
+    <td rowspan="9" class="right" style="vertical-align:middle; padding-right:12px;">
+      {{ quotation.net_amount|indian_format_with_decimals }}
+    </td>
   </tr>
   <tr>
-    <td class="est-col-no">2</td>
-    <td class="est-col-item"><b>{{ quotation.inv_phase }}</b> Solar Grid Inverter<br>Make - {{ quotation.inverter_company_names }} (Approx. {{ quotation.inverter_qty }} qty)</td>
-    <td class="est-col-img">&nbsp;</td>
-    <td class="est-col-qty"><b>{{ quotation.inv_capacity_kw|clean_decimal }} KW</b></td>
+    <td class="indent-left"><b>{{ quotation.inv_phase }}</b> Solar Grid <b>Inverter</b><br><b>Make -</b> {{ quotation.inverter_company_names }} &nbsp;(Approx.{{ quotation.inverter_qty }} qty)</td>
+    <td class="center"><b>{{ quotation.inv_capacity_kw|clean_decimal }} KW</b></td>
   </tr>
   <tr>
-    <td class="est-col-no">3</td>
-    <td class="est-col-item">
+    <td class="indent-left">
       {% if quotation.structure_type == 'Tin Shade' %}
-        <b>{{ quotation.structure_type }} Structure</b>{% if formatted_other_details %}, {{ formatted_other_details }}{% endif %}
+        <b>{{ quotation.structure_type }} Structure</b>
+        {% if formatted_other_details %}, {{ formatted_other_details }}{% endif %}
       {% else %}
-        <b>{{ quotation.structure_type }}</b> {{ quotation.structure_front_height_ft|clean_decimal }} X {{ quotation.structure_back_height_ft|clean_decimal }} Feet{% if formatted_other_details %}, {{ formatted_other_details }}{% endif %}
+        <b>{{ quotation.structure_type }} - </b>
+        {{ quotation.structure_front_height_ft|clean_decimal }} X
+        {{ quotation.structure_back_height_ft|clean_decimal }} Feet
+        {% if formatted_other_details %}, {{ formatted_other_details }}{% endif %}
       {% endif %}
     </td>
-    <td class="est-col-img">&nbsp;</td>
-    <td class="est-col-qty"><b>For {{ quotation.plant_capacity_kw|clean_decimal }} KW</b></td>
+    <td class="center"><b>For {{ quotation.plant_capacity_kw|clean_decimal }} KW</b></td>
   </tr>
   <tr>
-    <td class="est-col-no">4</td>
-    <td class="est-col-item">Generation Meter (Make Secure / L&amp;T)<br><b style="background-color:yellow;">(Net Meter will be providing by MSEDCL)</b></td>
-    <td class="est-col-img">&nbsp;</td>
-    <td class="est-col-qty"><b>2 Nos.</b></td>
+    <td class="indent-left">Generation Meter (Make Secure / L&amp;T)<br><b style="background-color:yellow;">(Net Meter will be providing by MSEDCL)</b></td>
+    <td class="center"><b>2 Nos.</b></td>
   </tr>
   <tr>
-    <td class="est-col-no">5</td>
-    <td class="est-col-item">Earthing with Lighting Arrestor- with 16 mm &amp; 25 mm Conductor Cable. AC Cable 65 feet &amp; DC Cable. Make - TCI / Polycab / Apar</td>
-    <td class="est-col-img">&nbsp;</td>
-    <td class="est-col-qty">Entire Project</td>
+    <td class="indent-left">Earthing with Lighting Arrestor- with 16 mm &amp; 25 mm Conductor<br>Cable.AC Cable 65 feet &amp; DC Cable. <b>Make -</b> TCI / Polycab / Apar</td>
+    <td class="center">Entire Project</td>
   </tr>
   <tr>
-    <td class="est-col-no">6</td>
-    <td class="est-col-item">AC Surge Protection Device &amp; MCCB. Make L&amp;T / ABB. DC Protection Device. ACDB &amp; DCDB with IP 65 Distribution Boxes</td>
-    <td class="est-col-img">&nbsp;</td>
-    <td class="est-col-qty">Entire Project</td>
+    <td class="indent-left">AC Surge Protection Device &amp; MCCB. Make L&amp;T / ABB<br>DC Protection Device.ACDB &amp; DCDB with IP 65 Distribution Boxes</td>
+    <td class="center">Entire Project</td>
   </tr>
   <tr>
-    <td class="est-col-no">7</td>
-    <td class="est-col-item">Installation</td>
-    <td class="est-col-img">&nbsp;</td>
-    <td class="est-col-qty">Entire Project</td>
+    <td class="indent-left">Installation</td>
+    <td class="center">Entire Project</td>
   </tr>
   <tr>
-    <td class="est-col-no">8</td>
-    <td class="est-col-item">Transportation</td>
-    <td class="est-col-img">&nbsp;</td>
-    <td class="est-col-qty">Included</td>
+    <td class="indent-left">Transportation</td>
+    <td class="center">Included</td>
   </tr>
   <tr>
-    <td class="est-col-no">9</td>
-    <td class="est-col-item">Liaisoning</td>
-    <td class="est-col-img">&nbsp;</td>
-    <td class="est-col-qty">Included</td>
+    <td class="indent-left">Lessoning</td>
+    <td class="center">Included</td>
   </tr>
   {% if quotation.special_discount and quotation.special_discount > 0 %}
   <tr>
-    <td colspan="4" class="bold"><span style="background-color:yellow;">SPECIAL DISCOUNT</span></td>
-    <td colspan="4" class="right bold">{{ quotation.special_discount|indian_format_with_decimals }}</td>
+    <td colspan="2" class="bold indent-left"><span style="background-color:yellow;">SPECIAL DISCOUNT</span></td>
+    <td class="right bold">{{ quotation.special_discount|indian_format_with_decimals }}</td>
+  </tr>
+  <tr>
+    <td colspan="2" class="bold indent-left">AFTER DISCOUNT AMOUNT</td>
+    <td class="right">{{ after_discount_amount|indian_format_with_decimals }}</td>
   </tr>
   {% endif %}
   <tr>
-    <td colspan="4" class="bold">GST 5&#37; (70&#37; of Basic Amount)</td>
-    <td colspan="4" class="right">{{ quotation.gst_5_amount|indian_format_with_decimals }}</td>
+    <td colspan="2" class="bold indent-left">GST 5&#37; (70&#37; of Basic Amount)</td>
+    <td class="right">{{ quotation.gst_5_amount|indian_format_with_decimals }}</td>
   </tr>
   <tr>
-    <td colspan="4" class="bold">GST 18&#37; (30&#37; of Basic Amount)</td>
-    <td colspan="4" class="right">{{ quotation.gst_18_amount|indian_format_with_decimals }}</td>
+    <td colspan="2" class="bold indent-left">GST 18&#37; (30&#37; of Basic Amount)</td>
+    <td class="right">{{ quotation.gst_18_amount|indian_format_with_decimals }}</td>
   </tr>
   <tr>
-    <td colspan="4" class="bold">Indian Rupee {{ amount_words }} Only</td>
-    <td colspan="4" class="right bold"><span class="rupee-symbol">₹</span> {{ quotation.final_amount|indian_format_with_decimals }}</td>
+    <td colspan="2" class="bold indent-left">Net Amount – INR – {{ amount_words }}</td>
+    <td class="right bold"><span class="rupee-symbol">₹</span> {{ quotation.final_amount|indian_format_with_decimals }}</td>
   </tr>
 </table>
 
