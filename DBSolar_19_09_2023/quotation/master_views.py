@@ -282,10 +282,6 @@ def edit_quotation_template(request, template_key):
                         default_storage.delete(PROPOSAL_ABOUT_MEDIA)
                     default_storage.save(PROPOSAL_ABOUT_MEDIA, upload)
                     messages.success(request, 'About page image saved.')
-            elif action == 'logo' and request.FILES.get('company_logo'):
-                master.company_logo = request.FILES['company_logo']
-                master.save(update_fields=['company_logo'])
-                messages.success(request, 'Company logo saved for pages 2–6 (top right).')
             elif request.FILES.get('proposal_cover_image'):
                 master.proposal_cover_image = request.FILES['proposal_cover_image']
                 master.save(update_fields=['proposal_cover_image'])

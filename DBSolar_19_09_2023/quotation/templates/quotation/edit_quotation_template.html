@@ -106,18 +106,6 @@
     object-fit:cover;
     object-position:top;
   }
-  .pdf-page-frame .page-header-logo {
-    display:flex;
-    justify-content:flex-end;
-    padding:8px 12px 0;
-    background:#fff;
-    min-height:42px;
-  }
-  .pdf-page-frame .page-header-logo img {
-    max-height:36px;
-    max-width:120px;
-    object-fit:contain;
-  }
   .pdf-page-frame .page-body {
     padding:10px;
     background:#fafafa;
@@ -200,13 +188,13 @@
 
   <div class="page-sheet">
     <div class="page-label">Page 2 / 6 — About company</div>
-    <p class="help-text mb-2">Photo on this page is editable. Company logo is top-right (editable below). About company text stays below the photo.</p>
+    <p class="help-text mb-2">Photo on this page is editable. No Logo rectangle. About company text stays below the photo.</p>
     <div class="pdf-page-frame">
-      <div class="page-header-logo">
-        {% if master.company_logo %}
-          <img src="{{ master.company_logo.url }}" alt="Company logo">
-        {% endif %}
-      </div>
+      {% if master.header_image %}
+        <img class="hf-img" src="{{ master.header_image.url }}" alt="Header">
+      {% else %}
+        <img class="hf-img" src="{% static 'images/quotation_bg1.jpg' %}" alt="Header">
+      {% endif %}
       <div class="page-body">
         {% if about_image_url %}
           <img class="page-thumb" src="{{ about_image_url }}" alt="About page">
@@ -228,26 +216,15 @@
       <div class="help-text mt-1 mb-2">Upload another photo to replace the current page 2 image in the PDF.</div>
       <button type="submit" class="btn btn-success btn-sm">Save About Image</button>
     </form>
-    <form method="post" enctype="multipart/form-data" class="mt-3" style="max-width:none;width:100%;background:transparent;box-shadow:none;padding:0;margin:0;border:none;">
-      {% csrf_token %}
-      <input type="hidden" name="action" value="logo">
-      <label class="form-label"><b>Change company logo (pages 2–6 top-right)</b></label>
-      {% if master.company_logo %}
-        <div class="mb-2"><img src="{{ master.company_logo.url }}" alt="Logo" style="max-height:48px;"></div>
-      {% endif %}
-      <input type="file" name="company_logo" class="form-control" accept="image/*" required>
-      <div class="help-text mt-1 mb-2">This logo appears only after the cover page, top-right. No Logo rectangle.</div>
-      <button type="submit" class="btn btn-success btn-sm">Save Company Logo</button>
-    </form>
   </div>
   <div class="page-sheet">
     <div class="page-label">Page 3 / 6 — Invoice table (same as standard quotation)</div>
     <div class="pdf-page-frame">
-      <div class="page-header-logo">
-        {% if master.company_logo %}
-          <img src="{{ master.company_logo.url }}" alt="Company logo">
-        {% endif %}
-      </div>
+      {% if master.header_image %}
+        <img class="hf-img" src="{{ master.header_image.url }}" alt="Header">
+      {% else %}
+        <img class="hf-img" src="{% static 'images/quotation_bg1.jpg' %}" alt="Header">
+      {% endif %}
       <div class="page-body">
         <img class="page-thumb" src="{% static 'quotation/proposal/invoice_preview.png' %}" alt="Invoice page">
       </div>
@@ -261,11 +238,11 @@
   <div class="page-sheet">
     <div class="page-label">Page 4 / 6 — Terms &amp; Condition</div>
     <div class="pdf-page-frame">
-      <div class="page-header-logo">
-        {% if master.company_logo %}
-          <img src="{{ master.company_logo.url }}" alt="Company logo">
-        {% endif %}
-      </div>
+      {% if master.header_image %}
+        <img class="hf-img" src="{{ master.header_image.url }}" alt="Header">
+      {% else %}
+        <img class="hf-img" src="{% static 'images/quotation_bg1.jpg' %}" alt="Header">
+      {% endif %}
       <div class="page-body">
         <img class="page-thumb" src="{% static 'quotation/proposal/terms_preview.png' %}" alt="Terms page">
       </div>
@@ -279,11 +256,11 @@
   <div class="page-sheet">
     <div class="page-label">Page 5 / 6 — Testimonials</div>
     <div class="pdf-page-frame">
-      <div class="page-header-logo">
-        {% if master.company_logo %}
-          <img src="{{ master.company_logo.url }}" alt="Company logo">
-        {% endif %}
-      </div>
+      {% if master.header_image %}
+        <img class="hf-img" src="{{ master.header_image.url }}" alt="Header">
+      {% else %}
+        <img class="hf-img" src="{% static 'images/quotation_bg1.jpg' %}" alt="Header">
+      {% endif %}
       <div class="page-body">
         <img class="page-thumb" src="{% static 'quotation/proposal/testimonials_preview.png' %}" alt="Testimonials page">
       </div>
@@ -297,11 +274,11 @@
   <div class="page-sheet">
     <div class="page-label">Page 6 / 6 — Thank you</div>
     <div class="pdf-page-frame">
-      <div class="page-header-logo">
-        {% if master.company_logo %}
-          <img src="{{ master.company_logo.url }}" alt="Company logo">
-        {% endif %}
-      </div>
+      {% if master.header_image %}
+        <img class="hf-img" src="{{ master.header_image.url }}" alt="Header">
+      {% else %}
+        <img class="hf-img" src="{% static 'images/quotation_bg1.jpg' %}" alt="Header">
+      {% endif %}
       <div class="page-body">
         <img class="page-thumb" src="{% static 'quotation/proposal/thankyou_preview.png' %}" alt="Thank you page">
       </div>

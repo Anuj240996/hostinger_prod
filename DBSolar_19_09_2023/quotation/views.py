@@ -5334,14 +5334,12 @@ def industrial_quotation_pdf(request, pk):
         context['cover_full_src'] = ''
         context['cover_left_src'] = ''
         context['about_photo_src'] = ''
-        context['header_logo_src'] = ''
         master = context.get('quotation_master')
         try:
             from .cover_render import (
                 render_proposal_cover_png,
                 render_cover_left_photo,
                 render_about_photo,
-                render_header_logo,
             )
             from datetime import datetime
             this_year = datetime.now().strftime('%y')
@@ -5353,14 +5351,12 @@ def industrial_quotation_pdf(request, pk):
             ) or ''
             context['cover_left_src'] = render_cover_left_photo(master) or ''
             context['about_photo_src'] = render_about_photo() or ''
-            context['header_logo_src'] = render_header_logo(master) or ''
         except Exception:
             import logging
             logging.getLogger(__name__).exception("Sample 2 cover/about render failed")
             context['cover_full_src'] = ''
             context['cover_left_src'] = ''
             context['about_photo_src'] = ''
-            context['header_logo_src'] = ''
 
     html = render_to_string(template_name, context)
     if getattr(request, '_quotation_pdf_skip_sanitize', False):

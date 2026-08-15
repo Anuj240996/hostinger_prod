@@ -307,28 +307,3 @@ def about_image_public_url():
         return ""
     base = (getattr(settings, "MEDIA_URL", "/media/") or "/media/").rstrip("/")
     return "{}/{}".format(base, PROPOSAL_ABOUT_MEDIA)
-
-
-def render_header_logo(master):
-    """Company logo as temp JPEG for pages 2+ header (reliable for xhtml2pdf)."""
-    import tempfile
-    logo = _open_image(getattr(master, "company_logo", None) if master else None)
-    if logo is None:
-        return ""
-    logo = logo.convert("RGBA")
-    max_h, max_w = 72, 200
-    scale = min(max_w / float(logo.width), max_h / float(logo.height), 1.0)
-    logo = logo.resize(
-        (max(1, int(logo.width * scale)), max(1, int(logo.height * scale))),
-        Image.Resampling.LANCZOS if hasattr(Image, "Resampling") else Image.LANCZOS,
-    )
-    bg = Image.new("RGB", (logo.width, logo.height), WHITE)
-    if logo.mode == "RGBA":
-        bg.paste(logo, (0, 0), logo)
-    else:
-        bg.paste(logo.convert("RGB"), (0, 0))
-    logo.close()
-    fd, out_path = tempfile.mkstemp(prefix="dbsolar_logo_", suffix=".jpg")
-    os.close(fd)
-    bg.save(out_path, "JPEG", quality=92)
-    return out_path.replace("\\", "/")
