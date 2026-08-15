@@ -80,8 +80,7 @@ def quotation_master(request):
         except Exception:
             pass
         master = QuotationMaster.objects.defer(
-            'default_pdf_template', 'default_industrial_pdf_template',
-            'proposal_cover_image', 'proposal_about_image'
+            'default_pdf_template', 'default_industrial_pdf_template', 'proposal_cover_image'
         ).filter(pk=1).first()
         if master is None:
             master = QuotationMaster(pk=1, company_name='Heramb Industries')
@@ -264,35 +263,25 @@ def edit_quotation_template(request, template_key):
         except Exception:
             pass
         master = QuotationMaster.objects.defer(
-            'default_pdf_template', 'default_industrial_pdf_template',
-            'proposal_cover_image', 'proposal_about_image'
+            'default_pdf_template', 'default_industrial_pdf_template', 'proposal_cover_image'
         ).filter(pk=1).first()
         if master is None:
             master = QuotationMaster(pk=1, company_name='Heramb Industries')
 
     if request.method == 'POST' and template_key == 'standard_industrial':
-        action = (request.POST.get('action') or '').strip()
-        try:
-            if action == 'cover' and request.FILES.get('proposal_cover_image'):
+        if request.FILES.get('proposal_cover_image'):
+            try:
                 master.proposal_cover_image = request.FILES['proposal_cover_image']
                 master.save(update_fields=['proposal_cover_image'])
                 messages.success(request, 'Cover page image saved.')
-            elif action == 'about' and request.FILES.get('proposal_about_image'):
-                master.proposal_about_image = request.FILES['proposal_about_image']
-                master.save(update_fields=['proposal_about_image'])
-                messages.success(request, 'About page image saved.')
-            elif action == 'logo' and request.FILES.get('company_logo'):
-                master.company_logo = request.FILES['company_logo']
-                master.save(update_fields=['company_logo'])
-                messages.success(request, 'Company logo saved for pages 2–6.')
-            else:
-                messages.error(request, 'Please choose an image file to upload.')
-        except (ProgrammingError, OperationalError):
-            try:
-                connection.rollback()
-            except Exception:
-                pass
-            messages.error(request, 'Could not save image. Run: python manage.py migrate quotation')
+            except (ProgrammingError, OperationalError):
+                try:
+                    connection.rollback()
+                except Exception:
+                    pass
+                messages.error(request, 'Could not save cover image. Run: python manage.py migrate quotation')
+            return redirect('quotation:edit_quotation_template', template_key=template_key)
+        messages.error(request, 'Please choose a cover page image.')
         return redirect('quotation:edit_quotation_template', template_key=template_key)
 
     label = next(item['label'] for item in PDF_TEMPLATE_OPTIONS if item['key'] == template_key)
