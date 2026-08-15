@@ -2358,7 +2358,7 @@ def revise_quotation(request, pk):
     # CRM list/detail URLs (e.g. quotation_detail) exist only under /new-lead/quotations/.
     show_crm_quotation_family_links = "/new-lead/" in (getattr(request, "path", "") or "")
 
-    from .master_helpers import get_default_pdf_template
+    from .master_helpers import get_quotation_pdf_context_extras
 
     context = {
         "form": form,
@@ -2373,8 +2373,8 @@ def revise_quotation(request, pk):
         "show_crm_quotation_family_links": show_crm_quotation_family_links,
         "lock_consumer_details": True,
         "skip_pdf_after_save": is_crm_revise,
-        "default_pdf_template": get_default_pdf_template(),
     }
+    context.update(get_quotation_pdf_context_extras())
     template_name = "quotation/revise_quotation.html"
     if getattr(request, "path", "") and "/new-lead/" in request.path:
         template_name = "quotations/crm_revise_quotation.html"
@@ -4928,7 +4928,7 @@ def create_quotation(request):
     if getattr(request, 'path', '') and '/new-lead/' in request.path:
         template_name = 'quotations/crm_create_quotation.html'
 
-    from .master_helpers import get_default_selected_term_ids, get_default_pdf_template
+    from .master_helpers import get_default_selected_term_ids, get_quotation_pdf_context_extras
 
     context = {
         'form': form,
@@ -4941,8 +4941,8 @@ def create_quotation(request):
         'passed_consumer_no': consumer_no,  # Pass to template for display
         'survey_lead_rows': _survey_lead_rows_for_quotation_template(),
         'after_save_list_url': after_save_list_url,
-        'default_pdf_template': get_default_pdf_template(),
     }
+    context.update(get_quotation_pdf_context_extras())
     return render(request, template_name, context)
 
 #
@@ -7647,7 +7647,7 @@ def edit_quotation(request, pk):
     """
     quotation = get_quotation_or_404_for_request(request, pk)
     is_crm_edit = '/new-lead/' in (getattr(request, 'path', '') or '')
-    from .master_helpers import get_default_pdf_template
+    from .master_helpers import get_quotation_pdf_context_extras
 
     panel_companies = list(SolarPanelCompany.objects.all())
     inverter_companies = list(InverterCompany.objects.all())
@@ -7967,8 +7967,8 @@ def edit_quotation(request, pk):
         "representatives": Representative.objects.all().order_by('name'),
         "survey_lead_rows": _survey_lead_rows_for_quotation_template(),
         "skip_pdf_after_save": is_crm_edit,
-        "default_pdf_template": get_default_pdf_template(),
     }
+    context.update(get_quotation_pdf_context_extras())
     template_name = "quotation/edit_quotation.html"
     if is_crm_edit:
         template_name = "quotations/crm_edit_quotation.html"

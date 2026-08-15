@@ -110,7 +110,7 @@ def quotation_master(request):
             messages.success(request, 'Company details saved.')
 
         elif action == 'save_pdf_template':
-            from .master_helpers import PDF_TEMPLATE_OPTIONS
+            from .master_helpers import PDF_TEMPLATE_OPTIONS, get_pdf_template_option
             selected = request.POST.get('default_pdf_template', '')
             valid = {item['key'] for item in PDF_TEMPLATE_OPTIONS}
             if selected not in valid:
@@ -119,7 +119,11 @@ def quotation_master(request):
                 try:
                     master.default_pdf_template = selected
                     master.save(update_fields=['default_pdf_template'])
-                    label = next(item['label'] for item in PDF_TEMPLATE_OPTIONS if item['key'] == selected)
+                    option = get_pdf_template_option(selected)
+                    label = '{} — {}'.format(
+                        option.get('sample_label', ''),
+                        option.get('label', selected),
+                    ).strip(' —')
                     messages.success(request, f'Default quotation template set to {label}.')
                 except (ProgrammingError, OperationalError):
                     try:
@@ -213,7 +217,12 @@ def quotation_master(request):
             only.is_active = True
             only.save(update_fields=['show_in_quotation_form', 'is_default', 'is_active'])
 
-    from .master_helpers import PDF_TEMPLATE_OPTIONS, get_default_pdf_template
+    from .master_helpers import (
+        PDF_TEMPLATE_GROUPS,
+        PDF_TEMPLATE_OPTIONS,
+        get_default_pdf_template,
+        get_pdf_template_option,
+    )
 
     return render(request, 'quotation/quotation_master.html', {
         'master': master,
@@ -222,7 +231,9 @@ def quotation_master(request):
         'all_banks': all_banks,
         'bank_count': all_banks.count(),
         'pdf_template_options': PDF_TEMPLATE_OPTIONS,
+        'pdf_template_groups': PDF_TEMPLATE_GROUPS,
         'default_pdf_template': get_default_pdf_template(),
+        'default_pdf_option': get_pdf_template_option(),
     })
 
 

@@ -313,24 +313,42 @@
     padding: 14px;
     height: 100%;
     background: #fff;
-    cursor: pointer;
     transition: border-color .15s, box-shadow .15s;
   }
-  .tpl-card.is-selected {
-    border-color: #00897B;
-    box-shadow: 0 0 0 3px rgba(0,137,123,.18);
-  }
-  .tpl-card img {
-    width: 100%;
-    height: 160px;
-    object-fit: cover;
-    object-position: top;
-    border-radius: 8px;
-    border: 1px solid #eee;
-    background: #f5f5f5;
-  }
-  .tpl-card .tpl-label { font-weight: 700; color: #263238; margin-top: 8px; }
+  .tpl-card .tpl-label { font-weight: 700; color: #263238; margin-top: 0; }
   .tpl-card .tpl-hint { font-size: 0.82rem; color: #607d8b; }
+  .tpl-sample-list {
+    list-style: none;
+    margin: 14px 0 0;
+    padding: 0;
+  }
+  .tpl-sample-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    border: 1px solid #e6edf2;
+    border-radius: 8px;
+    margin-bottom: 8px;
+    background: #f8fafb;
+  }
+  .tpl-sample-row.is-default {
+    border-color: #00897B;
+    background: #e8f5f3;
+  }
+  .tpl-sample-row .sample-meta { flex: 1; min-width: 0; }
+  .tpl-sample-row .sample-name { font-weight: 700; color: #263238; }
+  .tpl-sample-row .sample-desc { font-size: 0.8rem; color: #607d8b; }
+  .tpl-sample-row label.default-radio {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin: 0;
+    font-size: 0.8rem;
+    color: #455a64;
+    white-space: nowrap;
+    cursor: pointer;
+  }
 </style>
 
 <div class="container-fluid my-3">
@@ -354,44 +372,41 @@
   {% endif %}
 
   <div class="card master-card" id="quotation-templates-card">
-    <div class="card-header">Quotation Templates — Standard / Industrial / Standard &amp; Industrial</div>
+    <div class="card-header">Quotation Templates — Standard / Industrial</div>
     <div class="card-body">
-      <p class="help-text mb-3">Select the template used by default when generating quotation PDFs. Existing Standard and Industrial templates stay available. Choose <b>Standard &amp; Industrial Quotation</b> to use the new 6-page proposal.</p>
+      <p class="help-text mb-3">
+        Only two template groups. Under <b>Standard</b>, pick Sample 1 / Sample 2 (and more later) with
+        <b>Default</b> radio and <b>Edit</b>. The default sample is used on Lead CRM generated quotation PDF.
+      </p>
       <form method="post">
         {% csrf_token %}
         <input type="hidden" name="action" value="save_pdf_template">
         <div class="row g-3">
-          <div class="col-md-4">
-            <label class="tpl-card{% if default_pdf_template == 'quotation' %} is-selected{% endif %}">
-              <input type="radio" name="default_pdf_template" value="quotation" {% if default_pdf_template == 'quotation' %}checked{% endif %} style="width:18px;height:18px;margin-right:8px;vertical-align:middle;">
-              <span class="tpl-label">Standard Quotation</span>
-              <div class="tpl-hint mt-1">Existing standard invoice PDF already in the project.</div>
-            </label>
-            <div class="text-center mt-2">
-              <a href="{% url 'quotation:edit_quotation_template' 'quotation' %}" class="btn btn-sm btn-primary">Edit</a>
+          {% for group in pdf_template_groups %}
+          <div class="col-md-6">
+            <div class="tpl-card">
+              <div class="tpl-label">{{ group.label }}</div>
+              <div class="tpl-hint mt-1">{{ group.hint }}</div>
+              <ul class="tpl-sample-list">
+                {% for sample in group.samples %}
+                <li class="tpl-sample-row{% if default_pdf_template == sample.key %} is-default{% endif %}">
+                  <label class="default-radio">
+                    <input type="radio" name="default_pdf_template" value="{{ sample.key }}"
+                      {% if default_pdf_template == sample.key %}checked{% endif %}
+                      style="width:16px;height:16px;">
+                    Default
+                  </label>
+                  <div class="sample-meta">
+                    <div class="sample-name">{{ sample.sample_label }} — {{ sample.label }}</div>
+                    <div class="sample-desc">{{ sample.hint }}</div>
+                  </div>
+                  <a href="{% url 'quotation:edit_quotation_template' sample.key %}" class="btn btn-sm btn-primary">Edit</a>
+                </li>
+                {% endfor %}
+              </ul>
             </div>
           </div>
-          <div class="col-md-4">
-            <label class="tpl-card{% if default_pdf_template == 'industrial' %} is-selected{% endif %}">
-              <input type="radio" name="default_pdf_template" value="industrial" {% if default_pdf_template == 'industrial' %}checked{% endif %} style="width:18px;height:18px;margin-right:8px;vertical-align:middle;">
-              <span class="tpl-label">Industrial Quotation</span>
-              <div class="tpl-hint mt-1">Existing industrial quotation PDF already in the project.</div>
-            </label>
-            <div class="text-center mt-2">
-              <a href="{% url 'quotation:edit_quotation_template' 'industrial' %}" class="btn btn-sm btn-primary">Edit</a>
-            </div>
-          </div>
-          <div class="col-md-4">
-            <label class="tpl-card{% if default_pdf_template == 'standard_industrial' %} is-selected{% endif %}" style="border-color:#f9a825;">
-              <input type="radio" name="default_pdf_template" value="standard_industrial" {% if default_pdf_template == 'standard_industrial' %}checked{% endif %} style="width:18px;height:18px;margin-right:8px;vertical-align:middle;">
-              <span class="tpl-label">Standard &amp; Industrial Quotation</span>
-              <span class="term-badge on-yellow">NEW</span>
-              <div class="tpl-hint mt-1">New 6-page proposal. Cover shows company logo/name/address and consumer name/address.</div>
-            </label>
-            <div class="text-center mt-2">
-              <a href="{% url 'quotation:edit_quotation_template' 'standard_industrial' %}" class="btn btn-sm btn-primary">Edit</a>
-            </div>
-          </div>
+          {% endfor %}
         </div>
         <div class="master-add-actions mt-3">
           <button type="submit" class="btn btn-sm btn-success">Save Default Template</button>
@@ -874,11 +889,11 @@
       if (wrap) wrap.classList.toggle('is-checked', e.target.checked);
     }
     if (e.target && e.target.name === 'default_pdf_template') {
-      document.querySelectorAll('.tpl-card').forEach(function (card) {
-        card.classList.remove('is-selected');
+      document.querySelectorAll('.tpl-sample-row').forEach(function (row) {
+        row.classList.remove('is-default');
       });
-      var selectedCard = e.target.closest('.tpl-card');
-      if (selectedCard) selectedCard.classList.add('is-selected');
+      var selectedRow = e.target.closest('.tpl-sample-row');
+      if (selectedRow) selectedRow.classList.add('is-default');
     }
   });
 </script>

@@ -741,6 +741,12 @@ def quotation_list(request):
         'board_columns': build_quotation_list_board_columns(quotations_latest),
         'quotations_latest_count': len(quotations_latest),
     }
+    try:
+        from quotation.master_helpers import get_quotation_pdf_context_extras
+        context.update(get_quotation_pdf_context_extras())
+    except Exception:
+        context.setdefault('default_pdf_template', 'quotation')
+        context.setdefault('pdf_template_groups', [])
 
     return render(request, 'quotations/quotation_list.html', context)
 
@@ -997,6 +1003,12 @@ def quotation_detail(request, pk):
         'conversion_history_available': conversion_history_available,
         'rejection_history_available': rejection_history_available,
     }
+    try:
+        from quotation.master_helpers import get_quotation_pdf_context_extras
+        context.update(get_quotation_pdf_context_extras())
+    except Exception:
+        context.setdefault('default_pdf_template', 'quotation')
+        context.setdefault('pdf_template_groups', [])
 
     return render(request, 'quotations/quotation_detail_erp.html', context)
 

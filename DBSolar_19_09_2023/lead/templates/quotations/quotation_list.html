@@ -798,9 +798,30 @@
 </div>
 
 <div id="crmQuotationPdfChoiceModal" style="display:none; position:fixed; z-index:99999; left:0; top:0; right:0; bottom:0; background:rgba(0,0,0,0.5); align-items:center; justify-content:center;">
-    <div style="background:white; margin:auto; padding:30px; border-radius:10px; max-width:500px; width:92%; box-shadow:0 6px 18px rgba(0,0,0,0.3);">
+    <div style="background:white; margin:auto; padding:30px; border-radius:10px; max-width:560px; width:92%; box-shadow:0 6px 18px rgba(0,0,0,0.3);">
         <h3 style="color:#1e41d1;">Generate PDF</h3>
-        <p style="margin-bottom:20px;">Choose a template for PDF generation:</p>
+        <p style="margin-bottom:12px;">Default from Quotation Master:
+          <b>{{ default_pdf_option.sample_label|default:"Sample 1" }} — {{ default_pdf_option.label|default:"Standard Invoice" }}</b>
+        </p>
+        <button type="button" id="crmPdfDefaultBtn" style="width:100%; margin-bottom:18px; padding:12px; background:#00897B; color:white; border:none; border-radius:5px; cursor:pointer;">
+          <strong>Open Default PDF</strong>
+        </button>
+        {% for group in pdf_template_groups %}
+        <div style="margin-bottom:14px;">
+          <div style="font-weight:700; color:#263238; margin-bottom:8px;">{{ group.label }}</div>
+          <div style="display:flex; gap:10px; flex-wrap:wrap;">
+            {% for sample in group.samples %}
+            <button type="button"
+              class="crm-pdf-sample-btn"
+              data-pdf-path="{{ sample.pdf_path }}"
+              style="flex:1; min-width:150px; padding:12px; background:{% if default_pdf_template == sample.key %}#00897B{% elif sample.group == 'industrial' %}#1e41d1{% else %}#4a6cf7{% endif %}; color:white; border:none; border-radius:5px; cursor:pointer;">
+              <strong>{{ sample.sample_label }}</strong><br>
+              <small>{{ sample.label }}</small>
+            </button>
+            {% endfor %}
+          </div>
+        </div>
+        {% empty %}
         <div style="display:flex; gap:12px; margin-bottom:25px; flex-wrap:wrap;">
             <button type="button" id="crmPdfRegularBtn" class="crm-pdf-option-btn" style="flex:1; min-width:140px; padding:15px; background:#4a6cf7; color:white; border:none; border-radius:5px; cursor:pointer;">
                 <strong>Regular Quotation</strong><br>
@@ -810,11 +831,8 @@
                 <strong>Industrial Quotation</strong><br>
                 <small>Industrial template</small>
             </button>
-            <button type="button" id="crmPdfStandardIndustrialBtn" class="crm-pdf-option-btn" style="flex:1; min-width:140px; padding:15px; background:#0A2540; color:white; border:none; border-radius:5px; cursor:pointer;">
-                <strong>Standard &amp; Industrial</strong><br>
-                <small>6-page proposal</small>
-            </button>
         </div>
+        {% endfor %}
         <div style="text-align:right;">
             <button type="button" id="closeCrmQuotationPdfChoiceModal" style="padding:8px 20px; background:#6c757d; color:white; border:none; border-radius:4px;">Cancel</button>
         </div>
@@ -988,8 +1006,15 @@
     var pdfCloseBtn = document.getElementById('closeCrmQuotationPdfChoiceModal');
     var pdfRegularBtn = document.getElementById('crmPdfRegularBtn');
     var pdfIndustrialBtn = document.getElementById('crmPdfIndustrialBtn');
-    var pdfStandardIndustrialBtn = document.getElementById('crmPdfStandardIndustrialBtn');
+    var pdfDefaultBtn = document.getElementById('crmPdfDefaultBtn');
     var activeQuoteId = null;
+    var defaultPdfPathTpl = "{{ default_pdf_option.pdf_path|default:'/quotation/{pk}/pdf/' }}";
+
+    function openCrmPdf(pathTpl) {
+      if (!activeQuoteId || !pathTpl) return;
+      window.open(pathTpl.replace('{pk}', encodeURIComponent(activeQuoteId)), '_blank');
+      if (pdfModal) pdfModal.style.display = 'none';
+    }
 
     document.querySelectorAll('.openCrmPdfChoiceModal').forEach(function (btn) {
       if (btn.dataset.boundCrmPdfChoice === '1') return;
@@ -1014,25 +1039,24 @@
         }
       });
     }
+    if (pdfDefaultBtn) {
+      pdfDefaultBtn.addEventListener('click', function () {
+        openCrmPdf(defaultPdfPathTpl);
+      });
+    }
+    document.querySelectorAll('.crm-pdf-sample-btn').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        openCrmPdf(this.getAttribute('data-pdf-path'));
+      });
+    });
     if (pdfRegularBtn) {
       pdfRegularBtn.addEventListener('click', function () {
-        if (!activeQuoteId) return;
-        window.open('/quotation/' + encodeURIComponent(activeQuoteId) + '/pdf/', '_blank');
-        if (pdfModal) pdfModal.style.display = 'none';
+        openCrmPdf('/quotation/{pk}/pdf/');
       });
     }
     if (pdfIndustrialBtn) {
       pdfIndustrialBtn.addEventListener('click', function () {
-        if (!activeQuoteId) return;
-        window.open('/quotation/' + encodeURIComponent(activeQuoteId) + '/industrial_pdf/', '_blank');
-        if (pdfModal) pdfModal.style.display = 'none';
-      });
-    }
-    if (pdfStandardIndustrialBtn) {
-      pdfStandardIndustrialBtn.addEventListener('click', function () {
-        if (!activeQuoteId) return;
-        window.open('/quotation/' + encodeURIComponent(activeQuoteId) + '/standard_industrial_pdf/', '_blank');
-        if (pdfModal) pdfModal.style.display = 'none';
+        openCrmPdf('/quotation/{pk}/industrial_pdf/');
       });
     }
 

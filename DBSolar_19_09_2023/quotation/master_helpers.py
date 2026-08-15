@@ -96,27 +96,53 @@ PDF_TEMPLATE_STANDARD = 'quotation'
 PDF_TEMPLATE_INDUSTRIAL = 'industrial'
 PDF_TEMPLATE_STANDARD_INDUSTRIAL = 'standard_industrial'
 
+# Flat list kept for validation / redirects.
 PDF_TEMPLATE_OPTIONS = [
     {
         'key': PDF_TEMPLATE_STANDARD,
-        'label': 'Standard Quotation',
+        'label': 'Standard Invoice',
+        'sample_label': 'Sample 1',
+        'group': 'standard',
         'hint': 'Existing standard quotation PDF',
         'template': 'quotation/quotation_template.html',
         'url_name': 'quotation:quotation_pdf',
-    },
-    {
-        'key': PDF_TEMPLATE_INDUSTRIAL,
-        'label': 'Industrial Quotation',
-        'hint': 'Existing industrial quotation PDF',
-        'template': 'quotation/industrial_quotation.html',
-        'url_name': 'quotation:industrial_quotation_pdf',
+        'pdf_path': '/quotation/{pk}/pdf/',
     },
     {
         'key': PDF_TEMPLATE_STANDARD_INDUSTRIAL,
         'label': 'Standard & Industrial Quotation',
+        'sample_label': 'Sample 2',
+        'group': 'standard',
         'hint': '6-page proposal (cover, about, invoice, terms, testimonials, thank you)',
         'template': 'quotation/standard_industrial_quotation.html',
         'url_name': 'quotation:standard_industrial_quotation_pdf',
+        'pdf_path': '/quotation/{pk}/standard_industrial_pdf/',
+    },
+    {
+        'key': PDF_TEMPLATE_INDUSTRIAL,
+        'label': 'Industrial Quotation',
+        'sample_label': 'Sample 1',
+        'group': 'industrial',
+        'hint': 'Existing industrial quotation PDF',
+        'template': 'quotation/industrial_quotation.html',
+        'url_name': 'quotation:industrial_quotation_pdf',
+        'pdf_path': '/quotation/{pk}/industrial_pdf/',
+    },
+]
+
+# Two master cards: Standard (with samples) and Industrial (with samples).
+PDF_TEMPLATE_GROUPS = [
+    {
+        'key': 'standard',
+        'label': 'Standard Quotation',
+        'hint': 'Standard quotation samples. Set one as default for Lead CRM PDF.',
+        'samples': [o for o in PDF_TEMPLATE_OPTIONS if o['group'] == 'standard'],
+    },
+    {
+        'key': 'industrial',
+        'label': 'Industrial Quotation',
+        'hint': 'Industrial quotation samples. Set one as default for Lead CRM PDF.',
+        'samples': [o for o in PDF_TEMPLATE_OPTIONS if o['group'] == 'industrial'],
     },
 ]
 
@@ -133,12 +159,21 @@ def get_default_pdf_template():
     return key
 
 
-def pdf_url_name_for_template(template_key=None):
+def get_pdf_template_option(template_key=None):
     key = template_key or get_default_pdf_template()
     for item in PDF_TEMPLATE_OPTIONS:
         if item['key'] == key:
-            return item['url_name']
-    return 'quotation:quotation_pdf'
+            return item
+    return PDF_TEMPLATE_OPTIONS[0]
+
+
+def pdf_url_name_for_template(template_key=None):
+    return get_pdf_template_option(template_key)['url_name']
+
+
+def pdf_path_for_template(pk, template_key=None):
+    option = get_pdf_template_option(template_key)
+    return option['pdf_path'].format(pk=pk)
 
 
 def redirect_quotation_pdf(pk, template_key=None):
@@ -148,8 +183,12 @@ def redirect_quotation_pdf(pk, template_key=None):
 
 def get_quotation_pdf_context_extras():
     master = get_quotation_master()
+    default_key = get_default_pdf_template()
     return {
         'quotation_master': master,
         'bank_detail': get_default_bank_detail(),
-        'default_pdf_template': get_default_pdf_template(),
+        'default_pdf_template': default_key,
+        'pdf_template_options': PDF_TEMPLATE_OPTIONS,
+        'pdf_template_groups': PDF_TEMPLATE_GROUPS,
+        'default_pdf_option': get_pdf_template_option(default_key),
     }

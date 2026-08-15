@@ -1822,18 +1822,24 @@ document.addEventListener('DOMContentLoaded', function(){
         <p>Select a template for your quotation:</p>
 
         <div class="radio-group" style="margin: 20px 0;">
+            {% for group in pdf_template_groups %}
+            <div style="font-weight:700; margin:12px 0 6px; color:#263238;">{{ group.label }}</div>
+            {% for sample in group.samples %}
+            <label class="radio-label" style="display: block; margin: 8px 0 8px 8px;">
+                <input type="radio" name="pdf_template_radio" value="{{ sample.key }}"{% if default_pdf_template == sample.key %} checked{% endif %}>
+                {{ sample.sample_label }} — {{ sample.label }}
+            </label>
+            {% endfor %}
+            {% empty %}
             <label class="radio-label" style="display: block; margin: 10px 0;">
-                <input type="radio" name="pdf_template_radio" value="quotation"{% if default_pdf_template != 'industrial' and default_pdf_template != 'standard_industrial' %} checked{% endif %}>
-                Standard Quotation Template
+                <input type="radio" name="pdf_template_radio" value="quotation"{% if default_pdf_template != 'industrial' %} checked{% endif %}>
+                Sample 1 — Standard Invoice
             </label>
             <label class="radio-label" style="display: block; margin: 10px 0;">
                 <input type="radio" name="pdf_template_radio" value="industrial"{% if default_pdf_template == 'industrial' %} checked{% endif %}>
-                Industrial Quotation Template
+                Sample 1 — Industrial Quotation
             </label>
-            <label class="radio-label" style="display: block; margin: 10px 0;">
-                <input type="radio" name="pdf_template_radio" value="standard_industrial"{% if default_pdf_template == 'standard_industrial' %} checked{% endif %}>
-                Standard &amp; Industrial Quotation Template
-            </label>
+            {% endfor %}
         </div>
 
         <div style="text-align: right; margin-top: 20px;">
