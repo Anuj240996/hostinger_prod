@@ -112,4 +112,5 @@ fi
 echo "=== Starting Gunicorn on 0.0.0.0:8000 (workers=${WEB_CONCURRENCY:-1}) ==="
 echo "Health probe: GET /health/  (internal check: curl -s http://127.0.0.1:8000/health/)"
 echo "Proxy must point to this service on port 8000."
-exec "$@"
+# Always start this app. Ignore EasyPanel custom CMD that can point at a broken WSGI path.
+exec gunicorn --chdir /app --bind 0.0.0.0:8000 --workers "${WEB_CONCURRENCY:-1}" --timeout 120 --access-logfile - --error-logfile - gunicorn_wsgi:application
