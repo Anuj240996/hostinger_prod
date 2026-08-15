@@ -160,19 +160,21 @@
   {% endif %}
 </div>
 
-{# PAGE 2 — About company #}
+{# PAGE 2 — About company: photo (editable) then written text. No Logo rectangle. #}
 <table class="no-border">
   <tr>
     <td style="border:none; text-align:right;">
       {% if quotation_master.company_logo %}
         <img src="{{ quotation_master.company_logo.url }}" style="height:42pt;">
-      {% else %}
-        <div style="display:inline-block; border:1px solid #bbb; padding:8px 18px; color:#666;">Logo</div>
       {% endif %}
     </td>
   </tr>
 </table>
+{% if about_photo_src %}
+<img src="{{ about_photo_src }}" style="width:520pt; height:240pt;">
+{% else %}
 <img src="{% static 'quotation/proposal/about_page.jpg' %}" style="width:520pt; height:240pt;">
+{% endif %}
 <div style="background:#FFD200; text-align:right; padding:6px 12px; font-weight:bold;">Award Winning Company</div>
 <h2 style="margin-top:16px;">About {{ quotation_master.company_name|default:"Heramb Industries" }}</h2>
 <p>

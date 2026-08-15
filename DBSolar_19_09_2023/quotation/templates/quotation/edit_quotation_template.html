@@ -178,6 +178,7 @@
 
     <form method="post" enctype="multipart/form-data" style="max-width:none;width:100%;background:transparent;box-shadow:none;padding:0;margin:0;border:none;">
       {% csrf_token %}
+      <input type="hidden" name="action" value="cover">
       <label class="form-label"><b>Change cover page image (left column)</b></label>
       <input type="file" name="proposal_cover_image" class="form-control" accept="image/*" required>
       <div class="help-text mt-1 mb-2">Left column is 50% of the cover content area (inside white margins).</div>
@@ -187,7 +188,7 @@
 
   <div class="page-sheet">
     <div class="page-label">Page 2 / 6 — About company</div>
-    <p class="help-text mb-2">Pages 2–6 use the same header and footer images as Sample 1 (Standard Invoice).</p>
+    <p class="help-text mb-2">Photo on this page is editable. No Logo rectangle. About company text stays below the photo.</p>
     <div class="pdf-page-frame">
       {% if master.header_image %}
         <img class="hf-img" src="{{ master.header_image.url }}" alt="Header">
@@ -195,7 +196,11 @@
         <img class="hf-img" src="{% static 'images/quotation_bg1.jpg' %}" alt="Header">
       {% endif %}
       <div class="page-body">
-        <img class="page-thumb" src="{% static 'quotation/proposal/about_page.jpg' %}" alt="About page">
+        {% if about_image_url %}
+          <img class="page-thumb" src="{{ about_image_url }}" alt="About page">
+        {% else %}
+          <img class="page-thumb" src="{% static 'quotation/proposal/about_page.jpg' %}" alt="About page">
+        {% endif %}
       </div>
       {% if master.footer_image %}
         <img class="hf-img" src="{{ master.footer_image.url }}" alt="Footer">
@@ -203,6 +208,14 @@
         <img class="hf-img" src="{% static 'images/address.jpg' %}" alt="Footer">
       {% endif %}
     </div>
+    <form method="post" enctype="multipart/form-data" class="mt-3" style="max-width:none;width:100%;background:transparent;box-shadow:none;padding:0;margin:0;border:none;">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="about">
+      <label class="form-label"><b>Change page 2 image</b></label>
+      <input type="file" name="proposal_about_image" class="form-control" accept="image/*" required>
+      <div class="help-text mt-1 mb-2">Upload another photo to replace the current page 2 image in the PDF.</div>
+      <button type="submit" class="btn btn-success btn-sm">Save About Image</button>
+    </form>
   </div>
   <div class="page-sheet">
     <div class="page-label">Page 3 / 6 — Invoice table (same as standard quotation)</div>

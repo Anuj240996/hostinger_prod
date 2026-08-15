@@ -269,20 +269,41 @@ def edit_quotation_template(request, template_key):
             master = QuotationMaster(pk=1, company_name='Heramb Industries')
 
     if request.method == 'POST' and template_key == 'standard_industrial':
-        if request.FILES.get('proposal_cover_image'):
-            try:
+        action = (request.POST.get('action') or '').strip()
+        try:
+            if action == 'about' or request.FILES.get('proposal_about_image'):
+                from django.core.files.storage import default_storage
+                from .cover_render import PROPOSAL_ABOUT_MEDIA
+                upload = request.FILES.get('proposal_about_image')
+                if not upload:
+                    messages.error(request, 'Please choose an About page image.')
+                else:
+                    if default_storage.exists(PROPOSAL_ABOUT_MEDIA):
+                        default_storage.delete(PROPOSAL_ABOUT_MEDIA)
+                    default_storage.save(PROPOSAL_ABOUT_MEDIA, upload)
+                    messages.success(request, 'About page image saved.')
+            elif request.FILES.get('proposal_cover_image'):
                 master.proposal_cover_image = request.FILES['proposal_cover_image']
                 master.save(update_fields=['proposal_cover_image'])
                 messages.success(request, 'Cover page image saved.')
-            except (ProgrammingError, OperationalError):
-                try:
-                    connection.rollback()
-                except Exception:
-                    pass
-                messages.error(request, 'Could not save cover image. Run: python manage.py migrate quotation')
-            return redirect('quotation:edit_quotation_template', template_key=template_key)
-        messages.error(request, 'Please choose a cover page image.')
+            else:
+                messages.error(request, 'Please choose an image file to upload.')
+        except (ProgrammingError, OperationalError):
+            try:
+                connection.rollback()
+            except Exception:
+                pass
+            messages.error(request, 'Could not save image.')
+        except Exception as exc:
+            messages.error(request, 'Could not save image: %s' % exc)
         return redirect('quotation:edit_quotation_template', template_key=template_key)
+
+    about_image_url = ''
+    try:
+        from .cover_render import about_image_public_url
+        about_image_url = about_image_public_url()
+    except Exception:
+        about_image_url = ''
 
     label = next(item['label'] for item in PDF_TEMPLATE_OPTIONS if item['key'] == template_key)
     return render(request, 'quotation/edit_quotation_template.html', {
@@ -290,4 +311,5 @@ def edit_quotation_template(request, template_key):
         'template_key': template_key,
         'template_label': label,
         'default_pdf_template': get_default_pdf_template(),
+        'about_image_url': about_image_url,
     })
