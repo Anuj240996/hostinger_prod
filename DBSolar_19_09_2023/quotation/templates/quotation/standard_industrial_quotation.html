@@ -123,16 +123,7 @@
   {% endif %}
 </div>
 
-{# PAGE 2 — About company: photo (editable) then written text. No Logo rectangle. #}
-<table class="no-border">
-  <tr>
-    <td style="border:none; text-align:right;">
-      {% if quotation_master.company_logo %}
-        <img src="{{ quotation_master.company_logo.url }}" style="height:42pt;">
-      {% endif %}
-    </td>
-  </tr>
-</table>
+{# PAGE 2 — About company: photo (editable) then written text. No company logo. #}
 {% if about_photo_src %}
 <img src="{{ about_photo_src }}" style="width:520pt; height:240pt;">
 {% else %}
@@ -323,11 +314,6 @@
 <table class="no-border">
   <tr>
     <td style="border:none;"><h1 style="text-align:center;">Terms &amp; Condition</h1></td>
-    <td style="border:none; width:68pt; text-align:right;">
-      {% if quotation_master.company_logo %}
-        <img src="{{ quotation_master.company_logo.url }}" style="height:36pt;">
-      {% endif %}
-    </td>
   </tr>
 </table>
 
@@ -376,11 +362,6 @@
 <table class="no-border">
   <tr>
     <td style="border:none;"><h1 style="text-align:center;">Testimonials</h1></td>
-    <td style="border:none; width:68pt; text-align:right;">
-      {% if quotation_master.company_logo %}
-        <img src="{{ quotation_master.company_logo.url }}" style="height:36pt;">
-      {% endif %}
-    </td>
   </tr>
 </table>
 
@@ -398,17 +379,6 @@
 
 {# PAGE 6 — Thank you #}
 <div class="page-break"></div>
-<table class="no-border">
-  <tr>
-    <td style="border:none; text-align:right;">
-      {% if quotation_master.company_logo %}
-        <img src="{{ quotation_master.company_logo.url }}" style="height:42pt;">
-      {% else %}
-        <div style="display:inline-block; border:1px solid #bbb; padding:8px 18px; color:#666;">Logo</div>
-      {% endif %}
-    </td>
-  </tr>
-</table>
 <div style="text-align:center; margin-top:80px; margin-bottom:60px;">
   <div style="background:#0A66C2; color:#fff; display:inline-block; padding:28px 48px; font-size:36px; font-weight:bold;">THANK YOU</div>
 </div>
