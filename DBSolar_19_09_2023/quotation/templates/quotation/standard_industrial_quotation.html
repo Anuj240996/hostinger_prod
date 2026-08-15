@@ -56,6 +56,7 @@
     .offer-col-desc { width: 305pt; }
     .offer-col-units { width: 95pt; text-align: center; }
     .offer-col-amt { width: 125pt; text-align: right; }
+    .offer-table { width: 525pt; }
     .page-break { page-break-before: always; }
     .section-bar {
       background: #0A66C2;
@@ -155,11 +156,17 @@
 
 {# PAGE 3 — Quotation (attached EST layout; Sample 1 header/footer stay) #}
 <div class="page-break"></div>
-<div class="est-title">Quotation</div>
-
-<table class="no-border est-meta" width="520" style="margin-bottom:8px;">
+<table class="no-border" align="center" width="525">
   <tr>
-    <td style="width:175pt;">
+    <td style="border:none; text-align:center;">
+      <div class="est-title">Quotation</div>
+    </td>
+  </tr>
+</table>
+
+<table class="no-border est-meta" align="center" width="525" style="margin-bottom:8px;">
+  <tr>
+    <td style="width:180pt;">
       <b>From</b><br>
       <b>{{ quotation_master.company_name|default:"Heramb Industries" }}</b><br>
       {% if quotation_master.from_address %}
@@ -171,7 +178,7 @@
         New Osman Pura, Chh. Sambhajinagar (MH) - 431001
       {% endif %}
     </td>
-    <td style="width:185pt;">
+    <td style="width:180pt;">
       <b>Bill To</b><br>
       <b>{{ quotation.title }} {{ quotation.consumer_name }}</b><br>
       {{ quotation.consumer_address1 }}{% if quotation.consumer_address1 %}<br>{% endif %}
@@ -179,7 +186,7 @@
       {% if quotation.consumer_mobile %}Mobile : {{ quotation.consumer_mobile }}<br>{% endif %}
       {% if quotation.consumer_email %}Email : {{ quotation.consumer_email }}{% endif %}
     </td>
-    <td style="width:160pt;">
+    <td style="width:165pt;">
       <b>Date:</b> {{ formatted_date_long|default:formatted_date }}<br>
       <b>Expiry Date:</b> {{ formatted_expiry_date|default:formatted_date }}<br>
       <b>Estimate#:</b>
@@ -201,7 +208,7 @@
   Offer for <span class="bold">{{ quotation.plant_capacity_kw|clean_decimal }}</span> KW Rooftop Grid Solar Plant.
 </h4>
 
-<table class="offer-table" id="offer_details" align="center">
+<table class="offer-table" id="offer_details" align="center" width="525">
   <tr align="center">
     <th class="offer-col-desc">Product Description</th>
     <th class="offer-col-units">Units</th>
