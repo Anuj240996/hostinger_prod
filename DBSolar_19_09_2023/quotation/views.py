@@ -5331,32 +5331,14 @@ def industrial_quotation_pdf(request, pk):
     filename = getattr(request, '_quotation_pdf_filename', f'industrial_quotation_{quotation.pk}.pdf')
 
     if template_name.endswith('standard_industrial_quotation.html'):
-        context['cover_full_src'] = ''
-        context['about_photo_src'] = ''
-        context['header_logo_src'] = ''
-        master = context.get('quotation_master')
+        context['cover_left_src'] = ''
         try:
-            from .cover_render import (
-                render_proposal_cover_png,
-                render_about_photo,
-                render_header_logo,
-            )
-            from datetime import datetime
-            this_year = datetime.now().strftime('%y')
-            context['cover_full_src'] = render_proposal_cover_png(
-                context.get('quotation'),
-                master,
-                context.get('formatted_date'),
-                this_year,
-            ) or ''
-            context['about_photo_src'] = render_about_photo(master) or ''
-            context['header_logo_src'] = render_header_logo(master) or ''
+            from .cover_render import render_cover_left_photo
+            context['cover_left_src'] = render_cover_left_photo(context.get('quotation_master')) or ''
         except Exception:
             import logging
-            logging.getLogger(__name__).exception("Sample 2 cover/about/logo render failed")
-            context['cover_full_src'] = ''
-            context['about_photo_src'] = ''
-            context['header_logo_src'] = ''
+            logging.getLogger(__name__).exception("Cover left photo render failed")
+            context['cover_left_src'] = ''
 
     html = render_to_string(template_name, context)
     if getattr(request, '_quotation_pdf_skip_sanitize', False):
