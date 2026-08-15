@@ -5332,16 +5332,13 @@ def industrial_quotation_pdf(request, pk):
 
     if template_name.endswith('standard_industrial_quotation.html'):
         context['cover_left_src'] = ''
-        context['about_photo_src'] = ''
         try:
-            from .cover_render import render_cover_left_photo, render_about_photo
+            from .cover_render import render_cover_left_photo
             context['cover_left_src'] = render_cover_left_photo(context.get('quotation_master')) or ''
-            context['about_photo_src'] = render_about_photo() or ''
         except Exception:
             import logging
-            logging.getLogger(__name__).exception("Cover/about photo render failed")
+            logging.getLogger(__name__).exception("Cover left photo render failed")
             context['cover_left_src'] = ''
-            context['about_photo_src'] = ''
 
     html = render_to_string(template_name, context)
     if getattr(request, '_quotation_pdf_skip_sanitize', False):
