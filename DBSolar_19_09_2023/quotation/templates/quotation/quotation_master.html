@@ -47,20 +47,33 @@
     box-shadow: none !important;
     display: block !important;
   }
-  .bank-round-check-wrap {
-    position: relative;
-    width: 24px;
-    height: 24px;
+  .bank-radio-wrap {
     display: inline-flex;
     align-items: center;
-    justify-content: center;
+    gap: 6px;
+    cursor: pointer;
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: #455a64;
     background: transparent !important;
-    background-color: transparent !important;
     box-shadow: none !important;
     border: none !important;
     padding: 0 !important;
     margin: 0 !important;
+  }
+  .bank-radio-wrap.is-checked,
+  .bank-radio-wrap:has(.bank-select-radio:checked) {
+    color: #00897B;
+  }
+  .bank-select-radio {
+    width: 16px !important;
+    height: 16px !important;
+    margin: 0 !important;
+    accent-color: #00897B;
     cursor: pointer;
+  }
+  .bank-radio-label {
+    white-space: nowrap;
   }
   /* Fully hide native checkbox so browser/Bootstrap fill never shows */
   .bank-card .bank-round-check-wrap input.bank-round-check[type="checkbox"],
@@ -547,30 +560,21 @@
           {% with use_on_pdf=bank.is_default %}
           <div class="bank-card" id="bank-card-{{ bank.id }}" data-bank-id="{{ bank.id }}">
             <div class="bank-card-top">
-              <form method="post" class="bank-use-form" title="Use on quotation PDF">
+              <form method="post" class="bank-use-form" title="Use this bank on quotation PDF">
                 {% csrf_token %}
-                <input type="hidden" name="action" value="save_bank">
+                <input type="hidden" name="action" value="select_bank">
                 <input type="hidden" name="bank_id" value="{{ bank.id }}">
-                <input type="hidden" name="account_name" value="{{ bank.account_name }}">
-                <input type="hidden" name="account_no" value="{{ bank.account_no }}">
-                <input type="hidden" name="bank_name" value="{{ bank.bank_name }}">
-                <input type="hidden" name="branch_name" value="{{ bank.branch_name }}">
-                <input type="hidden" name="ifsc_code" value="{{ bank.ifsc_code }}">
-                <input type="hidden" name="sort_order" value="{{ bank.sort_order }}">
-                <label class="bank-round-check-wrap{% if bank_count == 1 or use_on_pdf %} is-checked{% endif %}">
+                <label class="bank-radio-wrap{% if bank_count == 1 or use_on_pdf %} is-checked{% endif %}">
                   <input
-                    class="bank-round-check"
-                    type="checkbox"
-                    name="use_on_pdf"
+                    class="bank-select-radio"
+                    type="radio"
+                    name="selected_bank"
+                    value="{{ bank.id }}"
                     {% if bank_count == 1 or use_on_pdf %}checked{% endif %}
                     onchange="this.form.submit()"
-                    aria-label="Use on quotation PDF"
+                    aria-label="Use this bank on quotation PDF"
                   >
-                  <span class="bank-round-check-ui" aria-hidden="true">
-                    <svg viewBox="0 0 16 16" focusable="false">
-                      <polyline points="3.5,8.5 6.5,11.5 12.5,4.5"></polyline>
-                    </svg>
-                  </span>
+                  <span class="bank-radio-label">Use on quotation</span>
                 </label>
               </form>
             </div>
@@ -680,9 +684,6 @@
             {% else %}
               <span class="term-badge off">Hidden on form</span>
             {% endif %}
-            {% if term.default_selected %}
-              <span class="term-badge on-default">Default selected</span>
-            {% endif %}
             {% if term.is_active %}
               <span class="term-badge on-active">Active</span>
             {% else %}
@@ -714,10 +715,6 @@
             <div class="form-check">
               <input class="form-check-input" type="checkbox" name="show_in_quotation_form" id="show_{{ term.id }}" {% if term.show_in_quotation_form %}checked{% endif %}>
               <label class="form-check-label" for="show_{{ term.id }}">Show in quotation form</label>
-            </div>
-            <div class="form-check">
-              <input class="form-check-input" type="checkbox" name="default_selected" id="default_{{ term.id }}" {% if term.default_selected %}checked{% endif %}>
-              <label class="form-check-label" for="default_{{ term.id }}">Default selected</label>
             </div>
             <div class="form-check">
               <input class="form-check-input" type="checkbox" name="is_active" id="active_{{ term.id }}" {% if term.is_active %}checked{% endif %}>
@@ -756,20 +753,16 @@
         <input type="hidden" name="action" value="save_bank">
         <div class="modal-body">
           <div class="bank-card-top">
-            <label class="bank-round-check-wrap{% if bank_count == 0 %} is-checked{% endif %}" title="Use on quotation PDF">
+            <label class="bank-radio-wrap{% if bank_count == 0 %} is-checked{% endif %}" title="Use this bank on quotation PDF">
               <input
-                class="bank-round-check"
+                class="bank-select-radio"
                 type="checkbox"
                 name="use_on_pdf"
                 id="use_on_pdf_new"
                 {% if bank_count == 0 %}checked{% endif %}
-                aria-label="Use on quotation PDF"
+                aria-label="Use this bank on quotation PDF"
               >
-              <span class="bank-round-check-ui" aria-hidden="true">
-                <svg viewBox="0 0 16 16" focusable="false">
-                  <polyline points="3.5,8.5 6.5,11.5 12.5,4.5"></polyline>
-                </svg>
-              </span>
+              <span class="bank-radio-label">Use on quotation</span>
             </label>
           </div>
           <div class="bank-card-body">
@@ -827,10 +820,6 @@
             <div class="form-check">
               <input class="form-check-input" type="checkbox" name="show_in_quotation_form" id="new_show" checked>
               <label class="form-check-label" for="new_show">Show in quotation form</label>
-            </div>
-            <div class="form-check">
-              <input class="form-check-input" type="checkbox" name="default_selected" id="new_default">
-              <label class="form-check-label" for="new_default">Default selected</label>
             </div>
             <div class="form-check">
               <input class="form-check-input" type="checkbox" name="is_active" id="new_active" checked>
@@ -938,10 +927,10 @@
     var card = document.getElementById('term-card-' + termId);
     if (card) card.classList.remove('is-editing');
   }
-  // Keep round checkbox UI in sync inside Add Bank modal
+  // Keep bank radio label color in sync
   document.addEventListener('change', function (e) {
-    if (e.target && e.target.classList.contains('bank-round-check')) {
-      var wrap = e.target.closest('.bank-round-check-wrap');
+    if (e.target && e.target.classList.contains('bank-select-radio')) {
+      var wrap = e.target.closest('.bank-radio-wrap');
       if (wrap) wrap.classList.toggle('is-checked', e.target.checked);
     }
     if (e.target && (

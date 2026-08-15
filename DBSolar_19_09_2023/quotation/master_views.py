@@ -164,7 +164,7 @@ def quotation_master(request):
                 term.has_yellow_background = request.POST.get('has_yellow_background') == 'on'
                 term.is_active = request.POST.get('is_active') == 'on'
                 term.show_in_quotation_form = request.POST.get('show_in_quotation_form') == 'on'
-                term.default_selected = request.POST.get('default_selected') == 'on'
+                term.default_selected = term.show_in_quotation_form
                 term.save()
                 messages.success(request, 'Terms & condition saved.')
 
@@ -202,6 +202,20 @@ def quotation_master(request):
                     is_active=False,
                 )
             messages.success(request, 'Bank details saved.')
+
+        elif action == 'select_bank':
+            bank_id = request.POST.get('bank_id')
+            if bank_id:
+                bank = get_object_or_404(QuotationBankDetail, pk=bank_id)
+                QuotationBankDetail.objects.exclude(pk=bank.pk).update(
+                    is_default=False,
+                    show_in_quotation_form=False,
+                )
+                bank.is_default = True
+                bank.show_in_quotation_form = True
+                bank.is_active = True
+                bank.save(update_fields=['is_default', 'show_in_quotation_form', 'is_active'])
+                messages.success(request, 'This bank will be used on quotation PDFs.')
 
         elif action == 'delete_bank':
             bank_id = request.POST.get('bank_id')

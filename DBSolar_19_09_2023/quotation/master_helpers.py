@@ -65,8 +65,8 @@ def get_active_terms_conditions():
 
 
 def get_default_selected_term_ids():
-    """IDs of terms pre-selected on new quotation forms."""
-    return [t.id for t in get_active_terms_conditions() if t.default_selected]
+    """Terms shown on the quotation form are pre-checked on new quotations."""
+    return [t.id for t in get_active_terms_conditions()]
 
 
 def get_form_visible_term_ids():
