@@ -69,7 +69,7 @@
       background: #d6eaf8;
       font-weight: bold;
       padding: 5px 8px;
-      margin-top: 10px;
+      margin-top: 15px;
     }
     .cover-yellow { background: #FFD200; }
     .rupee-symbol { font-family: DejaVu Sans, Arial, sans-serif; }
@@ -165,9 +165,9 @@
 {# PAGE 2 — About company: photo (editable) then written text. No company logo. #}
 <div class="si-large" style="font-size:15px; line-height:1.5;">
 {% if about_photo_src %}
-<img src="{{ about_photo_src }}" style="width:520pt; height:240pt;">
+<img src="{{ about_photo_src }}" style="width:565pt; height:300pt;">
 {% else %}
-<img src="{% static 'quotation/proposal/about_page.jpg' %}" style="width:520pt; height:240pt;">
+<img src="{% static 'quotation/proposal/about_page.jpg' %}" style="width:565pt; height:300pt;">
 {% endif %}
 <div class="award-bar" style="background:#FFD200; text-align:right; padding:6px 12px; font-weight:bold;">Award Winning Company</div>
 <h2 style="margin-top:16px; font-size:20px;">About {{ quotation_master.company_name|default:"Heramb Industries" }}</h2>
@@ -358,6 +358,7 @@
 {# After quotation table — Sample 1 Major Components + Payback, before Terms #}
 <div class="page-break"></div>
 <div style="font-size:13px; line-height:1.4;">
+<div class="si-large" style="font-size:15px; line-height:1.5;">
 <div class="subhead">DETAILS FOR THE MAJOR COMPONENTS:</div>
 <table class="offer-table1" align="center" width="525">
   <tr>
@@ -411,7 +412,7 @@
 </table>
 </div>
 
-<div class="si-sow" style="font-size:15px; line-height:1.5;">
+
 <div class="subhead">SCOPE OF WORK (By HERAMB INDUSTRIES):</div>
 <div style="margin-left:20px; margin-right:20px; font-weight:bold; font-size:15px;">Our comprehensive turnkey solution includes:</div>
 
@@ -460,7 +461,7 @@
   <li>Provision of user manuals, warranties, and as-built drawings.</li>
 </ul>
 </div>
-
+<div class="si-large" style="font-size:15px; line-height:1.5;">
 <div class="subhead">Scope of Work For Customer:</div>
 <ul style="line-height:1.5; padding-left:60px; font-size:15px;">
   <li>Providing rooftop access.</li>
@@ -470,7 +471,7 @@
   <li>Completing necessary civil work and approvals within the proposed timeline.</li>
   <li>Providing safe storage for delivered materials (PV modules, inverters, etc.).</li>
 </ul>
-
+</div>
 {# PAGE 4 — Terms #}
 <div class="page-break"></div>
 <div class="si-large" style="font-size:15px; line-height:1.5;">
@@ -481,7 +482,7 @@
 </table>
 
 <div class="subhead">Terms &amp; Condition</div>
-<ol>
+<ol style="line-height:1.5; padding-left:60px; font-size:15px;">  
   {# Permanent list — same as Sample 1 Standard Invoice #}
   <li><span style="background-color:yellow;">Included GST.</span></li>
   <li>
@@ -503,7 +504,7 @@
 
 
 <div class="subhead">Warranty Exclusion:</div>
-<ol>
+<ol style="line-height:1.5; padding-left:60px; font-size:15px;">
   <li>Damage from improper handling.</li>
   <li>Failure to make full payment.</li>
   <li>Force majeure events or third-party interference.</li>
