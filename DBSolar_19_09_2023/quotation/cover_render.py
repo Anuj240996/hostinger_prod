@@ -284,10 +284,49 @@ def render_proposal_cover_png(quotation, master, formatted_date, this_year, form
 
     fd, out_path = tempfile.mkstemp(prefix="dbsolar_cover_", suffix=".jpg")
     os.close(fd)
-    # 595x841 px at 72dpi = 595x841 pt so xhtml2pdf fills A4 even if CSS size is ignored.
-    page = canvas.convert("RGB").resize((595, 841), Image.Resampling.LANCZOS if hasattr(Image, "Resampling") else Image.LANCZOS)
-    page.save(out_path, "JPEG", quality=90, dpi=(72, 72))
+    canvas.convert("RGB").save(out_path, "JPEG", quality=90, dpi=(144, 144))
     return out_path.replace("\\", "/")
+
+
+def stamp_cover_on_pdf(jpeg_path, pdf_bytes):
+    """Replace page 1 with a ReportLab A4 page that draws the cover edge-to-edge."""
+    from io import BytesIO
+    from reportlab.lib.pagesizes import A4
+    from reportlab.lib.utils import ImageReader
+    from reportlab.pdfgen import canvas as rl_canvas
+
+    try:
+        from pypdf import PdfReader, PdfWriter
+    except ImportError:
+        from PyPDF2 import PdfReader, PdfWriter
+
+    if not jpeg_path or not os.path.isfile(jpeg_path) or not pdf_bytes:
+        return pdf_bytes
+
+    cover_buf = BytesIO()
+    c = rl_canvas.Canvas(cover_buf, pagesize=A4)
+    page_w, page_h = A4
+    # 1pt bleed so no hairline white at the page edge
+    c.drawImage(
+        ImageReader(jpeg_path),
+        -1,
+        -1,
+        width=page_w + 2,
+        height=page_h + 2,
+        preserveAspectRatio=False,
+        mask="auto",
+    )
+    c.save()
+    cover_buf.seek(0)
+
+    writer = PdfWriter()
+    writer.add_page(PdfReader(cover_buf).pages[0])
+    rest = PdfReader(BytesIO(pdf_bytes))
+    for page in rest.pages[1:]:
+        writer.add_page(page)
+    out = BytesIO()
+    writer.write(out)
+    return out.getvalue()
 
 
 def render_cover_left_photo(master):

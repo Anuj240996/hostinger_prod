@@ -5408,7 +5408,17 @@ def industrial_quotation_pdf(request, pk):
             status=500
         )
 
-    response = HttpResponse(result.getvalue(), content_type='application/pdf')
+    pdf_bytes = result.getvalue()
+    cover_src = context.get('cover_full_src') or ''
+    if template_name.endswith('standard_industrial_quotation.html') and cover_src:
+        try:
+            from .cover_render import stamp_cover_on_pdf
+            pdf_bytes = stamp_cover_on_pdf(cover_src, pdf_bytes) or pdf_bytes
+        except Exception:
+            import logging
+            logging.getLogger(__name__).exception("Sample 2 cover stamp failed")
+
+    response = HttpResponse(pdf_bytes, content_type='application/pdf')
     response['Content-Disposition'] = f'filename="{filename}"'
     return response
 
