@@ -94,12 +94,13 @@
     .si-large .thank-you-banner { font-size: 42px; }
     .si-large .contact-row { font-size: 15px; }
     /* Page 3 — 12px */
-    .si-page3 { font-size: 12px; line-height: 1.4; }
-    .si-page3 .est-title { font-size: 24px; }
-    .si-page3 .est-meta td { font-size: 12px; line-height: 1.4; }
+    .si-page3 { font-size: 12px; line-height: 1.25; page-break-inside: avoid; }
+    .si-page3 .est-title { font-size: 24px; margin: 0 0 4px 0; }
+    .si-page3 .est-meta td { font-size: 12px; line-height: 1.25; }
     .si-page3 .offer-table th,
-    .si-page3 .offer-table td { font-size: 12px; }
-    .si-page3 .section-bar { font-size: 12px; }
+    .si-page3 .offer-table td { font-size: 12px; padding: 1px 3px; }
+    .si-page3 .section-bar { font-size: 12px; padding: 4px 6px; }
+    .si-page3 .keep-page { page-break-inside: avoid; }
     .space-top { margin-top: 12px; }
     .offer-table1 { width: 525pt; margin-top: 8px; }
     .offer-table1 th {
@@ -172,16 +173,16 @@
 {% endif %}
 <div class="award-bar" style="background:#FFD200; text-align:right; padding:6px 12px; font-weight:bold;">Award Winning Company</div>
 <h2 style="margin-top:16px; font-size:20px;">About {{ quotation_master.company_name|default:"Heramb Industries" }}</h2>
-<p>
+<p style="text-align:justify;">
   {{ quotation_master.company_name|default:"Heramb Industries" }} provides end-to-end rooftop solar solutions
   for residential, commercial and industrial consumers across Maharashtra.
   We design, supply, install and commission grid-tied solar power plants with genuine
   competitive offers and complete documentation support.
 </p>
-<p>
+<p style="text-align:justify;">
   {% if quotation_master.from_address %}{{ quotation_master.from_address|linebreaksbr }}{% else %}Bhagya Banglow, Near Sant Eknath Rang Mandir, New Osman Pura, Chh. Sambhajinagar (MH) - 431001{% endif %}
 </p>
-<p>
+<p style="text-align:justify;">
   This proposal includes system design, major components, commercial offer, terms and
   after-sales support so the consumer can take a clear decision quickly.
 </p>
@@ -189,10 +190,12 @@
 
 {# PAGE 3 — Quotation (attached EST layout; Sample 1 header/footer stay) #}
 <div class="page-break"></div>
-<div class="si-page3" style="font-size:12px; line-height:1.4;">
-<h1 class="est-title" style="text-align:center; font-size:24px;">Quotation</h1>
+<table class="no-border keep-page" align="center" width="525" style="page-break-inside:avoid;">
+<tr><td style="border:none;">
+<div class="si-page3" style="font-size:12px; line-height:1.25;">
+<h1 class="est-title" style="text-align:center; font-size:24px; margin:0 0 4px 0;">Quotation</h1>
 
-<table class="no-border est-meta" align="center" width="525" style="margin-bottom:8px; font-size:12px;">
+<table class="no-border est-meta" align="center" width="525" style="margin-bottom:4px; font-size:12px;">
   <tr>
     <td style="width:180pt;">
       <b>From</b><br>
@@ -221,6 +224,7 @@
       {% if quotation.consumer_type == 'Residential' %}DB/Res/{{ quotation.quotation_no }}/{{ this_year }}
       {% elif quotation.consumer_type == 'Commercial' %}DB/Comm/{{ quotation.quotation_no }}/{{ this_year }}
       {% elif quotation.consumer_type == 'Industrial' %}DB/Ind/{{ quotation.quotation_no }}/{{ this_year }}
+      {% elif quotation.consumer_type == 'Government' %}DB/Gov/{{ quotation.quotation_no }}/{{ this_year }}
       {% else %}{{ quotation.quotation_no }}{% endif %}<br>
       <b>Created by:</b> {{ quotation.employee_name }}<br>
       {% if representatives %}
@@ -312,18 +316,18 @@
 </table>
 
 {% if quotation.consumer_type == 'Residential' %}
-<div style="background-color:yellow; margin-top:8px; padding:4px; font-size:12px;">
+<div style="background-color:yellow; margin-top:4px; padding:2px 4px; font-size:12px; page-break-inside:avoid;">
   <b>Note-</b>
   {% if quotation_master.subsidy_notes %}{{ quotation_master.subsidy_notes }}
   {% else %}Exact subsidy depends on your electricity load approval. Maximum up to ₹ 78,000 is available.{% endif %}
 </div>
 {% endif %}
 
-<table class="no-border" align="center" style="margin-top:12px; font-size:12px;">
+<table class="no-border" align="center" style="margin-top:6px; font-size:12px; page-break-inside:avoid;">
   <tr>
     <td style="border:none; width:307pt; vertical-align:top;">
-      <div class="section-bar" style="font-size:15px;">Bank Details</div>
-      <div style="line-height:1.7; margin-top:6px;">
+      <div class="section-bar" style="font-size:12px;">Bank Details</div>
+      <div style="line-height:1.35; margin-top:4px;">
         {% if bank_detail %}
           {% if bank_detail.account_name %}<b>A/C Name -</b> {{ bank_detail.account_name }}<br>{% endif %}
           {% if bank_detail.account_no %}<b>A/C No -</b> {{ bank_detail.account_no }}<br>{% endif %}
@@ -342,13 +346,15 @@
       </div>
     </td>
     <td style="border:none; width:252pt; vertical-align:top; text-align:center;">
-      <img src="{% static 'images/sign.jpeg' %}" style="width:90pt; height:70pt;"><br>
+      <img src="{% static 'images/sign.jpeg' %}" style="width:70pt; height:52pt;"><br>
       <b>Authorized Signature</b><br>
       <b>M/S {{ quotation_master.company_name|default:"HERAMB INDUSTRIES"|upper }}</b>
     </td>
   </tr>
 </table>
 </div>
+</td></tr>
+</table>
 
 {# After quotation table — Sample 1 Major Components + Payback, before Terms #}
 <div class="page-break"></div>
@@ -408,10 +414,11 @@
 </div>
 
 
+<div class="si-large" style="font-size:15px; line-height:1.5;">
 <div class="subhead">SCOPE OF WORK (By HERAMB INDUSTRIES):</div>
-<div style="margin-left:20px; margin-right:20px; font-weight:bold; font-size:15px;">Our comprehensive turnkey solution includes:</div>
+<div style="margin-left:20px; margin-right:20px; font-size:15px;">Our comprehensive turnkey solution includes:</div>
 
-<h4 style="margin-left:0; margin-right:20px; line-height:1.8; text-indent:40px; font-size:15px;">Design &amp; Engineering:</h4>
+<div style="font-weight:bold; font-size:15px; margin:6px 0 0 20px;">Design &amp; Engineering:</div>
 <ul style="line-height:1.5; padding-left:60px; font-size:15px;">
   <li>Detailed Site Survey &amp; Feasibility Study.</li>
   <li>System Sizing &amp; Layout Design (including shadow analysis).</li>
@@ -420,7 +427,7 @@
   <li>Submission of detailed engineering drawings for approval.</li>
 </ul>
 
-<h4 style="margin-left:0; margin-right:20px; line-height:1.8; text-indent:40px; font-size:15px;">Procurement &amp; Supply:</h4>
+<div style="font-weight:bold; font-size:15px; margin:6px 0 0 20px;">Procurement &amp; Supply:</div>
 <ul style="line-height:1.5; padding-left:60px; font-size:15px;">
   <li>High-efficiency Solar PV Modules.</li>
   <li>Grid-Tied String Inverters.</li>
@@ -432,7 +439,7 @@
   <li>All necessary hardware, connectors (MC4), and safety components.</li>
 </ul>
 
-<h4 style="margin-left:0; margin-right:20px; line-height:1.8; text-indent:40px; font-size:15px;">Installation &amp; Commissioning:</h4>
+<div style="font-weight:bold; font-size:15px; margin:6px 0 0 20px;">Installation &amp; Commissioning:</div>
 <ul style="line-height:1.5; padding-left:60px; font-size:15px;">
   <li>Foundation and mounting structure installation.</li>
   <li>PV Module installation and string wiring.</li>
@@ -444,13 +451,13 @@
   <li>Final commissioning and handover.</li>
 </ul>
 
-<h4 style="margin-left:0; margin-right:20px; line-height:1.8; text-indent:40px; font-size:15px;">Liaison &amp; Approvals:</h4>
+<div style="font-weight:bold; font-size:15px; margin:6px 0 0 20px;">Liaison &amp; Approvals:</div>
 <ul style="line-height:1.5; padding-left:60px; font-size:15px;">
   <li>Assistance with MSEDCL/CEIG approval processes for net metering.</li>
   <li>All necessary documentation for project completion and approvals.</li>
 </ul>
 
-<h4 style="margin-left:0; margin-right:20px; line-height:1.8; text-indent:40px; font-size:15px;">Training &amp; Documentation:</h4>
+<div style="font-weight:bold; font-size:15px; margin:6px 0 0 20px;">Training &amp; Documentation:</div>
 <ul style="line-height:1.5; padding-left:60px; font-size:15px;">
   <li>Operational training for your designated personnel.</li>
   <li>Provision of user manuals, warranties, and as-built drawings.</li>
@@ -503,8 +510,8 @@
 </ol>
 
 <div class="subhead">AGREEMENT AND ACCEPTANCE:</div>
-<div class="si-agree" style="line-height:1.5; margin-left:40px; margin-right:30px; text-indent:40px; font-size:15px;">This document constitutes an offer by HERAMB INDUSTRIES to provide the goods and services described herein. By signing below, the parties acknowledge that they have read, understand, and accept the terms and conditions given above.</div>
-<div class="si-agree" style="line-height:1.5; margin-left:40px; margin-right:30px; text-indent:40px; font-size:15px;">We look forward to partnering with you to power your facility with clean, sustainable solar energy. Please do not hesitate to contact us for any clarifications or further discussions.</div>
+<div class="si-agree" style="line-height:1.5; margin-left:40px; margin-right:30px; font-size:15px; text-align:justify;">This document constitutes an offer by HERAMB INDUSTRIES to provide the goods and services described herein. By signing below, the parties acknowledge that they have read, understand, and accept the terms and conditions given above.</div>
+<div class="si-agree" style="line-height:1.5; margin-left:40px; margin-right:30px; font-size:15px; text-align:justify;">We look forward to partnering with you to power your facility with clean, sustainable solar energy. Please do not hesitate to contact us for any clarifications or further discussions.</div>
 </div>
 
 {# PAGE 5 — Testimonials #}

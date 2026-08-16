@@ -219,6 +219,8 @@ def render_proposal_cover_png(quotation, master, formatted_date, this_year):
         qid = "DB/Comm/{}/{}".format(qno, this_year)
     elif ctype == "Industrial":
         qid = "DB/Ind/{}/{}".format(qno, this_year)
+    elif ctype == "Government":
+        qid = "DB/Gov/{}/{}".format(qno, this_year)
     else:
         qid = str(qno)
 
@@ -229,7 +231,20 @@ def render_proposal_cover_png(quotation, master, formatted_date, this_year):
         "By : {}".format(by_name),
     ]
 
-    cy = y2 + 36
+    cy = y2 + 28
+    type_label = ctype or ""
+    if type_label:
+        card_h = 54
+        card_box = (x_left, cy, x_right, cy + card_h)
+        try:
+            draw.rounded_rectangle(card_box, radius=12, fill=WHITE, outline=NAVY, width=3)
+        except Exception:
+            draw.rectangle(card_box, fill=WHITE, outline=NAVY, width=3)
+        type_font = _font(24, bold=True)
+        tw = _text_w(type_font, type_label)
+        draw.text((x_left + max(10, (col_w - tw) / 2), cy + 12), type_label, font=type_font, fill=NAVY)
+        cy += card_h + 18
+
     cy = _draw_right(draw, x_right, cy, _wrap(consumer, name_font, col_w), name_font, BLACK, 36)
     cy += 8
     cy = _draw_right(draw, x_right, cy, _wrap(consumer_addr, body_font, col_w), body_font, BLACK, 28)
