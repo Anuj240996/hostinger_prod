@@ -547,17 +547,9 @@
 </div>
 </div>
 
-{# PAGE 6 — Thank you image + bank / company / contact / seal (same as Sample 1 industrial) #}
+{# PAGE 6 — Bank / company / contact / seal, then Thank you image #}
 <div class="page-break"></div>
 <div class="si-large" style="font-size:15px; line-height:1.5;">
-<table class="no-border" align="center" width="525">
-  <tr>
-    <td style="border:none; text-align:center; padding:0;">
-      <img src="{% static 'quotation/proposal/thankyou.png' %}" style="width:220pt; height:220pt;">
-    </td>
-  </tr>
-</table>
-
 <table class="no-border" style="width:525pt; margin-top:8px;">
   <tr>
     <td style="width:290pt; vertical-align:top; padding-right:12px; border:none;">
@@ -621,6 +613,14 @@
              style="width:85pt; height:65pt; display:block; margin:0; padding:0;">
         <b>M/S {{ quotation_master.company_name|default:"HERAMB INDUSTRIES"|upper }}</b>
       </div>
+    </td>
+  </tr>
+</table>
+
+<table class="no-border" align="center" width="525" style="margin-top:12px;">
+  <tr>
+    <td style="border:none; text-align:center; padding:0;">
+      <img src="{% static 'quotation/proposal/thankyou.png' %}" style="width:360pt; height:310pt;">
     </td>
   </tr>
 </table>

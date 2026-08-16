@@ -286,7 +286,7 @@
   </div>
   <div class="page-sheet">
     <div class="page-label">Page 6 / 6 — Thank you</div>
-    <p class="help-text mb-2">Thank you image, then Bank Details, Company Details, Contact Person and company seal (same as Sample 1 industrial).</p>
+    <p class="help-text mb-2">Bank Details, Company Details, Contact Person and company seal first, then the Thank you image below (no grey background).</p>
     <div class="pdf-page-frame">
       {% if master.header_image %}
         <img class="hf-img" src="{{ master.header_image.url }}" alt="Header">
@@ -294,10 +294,10 @@
         <img class="hf-img" src="{% static 'images/quotation_bg1.jpg' %}" alt="Header">
       {% endif %}
       <div class="page-body" style="text-align:center;">
-        <img class="page-thumb" src="{% static 'quotation/proposal/thankyou.png' %}" alt="Thank you" style="max-width:220px;">
-        <div class="help-text mt-2 mb-0" style="text-align:left;">
-          Bank Details and Company Details (GST / PAN), Contact Person with number, and company seal appear below the image on the PDF.
+        <div class="help-text mb-2" style="text-align:left;">
+          Bank Details and Company Details (GST / PAN), Contact Person with number, and company seal print first. The Thank you image is below them.
         </div>
+        <img class="page-thumb" src="{% static 'quotation/proposal/thankyou.png' %}" alt="Thank you" style="max-width:360px; background:#fff;">
       </div>
       {% if master.footer_image %}
         <img class="hf-img" src="{{ master.footer_image.url }}" alt="Footer">
