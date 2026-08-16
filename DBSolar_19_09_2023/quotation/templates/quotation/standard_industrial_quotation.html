@@ -551,29 +551,80 @@
 </div>
 </div>
 
-{# PAGE 6 — Thank you #}
+{# PAGE 6 — Thank you image + bank / company / contact / seal (same as Sample 1 industrial) #}
 <div class="page-break"></div>
 <div class="si-large" style="font-size:15px; line-height:1.5;">
-<div style="text-align:center; margin-top:80px; margin-bottom:60px;">
-  <div class="thank-you-banner" style="background:#0A66C2; color:#fff; display:inline-block; padding:28px 48px; font-size:42px; font-weight:bold;">THANK YOU</div>
-</div>
-<table class="no-border contact-row" style="margin-top:40px; font-size:15px;">
+<table class="no-border" align="center" width="525">
   <tr>
-    <td style="border:none; width:185pt; text-align:center; border-right:1pt solid #ccc;">
-      <b>{{ quotation_master.company_name|default:"HERAMB INDUSTRIES"|upper }}</b><br>
-      {% if quotation_master.address %}{{ quotation_master.address }}{% else %}Maharashtra{% endif %}
+    <td style="border:none; text-align:center; padding:0;">
+      <img src="{% static 'quotation/proposal/thankyou.png' %}" style="width:220pt; height:220pt;">
     </td>
-    <td style="border:none; width:189pt; text-align:center; border-right:1pt solid #ccc;">
-      <b>MOBILE</b><br>
+  </tr>
+</table>
+
+<table class="no-border" style="width:525pt; margin-top:8px;">
+  <tr>
+    <td style="width:290pt; vertical-align:top; padding-right:12px; border:none;">
+      <h4 align="left" style="margin:0 0 6px 0;">
+        <span style="background-color: #0A66C2; color: white; font-size: 17px;"><u>Bank Details:</u></span>
+      </h4>
+      <div style="line-height: 1.8; margin-left: 20px; font-size: 15px;">
+        {% if bank_detail %}
+          {% if bank_detail.account_name %}<b>A/C Name -</b> {{ bank_detail.account_name }}<br>{% endif %}
+          {% if bank_detail.account_no %}<b>A/C No -</b> {{ bank_detail.account_no }}<br>{% endif %}
+          {% if bank_detail.bank_name %}<b>Bank Name -</b> {{ bank_detail.bank_name }}<br>{% endif %}
+          {% if bank_detail.branch_name %}<b>Branch Name -</b> {{ bank_detail.branch_name }}<br>{% endif %}
+          {% if bank_detail.ifsc_code %}<b>IFSC CODE -</b> {{ bank_detail.ifsc_code }}<br>{% endif %}
+        {% else %}
+          <b>A/C Name -</b> Heramb Industries<br>
+          <b>A/C No -</b> 112233665544778<br>
+          <b>Bank Name -</b> SVC CO-OP Bank<br>
+          <b>Branch Name -</b> Aurangabad / Chh. SambhajiNagar<br>
+          <b>IFSC CODE -</b> SVSB000123<br>
+        {% endif %}
+      </div>
+    </td>
+    <td style="width:235pt; vertical-align:top; padding-left:12px; border:none;">
+      <h4 align="left" style="margin:0 0 6px 0;">
+        <span style="background-color: #0A66C2; color: white; font-size: 17px;"><u>Company Details:</u></span>
+      </h4>
+      <div style="line-height: 1.8; margin-left: 20px; font-size: 15px;">
+        {% if quotation_master.gst_no or quotation_master.pan_no %}
+          {% if quotation_master.gst_no %}<b>GST No -</b> {{ quotation_master.gst_no }}<br>{% endif %}
+          {% if quotation_master.pan_no %}<b>PAN No -</b> {{ quotation_master.pan_no }}<br>{% endif %}
+        {% elif bank_detail %}
+          {% if bank_detail.gst_no %}<b>GST No -</b> {{ bank_detail.gst_no }}<br>{% endif %}
+          {% if bank_detail.pan_no %}<b>PAN No -</b> {{ bank_detail.pan_no }}<br>{% endif %}
+        {% else %}
+          <b>GST No -</b> 123457896541332<br>
+          <b>PAN No -</b> ABC12358G<br>
+        {% endif %}
+      </div>
+    </td>
+  </tr>
+</table>
+
+<table class="no-border" style="width:525pt; margin-top:8px;">
+  <tr>
+    <td style="border:none; width:290pt; vertical-align:top; line-height:1.0; padding-top:0; padding-bottom:8px;">
+      <b style="font-size: 20px;">Contact Person: </b>
       {% if representatives %}
-        {% for rep in representatives %}{% if forloop.first %}{{ rep.contact|default:"—" }}{% endif %}{% endfor %}
+        <ul style="margin: 5px 0 0 30px; padding-left: 12px; line-height: 1.5; font-size: 15px;">
+        {% for rep in representatives %}
+          <li style="margin:0; padding:0;">{{ rep.name }}{% if rep.contact %}-{{ rep.contact }}{% endif %}</li>
+        {% endfor %}
+        </ul>
       {% else %}
-        —
+        <p>No representatives selected.</p>
       {% endif %}
     </td>
-    <td style="border:none; width:185pt; text-align:center;">
-      <b>EMAIL</b><br>
-      herambasd1@gmail.com
+    <td style="border:none; width:235pt; vertical-align:top;">
+      <div style="font-size: 16px; margin-left: 20px; text-align: center;">
+        <b>With Regards,</b>
+        <img src="{% static 'images/sign.jpeg' %}"
+             style="width:85pt; height:65pt; display:block; margin:0; padding:0;">
+        <b>M/S {{ quotation_master.company_name|default:"HERAMB INDUSTRIES"|upper }}</b>
+      </div>
     </td>
   </tr>
 </table>
