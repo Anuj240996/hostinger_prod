@@ -5372,6 +5372,7 @@ def industrial_quotation_pdf(request, pk):
                 master,
                 context.get('formatted_date'),
                 this_year,
+                context.get('formatted_expiry_date'),
             ) or ''
             context['cover_left_src'] = render_cover_left_photo(master) or ''
             context['about_photo_src'] = render_about_photo() or ''

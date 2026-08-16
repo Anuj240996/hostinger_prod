@@ -125,16 +125,30 @@ def _draw_left(draw, x, y, lines, font, fill, line_gap):
     return y
 
 
-def render_proposal_cover_png(quotation, master, formatted_date, this_year):
+def _draw_right_labeled(draw, x_right, y, label, value, label_font, value_font, fill, line_gap):
+    value = value or ""
+    label_text = label
+    total = _text_w(label_font, label_text) + _text_w(value_font, value)
+    x = x_right - total
+    draw.text((x, y), label_text, font=label_font, fill=fill)
+    draw.text((x + _text_w(label_font, label_text), y), value, font=value_font, fill=fill)
+    return y + line_gap
+
+
+def render_proposal_cover_png(quotation, master, formatted_date, this_year, formatted_expiry_date=None):
     """
-    Full A4 JPEG with equal white margins painted in (no PDF footer gap).
+    Full A4 JPEG with equal white margins on all four sides.
     Left photo + yellow / navy / yellow like the Sample 2 edit preview.
     """
     import tempfile
 
-    m = 36  # ~18pt at 2x so the image can sit edge-to-edge on A4
+    m = 28  # same white margin on left, top, right, and bottom
     ox, oy = m, m
-    cw, ch = A4_W - 2 * m, A4_H - 2 * m
+    # Pillow rectangle second point is exclusive — use inner+1 so the band
+    # reaches the same inset on the right and bottom as on the left and top.
+    inner_r = A4_W - m
+    inner_b = A4_H - m
+    cw, ch = inner_r - ox, inner_b - oy
     mid = ox + cw // 2
 
     canvas = Image.new("RGB", (A4_W, A4_H), WHITE)
@@ -149,31 +163,32 @@ def render_proposal_cover_png(quotation, master, formatted_date, this_year):
         canvas.paste(_cover_fit(photo, left_w, ch), (ox, oy))
         photo.close()
     else:
-        ImageDraw.Draw(canvas).rectangle((ox, oy, mid, oy + ch), fill=(20, 60, 90))
+        ImageDraw.Draw(canvas).rectangle((ox, oy, mid, inner_b), fill=(20, 60, 90))
 
-    y1 = oy + int(ch * 0.18)
-    y2 = oy + int(ch * 0.50)
+    # Navy band: slightly lower and shorter than the previous 18%–50% band
+    y1 = oy + int(ch * 0.24)
+    y2 = y1 + int(ch * 0.20)
     draw = ImageDraw.Draw(canvas)
-    draw.rectangle((mid, oy, ox + cw, y1), fill=YELLOW)
-    draw.rectangle((mid, y1, ox + cw, y2), fill=NAVY)
-    draw.rectangle((mid, y2, ox + cw, oy + ch), fill=YELLOW)
+    draw.rectangle((mid, oy, inner_r, y1), fill=YELLOW)
+    draw.rectangle((mid, y1, inner_r, y2), fill=NAVY)
+    draw.rectangle((mid, y2, inner_r, inner_b), fill=YELLOW)
 
-    pad = 36
+    pad = 28
     x_left = mid + pad
-    x_right = ox + cw - pad
+    x_right = inner_r - pad
     col_w = max(40, x_right - x_left)
 
     title_font = _font(42, bold=True)
-    ty = oy + 48
+    ty = oy + 40
     for line in ("Roof Top Solar", "Proposal"):
         draw.text((x_right - _text_w(title_font, line), ty), line, font=title_font, fill=BLACK)
         ty += 52
 
-    ny = y1 + 28
+    ny = y1 + 18
     logo = _open_image(getattr(master, "company_logo", None) if master else None)
     if logo is not None:
         logo = logo.convert("RGBA")
-        max_h, max_w = 90, 220
+        max_h, max_w = 72, 200
         scale = min(max_w / float(logo.width), max_h / float(logo.height), 1.0)
         logo = logo.resize(
             (max(1, int(logo.width * scale)), max(1, int(logo.height * scale))),
@@ -185,14 +200,16 @@ def render_proposal_cover_png(quotation, master, formatted_date, this_year):
         else:
             bg.paste(logo.convert("RGB"), (6, 6))
         canvas.paste(bg, (x_left, ny))
-        ny += bg.height + 16
+        ny += bg.height + 10
         logo.close()
 
-    name_font = _font(30, bold=True)
+    name_font = _font(31, bold=True)
     body_font = _font(20)
+    label_font = _font(20, bold=True)
     company = (getattr(master, "company_name", None) or "Heramb Industries") if master else "Heramb Industries"
+    company = company.upper()
     ny = _draw_left(draw, x_left, ny, _wrap(company, name_font, col_w), name_font, WHITE, 36)
-    ny += 10
+    ny += 8
     address = ""
     if master is not None:
         address = (getattr(master, "from_address", None) or getattr(master, "address", None) or "").strip()
@@ -201,7 +218,7 @@ def render_proposal_cover_png(quotation, master, formatted_date, this_year):
             "Bhagya Banglow, Near Sant Eknath Rang Mandir,\n"
             "New Osman Pura, Chh. Sambhajinagar (MH) - 431001"
         )
-    _draw_left(draw, x_left, ny, _wrap(address, body_font, col_w), body_font, WHITE, 28)
+    _draw_left(draw, x_left, ny, _wrap(address, body_font, col_w), body_font, WHITE, 26)
 
     consumer = "{} {}".format(
         getattr(quotation, "title", "") or "",
@@ -210,6 +227,7 @@ def render_proposal_cover_png(quotation, master, formatted_date, this_year):
     addr1 = getattr(quotation, "consumer_address1", "") or ""
     addr2 = getattr(quotation, "consumer_address2", "") or ""
     consumer_addr = ",\n".join([line for line in (addr1, addr2) if line])
+    consumer_mobile = getattr(quotation, "consumer_mobile", "") or ""
 
     ctype = getattr(quotation, "consumer_type", "") or ""
     qno = getattr(quotation, "quotation_no", "") or quotation.pk
@@ -225,16 +243,21 @@ def render_proposal_cover_png(quotation, master, formatted_date, this_year):
         qid = str(qno)
 
     by_name = getattr(quotation, "employee_name", "") or ""
-    meta = [
-        "ID : {}".format(qid),
-        "Date : {}".format(formatted_date or ""),
-        "By : {}".format(by_name),
-    ]
+    by_contact = ""
+    try:
+        reps = list(quotation.representatives.all())
+        if reps:
+            by_name = getattr(reps[0], "name", None) or by_name
+            by_contact = getattr(reps[0], "contact", "") or ""
+    except Exception:
+        pass
 
-    cy = y2 + 28
+    expiry = formatted_expiry_date or formatted_date or ""
+
+    cy = y2 + 22
     type_label = ctype or ""
     if type_label:
-        card_h = 54
+        card_h = 50
         card_box = (x_left, cy, x_right, cy + card_h)
         try:
             draw.rounded_rectangle(card_box, radius=12, fill=WHITE, outline=NAVY, width=3)
@@ -242,20 +265,28 @@ def render_proposal_cover_png(quotation, master, formatted_date, this_year):
             draw.rectangle(card_box, fill=WHITE, outline=NAVY, width=3)
         type_font = _font(24, bold=True)
         tw = _text_w(type_font, type_label)
-        draw.text((x_left + max(10, (col_w - tw) / 2), cy + 12), type_label, font=type_font, fill=NAVY)
-        cy += card_h + 18
+        draw.text((x_left + max(10, (col_w - tw) / 2), cy + 10), type_label, font=type_font, fill=NAVY)
+        cy += card_h + 14
 
-    cy = _draw_right(draw, x_right, cy, _wrap(consumer, name_font, col_w), name_font, BLACK, 36)
-    cy += 8
-    cy = _draw_right(draw, x_right, cy, _wrap(consumer_addr, body_font, col_w), body_font, BLACK, 28)
-    cy += 18
+    cy = _draw_right(draw, x_right, cy, _wrap(consumer, name_font, col_w), name_font, BLACK, 34)
+    cy += 6
+    cy = _draw_right(draw, x_right, cy, _wrap(consumer_addr, body_font, col_w), body_font, BLACK, 26)
+    if consumer_mobile:
+        cy += 4
+        cy = _draw_right_labeled(draw, x_right, cy, "Mobile : ", consumer_mobile, label_font, body_font, BLACK, 26)
+    cy += 12
     draw.line((x_left, cy, x_right, cy), fill=BLACK, width=2)
-    cy += 22
-    _draw_right(draw, x_right, cy, meta, body_font, BLACK, 30)
+    cy += 16
+    cy = _draw_right_labeled(draw, x_right, cy, "ID : ", str(qid), label_font, body_font, BLACK, 28)
+    cy = _draw_right_labeled(draw, x_right, cy, "Date : ", str(formatted_date or ""), label_font, body_font, BLACK, 28)
+    cy = _draw_right_labeled(draw, x_right, cy, "Expiry Date : ", str(expiry), label_font, body_font, BLACK, 28)
+    cy = _draw_right_labeled(draw, x_right, cy, "By : ", str(by_name), label_font, body_font, BLACK, 28)
+    if by_contact:
+        _draw_right_labeled(draw, x_right, cy, "Contact : ", str(by_contact), label_font, body_font, BLACK, 28)
 
     fd, out_path = tempfile.mkstemp(prefix="dbsolar_cover_", suffix=".jpg")
     os.close(fd)
-    canvas.convert("RGB").save(out_path, "JPEG", quality=88)
+    canvas.convert("RGB").save(out_path, "JPEG", quality=88, dpi=(144, 144))
     return out_path.replace("\\", "/")
 
 

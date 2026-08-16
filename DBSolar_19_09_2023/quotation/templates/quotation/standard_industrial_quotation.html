@@ -43,6 +43,8 @@
       font-size: 11px;
       line-height: 1.35;
       color: #111;
+      margin: 0;
+      padding: 0;
     }
     h1, h2, h3, h4 { margin: 4px 0; }
     table { border-collapse: collapse; }
@@ -109,7 +111,7 @@
     .si-page3 .bank-lines { font-size: 12px; line-height: 1.5; margin-top: 6px; }
     .si-page3 .sign-img { width: 90pt; height: 70pt; }
     .si-page3-compact .bank-heading { font-size: 11px; padding: 3px 6px; }
-    .si-page3-compact .bank-lines { font-size: 10px; line-height: 1.25; margin-top: 3px; }
+    .si-page3-compact .bank-lines { font-size: 11px; line-height: 1.25; margin-top: 3px; }
     .si-page3-compact .sign-img { width: 70pt; height: 52pt; }
     .space-top { margin-top: 12px; }
     .offer-table1 { width: 525pt; margin-top: 8px; }
@@ -140,11 +142,13 @@
 {% now "y" as this_year %}
 
 {# PAGE 1 — Full A4 cover image (equal white margins painted; no leftover footer space) #}
+<div style="margin:0; padding:0; font-size:0; line-height:0;">
 {% if cover_full_src %}
-<img src="{{ cover_full_src }}" style="width:595.27pt; height:841.89pt; display:block; margin:0; padding:0;">
+<img src="{{ cover_full_src }}" width="595" height="842" style="width:595.27pt; height:841.89pt; display:block; margin:0; padding:0; border:0;">
 {% else %}
-<img src="{% static 'quotation/proposal/cover_left.png' %}" style="width:595.27pt; height:841.89pt; display:block; margin:0; padding:0;">
+<img src="{% static 'quotation/proposal/cover_left.png' %}" width="595" height="842" style="width:595.27pt; height:841.89pt; display:block; margin:0; padding:0; border:0;">
 {% endif %}
+</div>
 
 <pdf:nexttemplate name="inner"/>
 <div class="page-break"></div>
