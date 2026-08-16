@@ -99,6 +99,26 @@
     .si-page3 .offer-table th,
     .si-page3 .offer-table td { font-size: 12px; }
     .si-page3 .section-bar { font-size: 12px; }
+    .space-top { margin-top: 12px; }
+    .offer-table1 { width: 525pt; margin-top: 8px; }
+    .offer-table1 th {
+      background: #ADD8E6;
+      color: #111;
+      font-size: 13px;
+    }
+    .offer-table1 th,
+    .offer-table1 td {
+      vertical-align: middle;
+      text-align: center;
+      padding-top: 5px;
+      padding-bottom: 5px;
+      font-size: 13px;
+    }
+    .sample1-heading {
+      background-color: #0A66C2;
+      color: white;
+      font-size: 17px;
+    }
   </style>
 </head>
 <body>
@@ -329,6 +349,66 @@
       <b>M/S {{ quotation_master.company_name|default:"HERAMB INDUSTRIES"|upper }}</b>
     </td>
   </tr>
+</table>
+</div>
+
+{# After quotation table — Sample 1 Major Components + Payback, before Terms #}
+<div class="page-break"></div>
+<div style="font-size:13px; line-height:1.4;">
+<h4 class="space-top" align="left" style="padding-bottom:10px;">
+  <span class="sample1-heading"><u>DETAILS FOR THE MAJOR COMPONENTS</u></span>
+</h4>
+<table class="offer-table1" align="center">
+  <tr>
+    <th width="10%">Sr No.</th>
+    <th width="25%">Components</th>
+    <th width="35%">Makes</th>
+    <th width="30%">Warranty</th>
+  </tr>
+  <tr>
+    <td>1.</td>
+    <td><b>PV Models <br>{{ quotation.panel_type }}</b></td>
+    <td>{{ quotation.panel_company_names }}</td>
+    <td><b>{{ quotation.panel_manufacturing_warranty }}</b> years Manufacturing and <b>{{ quotation.panel_performance_warranty }}</b> years performance warranty.</td>
+  </tr>
+  <tr>
+    <td>2.</td>
+    <td><b>Inverter</b></td>
+    <td>{{ quotation.inverter_company_names }} or Equivalent</td>
+    <td><b>{{ quotation.inverter_warranty }}</b> years </td>
+  </tr>
+  <tr>
+    <td>3.</td>
+    <td>
+      {% if quotation.structure_type == 'Tin Shade' %}
+        <b>{{ quotation.structure_type }} Structure</b>
+      {% else %}
+        <b>{{ quotation.structure_type }}</b>
+      {% endif %}
+    </td>
+    <td>Heramb</td>
+    <td><b>{{ quotation.structure_warranty }}</b> years.</td>
+  </tr>
+  <tr>
+    <td>4.</td>
+    <td><b>Cables</b></td>
+    <td>Polycab or Equivalent</td>
+    <td>N.A.</td>
+  </tr>
+</table>
+
+<h4 class="space-top" align="left" style="padding-bottom:5px; padding-top:5px;">
+  <span class="sample1-heading"><u>PAYBACK CALCULATIONS</u></span>
+</h4>
+<table class="offer-table1" align="center">
+  <tr><td width="50%" style="font-weight:bold; text-align:left;">Plant Capacity</td><td align="center" width="25%">{{ quotation.plant_capacity_kw|clean_decimal }}</td><td align="center" width="25%">KW</td></tr>
+  <tr><td style="font-weight:bold; text-align:left;">No. of Units Generated per Year (Approx.)</td><td align="center">{{ units_generated_per_year|indian_format }}</td><td align="center">Approx UNITS</td></tr>
+  <tr><td style="font-weight:bold; text-align:left;">Electricity per Unit Cost</td><td align="center">{{ unit_rate|indian_format }}</td><td align="center">Rs/Unit</td></tr>
+  <tr><td style="font-weight:bold; text-align:left;">Yearly Saving</td><td align="center">{{ yearly_saving|indian_format }}</td><td align="center">Rs/Year</td></tr>
+  <tr><td style="font-weight:bold; text-align:left;">Investment Cost</td><td align="center">{{ quotation.final_amount|indian_format }}</td><td align="center">Rs/System</td></tr>
+  <tr><td style="font-weight:bold; text-align:left;">Subsidy</td><td align="center">{{ subsidy_amount|indian_format }}</td><td align="center">Rs</td></tr>
+  <tr><td style="font-weight:bold; text-align:left;">Total amount after Subsidy</td><td align="center">{{ after_subsidy_amount|indian_format }}</td><td align="center">Rs/System</td></tr>
+  <tr><td style="font-weight:bold; text-align:left;">Payback Period</td><td align="center">{{ payback_period }}</td><td align="center">Years</td></tr>
 </table>
 </div>
 
