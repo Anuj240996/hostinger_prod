@@ -49,6 +49,7 @@
     th, td { border: 1px solid #000; padding: 3px 4px; vertical-align: top; word-wrap: break-word; }
     th { background: #0A2540; color: #fff; }
     .no-border td, .no-border th { border: none !important; }
+    .offer-table th, .offer-table td { border: 1px solid #000 !important; }
     .center { text-align: center; }
     .right { text-align: right; }
     .bold { font-weight: bold; }
@@ -74,7 +75,7 @@
     }
     .cover-yellow { background: #FFD200; }
     .rupee-symbol { font-family: DejaVu Sans, Arial, sans-serif; }
-    .est-title { color: #0A2540; font-size: 26px; font-weight: bold; text-align: center; margin: 0 0 10px 0; }
+    .est-title { color: #0A2540; font-size: 26px; font-weight: bold; text-align: center; margin: 0 0 2px 0; }
     .est-meta td { border: none !important; vertical-align: top; font-size: 10px; line-height: 1.45; }
     .est-items { width: 100%; }
     .est-items th { background: #0A2540; color: #fff; font-size: 8px; text-align: center; padding: 5px 2px; }
@@ -93,14 +94,25 @@
     .si-large .award-bar { font-size: 15px; }
     .si-large .thank-you-banner { font-size: 42px; }
     .si-large .contact-row { font-size: 15px; }
-    /* Page 3 — 12px */
-    .si-page3 { font-size: 12px; line-height: 1.25; page-break-inside: avoid; }
-    .si-page3 .est-title { font-size: 24px; margin: 0 0 4px 0; }
-    .si-page3 .est-meta td { font-size: 12px; line-height: 1.25; }
+    /* Page 3 — 12px. Compact only when subsidy note is shown (Residential). */
+    .si-page3 { font-size: 12px; line-height: 1.35; }
+    .si-page3 .est-title { font-size: 24px; margin: 0 0 1px 0; }
+    .si-page3 .est-meta { margin-bottom: 2px; }
+    .si-page3 .est-meta td { font-size: 12px; line-height: 1.35; }
     .si-page3 .offer-table th,
-    .si-page3 .offer-table td { font-size: 12px; padding: 1px 3px; }
-    .si-page3 .section-bar { font-size: 12px; padding: 4px 6px; }
-    .si-page3 .keep-page { page-break-inside: avoid; }
+    .si-page3 .offer-table td {
+      font-size: 12px;
+      padding: 3px 4px;
+      border: 1px solid #000 !important;
+    }
+    .si-page3 .bank-heading { font-size: 15px; padding: 6px 8px; }
+    .si-page3 .bank-lines { font-size: 12px; line-height: 1.5; margin-top: 6px; }
+    .si-page3 .sign-img { width: 90pt; height: 70pt; }
+    .si-page3-compact .offer-table th,
+    .si-page3-compact .offer-table td { padding: 0 3px; line-height: 1.1; }
+    .si-page3-compact .bank-heading { font-size: 11px; padding: 3px 6px; }
+    .si-page3-compact .bank-lines { font-size: 10px; line-height: 1.25; margin-top: 3px; }
+    .si-page3-compact .sign-img { width: 70pt; height: 52pt; }
     .space-top { margin-top: 12px; }
     .offer-table1 { width: 525pt; margin-top: 8px; }
     .offer-table1 th {
@@ -190,12 +202,10 @@
 
 {# PAGE 3 — Quotation (attached EST layout; Sample 1 header/footer stay) #}
 <div class="page-break"></div>
-<table class="no-border keep-page" align="center" width="525" style="page-break-inside:avoid;">
-<tr><td style="border:none;">
-<div class="si-page3" style="font-size:12px; line-height:1.25;">
-<h1 class="est-title" style="text-align:center; font-size:24px; margin:0 0 4px 0;">Quotation</h1>
+<div class="si-page3{% if quotation.consumer_type == 'Residential' %} si-page3-compact{% endif %}" style="font-size:12px;">
+<h1 class="est-title" style="text-align:center; font-size:24px; margin:0 0 1px 0;">Quotation</h1>
 
-<table class="no-border est-meta" align="center" width="525" style="margin-bottom:4px; font-size:12px;">
+<table class="no-border est-meta" align="center" width="525" style="margin-bottom:2px; font-size:12px;">
   <tr>
     <td style="width:180pt;">
       <b>From</b><br>
@@ -236,7 +246,7 @@
   </tr>
 </table>
 
-<table class="offer-table" id="offer_details" align="center" width="525" style="font-size:12px;">
+<table class="offer-table" id="offer_details" align="center" width="525" style="font-size:12px; border-collapse:collapse;">
   <tr align="center">
     <th class="offer-col-desc">Product Description</th>
     <th class="offer-col-units">Units</th>
@@ -323,11 +333,11 @@
 </div>
 {% endif %}
 
-<table class="no-border" align="center" style="margin-top:6px; font-size:12px; page-break-inside:avoid;">
+<table class="no-border" align="center" style="margin-top:8px; page-break-inside:avoid;">
   <tr>
     <td style="border:none; width:307pt; vertical-align:top;">
-      <div class="section-bar" style="font-size:12px;">Bank Details</div>
-      <div style="line-height:1.35; margin-top:4px;">
+      <div class="section-bar bank-heading">Bank Details</div>
+      <div class="bank-lines"{% if quotation.consumer_type == 'Residential' %} style="font-size:10px; line-height:1.25;"{% endif %}>
         {% if bank_detail %}
           {% if bank_detail.account_name %}<b>A/C Name -</b> {{ bank_detail.account_name }}<br>{% endif %}
           {% if bank_detail.account_no %}<b>A/C No -</b> {{ bank_detail.account_no }}<br>{% endif %}
@@ -346,15 +356,17 @@
       </div>
     </td>
     <td style="border:none; width:252pt; vertical-align:top; text-align:center;">
+      {% if quotation.consumer_type == 'Residential' %}
       <img src="{% static 'images/sign.jpeg' %}" style="width:70pt; height:52pt;"><br>
+      {% else %}
+      <img src="{% static 'images/sign.jpeg' %}" style="width:90pt; height:70pt;"><br>
+      {% endif %}
       <b>Authorized Signature</b><br>
       <b>M/S {{ quotation_master.company_name|default:"HERAMB INDUSTRIES"|upper }}</b>
     </td>
   </tr>
 </table>
 </div>
-</td></tr>
-</table>
 
 {# After quotation table — Sample 1 Major Components + Payback, before Terms #}
 <div class="page-break"></div>
