@@ -142,10 +142,8 @@ def render_proposal_cover_png(quotation, master, formatted_date, this_year, form
     """
     import tempfile
 
-    m = 28  # same white margin on left, top, right, and bottom
+    m = 0  # bleed to the JPEG edges; PDF places this image on full A4
     ox, oy = m, m
-    # Pillow rectangle second point is exclusive — use inner+1 so the band
-    # reaches the same inset on the right and bottom as on the left and top.
     inner_r = A4_W - m
     inner_b = A4_H - m
     cw, ch = inner_r - ox, inner_b - oy
@@ -286,7 +284,9 @@ def render_proposal_cover_png(quotation, master, formatted_date, this_year, form
 
     fd, out_path = tempfile.mkstemp(prefix="dbsolar_cover_", suffix=".jpg")
     os.close(fd)
-    canvas.convert("RGB").save(out_path, "JPEG", quality=88, dpi=(144, 144))
+    # 595x841 px at 72dpi = 595x841 pt so xhtml2pdf fills A4 even if CSS size is ignored.
+    page = canvas.convert("RGB").resize((595, 841), Image.Resampling.LANCZOS if hasattr(Image, "Resampling") else Image.LANCZOS)
+    page.save(out_path, "JPEG", quality=90, dpi=(72, 72))
     return out_path.replace("\\", "/")
 
 

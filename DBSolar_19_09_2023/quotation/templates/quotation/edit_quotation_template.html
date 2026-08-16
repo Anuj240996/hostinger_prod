@@ -32,7 +32,7 @@
     border:1px solid #ccc;
     overflow:hidden;
     background:#fff;
-    padding:14px;
+    padding:0;
     box-sizing:border-box;
   }
   .cover-preview-inner {
@@ -139,7 +139,7 @@
   <div class="page-sheet">
     <div class="page-label">Page 1 / 6 — Cover</div>
     <p class="help-text mb-3">
-      Same as generated PDF: equal white margin on all sides. Left photo + yellow / navy / yellow.
+      Same as generated PDF: cover fills the full A4 page. Left photo + yellow / navy / yellow.
       Cover has no Sample 1 header/footer.
     </p>
 
@@ -186,7 +186,7 @@
       <input type="hidden" name="action" value="cover">
       <label class="form-label"><b>Change cover page image (left column)</b></label>
       <input type="file" name="proposal_cover_image" class="form-control" accept="image/*" required>
-      <div class="help-text mt-1 mb-2">Left column is 50% of the cover content area (inside white margins).</div>
+      <div class="help-text mt-1 mb-2">Left column is 50% of the cover page.</div>
       <button type="submit" class="btn btn-success btn-sm">Save Cover Image</button>
     </form>
   </div>

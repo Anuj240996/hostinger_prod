@@ -8,15 +8,16 @@
   <meta charset="utf-8">
   <title>Standard &amp; Industrial Quotation</title>
   <style>
-    /* Cover: one full-page image (white margins painted in — no leftover footer gap) */
+    /* Cover: dedicated full-page frame. Sizes must be pt — unitless HTML width is treated as px and shrinks the page. */
     @page {
       size: A4;
-      margin: 0;
-      @frame content {
-        left: 0;
-        top: 0;
-        width: 595.27pt;
-        height: 841.89pt;
+      margin: 0pt;
+      @frame cover_full_frame {
+        -pdf-frame-content: cover_full;
+        left: 0pt;
+        top: 0pt;
+        width: 595pt;
+        height: 841pt;
       }
     }
     /* Pages 2+: same header/footer frames as Sample 1 (Standard Invoice) */
@@ -141,12 +142,12 @@
 <body>
 {% now "y" as this_year %}
 
-{# PAGE 1 — Full A4 cover image (equal white margins painted; no leftover footer space) #}
-<div style="margin:0; padding:0; font-size:0; line-height:0;">
+{# PAGE 1 — Full A4 cover. CSS size in pt only (HTML width/height would be read as px). #}
+<div id="cover_full">
 {% if cover_full_src %}
-<img src="{{ cover_full_src }}" width="595" height="842" style="width:595.27pt; height:841.89pt; display:block; margin:0; padding:0; border:0;">
+<img src="{{ cover_full_src }}" style="width:595pt; height:841pt;">
 {% else %}
-<img src="{% static 'quotation/proposal/cover_left.png' %}" width="595" height="842" style="width:595.27pt; height:841.89pt; display:block; margin:0; padding:0; border:0;">
+<img src="{% static 'quotation/proposal/cover_left.png' %}" style="width:595pt; height:841pt;">
 {% endif %}
 </div>
 
