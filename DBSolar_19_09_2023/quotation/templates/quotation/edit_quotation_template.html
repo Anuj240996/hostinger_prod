@@ -267,7 +267,7 @@
     </div>
   </div>
   <div class="page-sheet">
-    <div class="page-label">Page 5 / 6 — Testimonials</div>
+    <div class="page-label">Page 5 / 7 — Testimonials</div>
     <div class="pdf-page-frame">
       {% if master.header_image %}
         <img class="hf-img" src="{{ master.header_image.url }}" alt="Header">
@@ -285,7 +285,51 @@
     </div>
   </div>
   <div class="page-sheet">
-    <div class="page-label">Page 6 / 6 — Thank you</div>
+    <div class="page-label">Page 6 / 7 — List of Documents</div>
+    <p class="help-text mb-2">
+      Documents for solar project installation, plus documents required for loan (including ownership document options).
+    </p>
+    <div class="pdf-page-frame">
+      {% if master.header_image %}
+        <img class="hf-img" src="{{ master.header_image.url }}" alt="Header">
+      {% else %}
+        <img class="hf-img" src="{% static 'images/quotation_bg1.jpg' %}" alt="Header">
+      {% endif %}
+      <div class="page-body">
+        <b>Documents Required for Solar Project Installation</b>
+        <ol class="mb-2">
+          <li>Electrical Bill</li>
+          <li>Aadhaar Card</li>
+          <li>PAN Card</li>
+          <li>Passport Size Photo</li>
+          <li>Nationalised Cancelled Cheque or Bank Passbook of Aadhaar Seeding Bank Photo</li>
+          <li>Advance Cheque</li>
+          <li>Pre Installation Site Photo</li>
+          <li>Email ID</li>
+          <li>Mobile No</li>
+          <li>Sign on Purchase Order</li>
+        </ol>
+        <b>List of Documents for Solar Project Installation for Loan</b>
+        <ol class="mb-0">
+          <li>Aadhaar Card</li>
+          <li>PAN Card</li>
+          <li>Bank Passbook / Cheque Photo</li>
+          <li>Pre Installation Site Photo</li>
+          <li>Email ID</li>
+          <li>Mobile No</li>
+          <li>MSEB Light Bill</li>
+          <li>Ownership Document — any one of the following (Property tax receipt, Panchayat letter, Land records, Land possession certificate, Sale Deed, Lease Deed, Government allotment / occupancy letter, Partition deed, Mutation certificate, Share certificate with NOC, Flat allotment letter, Occupancy certificate, Letter of possession, NOC from society)</li>
+        </ol>
+      </div>
+      {% if master.footer_image %}
+        <img class="hf-img" src="{{ master.footer_image.url }}" alt="Footer">
+      {% else %}
+        <img class="hf-img" src="{% static 'images/address.jpg' %}" alt="Footer">
+      {% endif %}
+    </div>
+  </div>
+  <div class="page-sheet">
+    <div class="page-label">Page 7 / 7 — Thank you</div>
     <p class="help-text mb-2">Bank Details, Company Details, Contact Person and company seal first, then the Thank you image below (no grey background).</p>
     <div class="pdf-page-frame">
       {% if master.header_image %}
