@@ -137,7 +137,7 @@
   {% if template_key == 'standard_industrial' %}
 
   <div class="page-sheet">
-    <div class="page-label">Page 1 / 6 — Cover</div>
+    <div class="page-label">Page 1 / 7 — Cover</div>
     <p class="help-text mb-3">
       Same as generated PDF: cover fills the full A4 page. Left photo + yellow / navy / yellow.
       Cover has no Sample 1 header/footer.
@@ -192,7 +192,7 @@
   </div>
 
   <div class="page-sheet">
-    <div class="page-label">Page 2 / 6 — About company</div>
+    <div class="page-label">Page 2 / 7 — About company</div>
     <p class="help-text mb-2">Photo on this page is editable. No Logo rectangle. About company text stays below the photo.</p>
     <div class="pdf-page-frame">
       {% if master.header_image %}
@@ -227,7 +227,7 @@
     </form>
   </div>
   <div class="page-sheet">
-    <div class="page-label">Page 3 / 6 — Quotation (EST layout)</div>
+    <div class="page-label">Page 3 / 7 — Quotation (EST layout)</div>
     <div class="pdf-page-frame">
       {% if master.header_image %}
         <img class="hf-img" src="{{ master.header_image.url }}" alt="Header">
@@ -249,7 +249,7 @@
     <p class="help-text mb-0">These two Sample 1 tables print after the quotation page and before Terms &amp; Condition: DETAILS FOR THE MAJOR COMPONENTS and PAYBACK CALCULATIONS.</p>
   </div>
   <div class="page-sheet">
-    <div class="page-label">Page 4 / 6 — Terms &amp; Condition</div>
+    <div class="page-label">Page 4 / 7 — Terms &amp; Condition</div>
     <div class="pdf-page-frame">
       {% if master.header_image %}
         <img class="hf-img" src="{{ master.header_image.url }}" alt="Header">
