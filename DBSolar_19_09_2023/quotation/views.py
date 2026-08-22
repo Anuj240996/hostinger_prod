@@ -5314,9 +5314,9 @@ def industrial_quotation_pdf(request, pk):
             formatted_date_long = date_value.strftime('%d %b, %Y')
             expiry_value = getattr(quotation, 'valid_until', None)
             if expiry_value and hasattr(expiry_value, 'strftime'):
-                formatted_expiry_date = expiry_value.strftime('%d %b, %Y')
+                formatted_expiry_date = expiry_value.strftime('%d/%m/%Y')
             else:
-                formatted_expiry_date = (date_value + timedelta(days=7)).strftime('%d %b, %Y')
+                formatted_expiry_date = (date_value + timedelta(days=7)).strftime('%d/%m/%Y')
     except Exception:
         formatted_date_long = formatted_date
         formatted_expiry_date = formatted_date

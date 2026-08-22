@@ -216,6 +216,33 @@ def _render_pdf417_bars_rgba(data, target_width, max_height=None):
     return _make_white_transparent(img)
 
 
+def _cover_by_and_contact(quotation):
+    """Associate dropdown first; otherwise first representative."""
+    associate = getattr(quotation, "assigned_associate", None)
+    if associate is not None:
+        name = (associate.get_full_name() or "").strip() or (associate.username or "")
+        contact = ""
+        try:
+            profile = getattr(associate, "profile", None)
+            if profile is not None:
+                contact = (profile.phone or profile.workphone or "").strip()
+        except Exception:
+            pass
+        if name:
+            return name, contact
+
+    by_name = getattr(quotation, "employee_name", "") or ""
+    by_contact = ""
+    try:
+        reps = list(quotation.representatives.all())
+        if reps:
+            by_name = getattr(reps[0], "name", None) or by_name
+            by_contact = getattr(reps[0], "contact", "") or ""
+    except Exception:
+        pass
+    return by_name, by_contact
+
+
 def render_proposal_cover_png(
     quotation, master, formatted_date, this_year, formatted_expiry_date=None, scan_url=None
 ):
@@ -335,15 +362,7 @@ def render_proposal_cover_png(
 
     ctype = getattr(quotation, "consumer_type", "") or ""
 
-    by_name = getattr(quotation, "employee_name", "") or ""
-    by_contact = ""
-    try:
-        reps = list(quotation.representatives.all())
-        if reps:
-            by_name = getattr(reps[0], "name", None) or by_name
-            by_contact = getattr(reps[0], "contact", "") or ""
-    except Exception:
-        pass
+    by_name, by_contact = _cover_by_and_contact(quotation)
 
     expiry = formatted_expiry_date or formatted_date or ""
 
