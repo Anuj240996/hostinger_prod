@@ -3,7 +3,6 @@ asgiref==3.8.1
 asn1crypto==1.5.1
 automium==0.2.6
 automium-web==0.1.1
-barcode==1.0.3
 bcrypt==4.0.1
 beautifulsoup4==4.11.2
 Brotli==1.0.9

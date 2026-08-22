@@ -172,26 +172,87 @@ def build_quotation_scan_url(request, pk):
     return "{}/quotation/{}/standard_industrial_scan/".format(base, pk)
 
 
-def _render_code128_barcode_image(data, label_text):
-    import barcode
-    from barcode.writer import ImageWriter
+def _render_code128_python_barcode(data):
+    """Render Code128 bars via python-barcode (not the unrelated PyPI 'barcode' package)."""
     from io import BytesIO
+
+    from barcode.writer import ImageWriter
+    import barcode as pybarcode
 
     writer = ImageWriter()
     writer.set_options(
         {
-            "module_width": 0.28,
-            "module_height": 10.0,
+            "module_width": 0.22,
+            "module_height": 14.0,
             "quiet_zone": 2.0,
             "font_size": 0,
             "text_distance": 1.0,
         }
     )
-    bar = barcode.get("code128", data, writer=writer)
+    bar = pybarcode.get("code128", data, writer=writer)
     buf = BytesIO()
     bar.write(buf, options={"write_text": False})
     buf.seek(0)
-    img = Image.open(buf).convert("RGB")
+    return Image.open(buf).convert("RGB")
+
+
+def _render_code128_reportlab_pdftoppm(data):
+    """Docker/Linux fallback: ReportLab canvas + pdftoppm (poppler-utils)."""
+    import shutil
+    import subprocess
+    import tempfile
+    from io import BytesIO
+
+    from reportlab.graphics.barcode import code128
+    from reportlab.pdfgen import canvas as rl_canvas
+
+    if not shutil.which("pdftoppm"):
+        raise RuntimeError("pdftoppm not available")
+
+    bc = code128.Code128(data, barHeight=55, barWidth=0.32)
+    page_w = max(int(bc.width) + 24, 120)
+    page_h = max(int(bc.height) + 24, 80)
+    pdf_buf = BytesIO()
+    c = rl_canvas.Canvas(pdf_buf, pagesize=(page_w, page_h))
+    bc.drawOn(c, 12, 12)
+    c.save()
+
+    fd, pdf_path = tempfile.mkstemp(prefix="dbsolar_bc_", suffix=".pdf")
+    os.close(fd)
+    png_base = pdf_path[:-4]
+    try:
+        with open(pdf_path, "wb") as handle:
+            handle.write(pdf_buf.getvalue())
+        subprocess.run(
+            ["pdftoppm", "-png", "-singlefile", "-r", "300", pdf_path, png_base],
+            check=True,
+            capture_output=True,
+        )
+        return Image.open(png_base + ".png").convert("RGB")
+    finally:
+        for path in (pdf_path, png_base + ".png"):
+            try:
+                if os.path.isfile(path):
+                    os.remove(path)
+            except OSError:
+                pass
+
+
+def _render_code128_barcode_image(data, label_text):
+    import logging
+
+    logger = logging.getLogger(__name__)
+    errors = []
+    img = None
+    for renderer in (_render_code128_python_barcode, _render_code128_reportlab_pdftoppm):
+        try:
+            img = renderer(data)
+            break
+        except Exception as exc:
+            errors.append("{}: {}".format(renderer.__name__, exc))
+    if img is None:
+        logger.error("Sample 2 cover barcode failed: %s", "; ".join(errors))
+        raise RuntimeError("Barcode render failed")
 
     label_font = _font(18)
     lw = _text_w(label_font, label_text)
@@ -262,8 +323,13 @@ def render_proposal_cover_png(
     try:
         barcode_img = _render_code128_barcode_image(scan_url or str(qid), str(qid))
         max_bw = col_w - 10
+        max_bh = max(80, y1 - (ty + 12) - 16)
+        scale = 1.0
         if barcode_img.width > max_bw:
-            scale = max_bw / float(barcode_img.width)
+            scale = min(scale, max_bw / float(barcode_img.width))
+        if barcode_img.height > max_bh:
+            scale = min(scale, max_bh / float(barcode_img.height))
+        if scale < 1.0:
             new_w = max(1, int(barcode_img.width * scale))
             new_h = max(1, int(barcode_img.height * scale))
             barcode_img = barcode_img.resize(
@@ -276,7 +342,9 @@ def render_proposal_cover_png(
         bg.paste(barcode_img, (4, 4))
         canvas.paste(bg, (bx - 4, by - 4))
     except Exception:
-        pass
+        import logging
+
+        logging.getLogger(__name__).exception("Sample 2 cover barcode placement failed")
 
     ny = y1 + 18
     logo = _open_image(getattr(master, "company_logo", None) if master else None)
