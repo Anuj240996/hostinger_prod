@@ -183,93 +183,31 @@ def _make_white_transparent(img_rgb, threshold=235):
     return img
 
 
-def _render_code128_python_barcode(data):
-    """Render Code128 bars via python-barcode (not the unrelated PyPI 'barcode' package)."""
-    from io import BytesIO
+def _render_pdf417_bars_rgba(data, target_width):
+    """Render PDF417 2D barcode, scaled to target_width, transparent background."""
+    from pdf417gen import encode, render_image
 
-    from barcode.writer import ImageWriter
-    import barcode as pybarcode
-
-    writer = ImageWriter()
-    writer.set_options(
-        {
-            "module_width": 0.22,
-            "module_height": 14.0,
-            "quiet_zone": 2.0,
-            "font_size": 0,
-            "text_distance": 1.0,
-        }
-    )
-    bar = pybarcode.get("code128", data, writer=writer)
-    buf = BytesIO()
-    bar.write(buf, options={"write_text": False})
-    buf.seek(0)
-    return Image.open(buf).convert("RGB")
-
-
-def _render_code128_reportlab_pdftoppm(data):
-    """Docker/Linux fallback: ReportLab canvas + pdftoppm (poppler-utils)."""
-    import shutil
-    import subprocess
-    import tempfile
-    from io import BytesIO
-
-    from reportlab.graphics.barcode import code128
-    from reportlab.pdfgen import canvas as rl_canvas
-
-    if not shutil.which("pdftoppm"):
-        raise RuntimeError("pdftoppm not available")
-
-    bc = code128.Code128(data, barHeight=55, barWidth=0.32)
-    page_w = max(int(bc.width) + 24, 120)
-    page_h = max(int(bc.height) + 24, 80)
-    pdf_buf = BytesIO()
-    c = rl_canvas.Canvas(pdf_buf, pagesize=(page_w, page_h))
-    bc.drawOn(c, 12, 12)
-    c.save()
-
-    fd, pdf_path = tempfile.mkstemp(prefix="dbsolar_bc_", suffix=".pdf")
-    os.close(fd)
-    png_base = pdf_path[:-4]
+    columns = 4
+    if len(data) > 120:
+        columns = 5
     try:
-        with open(pdf_path, "wb") as handle:
-            handle.write(pdf_buf.getvalue())
-        subprocess.run(
-            ["pdftoppm", "-png", "-singlefile", "-r", "300", pdf_path, png_base],
-            check=True,
-            capture_output=True,
-        )
-        return Image.open(png_base + ".png").convert("RGB")
-    finally:
-        for path in (pdf_path, png_base + ".png"):
-            try:
-                if os.path.isfile(path):
-                    os.remove(path)
-            except OSError:
-                pass
+        codes = encode(data, columns=columns)
+    except Exception:
+        codes = encode(data)
 
-
-def _render_code128_bars_rgba(data, target_width):
-    """Render Code128 bars only, scaled to target_width, transparent background."""
-    import logging
-
-    logger = logging.getLogger(__name__)
-    errors = []
-    img = None
-    for renderer in (_render_code128_python_barcode, _render_code128_reportlab_pdftoppm):
-        try:
-            img = renderer(data)
-            break
-        except Exception as exc:
-            errors.append("{}: {}".format(renderer.__name__, exc))
-    if img is None:
-        logger.error("Sample 2 cover barcode failed: %s", "; ".join(errors))
-        raise RuntimeError("Barcode render failed")
+    img = render_image(
+        codes,
+        scale=2,
+        ratio=3,
+        padding=0,
+        fg_color="#000000",
+        bg_color="#FFFFFF",
+    )
 
     target_width = max(80, int(target_width))
     scale = target_width / float(img.width)
     new_w = target_width
-    new_h = max(28, int(round(img.height * scale)))
+    new_h = max(24, int(round(img.height * scale)))
     img = img.resize(
         (new_w, new_h),
         Image.Resampling.LANCZOS if hasattr(Image, "Resampling") else Image.LANCZOS,
@@ -331,7 +269,7 @@ def render_proposal_cover_png(
         ty += 52
 
     try:
-        barcode_img = _render_code128_bars_rgba(scan_url or str(qid), title_width)
+        barcode_img = _render_pdf417_bars_rgba(scan_url or str(qid), title_width)
         bx = x_right - barcode_img.width
         by = ty + 8
         canvas.paste(barcode_img, (bx, by), barcode_img)

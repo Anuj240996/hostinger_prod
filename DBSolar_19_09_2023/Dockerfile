@@ -37,7 +37,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 COPY requirements.txt /app/
 RUN pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir -r requirements.txt && \
-    pip install --no-cache-dir --force-reinstall python-barcode==0.13.1 && \
+    pip install --no-cache-dir --force-reinstall python-barcode==0.13.1 pdf417gen==0.8.1 && \
     pip install --no-cache-dir gunicorn psycopg2-binary
 
 # Copy project files (including asert/, media/, and static/ directories)
