@@ -582,6 +582,9 @@ def lead_edit(request, pk):
         form = LeadForm(request.POST, instance=lead, organization=request.organization)
         if form.is_valid():
             form.save()
+            from quotation.conversion_utils import sync_quotation_consumer_names_for_lead
+
+            sync_quotation_consumer_names_for_lead(lead)
             messages.success(request, 'Lead updated successfully!')
             return redirect(f'/new-lead/leads/{lead.id}/')
     else:

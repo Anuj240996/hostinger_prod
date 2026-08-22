@@ -4,6 +4,23 @@ from django.db import connection
 from django.utils import timezone
 
 
+def sync_consumer_name_from_crm_lead(quotation, lead):
+    """Keep denormalized consumer_name aligned with the selected CRM lead."""
+    if lead and (lead.name or "").strip():
+        quotation.consumer_name = (lead.name or "")[:255]
+
+
+def sync_quotation_consumer_names_for_lead(lead):
+    """Push lead.name onto all ERP quotations linked to this lead."""
+    if not lead or not (lead.name or "").strip():
+        return 0
+    from quotation.models import Quotation
+
+    return Quotation.objects.filter(lead_id=lead.pk).update(
+        consumer_name=(lead.name or "")[:255]
+    )
+
+
 def finalize_quotation_conversion(quotation, converted_by=None):
     """
     Mark an approved ERP quotation as converted after consumer form submit.

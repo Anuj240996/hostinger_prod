@@ -7798,6 +7798,9 @@ def edit_quotation(request, pk):
                 form.cleaned_data.get('lead'),
                 form.cleaned_data.get('survey'),
             )
+            from .conversion_utils import sync_consumer_name_from_crm_lead
+
+            sync_consumer_name_from_crm_lead(quotation, form.cleaned_data.get('lead'))
             ensure_quotation_consumer_name(quotation)
 
             # Handle system_na checkbox
