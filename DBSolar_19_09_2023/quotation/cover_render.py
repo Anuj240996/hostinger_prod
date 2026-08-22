@@ -216,6 +216,31 @@ def _render_pdf417_bars_rgba(data, target_width, max_height=None):
     return _make_white_transparent(img)
 
 
+def _cover_proposal_title_lines(quotation):
+    """Cover heading from quotation project_type, e.g. Ground Mount PV Solar Proposal."""
+    project_type = (getattr(quotation, "project_type", None) or "").strip()
+    mapping = {
+        "RoofTop": ("Roof Top Solar", "Proposal"),
+        "Rooftop": ("Roof Top Solar", "Proposal"),
+        "Ground Mount PV": ("Ground Mount PV Solar", "Proposal"),
+        "Street Light": ("Street Light Solar", "Proposal"),
+        "Water Pump": ("Water Pump Solar", "Proposal"),
+        "Hi-Mas": ("Hi Mas Solar", "Proposal"),
+        "Hi Mas": ("Hi Mas Solar", "Proposal"),
+        "Other": ("Solar", "Proposal"),
+    }
+    if project_type in mapping:
+        return mapping[project_type]
+    if project_type.lower().replace("-", " ").replace("_", " ") in ("rooftop", "roof top"):
+        return ("Roof Top Solar", "Proposal")
+    if project_type:
+        label = project_type.replace("Hi-Mas", "Hi Mas").strip()
+        if not label.lower().endswith(" solar"):
+            label = "{} Solar".format(label)
+        return (label, "Proposal")
+    return ("Roof Top Solar", "Proposal")
+
+
 def _cover_by_and_contact(quotation):
     """Associate dropdown first; otherwise first representative."""
     associate = getattr(quotation, "assigned_associate", None)
@@ -289,8 +314,14 @@ def render_proposal_cover_png(
     qid = quotation_reference_id(quotation, this_year)
 
     title_font = _font(42, bold=True)
-    title_lines = ("Roof Top Solar", "Proposal")
+    title_lines = _cover_proposal_title_lines(quotation)
     title_width = max(_text_w(title_font, line) for line in title_lines)
+    if title_width > col_w - 10:
+        title_font = _font(36, bold=True)
+        title_width = max(_text_w(title_font, line) for line in title_lines)
+    if title_width > col_w - 10:
+        title_font = _font(30, bold=True)
+        title_width = max(_text_w(title_font, line) for line in title_lines)
     ty = oy + 40
     for line in title_lines:
         draw.text((x_right - _text_w(title_font, line), ty), line, font=title_font, fill=BLACK)
