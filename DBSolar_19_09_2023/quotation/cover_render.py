@@ -183,13 +183,11 @@ def _make_white_transparent(img_rgb, threshold=235):
     return img
 
 
-def _render_pdf417_bars_rgba(data, target_width):
-    """Render PDF417 2D barcode, scaled to target_width, transparent background."""
+def _render_pdf417_bars_rgba(data, target_width, max_height=None):
+    """Render compact PDF417 2D barcode with transparent background."""
     from pdf417gen import encode, render_image
 
-    columns = 4
-    if len(data) > 120:
-        columns = 5
+    columns = 5 if len(data) > 120 else 4
     try:
         codes = encode(data, columns=columns)
     except Exception:
@@ -197,17 +195,20 @@ def _render_pdf417_bars_rgba(data, target_width):
 
     img = render_image(
         codes,
-        scale=2,
+        scale=1,
         ratio=3,
         padding=0,
         fg_color="#000000",
         bg_color="#FFFFFF",
     )
 
-    target_width = max(80, int(target_width))
+    target_width = max(60, int(target_width))
     scale = target_width / float(img.width)
-    new_w = target_width
-    new_h = max(24, int(round(img.height * scale)))
+    if max_height:
+        max_height = max(20, int(max_height))
+        scale = min(scale, max_height / float(img.height))
+    new_w = max(1, int(round(img.width * scale)))
+    new_h = max(1, int(round(img.height * scale)))
     img = img.resize(
         (new_w, new_h),
         Image.Resampling.LANCZOS if hasattr(Image, "Resampling") else Image.LANCZOS,
@@ -269,12 +270,18 @@ def render_proposal_cover_png(
         ty += 52
 
     try:
-        barcode_img = _render_pdf417_bars_rgba(scan_url or str(qid), title_width)
+        barcode_width = int(title_width * 0.52)
+        barcode_height = int(title_width * 0.16)
+        barcode_img = _render_pdf417_bars_rgba(
+            scan_url or str(qid),
+            barcode_width,
+            max_height=barcode_height,
+        )
         bx = x_right - barcode_img.width
         by = ty + 8
         canvas.paste(barcode_img, (bx, by), barcode_img)
-        label_font = _font(16)
-        label_y = by + barcode_img.height + 4
+        label_font = _font(14)
+        label_y = by + barcode_img.height + 3
         draw.text((x_right - _text_w(label_font, str(qid)), label_y), str(qid), font=label_font, fill=BLACK)
     except Exception:
         import logging
