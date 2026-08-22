@@ -172,6 +172,17 @@ def build_quotation_scan_url(request, pk):
     return "{}/quotation/{}/standard_industrial_scan/".format(base, pk)
 
 
+def _make_white_transparent(img_rgb, threshold=235):
+    img = img_rgb.convert("RGBA")
+    pixels = img.load()
+    for y in range(img.height):
+        for x in range(img.width):
+            r, g, b = pixels[x, y][:3]
+            if r >= threshold and g >= threshold and b >= threshold:
+                pixels[x, y] = (255, 255, 255, 0)
+    return img
+
+
 def _render_code128_python_barcode(data):
     """Render Code128 bars via python-barcode (not the unrelated PyPI 'barcode' package)."""
     from io import BytesIO
@@ -238,7 +249,8 @@ def _render_code128_reportlab_pdftoppm(data):
                 pass
 
 
-def _render_code128_barcode_image(data, label_text):
+def _render_code128_bars_rgba(data, target_width):
+    """Render Code128 bars only, scaled to target_width, transparent background."""
     import logging
 
     logger = logging.getLogger(__name__)
@@ -254,19 +266,15 @@ def _render_code128_barcode_image(data, label_text):
         logger.error("Sample 2 cover barcode failed: %s", "; ".join(errors))
         raise RuntimeError("Barcode render failed")
 
-    label_font = _font(18)
-    lw = _text_w(label_font, label_text)
-    lh = 28
-    pad = 4
-    out_w = max(img.width, int(lw) + 10)
-    out_h = img.height + lh + pad
-    out = Image.new("RGB", (out_w, out_h), WHITE)
-    bx = (out_w - img.width) // 2
-    out.paste(img, (bx, 0))
-    draw = ImageDraw.Draw(out)
-    tx = (out_w - lw) // 2
-    draw.text((tx, img.height + pad), label_text, font=label_font, fill=BLACK)
-    return out
+    target_width = max(80, int(target_width))
+    scale = target_width / float(img.width)
+    new_w = target_width
+    new_h = max(28, int(round(img.height * scale)))
+    img = img.resize(
+        (new_w, new_h),
+        Image.Resampling.LANCZOS if hasattr(Image, "Resampling") else Image.LANCZOS,
+    )
+    return _make_white_transparent(img)
 
 
 def render_proposal_cover_png(
@@ -315,32 +323,21 @@ def render_proposal_cover_png(
     qid = quotation_reference_id(quotation, this_year)
 
     title_font = _font(42, bold=True)
+    title_lines = ("Roof Top Solar", "Proposal")
+    title_width = max(_text_w(title_font, line) for line in title_lines)
     ty = oy + 40
-    for line in ("Roof Top Solar", "Proposal"):
+    for line in title_lines:
         draw.text((x_right - _text_w(title_font, line), ty), line, font=title_font, fill=BLACK)
         ty += 52
 
     try:
-        barcode_img = _render_code128_barcode_image(scan_url or str(qid), str(qid))
-        max_bw = col_w - 10
-        max_bh = max(80, y1 - (ty + 12) - 16)
-        scale = 1.0
-        if barcode_img.width > max_bw:
-            scale = min(scale, max_bw / float(barcode_img.width))
-        if barcode_img.height > max_bh:
-            scale = min(scale, max_bh / float(barcode_img.height))
-        if scale < 1.0:
-            new_w = max(1, int(barcode_img.width * scale))
-            new_h = max(1, int(barcode_img.height * scale))
-            barcode_img = barcode_img.resize(
-                (new_w, new_h),
-                Image.Resampling.LANCZOS if hasattr(Image, "Resampling") else Image.LANCZOS,
-            )
+        barcode_img = _render_code128_bars_rgba(scan_url or str(qid), title_width)
         bx = x_right - barcode_img.width
-        by = ty + 12
-        bg = Image.new("RGB", (barcode_img.width + 8, barcode_img.height + 8), WHITE)
-        bg.paste(barcode_img, (4, 4))
-        canvas.paste(bg, (bx - 4, by - 4))
+        by = ty + 8
+        canvas.paste(barcode_img, (bx, by), barcode_img)
+        label_font = _font(16)
+        label_y = by + barcode_img.height + 4
+        draw.text((x_right - _text_w(label_font, str(qid)), label_y), str(qid), font=label_font, fill=BLACK)
     except Exception:
         import logging
 
