@@ -69,6 +69,7 @@ urlpatterns = [
     # path("edit-model/", views.edit_any_model, name="edit_any_model"),
     path('<int:pk>/industrial_pdf/', views.industrial_quotation_pdf, name='industrial_quotation_pdf'),
     path('<int:pk>/standard_industrial_pdf/', views.standard_industrial_quotation_pdf, name='standard_industrial_quotation_pdf'),
+    path('<int:pk>/standard_industrial_scan/', views.standard_industrial_quotation_scan, name='standard_industrial_scan'),
     path('<int:pk>/pdf/', views.quotation_pdf, name='quotation_pdf'),
 
 

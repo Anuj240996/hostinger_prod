@@ -135,7 +135,82 @@ def _draw_right_labeled(draw, x_right, y, label, value, label_font, value_font, 
     return y + line_gap
 
 
-def render_proposal_cover_png(quotation, master, formatted_date, this_year, formatted_expiry_date=None):
+def quotation_reference_id(quotation, this_year):
+    ctype = getattr(quotation, "consumer_type", "") or ""
+    qno = getattr(quotation, "quotation_no", "") or quotation.pk
+    if ctype == "Residential":
+        return "DB/Res/{}/{}".format(qno, this_year)
+    if ctype == "Commercial":
+        return "DB/Comm/{}/{}".format(qno, this_year)
+    if ctype == "Industrial":
+        return "DB/Ind/{}/{}".format(qno, this_year)
+    if ctype == "Government":
+        return "DB/Gov/{}/{}".format(qno, this_year)
+    return str(qno)
+
+
+def quotation_scan_password(quotation, year=None):
+    from datetime import datetime
+
+    if year is None:
+        year = datetime.now().year
+    name = (getattr(quotation, "consumer_name", "") or "").strip()
+    letters = "".join(ch for ch in name.upper() if ch.isalpha())[:4]
+    if len(letters) < 4:
+        letters = (letters + "XXXX")[:4]
+    return "{}{}".format(letters, year)
+
+
+def build_quotation_scan_url(request, pk):
+    from django.urls import reverse
+
+    if request is not None:
+        return request.build_absolute_uri(
+            reverse("quotation:standard_industrial_scan", kwargs={"pk": pk})
+        )
+    base = os.environ.get("SITE_BASE_URL", "https://app.db-solar.co.in").rstrip("/")
+    return "{}/quotation/{}/standard_industrial_scan/".format(base, pk)
+
+
+def _render_code128_barcode_image(data, label_text):
+    import barcode
+    from barcode.writer import ImageWriter
+    from io import BytesIO
+
+    writer = ImageWriter()
+    writer.set_options(
+        {
+            "module_width": 0.28,
+            "module_height": 10.0,
+            "quiet_zone": 2.0,
+            "font_size": 0,
+            "text_distance": 1.0,
+        }
+    )
+    bar = barcode.get("code128", data, writer=writer)
+    buf = BytesIO()
+    bar.write(buf, options={"write_text": False})
+    buf.seek(0)
+    img = Image.open(buf).convert("RGB")
+
+    label_font = _font(18)
+    lw = _text_w(label_font, label_text)
+    lh = 28
+    pad = 4
+    out_w = max(img.width, int(lw) + 10)
+    out_h = img.height + lh + pad
+    out = Image.new("RGB", (out_w, out_h), WHITE)
+    bx = (out_w - img.width) // 2
+    out.paste(img, (bx, 0))
+    draw = ImageDraw.Draw(out)
+    tx = (out_w - lw) // 2
+    draw.text((tx, img.height + pad), label_text, font=label_font, fill=BLACK)
+    return out
+
+
+def render_proposal_cover_png(
+    quotation, master, formatted_date, this_year, formatted_expiry_date=None, scan_url=None
+):
     """
     Full A4 JPEG with equal white margins on all four sides.
     Left photo + yellow / navy / yellow like the Sample 2 edit preview.
@@ -176,11 +251,32 @@ def render_proposal_cover_png(quotation, master, formatted_date, this_year, form
     x_right = inner_r - pad
     col_w = max(40, x_right - x_left)
 
+    qid = quotation_reference_id(quotation, this_year)
+
     title_font = _font(42, bold=True)
     ty = oy + 40
     for line in ("Roof Top Solar", "Proposal"):
         draw.text((x_right - _text_w(title_font, line), ty), line, font=title_font, fill=BLACK)
         ty += 52
+
+    try:
+        barcode_img = _render_code128_barcode_image(scan_url or str(qid), str(qid))
+        max_bw = col_w - 10
+        if barcode_img.width > max_bw:
+            scale = max_bw / float(barcode_img.width)
+            new_w = max(1, int(barcode_img.width * scale))
+            new_h = max(1, int(barcode_img.height * scale))
+            barcode_img = barcode_img.resize(
+                (new_w, new_h),
+                Image.Resampling.LANCZOS if hasattr(Image, "Resampling") else Image.LANCZOS,
+            )
+        bx = x_right - barcode_img.width
+        by = ty + 12
+        bg = Image.new("RGB", (barcode_img.width + 8, barcode_img.height + 8), WHITE)
+        bg.paste(barcode_img, (4, 4))
+        canvas.paste(bg, (bx - 4, by - 4))
+    except Exception:
+        pass
 
     ny = y1 + 18
     logo = _open_image(getattr(master, "company_logo", None) if master else None)
@@ -228,17 +324,6 @@ def render_proposal_cover_png(quotation, master, formatted_date, this_year, form
     consumer_mobile = getattr(quotation, "consumer_mobile", "") or ""
 
     ctype = getattr(quotation, "consumer_type", "") or ""
-    qno = getattr(quotation, "quotation_no", "") or quotation.pk
-    if ctype == "Residential":
-        qid = "DB/Res/{}/{}".format(qno, this_year)
-    elif ctype == "Commercial":
-        qid = "DB/Comm/{}/{}".format(qno, this_year)
-    elif ctype == "Industrial":
-        qid = "DB/Ind/{}/{}".format(qno, this_year)
-    elif ctype == "Government":
-        qid = "DB/Gov/{}/{}".format(qno, this_year)
-    else:
-        qid = str(qno)
 
     by_name = getattr(quotation, "employee_name", "") or ""
     by_contact = ""

@@ -5364,15 +5364,18 @@ def industrial_quotation_pdf(request, pk):
                 render_proposal_cover_png,
                 render_cover_left_photo,
                 render_about_photo,
+                build_quotation_scan_url,
             )
             from datetime import datetime
             this_year = datetime.now().strftime('%y')
+            scan_url = build_quotation_scan_url(request, quotation.pk)
             context['cover_full_src'] = render_proposal_cover_png(
                 context.get('quotation'),
                 master,
                 context.get('formatted_date'),
                 this_year,
                 context.get('formatted_expiry_date'),
+                scan_url=scan_url,
             ) or ''
             context['cover_left_src'] = render_cover_left_photo(master) or ''
             context['about_photo_src'] = render_about_photo() or ''
@@ -5429,6 +5432,46 @@ def standard_industrial_quotation_pdf(request, pk):
     request._quotation_pdf_filename = f'standard_industrial_quotation_{pk}.pdf'
     request._quotation_pdf_skip_sanitize = True
     return industrial_quotation_pdf(request, pk)
+
+
+QUOTATION_SCAN_SESSION_PREFIX = "quotation_scan_unlocked_"
+
+
+def _quotation_password_year(quotation):
+    from datetime import datetime
+
+    date_value = quotation.date or quotation.created_at or timezone.now()
+    if hasattr(date_value, "year"):
+        return date_value.year
+    return datetime.now().year
+
+
+def standard_industrial_quotation_scan(request, pk):
+    """Public barcode scan entry: password gate before Sample 2 PDF."""
+    quotation = get_object_or_404(Quotation.objects.all(), pk=pk)
+    from .cover_render import quotation_reference_id, quotation_scan_password
+    from datetime import datetime
+
+    this_year = datetime.now().strftime("%y")
+    qid = quotation_reference_id(quotation, this_year)
+    error = ""
+    if request.method == "POST":
+        password = (request.POST.get("password") or "").strip().upper()
+        expected = quotation_scan_password(quotation, _quotation_password_year(quotation)).upper()
+        if password == expected:
+            request.session["{}{}".format(QUOTATION_SCAN_SESSION_PREFIX, pk)] = True
+            request.session.modified = True
+            return redirect("quotation:standard_industrial_quotation_pdf", pk=pk)
+        error = "Incorrect password. Please try again."
+    return render(
+        request,
+        "quotation/scan_password.html",
+        {
+            "quotation": quotation,
+            "qid": qid,
+            "error": error,
+        },
+    )
 
 
 
