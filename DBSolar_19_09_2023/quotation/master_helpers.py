@@ -134,7 +134,7 @@ PDF_TEMPLATE_OPTIONS = [
         'label': 'Standard & Industrial Quotation',
         'sample_label': 'Sample 2',
         'group': 'standard',
-        'hint': 'Proposal PDF (cover, about, invoice, components & payback, terms, testimonials, thank you)',
+        'hint': 'Proposal PDF (cover, about, invoice, components & payback, terms, documents, thank you)',
         'template': 'quotation/standard_industrial_quotation.html',
         'url_name': 'quotation:standard_industrial_quotation_pdf',
         'pdf_path': '/quotation/{pk}/standard_industrial_pdf/',
