@@ -5172,6 +5172,45 @@ logger = logging.getLogger(__name__)
 #         }
 #         return render(request, self.template_name, context)
 
+
+def assign_sales_billno_to_purchase_serials(serial_list, stock, billobj):
+    """
+    Assign sales_billno on purchaseserial for a sale save:
+    - never update rows where return_bill_id is set
+    - only update rows where sales_billno_id is null
+    - update only the sales_billno field (one available row per serial)
+    """
+    if not billobj or not serial_list:
+        return 0
+    cleaned = []
+    seen = set()
+    for raw in serial_list:
+        sn = (raw or "").strip()
+        if not sn:
+            continue
+        key = sn.upper()
+        if key in seen:
+            continue
+        seen.add(key)
+        cleaned.append(sn)
+
+    updated = 0
+    for sn in cleaned:
+        qs = PurchaseSerial.objects.filter(
+            serialNo=sn,
+            sales_billno__isnull=True,
+            return_bill__isnull=True,
+        ).order_by("id")
+        if stock is not None:
+            qs = qs.filter(stock=stock)
+        row = qs.first()
+        if row is None:
+            continue
+        PurchaseSerial.objects.filter(pk=row.pk).update(sales_billno=billobj)
+        updated += 1
+    return updated
+
+
 class SaleCreateView(LoginRequiredMixin, View):
     template_name = 'sales/new_sale.html'
     login_url = '/index/'
@@ -5241,19 +5280,11 @@ class SaleCreateView(LoginRequiredMixin, View):
                             serial_numbers = request.POST.get(f'serials-{stock.id}')
                             if serial_numbers:
                                  serial_list = serial_numbers.split(',')
-                                 PurchaseSerial.objects.filter(serialNo__in=serial_list, stock=stock).update(
-                                        sales_billno=billobj
-                                 )
+                                 assign_sales_billno_to_purchase_serials(serial_list, stock, billobj)
                             else:
                                 if barcodes:
                                     barcode_list = barcodes.split(',')
-                                    for barcode in barcode_list:
-                                        if barcode.strip():  # Ensure barcode is not empty
-                                            # Update or create PurchaseSerial record
-                                            PurchaseSerial.objects.filter(serialNo=barcode.strip()).update(
-                                                sales_billno=billobj,
-                                                stock=stock
-                                            )
+                                    assign_sales_billno_to_purchase_serials(barcode_list, stock, billobj)
 
                     messages.success(request, "Sales items have been registered successfully")
                     return redirect('sale-bill', billno=billobj.billno)
@@ -5363,7 +5394,8 @@ def search_barcode(request):
         # Search for serial numbers matching the barcode
         serial_numbers = PurchaseSerial.objects.filter(
             serialNo=barcode,
-            sales_billno__isnull=True  # Only include serials not already sold
+            sales_billno__isnull=True,  # Only include serials not already sold
+            return_bill__isnull=True,   # Do not reuse returned historical rows
         ).select_related('stock', 'billno').values(
             'serialNo',
             'stock_id',
@@ -5568,9 +5600,7 @@ class customeView(LoginRequiredMixin, View):
                             serial_numbers = request.POST.get(f'serials-{stock.id}')
                             if serial_numbers:
                                 serial_list = serial_numbers.split(',')
-                                PurchaseSerial.objects.filter(serialNo__in=serial_list, stock=stock).update(
-                                    sales_billno=billobj
-                                )
+                                assign_sales_billno_to_purchase_serials(serial_list, stock, billobj)
 
                     # If everything goes well, log and redirect
                     messages.success(request, "Purchased items have been registered successfully")
@@ -5823,9 +5853,7 @@ class SaleCreateView_bill(LoginRequiredMixin, View):
                             serial_numbers = request.POST.get(f'serials-{stock.id}')
                             if serial_numbers:
                                 serial_list = serial_numbers.split(',')
-                                PurchaseSerial.objects.filter(serialNo__in=serial_list, stock=stock).update(
-                                    sales_billno=billobj
-                                )
+                                assign_sales_billno_to_purchase_serials(serial_list, stock, billobj)
 
                     # If everything goes well, log and redirect
                     messages.success(request, "Purchased items have been registered successfully")
@@ -6112,20 +6140,26 @@ def get_serial_numbers(request):
         .filter(
             stock_id=stock_id,
             sales_billno__isnull=True,
-            final_salebill__isnull=True
+            final_salebill__isnull=True,
+            return_bill__isnull=True,
         )
         .select_related('billno')
-        .order_by('billno__billno', 'serialNo')
+        .order_by('billno__billno', 'serialNo', 'id')
     )
 
     serials = []
     grouped = {}
+    seen = set()
 
     for s in serial_numbers:
         bill_no = str(s.billno.billno) if s.billno_id else "N/A"
         serial_value = (s.serialNo or "").strip()
         if not serial_value:
             continue
+        key = serial_value.upper()
+        if key in seen:
+            continue
+        seen.add(key)
         serials.append({
             'serialNo': serial_value,
             'billno': bill_no
@@ -6171,8 +6205,8 @@ def update_sales_billno(request):
             selected_serial_numbers = request.POST.getlist('selectedSerialNumbers')
             sales_billno = request.POST.get('sales_billno')
 
-            # Update purchaseserial entries
-            PurchaseSerial.objects.filter(serialNo__in=selected_serial_numbers).update(sales_billno=sales_billno)
+            # Update only available purchaseserial rows (sales_billno null, return_bill null)
+            assign_sales_billno_to_purchase_serials(selected_serial_numbers, None, sales_billno)
 
             return JsonResponse({'success': True})
 
@@ -7360,11 +7394,15 @@ def update_sales_billno_edit(request):
 
         # Update checked serial numbers with the sales bill number
         if checked_serial_numbers:
-            PurchaseSerial.objects.filter(serialNo__in=checked_serial_numbers).update(sales_billno=sales_billno)
+            assign_sales_billno_to_purchase_serials(checked_serial_numbers, None, sales_billno)
 
-        # Update unchecked serial numbers to have serialNo set to None
+        # Clear only available/non-return rows for unchecked serials on this bill
         if unchecked_serial_numbers:
-            PurchaseSerial.objects.filter(serialNo__in=unchecked_serial_numbers).update(sales_billno=None)
+            PurchaseSerial.objects.filter(
+                serialNo__in=unchecked_serial_numbers,
+                sales_billno=sales_billno,
+                return_bill__isnull=True,
+            ).update(sales_billno=None)
 
         return JsonResponse({'success': True})
     return JsonResponse({'success': False, 'error': 'Invalid request method'})
@@ -7435,11 +7473,13 @@ def edit_sale_view(request, pk):
 
 
         for stock_id, serial_numbers in serials_data.items():
-            PurchaseSerial.objects.filter(stock_id=stock_id, sales_billno=sale_bill.billno).update(sales_billno=None)
             PurchaseSerial.objects.filter(
                 stock_id=stock_id,
-                serialNo__in=serial_numbers
-            ).update(sales_billno=sale_bill.billno)
+                sales_billno=sale_bill.billno,
+                return_bill__isnull=True,
+            ).update(sales_billno=None)
+            stock = Stock.objects.filter(pk=stock_id).first()
+            assign_sales_billno_to_purchase_serials(serial_numbers, stock, sale_bill)
 
 
         for item in sale_items:
