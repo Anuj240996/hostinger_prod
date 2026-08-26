@@ -302,6 +302,21 @@ class PurchaseItem(models.Model):
                         [row[0], self.pk],
                     )
 
+    def get_unique_serials(self):
+        """Return PurchaseSerial rows with unique serialNo values (first occurrence kept)."""
+        seen = set()
+        unique = []
+        for serial in self.purchaseserial_set.all().order_by("id"):
+            sn = (serial.serialNo or "").strip()
+            if not sn:
+                continue
+            key = sn.upper()
+            if key in seen:
+                continue
+            seen.add(key)
+            unique.append(serial)
+        return unique
+
     def __str__(self):
         return "Bill no: " + str(self.billno.billno) + ", Item = " + self.stock.name
 

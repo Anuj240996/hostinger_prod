@@ -226,13 +226,13 @@
                                             <td class="inner-box" style="width: 5%;">&nbsp; {{ forloop.counter }}</td>
                                              <td class="inner-box text-capitalize" style="width: {% if billdetails.gst_amount != 0 %}30{% else %}39{% endif %}%; line-height: 1.2;">
                                                 <span style="padding-left: 10px; display: inline-block;">{{ item.stock.name }}</span><br>
-                                                {% if item.purchaseserial_set.all %}
-                                                    {% if item.purchaseserial_set.all|length > 10 %}
+                                                {% if item.unique_serials %}
+                                                    {% if item.unique_serials|length > 10 %}
                                                         <small style="padding-left: 15px; display: inline-block; color:black; font-weight:bold;">As per Serial Number Sheet attached.</small>
                                                     {% else %}
                                                         <small style="padding-left: 15px; display: inline-block;">Serial No -</small>
                                                         <small style="padding-left: 2px; display: inline-block;">
-                                                        {% for serial in item.purchaseserial_set.all %}
+                                                        {% for serial in item.unique_serials %}
                                                             {{ serial.serialNo }}{% if not forloop.last %}, {% endif %}
                                                         {% endfor %}
                                                     </small>
@@ -257,7 +257,7 @@
                         <tr class="bill-serial-sheet-placeholder" style="display:none;">
                             <td colspan="{% if billdetails.gst_amount != 0 %}7{% else %}6{% endif %}">
                                 {% for item in items %}
-                                    {% if item.purchaseserial_set.all and item.purchaseserial_set.all|length > 10 %}
+                                    {% if item.unique_serials and item.unique_serials|length > 10 %}
                                         <table class="outer-box inner-box serial-sheet-table" style="width: 800px; margin-left: auto; margin-right: auto;">
                                             <thead>
                                                 <tr>
@@ -270,7 +270,7 @@
                                                 </tr>
                                             </thead>
                                             <tbody>
-                                                {% for serial in item.purchaseserial_set.all %}
+                                                {% for serial in item.unique_serials %}
                                                 <tr>
                                                     <td class="inner-box" style="text-align:center;">{{ forloop.counter }}</td>
                                                     <td class="inner-box text-capitalize" style="padding-left:8px;">{{ item.stock.name }}</td>
@@ -348,10 +348,10 @@
                                         <tr>
                                             <td class="inner-box" style="padding:10px;">
                                                 {% for item in items %}
-                                                    {% if item.purchaseserial_set.all and item.purchaseserial_set.all|length > 10 %}
+                                                    {% if item.unique_serials and item.unique_serials|length > 10 %}
                                                         <div style="font-weight:bold; margin-top:8px;">{{ item.stock.name }}</div>
-                                                        <ul style="column-count:{% if item.purchaseserial_set.all|length > 30 %}4{% else %}3{% endif %}; column-gap:24px; margin:6px 0 10px 0; padding:0; list-style:none;">
-                                                            {% for serial in item.purchaseserial_set.all %}
+                                                        <ul style="column-count:{% if item.unique_serials|length > 30 %}4{% else %}3{% endif %}; column-gap:24px; margin:6px 0 10px 0; padding:0; list-style:none;">
+                                                            {% for serial in item.unique_serials %}
                                                                 <li style="break-inside: avoid; page-break-inside: avoid; margin:0 0 2px 0;">
                                                                     <span style="display:inline-block; min-width:28px; font-weight:bold;">{{ forloop.counter }}.</span>{{ serial.serialNo }}
                                                                 </li>

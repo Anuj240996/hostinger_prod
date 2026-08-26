@@ -1733,19 +1733,27 @@ class PurchaseCreateView(LoginRequiredMixin, View):
                         billitem.save()
                         logger.info(f"PurchaseItem saved successfully for stock id {stock.id}")
 
-                        # Save PurchaseSerial entries
+                        # Save PurchaseSerial entries (unique serial numbers only)
                         serial_numbers = request.POST.getlist(f'serial_numbers_{index}[]')
+                        seen_serials = set()
                         for serial_number in serial_numbers:
+                            sn = (serial_number or "").strip()
+                            if not sn:
+                                continue
+                            key = sn.upper()
+                            if key in seen_serials:
+                                continue
+                            seen_serials.add(key)
                             purchase_serial = PurchaseSerial(
                                 billno=billobj,
                                 stock=stock,
                                 purchase=unit_instance,
-                                serialNo=serial_number,
+                                serialNo=sn,
                                 item=billitem  # Link to the saved PurchaseItem
                             )
                             purchase_serial.save()
                             logger.info(
-                                f"PurchaseSerial saved successfully for stock id {stock.id} with serial number {serial_number}")
+                                f"PurchaseSerial saved successfully for stock id {stock.id} with serial number {sn}")
                         items_saved += 1
                     
                     if items_saved == 0:
@@ -6076,12 +6084,20 @@ def update_purchase_serial_numbers(request):
         # Delete any existing PurchaseSerial records for this purchase item.
         PurchaseSerial.objects.filter(item=purchase_item).delete()
 
-        # Create new PurchaseSerial entries.
+        # Create new PurchaseSerial entries (unique serial numbers only).
+        seen_serials = set()
         for serial in serial_numbers:
+            sn = (serial or "").strip()
+            if not sn:
+                continue
+            key = sn.upper()
+            if key in seen_serials:
+                continue
+            seen_serials.add(key)
             PurchaseSerial.objects.create(
                 billno=bill,
                 stock=stock,
-                serialNo=serial.strip(),
+                serialNo=sn,
                 purchase=stock.purchase,
                 item=purchase_item,  # Pass the instance directly.
             )
@@ -6525,10 +6541,14 @@ class PurchaseBillView(LoginRequiredMixin, View):
     login_url = '/index/'
 
     def get(self, request, billno):
+        items = list(
+            PurchaseItem.objects.filter(billno=billno).prefetch_related('purchaseserial_set')
+        )
+        for item in items:
+            item.unique_serials = item.get_unique_serials()
         context = {
             'bill': PurchaseBill.objects.get(billno=billno),
-            # 'items': PurchaseItem.objects.filter(billno=billno),
-            'items': PurchaseItem.objects.filter(billno=billno).prefetch_related('purchaseserial_set'),
+            'items': items,
             'billdetails': PurchaseBillDetails.objects.get(billno=billno),
             'bill_base': self.bill_base,
         }
@@ -6553,9 +6573,14 @@ class PurchaseBillView(LoginRequiredMixin, View):
 
             billdetailsobj.save()
             messages.success(request, "Bill details have been modified successfully")
+        items = list(
+            PurchaseItem.objects.filter(billno=billno).prefetch_related('purchaseserial_set')
+        )
+        for item in items:
+            item.unique_serials = item.get_unique_serials()
         context = {
             'bill': PurchaseBill.objects.get(billno=billno),
-            'items': PurchaseItem.objects.filter(billno=billno),
+            'items': items,
             'billdetails': PurchaseBillDetails.objects.get(billno=billno),
             'bill_base': self.bill_base,
         }
@@ -7938,11 +7963,19 @@ def purchase_edit_view(request, pk):
 
             # Look up serial numbers for the new item using the stock id as a string.
             new_serials = serials_data.get(str(stock_id), [])
+            seen_serials = set()
             for serial in new_serials:
+                sn = (serial or "").strip()
+                if not sn:
+                    continue
+                key = sn.upper()
+                if key in seen_serials:
+                    continue
+                seen_serials.add(key)
                 PurchaseSerial.objects.create(
                     billno=purchase_bill,
                     stock=stock,
-                    serialNo=serial,
+                    serialNo=sn,
                     purchase=stock.purchase,
                     item=new_item,
                 )
