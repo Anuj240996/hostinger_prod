@@ -668,10 +668,39 @@ def _control_panel_permissions_impl(request):
                 request,
                 f"Permissions saved for {len(selected_users)} user(s).",
             )
-            # HttpResponseRedirect — django.shortcuts.redirect() still calls reverse()
-            # which loads URLConf and can 500 if optional deps (pyzbar) fail to import.
-            ids = ",".join(str(u.id) for u in selected_users)
-            return HttpResponseRedirect(f"{CP_PERMISSIONS_PATH}?category={selected_category}&targets={ids}")
+            # Refresh grants then render in-place (no redirect). Redirect GET through
+            # base.html/{% url %} can 500 when URLConf optional imports fail.
+            if single_user:
+                current_portal_grants = {
+                    a.portal.name: a.granted
+                    for a in CPUserPortalAccess.objects.filter(user=single_user).select_related("portal")
+                }
+                current_perm_grants = {
+                    f"{a.module_permission.module.name}:{a.module_permission.operation}": a.granted
+                    for a in CPUserModulePermission.objects.filter(user=single_user)
+                    .select_related("module_permission", "module_permission__module")
+                }
+                current_nav_grants = {
+                    a.nav_item.key
+                    for a in CPUserNavAccess.objects.filter(user=single_user, granted=True).select_related("nav_item")
+                }
+
+    # Keep selected targets visible even if category filters exclude them
+    # (e.g. user 688 with is_staff=False edited under Staff category).
+    if selected_users:
+        if selected_category == "staff":
+            staff_users = list(staff_users)
+            have = {u.id for u in staff_users}
+            for u in selected_users:
+                if u.id not in have:
+                    staff_users.append(u)
+        elif selected_category == "customer":
+            customer_users = list(customer_users)
+            have = {u.id for u in customer_users}
+            for u in selected_users:
+                if u.id not in have:
+                    customer_users.append(u)
+
     context = {
         "selected_category": selected_category,
         "staff_users": staff_users,
