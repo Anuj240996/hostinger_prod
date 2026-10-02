@@ -7,7 +7,8 @@ FROM python:3.10-slim
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
-    DEBIAN_FRONTEND=noninteractive
+    DEBIAN_FRONTEND=noninteractive \
+    DBSOLAR_ENTRYPOINT_AUTO=v3
 
 WORKDIR /app
 
@@ -47,7 +48,10 @@ ENV DJANGO_SETTINGS_MODULE=inventoryproject.settings
 RUN SECRET_KEY=build-collectstatic-only DEBUG=False \
     python manage.py collectstatic --noinput
 
-RUN sed -i 's/\r$//' /app/entrypoint.sh && chmod +x /app/entrypoint.sh
+# Ensure startup helper + entrypoint are executable (CRLF-safe)
+RUN test -f /app/fix_startup_migrations.py && \
+    sed -i 's/\r$//' /app/entrypoint.sh && chmod +x /app/entrypoint.sh && \
+    echo "Build includes fix_startup_migrations.py (auto-v3)"
 
 EXPOSE 8000
 
