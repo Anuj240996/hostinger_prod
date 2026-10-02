@@ -207,6 +207,20 @@ def staff_nav_specs() -> List[NavSpec]:
         n("staff.logout", "Account", "Logout", "user-logout"),
     ]
 
+    # Solar CRM (Control Panel → Solar CRM). Staff Dashboard / Main Dashboard is always
+    # visible without a grant; every other CRM menu requires an explicit checkbox.
+    specs += [
+        n("staff.solarcrm.crm_dashboard", "Solar CRM", "CRM Dashboard", "dashboard"),
+        n("staff.solarcrm.leads", "Solar CRM", "Leads", "lead_list"),
+        n("staff.solarcrm.pipeline", "Solar CRM", "Pipeline", "pipeline"),
+        n("staff.solarcrm.surveys", "Solar CRM", "Site Surveys", "survey_list"),
+        n("staff.solarcrm.quotations", "Solar CRM", "Quotations", "quotation_list"),
+        n("staff.solarcrm.revenue", "Solar CRM", "Revenue", "revenue"),
+        n("staff.solarcrm.analytics", "Solar CRM", "Analytics", "analytics"),
+        n("staff.solarcrm.sales_team", "Solar CRM", "Sales Team", "team:team"),
+        n("staff.solarcrm.settings", "Solar CRM", "Settings", "settings"),
+    ]
+
     return specs
 
 

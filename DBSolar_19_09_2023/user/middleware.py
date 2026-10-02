@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from django.http import HttpResponseForbidden
+from django.shortcuts import redirect
 from django.urls import resolve
 
 from .permission_map import (
@@ -10,6 +11,21 @@ from .permission_map import (
     required_permission,
 )
 from .permissions import has_cp_operation, has_portal_access, has_nav_url_access
+
+# Solar CRM menu URLs: if staff lacks CP grant, send them to Staff Dashboard
+SOLAR_CRM_MENU_URL_NAMES = frozenset(
+    {
+        "dashboard",
+        "lead_list",
+        "pipeline",
+        "survey_list",
+        "quotation_list",
+        "revenue",
+        "analytics",
+        "team:team",
+        "settings",
+    }
+)
 
 
 class CPPermissionMiddleware:
@@ -56,6 +72,9 @@ class CPPermissionMiddleware:
                 # If a page/submodule permission exists, enforce it first.
                 # (This enables fine-grained "sub module" control from the control panel.)
                 if url_name and not has_nav_url_access(user, url_name):
+                    # Unselected Solar CRM menus → Staff Dashboard only
+                    if url_name in SOLAR_CRM_MENU_URL_NAMES:
+                        return redirect("main_project_dashboard")
                     return HttpResponseForbidden("Access denied (submodule).")
 
                 # Portal access checks (any-of first, then single portal).

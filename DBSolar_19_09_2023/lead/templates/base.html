@@ -1,5 +1,6 @@
   {% load static %}
-    {% load team_permissions %}   <!-- add this line -->
+    {% load team_permissions %}
+    {% load permission_filters %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -30,72 +31,83 @@
             </div>
 
             {% block sidebar %}
-            <!-- Regular CRM navigation (default) -->
+            {# Staff Dashboard always visible. Other Solar CRM menus require Control Panel grants. #}
             <ul class="nav flex-column">
                 <li class="nav-item">
                     <a href="{% url 'main_project_dashboard' %}" class="nav-link {% if request.resolver_match.url_name == 'main_project_dashboard' %}active{% endif %}">
-                        <i class="fas fa-home me-3"></i>Main Dashboard
+                        <i class="fas fa-home me-3"></i>Staff Dashboard
                     </a>
                 </li>
+                {% if request.user.is_superuser or request.user|has_url_permission:"dashboard" %}
                 <li class="nav-item">
                     <a href="{% url 'dashboard' %}" class="nav-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
                         <i class="fas fa-tachometer-alt me-3"></i>CRM Dashboard
                     </a>
                 </li>
+                {% endif %}
+                {% if request.user.is_superuser or request.user|has_url_permission:"lead_list" %}
                 <li class="nav-item">
                     <a href="{% url 'lead_list' %}" class="nav-link {% if 'leads' in request.path %}active{% endif %}">
                         <i class="fas fa-users me-3"></i>Leads
                     </a>
                 </li>
+                {% endif %}
+                {% if request.user.is_superuser or request.user|has_url_permission:"pipeline" %}
                 <li class="nav-item">
                     <a href="{% url 'pipeline' %}" class="nav-link {% if 'pipeline' in request.path %}active{% endif %}">
                         <i class="fas fa-chart-line me-3"></i>Pipeline
                     </a>
                 </li>
+                {% endif %}
+                {% if request.user.is_superuser or request.user|has_url_permission:"survey_list" %}
                 <li class="nav-item">
                     <a href="{% url 'survey_list' %}" class="nav-link {% if 'surveys' in request.path %}active{% endif %}">
                         <i class="fas fa-hard-hat me-3"></i>Site Surveys
                     </a>
                 </li>
+                {% endif %}
+                {% if request.user.is_superuser or request.user|has_url_permission:"quotation_list" %}
                 <li class="nav-item">
                     <a href="{% url 'quotation_list' %}" class="nav-link {% if 'quotations' in request.path %}active{% endif %}">
                         <i class="fas fa-file-invoice me-3"></i>Quotations
                     </a>
                 </li>
+                {% endif %}
+                {% if request.user.is_superuser or request.user|has_url_permission:"revenue" %}
                 <li class="nav-item">
                     <a href="{% url 'revenue' %}" class="nav-link {% if 'revenue' in request.path %}active{% endif %}">
                         <i class="fas fa-dollar-sign me-3"></i>Revenue
                     </a>
                 </li>
+                {% endif %}
+                {% if request.user.is_superuser or request.user|has_url_permission:"analytics" %}
                 <li class="nav-item">
                     <a href="{% url 'analytics' %}" class="nav-link {% if 'analytics' in request.path %}active{% endif %}">
                         <i class="fas fa-chart-pie me-3"></i>Analytics
                     </a>
                 </li>
-               {% if user_is_org_admin %}
-<li class="nav-item">
-    <a href="{% url 'team:user_list' %}" class="nav-link">
-        <i class="fas fa-users-cog me-3"></i>Team
-    </a>
-</li>
-{% endif %}
+                {% endif %}
+                {% if user_is_org_admin and request.user.is_superuser %}
+                <li class="nav-item">
+                    <a href="{% url 'team:user_list' %}" class="nav-link">
+                        <i class="fas fa-users-cog me-3"></i>Team
+                    </a>
+                </li>
+                {% endif %}
+                {% if request.user.is_superuser or request.user|has_url_permission:"team:team" %}
                 <li class="nav-item">
                     <a href="{% url 'team:team' %}" class="nav-link {% if 'team' in request.path %}active{% endif %}">
                         <i class="fas fa-users-cog me-3"></i>Sales Team
                     </a>
                 </li>
-                {% if user_is_org_admin or request.user.is_superuser %}
+                {% endif %}
+                {% if request.user.is_superuser or request.user|has_url_permission:"settings" %}
                 <li class="nav-item">
                     <a href="{% url 'settings' %}" class="nav-link {% if 'settings' in request.path %}active{% endif %}">
                         <i class="fas fa-cog me-3"></i>Settings
                     </a>
                 </li>
                 {% endif %}
-<!--                <li class="nav-item">-->
-<!--                    <a href="{% url 'settings' %}" class="nav-link {% if 'settings' in request.path %}active{% endif %}">-->
-<!--                        <i class="fas fa-cog me-3"></i>Settings-->
-<!--                    </a>-->
-<!--                </li>-->
             </ul>
             {% endblock %}
 

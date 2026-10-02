@@ -119,6 +119,10 @@ def has_nav_url_access(user, url_name: str) -> bool:
     if not getattr(user, "is_staff", False):
         return True
 
+    # Solar CRM Staff Dashboard is always available for staff (no CP checkbox required)
+    if url_name == "main_project_dashboard":
+        return True
+
     nav_ids = list(
         CPNavItem.objects.filter(url_name=url_name, is_active=True).values_list("id", flat=True)
     )

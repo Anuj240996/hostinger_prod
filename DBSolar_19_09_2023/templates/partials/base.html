@@ -157,19 +157,38 @@
                      </li>
                      {% endif %} -->
 
-                    {% if user.is_authenticated %}
+                    {% if user.is_superuser or user|has_url_permission:"dashboard" or user|has_url_permission:"lead_list" or user|has_url_permission:"pipeline" or user|has_url_permission:"survey_list" or user|has_url_permission:"quotation_list" or user|has_url_permission:"revenue" or user|has_url_permission:"analytics" or user|has_url_permission:"team:team" or user|has_url_permission:"settings" %}
                     <li class="submenu {% if '/new-lead/' in request.path %}active{% endif %}">
                        <a href="#"><i class="nav-icon fas fa-bullseye"></i> <span> Lead CRM</span> <span class="menu-arrow"></span></a>
                        <ul>
-                          <li><a href="/new-lead/"><i class="nav-icon fas fa-tachometer-alt"></i> Dashboard</a></li>
-                          <li><a href="/new-lead/leads/"><i class="nav-icon fas fa-users"></i> Leads</a></li>
-                          <li><a href="/new-lead/pipeline/"><i class="nav-icon fas fa-chart-line"></i> Pipeline</a></li>
-                          <li><a href="/new-lead/surveys/"><i class="nav-icon fas fa-hard-hat"></i> Site Surveys</a></li>
-                          <li><a href="/new-lead/quotations/"><i class="nav-icon fas fa-file-invoice"></i> Quotations</a></li>
-                          <li><a href="/new-lead/revenue/"><i class="nav-icon fas fa-dollar-sign"></i> Revenue</a></li>
-                          <li><a href="/new-lead/analytics/"><i class="nav-icon fas fa-chart-pie"></i> Analytics</a></li>
-                          <li><a href="/new-lead/team/users/"><i class="nav-icon fas fa-users-cog"></i> Sales Team</a></li>
-                          <li><a href="/new-lead/settings/"><i class="nav-icon fas fa-cog"></i> Settings</a></li>
+                          <li><a href="{% url 'main_project_dashboard' %}"><i class="nav-icon fas fa-tachometer-alt"></i> Staff Dashboard</a></li>
+                          {% if user.is_superuser or user|has_url_permission:"dashboard" %}
+                          <li><a href="{% url 'dashboard' %}"><i class="nav-icon fas fa-tachometer-alt"></i> CRM Dashboard</a></li>
+                          {% endif %}
+                          {% if user.is_superuser or user|has_url_permission:"lead_list" %}
+                          <li><a href="{% url 'lead_list' %}"><i class="nav-icon fas fa-users"></i> Leads</a></li>
+                          {% endif %}
+                          {% if user.is_superuser or user|has_url_permission:"pipeline" %}
+                          <li><a href="{% url 'pipeline' %}"><i class="nav-icon fas fa-chart-line"></i> Pipeline</a></li>
+                          {% endif %}
+                          {% if user.is_superuser or user|has_url_permission:"survey_list" %}
+                          <li><a href="{% url 'survey_list' %}"><i class="nav-icon fas fa-hard-hat"></i> Site Surveys</a></li>
+                          {% endif %}
+                          {% if user.is_superuser or user|has_url_permission:"quotation_list" %}
+                          <li><a href="{% url 'quotation_list' %}"><i class="nav-icon fas fa-file-invoice"></i> Quotations</a></li>
+                          {% endif %}
+                          {% if user.is_superuser or user|has_url_permission:"revenue" %}
+                          <li><a href="{% url 'revenue' %}"><i class="nav-icon fas fa-dollar-sign"></i> Revenue</a></li>
+                          {% endif %}
+                          {% if user.is_superuser or user|has_url_permission:"analytics" %}
+                          <li><a href="{% url 'analytics' %}"><i class="nav-icon fas fa-chart-pie"></i> Analytics</a></li>
+                          {% endif %}
+                          {% if user.is_superuser or user|has_url_permission:"team:team" %}
+                          <li><a href="{% url 'team:team' %}"><i class="nav-icon fas fa-users-cog"></i> Sales Team</a></li>
+                          {% endif %}
+                          {% if user.is_superuser or user|has_url_permission:"settings" %}
+                          <li><a href="{% url 'settings' %}"><i class="nav-icon fas fa-cog"></i> Settings</a></li>
+                          {% endif %}
                        </ul>
                     </li>
                     {% endif %}
