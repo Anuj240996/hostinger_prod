@@ -1243,15 +1243,25 @@
                            <li><a href="{% url 'firereport-dateReport' %}"> <i class="nav-icon fas fa-calendar-alt"></i> All Report</a></li>
                         </ul>
                      </li>
+                     {% if user|has_url_permission:"firereport-service-new" or user|has_url_permission:"firereport-service-assigned" or user|has_url_permission:"firereport-service-in-process" or user|has_url_permission:"firereport-service-completed" or user|has_module_permission:"services" or user.is_superuser %}
                      <li class="submenu {% active_link 'firereport-service-new' 'active' %} {% active_link 'firereport-service-assigned' 'active' %} {% active_link 'firereport-service-in-process' 'active' %} {% active_link 'firereport-service-completed' 'active' %}">
                         <a href="#"><i class="nav-icon fas fa-tools" aria-hidden="true"></i> <span> Services</span> <span class="menu-arrow"></span></a>
                         <ul>
+                           {% if user|has_url_permission:"firereport-service-new" or user.is_superuser %}
                            <li><a href="{% url 'firereport-service-new' %}"><i class="nav-icon fas fa-plus-circle" aria-hidden="true"></i> New Request</a></li>
+                           {% endif %}
+                           {% if user|has_url_permission:"firereport-service-assigned" or user.is_superuser %}
                            <li><a href="{% url 'firereport-service-assigned' %}"><i class="nav-icon fas fa-clipboard-list" aria-hidden="true"></i> Assigned Request</a></li>
+                           {% endif %}
+                           {% if user|has_url_permission:"firereport-service-in-process" or user.is_superuser %}
                            <li><a href="{% url 'firereport-service-in-process' %}"><i class="nav-icon fas fa-spinner" aria-hidden="true"></i> Requests In Process</a></li>
+                           {% endif %}
+                           {% if user|has_url_permission:"firereport-service-completed" or user.is_superuser %}
                            <li><a href="{% url 'firereport-service-completed' %}"><i class="nav-icon fas fa-check-circle" aria-hidden="true"></i> Completed Requests</a></li>
+                           {% endif %}
                         </ul>
                      </li>
+                     {% endif %}
                      <li class="{% active_link 'dashboard-notification' 'active' %}">
                         <a href="{% url 'dashboard-notification' %}"><i class="fas fa-bell"></i> <span> View Notification</span> </a>
                      </li>
@@ -1302,15 +1312,25 @@
                            <li><a href="{% url 'firereport-dateReport' %}"> <i class="nav-icon fas fa-calendar-alt"></i> All Report</a></li>
                         </ul>
                      </li>
+                     {% if user|has_url_permission:"firereport-service-new" or user|has_url_permission:"firereport-service-assigned" or user|has_url_permission:"firereport-service-in-process" or user|has_url_permission:"firereport-service-completed" or user|has_module_permission:"services" or user.is_superuser %}
                      <li class="submenu {% active_link 'firereport-service-new' 'active' %} {% active_link 'firereport-service-assigned' 'active' %} {% active_link 'firereport-service-in-process' 'active' %} {% active_link 'firereport-service-completed' 'active' %}">
                         <a href="#"><i class="nav-icon fas fa-tools" aria-hidden="true"></i> <span> Services</span> <span class="menu-arrow"></span></a>
                         <ul>
+                           {% if user|has_url_permission:"firereport-service-new" or user.is_superuser %}
                            <li><a href="{% url 'firereport-service-new' %}"><i class="nav-icon fas fa-plus-circle" aria-hidden="true"></i> New Request</a></li>
+                           {% endif %}
+                           {% if user|has_url_permission:"firereport-service-assigned" or user.is_superuser %}
                            <li><a href="{% url 'firereport-service-assigned' %}"><i class="nav-icon fas fa-clipboard-list" aria-hidden="true"></i> Assigned Request</a></li>
+                           {% endif %}
+                           {% if user|has_url_permission:"firereport-service-in-process" or user.is_superuser %}
                            <li><a href="{% url 'firereport-service-in-process' %}"><i class="nav-icon fas fa-spinner" aria-hidden="true"></i> Requests In Process</a></li>
+                           {% endif %}
+                           {% if user|has_url_permission:"firereport-service-completed" or user.is_superuser %}
                            <li><a href="{% url 'firereport-service-completed' %}"><i class="nav-icon fas fa-check-circle" aria-hidden="true"></i> Completed Requests</a></li>
+                           {% endif %}
                         </ul>
                      </li>
+                     {% endif %}
                      <li class="{% active_link 'dashboard-notification' 'active' %}">
                         <a href="{% url 'dashboard-notification' %}"><i class="fas fa-bell"></i> <span> View Notification</span> </a>
                      </li>
