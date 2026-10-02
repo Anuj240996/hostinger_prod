@@ -21,10 +21,15 @@ from django.core.files.storage import FileSystemStorage
 from django.http import JsonResponse, StreamingHttpResponse
 from django.shortcuts import render
 from PIL import Image
-from pyzbar.pyzbar import decode
+
+try:
+    from pyzbar.pyzbar import decode
+    from pyzbar import pyzbar
+except ImportError:  # pragma: no cover - optional native dep; must not break URLConf
+    decode = None
+    pyzbar = None
 
 from PyPDF2 import PdfFileReader
-from pyzbar.pyzbar import decode
 from PIL import Image
 
 from customer.models import Customer, Meters, GenerationMeter, GenerationCT, MSEB
@@ -45,7 +50,6 @@ import base64
 import cv2
 import numpy as np
 import pytz
-from pyzbar import pyzbar
 from .models import BarcodeImage
 from .models import Customer
 from django.contrib.auth.models import User  # Import the User model
@@ -55,7 +59,6 @@ import base64
 import cv2
 import numpy as np
 from django.http import JsonResponse
-from pyzbar import pyzbar
 from django.utils import timezone
 import pytz
 
@@ -64,7 +67,6 @@ import cv2
 import numpy as np
 from django.http import JsonResponse
 from django.shortcuts import render
-from pyzbar import pyzbar
 
 from django.shortcuts import render
 from django.http import JsonResponse
@@ -73,12 +75,10 @@ from django.utils import timezone
 import base64
 import cv2
 import numpy as np
-from pyzbar import pyzbar
 
 from django.shortcuts import render
 from django.http import JsonResponse
 import cv2
-from pyzbar import pyzbar
 import base64
 
 
@@ -3253,7 +3253,6 @@ from django.shortcuts import render, redirect
 from django.core.files.storage import FileSystemStorage
 from django.http import JsonResponse
 from PyPDF2 import PdfReader
-from pyzbar.pyzbar import decode
 from PIL import Image
 
 from .models import BarcodeImage
@@ -4139,7 +4138,6 @@ def deletebarcode(request):
 # barcode_decoder/views.py
 
 from django.http import JsonResponse
-from pyzbar.pyzbar import decode
 from PIL import Image
 from io import BytesIO
 import base64

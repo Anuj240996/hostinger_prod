@@ -6,7 +6,7 @@ from django.urls import reverse
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib.auth.models import User
 from django.contrib import messages
-from django.http import JsonResponse
+from django.http import HttpResponseRedirect, JsonResponse
 from django.views.decorators.http import require_POST, require_http_methods
 from django.views.decorators.csrf import csrf_protect
 from django.db import transaction
@@ -14,8 +14,15 @@ from django.contrib.auth import hashers
 from django.utils import timezone
 from django.utils.http import url_has_allowed_host_and_scheme
 import json
+import logging
 import secrets
 from collections import OrderedDict
+
+logger = logging.getLogger(__name__)
+
+# Hardcoded path + HttpResponseRedirect avoids reverse()/URLConf import failures
+# (e.g. missing pyzbar) breaking an otherwise successful permissions save.
+CP_PERMISSIONS_PATH = "/user/control-panel/permissions/"
 
 from transactions.models import Vendor
 
@@ -259,9 +266,7 @@ def control_panel_user_permissions(request, user_id):
     else:
         category = "customer"
 
-    return redirect(
-        f"{reverse('user:control_panel_permissions')}?category={category}&targets={u.id}"
-    )
+    return HttpResponseRedirect(f"{CP_PERMISSIONS_PATH}?category={category}&targets={u.id}")
 
 
 @login_required
@@ -547,7 +552,7 @@ def control_panel_permissions(request):
     if request.method == "POST" and request.POST.get("do_save") == "1":
         if not selected_users:
             messages.error(request, "Please select at least one user/vendor/customer.")
-            return redirect("user:control_panel_permissions")
+            return HttpResponseRedirect(f"{CP_PERMISSIONS_PATH}?category={selected_category}")
 
         overwrite = request.POST.get("overwrite") == "1"
 
@@ -574,67 +579,71 @@ def control_panel_permissions(request):
         # Admin must explicitly select portals in the Portal Access section.
         # This allows fine-grained control, e.g., granting only Complaint Dashboard without Staff Dashboard.
 
-        with transaction.atomic():
-            for u in selected_users:
-                # Portals
-                # Save EXACTLY what admin selected in Portal Access.
-                for p in portals:
-                    granted = p.name in desired_portals
-                    CPUserPortalAccess.objects.update_or_create(
-                        user=u,
-                        portal=p,
-                        defaults={"granted": granted, "granted_by": request.user},
-                    )
+        try:
+            with transaction.atomic():
+                for u in selected_users:
+                    # Portals
+                    # Save EXACTLY what admin selected in Portal Access.
+                    for p in portals:
+                        granted = p.name in desired_portals
+                        CPUserPortalAccess.objects.update_or_create(
+                            user=u,
+                            portal=p,
+                            defaults={"granted": granted, "granted_by": request.user},
+                        )
 
-                # Module operations
-                for m in modules:
-                    if m.name in CP_PM_TABLE_HIDDEN_MODULE_NAMES:
-                        continue
-                    for op in OPERATIONS_ORDER:
-                        mp = perm_by_key.get(f"{m.name}:{op}")
-                        if not mp:
+                    # Module operations
+                    for m in modules:
+                        if m.name in CP_PM_TABLE_HIDDEN_MODULE_NAMES:
                             continue
-                        if overwrite:
-                            granted = f"{m.name}:{op}" in desired_perms
-                            CPUserModulePermission.objects.update_or_create(
-                                user=u,
-                                module_permission=mp,
-                                defaults={"granted": granted, "granted_by": request.user},
-                            )
-                        else:
-                            if f"{m.name}:{op}" in desired_perms:
+                        for op in OPERATIONS_ORDER:
+                            mp = perm_by_key.get(f"{m.name}:{op}")
+                            if not mp:
+                                continue
+                            if overwrite:
+                                granted = f"{m.name}:{op}" in desired_perms
                                 CPUserModulePermission.objects.update_or_create(
                                     user=u,
                                     module_permission=mp,
-                                    defaults={"granted": True, "granted_by": request.user},
+                                    defaults={"granted": granted, "granted_by": request.user},
                                 )
+                            else:
+                                if f"{m.name}:{op}" in desired_perms:
+                                    CPUserModulePermission.objects.update_or_create(
+                                        user=u,
+                                        module_permission=mp,
+                                        defaults={"granted": True, "granted_by": request.user},
+                                    )
 
-                # Submodule/page (nav) grants
-                for ni in nav_items:
-                    if overwrite:
-                        granted = ni.key in desired_nav_keys
-                        CPUserNavAccess.objects.update_or_create(
-                            user=u,
-                            nav_item=ni,
-                            defaults={"granted": granted, "granted_by": request.user},
-                        )
-                    else:
-                        if ni.key in desired_nav_keys:
+                    # Submodule/page (nav) grants
+                    for ni in nav_items:
+                        if overwrite:
+                            granted = ni.key in desired_nav_keys
                             CPUserNavAccess.objects.update_or_create(
                                 user=u,
                                 nav_item=ni,
-                                defaults={"granted": True, "granted_by": request.user},
+                                defaults={"granted": granted, "granted_by": request.user},
                             )
-
-        messages.success(
-            request,
-            f"Permissions saved for {len(selected_users)} user(s).",
-        )
-
-        # Redirect back, preserving selection
-        ids = ",".join(str(u.id) for u in selected_users)
-        return redirect(f"{reverse('user:control_panel_permissions')}?category={selected_category}&targets={ids}")
-
+                        else:
+                            if ni.key in desired_nav_keys:
+                                CPUserNavAccess.objects.update_or_create(
+                                    user=u,
+                                    nav_item=ni,
+                                    defaults={"granted": True, "granted_by": request.user},
+                                )
+        except Exception as exc:
+            logger.exception("Control Panel permissions save failed for targets=%s", selected_targets)
+            messages.error(request, f"Failed to save permissions: {exc}")
+            # Re-render the page so the admin sees the real error (no reverse/redirect).
+        else:
+            messages.success(
+                request,
+                f"Permissions saved for {len(selected_users)} user(s).",
+            )
+            # HttpResponseRedirect — django.shortcuts.redirect() still calls reverse()
+            # which loads URLConf and can 500 if optional deps (pyzbar) fail to import.
+            ids = ",".join(str(u.id) for u in selected_users)
+            return HttpResponseRedirect(f"{CP_PERMISSIONS_PATH}?category={selected_category}&targets={ids}")
     context = {
         "selected_category": selected_category,
         "staff_users": staff_users,
