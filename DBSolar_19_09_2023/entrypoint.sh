@@ -90,25 +90,10 @@ fi
 if [ "${SKIP_MIGRATE:-0}" = "1" ]; then
   echo "SKIP_MIGRATE=1 — skipping migrations."
 else
-  echo "Running database migrations..."
-  # --fake-initial: if tables already exist (common on restored/prod DBs) but
-  # django_migrations is missing the initial row, mark initials applied instead of
-  # crashing with: relation "django_content_type" already exists
-  if ! python manage.py migrate --noinput --fake-initial; then
-    echo "WARNING: migrate --fake-initial failed. Trying safe recovery for existing tables..."
-    python manage.py migrate contenttypes zero --fake --noinput 2>/dev/null || true
-    python manage.py migrate contenttypes --fake-initial --noinput || true
-    python manage.py migrate auth --fake-initial --noinput || true
-    python manage.py migrate sessions --fake-initial --noinput || true
-    python manage.py migrate admin --fake-initial --noinput || true
-    if ! python manage.py migrate --noinput --fake-initial; then
-      echo "ERROR: Database migrations failed."
-      echo "Do NOT drop the production database."
-      echo "Temporary recovery: set EasyPanel env SKIP_MIGRATE=1, redeploy, then fix migrations from Terminal."
-      exit 1
-    fi
-  fi
-  echo "Database migrations completed."
+  echo "Running database migrations (safe mode for existing production tables)..."
+  # Never exit the container on migrate failure — that causes EasyPanel crash-loops.
+  # fix_startup_migrations.py fakes contenttypes/auth initials when tables already exist.
+  python fix_startup_migrations.py || echo "WARNING: migration helper returned non-zero; continuing startup."
 fi
 
 # collectstatic runs at Docker build time. Re-run only when forced (e.g. after static changes).
