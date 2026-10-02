@@ -1,6 +1,8 @@
 #!/bin/sh
-set -e
+# EasyPanel entrypoint — always starts Gunicorn (never crash-loops on migrate).
+# Version stamp appears in logs so you can confirm the new image is running.
 
+echo "=== entrypoint auto-v3 (551ace+/e4a06e+ migrate safe) ==="
 echo "Starting application setup..."
 echo "Architecture: Option A — Django owns this database; phone app must use HTTP APIs (not direct DB)."
 
@@ -16,7 +18,6 @@ fi
 python - <<'PY'
 import os, re, sys
 url = os.environ.get("DATABASE_URL", "")
-# postgres://user:pass@host:5432/db
 m = re.match(r"^[^:]+://([^:/@]+)(?::[^@]*)?@([^:/]+)(?::(\d+))?/(.+)$", url)
 if not m:
     print("ERROR: DATABASE_URL format is invalid.")
@@ -87,14 +88,22 @@ if [ ! -f /app/media/profile_pics/default.png ]; then
   fi
 fi
 
-if [ "${SKIP_MIGRATE:-0}" = "1" ]; then
-  echo "SKIP_MIGRATE=1 — skipping migrations."
+# ---- migrations: never abort container (set +e) ----
+set +e
+echo "Running database migrations (fully automatic safe mode)..."
+if [ -f /app/fix_startup_migrations.py ]; then
+  python /app/fix_startup_migrations.py
+  MIG_RC=$?
 else
-  echo "Running database migrations (safe mode for existing production tables)..."
-  # Never exit the container on migrate failure — that causes EasyPanel crash-loops.
-  # fix_startup_migrations.py fakes contenttypes/auth initials when tables already exist.
-  python fix_startup_migrations.py || echo "WARNING: migration helper returned non-zero; continuing startup."
+  echo "fix_startup_migrations.py missing — falling back to migrate --fake-initial"
+  python manage.py migrate --noinput --fake-initial
+  MIG_RC=$?
 fi
+if [ "$MIG_RC" -ne 0 ]; then
+  echo "WARNING: migration helper exit code=$MIG_RC — starting app anyway."
+fi
+set -e
+# ---- end migrations ----
 
 # collectstatic runs at Docker build time. Re-run only when forced (e.g. after static changes).
 if [ "${RUN_COLLECTSTATIC:-0}" = "1" ]; then

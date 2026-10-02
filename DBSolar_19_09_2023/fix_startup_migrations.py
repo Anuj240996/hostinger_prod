@@ -1,14 +1,23 @@
 #!/usr/bin/env python
 """
-Startup migration helper for EasyPanel / existing production DBs.
+Auto-fix production startup migrations.
 
-Handles: ProgrammingError relation "django_content_type" already exists
-when tables exist but django_migrations is missing initial rows.
+Fixes EasyPanel crash-loop:
+  ProgrammingError: relation "django_content_type" already exists
+
+No manual env vars required. Always returns 0 so entrypoint continues to Gunicorn.
 """
 from __future__ import annotations
 
 import os
 import sys
+
+
+def _setup():
+    os.environ.setdefault("DJANGO_SETTINGS_MODULE", "inventoryproject.settings")
+    import django
+
+    django.setup()
 
 
 def table_exists(cursor, name: str) -> bool:
@@ -34,71 +43,84 @@ def fake_record(cursor, app: str, name: str) -> None:
         "INSERT INTO django_migrations (app, name, applied) VALUES (%s, %s, NOW())",
         [app, name],
     )
-    print(f"Faked migration record: {app}.{name}")
+    print(f"AUTO-FAKE: {app}.{name}")
 
 
-def pre_fake_existing_initials() -> None:
-    import django
+def pre_fake_existing_initials() -> int:
     from django.db import connection
 
-    os.environ.setdefault("DJANGO_SETTINGS_MODULE", "inventoryproject.settings")
-    django.setup()
-
-    # Core Django initials that commonly pre-exist on restored DBs
+    # (app, migration_name, witness_table)
     core = [
         ("contenttypes", "0001_initial", "django_content_type"),
         ("auth", "0001_initial", "auth_user"),
         ("sessions", "0001_initial", "django_session"),
         ("admin", "0001_initial", "django_admin_log"),
     ]
-
+    count = 0
     with connection.cursor() as cursor:
         if not table_exists(cursor, "django_migrations"):
-            print("django_migrations missing — letting migrate create it.")
-            return
+            print("django_migrations missing — migrate will create it.")
+            return 0
         for app, name, table in core:
             if table_exists(cursor, table) and not migration_recorded(cursor, app, name):
                 fake_record(cursor, app, name)
+                count += 1
+    return count
+
+
+def run_migrate() -> None:
+    from django.core.management import call_command
+
+    call_command("migrate", interactive=False, fake_initial=True, verbosity=1)
 
 
 def main() -> int:
+    print("=== fix_startup_migrations v3 (auto) ===")
     if os.environ.get("SKIP_MIGRATE", "0") == "1":
-        print("SKIP_MIGRATE=1 — skipping migrations.")
+        print("SKIP_MIGRATE=1 — skipping.")
         return 0
 
-    print("Pre-faking initial migrations for tables that already exist...")
     try:
-        pre_fake_existing_initials()
+        _setup()
     except Exception as exc:
-        print(f"WARNING: pre-fake step failed: {exc}")
-
-    from django.core.management import call_command
-    from django.db.utils import ProgrammingError
+        print(f"WARNING: Django setup failed: {exc}")
+        print("Continuing to Gunicorn anyway.")
+        return 0
 
     try:
-        call_command("migrate", interactive=False, fake_initial=True, verbosity=1)
+        n = pre_fake_existing_initials()
+        print(f"Pre-faked {n} initial migration(s).")
+    except Exception as exc:
+        print(f"WARNING: pre-fake failed: {exc}")
+
+    # Prefer manage.py --fake for contenttypes if table exists (belt and suspenders)
+    try:
+        from django.core.management import call_command
+        from django.db import connection
+
+        with connection.cursor() as cursor:
+            if table_exists(cursor, "django_content_type") and not migration_recorded(
+                cursor, "contenttypes", "0001_initial"
+            ):
+                print("Forcing: migrate contenttypes 0001 --fake")
+                call_command("migrate", "contenttypes", "0001", fake=True, interactive=False, verbosity=1)
+    except Exception as exc:
+        print(f"WARNING: contenttypes --fake failed: {exc}")
+
+    try:
+        run_migrate()
         print("Database migrations completed.")
-        return 0
-    except ProgrammingError as exc:
-        msg = str(exc)
-        print(f"WARNING: migrate ProgrammingError: {exc}")
-        if "already exists" in msg:
-            print("Retrying after second pre-fake pass...")
-            try:
-                pre_fake_existing_initials()
-                call_command("migrate", interactive=False, fake_initial=True, verbosity=1)
-                print("Database migrations completed on retry.")
-                return 0
-            except Exception as exc2:
-                print(f"WARNING: retry migrate failed: {exc2}")
-        print("Continuing app startup so EasyPanel does not crash-loop.")
-        print("Do NOT drop the production database.")
-        return 0
     except Exception as exc:
-        print(f"WARNING: migrate failed: {exc}")
-        print("Continuing app startup so EasyPanel does not crash-loop.")
-        print("Do NOT drop the production database.")
-        return 0
+        print(f"WARNING: migrate failed ({type(exc).__name__}): {exc}")
+        try:
+            pre_fake_existing_initials()
+            run_migrate()
+            print("Database migrations completed on retry.")
+        except Exception as exc2:
+            print(f"WARNING: retry migrate failed: {exc2}")
+            print("App will still start (no crash-loop). Do NOT drop the database.")
+
+    return 0
 
 
 if __name__ == "__main__":
