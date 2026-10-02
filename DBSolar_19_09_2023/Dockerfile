@@ -49,7 +49,7 @@ RUN mkdir -p /app/asert /app/static /app/staticfiles /app/media
 
 # Bake static files into the image so the container can start Gunicorn immediately.
 ENV DJANGO_SETTINGS_MODULE=inventoryproject.settings \
-    DBSOLAR_ENTRYPOINT_AUTO=v6
+    DBSOLAR_ENTRYPOINT_AUTO=v7
 # Never fail the image build on collectstatic (EasyPanel then shows yellow + empty logs)
 RUN SECRET_KEY=build-collectstatic-only DEBUG=False \
     python manage.py collectstatic --noinput \
@@ -60,7 +60,7 @@ COPY entrypoint.sh /app/entrypoint.sh
 RUN sed -i 's/\r$//' /app/entrypoint.sh || true; \
     chmod +x /app/entrypoint.sh || true; \
     ls -la /app/entrypoint.sh /app/gunicorn_wsgi.py /app/fix_startup_migrations.py || true; \
-    echo "Build includes entrypoint auto-v6"
+    echo "Build includes entrypoint auto-v7"
 
 # Expose port (map host 8001->8000 in EasyPanel if V1 already uses host :8000)
 EXPOSE 8000
@@ -71,5 +71,5 @@ ENV WEB_CONCURRENCY=1
 # "exec format error" from CRLF shebang or missing /bin/bash on slim).
 ENTRYPOINT ["/bin/sh", "/app/entrypoint.sh"]
 
-# Default command (entrypoint starts gunicorn itself; CMD kept as EasyPanel fallback)
-CMD ["true"]
+# Fallback if ENTRYPOINT is overridden: still start Gunicorn
+CMD ["sh", "-c", "exec gunicorn --chdir /app --bind 0.0.0.0:8000 --workers ${WEB_CONCURRENCY:-1} --timeout 120 --access-logfile - --error-logfile - gunicorn_wsgi:application"]

@@ -8,7 +8,7 @@ FROM python:3.10-slim
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     DEBIAN_FRONTEND=noninteractive \
-    DBSOLAR_ENTRYPOINT_AUTO=v6
+    DBSOLAR_ENTRYPOINT_AUTO=v7
 
 WORKDIR /app
 
@@ -54,7 +54,7 @@ RUN SECRET_KEY=build-collectstatic-only DEBUG=False \
 RUN sed -i 's/\r$//' /app/entrypoint.sh || true; \
     chmod +x /app/entrypoint.sh || true; \
     ls -la /app/entrypoint.sh /app/gunicorn_wsgi.py /app/fix_startup_migrations.py || true; \
-    echo "Build includes entrypoint auto-v6"
+    echo "Build includes entrypoint auto-v7"
 
 EXPOSE 8000
 
@@ -64,4 +64,4 @@ ENV WEB_CONCURRENCY=1
 # "exec format error" from CRLF shebang or missing /bin/bash on slim).
 ENTRYPOINT ["/bin/sh", "/app/entrypoint.sh"]
 
-CMD ["true"]
+CMD ["sh", "-c", "exec gunicorn --chdir /app --bind 0.0.0.0:8000 --workers ${WEB_CONCURRENCY:-1} --timeout 120 --access-logfile - --error-logfile - gunicorn_wsgi:application"]
