@@ -9,7 +9,14 @@ from inventory.quantity_utils import (
     quantity_to_str,
 )
 
-from ci_info import vendor
+# Optional barcode deps — must never break URLConf / {% url %} reverse.
+try:
+    from pyzbar.pyzbar import decode, ZBarSymbol
+    from pyzbar import pyzbar
+except ImportError:  # pragma: no cover
+    decode = None
+    ZBarSymbol = None
+    pyzbar = None
 
 logger = logging.getLogger(__name__)
 from django.contrib.auth.decorators import login_required
@@ -1832,15 +1839,23 @@ class PurchaseCreateView(LoginRequiredMixin, View):
 #     return serials
 
 
-# views.py
-import cv2
+# views.py — optional OCR/barcode deps (must not break URLConf import)
+try:
+    import cv2
+except ImportError:  # pragma: no cover
+    cv2 = None
 import numpy as np
-from pyzbar.pyzbar import decode, ZBarSymbol
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from PIL import Image
-from pdf2image import convert_from_bytes
-import pytesseract
+try:
+    from pdf2image import convert_from_bytes
+except ImportError:  # pragma: no cover
+    convert_from_bytes = None
+try:
+    import pytesseract
+except ImportError:  # pragma: no cover
+    pytesseract = None
 from io import BytesIO
 
 # @csrf_exempt
@@ -1958,13 +1973,22 @@ from io import BytesIO
 # views.py
 import base64
 import numpy as np
-import cv2
+try:
+    import cv2
+except ImportError:
+    cv2 = None
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
-from pyzbar import pyzbar
+# Soft-imported at module top: from pyzbar import pyzbar
 from PIL import Image
-import pytesseract
-from pdf2image import convert_from_bytes
+try:
+    import pytesseract
+except ImportError:
+    pytesseract = None
+try:
+    from pdf2image import convert_from_bytes
+except ImportError:
+    convert_from_bytes = None
 #
 # @csrf_exempt
 # def extract_barcodes(request):
@@ -1989,19 +2013,31 @@ from pdf2image import convert_from_bytes
 #     return JsonResponse({'serials': list(set(serials))[:100]})
 
 import base64
-import cv2
+try:
+    import cv2
+except ImportError:
+    cv2 = None
 import numpy as np
-from pyzbar.pyzbar import decode
-from pdf2image import convert_from_bytes
+# Soft-imported at module top: from pyzbar.pyzbar import decode
+try:
+    from pdf2image import convert_from_bytes
+except ImportError:
+    convert_from_bytes = None
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from collections import OrderedDict
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
-from pyzbar import pyzbar
-from pdf2image import convert_from_bytes
+# Soft-imported at module top: from pyzbar import pyzbar
+try:
+    from pdf2image import convert_from_bytes
+except ImportError:
+    convert_from_bytes = None
 import numpy as np
-import cv2
+try:
+    import cv2
+except ImportError:
+    cv2 = None
 
 # @csrf_exempt
 # def extract_barcodes(request):
@@ -2140,9 +2176,15 @@ import cv2
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from PIL import Image, ImageFilter, ImageOps
-from pdf2image import convert_from_bytes
+try:
+    from pdf2image import convert_from_bytes
+except ImportError:
+    convert_from_bytes = None
 from collections import OrderedDict
-import pytesseract
+try:
+    import pytesseract
+except ImportError:
+    pytesseract = None
 import re
 #
 # @csrf_exempt
@@ -2193,8 +2235,11 @@ from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from collections import OrderedDict
 import numpy as np
-import cv2
-from pyzbar import pyzbar
+try:
+    import cv2
+except ImportError:
+    cv2 = None
+# Soft-imported at module top: from pyzbar import pyzbar
 import fitz  # PyMuPDF
 from PIL import Image
 import io
@@ -2445,8 +2490,11 @@ from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from collections import OrderedDict
 import numpy as np
-import cv2
-from pyzbar import pyzbar
+try:
+    import cv2
+except ImportError:
+    cv2 = None
+# Soft-imported at module top: from pyzbar import pyzbar
 import fitz  # PyMuPDF
 from PIL import Image
 import io
@@ -2698,7 +2746,10 @@ def extract_barcodes_from_cv2_image(img_cv):
 from django.views.decorators.csrf import csrf_exempt
 from django.http import JsonResponse
 from PIL import Image, ImageOps, ImageFilter
-import pytesseract
+try:
+    import pytesseract
+except ImportError:
+    pytesseract = None
 import re
 import fitz  # PyMuPDF
 import io
@@ -2956,13 +3007,22 @@ def check_duplicate_serials(request):
 # views.py
 import base64
 import numpy as np
-import cv2
+try:
+    import cv2
+except ImportError:
+    cv2 = None
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
-from pyzbar import pyzbar
+# Soft-imported at module top: from pyzbar import pyzbar
 from PIL import Image
-import pytesseract
-from pdf2image import convert_from_bytes
+try:
+    import pytesseract
+except ImportError:
+    pytesseract = None
+try:
+    from pdf2image import convert_from_bytes
+except ImportError:
+    convert_from_bytes = None
 
 @csrf_exempt
 def extract_serials(request):

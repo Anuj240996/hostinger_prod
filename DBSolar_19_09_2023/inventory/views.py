@@ -948,7 +948,7 @@
 #     category_id = request.GET.get('category_id')
 #     subcategories = SubCategory.objects.filter(category_id=category_id).all()
 #     return JsonResponse(list(subcategories.values('id', 'name')), safe=False)
-from audioop import reverse
+from django.urls import reverse
 
 from django.http import JsonResponse
 # from django.http import JsonResponse

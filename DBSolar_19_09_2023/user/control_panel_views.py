@@ -278,9 +278,37 @@ def control_panel_permissions(request):
     - select one or more targets
     - apply preset or custom portals/modules/operations
     """
+    try:
+        return _control_panel_permissions_impl(request)
+    except Exception as exc:
+        logger.exception(
+            "Control Panel permissions page crashed method=%s path=%s GET=%s POST_keys=%s",
+            request.method,
+            request.path,
+            dict(request.GET),
+            list(request.POST.keys()) if request.method == "POST" else [],
+        )
+        # Admin-only page: show the real exception even when DEBUG=False.
+        import traceback as _tb
+        body = (
+            "<h1>Control Panel Permissions Error</h1>"
+            f"<p><b>{type(exc).__name__}:</b> {exc}</p>"
+            "<pre style='white-space:pre-wrap;background:#111;color:#eee;padding:12px;'>"
+            f"{_tb.format_exc()}"
+            "</pre>"
+            "<p><a href='/user/control-panel/'>Back to Control Panel</a></p>"
+        )
+        from django.http import HttpResponse
+        return HttpResponse(body, status=500, content_type="text/html; charset=utf-8")
+
+
+def _control_panel_permissions_impl(request):
+    """
+    Unified permission manager (v3) implementation.
+    """
     if not request.session.get("control_panel_authenticated"):
         messages.warning(request, "Please login to Control Panel first")
-        return redirect("user:control_panel_login")
+        return HttpResponseRedirect("/user/control-panel/login/")
 
     # Lists for selection UI
     associate_staff_ids = list(

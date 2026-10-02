@@ -171,7 +171,7 @@ from product import views
 from django.urls import path
 
 from product.views import get_subcategories
-from transactions.views import get_stocks
+# get_stocks imported lazily only if needed — avoid loading transactions.views here
 from . import views
 from .views import FavoriteListView
 
