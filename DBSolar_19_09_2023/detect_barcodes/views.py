@@ -2597,10 +2597,16 @@ def displayproduct(request):
     customer = get_object_or_404(Customer, new_customer_id=request.user.id)
     user_record = customer
     selected_company = customer.Comp_name
-    items = BarcodeImage.objects.filter(company=selected_company)
-    solar_items = items.filter(product_name='SolarPanel')
-    inverter_items = items.filter(product_name='Inverter')
-    replace_items = items.filter(product_name='Replace')
+    # Prefer AssignTo (same as admin barcode views). Also include Comp_name match
+    # for legacy rows that were saved without AssignTo.
+    from django.db.models import Q
+    barcode_q = Q(AssignTo_id=request.user.id)
+    if selected_company:
+        barcode_q |= Q(company__iexact=str(selected_company).strip())
+    items = BarcodeImage.objects.filter(barcode_q).distinct()
+    solar_items = items.filter(product_name__iexact='SolarPanel')
+    inverter_items = items.filter(product_name__iexact='Inverter')
+    replace_items = items.filter(product_name__iexact='Replace')
     solar_panel_total_quantity = solar_items.count()
     solar_panel_quantity_by_wattage = solar_items.values('wattage').annotate(total_quantity=Count('id'))
     inverter_panel_total_quantity = inverter_items.count()
