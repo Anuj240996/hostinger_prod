@@ -204,16 +204,17 @@ def required_permission(url_name: Optional[str], request: HttpRequest) -> Option
     if url_name in {"firereport-deleteTeam", "firereport-deleteRequest"}:
         return ("firereport", "delete")
 
-    # SERVICES
+    # SERVICES (Control Panel module: services — not firereport/Complaint)
     if url_name in {
+        "firereport-service-new",
         "firereport-service-assigned",
         "firereport-service-in-process",
         "firereport-service-completed",
         "firereport-service-viewRequestDetails",
     }:
-        return ("firereport", "view")
+        return ("services", "view")
     if url_name in {"firereport-service-mark-in-process", "firereport-service-mark-completed"}:
-        return ("firereport", "edit")
+        return ("services", "edit")
 
     # BARCODE / detect_barcodes
     if url_name.startswith("detect_barcodes-") or url_name.startswith("generate_barcodes-"):

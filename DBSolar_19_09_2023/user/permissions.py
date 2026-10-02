@@ -81,21 +81,24 @@ def has_portal_access(user, portal_name: str) -> bool:
 
 def has_nav_url_access(user, url_name: str) -> bool:
     """
-    Per-page/submodule access check.
+    Per-page/submodule access check against Control Panel nav grants.
 
-    The four Dashboard landing URLs (staff / consumer / complaint / stock) are allowed
-    only when the matching item is explicitly granted under Control Panel
-    Models & Sub-models — not from Portal access alone.
-
-    Other URLs: legacy behavior (open if no nav rows yet; else enforce nav grants).
+    Dashboard landing URLs always require an explicit nav grant.
+    Other registered nav URLs require grant once the user has any CP nav rows.
+    URLs not in CPNavItem stay open (not managed by Control Panel menus).
     """
     if not user or isinstance(user, AnonymousUser) or not getattr(user, "is_authenticated", False):
         return False
     if getattr(user, "is_superuser", False):
         return True
 
+    if url_name in {"user-logout", "user-login"}:
+        return True
+
+    has_any_nav = CPUserNavAccess.objects.filter(user=user).exists()
+
     if url_name in DASHBOARD_SUBMODULE_URL_NAMES:
-        if not CPUserNavAccess.objects.filter(user=user).exists():
+        if not has_any_nav:
             return False
         nav_ids = list(
             CPNavItem.objects.filter(url_name=url_name, is_active=True).values_list("id", flat=True)
@@ -108,13 +111,15 @@ def has_nav_url_access(user, url_name: str) -> bool:
             granted=True,
         ).exists()
 
-    if not CPUserNavAccess.objects.filter(user=user).exists():
-        return True
-
     nav_ids = list(
         CPNavItem.objects.filter(url_name=url_name, is_active=True).values_list("id", flat=True)
     )
+    # Not a Control Panel menu URL → do not block
     if not nav_ids:
+        return True
+
+    # No CP nav rows yet → legacy open access for registered URLs
+    if not has_any_nav:
         return True
 
     return CPUserNavAccess.objects.filter(
