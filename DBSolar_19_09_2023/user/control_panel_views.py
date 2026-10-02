@@ -2,6 +2,7 @@
 Control Panel Views for Permission Management
 """
 from django.shortcuts import render, redirect, get_object_or_404
+from django.urls import reverse
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib.auth.models import User
 from django.contrib import messages
@@ -258,7 +259,9 @@ def control_panel_user_permissions(request, user_id):
     else:
         category = "customer"
 
-    return redirect(f"{reverse('user:control_panel_permissions')}?category={category}&targets={u.id}")
+    return redirect(
+        f"{reverse('user:control_panel_permissions')}?category={category}&targets={u.id}"
+    )
 
 
 @login_required
