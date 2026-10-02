@@ -422,30 +422,46 @@
                      </li>
 
                      {% endif %}
-                     {% if user|has_module_permission:"firereport" or user.is_superuser %}
+                     {% if user|has_url_permission:"firereport-newRequest" or user|has_url_permission:"firereport-assignRequest" or user|has_url_permission:"firereport-teamontheway" or user|has_url_permission:"firereport-workinprogress" or user|has_url_permission:"firereport-completeRequest" or user|has_url_permission:"firereport-allRequest" or user|has_url_permission:"firereport-reassignRequest" or user|has_url_permission:"firereport-dateReport" or user|has_url_permission:"firereport-search" or user.is_superuser %}
                      <li class="submenu {% active_link 'firereport-newRequest' 'active' %} {% active_link 'firereport-assignRequest' 'active' %} {% active_link 'firereport-teamontheway' 'active' %} {% active_link 'firereport-workinprogress' 'active' %} {% active_link 'firereport-completeRequest' 'active' %} {% active_link 'firereport-allRequest' 'active' %} {% active_link 'firereport-dateReport' 'active' %} {% active_link 'firereport-search' 'active' %}">
                         <a href="{% url 'customer-Comm_Cust' %}"><i class="nav-icon fas fa-exclamation-circle" aria-hidden="true"></i> <span> Complaint</span> <span class="menu-arrow"></span></a>
                         <ul>
+                           {% if user|has_url_permission:"firereport-newRequest" or user.is_superuser %}
                            <li><a href="{% url 'firereport-newRequest' %}"><i class="nav-icon fas fa-envelope" aria-hidden="true"></i> New Request</a></li>
+                           {% endif %}
+                           {% if user|has_url_permission:"firereport-assignRequest" or user.is_superuser %}
                            <li><a href="{% url 'firereport-assignRequest' %}"><i class="nav-icon fa fa-arrow-circle-right" aria-hidden="true"></i> Assigned Request</a></li>
+                           {% endif %}
+                           {% if user|has_url_permission:"firereport-teamontheway" or user.is_superuser %}
                            <li><a href="{% url 'firereport-teamontheway' %}"><i class="nav-icon fa fa-spinner" aria-hidden="true"></i> In Progress</a></li>
+                           {% endif %}
+                           {% if user|has_url_permission:"firereport-workinprogress" or user.is_superuser %}
                            <li><a href="{% url 'firereport-workinprogress' %}"><i class="nav-icon fa fa-tasks" aria-hidden="true"></i> Work in Progress</a></li>
+                           {% endif %}
+                           {% if user|has_url_permission:"firereport-completeRequest" or user.is_superuser %}
                            <li><a href="{% url 'firereport-completeRequest' %}"><i class="nav-icon fa fa-check" aria-hidden="true"></i> Completed Request</a></li>
+                           {% endif %}
+                           {% if user|has_url_permission:"firereport-allRequest" or user.is_superuser %}
                            <li><a href="{% url 'firereport-allRequest' %}"><i class="nav-icon fa fa-list" aria-hidden="true"></i> All Requests</a></li>
+                           {% endif %}
+                           {% if user|has_url_permission:"firereport-reassignRequest" or user.is_superuser %}
                            <li><a href="{% url 'firereport-reassignRequest' %}"><i class="nav-icon fas fa-sync-alt" aria-hidden="true"></i> Re-Assign Request</a></li>
-                           <li><a href="{% url 'firereport-dateReport' %}"> <i class="nav-icon fas fa-calendar-alt"></i> All Report
-                              </a>
-                           </li>
-                           <li><a href="{% url 'firereport-search' %}"> <i class="nav-icon fas fa-search"></i>
-                              Search</a>
-                           </li>
+                           {% endif %}
+                           {% if user|has_url_permission:"firereport-dateReport" or user.is_superuser %}
+                           <li><a href="{% url 'firereport-dateReport' %}"> <i class="nav-icon fas fa-calendar-alt"></i> All Report</a></li>
+                           {% endif %}
+                           {% if user|has_url_permission:"firereport-search" or user.is_superuser %}
+                           <li><a href="{% url 'firereport-search' %}"> <i class="nav-icon fas fa-search"></i> Search</a></li>
+                           {% endif %}
                         </ul>
                      </li>
+                     {% endif %}
+                     {% if user|has_url_permission:"firereport-task" or user.is_superuser %}
                      <li class="{% active_link 'firereport-task' 'active' %}">
                         <a href="{% url 'firereport-task' %}"><i class="nav-icon fa fa-tasks" aria-hidden="true"></i><span> New Task</span></a>
                      </li>
                      {% endif %}
-                     {% if user|has_url_permission:"firereport-service-new" or user|has_url_permission:"firereport-service-assigned" or user|has_url_permission:"firereport-service-in-process" or user|has_url_permission:"firereport-service-completed" or user|has_module_permission:"services" or user.is_superuser %}
+                     {% if user|has_url_permission:"firereport-service-new" or user|has_url_permission:"firereport-service-assigned" or user|has_url_permission:"firereport-service-in-process" or user|has_url_permission:"firereport-service-completed" or user.is_superuser %}
                      <li class="submenu {% active_link 'firereport-service-new' 'active' %} {% active_link 'firereport-service-assigned' 'active' %} {% active_link 'firereport-service-in-process' 'active' %} {% active_link 'firereport-service-completed' 'active' %}">
                         <a href="#"><i class="nav-icon fas fa-tools" aria-hidden="true"></i> <span> Services</span> <span class="menu-arrow"></span></a>
                         <ul>
@@ -568,6 +584,28 @@
 <!--                        <a href="{% url 'customer-view_all_cust' %}"><i class="nav-icon fas fa-list-alt" aria-hidden="true"></i> Consumer List</a>-->
 <!--                     </li>-->
 
+                     {% if user|has_url_permission:"customer-view_all_cust" or user|has_url_permission:"customer-cust" or user|has_url_permission:"customer-update_company_name" or user|has_url_permission:"customer-change_staff" or user|has_url_permission:"customer-search_by_staff" or user.is_superuser %}
+                     <li class="submenu {% active_link 'customer-view_all_cust' 'active' %} {% active_link 'customer-cust' 'active' %} {% active_link 'customer-search_by_staff' 'active' %}">
+                        <a href="#"><i class="nav-icon fas fa-users" aria-hidden="true"></i> <span> Consumer</span> <span class="menu-arrow"></span></a>
+                        <ul>
+                           {% if user|has_url_permission:"customer-cust" or user.is_superuser %}
+                           <li><a href="{% url 'customer-cust' %}"><i class="nav-icon fas fa-user-plus" aria-hidden="true"></i> Add Consumer</a></li>
+                           {% endif %}
+                           {% if user|has_url_permission:"customer-view_all_cust" or user.is_superuser %}
+                           <li><a href="{% url 'customer-view_all_cust' %}"><i class="nav-icon fas fa-list-alt" aria-hidden="true"></i> Consumer List</a></li>
+                           {% endif %}
+                           {% if user|has_url_permission:"customer-update_company_name" or user.is_superuser %}
+                           <li><a href="{% url 'customer-update_company_name' %}"><i class="nav-icon fas fa-user-edit" aria-hidden="true"></i> Update Consumer Name</a></li>
+                           {% endif %}
+                           {% if user|has_url_permission:"customer-change_staff" or user.is_superuser %}
+                           <li><a href="{% url 'customer-change_staff' %}"><i class="nav-icon fas fa-exchange-alt" aria-hidden="true"></i> Re-Assign Employee</a></li>
+                           {% endif %}
+                           {% if user|has_url_permission:"customer-search_by_staff" or user.is_superuser %}
+                           <li><a href="{% url 'customer-search_by_staff' %}"><i class="nav-icon fas fa-search" aria-hidden="true"></i> Cons. SearchBy Staff</a></li>
+                           {% endif %}
+                        </ul>
+                     </li>
+                     {% endif %}
 
                      {% if user|has_url_permission:"favorite" or user|has_url_permission:"favorite_list_view" or user.is_superuser %}
                      <li class="submenu {% active_link 'favorite' 'active' %} {% active_link 'favorite_list_view' 'active' %}">
@@ -711,7 +749,7 @@
                         </ul>
                      </li>
                      {% endif %}
-                     {% if user|has_url_permission:"firereport-service-new" or user|has_url_permission:"firereport-service-assigned" or user|has_url_permission:"firereport-service-in-process" or user|has_url_permission:"firereport-service-completed" or user|has_module_permission:"services" or user.is_superuser %}
+                     {% if user|has_url_permission:"firereport-service-new" or user|has_url_permission:"firereport-service-assigned" or user|has_url_permission:"firereport-service-in-process" or user|has_url_permission:"firereport-service-completed" or user.is_superuser %}
                      <li class="submenu {% active_link 'firereport-service-new' 'active' %} {% active_link 'firereport-service-assigned' 'active' %} {% active_link 'firereport-service-in-process' 'active' %} {% active_link 'firereport-service-completed' 'active' %}">
                         <a href="#"><i class="nav-icon fas fa-tools" aria-hidden="true"></i> <span> Services</span> <span class="menu-arrow"></span></a>
                         <ul>
@@ -1163,7 +1201,7 @@
                         </ul>
                      </li>
                      {% endif %}
-                     {% if user|has_url_permission:"firereport-service-new" or user|has_url_permission:"firereport-service-assigned" or user|has_url_permission:"firereport-service-in-process" or user|has_url_permission:"firereport-service-completed" or user|has_module_permission:"services" or user.is_superuser %}
+                     {% if user|has_url_permission:"firereport-service-new" or user|has_url_permission:"firereport-service-assigned" or user|has_url_permission:"firereport-service-in-process" or user|has_url_permission:"firereport-service-completed" or user.is_superuser %}
                     <li class="submenu {% active_link 'firereport-service-new' 'active' %} {% active_link 'firereport-service-assigned' 'active' %} {% active_link 'firereport-service-in-process' 'active' %} {% active_link 'firereport-service-completed' 'active' %}">
                        <a href="#"><i class="nav-icon fas fa-tools" aria-hidden="true"></i> <span> Services</span> <span class="menu-arrow"></span></a>
                        <ul>
@@ -1243,7 +1281,7 @@
                            <li><a href="{% url 'firereport-dateReport' %}"> <i class="nav-icon fas fa-calendar-alt"></i> All Report</a></li>
                         </ul>
                      </li>
-                     {% if user|has_url_permission:"firereport-service-new" or user|has_url_permission:"firereport-service-assigned" or user|has_url_permission:"firereport-service-in-process" or user|has_url_permission:"firereport-service-completed" or user|has_module_permission:"services" or user.is_superuser %}
+                     {% if user|has_url_permission:"firereport-service-new" or user|has_url_permission:"firereport-service-assigned" or user|has_url_permission:"firereport-service-in-process" or user|has_url_permission:"firereport-service-completed" or user.is_superuser %}
                      <li class="submenu {% active_link 'firereport-service-new' 'active' %} {% active_link 'firereport-service-assigned' 'active' %} {% active_link 'firereport-service-in-process' 'active' %} {% active_link 'firereport-service-completed' 'active' %}">
                         <a href="#"><i class="nav-icon fas fa-tools" aria-hidden="true"></i> <span> Services</span> <span class="menu-arrow"></span></a>
                         <ul>
@@ -1312,7 +1350,7 @@
                            <li><a href="{% url 'firereport-dateReport' %}"> <i class="nav-icon fas fa-calendar-alt"></i> All Report</a></li>
                         </ul>
                      </li>
-                     {% if user|has_url_permission:"firereport-service-new" or user|has_url_permission:"firereport-service-assigned" or user|has_url_permission:"firereport-service-in-process" or user|has_url_permission:"firereport-service-completed" or user|has_module_permission:"services" or user.is_superuser %}
+                     {% if user|has_url_permission:"firereport-service-new" or user|has_url_permission:"firereport-service-assigned" or user|has_url_permission:"firereport-service-in-process" or user|has_url_permission:"firereport-service-completed" or user.is_superuser %}
                      <li class="submenu {% active_link 'firereport-service-new' 'active' %} {% active_link 'firereport-service-assigned' 'active' %} {% active_link 'firereport-service-in-process' 'active' %} {% active_link 'firereport-service-completed' 'active' %}">
                         <a href="#"><i class="nav-icon fas fa-tools" aria-hidden="true"></i> <span> Services</span> <span class="menu-arrow"></span></a>
                         <ul>

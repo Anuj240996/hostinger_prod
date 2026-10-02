@@ -83,9 +83,9 @@ def has_nav_url_access(user, url_name: str) -> bool:
     """
     Per-page/submodule access check against Control Panel nav grants.
 
-    Dashboard landing URLs always require an explicit nav grant.
-    Other registered nav URLs require grant once the user has any CP nav rows.
-    URLs not in CPNavItem stay open (not managed by Control Panel menus).
+    Once a user has ANY Control Panel config (portal / module / nav rows),
+    registered menu URLs require an explicit granted=True nav row.
+    Unchecked items in Control Panel must not appear in the sidebar.
     """
     if not user or isinstance(user, AnonymousUser) or not getattr(user, "is_authenticated", False):
         return False
@@ -96,13 +96,17 @@ def has_nav_url_access(user, url_name: str) -> bool:
         return True
 
     has_any_nav = CPUserNavAccess.objects.filter(user=user).exists()
+    has_cp_config = (
+        has_any_nav
+        or CPUserModulePermission.objects.filter(user=user).exists()
+        or CPUserPortalAccess.objects.filter(user=user).exists()
+    )
+
+    nav_ids = list(
+        CPNavItem.objects.filter(url_name=url_name, is_active=True).values_list("id", flat=True)
+    )
 
     if url_name in DASHBOARD_SUBMODULE_URL_NAMES:
-        if not has_any_nav:
-            return False
-        nav_ids = list(
-            CPNavItem.objects.filter(url_name=url_name, is_active=True).values_list("id", flat=True)
-        )
         if not nav_ids:
             return False
         return CPUserNavAccess.objects.filter(
@@ -111,20 +115,18 @@ def has_nav_url_access(user, url_name: str) -> bool:
             granted=True,
         ).exists()
 
-    nav_ids = list(
-        CPNavItem.objects.filter(url_name=url_name, is_active=True).values_list("id", flat=True)
-    )
     # Not a Control Panel menu URL → do not block
     if not nav_ids:
         return True
 
-    # No CP nav rows yet → legacy open access for registered URLs
-    if not has_any_nav:
-        return True
+    # User has Control Panel configuration → require explicit grant
+    if has_cp_config:
+        return CPUserNavAccess.objects.filter(
+            user=user,
+            nav_item_id__in=nav_ids,
+            granted=True,
+        ).exists()
 
-    return CPUserNavAccess.objects.filter(
-        user=user,
-        nav_item_id__in=nav_ids,
-        granted=True,
-    ).exists()
+    # Legacy users with no CP rows yet
+    return True
 
