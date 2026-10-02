@@ -8,7 +8,7 @@ FROM python:3.10-slim
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     DEBIAN_FRONTEND=noninteractive \
-    DBSOLAR_ENTRYPOINT_AUTO=v3
+    DBSOLAR_ENTRYPOINT_AUTO=v4
 
 WORKDIR /app
 
@@ -45,13 +45,15 @@ COPY DBSolar_19_09_2023/ /app/
 RUN mkdir -p /app/asert /app/static /app/staticfiles /app/media
 
 ENV DJANGO_SETTINGS_MODULE=inventoryproject.settings
+# Never fail the image build on collectstatic (EasyPanel then shows yellow + empty logs)
 RUN SECRET_KEY=build-collectstatic-only DEBUG=False \
-    python manage.py collectstatic --noinput
+    python manage.py collectstatic --noinput \
+    || echo "WARNING: collectstatic failed at build — entrypoint may retry"
 
 # Ensure startup helper + entrypoint are executable (CRLF-safe)
 RUN test -f /app/fix_startup_migrations.py && \
     sed -i 's/\r$//' /app/entrypoint.sh && chmod +x /app/entrypoint.sh && \
-    echo "Build includes fix_startup_migrations.py (auto-v3)"
+    echo "Build includes fix_startup_migrations.py (auto-v4)"
 
 EXPOSE 8000
 

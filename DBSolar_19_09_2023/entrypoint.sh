@@ -1,28 +1,32 @@
 #!/bin/sh
-# EasyPanel entrypoint — always starts Gunicorn (never crash-loops on migrate).
+# EasyPanel entrypoint — always starts Gunicorn (never crash-loops on migrate/DB wait).
 # Version stamp appears in logs so you can confirm the new image is running.
 
-echo "=== entrypoint auto-v3 (551ace+/e4a06e+ migrate safe) ==="
+echo "=== entrypoint auto-v4 (always-start gunicorn) ==="
 echo "Starting application setup..."
 echo "Architecture: Option A — Django owns this database; phone app must use HTTP APIs (not direct DB)."
 
-# Require DATABASE_URL (EasyPanel must set this)
+# DATABASE_URL is required for a healthy app, but do not abort before Gunicorn
+# (empty EasyPanel logs / yellow status are worse than a running unhealthy app).
 if [ -z "${DATABASE_URL:-}" ]; then
-  echo "ERROR: DATABASE_URL is not set."
+  echo "WARNING: DATABASE_URL is not set."
   echo "Example: postgres://USER:PASS@database:5432/db_solar_v2"
   echo "Host must be the EasyPanel Postgres service name (usually: database)."
-  exit 1
+  echo "Continuing startup so container logs stay visible..."
 fi
 
 # Show DB host without password (helps debug Bad Gateway / No route to host)
-python - <<'PY'
+python - <<'PY' || true
 import os, re, sys
 url = os.environ.get("DATABASE_URL", "")
+if not url:
+    print("DATABASE_URL empty — skip host parse.")
+    sys.exit(0)
 m = re.match(r"^[^:]+://([^:/@]+)(?::[^@]*)?@([^:/]+)(?::(\d+))?/(.+)$", url)
 if not m:
-    print("ERROR: DATABASE_URL format is invalid.")
+    print("WARNING: DATABASE_URL format looks invalid.")
     print("Expected: postgres://USER:PASS@HOST:5432/DBNAME")
-    sys.exit(1)
+    sys.exit(0)
 user, host, port, db = m.group(1), m.group(2), m.group(3) or "5432", m.group(4)
 print(f"DATABASE_URL target: user={user} host={host} port={port} db={db}")
 stale = {"db_solar_database", "db-solar-database"}
@@ -34,13 +38,15 @@ if host in stale or host.startswith("10."):
     print("=" * 60)
 PY
 
-# Wait for database to be ready (with timeout)
+# Wait for database to be ready (do not exit — always reach Gunicorn)
 echo "Waiting for database..."
-MAX_ATTEMPTS=30
+MAX_ATTEMPTS=20
 ATTEMPT=0
+DB_OK=0
 
-while [ $ATTEMPT -lt $MAX_ATTEMPTS ]; do
-  if python -c "
+if [ -n "${DATABASE_URL:-}" ]; then
+  while [ $ATTEMPT -lt $MAX_ATTEMPTS ]; do
+    if python -c "
 import sys
 import psycopg2
 import os
@@ -53,26 +59,25 @@ try:
     conn.close()
     print('Database connection successful!')
     sys.exit(0)
-except psycopg2.OperationalError as e:
+except Exception as e:
     print(f'Database connection failed: {e}')
     sys.exit(1)
-except Exception as e:
-    print(f'Error: {e}')
-    sys.exit(1)
 "; then
-    echo "Database is up - proceeding with setup"
-    break
-  else
-    ATTEMPT=$((ATTEMPT + 1))
-    if [ $ATTEMPT -ge $MAX_ATTEMPTS ]; then
-      echo "ERROR: Could not connect to database after $MAX_ATTEMPTS attempts."
-      echo "Fix DATABASE_URL host (use EasyPanel service name 'database'), then Redeploy."
-      exit 1
+      echo "Database is up - proceeding with setup"
+      DB_OK=1
+      break
+    else
+      ATTEMPT=$((ATTEMPT + 1))
+      echo "Database is unavailable - sleeping (attempt $ATTEMPT/$MAX_ATTEMPTS)"
+      sleep 2
     fi
-    echo "Database is unavailable - sleeping (attempt $ATTEMPT/$MAX_ATTEMPTS)"
-    sleep 2
-  fi
-done
+  done
+fi
+
+if [ "$DB_OK" -ne 1 ]; then
+  echo "WARNING: Database not reachable after wait — starting Gunicorn anyway."
+  echo "Fix DATABASE_URL host (usually 'database'), then Redeploy."
+fi
 
 mkdir -p /app/media/profile_pics
 if [ ! -f /app/media/profile_pics/default.png ]; then
