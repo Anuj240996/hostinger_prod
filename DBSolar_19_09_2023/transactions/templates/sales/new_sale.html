@@ -517,10 +517,18 @@
         align-items: center;
         gap: 3px;
         margin: 0;
-        padding: 0;
+        padding: 2px 6px;
         min-height: 22px;
         white-space: nowrap;
         line-height: 1.2;
+        border-radius: 4px;
+        transition: background-color 0.15s ease;
+    }
+    #serial-number-container .serial-item:has(input[type="checkbox"]:checked) {
+        background-color: #d1e7dd;
+    }
+    #serial-number-container .serial-item.serial-item-selected {
+        background-color: #d1e7dd;
     }
     #serial-number-container .serial-item input[type="checkbox"] {
         position: static;
@@ -585,6 +593,13 @@ $(document).ready(function() {
         return $('#serial-number-container input[type="checkbox"]:checked').length;
     }
 
+    function refreshSerialSelectedBackgrounds() {
+        $('#serial-number-container .serial-item').each(function() {
+            var checked = $(this).find('input[type="checkbox"]').prop('checked');
+            $(this).toggleClass('serial-item-selected', !!checked);
+        });
+    }
+
     function enforceSelectionLimit() {
         var checkedCount = getCheckedCount();
         var $allCheckboxes = $('#serial-number-container input[type="checkbox"]');
@@ -599,6 +614,7 @@ $(document).ready(function() {
         var isAllChecked = allCount > 0 && checkedCount === allCount;
         $('#selectAllSerialsBtn').text(isAllChecked ? 'Unselect All' : 'Select All');
         $('#selectedSerialCount').text('Selected: ' + checkedCount + ' / ' + selectionCap);
+        refreshSerialSelectedBackgrounds();
     }
 
     function bindSerialChangeHandlers() {

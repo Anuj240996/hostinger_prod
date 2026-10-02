@@ -904,10 +904,18 @@
         align-items: center;
         gap: 3px;
         margin: 0;
-        padding: 0;
+        padding: 2px 6px;
         min-height: 22px;
         white-space: nowrap;
         line-height: 1.2;
+        border-radius: 4px;
+        transition: background-color 0.15s ease;
+    }
+    #serial-number-container .serial-item:has(input[type="checkbox"]:checked) {
+        background-color: #d1e7dd;
+    }
+    #serial-number-container .serial-item.serial-item-selected {
+        background-color: #d1e7dd;
     }
     #serial-number-container .serial-item input[type="checkbox"] {
         position: static;
@@ -1633,6 +1641,13 @@
             return $('#serial-number-container input[type="checkbox"]:checked').length;
         }
 
+        function refreshSerialSelectedBackgrounds() {
+            $('#serial-number-container .serial-item').each(function () {
+                var checked = $(this).find('input[type="checkbox"]').prop('checked');
+                $(this).toggleClass('serial-item-selected', !!checked);
+            });
+        }
+
         function renderPurchaseBillCards(groupedSerials) {
             var $billContainer = $('#purchase-bill-container');
             var $modalDialog = $('#serialNumberModal .modal-dialog');
@@ -1670,6 +1685,7 @@
             var total = $all.length;
             $('#selectedSerialCount').text('Selected: ' + checkedCount + ' / ' + Math.min(quantity, total));
             $('#selectAllSerialsBtn').text(total > 0 && checkedCount === total ? 'Unselect All' : 'Select All');
+            refreshSerialSelectedBackgrounds();
         }
 
         $(document).on('click', '.stockName', function (e) {
