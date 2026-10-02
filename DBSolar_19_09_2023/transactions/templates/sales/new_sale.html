@@ -90,7 +90,7 @@
 <!--</fieldset>-->
 <fieldset>
   <div class="panel panel-default">
-    <div class="panel-heading panel-heading-text">Consumer Details</div>
+    <div class="panel-heading panel-heading-text">{% if entity_type == 'vendor' or vendor and not supplier %}Vendor Details{% else %}Consumer Details{% endif %}</div>
     <div class="panel-body">
       <div class="form-row">
         <div class="form-group col-md-6">
@@ -157,6 +157,7 @@
 
 <form method="post" class="panel panel-default" id="purchaseForm">
     {% csrf_token %}
+    <input type="hidden" name="entity" value="{{ entity_type|default:'' }}">
     {{ formset.management_form }}
     <div class="panel-heading panel-heading-text">Product Details</div>
 <fieldset>

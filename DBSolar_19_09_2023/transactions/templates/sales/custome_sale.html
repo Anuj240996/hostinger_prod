@@ -861,6 +861,7 @@
 <br>
 <form method="post" class="panel panel-default" id="purchaseForm">
     {% csrf_token %}
+    <input type="hidden" name="entity" value="{{ entity_type|default:'' }}">
      {{ formset.management_form }}
 
     <div class="panel-heading panel-heading-text">Product Details</div>

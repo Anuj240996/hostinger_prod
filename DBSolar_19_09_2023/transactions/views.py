@@ -3896,16 +3896,16 @@ class SelectCustomerView(LoginRequiredMixin, View):
             if entity_type == 'customer':
                 customer = get_object_or_404(Customer, Cust_id=selected_supplier)
                 if dc_type == "individual":
-                    return redirect('new-sale', customer.pk)
+                    return redirect(f"{reverse('new-sale', args=[customer.pk])}?entity=customer")
                 elif dc_type == "selected":
-                    return redirect('custome-sale', customer.pk)
+                    return redirect(f"{reverse('custome-sale', args=[customer.pk])}?entity=customer")
             elif entity_type == 'vendor':
-                customer = get_object_or_404(Vendor, id=selected_supplier)
+                vendor = get_object_or_404(Vendor, id=selected_supplier)
                 if dc_type == "individual":
-                    # Change URL name as appropriate
-                    return redirect('new-sale', customer.pk)
+                    # entity=vendor is required: Cust_id and Vendor.id often collide
+                    return redirect(f"{reverse('new-sale', args=[vendor.pk])}?entity=vendor")
                 elif dc_type == "selected":
-                    return redirect('custome-sale', customer.pk)
+                    return redirect(f"{reverse('custome-sale', args=[vendor.pk])}?entity=vendor")
         # If something is missing, re-render the form with categories for context.
         customer_categories = list(Customer.objects.values('Cust_type').distinct())
         vendor_categories = list(Vendor.objects.values('category__id', 'category__name').distinct())
@@ -5271,18 +5271,81 @@ def assign_sales_billno_to_purchase_serials(serial_list, stock, billobj):
     return updated
 
 
+def _resolve_sale_party(request, pk):
+    """
+    Resolve Customer vs Vendor for sale create.
+
+    Customer.Cust_id and Vendor.id often share the same integer, so looking up
+    both by pk and preferring Customer incorrectly saves vendor sales as
+    consumer bills. Entity comes from ?entity= / POST entity (set by select-customer).
+    """
+    entity = (
+        request.POST.get("entity")
+        or request.GET.get("entity")
+        or ""
+    ).strip().lower()
+    if entity in ("vendor", "v"):
+        return None, Vendor.objects.filter(pk=pk).first(), "vendor"
+    if entity in ("customer", "consumer", "c"):
+        return Customer.objects.filter(Cust_id=pk).first(), None, "customer"
+
+    # Legacy URLs without entity: only use a party when the other does not exist
+    supplier = Customer.objects.filter(Cust_id=pk).first()
+    vendor = Vendor.objects.filter(pk=pk).first()
+    if supplier and not vendor:
+        return supplier, None, "customer"
+    if vendor and not supplier:
+        return None, vendor, "vendor"
+    if supplier and vendor:
+        # Ambiguous — force re-select so we never mis-attribute
+        return None, None, ""
+    return None, None, ""
+
+
+def _salebill_from_party(supplierobj, vendor_obj, entity_type):
+    """Build SaleBill linked to the correct party with contact fields filled."""
+    now = timezone.now()
+    if entity_type == "vendor" and vendor_obj:
+        return SaleBill(
+            Vend_id=vendor_obj,
+            time=now,
+            name=vendor_obj.name or "",
+            phone=(vendor_obj.phone or "")[:12],
+            address=vendor_obj.address or "",
+            email=vendor_obj.email or "",
+            gstin=(vendor_obj.gstin or "")[:15],
+        )
+    if supplierobj:
+        return SaleBill(
+            Cust_id=supplierobj,
+            time=now,
+            name=getattr(supplierobj, "Comp_name", "") or "",
+            phone=str(getattr(supplierobj, "phone", None) or "")[:12],
+            address=getattr(supplierobj, "Address", "") or "",
+            email=getattr(supplierobj, "email", None) or "",
+            gstin=str(getattr(supplierobj, "gstin", None) or "")[:15],
+        )
+    return None
+
+
 class SaleCreateView(LoginRequiredMixin, View):
     template_name = 'sales/new_sale.html'
     login_url = '/index/'
 
     def get(self, request, pk):
         formset = SaleItemFormset()  # Initialize an empty formset
-        supplierobj = Customer.objects.filter(Cust_id=pk).first()
-        vendor_obj = Vendor.objects.filter(pk=pk).first()
+        supplierobj, vendor_obj, entity_type = _resolve_sale_party(request, pk)
+        if not supplierobj and not vendor_obj:
+            messages.error(
+                request,
+                "Could not identify Consumer vs Vendor for this ID. Please select again from New Sales.",
+            )
+            return redirect('select_customer')
         context = {
             'formset': formset,
             'supplier': supplierobj,
             'vendor': vendor_obj,
+            'entity_type': entity_type,
             'stock_list': Stock.objects.filter(is_deleted=False),
             'categories': Category.objects.all(),
         }
@@ -5290,8 +5353,7 @@ class SaleCreateView(LoginRequiredMixin, View):
 
     def post(self, request, pk):
         formset = SaleItemFormset(request.POST)
-        supplierobj = Customer.objects.filter(Cust_id=pk).first()
-        vendor_obj = Vendor.objects.filter(pk=pk).first()
+        supplierobj, vendor_obj, entity_type = _resolve_sale_party(request, pk)
 
         if not supplierobj and not vendor_obj:
             messages.error(request, "No matching Customer or Vendor was found.")
@@ -5300,10 +5362,10 @@ class SaleCreateView(LoginRequiredMixin, View):
         if formset.is_valid():
             try:
                 with transaction.atomic():
-                    if supplierobj:
-                        billobj = SaleBill(Cust_id=supplierobj, time=timezone.now())
-                    else:
-                        billobj = SaleBill(Vend_id=vendor_obj, time=timezone.now())
+                    billobj = _salebill_from_party(supplierobj, vendor_obj, entity_type)
+                    if billobj is None:
+                        messages.error(request, "No matching Customer or Vendor was found.")
+                        return redirect('select_customer')
                     billobj.save()
 
                     # Save SaleBillDetails
@@ -5357,6 +5419,8 @@ class SaleCreateView(LoginRequiredMixin, View):
         context = {
             'formset': formset,
             'supplier': supplierobj,
+            'vendor': vendor_obj,
+            'entity_type': entity_type,
             'stock_list': Stock.objects.filter(is_deleted=False),
             'categories': Category.objects.all(),
         }
@@ -5564,10 +5628,13 @@ class customeView(LoginRequiredMixin, View):
     def get(self, request, pk):
         form = SaleForm()
         formset = SaleItemFormset()
-        # supplierobj = get_object_or_404(Customer, Cust_id=pk)  # Get the supplier object
-        # Check for both Customer and Vendor using filter().first()
-        supplierobj = Customer.objects.filter(Cust_id=pk).first()
-        vendor_obj = Vendor.objects.filter(pk=pk).first()
+        supplierobj, vendor_obj, entity_type = _resolve_sale_party(request, pk)
+        if not supplierobj and not vendor_obj:
+            messages.error(
+                request,
+                "Could not identify Consumer vs Vendor for this ID. Please select again from New Sales.",
+            )
+            return redirect('select_customer')
         stocks = Stock.objects.for_forms_dropdown()  # PG-safe vs legacy bit boolean columns
         favorite_lists = FavoriteList.objects.all()  # Get all favorite lists
         favorite_list = FavoriteList.objects.all().order_by(Lower('name'))
@@ -5580,26 +5647,25 @@ class customeView(LoginRequiredMixin, View):
             'favorite_list': favorite_list,  # Send favorite lists to the template
             'supplier': supplierobj,
             'vendor': vendor_obj,
+            'entity_type': entity_type,
         }
         return render(request, self.template_name, context)
 
     def post(self, request, pk):
         formset = SaleItemFormset(request.POST)  # Receive POST data for the formset
-        # supplierobj = get_object_or_404(Customer, Cust_id=pk)  # Get the supplier object
-        # Determine if the pk belongs to a Customer or Vendor
-        supplierobj = Customer.objects.filter(Cust_id=pk).first()
-        vendor_obj = Vendor.objects.filter(pk=pk).first()
+        supplierobj, vendor_obj, entity_type = _resolve_sale_party(request, pk)
+
+        if not supplierobj and not vendor_obj:
+            messages.error(request, "No matching Customer or Vendor was found.")
+            return redirect('select_customer')
 
         if formset.is_valid():  # Check if the formset is valid
             try:
                 with transaction.atomic():  # Use transaction to ensure atomicity
-                    # Save the SaleBill object
-                    # billobj = SaleBill(Cust_id=supplierobj)
-                    # billobj = SaleBill(Cust_id=supplierobj, time=timezone.now())
-                    if supplierobj:
-                        billobj = SaleBill(Cust_id=supplierobj, time=timezone.now())
-                    else:
-                        billobj = SaleBill(Vend_id=vendor_obj, time=timezone.now())
+                    billobj = _salebill_from_party(supplierobj, vendor_obj, entity_type)
+                    if billobj is None:
+                        messages.error(request, "No matching Customer or Vendor was found.")
+                        return redirect('select_customer')
 
                     billobj.save()
                     logger.info("SaleBill saved successfully")
@@ -5679,7 +5745,12 @@ class customeView(LoginRequiredMixin, View):
         context = {
             'formset': formset,
             'supplier': supplierobj,
+            'vendor': vendor_obj,
+            'entity_type': entity_type,
+            'stocks': Stock.objects.for_forms_dropdown(),
             'stock_list': Stock.objects.for_forms_dropdown(),
+            'favorite_lists': FavoriteList.objects.all(),
+            'favorite_list': FavoriteList.objects.all().order_by(Lower('name')),
             'categories': Category.objects.all(),
         }
         return render(request, self.template_name, context)
