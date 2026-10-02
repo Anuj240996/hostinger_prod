@@ -426,11 +426,11 @@
     }
 
     #serialNumberModal .modal-dialog {
-        max-width: 640px;
+        max-width: 500px;
         transition: max-width 0.2s ease;
     }
     #serialNumberModal .modal-dialog.modal-wide {
-        max-width: 760px;
+        max-width: 680px;
     }
     #serialNumberModal .modal-content {
         border-radius: 12px;
@@ -502,58 +502,41 @@
     .bill-theme-4 { background: #fff6ed; border-left-color: #f79009; }
     .bill-theme-5 { background: #fff1f3; border-left-color: #ee46bc; }
     .bill-theme-6 { background: #f9fafb; border-left-color: #667085; }
-    /* Simple list: one full serial per row (horizontal text, no letter stacking) */
     #serial-number-container {
-        display: block;
-        max-height: 48vh;
-        overflow-y: auto;
+        display: grid;
+        grid-auto-flow: column;
+        grid-template-rows: repeat(10, minmax(18px, auto));
+        grid-auto-columns: minmax(105px, max-content);
+        row-gap: 2px;
+        column-gap: 12px;
         overflow-x: auto;
-        padding: 2px 4px 8px;
+        padding-bottom: 4px;
+        justify-content: start;
+        justify-items: start;
+        text-align: left;
     }
     #serial-number-container .form-check {
-        display: flex !important;
-        flex-direction: row !important;
-        flex-wrap: nowrap !important;
-        align-items: center !important;
-        justify-content: flex-start !important;
-        gap: 10px;
-        margin: 0 0 8px 0 !important;
-        padding: 8px 12px !important;
-        width: 100%;
-        min-height: 38px;
-        box-sizing: border-box;
-        border: 1px solid #e4e7ec;
-        border-radius: 6px;
-        background: #fff;
+        display: inline-flex;
+        align-items: center;
+        justify-content: flex-start;
+        gap: 2px;
+        margin: 0;
+        min-height: 22px;
         text-align: left;
     }
     #serial-number-container .form-check-input {
-        position: static !important;
-        float: none !important;
-        margin: 0 !important;
-        margin-top: 0 !important;
-        margin-left: 0 !important;
-        margin-right: 0 !important;
-        flex: 0 0 auto !important;
-        width: 16px !important;
-        height: 16px !important;
-        transform: none !important;
+        position: static;
+        margin: 0;
+        margin-left: 0;
+        margin-right: 6px;
+        transform: scale(1.12);
+        transform-origin: center;
     }
     #serial-number-container .form-check-label {
-        display: inline-block !important;
-        margin: 0 !important;
-        padding: 0 !important;
-        line-height: 1.4 !important;
-        font-size: 14px !important;
-        font-family: Consolas, "Courier New", monospace;
-        white-space: nowrap !important;
-        word-break: keep-all !important;
-        overflow-wrap: normal !important;
-        writing-mode: horizontal-tb !important;
-        text-orientation: mixed !important;
-        text-align: left !important;
-        flex: 0 1 auto;
-        max-width: none;
+        margin: 0;
+        line-height: 1.2;
+        font-size: 14px;
+        text-align: left;
     }
 </style>
 
