@@ -241,6 +241,121 @@ def reporting(request):
 
 
 @login_required(login_url='user-login')
+def consumerServiceReporting(request):
+    """Consumer portal: create a service request (not staff service queue)."""
+    error = ""
+    if getattr(request.user, "is_staff", False) and not request.user.is_superuser:
+        return redirect('firereport-service-new')
+
+    service_categories = [
+        "Installation",
+        "Maintenance",
+        "Repair",
+        "Inspection",
+        "Warranty Service",
+        "Other",
+    ]
+    count1 = staff_Notification.objects.filter(staff_id=request.user.id, status=False).count()
+    notification1 = staff_Notification.objects.filter(staff_id=request.user.id, status=False).order_by('-created_at')
+    try:
+        customer = Customer.objects.get(new_customer=request.user)
+    except Customer.DoesNotExist:
+        customer = None
+        messages.error(request, "Consumer profile not found.")
+        return redirect('dashboard-index')
+
+    if request.method == "POST":
+        FullName = request.POST.get('FullName') or (
+            customer.Comp_name
+            or f"{customer.first_name or ''} {customer.last_name or ''}".strip()
+            or request.user.get_username()
+        )
+        MobileNumber = request.POST.get('MobileNumber') or str(customer.phone or "")
+        Location = request.POST.get('Location') or (customer.City or "")
+        service_category = (request.POST.get("ServiceCategory") or "").strip()
+        service_title = (request.POST.get("ServiceTitle") or "").strip()
+        service_description = (request.POST.get("Message") or "").strip()
+        Message = f"[Category: {service_category}] [Title: {service_title}]\n{service_description}".strip()
+        try:
+            ServiceRequest.objects.create(
+                FullName=FullName,
+                MobileNumber=MobileNumber,
+                Location=Location,
+                Message=Message,
+                Account_id=request.user.id,
+                Status="Pending",
+            )
+            error = "no"
+            messages.success(request, "Service request submitted successfully.")
+            return redirect('firereport-consumer-service-status')
+        except Exception:
+            traceback.print_exc()
+            error = "yes"
+            messages.error(request, "Could not submit service request. Please try again.")
+
+    return render(request, 'consumer_service_reporting.html', locals())
+
+
+@login_required(login_url='user-login')
+def consumerServiceStatus(request):
+    """Consumer portal: list own service requests only."""
+    if getattr(request.user, "is_staff", False) and not request.user.is_superuser:
+        return redirect('firereport-service-assigned')
+
+    count1 = staff_Notification.objects.filter(staff_id=request.user.id, status=False).count()
+    notification1 = staff_Notification.objects.filter(staff_id=request.user.id, status=False).order_by('-created_at')
+    qs = ServiceRequest.objects.filter(Account_id=request.user.id).order_by("-id")
+
+    sd = None
+    if request.method == 'POST':
+        sd = (request.POST.get('searchdata') or "").strip()
+        if sd:
+            q = Q(FullName__icontains=sd) | Q(MobileNumber__icontains=sd) | Q(Location__icontains=sd) | Q(Message__icontains=sd) | Q(Status__icontains=sd)
+            if sd.isdigit():
+                q = q | Q(id=int(sd))
+            qs = qs.filter(q)
+
+    import re as _re
+    services = []
+    for sr in qs:
+        raw = sr.Message or ""
+        cat = ""
+        title = ""
+        body = raw
+        m = _re.match(
+            r"^\[Category:\s*(?P<cat>.*?)\]\s*\[Title:\s*(?P<title>.*?)\]\s*(?:\r?\n)?(?P<body>[\s\S]*)$",
+            raw.strip(),
+        )
+        if m:
+            cat = (m.group("cat") or "").strip()
+            title = (m.group("title") or "").strip()
+            body = (m.group("body") or "").strip()
+        services.append(
+            {
+                "id": sr.id,
+                "full_name": sr.FullName,
+                "mobile": sr.MobileNumber,
+                "location": sr.Location,
+                "title": title,
+                "category": cat,
+                "message": body if body else raw,
+                "postingdate": sr.Postingdate,
+                "status": sr.Status or "Pending",
+            }
+        )
+
+    pending_q = Q(Status__isnull=True) | Q(Status="Pending")
+    stats = {
+        "total": qs.count(),
+        "pending": qs.filter(pending_q).count(),
+        "assigned": qs.filter(Status="Assigned").count(),
+        "in_progress": qs.filter(Status__in=["In Process", "In Progress"]).count(),
+        "completed": qs.filter(Status="Completed").count(),
+    }
+    return render(request, 'consumer_service_status.html', locals())
+
+
+@login_required(login_url='user-login')
 def viewStatus(request):
     count1 = staff_Notification.objects.filter(staff_id=request.user.id, status=False).count()
     notification1 = staff_Notification.objects.filter(staff_id=request.user.id, status=False).order_by('-created_at')

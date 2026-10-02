@@ -83,9 +83,12 @@ def has_nav_url_access(user, url_name: str) -> bool:
     """
     Per-page/submodule access check against Control Panel nav grants.
 
-    Once a user has ANY Control Panel config (portal / module / nav rows),
+    Consumers (non-staff) always get Consumer Portal menu access by default.
+    Control Panel nav grants apply to staff users only.
+
+    Once a staff user has ANY Control Panel config (portal / module / nav rows),
     registered menu URLs require an explicit granted=True nav row.
-    Unchecked items in Control Panel must not appear in the sidebar.
+    Unchecked items in Control Panel must not appear in the staff sidebar.
     """
     if not user or isinstance(user, AnonymousUser) or not getattr(user, "is_authenticated", False):
         return False
@@ -93,6 +96,10 @@ def has_nav_url_access(user, url_name: str) -> bool:
         return True
 
     if url_name in {"user-logout", "user-login"}:
+        return True
+
+    # Consumer / customer portal: menus are open by default (no CP grants required)
+    if not getattr(user, "is_staff", False):
         return True
 
     has_any_nav = CPUserNavAccess.objects.filter(user=user).exists()
@@ -119,7 +126,7 @@ def has_nav_url_access(user, url_name: str) -> bool:
     if not nav_ids:
         return True
 
-    # User has Control Panel configuration → require explicit grant
+    # Staff with Control Panel configuration → require explicit grant
     if has_cp_config:
         return CPUserNavAccess.objects.filter(
             user=user,
@@ -127,6 +134,6 @@ def has_nav_url_access(user, url_name: str) -> bool:
             granted=True,
         ).exists()
 
-    # Legacy users with no CP rows yet
+    # Legacy staff with no CP rows yet
     return True
 
