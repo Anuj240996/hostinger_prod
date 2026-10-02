@@ -569,6 +569,7 @@
                      <li class="{% active_link 'dashboard-index' 'active' %}">
                         <a href="{% url 'dashboard-index' %}"><i class="fa fa-home" style="font-size:20px" aria-hidden="true"></i><span style="font-size:20px;"><b>  Staff Portal</b></span> </a>
                      </li>
+                     {% if user|has_url_permission:"user-profile" or user|has_url_permission:"user-edit_profile" or user.is_superuser %}
                      <li class="submenu {% active_link 'dashboard-customers' %} {% active_link 'user-profile' 'active' %} {% active_link 'user-add' 'active' %} {% active_link 'user-edit_profile' 'active' %}">
                         <a href="#"><i class="fa fa-user-circle" aria-hidden="true"></i> <span> My Profile </span> <span class="menu-arrow"></span></a>
                         <ul>
@@ -580,6 +581,7 @@
                            {% endif %}
                         </ul>
                      </li>
+                     {% endif %}
 <!--                     <li class="{% active_link 'customer-view_all_cust' %}">-->
 <!--                        <a href="{% url 'customer-view_all_cust' %}"><i class="nav-icon fas fa-list-alt" aria-hidden="true"></i> Consumer List</a>-->
 <!--                     </li>-->
