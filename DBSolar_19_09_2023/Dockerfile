@@ -49,19 +49,20 @@ RUN mkdir -p /app/asert /app/static /app/staticfiles /app/media
 
 # Bake static files into the image so the container can start Gunicorn immediately.
 ENV DJANGO_SETTINGS_MODULE=inventoryproject.settings \
-    DBSOLAR_ENTRYPOINT_AUTO=v5
+    DBSOLAR_ENTRYPOINT_AUTO=v6
 # Never fail the image build on collectstatic (EasyPanel then shows yellow + empty logs)
 RUN SECRET_KEY=build-collectstatic-only DEBUG=False \
     python manage.py collectstatic --noinput \
-    || echo "WARNING: collectstatic failed at build — entrypoint may retry"
+    || echo "WARNING: collectstatic failed at build - entrypoint may retry"
 
-# Copy entrypoint script
+# Copy entrypoint script (never fail build if helper files differ)
 COPY entrypoint.sh /app/entrypoint.sh
-RUN test -f /app/fix_startup_migrations.py && \
-    sed -i 's/\r$//' /app/entrypoint.sh && chmod +x /app/entrypoint.sh && \
-    echo "Build includes fix_startup_migrations.py (auto-v5)"
+RUN sed -i 's/\r$//' /app/entrypoint.sh || true; \
+    chmod +x /app/entrypoint.sh || true; \
+    ls -la /app/entrypoint.sh /app/gunicorn_wsgi.py /app/fix_startup_migrations.py || true; \
+    echo "Build includes entrypoint auto-v6"
 
-# Expose port (map host 8001→8000 in EasyPanel if V1 already uses host :8000)
+# Expose port (map host 8001->8000 in EasyPanel if V1 already uses host :8000)
 EXPOSE 8000
 
 ENV WEB_CONCURRENCY=1
@@ -70,5 +71,5 @@ ENV WEB_CONCURRENCY=1
 # "exec format error" from CRLF shebang or missing /bin/bash on slim).
 ENTRYPOINT ["/bin/sh", "/app/entrypoint.sh"]
 
-# Default command (1 worker by default — lowers RAM on small VPS)
-CMD ["sh", "-c", "exec gunicorn --chdir /app --bind 0.0.0.0:8000 --workers ${WEB_CONCURRENCY:-1} --timeout 120 --access-logfile - --error-logfile - gunicorn_wsgi:application"]
+# Default command (entrypoint starts gunicorn itself; CMD kept as EasyPanel fallback)
+CMD ["true"]
