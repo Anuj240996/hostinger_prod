@@ -91,11 +91,24 @@ if [ "${SKIP_MIGRATE:-0}" = "1" ]; then
   echo "SKIP_MIGRATE=1 — skipping migrations."
 else
   echo "Running database migrations..."
-  python manage.py migrate --noinput || {
-      echo "ERROR: Database migrations failed. The app will not start until migrations succeed."
-      echo "For a fresh V2 database (db_solar_v2), drop and recreate the database, then redeploy."
+  # --fake-initial: if tables already exist (common on restored/prod DBs) but
+  # django_migrations is missing the initial row, mark initials applied instead of
+  # crashing with: relation "django_content_type" already exists
+  if ! python manage.py migrate --noinput --fake-initial; then
+    echo "WARNING: migrate --fake-initial failed. Trying safe recovery for existing tables..."
+    python manage.py migrate contenttypes zero --fake --noinput 2>/dev/null || true
+    python manage.py migrate contenttypes --fake-initial --noinput || true
+    python manage.py migrate auth --fake-initial --noinput || true
+    python manage.py migrate sessions --fake-initial --noinput || true
+    python manage.py migrate admin --fake-initial --noinput || true
+    if ! python manage.py migrate --noinput --fake-initial; then
+      echo "ERROR: Database migrations failed."
+      echo "Do NOT drop the production database."
+      echo "Temporary recovery: set EasyPanel env SKIP_MIGRATE=1, redeploy, then fix migrations from Terminal."
       exit 1
-  }
+    fi
+  fi
+  echo "Database migrations completed."
 fi
 
 # collectstatic runs at Docker build time. Re-run only when forced (e.g. after static changes).
