@@ -49,7 +49,7 @@ RUN mkdir -p /app/asert /app/static /app/staticfiles /app/media
 
 # Bake static files into the image so the container can start Gunicorn immediately.
 ENV DJANGO_SETTINGS_MODULE=inventoryproject.settings \
-    DBSOLAR_ENTRYPOINT_AUTO=v4
+    DBSOLAR_ENTRYPOINT_AUTO=v5
 # Never fail the image build on collectstatic (EasyPanel then shows yellow + empty logs)
 RUN SECRET_KEY=build-collectstatic-only DEBUG=False \
     python manage.py collectstatic --noinput \
@@ -59,7 +59,7 @@ RUN SECRET_KEY=build-collectstatic-only DEBUG=False \
 COPY entrypoint.sh /app/entrypoint.sh
 RUN test -f /app/fix_startup_migrations.py && \
     sed -i 's/\r$//' /app/entrypoint.sh && chmod +x /app/entrypoint.sh && \
-    echo "Build includes fix_startup_migrations.py (auto-v4)"
+    echo "Build includes fix_startup_migrations.py (auto-v5)"
 
 # Expose port (map host 8001→8000 in EasyPanel if V1 already uses host :8000)
 EXPOSE 8000

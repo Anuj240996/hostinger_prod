@@ -31,7 +31,7 @@ EasyPanel: http://72.60.98.248:3000/projects/db_solar/app/db-solar-v2
 2. Open **Environment** — `DATABASE_URL` host must be `database` (Postgres service name)
 3. Open **Deployments** — if last build failed, read the error
 4. Click green **Deploy** (clear build cache if available)
-5. Wait until Logs show: `=== entrypoint auto-v4 (always-start gunicorn) ===`
+5. Wait until Logs show: `=== entrypoint auto-v5 (always-start gunicorn) ===`
 6. Then: `=== Starting Gunicorn on 0.0.0.0:8000`
 7. Hard refresh https://app.db-solar.co.in
 
