@@ -27,15 +27,42 @@ class PermissionResult:
     reason: str = ""
 
 
-def has_cp_operation(user, module_name: str, operation: str) -> bool:
+def has_portal_access(user, portal_name: str) -> bool:
     """
-    True if user has granted CP permission for given module + operation.
+    Portal access is separate from module permissions.
     Superuser bypasses.
+    Non-staff consumers always have access (Consumer Portal is open by default).
     """
     if not user or isinstance(user, AnonymousUser) or not getattr(user, "is_authenticated", False):
         return False
 
     if getattr(user, "is_superuser", False):
+        return True
+
+    # Consumer / customer users: portal checks do not apply
+    if not getattr(user, "is_staff", False):
+        return True
+
+    portal = CPPortal.objects.filter(name__iexact=portal_name, is_active=True).first()
+    if not portal:
+        return False
+
+    return CPUserPortalAccess.objects.filter(user=user, portal=portal, granted=True).exists()
+
+
+def has_cp_operation(user, module_name: str, operation: str) -> bool:
+    """
+    True if user has granted CP permission for given module + operation.
+    Superuser bypasses.
+    Non-staff consumers are not subject to Control Panel module grants.
+    """
+    if not user or isinstance(user, AnonymousUser) or not getattr(user, "is_authenticated", False):
+        return False
+
+    if getattr(user, "is_superuser", False):
+        return True
+
+    if not getattr(user, "is_staff", False):
         return True
 
     module = CPModule.objects.filter(name__iexact=module_name, is_active=True).first()
@@ -59,24 +86,6 @@ def has_cp_operation(user, module_name: str, operation: str) -> bool:
 
 def has_cp_module_view(user, module_name: str) -> bool:
     return has_cp_operation(user, module_name, "view")
-
-
-def has_portal_access(user, portal_name: str) -> bool:
-    """
-    Portal access is separate from module permissions.
-    Superuser bypasses.
-    """
-    if not user or isinstance(user, AnonymousUser) or not getattr(user, "is_authenticated", False):
-        return False
-
-    if getattr(user, "is_superuser", False):
-        return True
-
-    portal = CPPortal.objects.filter(name__iexact=portal_name, is_active=True).first()
-    if not portal:
-        return False
-
-    return CPUserPortalAccess.objects.filter(user=user, portal=portal, granted=True).exists()
 
 
 def has_nav_url_access(user, url_name: str) -> bool:

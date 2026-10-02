@@ -14,7 +14,10 @@ from .permissions import has_cp_operation, has_portal_access, has_nav_url_access
 
 class CPPermissionMiddleware:
     """
-    Enforce Control Panel permissions at the URL layer.
+    Enforce Control Panel permissions at the URL layer (staff only).
+
+    Consumers (non-staff) always get Consumer Portal access by default —
+    CP portal / module / nav grants apply only to staff users.
 
     - If URL name is mapped to a portal, require portal access.
     - If URL name is mapped to a module/operation, require that operation.
@@ -30,6 +33,10 @@ class CPPermissionMiddleware:
         user = getattr(request, "user", None)
         if user and getattr(user, "is_authenticated", False):
             if not getattr(user, "is_superuser", False):
+                # Consumer / customer portal users: do not apply staff CP gates
+                if not getattr(user, "is_staff", False):
+                    return self.get_response(request)
+
                 match = getattr(request, "resolver_match", None)
                 if match is None:
                     try:
