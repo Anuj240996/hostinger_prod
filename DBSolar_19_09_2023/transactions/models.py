@@ -800,6 +800,47 @@ class SaleItem(models.Model):
     # total_quantity = models.IntegerField(null=True)
     total_quantity = models.DecimalField(max_digits=10, decimal_places=3, null=True)  # Store final amount
 
+    _ID_PG_LOCK = 9_123_450_130
+
+    def save(self, *args, **kwargs):
+        """Assign id = MAX(id)+1 when the PostgreSQL sequence is behind (MySQL migration)."""
+        from django.db import connection, transaction
+        from django.db.models import Max
+
+        is_insert = self._state.adding
+        if is_insert and self.pk is None:
+
+            def _take_next_id():
+                with connection.cursor() as cursor:
+                    if connection.vendor == "postgresql":
+                        cursor.execute(
+                            "SELECT pg_advisory_xact_lock(%s);",
+                            [SaleItem._ID_PG_LOCK],
+                        )
+                m = SaleItem.objects.aggregate(_m=Max("id"))["_m"]
+                self.pk = (m or 0) + 1
+
+            if connection.in_atomic_block:
+                _take_next_id()
+            else:
+                with transaction.atomic():
+                    _take_next_id()
+
+        super().save(*args, **kwargs)
+
+        if is_insert and connection.vendor == "postgresql":
+            with connection.cursor() as cursor:
+                cursor.execute(
+                    "SELECT pg_get_serial_sequence(%s, %s);",
+                    ["transactions_saleitem", "id"],
+                )
+                row = cursor.fetchone()
+                if row and row[0]:
+                    cursor.execute(
+                        "SELECT setval(%s::regclass, %s);",
+                        [row[0], self.pk],
+                    )
+
     def __str__(self):
         return "Bill no: " + str(self.billno.billno) + ", Item = " + self.stock.name
 
@@ -826,6 +867,49 @@ class SaleBillDetails(models.Model):
     total_amount = models.DecimalField(max_digits=10, decimal_places=2, null=True)  # Store final amount
     round_off = models.DecimalField(max_digits=10, decimal_places=2, null=True)  # Store final amount
 
+    _ID_PG_LOCK = 9_123_450_131
+
+    def save(self, *args, **kwargs):
+        """
+        Assign id = MAX(id)+1 when the PostgreSQL sequence is behind (MySQL migration).
+        Prevents duplicate key on transactions_salebilldetails_pkey (e.g. Key (id)=(40)).
+        """
+        from django.db import connection, transaction
+        from django.db.models import Max
+
+        is_insert = self._state.adding
+        if is_insert and self.pk is None:
+
+            def _take_next_id():
+                with connection.cursor() as cursor:
+                    if connection.vendor == "postgresql":
+                        cursor.execute(
+                            "SELECT pg_advisory_xact_lock(%s);",
+                            [SaleBillDetails._ID_PG_LOCK],
+                        )
+                m = SaleBillDetails.objects.aggregate(_m=Max("id"))["_m"]
+                self.pk = (m or 0) + 1
+
+            if connection.in_atomic_block:
+                _take_next_id()
+            else:
+                with transaction.atomic():
+                    _take_next_id()
+
+        super().save(*args, **kwargs)
+
+        if is_insert and connection.vendor == "postgresql":
+            with connection.cursor() as cursor:
+                cursor.execute(
+                    "SELECT pg_get_serial_sequence(%s, %s);",
+                    ["transactions_salebilldetails", "id"],
+                )
+                row = cursor.fetchone()
+                if row and row[0]:
+                    cursor.execute(
+                        "SELECT setval(%s::regclass, %s);",
+                        [row[0], self.pk],
+                    )
 
     def __str__(self):
         return "Bill no: " + str(self.billno.billno)
