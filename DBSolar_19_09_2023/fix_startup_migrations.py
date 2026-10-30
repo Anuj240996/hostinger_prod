@@ -68,6 +68,47 @@ def pre_fake_existing_initials() -> int:
     return count
 
 
+def resync_auth_user_id_sequence() -> None:
+    """Prevent new-consumer 500: auth_user_id_seq lag after imports/manual inserts."""
+    from django.db import connection
+
+    if connection.vendor != "postgresql":
+        return
+    with connection.cursor() as cursor:
+        if not table_exists(cursor, "auth_user"):
+            return
+        cursor.execute(
+            """
+            DO $$
+            DECLARE
+                seq_name text;
+                max_id bigint;
+            BEGIN
+                SELECT pg_get_serial_sequence('auth_user', 'id') INTO seq_name;
+                IF seq_name IS NOT NULL THEN
+                    SELECT COALESCE(MAX(id), 0) INTO max_id FROM auth_user;
+                    IF max_id > 0 THEN
+                        PERFORM setval(seq_name, max_id, true);
+                    ELSE
+                        PERFORM setval(seq_name, 1, false);
+                    END IF;
+                END IF;
+
+                SELECT pg_get_serial_sequence('user_profile', 'id') INTO seq_name;
+                IF seq_name IS NOT NULL THEN
+                    SELECT COALESCE(MAX(id), 0) INTO max_id FROM user_profile;
+                    IF max_id > 0 THEN
+                        PERFORM setval(seq_name, max_id, true);
+                    ELSE
+                        PERFORM setval(seq_name, 1, false);
+                    END IF;
+                END IF;
+            END $$;
+            """
+        )
+    print("Resynced auth_user / user_profile id sequences.")
+
+
 def run_migrate() -> None:
     from django.core.management import call_command
 
@@ -119,6 +160,11 @@ def main() -> int:
         except Exception as exc2:
             print(f"WARNING: retry migrate failed: {exc2}")
             print("App will still start (no crash-loop). Do NOT drop the database.")
+
+    try:
+        resync_auth_user_id_sequence()
+    except Exception as exc:
+        print(f"WARNING: auth_user sequence resync failed: {exc}")
 
     return 0
 

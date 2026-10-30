@@ -37,6 +37,7 @@ from user.views import profile
 from .models import Customer, Role, Department
 from django.contrib.auth.models import User, Group
 from datetime import datetime
+from django.db import IntegrityError
 from django.db.models import Q, Max, Count, Sum, DateField
 from django.contrib import messages
 from django.shortcuts import render, redirect
@@ -102,9 +103,58 @@ def _resync_customer_result_id_sequence():
         )
 
 
+def _resync_auth_user_id_sequence():
+    """Keep auth_user / user_profile ID sequences ahead of existing rows."""
+    from django.db import connection
+
+    if connection.vendor != "postgresql":
+        return
+    with connection.cursor() as cursor:
+        cursor.execute(
+            """
+            DO $$
+            DECLARE
+                seq_name text;
+                max_id bigint;
+            BEGIN
+                SELECT pg_get_serial_sequence('auth_user', 'id') INTO seq_name;
+                IF seq_name IS NOT NULL THEN
+                    SELECT COALESCE(MAX(id), 0) INTO max_id FROM auth_user;
+                    IF max_id > 0 THEN
+                        PERFORM setval(seq_name, max_id, true);
+                    ELSE
+                        PERFORM setval(seq_name, 1, false);
+                    END IF;
+                END IF;
+
+                SELECT pg_get_serial_sequence('user_profile', 'id') INTO seq_name;
+                IF seq_name IS NOT NULL THEN
+                    SELECT COALESCE(MAX(id), 0) INTO max_id FROM user_profile;
+                    IF max_id > 0 THEN
+                        PERFORM setval(seq_name, max_id, true);
+                    ELSE
+                        PERFORM setval(seq_name, 1, false);
+                    END IF;
+                END IF;
+            END $$;
+            """
+        )
+
+
+def _save_new_auth_user(user):
+    """Insert auth_user; resync Postgres sequence once if next id already exists."""
+    try:
+        user.save()
+        return user
+    except IntegrityError:
+        user.pk = None
+        _resync_auth_user_id_sequence()
+        user.save()
+        return user
+
+
 def _create_customer_result(*, consumer, consumer_id, assign_to=None):
     """Create Result row; resync sequence once on duplicate-key IntegrityError."""
-    from django.db import IntegrityError
     from .models import Result
 
     payload = {
@@ -839,7 +889,7 @@ def Cust_emp(request):
             user.email = request.POST['email']  # Add email to user object
             user.first_name = request.POST['first_name']
             user.last_name = request.POST['last_name']
-            user.save()
+            _save_new_auth_user(user)
             # Add the user to the 'Customers' group
             group = Group.objects.get(name='Customers')
             user.groups.add(group)
@@ -1180,7 +1230,7 @@ def Comm_Cust(request):
                 user.email = request.POST['email']
                 user.first_name = request.POST['first_name']
                 user.last_name = request.POST['last_name']
-                user.save()
+                _save_new_auth_user(user)
 
                 # Add the user to the 'Customers' group
                 group = Group.objects.get(name='Customers')
@@ -1942,7 +1992,7 @@ def Comp_Cust(request):
 
         user = form.save(commit=False)
         user.email = request.POST.get('email')
-        user.save()
+        _save_new_auth_user(user)
 
         group = Group.objects.get(name='Customers')
         user.groups.add(group)
@@ -2196,7 +2246,7 @@ def Govt_Cust(request):
         if form.is_valid():
             user = form.save(commit=False)
             user.email = request.POST['email']  # Add email to user object
-            user.save()
+            _save_new_auth_user(user)
             # Add the user to the 'Customers' group
             group = Group.objects.get(name='Customers')
             user.groups.add(group)
