@@ -60,7 +60,7 @@ COPY entrypoint.sh /app/entrypoint.sh
 RUN sed -i 's/\r$//' /app/entrypoint.sh || true; \
     chmod +x /app/entrypoint.sh || true; \
     ls -la /app/entrypoint.sh /app/gunicorn_wsgi.py /app/fix_startup_migrations.py || true; \
-    echo "Build includes entrypoint auto-v8"
+    echo "Build includes entrypoint auto-v8 cover-a4-20261030"
 
 # Expose port (map host 8001->8000 in EasyPanel if V1 already uses host :8000)
 EXPOSE 8000

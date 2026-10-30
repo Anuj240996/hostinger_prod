@@ -5418,7 +5418,10 @@ def industrial_quotation_pdf(request, pk):
             logging.getLogger(__name__).exception("Sample 2 cover stamp failed")
 
     response = HttpResponse(pdf_bytes, content_type='application/pdf')
-    response['Content-Disposition'] = f'filename="{filename}"'
+    response['Content-Disposition'] = f'inline; filename="{filename}"'
+    response['Cache-Control'] = 'private, no-store, no-cache, must-revalidate, max-age=0'
+    response['Pragma'] = 'no-cache'
+    response['Expires'] = '0'
     return response
 
 
