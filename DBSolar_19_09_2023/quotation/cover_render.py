@@ -433,12 +433,73 @@ def render_proposal_cover_png(
     return out_path.replace("\\", "/")
 
 
-def stamp_cover_on_pdf(jpeg_path, pdf_bytes):
-    """Replace page 1 with a ReportLab A4 page that draws the cover edge-to-edge."""
+def _jpeg_to_a4_pdf_bytes(jpeg_path):
+    """Wrap a JPEG in a single A4 PDF page. Does not need ReportLab."""
     from io import BytesIO
-    from reportlab.lib.pagesizes import A4
-    from reportlab.lib.utils import ImageReader
-    from reportlab.pdfgen import canvas as rl_canvas
+
+    with Image.open(jpeg_path) as im:
+        rgb = im.convert("RGB")
+        buf = BytesIO()
+        rgb.save(buf, format="JPEG", quality=92)
+        img_w, img_h = rgb.size
+    jpeg_data = buf.getvalue()
+
+    page_w = 595.27
+    page_h = 841.89
+    content = "q {:.4f} 0 0 {:.4f} -1 -1 cm /Im0 Do Q\n".format(page_w + 2.0, page_h + 2.0)
+    content_b = content.encode("latin1")
+
+    def _obj(num, payload):
+        return "{0} 0 obj\n".format(num).encode("latin1") + payload + b"\nendobj\n"
+
+    objects = [
+        _obj(1, b"<< /Type /Catalog /Pages 2 0 R >>"),
+        _obj(2, b"<< /Type /Pages /Kids [3 0 R] /Count 1 >>"),
+        _obj(
+            3,
+            (
+                "<< /Type /Page /Parent 2 0 R "
+                "/MediaBox [0 0 {w:.2f} {h:.2f}] "
+                "/CropBox [0 0 {w:.2f} {h:.2f}] "
+                "/Resources << /XObject << /Im0 4 0 R >> >> "
+                "/Contents 5 0 R >>"
+            ).format(w=page_w, h=page_h).encode("latin1"),
+        ),
+        (
+            b"4 0 obj\n"
+            + (
+                "<< /Type /XObject /Subtype /Image /Width {w} /Height {h} "
+                "/ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode "
+                "/Length {n} >>\nstream\n"
+            ).format(w=img_w, h=img_h, n=len(jpeg_data)).encode("latin1")
+            + jpeg_data
+            + b"\nendstream\nendobj\n"
+        ),
+        _obj(
+            5,
+            b"<< /Length %d >>\nstream\n" % len(content_b) + content_b + b"endstream",
+        ),
+    ]
+
+    header = b"%PDF-1.4\n%\xe2\xe3\xcf\xd3\n"
+    offsets = []
+    pos = len(header)
+    for obj in objects:
+        offsets.append(pos)
+        pos += len(obj)
+    xref_lines = ["xref", "0 {}".format(len(objects) + 1), "0000000000 65535 f "]
+    for off in offsets:
+        xref_lines.append("{:010d} 00000 n ".format(off))
+    xref_b = "\n".join(xref_lines).encode("latin1") + b"\n"
+    trailer = (
+        "trailer\n<< /Size {size} /Root 1 0 R >>\nstartxref\n{sx}\n%%EOF\n"
+    ).format(size=len(objects) + 1, sx=pos).encode("latin1")
+    return header + b"".join(objects) + xref_b + trailer
+
+
+def stamp_cover_on_pdf(jpeg_path, pdf_bytes):
+    """Put the painted A4 cover as page 1. Keep every xhtml2pdf page after it."""
+    from io import BytesIO
 
     try:
         from pypdf import PdfReader, PdfWriter
@@ -448,33 +509,45 @@ def stamp_cover_on_pdf(jpeg_path, pdf_bytes):
     if not jpeg_path or not os.path.isfile(jpeg_path) or not pdf_bytes:
         return pdf_bytes
 
-    cover_buf = BytesIO()
-    c = rl_canvas.Canvas(cover_buf, pagesize=A4)
-    page_w, page_h = A4
-    # 1pt bleed so no hairline white at the page edge
-    c.drawImage(
-        ImageReader(jpeg_path),
-        -1,
-        -1,
-        width=page_w + 2,
-        height=page_h + 2,
-        preserveAspectRatio=False,
-        mask="auto",
-    )
-    c.save()
-    cover_buf.seek(0)
+    cover_pdf = None
+    try:
+        from reportlab.lib.pagesizes import A4
+        from reportlab.lib.utils import ImageReader
+        from reportlab.pdfgen import canvas as rl_canvas
+
+        cover_buf = BytesIO()
+        c = rl_canvas.Canvas(cover_buf, pagesize=A4)
+        page_w, page_h = A4
+        c.drawImage(
+            ImageReader(jpeg_path),
+            -1,
+            -1,
+            width=page_w + 2,
+            height=page_h + 2,
+            preserveAspectRatio=False,
+            mask="auto",
+        )
+        c.save()
+        cover_pdf = cover_buf.getvalue()
+    except Exception:
+        import logging
+
+        logging.getLogger(__name__).warning(
+            "ReportLab cover stamp unavailable; using JPEG A4 wrapper"
+        )
+        cover_pdf = _jpeg_to_a4_pdf_bytes(jpeg_path)
 
     writer = PdfWriter()
-    writer.add_page(PdfReader(cover_buf).pages[0])
+    writer.add_page(PdfReader(BytesIO(cover_pdf)).pages[0])
     rest = PdfReader(BytesIO(pdf_bytes))
-    for page in rest.pages[1:]:
+    for page in rest.pages:
         writer.add_page(page)
     out = BytesIO()
     writer.write(out)
     return out.getvalue()
 
 
-def render_cover_left_photo(master):
+def render_cover_left_photo(master, width=298, height=842):
     """Portrait-crop the cover photo and save a temp JPEG. Empty string if unavailable."""
     import tempfile
     photo = None
@@ -484,11 +557,11 @@ def render_cover_left_photo(master):
         photo = _open_image(_static_cover_path())
     if photo is None:
         return ""
-    fitted = _cover_fit(photo, 594, 1560)
+    fitted = _cover_fit(photo, int(width), int(height))
     photo.close()
     fd, out_path = tempfile.mkstemp(prefix="dbsolar_cover_left_", suffix=".jpg")
     os.close(fd)
-    fitted.convert("RGB").save(out_path, "JPEG", quality=85)
+    fitted.convert("RGB").save(out_path, "JPEG", quality=85, dpi=(72, 72))
     return out_path.replace("\\", "/")
 
 

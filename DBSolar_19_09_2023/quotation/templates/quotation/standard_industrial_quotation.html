@@ -8,20 +8,8 @@
   <meta charset="utf-8">
   <title>Standard &amp; Industrial Quotation</title>
   <style>
-    /* Cover: dedicated full-page frame. Sizes must be pt — unitless HTML width is treated as px and shrinks the page. */
+    /* Pages 2+: Sample 1 header/footer. Cover is a painted A4 page prepended in Python. */
     @page {
-      size: A4;
-      margin: 0pt;
-      @frame cover_full_frame {
-        -pdf-frame-content: cover_full;
-        left: 0pt;
-        top: 0pt;
-        width: 595pt;
-        height: 841pt;
-      }
-    }
-    /* Pages 2+: same header/footer frames as Sample 1 (Standard Invoice) */
-    @page inner {
       size: A4;
       margin: 150px 30px 70px 30px;
       @frame header_frame {
@@ -150,17 +138,7 @@
 <body>
 {% now "y" as this_year %}
 
-{# PAGE 1 — Full A4 cover. CSS size in pt only (HTML width/height would be read as px). #}
-<div id="cover_full">
-{% if cover_full_src %}
-<img src="{{ cover_full_src }}" style="width:595pt; height:841pt;">
-{% else %}
-<img src="{% static 'quotation/proposal/cover_left.png' %}" style="width:595pt; height:841pt;">
-{% endif %}
-</div>
-
-<pdf:nexttemplate name="inner"/>
-<div class="page-break"></div>
+{# Cover is prepended as a true A4 page in Python so xhtml2pdf cannot zoom it. #}
 
 {# Same header/footer as Sample 1 Standard Invoice — used on pages 2 to last #}
 <div id="header_content" style="margin:0; padding:0;">

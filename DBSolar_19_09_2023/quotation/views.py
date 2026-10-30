@@ -5356,13 +5356,11 @@ def industrial_quotation_pdf(request, pk):
 
     if template_name.endswith('standard_industrial_quotation.html'):
         context['cover_full_src'] = ''
-        context['cover_left_src'] = ''
         context['about_photo_src'] = ''
         master = context.get('quotation_master')
         try:
             from .cover_render import (
                 render_proposal_cover_png,
-                render_cover_left_photo,
                 render_about_photo,
                 build_quotation_scan_url,
             )
@@ -5377,13 +5375,11 @@ def industrial_quotation_pdf(request, pk):
                 context.get('formatted_expiry_date'),
                 scan_url=scan_url,
             ) or ''
-            context['cover_left_src'] = render_cover_left_photo(master) or ''
             context['about_photo_src'] = render_about_photo() or ''
         except Exception:
             import logging
             logging.getLogger(__name__).exception("Sample 2 cover/about render failed")
             context['cover_full_src'] = ''
-            context['cover_left_src'] = ''
             context['about_photo_src'] = ''
 
     html = render_to_string(template_name, context)
