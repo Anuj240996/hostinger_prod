@@ -433,6 +433,25 @@ def render_proposal_cover_png(
     return out_path.replace("\\", "/")
 
 
+def render_proposal_cover_html_jpeg(full_jpeg_path):
+    """A4 at 72 dpi (595x842 px) so xhtml2pdf cannot zoom the cover."""
+    if not full_jpeg_path or not os.path.isfile(full_jpeg_path):
+        return ""
+    import tempfile
+
+    im = Image.open(full_jpeg_path)
+    fitted = im.resize(
+        (595, 842),
+        Image.Resampling.LANCZOS if hasattr(Image, "Resampling") else Image.LANCZOS,
+    )
+    im.close()
+    fd, out_path = tempfile.mkstemp(prefix="dbsolar_cover_a4_", suffix=".jpg")
+    os.close(fd)
+    fitted.convert("RGB").save(out_path, "JPEG", quality=92, dpi=(72, 72))
+    fitted.close()
+    return out_path.replace("\\", "/")
+
+
 def _jpeg_to_a4_pdf_bytes(jpeg_path):
     """Wrap a JPEG in a single A4 PDF page. Does not need ReportLab."""
     from io import BytesIO
@@ -498,7 +517,7 @@ def _jpeg_to_a4_pdf_bytes(jpeg_path):
 
 
 def stamp_cover_on_pdf(jpeg_path, pdf_bytes):
-    """Put the painted A4 cover as page 1. Keep every xhtml2pdf page after it."""
+    """Replace PDF page 1 with the painted A4 cover. Later pages stay as they are."""
     from io import BytesIO
 
     try:
@@ -540,7 +559,9 @@ def stamp_cover_on_pdf(jpeg_path, pdf_bytes):
     writer = PdfWriter()
     writer.add_page(PdfReader(BytesIO(cover_pdf)).pages[0])
     rest = PdfReader(BytesIO(pdf_bytes))
-    for page in rest.pages:
+    # HTML already has a cover as page 1 — replace it, keep About Us onward.
+    start = 1 if len(rest.pages) > 1 else 0
+    for page in rest.pages[start:]:
         writer.add_page(page)
     out = BytesIO()
     writer.write(out)
