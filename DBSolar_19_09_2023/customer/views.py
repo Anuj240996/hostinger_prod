@@ -104,7 +104,7 @@ def _resync_customer_result_id_sequence():
 
 
 def _resync_auth_user_id_sequence():
-    """Keep auth_user / user_profile ID sequences ahead of existing rows."""
+    """Attach auth_user_id_seq and set it to MAX(id) so the next insert is free."""
     from django.db import connection
 
     if connection.vendor != "postgresql":
@@ -113,44 +113,78 @@ def _resync_auth_user_id_sequence():
         cursor.execute(
             """
             DO $$
-            DECLARE
-                seq_name text;
-                max_id bigint;
             BEGIN
-                SELECT pg_get_serial_sequence('auth_user', 'id') INTO seq_name;
-                IF seq_name IS NOT NULL THEN
-                    SELECT COALESCE(MAX(id), 0) INTO max_id FROM auth_user;
-                    IF max_id > 0 THEN
-                        PERFORM setval(seq_name, max_id, true);
-                    ELSE
-                        PERFORM setval(seq_name, 1, false);
-                    END IF;
+              IF NOT EXISTS (
+                SELECT 1 FROM pg_class c
+                JOIN pg_namespace n ON n.oid = c.relnamespace
+                WHERE c.relkind = 'S' AND c.relname = 'auth_user_id_seq'
+              ) THEN
+                CREATE SEQUENCE auth_user_id_seq;
+              END IF;
+            END $$;
+            """
+        )
+        cursor.execute(
+            "ALTER TABLE auth_user ALTER COLUMN id SET DEFAULT nextval('auth_user_id_seq');"
+        )
+        cursor.execute(
+            "SELECT setval('auth_user_id_seq', "
+            "(SELECT GREATEST(COALESCE(MAX(id), 1), 1) FROM auth_user), true);"
+        )
+        cursor.execute(
+            """
+            DO $$
+            BEGIN
+              IF EXISTS (
+                SELECT 1 FROM information_schema.tables
+                WHERE table_schema = 'public' AND table_name = 'user_profile'
+              ) THEN
+                IF NOT EXISTS (
+                  SELECT 1 FROM pg_class c
+                  JOIN pg_namespace n ON n.oid = c.relnamespace
+                  WHERE c.relkind = 'S' AND c.relname = 'user_profile_id_seq'
+                ) THEN
+                  CREATE SEQUENCE user_profile_id_seq;
                 END IF;
-
-                SELECT pg_get_serial_sequence('user_profile', 'id') INTO seq_name;
-                IF seq_name IS NOT NULL THEN
-                    SELECT COALESCE(MAX(id), 0) INTO max_id FROM user_profile;
-                    IF max_id > 0 THEN
-                        PERFORM setval(seq_name, max_id, true);
-                    ELSE
-                        PERFORM setval(seq_name, 1, false);
-                    END IF;
-                END IF;
+                BEGIN
+                  ALTER TABLE user_profile ALTER COLUMN id SET DEFAULT nextval('user_profile_id_seq');
+                  PERFORM setval(
+                    'user_profile_id_seq',
+                    (SELECT GREATEST(COALESCE(MAX(id), 1), 1) FROM user_profile),
+                    true
+                  );
+                EXCEPTION WHEN undefined_column THEN
+                  NULL;
+                END;
+              END IF;
             END $$;
             """
         )
 
 
 def _save_new_auth_user(user):
-    """Insert auth_user; resync Postgres sequence once if next id already exists."""
-    try:
-        user.save()
-        return user
-    except IntegrityError:
+    """Insert auth_user after forcing the id sequence past existing rows."""
+    from django.db import connection, transaction
+
+    last_err = None
+    _resync_auth_user_id_sequence()
+    for _attempt in range(8):
         user.pk = None
-        _resync_auth_user_id_sequence()
-        user.save()
-        return user
+        try:
+            with transaction.atomic():
+                user.save()
+            return user
+        except IntegrityError as exc:
+            last_err = exc
+            try:
+                connection.rollback()
+            except Exception:
+                pass
+            _resync_auth_user_id_sequence()
+    if last_err:
+        raise last_err
+    user.save()
+    return user
 
 
 def _create_customer_result(*, consumer, consumer_id, assign_to=None):

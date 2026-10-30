@@ -8,7 +8,7 @@ FROM python:3.10-slim
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     DEBIAN_FRONTEND=noninteractive \
-    DBSOLAR_ENTRYPOINT_AUTO=v7
+    DBSOLAR_ENTRYPOINT_AUTO=v8
 
 WORKDIR /app
 
@@ -54,7 +54,7 @@ RUN SECRET_KEY=build-collectstatic-only DEBUG=False \
 RUN sed -i 's/\r$//' /app/entrypoint.sh || true; \
     chmod +x /app/entrypoint.sh || true; \
     ls -la /app/entrypoint.sh /app/gunicorn_wsgi.py /app/fix_startup_migrations.py || true; \
-    echo "Build includes entrypoint auto-v7"
+    echo "Build includes entrypoint auto-v8"
 
 EXPOSE 8000
 

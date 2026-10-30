@@ -68,6 +68,36 @@ def pre_fake_existing_initials() -> int:
     return count
 
 
+def column_exists(cursor, table: str, column: str) -> bool:
+    cursor.execute(
+        """
+        SELECT 1 FROM information_schema.columns
+        WHERE table_schema = 'public' AND table_name = %s AND column_name = %s
+        LIMIT 1
+        """,
+        [table, column],
+    )
+    return cursor.fetchone() is not None
+
+
+def fake_contenttypes_0002_if_name_gone() -> None:
+    """
+    Production DB already dropped django_content_type.name (MySQL import).
+    contenttypes.0002 then fails and blocks every later migration, including
+    auth_user sequence fixes. Fake it so migrate can continue.
+    """
+    from django.db import connection
+
+    with connection.cursor() as cursor:
+        if not table_exists(cursor, "django_content_type"):
+            return
+        if column_exists(cursor, "django_content_type", "name"):
+            return
+        if not migration_recorded(cursor, "contenttypes", "0001_initial"):
+            fake_record(cursor, "contenttypes", "0001_initial")
+        fake_record(cursor, "contenttypes", "0002_remove_content_type_name")
+
+
 def resync_auth_user_id_sequence() -> None:
     """Prevent new-consumer 500: auth_user_id_seq lag after imports/manual inserts."""
     from django.db import connection
@@ -80,33 +110,29 @@ def resync_auth_user_id_sequence() -> None:
         cursor.execute(
             """
             DO $$
-            DECLARE
-                seq_name text;
-                max_id bigint;
             BEGIN
-                SELECT pg_get_serial_sequence('auth_user', 'id') INTO seq_name;
-                IF seq_name IS NOT NULL THEN
-                    SELECT COALESCE(MAX(id), 0) INTO max_id FROM auth_user;
-                    IF max_id > 0 THEN
-                        PERFORM setval(seq_name, max_id, true);
-                    ELSE
-                        PERFORM setval(seq_name, 1, false);
-                    END IF;
-                END IF;
-
-                SELECT pg_get_serial_sequence('user_profile', 'id') INTO seq_name;
-                IF seq_name IS NOT NULL THEN
-                    SELECT COALESCE(MAX(id), 0) INTO max_id FROM user_profile;
-                    IF max_id > 0 THEN
-                        PERFORM setval(seq_name, max_id, true);
-                    ELSE
-                        PERFORM setval(seq_name, 1, false);
-                    END IF;
-                END IF;
+              IF NOT EXISTS (
+                SELECT 1 FROM pg_class c
+                JOIN pg_namespace n ON n.oid = c.relnamespace
+                WHERE c.relkind = 'S' AND c.relname = 'auth_user_id_seq'
+              ) THEN
+                CREATE SEQUENCE auth_user_id_seq;
+              END IF;
             END $$;
             """
         )
-    print("Resynced auth_user / user_profile id sequences.")
+        cursor.execute(
+            "ALTER TABLE auth_user ALTER COLUMN id SET DEFAULT nextval('auth_user_id_seq');"
+        )
+        cursor.execute(
+            "SELECT setval('auth_user_id_seq', "
+            "(SELECT GREATEST(COALESCE(MAX(id), 1), 1) FROM auth_user), true);"
+        )
+        cursor.execute("SELECT last_value FROM auth_user_id_seq;")
+        last_val = cursor.fetchone()[0]
+        cursor.execute("SELECT COALESCE(MAX(id), 0) FROM auth_user;")
+        max_id = cursor.fetchone()[0]
+    print(f"Resynced auth_user_id_seq last={last_val} max_id={max_id}")
 
 
 def run_migrate() -> None:
@@ -116,7 +142,7 @@ def run_migrate() -> None:
 
 
 def main() -> int:
-    print("=== fix_startup_migrations v3 (auto) ===")
+    print("=== fix_startup_migrations v8 (auto) ===")
     if os.environ.get("SKIP_MIGRATE", "0") == "1":
         print("SKIP_MIGRATE=1 — skipping.")
         return 0
@@ -134,7 +160,11 @@ def main() -> int:
     except Exception as exc:
         print(f"WARNING: pre-fake failed: {exc}")
 
-    # Prefer manage.py --fake for contenttypes if table exists (belt and suspenders)
+    try:
+        fake_contenttypes_0002_if_name_gone()
+    except Exception as exc:
+        print(f"WARNING: contenttypes.0002 fake failed: {exc}")
+
     try:
         from django.core.management import call_command
         from django.db import connection
@@ -149,12 +179,18 @@ def main() -> int:
         print(f"WARNING: contenttypes --fake failed: {exc}")
 
     try:
+        resync_auth_user_id_sequence()
+    except Exception as exc:
+        print(f"WARNING: auth_user sequence resync failed: {exc}")
+
+    try:
         run_migrate()
         print("Database migrations completed.")
     except Exception as exc:
         print(f"WARNING: migrate failed ({type(exc).__name__}): {exc}")
         try:
             pre_fake_existing_initials()
+            fake_contenttypes_0002_if_name_gone()
             run_migrate()
             print("Database migrations completed on retry.")
         except Exception as exc2:

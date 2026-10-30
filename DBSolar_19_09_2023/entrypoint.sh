@@ -1,7 +1,7 @@
 #!/bin/sh
-# EasyPanel entrypoint auto-v7 — start Gunicorn fast; never leave service unreachable.
+# EasyPanel entrypoint auto-v8 — start Gunicorn fast; never leave service unreachable.
 set +e
-echo "=== entrypoint auto-v7 (always-start gunicorn) ==="
+echo "=== entrypoint auto-v8 (always-start gunicorn) ==="
 echo "Starting application setup..."
 
 if [ -z "${DATABASE_URL:-}" ]; then
