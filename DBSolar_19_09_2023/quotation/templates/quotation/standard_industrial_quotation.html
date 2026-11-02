@@ -158,59 +158,59 @@
 <body>
 {% now "y" as this_year %}
 
-{# PAGE 1 — A4 50/50 cover (photo | yellow navy yellow). Image is 595x842 px. #}
+{# PAGE 1 — A4 50/50 cover. Do not use a full-page JPEG here (xhtml2pdf zooms it). #}
 <div id="cover_full">
-{% if cover_html_src %}
-<img src="{{ cover_html_src }}" width="595" height="841">
-{% else %}
 <table class="no-border" width="595" cellpadding="0" cellspacing="0" border="0">
   <tr>
-    <td width="297" height="841" valign="top" bgcolor="#123456">
+    <td width="297" height="841" valign="top" bgcolor="#0A2540">
       {% if cover_left_src %}
       <img src="{{ cover_left_src }}" width="297" height="841">
-      {% else %}
-      <img src="{% static 'quotation/proposal/cover_left.png' %}" width="297" height="841">
       {% endif %}
     </td>
     <td width="298" height="841" valign="top">
       <table class="no-border" width="298" cellpadding="0" cellspacing="0" border="0">
         <tr>
-          <td height="202" bgcolor="#FFD200" align="right" valign="top" style="padding:16px 14px; text-align:right;">
-            <font size="4"><b>{{ cover_title_line1 }}<br>{{ cover_title_line2 }}</b></font>
+          <td width="298" height="202" bgcolor="#FFD200" align="right" valign="top">
+            <div style="padding:18px 16px 8px 16px; text-align:right;">
+              <b>{{ cover_title_line1 }}<br>{{ cover_title_line2 }}</b>
+            </div>
           </td>
         </tr>
         <tr>
-          <td height="168" bgcolor="#0A2540" valign="top" style="padding:12px 14px; color:#ffffff;">
-            {% if cover_logo_src %}
-            <img src="{{ cover_logo_src }}" height="32">
-            {% endif %}
-            <font color="#ffffff"><b>{{ quotation_master.company_name|default:"Heramb Industries"|upper }}</b><br>
-            {% if quotation_master.from_address %}{{ quotation_master.from_address }}
-            {% elif quotation_master.address %}{{ quotation_master.address }}
-            {% else %}Bhagya Banglow, Near Sant Eknath Rang Mandir, New Osman Pura, Chh. Sambhajinagar (MH) - 431001{% endif %}
-            </font>
+          <td width="298" height="168" bgcolor="#0A2540" valign="top">
+            <div style="padding:12px 16px; color:#ffffff;">
+              {% if cover_logo_src %}
+              <img src="{{ cover_logo_src }}" height="32"><br>
+              {% endif %}
+              <font color="#ffffff"><b>{{ quotation_master.company_name|default:"Heramb Industries"|upper }}</b><br>
+              {% if quotation_master.from_address %}{{ quotation_master.from_address }}
+              {% elif quotation_master.address %}{{ quotation_master.address }}
+              {% else %}Bhagya Banglow, Near Sant Eknath Rang Mandir, New Osman Pura, Chh. Sambhajinagar (MH) - 431001{% endif %}
+              </font>
+            </div>
           </td>
         </tr>
         <tr>
-          <td height="471" bgcolor="#FFD200" align="right" valign="top" style="padding:14px; text-align:right;">
-            {% if quotation.consumer_type %}<b>{{ quotation.consumer_type }}</b><br><br>{% endif %}
-            <b>{{ quotation.title }} {{ quotation.consumer_name }}</b><br>
-            {{ quotation.consumer_address1 }}<br>
-            {{ quotation.consumer_address2 }}<br>
-            {% if quotation.consumer_mobile %}Mobile : {{ quotation.consumer_mobile }}<br>{% endif %}
-            <br>
-            <b>ID : </b>{{ cover_qid }}<br>
-            <b>Date : </b>{{ formatted_date }}<br>
-            <b>Expiry Date : </b>{{ formatted_expiry_date|default:formatted_date }}<br>
-            <b>By : </b>{{ cover_by_name }}
-            {% if cover_by_contact %}<br><b>Contact : </b>{{ cover_by_contact }}{% endif %}
+          <td width="298" height="471" bgcolor="#FFD200" align="right" valign="top">
+            <div style="padding:16px; text-align:right;">
+              {% if quotation.consumer_type %}<b>{{ quotation.consumer_type }}</b><br><br>{% endif %}
+              <b>{{ quotation.title }} {{ quotation.consumer_name }}</b><br>
+              {{ quotation.consumer_address1 }}<br>
+              {{ quotation.consumer_address2 }}<br>
+              {% if quotation.consumer_mobile %}Mobile : {{ quotation.consumer_mobile }}<br>{% endif %}
+              <br>
+              <b>ID : </b>{{ cover_qid }}<br>
+              <b>Date : </b>{{ formatted_date }}<br>
+              <b>Expiry Date : </b>{{ formatted_expiry_date|default:formatted_date }}<br>
+              <b>By : </b>{{ cover_by_name }}
+              {% if cover_by_contact %}<br><b>Contact : </b>{{ cover_by_contact }}{% endif %}
+            </div>
           </td>
         </tr>
       </table>
     </td>
   </tr>
 </table>
-{% endif %}
 </div>
 
 <pdf:nexttemplate name="inner"/>
