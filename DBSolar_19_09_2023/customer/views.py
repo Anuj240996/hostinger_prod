@@ -4,6 +4,7 @@ from io import BytesIO
 from django.contrib.auth.forms import UserCreationForm
 from django.db.models.functions import Trim, Lower, Cast
 from django.http import HttpResponseRedirect
+from django.urls import reverse
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.clickjacking import xframe_options_exempt
 from django.views.decorators.http import require_POST
@@ -76,40 +77,22 @@ def _mark_quotation_converted_after_consumer_save(request, quotation_id):
 
 def _resync_customer_result_id_sequence():
     """Keep customer_result.id sequence ahead of existing rows (import/manual lag)."""
+    _resync_pg_id_sequence("customer_result", "id")
+
+
+def _resync_pg_id_sequence(table_name, column_name="id"):
+    """Move a Postgres serial/identity sequence to MAX(column). Never SET DEFAULT on identity."""
     from django.db import connection
 
     if connection.vendor != "postgresql":
         return
-    with connection.cursor() as cursor:
-        cursor.execute(
-            """
-            DO $$
-            DECLARE
-                seq_name text;
-                max_id bigint;
-            BEGIN
-                SELECT pg_get_serial_sequence('customer_result', 'id') INTO seq_name;
-                IF seq_name IS NULL THEN
-                    RETURN;
-                END IF;
-                SELECT COALESCE(MAX(id), 0) INTO max_id FROM customer_result;
-                IF max_id > 0 THEN
-                    PERFORM setval(seq_name, max_id, true);
-                ELSE
-                    PERFORM setval(seq_name, 1, false);
-                END IF;
-            END $$;
-            """
-        )
-
-
-def _resync_pg_id_sequence(table_name):
-    """Move a Postgres serial/identity id sequence to MAX(id). Never SET DEFAULT on identity."""
-    from django.db import connection
-
-    if connection.vendor != "postgresql":
-        return
-    if table_name not in ("auth_user", "user_profile"):
+    allowed = {
+        ("auth_user", "id"),
+        ("user_profile", "id"),
+        ("customer", "cust_id"),
+        ("customer_result", "id"),
+    }
+    if (table_name, column_name) not in allowed:
         return
     sql = """
             DO $$
@@ -118,13 +101,13 @@ def _resync_pg_id_sequence(table_name):
               max_id bigint;
               is_identity boolean := false;
             BEGIN
-              SELECT COALESCE(MAX(id), 0) INTO max_id FROM {table};
-              seq_name := pg_get_serial_sequence('public.{table}', 'id');
+              SELECT COALESCE(MAX({column}), 0) INTO max_id FROM {table};
+              seq_name := pg_get_serial_sequence('public.{table}', '{column}');
               SELECT COALESCE(a.attidentity <> '', false) INTO is_identity
               FROM pg_attribute a
               JOIN pg_class c ON c.oid = a.attrelid
               JOIN pg_namespace n ON n.oid = c.relnamespace
-              WHERE n.nspname = 'public' AND c.relname = '{table}' AND a.attname = 'id';
+              WHERE n.nspname = 'public' AND c.relname = '{table}' AND a.attname = '{column}';
 
               IF seq_name IS NOT NULL THEN
                 IF max_id > 0 THEN
@@ -134,32 +117,23 @@ def _resync_pg_id_sequence(table_name):
                 END IF;
               ELSIF is_identity THEN
                 EXECUTE format(
-                  'ALTER TABLE public.{table} ALTER COLUMN id RESTART WITH %s',
+                  'ALTER TABLE public.{table} ALTER COLUMN {column} RESTART WITH %s',
                   GREATEST(max_id, 0) + 1
                 );
               ELSE
-                IF NOT EXISTS (
-                  SELECT 1 FROM pg_class c
-                  JOIN pg_namespace n ON n.oid = c.relnamespace
-                  WHERE c.relkind = 'S' AND c.relname = '{table}_id_seq'
-                ) THEN
-                  EXECUTE 'CREATE SEQUENCE {table}_id_seq';
-                END IF;
-                BEGIN
-                  EXECUTE 'ALTER TABLE public.{table} ALTER COLUMN id SET DEFAULT nextval(''{table}_id_seq'')';
-                EXCEPTION WHEN others THEN
-                  NULL;
-                END;
-                IF max_id > 0 THEN
-                  PERFORM setval('{table}_id_seq', max_id, true);
-                ELSE
-                  PERFORM setval('{table}_id_seq', 1, false);
-                END IF;
+                NULL;
               END IF;
             END $$;
-            """.format(table=table_name)
-    with connection.cursor() as cursor:
-        cursor.execute(sql)
+            """.format(table=table_name, column=column_name)
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute(sql)
+    except Exception:
+        import logging
+
+        logging.getLogger(__name__).exception(
+            "id sequence resync skipped for %s.%s", table_name, column_name
+        )
 
 
 def _resync_auth_user_id_sequence():
@@ -187,9 +161,58 @@ def _resync_auth_user_id_sequence():
         logging.getLogger(__name__).exception("auth_user id sequence resync skipped")
 
 
+def _save_new_customer(cust):
+    """Insert customer row; identity/serial lag must not 500 the enroll page."""
+    from django.db import connection, transaction
+    from django.db.utils import ProgrammingError
+
+    last_err = None
+    _resync_pg_id_sequence("customer", "cust_id")
+    for _attempt in range(6):
+        try:
+            with transaction.atomic():
+                cust.save()
+            return cust
+        except ProgrammingError as exc:
+            last_err = exc
+            try:
+                connection.rollback()
+            except Exception:
+                pass
+            if "identity column" in str(exc).lower():
+                cust.pk = None
+            _resync_pg_id_sequence("customer", "cust_id")
+        except IntegrityError as exc:
+            last_err = exc
+            try:
+                connection.rollback()
+            except Exception:
+                pass
+            _resync_pg_id_sequence("customer", "cust_id")
+            cust.pk = None
+    if last_err:
+        raise last_err
+    cust.save()
+    return cust
+
+
+def _consumer_enroll_error(request, template_name, context, form=None):
+    """Stay on the form instead of a 500 page."""
+    import logging
+
+    logging.getLogger(__name__).exception("Consumer enroll failed")
+    messages.error(request, "Could not save this consumer. Please try again.")
+    if form is not None:
+        context["form"] = form
+    elif "form" not in context:
+        context["form"] = UserCreationForm(request.POST)
+    return render(request, template_name, context)
+
+
 def _save_new_auth_user(user):
     """Insert auth_user after forcing the id sequence past existing rows."""
     from django.db import connection, transaction
+    from django.db.utils import ProgrammingError
 
     last_err = None
     _resync_auth_user_id_sequence()
@@ -199,7 +222,7 @@ def _save_new_auth_user(user):
             with transaction.atomic():
                 user.save()
             return user
-        except IntegrityError as exc:
+        except (IntegrityError, ProgrammingError) as exc:
             last_err = exc
             try:
                 connection.rollback()
@@ -214,6 +237,7 @@ def _save_new_auth_user(user):
 
 def _create_customer_result(*, consumer, consumer_id, assign_to=None):
     """Create Result row; resync sequence once on duplicate-key IntegrityError."""
+    from django.db.utils import ProgrammingError
     from .models import Result
 
     payload = {
@@ -221,9 +245,10 @@ def _create_customer_result(*, consumer, consumer_id, assign_to=None):
         "consumer_id": consumer_id,
         "AssignTo": assign_to,
     }
+    _resync_customer_result_id_sequence()
     try:
         return Result.objects.create(**payload)
-    except IntegrityError:
+    except (IntegrityError, ProgrammingError):
         _resync_customer_result_id_sequence()
         return Result.objects.create(**payload)
 
@@ -944,6 +969,7 @@ def Cust_emp(request):
     if request.method == 'POST':
         form = UserCreationForm(request.POST)
         if form.is_valid():
+          try:
             user = form.save(commit=False)
             user.email = request.POST['email']  # Add email to user object
             user.first_name = request.POST['first_name']
@@ -1031,7 +1057,7 @@ def Cust_emp(request):
                                 project_type=project_type, solar_pump=solar_pump, pump_qunt=pump_qunt,
                                 pump_warranty=pump_warranty, phase=phase, advance_paid=advance_paid,
                                 mobile_app_password=_customer_plain_password_from_request(request) or DEFAULT_CUSTOMER_MOBILE_PASSWORD)
-            new_cust.save()
+            _save_new_customer(new_cust)
 
             # If this customer was created from a quotation conversion, mark the quotation converted
             quotation_id = _resolve_quotation_id_from_request(request)
@@ -1059,6 +1085,8 @@ def Cust_emp(request):
             if request.POST.get('save_exit'):
                 return redirect('customer-cust')
             return redirect('customer-Cust_emp')
+          except Exception:
+            return _consumer_enroll_error(request, 'customer/Cust_emp.html', context, form)
         else:
             context['form'] = form
             return render(request, 'customer/Cust_emp.html', context)
@@ -1440,7 +1468,7 @@ def Comm_Cust(request):
                     advance_paid=advance_paid,
                     mobile_app_password=_customer_plain_password_from_request(request) or DEFAULT_CUSTOMER_MOBILE_PASSWORD,
                 )
-                new_cust.save()
+                _save_new_customer(new_cust)
 
                 # If this customer was created from a quotation conversion, mark the quotation converted
                 quotation_id = _resolve_quotation_id_from_request(request)
@@ -1473,8 +1501,7 @@ def Comm_Cust(request):
                 print(f"DEBUG Comm_Cust - Error type: {type(e)}")
                 import traceback
                 print(f"DEBUG Comm_Cust - Traceback: {traceback.format_exc()}")
-                messages.error(request, f'Error saving customer: {str(e)}')
-                return render(request, 'customer/Comm_Cust.html', context)
+                return _consumer_enroll_error(request, 'customer/Comm_Cust.html', context, form)
 
         else:
             print(f"DEBUG Comm_Cust - Form errors: {form.errors}")
@@ -2049,144 +2076,147 @@ def Comp_Cust(request):
             context['form'] = form
             return render(request, 'customer/Comp_Cust.html', context)
 
-        user = form.save(commit=False)
-        user.email = request.POST.get('email')
-        _save_new_auth_user(user)
+        try:
+            user = form.save(commit=False)
+            user.email = request.POST.get('email')
+            _save_new_auth_user(user)
 
-        group = Group.objects.get(name='Customers')
-        user.groups.add(group)
+            group = Group.objects.get(name='Customers')
+            user.groups.add(group)
 
-        # ---------------- SAFE POST DATA ----------------
-        Comp_name = request.POST.get('Comp_name')
-        Address = request.POST.get('Address')
-        Ups_Soft = request.POST.get('Ups_Soft')
-        email = request.POST.get('email')
-        solar_comp = request.POST.get('solar_comp')
-        UPSC = request.POST.get('UPSC')
-        state = request.POST.get('state')
-        po_order = request.POST.get('po_order')
-        project_type = request.POST.get('project_type')
-        advance_paid = request.POST.get('advance_paid', 'not_paid')
+            # ---------------- SAFE POST DATA ----------------
+            Comp_name = request.POST.get('Comp_name')
+            Address = request.POST.get('Address')
+            Ups_Soft = request.POST.get('Ups_Soft')
+            email = request.POST.get('email')
+            solar_comp = request.POST.get('solar_comp')
+            UPSC = request.POST.get('UPSC')
+            state = request.POST.get('state')
+            po_order = request.POST.get('po_order')
+            project_type = request.POST.get('project_type')
+            advance_paid = request.POST.get('advance_paid', 'not_paid')
 
-        # Integers (safe)
-        Plant_Capacity = _parse_post_int(request.POST.get('Plant_Capacity'))
-        phone = _parse_post_int(request.POST.get('phone'))
-        Pincode = _parse_post_int(request.POST.get('Pincode'))
-        qunt_solar = _parse_post_int(request.POST.get('qunt_solar'))
-        qunt_inv = _parse_post_int(request.POST.get('qunt_inv'))
-        sol_warranty = _parse_post_int(request.POST.get('sol_warranty'))
-        inv_warranty = _parse_post_int(request.POST.get('inv_warranty'))
-        com_warranty = _parse_post_int(request.POST.get('com_warranty'))
-        phase = _parse_post_int(request.POST.get('phase'))
+            # Integers (safe)
+            Plant_Capacity = _parse_post_int(request.POST.get('Plant_Capacity'))
+            phone = _parse_post_int(request.POST.get('phone'))
+            Pincode = _parse_post_int(request.POST.get('Pincode'))
+            qunt_solar = _parse_post_int(request.POST.get('qunt_solar'))
+            qunt_inv = _parse_post_int(request.POST.get('qunt_inv'))
+            sol_warranty = _parse_post_int(request.POST.get('sol_warranty'))
+            inv_warranty = _parse_post_int(request.POST.get('inv_warranty'))
+            com_warranty = _parse_post_int(request.POST.get('com_warranty'))
+            phase = _parse_post_int(request.POST.get('phase'))
 
-        # Date
-        po_date_str = request.POST.get('po_date')
-        po_date = datetime.strptime(po_date_str, "%Y-%m-%d").date() if po_date_str else None
+            # Date
+            po_date_str = request.POST.get('po_date')
+            po_date = datetime.strptime(po_date_str, "%Y-%m-%d").date() if po_date_str else None
 
-        # ---------------- CITY ----------------
-        city_name = request.POST.get('city_name')
-        new_city_name = request.POST.get('new_city_name')
+            # ---------------- CITY ----------------
+            city_name = request.POST.get('city_name')
+            new_city_name = request.POST.get('new_city_name')
 
-        if city_name == "Other" and new_city_name:
-            city_name = new_city_name
+            if city_name == "Other" and new_city_name:
+                city_name = new_city_name
 
-        # ---------------- ENGINEER ----------------
-        Teamid = request.POST.get('Engineer_Assigned')
-        if Teamid:
-            team1 = User.objects.get(id=Teamid)
-        else:
-            team1 = User.objects.get(id=1)
-        AssocId = request.POST.get('Associate_Assigned')
-        assoc_user = User.objects.get(id=AssocId) if AssocId else None
+            # ---------------- ENGINEER ----------------
+            Teamid = request.POST.get('Engineer_Assigned')
+            if Teamid:
+                team1 = User.objects.get(id=Teamid)
+            else:
+                team1 = User.objects.get(id=1)
+            AssocId = request.POST.get('Associate_Assigned')
+            assoc_user = User.objects.get(id=AssocId) if AssocId else None
 
-        # ---------------- PROJECT TYPE ----------------
-        Consumer = None
-        current_load = None
-        loadsancution = None
-        solar_pump = None
-        pump_qunt = None
-        pump_warranty = None
+            # ---------------- PROJECT TYPE ----------------
+            Consumer = None
+            current_load = None
+            loadsancution = None
+            solar_pump = None
+            pump_qunt = None
+            pump_warranty = None
 
-        if project_type == "Water Pump":
-            solar_pump = request.POST.get('solar_pump')
-            pump_qunt = _parse_post_int(request.POST.get('pump_qunt'))
-            pump_warranty = _parse_post_int(request.POST.get('pump_warranty'))
-        else:
-            Consumer = request.POST.get('Consumer')
-            current_load = _parse_post_int(request.POST.get('Bill_unit'))
-            loadsancution = _parse_post_int(request.POST.get('loadsancution'))
+            if project_type == "Water Pump":
+                solar_pump = request.POST.get('solar_pump')
+                pump_qunt = _parse_post_int(request.POST.get('pump_qunt'))
+                pump_warranty = _parse_post_int(request.POST.get('pump_warranty'))
+            else:
+                Consumer = request.POST.get('Consumer')
+                current_load = _parse_post_int(request.POST.get('Bill_unit'))
+                loadsancution = _parse_post_int(request.POST.get('loadsancution'))
 
-        # ---------------- CUSTOMER SAVE ----------------
-        Cust_id = 1001 if Customer.objects.count() == 0 else Customer.objects.aggregate(max=Max('Cust_id'))["max"] + 1
+            # ---------------- CUSTOMER SAVE ----------------
+            Cust_id = 1001 if Customer.objects.count() == 0 else Customer.objects.aggregate(max=Max('Cust_id'))["max"] + 1
 
-        new_cust = Customer.objects.create(
-            Cust_id=Cust_id,
-            Comp_name=Comp_name,
-            Consumer=Consumer,
-            current_load=current_load,
-            Address=Address,
-            Plant_Capacity=Plant_Capacity,
-            Ups_Soft=Ups_Soft,
-            Cust_type=Cust_type,
-            City=city_name,
-            email=email,
-            phone=phone,
-            solar_comp=solar_comp,
-            UPSC=UPSC,
-            Emp_id=request.user,
-            state=state,
-            Pincode=Pincode,
-            new_customer=user,
-            loadsancution=loadsancution,
-            po_date=po_date,
-            po_order=po_order,
-            Engg_Assign=team1,
-            Assoc_Assign=assoc_user,
-            qunt_solar=qunt_solar,
-            qunt_inv=qunt_inv,
-            sol_warranty=sol_warranty,
-            inv_warranty=inv_warranty,
-            com_warranty=com_warranty,
-            project_type=project_type,
-            solar_pump=solar_pump,
-            pump_qunt=pump_qunt,
-            pump_warranty=pump_warranty,
-            phase=phase,
-            advance_paid=advance_paid,
-            mobile_app_password=_customer_plain_password_from_request(request) or DEFAULT_CUSTOMER_MOBILE_PASSWORD,
-        )
+            new_cust = Customer(
+                Cust_id=Cust_id,
+                Comp_name=Comp_name,
+                Consumer=Consumer,
+                current_load=current_load,
+                Address=Address,
+                Plant_Capacity=Plant_Capacity,
+                Ups_Soft=Ups_Soft,
+                Cust_type=Cust_type,
+                City=city_name,
+                email=email,
+                phone=phone,
+                solar_comp=solar_comp,
+                UPSC=UPSC,
+                Emp_id=request.user,
+                state=state,
+                Pincode=Pincode,
+                new_customer=user,
+                loadsancution=loadsancution,
+                po_date=po_date,
+                po_order=po_order,
+                Engg_Assign=team1,
+                Assoc_Assign=assoc_user,
+                qunt_solar=qunt_solar,
+                qunt_inv=qunt_inv,
+                sol_warranty=sol_warranty,
+                inv_warranty=inv_warranty,
+                com_warranty=com_warranty,
+                project_type=project_type,
+                solar_pump=solar_pump,
+                pump_qunt=pump_qunt,
+                pump_warranty=pump_warranty,
+                phase=phase,
+                advance_paid=advance_paid,
+                mobile_app_password=_customer_plain_password_from_request(request) or DEFAULT_CUSTOMER_MOBILE_PASSWORD,
+            )
+            _save_new_customer(new_cust)
 
-        # # If this customer was created from a quotation conversion, mark the quotation converted
-        # quotation_id = request.GET.get('quotation_id') or request.POST.get('quotation_id') or \
-        #                (request.session.get('quotation_data', {}) or {}).get('quotation_id')
-        # if quotation_id:
-        #     try:
-        #         Quotation.objects.filter(pk=quotation_id).update(convert_consumer=True)
-        #     except Exception as e:
-        #         print(f"Failed to mark quotation {quotation_id} as converted: {e}")
-        #
-        # # ---------------- RESULT SAVE ----------------
-        # Result.objects.create(
-        #     consumer=Comp_name,
-        #     consumer_id=new_cust,
-        #     AssignTo=request.user
-        # )
-        new_cust.save()
+            # # If this customer was created from a quotation conversion, mark the quotation converted
+            # quotation_id = request.GET.get('quotation_id') or request.POST.get('quotation_id') or \
+            #                (request.session.get('quotation_data', {}) or {}).get('quotation_id')
+            # if quotation_id:
+            #     try:
+            #         Quotation.objects.filter(pk=quotation_id).update(convert_consumer=True)
+            #     except Exception as e:
+            #         print(f"Failed to mark quotation {quotation_id} as converted: {e}")
+            #
+            # # ---------------- RESULT SAVE ----------------
+            # Result.objects.create(
+            #     consumer=Comp_name,
+            #     consumer_id=new_cust,
+            #     AssignTo=request.user
+            # )
 
-        # If this customer was created from a quotation conversion, mark the quotation converted
-        quotation_id = _resolve_quotation_id_from_request(request)
-        if quotation_id:
-            _mark_quotation_converted_after_consumer_save(request, quotation_id)
+            # If this customer was created from a quotation conversion, mark the quotation converted
+            quotation_id = _resolve_quotation_id_from_request(request)
+            if quotation_id:
+                _mark_quotation_converted_after_consumer_save(request, quotation_id)
 
-        # After saving Customer, create related Result entry
-        _create_customer_result(
-            consumer=Comp_name,
-            consumer_id=new_cust,
-            assign_to=request.user,
-        )
+            # After saving Customer, create related Result entry
+            _create_customer_result(
+                consumer=Comp_name,
+                consumer_id=new_cust,
+                assign_to=request.user,
+            )
 
-        messages.success(request, "New Customer enrolled Successfully")
-        return HttpResponseRedirect(reverse('customer-cust'))
+            messages.success(request, "New Customer enrolled Successfully")
+            return HttpResponseRedirect(reverse('customer-cust'))
+        except Exception:
+            return _consumer_enroll_error(request, 'customer/Comp_Cust.html', context, form)
 
     # ---------------- GET REQUEST ----------------
     form = UserCreationForm()
@@ -2303,6 +2333,7 @@ def Govt_Cust(request):
         # Create a new user first
         form = UserCreationForm(request.POST)
         if form.is_valid():
+          try:
             user = form.save(commit=False)
             user.email = request.POST['email']  # Add email to user object
             _save_new_auth_user(user)
@@ -2414,7 +2445,7 @@ def Govt_Cust(request):
                 advance_paid=advance_paid,
                 mobile_app_password=_customer_plain_password_from_request(request) or DEFAULT_CUSTOMER_MOBILE_PASSWORD,
             )
-            new_cust.save()
+            _save_new_customer(new_cust)
 
             # If this customer was created from a quotation conversion, mark the quotation converted
             quotation_id = _resolve_quotation_id_from_request(request)
@@ -2442,6 +2473,8 @@ def Govt_Cust(request):
                     'cities': cities,
                 }
                 return render(request, 'customer/Govt_Cust.html', context)
+          except Exception:
+            return _consumer_enroll_error(request, 'customer/Govt_Cust.html', context, form)
         else:
             context['form'] = form
             return render(request, 'customer/Govt_Cust.html', context)

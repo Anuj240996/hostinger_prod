@@ -54,7 +54,7 @@ RUN SECRET_KEY=build-collectstatic-only DEBUG=False \
 RUN sed -i 's/\r$//' /app/entrypoint.sh || true; \
     chmod +x /app/entrypoint.sh || true; \
     ls -la /app/entrypoint.sh /app/gunicorn_wsgi.py /app/fix_startup_migrations.py || true; \
-    echo "Build includes entrypoint auto-v8 cover-a4-20261102e"
+    echo "Build includes entrypoint auto-v8 consumer-save-20261102a"
 
 EXPOSE 8000
 
