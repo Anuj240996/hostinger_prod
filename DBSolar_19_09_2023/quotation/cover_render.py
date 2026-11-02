@@ -517,7 +517,7 @@ def _jpeg_to_a4_pdf_bytes(jpeg_path):
 
 
 def stamp_cover_on_pdf(jpeg_path, pdf_bytes):
-    """Replace PDF page 1 with the painted A4 cover. Later pages stay as they are."""
+    """Put the painted A4 cover as page 1. Keep every later page unchanged."""
     from io import BytesIO
 
     try:
@@ -530,6 +530,11 @@ def stamp_cover_on_pdf(jpeg_path, pdf_bytes):
 
     cover_pdf = None
     try:
+        cover_pdf = _jpeg_to_a4_pdf_bytes(jpeg_path)
+        PdfReader(BytesIO(cover_pdf)).pages[0]
+    except Exception:
+        cover_pdf = None
+    if not cover_pdf:
         from reportlab.lib.pagesizes import A4
         from reportlab.lib.utils import ImageReader
         from reportlab.pdfgen import canvas as rl_canvas
@@ -548,20 +553,11 @@ def stamp_cover_on_pdf(jpeg_path, pdf_bytes):
         )
         c.save()
         cover_pdf = cover_buf.getvalue()
-    except Exception:
-        import logging
-
-        logging.getLogger(__name__).warning(
-            "ReportLab cover stamp unavailable; using JPEG A4 wrapper"
-        )
-        cover_pdf = _jpeg_to_a4_pdf_bytes(jpeg_path)
 
     writer = PdfWriter()
     writer.add_page(PdfReader(BytesIO(cover_pdf)).pages[0])
     rest = PdfReader(BytesIO(pdf_bytes))
-    # HTML already has a cover as page 1 — replace it, keep About Us onward.
-    start = 1 if len(rest.pages) > 1 else 0
-    for page in rest.pages[start:]:
+    for page in rest.pages:
         writer.add_page(page)
     out = BytesIO()
     writer.write(out)

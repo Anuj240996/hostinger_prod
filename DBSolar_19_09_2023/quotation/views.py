@@ -5356,44 +5356,16 @@ def industrial_quotation_pdf(request, pk):
 
     if template_name.endswith('standard_industrial_quotation.html'):
         context['cover_full_src'] = ''
-        context['cover_html_src'] = ''
-        context['cover_left_src'] = ''
-        context['cover_logo_src'] = ''
         context['about_photo_src'] = ''
-        context['cover_title_line1'] = 'Roof Top Solar'
-        context['cover_title_line2'] = 'Proposal'
-        context['cover_qid'] = ''
-        context['cover_by_name'] = ''
-        context['cover_by_contact'] = ''
         master = context.get('quotation_master')
         try:
             from .cover_render import (
                 render_proposal_cover_png,
-                render_proposal_cover_html_jpeg,
-                render_cover_left_photo,
-                render_about_photo,
                 build_quotation_scan_url,
-                quotation_reference_id,
-                _cover_proposal_title_lines,
-                _cover_by_and_contact,
             )
             from datetime import datetime
             this_year = datetime.now().strftime('%y')
             scan_url = build_quotation_scan_url(request, quotation.pk)
-            title_lines = _cover_proposal_title_lines(quotation)
-            context['cover_title_line1'] = title_lines[0]
-            context['cover_title_line2'] = title_lines[1]
-            context['cover_qid'] = quotation_reference_id(quotation, this_year)
-            by_name, by_contact = _cover_by_and_contact(quotation)
-            context['cover_by_name'] = by_name
-            context['cover_by_contact'] = by_contact
-            if master is not None:
-                logo_field = getattr(master, 'company_logo', None)
-                try:
-                    if logo_field and getattr(logo_field, 'name', ''):
-                        context['cover_logo_src'] = str(logo_field.path).replace('\\', '/')
-                except Exception:
-                    context['cover_logo_src'] = ''
             context['cover_full_src'] = render_proposal_cover_png(
                 context.get('quotation'),
                 master,
@@ -5402,17 +5374,16 @@ def industrial_quotation_pdf(request, pk):
                 context.get('formatted_expiry_date'),
                 scan_url=scan_url,
             ) or ''
-            context['cover_html_src'] = render_proposal_cover_html_jpeg(
-                context.get('cover_full_src')
-            ) or ''
-            context['cover_left_src'] = render_cover_left_photo(master, width=297, height=841) or ''
+        except Exception:
+            import logging
+            logging.getLogger(__name__).exception("Sample 2 cover render failed")
+            context['cover_full_src'] = ''
+        try:
+            from .cover_render import render_about_photo
             context['about_photo_src'] = render_about_photo() or ''
         except Exception:
             import logging
-            logging.getLogger(__name__).exception("Sample 2 cover/about render failed")
-            context['cover_full_src'] = ''
-            context['cover_html_src'] = ''
-            context['cover_left_src'] = ''
+            logging.getLogger(__name__).exception("Sample 2 about render failed")
             context['about_photo_src'] = ''
 
     html = render_to_string(template_name, context)
