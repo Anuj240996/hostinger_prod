@@ -80,17 +80,32 @@ def _cover_fit(im, tw, th):
 
 
 def _open_image(field_or_path):
+    """Open a path or Django ImageField. Empty FieldFile must not raise."""
     if field_or_path is None:
         return None
-    path = field_or_path
-    if hasattr(field_or_path, "path"):
+    path = None
+    if isinstance(field_or_path, (str, bytes, os.PathLike)):
+        path = str(field_or_path)
+    else:
+        # Do not use hasattr(..., "path"): Django FieldFile.path raises ValueError
+        # when no file is stored.
+        name = ""
         try:
-            if field_or_path and getattr(field_or_path, "name", ""):
-                path = field_or_path.path
-            else:
-                return None
+            name = field_or_path.name or ""
         except Exception:
+            name = ""
+        if not name:
             return None
+        try:
+            path = field_or_path.path
+        except Exception:
+            try:
+                path = os.path.join(
+                    str(settings.MEDIA_ROOT),
+                    str(name).lstrip("/").replace("/", os.sep),
+                )
+            except Exception:
+                return None
     if not path or not os.path.isfile(str(path)):
         return None
     try:
