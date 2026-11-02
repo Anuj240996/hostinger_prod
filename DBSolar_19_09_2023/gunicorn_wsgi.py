@@ -13,8 +13,13 @@ try:
         if connection.vendor == "postgresql":
             with connection.cursor() as cursor:
                 cursor.execute(
-                    "SELECT setval('auth_user_id_seq', "
-                    "(SELECT GREATEST(COALESCE(MAX(id), 1), 1) FROM auth_user), true);"
+                    """
+                    SELECT setval(
+                      COALESCE(pg_get_serial_sequence('public.auth_user', 'id'), 'auth_user_id_seq'),
+                      (SELECT GREATEST(COALESCE(MAX(id), 1), 1) FROM auth_user),
+                      true
+                    );
+                    """
                 )
             print("gunicorn_wsgi: auth_user_id_seq resynced")
     except Exception as seq_exc:

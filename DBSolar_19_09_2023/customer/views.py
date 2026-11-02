@@ -103,63 +103,88 @@ def _resync_customer_result_id_sequence():
         )
 
 
-def _resync_auth_user_id_sequence():
-    """Attach auth_user_id_seq and set it to MAX(id) so the next insert is free."""
+def _resync_pg_id_sequence(table_name):
+    """Move a Postgres serial/identity id sequence to MAX(id). Never SET DEFAULT on identity."""
     from django.db import connection
 
     if connection.vendor != "postgresql":
         return
-    with connection.cursor() as cursor:
-        cursor.execute(
-            """
+    if table_name not in ("auth_user", "user_profile"):
+        return
+    sql = """
             DO $$
+            DECLARE
+              seq_name text;
+              max_id bigint;
+              is_identity boolean := false;
             BEGIN
-              IF NOT EXISTS (
-                SELECT 1 FROM pg_class c
-                JOIN pg_namespace n ON n.oid = c.relnamespace
-                WHERE c.relkind = 'S' AND c.relname = 'auth_user_id_seq'
-              ) THEN
-                CREATE SEQUENCE auth_user_id_seq;
-              END IF;
-            END $$;
-            """
-        )
-        cursor.execute(
-            "ALTER TABLE auth_user ALTER COLUMN id SET DEFAULT nextval('auth_user_id_seq');"
-        )
-        cursor.execute(
-            "SELECT setval('auth_user_id_seq', "
-            "(SELECT GREATEST(COALESCE(MAX(id), 1), 1) FROM auth_user), true);"
-        )
-        cursor.execute(
-            """
-            DO $$
-            BEGIN
-              IF EXISTS (
-                SELECT 1 FROM information_schema.tables
-                WHERE table_schema = 'public' AND table_name = 'user_profile'
-              ) THEN
+              SELECT COALESCE(MAX(id), 0) INTO max_id FROM {table};
+              seq_name := pg_get_serial_sequence('public.{table}', 'id');
+              SELECT COALESCE(a.attidentity <> '', false) INTO is_identity
+              FROM pg_attribute a
+              JOIN pg_class c ON c.oid = a.attrelid
+              JOIN pg_namespace n ON n.oid = c.relnamespace
+              WHERE n.nspname = 'public' AND c.relname = '{table}' AND a.attname = 'id';
+
+              IF seq_name IS NOT NULL THEN
+                IF max_id > 0 THEN
+                  PERFORM setval(seq_name, max_id, true);
+                ELSE
+                  PERFORM setval(seq_name, 1, false);
+                END IF;
+              ELSIF is_identity THEN
+                EXECUTE format(
+                  'ALTER TABLE public.{table} ALTER COLUMN id RESTART WITH %s',
+                  GREATEST(max_id, 0) + 1
+                );
+              ELSE
                 IF NOT EXISTS (
                   SELECT 1 FROM pg_class c
                   JOIN pg_namespace n ON n.oid = c.relnamespace
-                  WHERE c.relkind = 'S' AND c.relname = 'user_profile_id_seq'
+                  WHERE c.relkind = 'S' AND c.relname = '{table}_id_seq'
                 ) THEN
-                  CREATE SEQUENCE user_profile_id_seq;
+                  EXECUTE 'CREATE SEQUENCE {table}_id_seq';
                 END IF;
                 BEGIN
-                  ALTER TABLE user_profile ALTER COLUMN id SET DEFAULT nextval('user_profile_id_seq');
-                  PERFORM setval(
-                    'user_profile_id_seq',
-                    (SELECT GREATEST(COALESCE(MAX(id), 1), 1) FROM user_profile),
-                    true
-                  );
-                EXCEPTION WHEN undefined_column THEN
+                  EXECUTE 'ALTER TABLE public.{table} ALTER COLUMN id SET DEFAULT nextval(''{table}_id_seq'')';
+                EXCEPTION WHEN others THEN
                   NULL;
                 END;
+                IF max_id > 0 THEN
+                  PERFORM setval('{table}_id_seq', max_id, true);
+                ELSE
+                  PERFORM setval('{table}_id_seq', 1, false);
+                END IF;
               END IF;
             END $$;
-            """
-        )
+            """.format(table=table_name)
+    with connection.cursor() as cursor:
+        cursor.execute(sql)
+
+
+def _resync_auth_user_id_sequence():
+    """Set auth_user id sequence to MAX(id) so the next insert is free."""
+    from django.db import connection
+
+    if connection.vendor != "postgresql":
+        return
+    try:
+        _resync_pg_id_sequence("auth_user")
+        with connection.cursor() as cursor:
+            cursor.execute(
+                """
+                SELECT EXISTS (
+                  SELECT 1 FROM information_schema.tables
+                  WHERE table_schema = 'public' AND table_name = 'user_profile'
+                );
+                """
+            )
+            if cursor.fetchone()[0]:
+                _resync_pg_id_sequence("user_profile")
+    except Exception:
+        import logging
+
+        logging.getLogger(__name__).exception("auth_user id sequence resync skipped")
 
 
 def _save_new_auth_user(user):

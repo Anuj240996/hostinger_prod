@@ -99,7 +99,7 @@ def fake_contenttypes_0002_if_name_gone() -> None:
 
 
 def resync_auth_user_id_sequence() -> None:
-    """Prevent new-consumer 500: auth_user_id_seq lag after imports/manual inserts."""
+    """Prevent new-consumer 500: serial/identity sequence lag after imports."""
     from django.db import connection
 
     if connection.vendor != "postgresql":
@@ -110,29 +110,61 @@ def resync_auth_user_id_sequence() -> None:
         cursor.execute(
             """
             DO $$
+            DECLARE
+              seq_name text;
+              max_id bigint;
+              is_identity boolean := false;
             BEGIN
-              IF NOT EXISTS (
-                SELECT 1 FROM pg_class c
-                JOIN pg_namespace n ON n.oid = c.relnamespace
-                WHERE c.relkind = 'S' AND c.relname = 'auth_user_id_seq'
-              ) THEN
-                CREATE SEQUENCE auth_user_id_seq;
+              SELECT COALESCE(MAX(id), 0) INTO max_id FROM auth_user;
+              seq_name := pg_get_serial_sequence('public.auth_user', 'id');
+              SELECT COALESCE(a.attidentity <> '', false) INTO is_identity
+              FROM pg_attribute a
+              JOIN pg_class c ON c.oid = a.attrelid
+              JOIN pg_namespace n ON n.oid = c.relnamespace
+              WHERE n.nspname = 'public' AND c.relname = 'auth_user' AND a.attname = 'id';
+
+              IF seq_name IS NOT NULL THEN
+                IF max_id > 0 THEN
+                  PERFORM setval(seq_name, max_id, true);
+                ELSE
+                  PERFORM setval(seq_name, 1, false);
+                END IF;
+              ELSIF is_identity THEN
+                EXECUTE format(
+                  'ALTER TABLE public.auth_user ALTER COLUMN id RESTART WITH %s',
+                  GREATEST(max_id, 0) + 1
+                );
+              ELSE
+                IF NOT EXISTS (
+                  SELECT 1 FROM pg_class c
+                  JOIN pg_namespace n ON n.oid = c.relnamespace
+                  WHERE c.relkind = 'S' AND c.relname = 'auth_user_id_seq'
+                ) THEN
+                  CREATE SEQUENCE auth_user_id_seq;
+                END IF;
+                BEGIN
+                  ALTER TABLE auth_user ALTER COLUMN id SET DEFAULT nextval('auth_user_id_seq');
+                EXCEPTION WHEN others THEN
+                  NULL;
+                END;
+                IF max_id > 0 THEN
+                  PERFORM setval('auth_user_id_seq', max_id, true);
+                ELSE
+                  PERFORM setval('auth_user_id_seq', 1, false);
+                END IF;
               END IF;
             END $$;
             """
         )
-        cursor.execute(
-            "ALTER TABLE auth_user ALTER COLUMN id SET DEFAULT nextval('auth_user_id_seq');"
-        )
-        cursor.execute(
-            "SELECT setval('auth_user_id_seq', "
-            "(SELECT GREATEST(COALESCE(MAX(id), 1), 1) FROM auth_user), true);"
-        )
-        cursor.execute("SELECT last_value FROM auth_user_id_seq;")
-        last_val = cursor.fetchone()[0]
         cursor.execute("SELECT COALESCE(MAX(id), 0) FROM auth_user;")
         max_id = cursor.fetchone()[0]
-    print(f"Resynced auth_user_id_seq last={last_val} max_id={max_id}")
+        cursor.execute("SELECT pg_get_serial_sequence('public.auth_user', 'id');")
+        seq_name = cursor.fetchone()[0]
+        last_val = None
+        if seq_name:
+            cursor.execute("SELECT last_value FROM %s;" % seq_name)
+            last_val = cursor.fetchone()[0]
+    print(f"Resynced auth_user id sequence last={last_val} max_id={max_id}")
 
 
 def run_migrate() -> None:
